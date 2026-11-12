@@ -240,7 +240,7 @@
     const revealCard = (state, cls) => {
       if (revealLeft(state) <= 0) return '';
       const fresh = state.reveal.at !== lastReveal;
-      return `<aside class="${cls} ${fresh ? 'pop' : ''}" data-reveal><span class="rv-head">✔ ¡Correcto!</span><span class="rv-answer">${esc(state.reveal.answer)}</span></aside>`;
+      return `<aside class="${cls} ${fresh ? 'pop' : ''}" data-reveal><span class="rv-head">✔ Letra ${esc(state.reveal.letter)}</span><span class="rv-answer">${esc(state.reveal.answer)}</span></aside>`;
     };
     const hideReveal = () => $$('[data-reveal]').forEach((el) => { el.hidden = true; });
     const scheduleRevealEnd = (state) => {
@@ -264,7 +264,7 @@
             <span class="obs-name">${esc(c.name)}</span>
             <span class="obs-score"><b class="ok">✔ ${c.hits}</b> <b class="ko">✘ ${c.misses}</b></span></div>`).join('')}</div>
           <div class="obs-wheel">${wheelSVG(st, st.turn, false, true)}</div>
-          ${questionCard(st)}${revealCard(st, 'obs-reveal')}`;
+          <div class="obs-side">${questionCard(st)}${revealCard(st, 'obs-reveal')}</div>`;
         lastQuestion = st.question;
         scheduleRevealEnd(st);
         return;

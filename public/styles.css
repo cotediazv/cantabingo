@@ -259,3 +259,11 @@ body.obs #pw { grid-template-rows: none; padding: 0; }
 .pw-reveal .rv-answer { font-size: 1.6rem; font-weight: 700; }
 @media (max-aspect-ratio: 3/2) { .obs-reveal { position: static; transform: none; width: auto; max-width: 92vw; margin: 2vh auto 0; } }
 @media (prefers-reduced-motion: reduce) { .obs-reveal.pop { animation: none; } }
+
+/* Columna derecha de OBS: la pregunta y, debajo, la respuesta acertada */
+.obs-side { position: fixed; right: 2.5vh; top: 50%; transform: translateY(-50%); width: calc((100vw - 94vh) / 2 - 4.5vh); display: grid; gap: 2.4vh; }
+.obs-side .obs-question, .obs-side .obs-reveal { position: relative; inset: auto; transform: none; width: auto; margin: 0; }
+.obs-side .obs-question.pop, .obs-side .obs-reveal.pop { animation: sidepop .45s cubic-bezier(.2, 1.4, .4, 1); }
+@keyframes sidepop { from { transform: scale(.7); opacity: 0; } }
+@media (max-aspect-ratio: 3/2) { .obs-side { position: static; transform: none; width: auto; max-width: 92vw; margin: 6vh auto 0; } }
+@media (prefers-reduced-motion: reduce) { .obs-side .obs-question.pop, .obs-side .obs-reveal.pop { animation: none; } }
