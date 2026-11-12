@@ -233,6 +233,22 @@
       return `<aside class="obs-question ${state.question !== lastQuestion ? 'pop' : ''}"><span class="obs-badge">${esc(state.letters[c.current])}</span>
         ${head ? `<span class="obs-head">${esc(head)}</span>` : ''}<span class="obs-text">${esc(body)}</span></aside>`;
     };
+    // Respuesta acertada: se muestra unos segundos y se retira sola
+    let lastReveal = 0;
+    let revealTimer = null;
+    const revealLeft = (state) => (state.reveal ? 4000 - (Date.now() + state.offset - state.reveal.at) : 0);
+    const revealCard = (state, cls) => {
+      if (revealLeft(state) <= 0) return '';
+      const fresh = state.reveal.at !== lastReveal;
+      return `<aside class="${cls} ${fresh ? 'pop' : ''}" data-reveal><span class="rv-head">✔ ¡Correcto!</span><span class="rv-answer">${esc(state.reveal.answer)}</span></aside>`;
+    };
+    const hideReveal = () => $$('[data-reveal]').forEach((el) => { el.hidden = true; });
+    const scheduleRevealEnd = (state) => {
+      clearTimeout(revealTimer);
+      if (!state.reveal) return;
+      lastReveal = state.reveal.at;
+      revealTimer = setTimeout(hideReveal, Math.max(0, revealLeft(state)));
+    };
     document.body.classList.add('wheel-screen');
     if (kind === 'obs') document.body.classList.add('obs');
     app.innerHTML = '<div id="pw"></div>';
@@ -248,13 +264,15 @@
             <span class="obs-name">${esc(c.name)}</span>
             <span class="obs-score"><b class="ok">✔ ${c.hits}</b> <b class="ko">✘ ${c.misses}</b></span></div>`).join('')}</div>
           <div class="obs-wheel">${wheelSVG(st, st.turn, false, true)}</div>
-          ${questionCard(st)}`;
+          ${questionCard(st)}${revealCard(st, 'obs-reveal')}`;
         lastQuestion = st.question;
+        scheduleRevealEnd(st);
         return;
       }
       $('#pw').innerHTML = `<h1 class="pw-title">${esc(st.name)}</h1>
-        ${st.question ? `<div class="pw-question">${esc(st.question)}</div>` : ''}
+        ${revealCard(st, 'pw-reveal')}${st.question ? `<div class="pw-question">${esc(st.question)}</div>` : ''}
         <div class="wheels n${st.players.length}">${st.players.map((_, i) => `<div class="wheel-box ${i === st.turn && !st.finished ? 'on' : 'off'}">${wheelSVG(st, i)}</div>`).join('')}</div>`;
+      scheduleRevealEnd(st);
     }, () => { leave(); if (location.hash === `#/${kind}`) route(); else location.hash = `#/${kind}`; });
     return () => { off(); stopClocks(); leave(); };
   }

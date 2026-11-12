@@ -247,3 +247,15 @@ body.obs #pw { grid-template-rows: none; padding: 0; }
 }
 @media (prefers-reduced-motion: reduce) { .obs-question.pop, .wheel g.cur circle { animation: none; } }
 .pw-question { background: linear-gradient(160deg, #7b2ff7, #f107a3); border: 2px solid #fff; color: #fff; }
+
+/* Respuesta acertada en pantalla */
+.obs-reveal, .pw-reveal { font-family: Fredoka, "Baloo 2", "Trebuchet MS", system-ui, sans-serif; display: grid; justify-items: center; text-align: center; color: #fff; background: linear-gradient(160deg, #12b866, #06884a); border: .5vh solid #fff; box-shadow: 0 1vh 3vh rgba(0,0,0,.4); }
+.obs-reveal { position: fixed; left: 2.5vh; top: 50%; transform: translateY(-50%); width: calc((100vw - 94vh) / 2 - 4.5vh); padding: 2.4vh; border-radius: 3vh; gap: 1vh; }
+.obs-reveal .rv-head { font-size: 3vh; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; background: rgba(255,255,255,.22); border-radius: 99px; padding: .3vh 1.8vh; }
+.obs-reveal .rv-answer { font-size: 5.4vh; font-weight: 700; line-height: 1.1; overflow-wrap: anywhere; text-wrap: balance; }
+.obs-reveal.pop { animation: qpop .45s cubic-bezier(.2, 1.4, .4, 1); }
+.pw-reveal { max-width: 720px; margin: 0 auto 12px; padding: 10px 16px; border-radius: var(--radius); border-width: 2px; gap: 2px; }
+.pw-reveal .rv-head { font-size: .9rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+.pw-reveal .rv-answer { font-size: 1.6rem; font-weight: 700; }
+@media (max-aspect-ratio: 3/2) { .obs-reveal { position: static; transform: none; width: auto; max-width: 92vw; margin: 2vh auto 0; } }
+@media (prefers-reduced-motion: reduce) { .obs-reveal.pop { animation: none; } }

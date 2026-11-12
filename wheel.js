@@ -5,6 +5,7 @@ const { BANK, CONTAINS } = require('./questions-bank.js');
 
 const LETTERS = 'ABCDEFGHIJLMNÑOPQRSTUVXYZ';
 const OPEN = (st) => st === 'pending' || st === 'pass';
+const REVEAL_MS = 4000; // tiempo que la respuesta acertada queda en pantalla
 
 module.exports = function wheelGame({ app, db, save, requireAdmin, fail }) {
   db.wheels ||= {};
@@ -96,6 +97,9 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail }) {
       case 'pass': {
         if (!OPEN(c.status[c.current])) return 'Esa letra ya está resuelta';
         remember(w);
+        // Al acertar, la respuesta se revela al público durante unos segundos
+        const solved = ((w.questions[w.turn] || [])[c.current] || {}).a;
+        w.reveal = action === 'hit' && solved ? { letter: w.letters[c.current], answer: solved, at: Date.now() } : null;
         c.status[c.current] = action;
         const more = nextLetter(c);
         if (!more) { settle(w); passTurn(w); } // terminó su rueda
@@ -119,9 +123,10 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail }) {
         if (!last) return 'No hay nada que deshacer';
         settle(w);
         Object.assign(w, JSON.parse(last));
+        w.reveal = null;
         return null;
       }
-      case 'reset': settle(w); w.history = []; w.turn = 0; w.players = freshPlayers(w); return null;
+      case 'reset': settle(w); w.history = []; w.turn = 0; w.reveal = null; w.players = freshPlayers(w); return null;
       default: return 'Acción desconocida';
     }
   }
@@ -129,6 +134,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail }) {
   const publicState = (w) => ({
     id: w.id, name: w.name, letters: w.letters, turn: w.turn, runningSince: w.runningSince, now: Date.now(),
     finished: !w.players.some(active), canUndo: w.history.length > 0,
+    reveal: w.reveal && Date.now() - w.reveal.at < REVEAL_MS ? w.reveal : null,
     // Al público va solo el enunciado de la letra en juego; la respuesta nunca sale del panel del moderador
     // y solo mientras su reloj está corriendo.
     question: w.runningSince && active(w.players[w.turn]) ? ((w.questions[w.turn] || [])[w.players[w.turn].current] || {}).q || '' : '',
