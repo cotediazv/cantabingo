@@ -141,6 +141,7 @@ setInterval(() => {
 
 // ---------- API ----------
 const app = express();
+app.set('trust proxy', 1); // detrás del proxy del hosting, para ver la IP real
 app.use(express.json({ limit: '1mb' }));
 // Sin caché: así cada celular recibe siempre la última versión publicada
 app.use(express.static(path.join(__dirname, 'public'), { setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache') }));
@@ -152,23 +153,56 @@ const summary = (p) => ({
 });
 function ownProject(req, res) {
   const p = db.projects[req.params.id];
-  if (!p || p.owner !== req.get('x-host')) { fail(res, 404, 'Proyecto no encontrado'); return null; }
+  if (!p) { fail(res, 404, 'Proyecto no encontrado'); return null; }
   return p;
 }
 function hostSession(req, res) {
   const s = db.sessions[req.params.sid];
-  if (!s || db.projects[s.projectId].owner !== req.get('x-host')) { fail(res, 404, 'Sesión no encontrada'); return null; }
+  if (!s) { fail(res, 404, 'Sesión no encontrada'); return null; }
   return s;
 }
 
+// ---------- Acceso del moderador ----------
+// Usuario y contraseña se leen de variables de entorno; nunca se guardan en el código.
+const ADMIN_USER = process.env.ADMIN_USER || '';
+const ADMIN_PASS = process.env.ADMIN_PASS || '';
+const AUTH_READY = Boolean(ADMIN_USER && ADMIN_PASS);
+const AUTH_KEY = crypto.createHash('sha256').update(`cantabingo:${ADMIN_USER}:${ADMIN_PASS}`).digest();
+const TOKEN_MS = 7 * 24 * 3600e3;
+const sha = (v) => crypto.createHash('sha256').update(String(v ?? '')).digest();
+const sign = (exp) => crypto.createHmac('sha256', AUTH_KEY).update(String(exp)).digest('hex');
+function validToken(token) {
+  if (!AUTH_READY || typeof token !== 'string') return false;
+  const [exp, sig] = token.split('.');
+  return Number(exp) > Date.now() && crypto.timingSafeEqual(sha(sig), sha(sign(exp)));
+}
+const requireAdmin = (req, res, next) => (validToken(req.get('x-admin')) ? next() : fail(res, 401, 'Inicia sesión como moderador'));
+const attempts = {}; // ip -> { n, until }: frena los intentos de adivinar la contraseña
+
+app.post('/api/login', (req, res) => {
+  if (!AUTH_READY) return fail(res, 503, 'El acceso de moderador aún no está configurado en el servidor (ADMIN_USER y ADMIN_PASS)');
+  const a = (attempts[req.ip] ||= { n: 0, until: 0 });
+  if (Date.now() < a.until) return fail(res, 429, 'Demasiados intentos. Espera 10 minutos.');
+  const b = req.body || {};
+  const okUser = crypto.timingSafeEqual(sha(b.user), sha(ADMIN_USER));
+  const okPass = crypto.timingSafeEqual(sha(b.pass), sha(ADMIN_PASS));
+  if (!(okUser && okPass)) {
+    if (++a.n >= 8) { a.n = 0; a.until = Date.now() + 10 * 60e3; }
+    return fail(res, 401, 'Usuario o contraseña incorrectos');
+  }
+  delete attempts[req.ip];
+  const exp = Date.now() + TOKEN_MS;
+  res.json({ token: `${exp}.${sign(exp)}` });
+});
+app.get('/api/me', (req, res) => res.json({ admin: validToken(req.get('x-admin')) }));
+app.use('/api/projects', requireAdmin);
+app.use('/api/sessions/:sid/host', requireAdmin);
+
 app.get('/api/projects', (req, res) => {
-  const host = req.get('x-host');
-  res.json(Object.values(db.projects).filter((p) => p.owner === host).sort((a, b) => b.created - a.created).map(summary));
+  res.json(Object.values(db.projects).sort((a, b) => b.created - a.created).map(summary));
 });
 
 app.post('/api/projects', (req, res) => {
-  const host = req.get('x-host');
-  if (!host || host.length < 16) return fail(res, 400, 'Falta el identificador del anfitrión');
   const b = req.body || {};
   const format = ['numbers', 'words', 'emojis'].includes(b.format) ? b.format : 'numbers';
   let items = null;
@@ -182,7 +216,7 @@ app.post('/api/projects', (req, res) => {
   const headers = [...str(b.headers, 5, 'BINGO').toUpperCase()];
   while (headers.length < 5) headers.push(' ');
   const p = {
-    id: id(), owner: host, created: Date.now(), format, values, items,
+    id: id(), created: Date.now(), format, values, items,
     name: str(b.name, 60, 'Proyecto de bingo'),
     headers: headers.slice(0, 5).join(''), freeCenter: b.freeCenter !== false,
     startNumber: clamp(b.startNumber, 1, 999999, 1),
@@ -272,6 +306,12 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
 app.get('/api/sessions/:sid/host', (req, res) => {
   const s = hostSession(req, res);
   if (s) res.json({ password: s.password, isPublic: s.isPublic });
+});
+
+// Sesión activa más reciente: a ella llevan el enlace y el QR fijos
+app.get('/api/current', (_req, res) => {
+  const s = Object.values(db.sessions).sort((a, b) => b.created - a.created)[0];
+  res.json({ id: s ? s.id : null });
 });
 
 // Lista pública de sesiones activas

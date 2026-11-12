@@ -9,15 +9,14 @@ const store = {
   del: (k) => { try { localStorage.removeItem(k); } catch { /* sin almacenamiento */ } },
 };
 const rnd = (n) => Array.from(crypto.getRandomValues(new Uint8Array(n)), (b) => b.toString(16).padStart(2, '0')).join('');
-let HOST = store.get('hostId');
-if (!HOST) { HOST = rnd(16); store.set('hostId', HOST); }
 
 async function api(method, url, body) {
   const res = await fetch(url, {
-    method, headers: { 'Content-Type': 'application/json', 'x-host': HOST },
+    method, headers: { 'Content-Type': 'application/json', 'x-admin': store.get('adminToken') || '' },
     body: body ? JSON.stringify(body) : undefined,
   });
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && url !== '/api/login') store.del('adminToken');
   if (!res.ok) throw Object.assign(new Error(data.error || 'Error inesperado'), { status: res.status });
   return data;
 }
@@ -126,8 +125,17 @@ function subscribe(sid, onState, onGone) {
   es.onerror = () => { fetch(`/api/sessions/${sid}`).then((r) => { if (r.status === 404) { es.close(); onGone(); } }).catch(() => {}); };
   return () => es.close();
 }
-const joinUrl = (sid) => `${location.origin}${location.pathname}#/jugar/${sid}`;
-const boardUrl = (sid) => `${location.origin}${location.pathname}#/tablero/${sid}`;
+// Enlaces fijos: siempre llevan a la sesión activa, así el QR no cambia de una partida a otra
+const joinUrl = () => `${location.origin}${location.pathname}#/jugar`;
+const boardUrl = () => `${location.origin}${location.pathname}#/tablero`;
+const currentSession = async () => (await api('GET', '/api/current').catch(() => ({}))).id || null;
+// Pantalla de espera: revisa cada pocos segundos si el moderador ya abrió una partida
+function waiting() {
+  app.innerHTML = `<div class="panel" style="max-width:460px;margin:8vh auto 0;text-align:center"><h1>Todavía no hay partida</h1>
+    <p class="muted">Cuando el moderador inicie el bingo, esta pantalla cambiará sola. No cierres la página.</p></div>`;
+  const timer = setInterval(async () => { if (await currentSession()) route(); }, 5000);
+  return () => clearInterval(timer);
+}
 const qr = (text) => `<img class="qr" alt="Código QR" src="/api/qr?text=${encodeURIComponent(text)}">`;
 const ended = () => { app.innerHTML = `<div class="panel"><h1>La sesión ha terminado</h1><p>El anfitrión cerró la sesión o se agotó su tiempo.</p><a class="btn primary" href="#/">Ir al inicio</a></div>`; };
 
@@ -142,7 +150,29 @@ const BACK = '<p class="back"><a href="#/proyectos">← Mis proyectos</a></p>';
 // ---------- Vistas ----------
 const views = {};
 
-views.home = () => {
+// Entrada del moderador: usuario y contraseña
+function viewLogin() {
+  app.innerHTML = `<form class="panel" id="login" style="max-width:420px;margin:8vh auto 0">
+    <h1>Moderador</h1><p class="muted">Ingresa para crear partidas y dirigir el bingo.</p>
+    <div class="fields" style="grid-template-columns:1fr">
+      <label class="f">Usuario<input type="text" name="user" autocomplete="username" autocapitalize="none" required></label>
+      <label class="f">Contraseña<input type="password" name="pass" autocomplete="current-password" required></label>
+      <button class="primary big">Entrar</button>
+    </div>
+    <p class="muted small" style="margin-top:14px">¿Vienes a jugar? Usa el enlace o el código QR que te dio el moderador.</p></form>`;
+  $('#login').onsubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const r = await api('POST', '/api/login', Object.fromEntries(new FormData(e.target)));
+      store.set('adminToken', r.token);
+      route();
+    } catch (err) { fail(err); }
+  };
+}
+const isAdmin = async () => Boolean(store.get('adminToken')) && (await api('GET', '/api/me').catch(() => ({}))).admin === true;
+
+views.home = async () => {
+  if (!(await isAdmin())) return viewLogin();
   app.innerHTML = `
     <section class="panel">
       <h1>Crea cartones de bingo y dirige sesiones en vivo</h1>
@@ -150,7 +180,8 @@ views.home = () => {
       <div class="row">
         <a class="btn primary" href="#/nuevo">Crear cartones</a>
         <a class="btn" href="#/proyectos">Dirigir una sesión</a>
-        <a class="btn" href="#/sesiones">Unirse a una sesión</a>
+        <a class="btn" href="#/sesiones">Ver sesiones activas</a>
+        <button id="logout">Cerrar sesión de moderador</button>
       </div>
     </section>
     <ol class="steps panel">
@@ -158,6 +189,8 @@ views.home = () => {
       <li><b>Anuncia</b><br><span class="muted">Generador aleatorio manual o automático, con voz.</span></li>
       <li><b>Valida</b><br><span class="muted">Los patrones completados aparecen al instante en la lista de resultados.</span></li>
     </ol>`;
+  $('#logout').onclick = () => { store.del('adminToken'); route(); };
+  return undefined;
 };
 
 views.proyectos = async () => {
@@ -181,7 +214,8 @@ views.proyectos = async () => {
   };
 };
 
-views.nuevo = () => {
+views.nuevo = async () => {
+  if (!(await isAdmin())) return viewLogin();
   app.innerHTML = `
     ${BACK}<h1>Nuevo proyecto de bingo</h1>
     <form class="panel fields" id="f">
@@ -347,6 +381,8 @@ views.sesiones = async () => {
 };
 
 views.jugar = async (sid) => {
+  const fixed = !sid;
+  if (fixed) { sid = await currentSession(); if (!sid) return waiting(); }
   const key = `tok_${sid}`;
   let me = null;
   const token = store.get(key);
@@ -357,7 +393,7 @@ views.jugar = async (sid) => {
     app.innerHTML = `<form class="panel" id="f" style="max-width:460px;margin:0 auto">
       <h1>${esc(info.name)}</h1><p class="muted">Recibirás ${info.cardsPerPlayer} ${info.cardsPerPlayer > 1 ? 'cartones' : 'cartón'} en este dispositivo. No necesitas cuenta.</p>
       <div class="fields" style="grid-template-columns:1fr">
-        <label class="f">Tu nombre<input type="text" name="name" maxlength="30" required autofocus></label>
+        <label class="f">Tu nombre<input type="text" name="name" maxlength="30" value="${esc(store.get('playerName') || '')}" required autofocus></label>
         ${info.locked ? '<label class="f">Contraseña de la sesión<input type="text" name="password" required></label>' : ''}
         <button class="primary big">Unirse</button>
       </div></form>`;
@@ -366,6 +402,7 @@ views.jugar = async (sid) => {
       try {
         const r = await api('POST', `/api/sessions/${sid}/join`, Object.fromEntries(new FormData(e.target)));
         store.set(key, r.token);
+        store.set('playerName', r.name);
         route();
       } catch (err) { fail(err); }
     };
@@ -437,10 +474,12 @@ views.jugar = async (sid) => {
     } catch (err) { fail(err); }
     e.target.disabled = false;
   };
-  return subscribe(sid, (s) => { st = s; render(); }, () => { store.del(key); ended(); });
+  return subscribe(sid, (s) => { st = s; render(); }, () => { store.del(key); if (fixed) route(); else ended(); });
 };
 
 views.tablero = async (sid) => {
+  const fixed = !sid;
+  if (fixed) { sid = await currentSession(); if (!sid) return waiting(); }
   document.body.classList.add('tv');
   app.innerHTML = '<div id="tv"></div>';
   const off = subscribe(sid, (st) => {
@@ -450,7 +489,7 @@ views.tablero = async (sid) => {
         ${drawsHTML(st, st.drawn)}
         ${qr(joinUrl(sid))}
       </div>${boardHTML(st, st.drawn)}`;
-  }, ended);
+  }, () => { document.body.classList.remove('tv'); if (fixed) route(); else ended(); });
   return () => { off(); document.body.classList.remove('tv'); };
 };
 
@@ -464,6 +503,7 @@ async function route() {
   const view = views[name || 'home'] || views.home;
   window.scrollTo(0, 0);
   try { cleanup = await view(arg); } catch (e) {
+    if (e.status === 401) return viewLogin(); // pantallas de moderador sin sesión iniciada
     app.innerHTML = `<div class="panel"><h1>No se pudo abrir esta página</h1><p>${esc(e.message)}</p><a class="btn primary" href="#/">Volver al inicio</a></div>`;
   }
 }

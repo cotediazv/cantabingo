@@ -13,6 +13,8 @@ Abre http://localhost:3000 (cambia el puerto con `PORT=8080 npm start`).
 
 ## Qué incluye
 
+- **Moderador**: el panel pide usuario y contraseña, definidos en las variables de entorno `ADMIN_USER` y `ADMIN_PASS` (sin ellas nadie puede moderar).
+- **Enlace fijo**: `#/jugar` y su QR llevan siempre a la sesión activa.
 - **Proyectos**: de 25 a 3.000 cartones virtuales únicos con números (25–150 valores), palabras/frases o emojis; encabezado de 5 letras, casilla central libre, numeración inicial.
 - **Sesión en vivo**: contraseña, 1–4 cartones por participante, un patrón por ronda (con su sombra en el cartón), generador manual/automático (5–60 s) con voz, selección manual, lista de resultados con validación automática, reinicio de ronda, selección final, 3 horas de duración.
 - **Participantes**: entran desde el celular por lista pública, enlace o QR, sin cuenta; sus cartones se restauran al recargar. El valor actual queda fijo arriba mientras se desplazan por sus cartones.

@@ -5,3 +5,9 @@ services:
     plan: free
     buildCommand: npm install
     startCommand: npm start
+    envVars:
+      # Usuario y contraseña del moderador: se escriben en el panel de Render, no aquí
+      - key: ADMIN_USER
+        sync: false
+      - key: ADMIN_PASS
+        sync: false
