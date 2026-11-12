@@ -304,6 +304,11 @@ async function hostConsole(p) {
   let spoken = -1;
   app.innerHTML = `
     <div>${BACK}
+      <div class="panel winners" id="results-panel" hidden>
+        <h2 id="results-title"></h2>
+        <div id="results" class="scroll-x"></div>
+        <div id="final"></div>
+      </div>
       <div class="panel">
         <div class="row between">
           <div><h1 id="title"></h1><div id="meta" class="muted"></div></div>
@@ -333,11 +338,6 @@ async function hostConsole(p) {
         <div class="panel"><h2 id="count"></h2><div id="board"></div><h2 style="margin-top:16px">Orden de salida</h2><div id="history" class="history"></div></div>
       </div>
     </div>
-    <div class="panel" id="results-panel">
-      <h2>Lista de resultados</h2>
-      <div id="results" class="scroll-x"></div>
-      <div id="final"></div>
-    </div>
     <div class="panel">
       <h2>Siguiente ronda</h2>
       <div id="restart-pats"></div>
@@ -362,10 +362,15 @@ async function hostConsole(p) {
     $('#auto').textContent = st.auto.on ? '⏸ Detener automático' : '▶ Modo automático';
     $('#auto').classList.toggle('on', st.auto.on);
     $('#manual').classList.toggle('on', manual);
-    $('#results').innerHTML = st.results.length ? `<table class="list"><tr><th>Cartón</th><th>Patrón</th><th>Participante</th><th>Valores</th><th>Estado</th></tr>
-      ${st.results.map((r) => `<tr><td class="${r.validated ? 'validated' : ''}"><b>#${p.startNumber + r.cardNo - 1}</b></td><td>${esc(PATTERNS.byId[r.pattern].name)}</td>
+    // Los ganadores van arriba de todo; primero los ya validados
+    const results = [...st.results].sort((a, b) => Number(b.validated) - Number(a.validated) || a.at - b.at);
+    const won = results.filter((r) => r.validated).length;
+    $('#results-panel').hidden = !results.length;
+    $('#results-title').textContent = won ? `🏆 ${won === 1 ? '1 ganador' : `${won} ganadores`}` : 'Cartones por completar';
+    $('#results').innerHTML = results.length ? `<table class="list"><tr><th>Cartón</th><th>Figura</th><th>Participante</th><th>Valores</th><th>Estado</th></tr>
+      ${results.map((r) => `<tr><td><b>#${p.startNumber + r.cardNo - 1}</b></td><td>${esc(PATTERNS.byId[r.pattern].name)}</td>
         <td>${esc(r.name)}</td><td>${r.at}</td>
-        <td>${r.validated ? '<span class="tag live">Validado</span>' : '<span class="tag">Pendiente de marcar</span>'}</td></tr>`).join('')}
+        <td>${r.validated ? '<span class="tag live">¡Bingo!</span>' : '<span class="tag">Le falta marcar</span>'}</td></tr>`).join('')}
       </table>` : '<p class="muted">Aquí aparecerá cada cartón que complete un patrón.</p>';
     $('#final').innerHTML = st.finalists ? `<p><b>Selección final:</b> ${st.finalists.map((c) => '#' + (p.startNumber + c - 1)).join(', ') || 'no hay cartones validados'}</p>` : '';
     if (st.drawn.length !== spoken) { if (spoken >= 0 && st.drawn.length > spoken) speak(speakText(st, st.drawn.at(-1))); spoken = st.drawn.length; }
