@@ -142,7 +142,8 @@ setInterval(() => {
 // ---------- API ----------
 const app = express();
 app.use(express.json({ limit: '1mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+// Sin caché: así cada celular recibe siempre la última versión publicada
+app.use(express.static(path.join(__dirname, 'public'), { setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache') }));
 
 const fail = (res, code, error) => res.status(code).json({ error });
 const summary = (p) => ({
