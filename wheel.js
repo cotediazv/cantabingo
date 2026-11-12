@@ -89,8 +89,11 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail }) {
     w.history.push(JSON.stringify({ turn: w.turn, players: w.players.map((c, i) => ({ ...c, remainingMs: liveRemaining(w, i) })) }));
     if (w.history.length > 40) w.history.shift();
   }
+  // Gana quien acierta todas las letras de su rosco
+  const winnerOf = (w) => w.players.findIndex((c) => c.status.every((x) => x === 'hit'));
   function act(w, action, b) {
     const c = w.players[w.turn];
+    if (winnerOf(w) >= 0 && ['hit', 'miss', 'pass', 'start', 'turn'].includes(action)) return 'La partida terminó: alguien completó el rosco';
     switch (action) {
       case 'hit':
       case 'miss':
@@ -102,7 +105,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail }) {
         w.reveal = action === 'hit' && solved ? { letter: w.letters[c.current], answer: solved, at: Date.now() } : null;
         c.status[c.current] = action;
         const more = nextLetter(c);
-        if (!more) { settle(w); passTurn(w); } // terminó su rueda
+        if (!more) { settle(w); if (winnerOf(w) < 0) passTurn(w); } // terminó su rosco; si lo completó, la partida se detiene
         else if (action !== 'hit') { settle(w); passTurn(w); } // fallo o paso: el reloj se detiene siempre y sigue otro, si queda alguno
         return null;
       }
@@ -134,6 +137,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail }) {
   const publicState = (w) => ({
     id: w.id, name: w.name, letters: w.letters, turn: w.turn, runningSince: w.runningSince, now: Date.now(),
     finished: !w.players.some(active), canUndo: w.history.length > 0,
+    winner: winnerOf(w) >= 0 ? { name: w.players[winnerOf(w)].name } : null,
     reveal: w.reveal && Date.now() - w.reveal.at < REVEAL_MS ? w.reveal : null,
     // Al público va solo el enunciado de la letra en juego; la respuesta nunca sale del panel del moderador
     // y solo mientras su reloj está corriendo.

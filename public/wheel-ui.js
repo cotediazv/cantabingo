@@ -172,11 +172,11 @@
     const render = () => {
       const c = st.players[st.turn];
       $('#w-name').textContent = st.name;
-      $('#w-turn').textContent = st.finished ? 'Juego terminado' : `Turno de ${c.name}`;
+      $('#w-turn').textContent = st.winner ? `🏆 ${st.winner.name} completó el rosco` : st.finished ? 'Juego terminado' : `Turno de ${c.name}`;
       $('#w-letter').textContent = c.active ? st.letters[c.current] : '—';
       const q = (questions[st.turn] || [])[c.current] || {};
       // La pregunta y su respuesta se muestran al moderador solo con el reloj en marcha
-      $('#w-question').innerHTML = !c.active ? '<span class="muted">Este concursante ya terminó su rosco.</span>'
+      $('#w-question').innerHTML = !c.active ? (st.winner ? '<b>¡Rosco completo!</b> La partida se detuvo y en pantalla se muestra la felicitación. Usa Deshacer si fue un error, o Reiniciar para jugar de nuevo.' : '<span class="muted">Este concursante ya terminó su rosco.</span>')
         : !st.runningSince ? '<span class="muted">Pulsa «Iniciar preguntas» para ver la pregunta de esta letra.</span>'
         : q.q ? `${q.cat ? `<div class="small muted" style="margin-bottom:6px">${TAGS[q.cat]} · ${q.level === 'f' ? 'Fácil' : 'Medio'}</div>` : ''}<div>${esc(q.q)}</div>${q.a ? `<div class="w-answer">Respuesta: <b>${esc(q.a)}</b></div>` : ''}` : '<span class="muted">Sin pregunta cargada para esta letra: léela de tu guion.</span>';
       $$('.w-keys button').forEach((b) => { b.disabled = !c.active; });
@@ -225,6 +225,7 @@
     }
     let st = null;
     let lastQuestion = null;
+    let wonBy = null;
     // Tarjeta de la pregunta: insignia con la letra, encabezado («Con la A») y el enunciado
     const questionCard = (state) => {
       if (!state.question) return '';
@@ -258,6 +259,19 @@
     const leave = () => { document.body.classList.remove('wheel-screen', 'obs'); };
     const off = watch(id, (s) => {
       st = s;
+      if (st.winner) {
+        // Rosco completo: se retira todo y queda solo la felicitación, en grande
+        if (wonBy !== st.winner.name) {
+          wonBy = st.winner.name;
+          const colors = ['#ff4fa3', '#ff9a3d', '#ffe14d', '#3fe08f', '#35c6ff', '#9b5cff'];
+          const confetti = Array.from({ length: 60 }, (_, i) => `<i style="left:${(Math.random() * 100).toFixed(1)}%;background:${colors[i % colors.length]};animation-delay:${(Math.random() * 3).toFixed(2)}s;animation-duration:${(3 + Math.random() * 3).toFixed(2)}s"></i>`).join('');
+          $('#pw').innerHTML = `<div class="win-screen"><div class="confetti">${confetti}</div>
+            <div class="win-card"><span class="win-trophy">🏆</span><span class="win-name">${esc(st.winner.name)}</span>
+              <span class="win-text">¡Completaste el rosco!</span><span class="win-sub">¡Felicitaciones!</span></div></div>`;
+        }
+        return;
+      }
+      wonBy = null;
       if (kind === 'obs') {
         // En OBS: solo la rueda del concursante en turno, con el centro libre para su cámara,
         // y el reloj con el marcador en una esquina.

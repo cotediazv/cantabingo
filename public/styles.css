@@ -267,3 +267,17 @@ body.obs #pw { grid-template-rows: none; padding: 0; }
 @keyframes sidepop { from { transform: scale(.7); opacity: 0; } }
 @media (max-aspect-ratio: 3/2) { .obs-side { position: static; transform: none; width: auto; max-width: 92vw; margin: 6vh auto 0; } }
 @media (prefers-reduced-motion: reduce) { .obs-side .obs-question.pop, .obs-side .obs-reveal.pop { animation: none; } }
+
+/* Pantalla de rosco completo */
+.win-screen { position: fixed; inset: 0; display: grid; place-items: center; overflow: hidden; font-family: Fredoka, "Baloo 2", "Trebuchet MS", system-ui, sans-serif; }
+.win-card { position: relative; display: grid; justify-items: center; gap: 1.5vh; text-align: center; color: #fff; max-width: 92vw; padding: 5vh 7vh; border-radius: 5vh; border: .8vh solid #fff;
+  background: linear-gradient(150deg, #ff8a00, #e52e71 55%, #7b2ff7); box-shadow: 0 2vh 6vh rgba(0,0,0,.5); animation: winpop .7s cubic-bezier(.2, 1.5, .4, 1); }
+.win-trophy { font-size: 14vh; line-height: 1; }
+.win-name { font-size: 15vh; font-weight: 700; line-height: 1; text-transform: uppercase; text-shadow: 0 .6vh 0 rgba(0,0,0,.25); overflow-wrap: anywhere; }
+.win-text { font-size: 8vh; font-weight: 700; line-height: 1.05; }
+.win-sub { font-size: 6vh; font-weight: 600; background: rgba(255,255,255,.22); border-radius: 99px; padding: .5vh 4vh; }
+@keyframes winpop { from { transform: scale(.4); opacity: 0; } }
+.confetti i { position: absolute; top: -4vh; width: 1.6vh; height: 3vh; border-radius: .4vh; animation: fall linear infinite; }
+@keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+@media (max-width: 700px) { .win-trophy { font-size: 18vw; } .win-name { font-size: 15vw; } .win-text { font-size: 9vw; } .win-sub { font-size: 6vw; } .win-card { padding: 6vw; } }
+@media (prefers-reduced-motion: reduce) { .confetti { display: none; } .win-card { animation: none; } }
