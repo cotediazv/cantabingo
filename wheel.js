@@ -142,7 +142,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail }) {
     const msg = `data: ${JSON.stringify(publicState(w))}\n\n`;
     for (const res of clients[w.id] || []) res.write(msg);
   }
-  const find = (req, res) => { const w = db.wheels[req.params.id]; if (!w) fail(res, 404, 'Esa rueda no existe o fue eliminada'); return w; };
+  const find = (req, res) => { const w = db.wheels[req.params.id]; if (!w) fail(res, 404, 'Ese rosco no existe o fue eliminado'); return w; };
 
   // ---------- API ----------
   app.use('/api/wheels', (req, res, next) => (req.method === 'GET' && /^\/[^/]+\/events$/.test(req.path) ? next() : requireAdmin(req, res, next)));
@@ -155,7 +155,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail }) {
   app.post('/api/wheels', (req, res) => {
     const b = req.body || {};
     const letters = [...new Set([...str(b.letters, 40, LETTERS).toUpperCase()].filter((ch) => /\p{L}/u.test(ch)))];
-    if (letters.length < 5) return fail(res, 400, 'La rueda necesita al menos 5 letras');
+    if (letters.length < 5) return fail(res, 400, 'El rosco necesita al menos 5 letras');
     const players = (Array.isArray(b.players) ? b.players : []).map((x) => str(x, 30)).filter(Boolean).slice(0, 4);
     if (!players.length) players.push('Concursante');
     // Preguntas: del banco (por defecto) o escritas por el moderador, una por letra { q, a }
@@ -165,7 +165,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail }) {
       return { q: str(item.q, 300), a: str(item.a, 80) };
     }));
     const w = {
-      id: newId(), name: str(b.name, 50, 'Rueda de palabras'), created: Date.now(), letters, seconds: clamp(b.seconds, 20, 900, 150),
+      id: newId(), name: str(b.name, 50, 'El Rosco'), created: Date.now(), letters, seconds: clamp(b.seconds, 20, 900, 150),
       setup: { players }, bank, questions, turn: 0, runningSince: null, history: [],
     };
     w.players = freshPlayers(w);
@@ -180,7 +180,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail }) {
   app.post('/api/wheels/:id/newquestions', (req, res) => {
     const w = find(req, res);
     if (!w) return;
-    if (!w.bank) return fail(res, 400, 'Esta rueda usa preguntas escritas a mano');
+    if (!w.bank) return fail(res, 400, 'Este rosco usa preguntas escritas a mano');
     w.questions = pickQuestions(w.letters, w.players.length, w.bank.cats, w.bank.levels);
     act(w, 'reset', {});
     broadcast(w);
@@ -214,7 +214,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail }) {
 
   app.get('/api/wheels/:id/events', (req, res) => {
     const w = db.wheels[req.params.id];
-    if (!w) return fail(res, 404, 'Esa rueda no existe o fue eliminada');
+    if (!w) return fail(res, 404, 'Ese rosco no existe o fue eliminado');
     res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
     res.flushHeaders();
     res.write(`data: ${JSON.stringify(publicState(w))}\n\n`);

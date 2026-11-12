@@ -41,7 +41,7 @@
       <text x="50" y="44" font-size="17" text-anchor="middle" dominant-baseline="central" fill="currentColor" font-weight="700" data-timer="${pi}">${clock(c.remainingMs)}</text>
       <text x="50" y="58" font-size="5" text-anchor="middle" fill="currentColor" font-weight="600">${esc(c.name.slice(0, 18))}</text>
       <text x="50" y="66" font-size="4.6" text-anchor="middle" fill="currentColor"><tspan fill="#35c97a">✔ ${c.hits}</tspan>  <tspan fill="#f07a7a">✘ ${c.misses}</tspan></text>`;
-    return `<svg viewBox="0 0 100 100" class="wheel ${mine ? 'turn' : ''}" role="img" aria-label="Rueda de ${esc(c.name)}">${DEFS}
+    return `<svg viewBox="0 0 100 100" class="wheel ${mine ? 'turn' : ''}" role="img" aria-label="Rosco de ${esc(c.name)}">${DEFS}
       <circle cx="50" cy="50" r="${R}" fill="none" stroke="url(#wg-ring)" stroke-width="${(r * 1.5).toFixed(2)}" opacity=".9"/>
       <circle cx="50" cy="50" r="${(R + r * 0.75).toFixed(2)}" fill="none" stroke="#fff" stroke-width=".35" opacity=".8"/>
       <circle cx="50" cy="50" r="${(R - r * 0.75).toFixed(2)}" fill="none" stroke="#fff" stroke-width=".35" opacity=".8"/>
@@ -80,26 +80,26 @@
     if (!(await isAdmin())) return viewLogin();
     const list = await api('GET', '/api/wheels');
     app.innerHTML = `<p class="back"><a href="#/">← Juegos</a></p>
-      <div class="row between" style="margin-bottom:16px"><h1>Rueda de palabras</h1><a class="btn primary" href="#/ruedanueva">⊕ Nueva rueda</a></div>
-      <div class="panel scroll-x">${list.length ? `<table class="list"><tr><th>Rueda</th><th>Concursantes</th><th>Reloj</th><th></th></tr>
+      <div class="row between" style="margin-bottom:16px"><h1>El Rosco</h1><a class="btn primary" href="#/ruedanueva">⊕ Nuevo rosco</a></div>
+      <div class="panel scroll-x">${list.length ? `<table class="list"><tr><th>Rosco</th><th>Concursantes</th><th>Reloj</th><th></th></tr>
         ${list.map((w) => `<tr><td><b>${esc(w.name)}</b><br><span class="muted small">${w.letters} letras</span></td><td>${w.players.map(esc).join(', ')}</td><td>${w.seconds} s</td>
           <td><div class="row"><a class="btn primary" href="#/ruedactl/${w.id}">Dirigir</a><button class="danger" data-del="${w.id}">Eliminar</button></div></td></tr>`).join('')}</table>`
-    : '<p>Aún no hay ruedas. Crea la primera.</p>'}</div>`;
+    : '<p>Aún no hay roscos. Crea el primero.</p>'}</div>`;
     app.onclick = async (e) => {
       const del = e.target.dataset.del;
-      if (del && confirm('¿Eliminar esta rueda?')) { await api('DELETE', `/api/wheels/${del}`).catch(fail); views.ruedas(); }
+      if (del && confirm('¿Eliminar este rosco?')) { await api('DELETE', `/api/wheels/${del}`).catch(fail); views.ruedas(); }
     };
     return undefined;
   };
 
   views.ruedanueva = async () => {
     if (!(await isAdmin())) return viewLogin();
-    app.innerHTML = `<p class="back"><a href="#/ruedas">← Ruedas</a></p><h1>Nueva rueda</h1>
+    app.innerHTML = `<p class="back"><a href="#/ruedas">← Roscos</a></p><h1>Nuevo rosco</h1>
       <form class="panel fields" id="wf">
-        <label class="f">Nombre<input type="text" name="name" maxlength="50" placeholder="Rueda del viernes"></label>
+        <label class="f">Nombre<input type="text" name="name" maxlength="50" placeholder="Rosco del viernes"></label>
         <label class="f">Segundos por concursante <span class="hint">20 a 900</span><input type="number" name="seconds" min="20" max="900" value="150"></label>
-        <label class="f wide">Letras de la rueda <span class="hint">en el orden en que giran</span><input type="text" name="letters" maxlength="40" value="${DEFAULT_LETTERS}"></label>
-        <label class="f wide">Concursantes <span class="hint">uno por línea, de 1 a 4; cada uno tiene su rueda y su reloj</span><textarea name="players" style="min-height:90px">Concursante 1</textarea></label>
+        <label class="f wide">Letras del rosco <span class="hint">en el orden en que giran</span><input type="text" name="letters" maxlength="40" value="${DEFAULT_LETTERS}"></label>
+        <label class="f wide">Concursantes <span class="hint">uno por línea, de 1 a 4; cada uno tiene su rosco y su reloj</span><textarea name="players" style="min-height:90px">Concursante 1</textarea></label>
         <label class="f">Preguntas<select name="source"><option value="bank">Automáticas, del banco de preguntas</option><option value="own">Las escribo yo</option></select></label>
         <div class="wide" id="bank-opts">
           <div class="row"><b class="small">Temas:</b>
@@ -109,11 +109,11 @@
           <div class="row" style="margin-top:8px"><b class="small">Nivel:</b>
             <label class="check"><input type="checkbox" name="level" value="f" checked> Fácil</label>
             <label class="check"><input type="checkbox" name="level" value="m" checked> Medio</label></div>
-          <p class="muted small" style="margin-top:8px">Cada rueda nueva toma las preguntas que menos se han usado, así van rotando solas. Solo las ves tú.</p>
+          <p class="muted small" style="margin-top:8px">Cada rosco nuevo toma las preguntas que menos se han usado, así van rotando solas. Solo las ves tú.</p>
         </div>
         <label class="f wide" id="own-opts" hidden>Tus preguntas <span class="hint">una por línea: <b>Letra; definición; respuesta</b>. Separa las de cada concursante con una línea <b>---</b></span>
           <textarea name="questions" placeholder="A; Con la A: fruto del manzano; manzana\nB; Con la B: embarcación pequeña; bote"></textarea></label>
-        <div class="wide"><button class="primary big">Crear la rueda</button></div>
+        <div class="wide"><button class="primary big">Crear el rosco</button></div>
       </form>`;
     $('#wf').source.onchange = (e) => { $('#bank-opts').hidden = e.target.value !== 'bank'; $('#own-opts').hidden = e.target.value !== 'own'; };
     $('#wf').onsubmit = async (e) => {
@@ -144,7 +144,7 @@
     const TAGS = { g: 'Cultura general', m: 'Música', a: 'Arte', f: 'Fácil' };
     let st = null;
     const act = (action, extra) => api('POST', `/api/wheels/${id}/act`, { action, ...extra }).catch(fail);
-    app.innerHTML = `<p class="back"><a href="#/ruedas">← Ruedas</a></p>
+    app.innerHTML = `<p class="back"><a href="#/ruedas">← Roscos</a></p>
       <div class="cols">
         <div class="panel">
           <div class="row between"><div><h1 id="w-name" style="margin:0"></h1><span class="muted" id="w-turn"></span></div><div class="w-letter" id="w-letter"></div></div>
@@ -161,21 +161,21 @@
             <button class="danger" id="w-reset">Reiniciar</button>
             ${fromBank ? '<button id="w-newq">↻ Preguntas nuevas</button>' : ''}
           </div>
-          <p class="muted small" style="margin-top:12px">Teclado: A acierto, F fallo, P paso, Espacio inicia o pausa el reloj. Toca una letra de la rueda para saltar a ella o reabrirla.</p>
+          <p class="muted small" style="margin-top:12px">Teclado: A acierto, F fallo, P paso, Espacio inicia o pausa el reloj. Toca una letra del rosco para saltar a ella o reabrirla.</p>
         </div>
         <div class="panel"><div class="wheels" id="w-wheels"></div></div>
       </div>
       <div class="panel"><h2>Pantalla del público</h2>
         <div class="row between"><div class="small"><b>Enlace para celulares o TV:</b> <a class="link" href="${publicUrl()}" target="_blank">${esc(publicUrl())}</a><br>
           <b>Fuente de navegador para OBS</b> (fondo transparente): <a class="link" href="${obsUrl()}" target="_blank">${esc(obsUrl())}</a><br>
-          <span class="muted">El público ve la rueda, el reloj y el marcador. La pregunta aparece solo mientras el reloj corre; la respuesta, nunca.</span></div>${qr(publicUrl())}</div></div>`;
+          <span class="muted">El público ve el rosco, el reloj y el marcador. La pregunta aparece solo mientras el reloj corre; la respuesta, nunca.</span></div>${qr(publicUrl())}</div></div>`;
     const render = () => {
       const c = st.players[st.turn];
       $('#w-name').textContent = st.name;
       $('#w-turn').textContent = st.finished ? 'Juego terminado' : `Turno de ${c.name}`;
       $('#w-letter').textContent = c.active ? st.letters[c.current] : '—';
       const q = (questions[st.turn] || [])[c.current] || {};
-      $('#w-question').innerHTML = !c.active ? '<span class="muted">Este concursante ya terminó su rueda.</span>'
+      $('#w-question').innerHTML = !c.active ? '<span class="muted">Este concursante ya terminó su rosco.</span>'
         : q.q ? `${q.cat ? `<div class="small muted" style="margin-bottom:6px">${TAGS[q.cat]} · ${q.level === 'f' ? 'Fácil' : 'Medio'}</div>` : ''}<div>${esc(q.q)}</div>${q.a ? `<div class="w-answer">Respuesta: <b>${esc(q.a)}</b></div>` : ''}` : '<span class="muted">Sin pregunta cargada para esta letra: léela de tu guion.</span>';
       $$('.w-keys button').forEach((b) => { b.disabled = !c.active; });
       $('#w-clock').textContent = st.runningSince ? '⏸ Pausar reloj' : '▶ Iniciar reloj';
@@ -192,9 +192,9 @@
       if (g) act('select', { index: Number(g.dataset.letter), player: Number(g.dataset.player) });
     };
     $('#w-clock').onclick = toggleClock;
-    $('#w-reset').onclick = () => { if (confirm('¿Reiniciar la rueda? Se borran aciertos, fallos y relojes.')) act('reset'); };
+    $('#w-reset').onclick = () => { if (confirm('¿Reiniciar el rosco? Se borran aciertos, fallos y relojes.')) act('reset'); };
     if (fromBank) $('#w-newq').onclick = async () => {
-      if (!confirm('¿Cambiar todas las preguntas por otras del banco? La rueda se reinicia.')) return;
+      if (!confirm('¿Cambiar todas las preguntas por otras del banco? El rosco se reinicia.')) return;
       try { await api('POST', `/api/wheels/${id}/newquestions`); route(); } catch (err) { fail(err); }
     };
     const onKey = (e) => {
