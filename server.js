@@ -205,7 +205,7 @@ app.delete('/api/projects/:id', (req, res) => {
 });
 
 const cleanPatterns = (list) => {
-  const out = [...new Set((Array.isArray(list) ? list : []).filter((x) => PATTERNS.byId[x]))].slice(0, 6);
+  const out = [...new Set((Array.isArray(list) ? list : []).filter((x) => PATTERNS.byId[x]))].slice(0, 1); // un patrón por ronda
   return out.length ? out : ['linea'];
 };
 

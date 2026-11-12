@@ -104,13 +104,12 @@ const miniHTML = (id) => {
 const patternsInline = (ids) => ids.map((id) => `<span class="pat-inline">${miniHTML(id)} ${esc(PATTERNS.byId[id].name)}</span>`).join('');
 function patternPicker(selected = ['linea']) {
   return `<div class="patterns">${PATTERNS.list.map((p) => `<label class="pat">
-    <input type="checkbox" name="pattern" value="${p.id}" ${selected.includes(p.id) ? 'checked' : ''}>${miniHTML(p.id)}<span>${esc(p.name)}</span></label>`).join('')}</div>
-    <p class="muted small" style="margin-top:8px">Elige hasta 6 patrones por ronda.</p>`;
+    <input type="radio" name="pattern" value="${p.id}" ${selected[0] === p.id ? 'checked' : ''}>${miniHTML(p.id)}<span>${esc(p.name)}</span></label>`).join('')}</div>
+    <p class="muted small" style="margin-top:8px">Un patrón por ronda: al elegir otro, el anterior se desmarca.</p>`;
 }
 function readPatterns(root) {
   const ids = $$('input[name=pattern]:checked', root).map((i) => i.value);
-  if (!ids.length) { toast('Elige al menos un patrón'); return null; }
-  if (ids.length > 6) { toast('Máximo 6 patrones por ronda'); return null; }
+  if (ids.length !== 1) { toast('Elige el patrón de la ronda'); return null; }
   return ids;
 }
 let voiceOn = store.get('voice') !== '0';
@@ -130,13 +129,15 @@ function subscribe(sid, onState, onGone) {
 const joinUrl = (sid) => `${location.origin}${location.pathname}#/jugar/${sid}`;
 const boardUrl = (sid) => `${location.origin}${location.pathname}#/tablero/${sid}`;
 const qr = (text) => `<img class="qr" alt="Código QR" src="/api/qr?text=${encodeURIComponent(text)}">`;
-const ended = () => { app.innerHTML = `<div class="panel"><h1>La sesión ha terminado</h1><p>El anfitrión cerró la sesión o se agotó su tiempo.</p><a class="btn primary" href="#/sesiones">Ver sesiones activas</a></div>`; };
+const ended = () => { app.innerHTML = `<div class="panel"><h1>La sesión ha terminado</h1><p>El anfitrión cerró la sesión o se agotó su tiempo.</p><a class="btn primary" href="#/">Ir al inicio</a></div>`; };
 
 const EMOJIS = ('🐶 Perro,🐱 Gato,🐭 Ratón,🐰 Conejo,🦊 Zorro,🐻 Oso,🐼 Panda,🐯 Tigre,🦁 León,🐮 Vaca,🐷 Cerdo,🐸 Rana,🐵 Mono,🐔 Gallina,🐧 Pingüino,' +
   '🦆 Pato,🦉 Búho,🐴 Caballo,🦄 Unicornio,🐝 Abeja,🦋 Mariposa,🐌 Caracol,🐢 Tortuga,🐍 Serpiente,🐙 Pulpo,🦀 Cangrejo,🐬 Delfín,🐳 Ballena,🦈 Tiburón,🐘 Elefante,' +
   '🦒 Jirafa,🐑 Oveja,🐐 Cabra,🦜 Loro,🐊 Cocodrilo,🍎 Manzana,🍐 Pera,🍊 Naranja,🍋 Limón,🍌 Plátano,🍉 Sandía,🍇 Uvas,🍓 Fresa,🍒 Cerezas,🍍 Piña,' +
   '🥥 Coco,🥝 Kiwi,🍅 Tomate,🥕 Zanahoria,🌽 Maíz,🍞 Pan,🧀 Queso,🥚 Huevo,🍕 Pizza,🍰 Pastel,🚗 Coche,🚌 Autobús,🚲 Bicicleta,🚂 Tren,✈️ Avión,' +
   '🚀 Cohete,⛵ Velero,🏠 Casa,🌳 Árbol,🌻 Girasol,🌵 Cactus,🌙 Luna,⭐ Estrella,☀️ Sol,🌈 Arcoíris,⚽ Balón,🎸 Guitarra,🎈 Globo,🎁 Regalo,🔑 Llave').split(',');
+
+const BACK = '<p class="back"><a href="#/proyectos">← Mis proyectos</a></p>';
 
 // ---------- Vistas ----------
 const views = {};
@@ -156,19 +157,14 @@ views.home = () => {
       <li><b>Invita</b><br><span class="muted">Comparte el enlace o el QR: cada persona recibe de 1 a 4 cartones en su celular.</span></li>
       <li><b>Anuncia</b><br><span class="muted">Generador aleatorio manual o automático, con voz.</span></li>
       <li><b>Valida</b><br><span class="muted">Los patrones completados aparecen al instante en la lista de resultados.</span></li>
-    </ol>
-    <div class="tiles">
-      <a class="tile" href="#/generador"><b>Generador de números gratis</b><span class="muted">Independiente: anuncia valores al azar o úsalo como tablero en una TV.</span></a>
-      <a class="tile" href="#/carton"><b>Cartón virtual gratis</b><span class="muted">Un cartón para marcar a mano; las líneas completas se ponen verdes.</span></a>
-      <a class="tile" href="#/sesiones"><b>Sesiones públicas</b><span class="muted">Busca la sesión de tu anfitrión y entra con la contraseña.</span></a>
-    </div>`;
+    </ol>`;
 };
 
 views.proyectos = async () => {
   const list = await api('GET', '/api/projects');
   const fmt = { numbers: 'Números', words: 'Palabras', emojis: 'Emojis' };
   app.innerHTML = `
-    <div class="row between" style="margin-bottom:16px"><h1>Mis proyectos</h1><a class="btn primary" href="#/nuevo">⊕ Nuevo proyecto de bingo</a></div>
+    ${BACK}<div class="row between" style="margin-bottom:16px"><h1>Mis proyectos</h1><a class="btn primary" href="#/nuevo">⊕ Nuevo proyecto de bingo</a></div>
     <div class="panel scroll-x">${list.length ? `<table class="list">
       <tr><th>Proyecto</th><th>Formato</th><th>Cartones</th><th>Estado</th><th></th></tr>
       ${list.map((p) => `<tr>
@@ -187,7 +183,7 @@ views.proyectos = async () => {
 
 views.nuevo = () => {
   app.innerHTML = `
-    <h1>Nuevo proyecto de bingo</h1>
+    ${BACK}<h1>Nuevo proyecto de bingo</h1>
     <form class="panel fields" id="f">
       <label class="f">Nombre del proyecto<input type="text" name="name" maxlength="60" placeholder="Bingo de fin de curso"></label>
       <label class="f">Número de cartones <span class="hint">de 25 a 3.000</span><input type="number" name="count" min="25" max="3000" value="25" required></label>
@@ -223,7 +219,7 @@ views.anfitrion = async (pid) => {
 function hostSetup(p) {
   const n = p.cards.length;
   app.innerHTML = `
-    <h1>Configurar la sesión</h1>
+    ${BACK}<h1>Configurar la sesión</h1>
     <form class="panel" id="f">
       <div class="fields">
         <label class="f">Nombre de la sesión<input type="text" name="name" maxlength="50" value="${esc(p.name)}" required></label>
@@ -234,7 +230,7 @@ function hostSetup(p) {
       </div>
       <h2 style="margin-top:20px">Patrones a completar</h2>
       ${patternPicker()}
-      <p class="muted small">El generador queda activo 3 horas. Podrás reiniciar la sesión las veces que quieras y cambiar los patrones en cada ronda.</p>
+      <p class="muted small">El generador queda activo 3 horas. Podrás reiniciar la sesión las veces que quieras y cambiar el patrón en cada ronda.</p>
       <button class="primary big">Activar el generador</button>
     </form>`;
   const f = $('#f');
@@ -261,7 +257,7 @@ async function hostConsole(p) {
   let manual = false;
   let spoken = -1;
   app.innerHTML = `
-    <div>
+    <div>${BACK}
       <div class="panel">
         <div class="row between">
           <div><h1 id="title"></h1><div id="meta" class="muted"></div></div>
@@ -298,15 +294,17 @@ async function hostConsole(p) {
     </div>
     <div class="panel">
       <h2>Siguiente ronda</h2>
-      <div id="restart-pats">${patternPicker()}</div>
+      <div id="restart-pats"></div>
       <div class="row">
         <button class="primary" id="restart">Reiniciar la sesión</button>
         <button id="finalbtn">Selección final entre cartones completados</button>
         <button class="danger" id="close">Cerrar la sesión</button>
       </div>
     </div>`;
+  let pickerRound = null;
   const render = () => {
     $('#title').textContent = st.name;
+    if (pickerRound !== st.round) { pickerRound = st.round; $('#restart-pats').innerHTML = patternPicker(st.patterns); }
     const mins = Math.max(0, Math.round((st.expires - Date.now()) / 60000));
     $('#meta').textContent = `Ronda ${st.round} · ${st.players} participantes · ${st.players * st.cardsPerPlayer} de ${st.totalCards} cartones repartidos · quedan ${Math.floor(mins / 60)} h ${mins % 60} min`;
     $('#pats').innerHTML = patternsInline(st.patterns);
@@ -341,7 +339,7 @@ async function hostConsole(p) {
 
 views.sesiones = async () => {
   const list = await api('GET', '/api/sessions');
-  app.innerHTML = `<h1>Sesiones activas</h1>
+  app.innerHTML = `${BACK}<h1>Sesiones activas</h1>
     <div class="panel scroll-x">${list.length ? `<table class="list"><tr><th>Sesión</th><th>Ronda</th><th></th></tr>
       ${list.map((s) => `<tr><td><b>${esc(s.name)}</b> ${s.locked ? '🔒' : ''}</td><td>${s.round}</td>
         <td><div class="row"><a class="btn primary" href="#/jugar/${s.id}">Unirse</a><a class="btn" href="#/tablero/${s.id}">Tablero</a></div></td></tr>`).join('')}</table>`
@@ -432,10 +430,7 @@ views.jugar = async (sid) => {
     } catch (err) { fail(err); }
     e.target.disabled = false;
   };
-  // Durante la partida se oculta el menú para que nadie salga por error a las herramientas sueltas
-  document.body.classList.add('playing');
-  const off = subscribe(sid, (s) => { st = s; render(); }, () => { store.del(key); document.body.classList.remove('playing'); ended(); });
-  return () => { off(); document.body.classList.remove('playing'); };
+  return subscribe(sid, (s) => { st = s; render(); }, () => { store.del(key); ended(); });
 };
 
 views.tablero = async (sid) => {
@@ -450,89 +445,6 @@ views.tablero = async (sid) => {
       </div>${boardHTML(st, st.drawn)}`;
   }, ended);
   return () => { off(); document.body.classList.remove('tv'); };
-};
-
-// Generador independiente: no está conectado a ningún cartón
-views.generador = () => {
-  const g = { format: 'numbers', headers: 'BINGO', values: 75 };
-  let drawn = [];
-  let timer = null;
-  app.innerHTML = `<h1>Generador de números gratis</h1>
-    <p class="muted">Versión independiente: anuncia valores al azar y sirve de tablero para una TV o proyector. No valida cartones.</p>
-    <div class="cols">
-      <div class="panel"><div id="draws"></div>
-        <div class="row" style="justify-content:center;margin-top:16px"><button class="primary big" id="gen">Generar un número</button></div>
-        <div class="row" style="justify-content:center;margin-top:14px">
-          <label class="small">Valores <input type="number" id="n" min="25" max="150" value="75" style="width:80px"></label>
-          <label class="small">Pausa <input type="number" id="interval" min="5" max="60" value="10" style="width:70px"> s</label>
-          <button id="auto">▶ Modo automático</button>
-          <label class="check"><input type="checkbox" id="voice" ${voiceOn ? 'checked' : ''}> Voz</label>
-          <button id="reset">Reiniciar</button>
-        </div></div>
-      <div class="panel"><h2 id="count"></h2><div id="board"></div></div>
-    </div>`;
-  const render = () => {
-    $('#draws').innerHTML = drawsHTML(g, drawn);
-    $('#board').innerHTML = boardHTML(g, drawn);
-    $('#count').textContent = `Tablero · ${drawn.length} de ${g.values}`;
-    $('#gen').disabled = drawn.length >= g.values;
-    $('#auto').textContent = timer ? '⏸ Detener automático' : '▶ Modo automático';
-  };
-  const stop = () => { clearInterval(timer); timer = null; };
-  const next = () => {
-    const left = [];
-    for (let v = 1; v <= g.values; v++) if (!drawn.includes(v)) left.push(v);
-    if (!left.length) return stop();
-    const v = left[Math.floor(Math.random() * left.length)];
-    drawn.push(v);
-    speak(speakText(g, v));
-    render();
-    return undefined;
-  };
-  $('#gen').onclick = next;
-  $('#auto').onclick = () => { if (timer) stop(); else { next(); timer = setInterval(next, Math.min(60, Math.max(5, Number($('#interval').value) || 10)) * 1000); } render(); };
-  $('#reset').onclick = () => { stop(); drawn = []; render(); };
-  $('#n').onchange = (e) => { g.values = Math.min(150, Math.max(25, Number(e.target.value) || 75)); e.target.value = g.values; stop(); drawn = []; render(); };
-  $('#voice').onchange = (e) => { voiceOn = e.target.checked; store.set('voice', voiceOn ? '1' : '0'); };
-  render();
-  return stop;
-};
-
-// Cartón independiente: se marca a mano, las líneas completas se ponen verdes
-views.carton = () => {
-  const g = { format: 'numbers', headers: 'BINGO', values: 75 };
-  let cells = [];
-  let marks = 0;
-  app.innerHTML = `<div><h1>Cartón virtual gratis</h1>
-    <p class="muted">Toca una casilla para marcarla (naranja). Una línea completa de cinco se pone verde. Nada comprueba los valores anunciados: revisa tú el cartón.</p>
-    <div class="panel row">
-      <label class="small">Valores <input type="number" id="n" min="25" max="150" value="75" style="width:80px"></label>
-      <label class="small">Casilla central libre <select id="free" style="width:auto"><option value="1">sí</option><option value="0">no</option></select></label>
-      <button class="primary" id="new">Nuevo cartón</button>
-    </div></div><div id="card"></div>`;
-  const render = () => {
-    const m = marks | (cells[12] === 0 ? 1 << 12 : 0);
-    const green = PATTERNS.lines.filter((l) => (m & l) === l).reduce((a, l) => a | l, 0);
-    $('#card').innerHTML = cardHTML(g, cells, { marks: m, green });
-  };
-  const fresh = () => {
-    g.values = Math.min(150, Math.max(25, Number($('#n').value) || 75));
-    $('#n').value = g.values;
-    cells = new Array(25);
-    for (let c = 0; c < 5; c++) {
-      const [lo, hi] = rangeOf(g, c);
-      const pool = Array.from({ length: hi - lo + 1 }, (_, i) => lo + i).sort(() => Math.random() - 0.5);
-      for (let r = 0; r < 5; r++) cells[r * 5 + c] = pool[r];
-    }
-    if ($('#free').value === '1') cells[12] = 0;
-    marks = 0;
-    render();
-  };
-  $('#new').onclick = fresh;
-  $('#n').onchange = fresh;
-  $('#free').onchange = fresh;
-  $('#card').onclick = (e) => { const c = e.target.closest('.cell'); if (c && cells[c.dataset.i] !== 0) { marks ^= 1 << Number(c.dataset.i); render(); } };
-  fresh();
 };
 
 // ---------- Enrutador ----------
