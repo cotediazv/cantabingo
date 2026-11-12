@@ -416,6 +416,8 @@ views.jugar = async (sid) => {
       cell.classList.remove('nope');
       void cell.offsetWidth; // reinicia la animación
       cell.classList.add('nope');
+      cell.blur();
+      setTimeout(() => cell.classList.remove('nope'), 350);
       return toast('Ese valor todavía no ha salido: no se puede marcar');
     }
     on ? marks[c.no].add(i) : marks[c.no].delete(i);

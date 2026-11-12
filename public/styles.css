@@ -34,7 +34,8 @@ main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 64px; }
 .steps li::before { counter-increment: s; content: counter(s); display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--primary); color: #fff; font-weight: 700; margin-bottom: 6px; }
 
 button, .btn { font: inherit; cursor: pointer; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 9px 16px; border-radius: 999px; text-decoration: none; display: inline-block; }
-button:hover, .btn:hover { border-color: var(--primary); }
+/* solo con ratón: en celular el «hover» se queda pegado tras tocar y parece una marca */
+@media (hover: hover) { button:not(.cell):hover, .btn:hover { border-color: var(--primary); } }
 button.primary, .btn.primary { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); font-weight: 600; }
 button.big { font-size: 1.15rem; padding: 14px 26px; }
 button.danger { color: var(--danger); }
@@ -97,12 +98,14 @@ table.list th { font-size: .8rem; text-transform: uppercase; letter-spacing: .05
 .cell small { font-size: .55rem; font-weight: 600; display: block; margin-top: 3px; }
 .cell.free { background: var(--line); font-size: .7rem; letter-spacing: .05em; }
 /* sombra suave de la figura que se está llenando */
-.cell.hint { background: #4b4196; border: 2px solid #a79bff; }
-.cell.free.hint { background: #5a4fb0; }
+/* fantasma: apenas más claro que una casilla normal */
+.cell.hint { background: #2f2a57; border-color: #4f4890; }
+.cell.free.hint { background: #453f78; }
 .cell.marked { background: var(--mark); color: #fff; border-color: var(--mark); }
-.cell.marked.hint { border: 3px solid #ffe7c2; }
+.cell.marked.hint { border: 2px solid #ffe7c2; }
 .cell.green { background: var(--win); color: #fff; border-color: var(--win); }
-.cell.nope { animation: nope .3s; border-color: var(--danger); }
+.cell.nope { animation: nope .3s; }
+.cell:focus { outline: none; }
 @keyframes nope { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
 .back { margin: 0 0 10px; font-size: .9rem; }
 button.cell { cursor: pointer; }
