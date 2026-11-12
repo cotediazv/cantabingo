@@ -14,9 +14,10 @@ let db = { projects: {}, sessions: {} };
 try { db = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); } catch { /* primera ejecución */ }
 for (const s of Object.values(db.sessions)) s.auto = { on: false, interval: 10, stopOnWin: true };
 let saveTimer = null;
+// Guarda como mucho una vez por segundo, aunque haya cientos de cambios seguidos
 const save = () => {
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => fs.writeFile(DATA_FILE, JSON.stringify(db), () => {}), 400);
+  if (saveTimer) return;
+  saveTimer = setTimeout(() => { saveTimer = null; fs.writeFile(DATA_FILE, JSON.stringify(db), () => {}); }, 1000);
 };
 const id = (n = 8) => crypto.randomBytes(n).toString('hex');
 const shortId = () => {
@@ -94,20 +95,37 @@ function evaluate(s) {
   }
   return added;
 }
-function publicState(s) {
+// El moderador recibe la lista completa de resultados; los participantes solo los cartones
+// ganadores (sin nombres), que es lo único que necesitan y pesa mucho menos.
+function publicState(s, full = false) {
   const p = db.projects[s.projectId];
+  const results = full ? s.results : s.results.filter((r) => r.validated).map((r) => ({ cardNo: r.cardNo, pattern: r.pattern, validated: true }));
   return {
     id: s.id, name: s.name, round: s.round, closed: !!s.closed, expires: s.expires,
     format: p.format, headers: p.headers, values: p.values, items: p.items, showName: s.showName,
-    patterns: s.patterns, drawn: s.drawn, results: s.results, finalists: s.finalists || null,
+    patterns: s.patterns, drawn: s.drawn, results, finalists: s.finalists || null,
     auto: s.auto, cardsPerPlayer: s.cardsPerPlayer, totalCards: p.cards.length,
     players: Object.values(s.players).length,
   };
 }
-function broadcast(s) {
+// Los avisos se agrupan: si llegan muchos cambios seguidos (cientos de personas entrando o
+// marcando a la vez) se envía un solo estado cada 150 ms en vez de uno por cada cambio.
+const pending = {};
+function send(s) {
+  const all = clients[s.id];
+  if (!all || !all.size) return;
+  const slim = `data: ${JSON.stringify(publicState(s))}\n\n`;
+  let full = null;
+  for (const res of all) {
+    if (res.isAdmin) res.write(full ||= `data: ${JSON.stringify(publicState(s, true))}\n\n`);
+    else res.write(slim);
+  }
+}
+function broadcast(s, now = false) {
   save();
-  const msg = `data: ${JSON.stringify(publicState(s))}\n\n`;
-  for (const res of clients[s.id] || []) res.write(msg);
+  if (now) { clearTimeout(pending[s.id]); delete pending[s.id]; send(s); return; }
+  if (pending[s.id]) return;
+  pending[s.id] = setTimeout(() => { delete pending[s.id]; if (db.sessions[s.id]) send(s); }, 150);
 }
 function stopAuto(s) { clearInterval(timers[s.id]); delete timers[s.id]; s.auto.on = false; }
 function draw(s, value) {
@@ -127,7 +145,7 @@ function draw(s, value) {
 function closeSession(s) {
   stopAuto(s);
   s.closed = true;
-  broadcast(s);
+  broadcast(s, true);
   for (const res of clients[s.id] || []) res.end();
   delete clients[s.id];
   const p = db.projects[s.projectId];
@@ -384,8 +402,9 @@ app.post('/api/sessions/:sid/sync', (req, res) => {
     cardOf(s, cardNo).forEach((v, i) => { if (v !== 0 && drawn.has(v)) all.push(i); });
     marks[cardNo] = s.marks[cardNo] = all;
   }
+  const before = s.results.filter((r) => r.validated).length;
   evaluate(s);
-  broadcast(s);
+  if (s.results.filter((r) => r.validated).length !== before) broadcast(s); else save();
   res.json({ marks, state: publicState(s) });
 });
 
@@ -395,7 +414,8 @@ app.get('/api/sessions/:sid/events', (req, res) => {
   if (!s) return fail(res, 404, 'La sesión no existe o ya terminó');
   res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
   res.flushHeaders();
-  res.write(`data: ${JSON.stringify(publicState(s))}\n\n`);
+  res.isAdmin = validToken(req.query.admin);
+  res.write(`data: ${JSON.stringify(publicState(s, res.isAdmin))}\n\n`);
   (clients[s.id] ||= new Set()).add(res);
   const ping = setInterval(() => res.write(': ping\n\n'), 25000);
   req.on('close', () => { clearInterval(ping); clients[s.id]?.delete(res); });

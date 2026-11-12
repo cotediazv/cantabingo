@@ -119,8 +119,8 @@ function speak(text) {
   speechSynthesis.cancel();
   speechSynthesis.speak(u);
 }
-function subscribe(sid, onState, onGone) {
-  const es = new EventSource(`/api/sessions/${sid}/events`);
+function subscribe(sid, onState, onGone, asAdmin = false) {
+  const es = new EventSource(`/api/sessions/${sid}/events${asAdmin ? `?admin=${encodeURIComponent(store.get('adminToken') || '')}` : ''}`);
   es.onmessage = (e) => { const st = JSON.parse(e.data); if (st.closed) { es.close(); onGone(); } else onState(st); };
   es.onerror = () => { fetch(`/api/sessions/${sid}`).then((r) => { if (r.status === 404) { es.close(); onGone(); } }).catch(() => {}); };
   return () => es.close();
@@ -383,7 +383,7 @@ async function hostConsole(p) {
   $('#restart').onclick = () => { const patterns = readPatterns($('#restart-pats')); if (patterns && confirm('¿Reiniciar la sesión? Los cartones de los participantes se limpian.')) act('restart', { patterns }); };
   $('#finalbtn').onclick = () => { const keep = prompt('¿Cuántos cartones quieres conservar?', '1'); if (keep) act('final', { keep: Number(keep) }); };
   $('#close').onclick = async () => { if (confirm('¿Cerrar la sesión para todos?')) { await act('close'); location.hash = '#/proyectos'; } };
-  const off = subscribe(sid, (s) => { st = s; render(); }, () => { location.hash = '#/proyectos'; });
+  const off = subscribe(sid, (s) => { st = s; render(); }, () => { location.hash = '#/proyectos'; }, true);
   const tick = setInterval(() => st && render(), 60000);
   return () => { off(); clearInterval(tick); };
 }
