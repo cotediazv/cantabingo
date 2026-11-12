@@ -183,24 +183,19 @@ function viewLogin() {
 }
 const isAdmin = async () => Boolean(store.get('adminToken')) && (await api('GET', '/api/me').catch(() => ({}))).admin === true;
 
+// Catálogo de juegos de la plataforma. Para sumar uno: agregar aquí su entrada y sus vistas.
+const GAMES = [
+  { id: 'bingo', icon: '🎱', name: 'Bingo', desc: 'Cartones virtuales en el celular, sorteo en vivo y ganadores automáticos.', href: '#/proyectos' },
+];
+
 views.home = async () => {
   if (!(await isAdmin())) return viewLogin();
   app.innerHTML = `
-    <section class="panel">
-      <h1>Crea cartones de bingo y dirige sesiones en vivo</h1>
-      <p class="muted">Genera de 25 a 3.000 cartones virtuales únicos con números, palabras o emojis. Cada participante los abre en su celular, tú anuncias los valores y la app detecta los cartones completados.</p>
-      <div class="row">
-        <a class="btn primary" href="#/nuevo">Crear cartones</a>
-        <a class="btn" href="#/proyectos">Dirigir una sesión</a>
-        <a class="btn" href="#/sesiones">Ver sesiones activas</a>
-        <button id="logout">Cerrar sesión de moderador</button>
-      </div>
-    </section>
-    <ol class="steps panel">
-      <li><b>Invita</b><br><span class="muted">Comparte el enlace o el QR: cada persona recibe de 1 a 4 cartones en su celular.</span></li>
-      <li><b>Anuncia</b><br><span class="muted">Generador aleatorio manual o automático, con voz.</span></li>
-      <li><b>Valida</b><br><span class="muted">Los patrones completados aparecen al instante en la lista de resultados.</span></li>
-    </ol>`;
+    <div class="row between" style="margin-bottom:16px"><h1>Juegos</h1><button id="logout">Cerrar sesión de moderador</button></div>
+    <div class="tiles">
+      ${GAMES.map((g) => `<a class="tile" href="${g.href}"><span class="tile-icon">${g.icon}</span><b>${esc(g.name)}</b><span class="muted">${esc(g.desc)}</span></a>`).join('')}
+    </div>
+    <p class="muted small" style="margin-top:16px">Aquí irán apareciendo los próximos juegos.</p>`;
   $('#logout').onclick = () => { store.del('adminToken'); route(); };
   return undefined;
 };
@@ -209,7 +204,7 @@ views.proyectos = async () => {
   const list = await api('GET', '/api/projects');
   const fmt = { numbers: 'Números', words: 'Palabras', emojis: 'Emojis' };
   app.innerHTML = `
-    ${BACK}<div class="row between" style="margin-bottom:16px"><h1>Mis proyectos</h1><a class="btn primary" href="#/nuevo">⊕ Nuevo proyecto de bingo</a></div>
+    <p class="back"><a href="#/">← Juegos</a></p><div class="row between" style="margin-bottom:16px"><h1>Bingo · Mis proyectos</h1><a class="btn primary" href="#/nuevo">⊕ Nuevo proyecto de bingo</a></div>
     <div class="panel scroll-x">${list.length ? `<table class="list">
       <tr><th>Proyecto</th><th>Formato</th><th>Cartones</th><th>Estado</th><th></th></tr>
       ${list.map((p) => `<tr>

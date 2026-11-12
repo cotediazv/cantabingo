@@ -160,3 +160,9 @@ button, .btn, .cell, .bn { touch-action: manipulation; -webkit-tap-highlight-col
   button.big { width: 100%; }
   table.list th, table.list td { padding: 8px 6px; font-size: .9rem; }
 }
+
+/* Portada de juegos */
+.tile { background: var(--surface); border-color: var(--line); display: grid; gap: 4px; }
+.tile:hover { border-color: #a79bff; }
+.tile-icon { font-size: 2.2rem; line-height: 1; margin-bottom: 6px; }
+.tiles { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
