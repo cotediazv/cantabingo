@@ -152,7 +152,7 @@
       <div class="panel"><h2>Pantalla del público</h2>
         <div class="row between"><div class="small"><b>Enlace para celulares o TV:</b> <a class="link" href="${publicUrl()}" target="_blank">${esc(publicUrl())}</a><br>
           <b>Fuente de navegador para OBS</b> (fondo transparente): <a class="link" href="${obsUrl()}" target="_blank">${esc(obsUrl())}</a><br>
-          <span class="muted">El público solo ve la rueda, el reloj y el marcador; nunca las preguntas ni las respuestas.</span></div>${qr(publicUrl())}</div></div>`;
+          <span class="muted">El público ve la rueda, el reloj, el marcador y la pregunta de la letra en juego; nunca la respuesta.</span></div>${qr(publicUrl())}</div></div>`;
     const render = () => {
       const c = st.players[st.turn];
       $('#w-name').textContent = st.name;
@@ -220,10 +220,12 @@
             <span class="obs-clock" data-timer="${i}">${clock(c.remainingMs)}</span>
             <span class="obs-name">${esc(c.name)}</span>
             <span class="obs-score"><b class="ok">✔ ${c.hits}</b> <b class="ko">✘ ${c.misses}</b></span></div>`).join('')}</div>
-          <div class="obs-wheel">${wheelSVG(st, st.turn, false, true)}</div>`;
+          <div class="obs-wheel">${wheelSVG(st, st.turn, false, true)}</div>
+          ${st.question ? `<div class="obs-question">${esc(st.question)}</div>` : ''}`;
         return;
       }
       $('#pw').innerHTML = `<h1 class="pw-title">${esc(st.name)}</h1>
+        ${st.question ? `<div class="pw-question">${esc(st.question)}</div>` : ''}
         <div class="wheels n${st.players.length}">${st.players.map((_, i) => `<div class="wheel-box ${i === st.turn && !st.finished ? 'on' : 'off'}">${wheelSVG(st, i)}</div>`).join('')}</div>`;
     }, () => { leave(); if (location.hash === `#/${kind}`) route(); else location.hash = `#/${kind}`; });
     return () => { off(); stopClocks(); leave(); };

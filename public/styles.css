@@ -207,3 +207,9 @@ body.obs #pw { position: fixed; inset: 0; display: grid; place-items: center; }
 .obs-player:not(.on) .obs-clock { font-size: 4.5vh; }
 .obs-name { font-size: 2.6vh; font-weight: 700; }
 .obs-score { font-size: 2.6vh; } .obs-score .ok { color: #4fe39a; } .obs-score .ko { color: #ff8b8b; }
+
+/* Pregunta en pantalla */
+.pw-question { max-width: 720px; margin: 0 auto 12px; padding: 12px 16px; border-radius: var(--radius); background: var(--raised); border: 1px solid #5a54a0; text-align: center; font-size: 1.15rem; font-weight: 600; }
+body.obs #pw { grid-template-rows: 1fr auto; padding-bottom: 2vh; }
+.obs-wheel { width: min(82vh, 99vw); }
+.obs-question { max-width: 92vw; margin: 0 auto; padding: 1.6vh 3vh; border-radius: 2vh; background: rgba(12, 10, 28, .82); color: #fff; text-align: center; font-size: 4vh; font-weight: 700; line-height: 1.2; text-wrap: balance; }
