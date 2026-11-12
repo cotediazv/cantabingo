@@ -99,10 +99,9 @@ table.list th { font-size: .8rem; text-transform: uppercase; letter-spacing: .05
 .cell.free { background: var(--line); font-size: .7rem; letter-spacing: .05em; }
 /* sombra suave de la figura que se está llenando */
 /* fantasma: apenas más claro que una casilla normal */
-.cell.hint { background: #2f2a57; border-color: #4f4890; }
+.cell.hint { background: #302b59; }
 .cell.free.hint { background: #453f78; }
 .cell.marked { background: var(--mark); color: #fff; border-color: var(--mark); }
-.cell.marked.hint { border: 2px solid #ffe7c2; }
 .cell.green { background: var(--win); color: #fff; border-color: var(--win); }
 .cell.nope { animation: nope .3s; }
 .cell:focus { outline: none; }
