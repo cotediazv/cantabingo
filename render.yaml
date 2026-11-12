@@ -2,9 +2,14 @@ services:
   - type: web
     name: cantabingo
     runtime: node
-    plan: free
+    plan: starter
     buildCommand: npm install
     startCommand: npm start
+    # Disco permanente: proyectos y sesiones sobreviven a los reinicios
+    disk:
+      name: datos
+      mountPath: /var/data
+      sizeGB: 1
     envVars:
       # Usuario y contraseña del moderador: se escriben en el panel de Render, no aquí
       - key: ADMIN_USER

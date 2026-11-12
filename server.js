@@ -6,7 +6,10 @@ const QRCode = require('qrcode');
 const PATTERNS = require('./public/patterns.js');
 
 const PORT = process.env.PORT || 3000;
-const DATA_FILE = process.env.DATA_FILE || path.join(__dirname, 'data.json');
+// Si existe un disco permanente montado en /var/data, los datos se guardan ahí y sobreviven a los reinicios
+const DISK_DIR = '/var/data';
+const hasDisk = (() => { try { fs.accessSync(DISK_DIR, fs.constants.W_OK); return true; } catch { return false; } })();
+const DATA_FILE = process.env.DATA_FILE || path.join(hasDisk ? DISK_DIR : __dirname, 'data.json');
 const SESSION_HOURS = 3;
 
 // ---------- Almacenamiento (JSON en disco) ----------
@@ -14,11 +17,31 @@ let db = { projects: {}, sessions: {} };
 try { db = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); } catch { /* primera ejecución */ }
 for (const s of Object.values(db.sessions)) s.auto = { on: false, interval: 10, stopOnWin: true };
 let saveTimer = null;
+let writing = false;
+let dirty = false;
+// Escribe primero un archivo temporal y luego lo renombra: si el proceso muere a mitad,
+// el archivo anterior queda intacto.
+function writeNow() {
+  if (writing) { dirty = true; return; }
+  writing = true;
+  fs.writeFile(`${DATA_FILE}.tmp`, JSON.stringify(db), (err) => {
+    const done = () => { writing = false; if (dirty) { dirty = false; writeNow(); } };
+    if (err) { console.error('No se pudo guardar:', err.message); return done(); }
+    fs.rename(`${DATA_FILE}.tmp`, DATA_FILE, done);
+  });
+}
 // Guarda como mucho una vez por segundo, aunque haya cientos de cambios seguidos
 const save = () => {
   if (saveTimer) return;
-  saveTimer = setTimeout(() => { saveTimer = null; fs.writeFile(DATA_FILE, JSON.stringify(db), () => {}); }, 1000);
+  saveTimer = setTimeout(() => { saveTimer = null; writeNow(); }, 1000);
 };
+// Al apagarse o reiniciarse el servicio, guarda todo antes de salir
+for (const signal of ['SIGTERM', 'SIGINT']) {
+  process.on(signal, () => {
+    try { fs.writeFileSync(`${DATA_FILE}.tmp`, JSON.stringify(db)); fs.renameSync(`${DATA_FILE}.tmp`, DATA_FILE); } catch (err) { console.error('No se pudo guardar al salir:', err.message); }
+    process.exit(0);
+  });
+}
 const id = (n = 8) => crypto.randomBytes(n).toString('hex');
 const shortId = () => {
   const abc = 'abcdefghjkmnpqrstuvwxyz23456789';
@@ -427,4 +450,4 @@ app.get('/api/qr', async (req, res) => {
   } catch { fail(res, 400, 'Texto no válido'); }
 });
 
-app.listen(PORT, () => console.log(`Bingo listo en http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`Bingo listo en http://localhost:${PORT} · datos en ${DATA_FILE}${hasDisk ? ' (disco permanente)' : ' (se pierden al reiniciar)'}`));

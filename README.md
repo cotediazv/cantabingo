@@ -24,6 +24,6 @@ No hay cartones impresos: todos los cartones se juegan en pantalla.
 
 ## Estructura
 
-- `server.js` — API, generación de cartones, lógica de sesión y eventos en tiempo real (SSE). Los datos se guardan en `data.json`.
+- `server.js` — API, generación de cartones, lógica de sesión y eventos en tiempo real (SSE). Los datos se guardan en `/var/data/data.json` si existe ese disco permanente; si no, en `data.json` junto al código (se pierde al reiniciar en hostings sin disco).
 - `public/patterns.js` — catálogo de patrones (compartido servidor/navegador).
 - `public/app.js`, `styles.css`, `index.html` — interfaz.
