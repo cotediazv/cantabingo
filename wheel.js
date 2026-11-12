@@ -130,7 +130,8 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail }) {
     id: w.id, name: w.name, letters: w.letters, turn: w.turn, runningSince: w.runningSince, now: Date.now(),
     finished: !w.players.some(active), canUndo: w.history.length > 0,
     // Al público va solo el enunciado de la letra en juego; la respuesta nunca sale del panel del moderador
-    question: active(w.players[w.turn]) ? ((w.questions[w.turn] || [])[w.players[w.turn].current] || {}).q || '' : '',
+    // y solo mientras su reloj está corriendo.
+    question: w.runningSince && active(w.players[w.turn]) ? ((w.questions[w.turn] || [])[w.players[w.turn].current] || {}).q || '' : '',
     players: w.players.map((c) => ({
       name: c.name, status: c.status, current: c.current, remainingMs: c.remainingMs, active: active(c),
       hits: c.status.filter((x) => x === 'hit').length, misses: c.status.filter((x) => x === 'miss').length,

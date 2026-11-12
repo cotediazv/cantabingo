@@ -168,7 +168,7 @@
       <div class="panel"><h2>Pantalla del público</h2>
         <div class="row between"><div class="small"><b>Enlace para celulares o TV:</b> <a class="link" href="${publicUrl()}" target="_blank">${esc(publicUrl())}</a><br>
           <b>Fuente de navegador para OBS</b> (fondo transparente): <a class="link" href="${obsUrl()}" target="_blank">${esc(obsUrl())}</a><br>
-          <span class="muted">El público ve la rueda, el reloj, el marcador y la pregunta de la letra en juego; nunca la respuesta.</span></div>${qr(publicUrl())}</div></div>`;
+          <span class="muted">El público ve la rueda, el reloj y el marcador. La pregunta aparece solo mientras el reloj corre; la respuesta, nunca.</span></div>${qr(publicUrl())}</div></div>`;
     const render = () => {
       const c = st.players[st.turn];
       $('#w-name').textContent = st.name;
