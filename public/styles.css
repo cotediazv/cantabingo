@@ -88,7 +88,8 @@ table.list th { font-size: .8rem; text-transform: uppercase; letter-spacing: .05
 /* Cartones */
 .cards { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
 .card { background: var(--surface); border: 2px solid #5a54a0; border-radius: 10px; padding: 8px; max-width: 460px; width: 100%; margin: 0 auto; }
-.card-top { display: flex; justify-content: space-between; gap: 8px; font-size: .8rem; font-weight: 700; padding: 0 2px 6px; }
+.card-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: .85rem; font-weight: 700; padding: 0 2px 6px; }
+.card-top .left { color: #ffc46b; font-size: .95rem; }
 .grid5 { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
 .grid5.head span { background: var(--primary); color: #fff; text-align: center; font-weight: 800; font-size: 1.3rem; border-radius: 6px; padding: 2px 0; }
 .grid5.cells { margin-top: 4px; }
@@ -102,7 +103,7 @@ table.list th { font-size: .8rem; text-transform: uppercase; letter-spacing: .05
 .cell.hint { background: #302b59; }
 .cell.free.hint { background: #453f78; }
 .cell.marked { background: var(--mark); color: #fff; border-color: var(--mark); }
-.cell.green { background: var(--win); color: #fff; border-color: var(--win); }
+.cell.green, .cell.free.green { background: var(--win); color: #fff; border-color: var(--win); }
 .cell.nope { animation: nope .3s; }
 .cell:focus { outline: none; }
 @keyframes nope { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }

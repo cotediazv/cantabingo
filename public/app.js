@@ -82,7 +82,7 @@ function boardHTML(g, drawn, pick = false) {
   });
   return `<div class="board ${text ? 'text' : ''} ${pick ? 'pick' : ''}" style="--per:${per}">${rows.join('')}</div>`;
 }
-function cardHTML(g, cells, { no = '', marks = 0, green = 0, hint = 0 } = {}) {
+function cardHTML(g, cells, { no = '', marks = 0, green = 0, hint = 0, note = '' } = {}) {
   const txt = g.format === 'words' ? 'txt' : '';
   const body = cells.map((v, i) => {
     const cls = v === 0 ? 'free' : green & (1 << i) ? 'green' : marks & (1 << i) ? 'marked' : '';
@@ -91,7 +91,7 @@ function cardHTML(g, cells, { no = '', marks = 0, green = 0, hint = 0 } = {}) {
     return `<button class="cell ${txt} ${cls} ${g2} ${h}" data-i="${i}">${cellInner(g, v)}</button>`;
   }).join('');
   return `<div class="card" data-no="${esc(no)}">
-    ${no !== '' ? `<div class="card-top"><span>Cartón</span><span>#${esc(no)}</span></div>` : ''}
+    ${no !== '' ? `<div class="card-top"><span>Cartón #${esc(no)}</span><span class="left">${esc(note)}</span></div>` : ''}
     <div class="grid5 head">${[...g.headers].map((h) => `<span>${esc(h)}</span>`).join('')}</div>
     <div class="grid5 cells">${body}</div>
   </div>`;
@@ -424,12 +424,12 @@ views.jugar = async (sid) => {
   let round = null;
   const marks = Object.fromEntries(me.cards.map((c) => [c.no, new Set(c.marks)]));
   const maskOf = (c) => [...marks[c.no]].reduce((m, i) => m | (1 << i), c.cells[12] === 0 ? 1 << 12 : 0);
-  app.innerHTML = `<div id="banner"></div>
-    <div class="panel"><h2 id="title" style="margin:0"></h2><span class="muted small" id="meta"></span><div id="pats" style="margin-top:8px"></div></div>
-    <div class="now" id="now"></div>
+  app.innerHTML = `<div class="now" id="now"></div>
+    <div id="banner"></div>
     <div class="cards" id="cards"></div>
     <button class="primary big" id="sync" style="margin-top:16px">↻ Actualizar y marcar lo que falta</button>
-    <p class="muted small" style="margin-top:8px">Marca por ti los valores ya anunciados que se te pasaron.</p>`;
+    <p class="muted small" style="margin-top:8px">Marca por ti los valores ya anunciados que se te pasaron.</p>
+    <div class="panel" style="margin-top:20px"><h2 id="title" style="margin:0"></h2><span class="muted small" id="meta"></span><div id="pats" style="margin-top:8px"></div></div>`;
   const render = () => {
     if (round !== null && st.round !== round) me.cards.forEach((c) => marks[c.no].clear());
     round = st.round;
@@ -442,15 +442,17 @@ views.jugar = async (sid) => {
     // Sombra de la figura. Si el patrón admite varias formas (cualquier línea, dos líneas…),
     // se sombrea la que este cartón lleva más avanzada.
     const bits = (x) => { let n = 0; for (; x; x &= x - 1) n++; return n; };
-    const hintFor = (m) => st.patterns.reduce((a, id) => {
-      const best = PATTERNS.byId[id].variants.reduce((p, v) => (bits(v & m) / bits(v) > bits(p & m) / bits(p) ? v : p));
-      return a | best;
-    }, 0);
+    const bestFor = (m) => PATTERNS.byId[st.patterns[0]].variants.reduce((p, v) => (bits(v & m) / bits(v) > bits(p & m) / bits(p) ? v : p));
+    // Cuántas casillas de la figura le quedan por marcar a este cartón
+    const noteFor = (m) => {
+      const left = bits(bestFor(m) & ~m);
+      return left === 0 ? '¡Figura completa!' : left === 1 ? 'Te falta 1 número' : `Te faltan ${left} números`;
+    };
     $('#banner').innerHTML = mine.length ? '<div class="bingo-banner">¡BINGO!</div>' : '';
     $('#cards').innerHTML = me.cards.map((c) => {
       const m = maskOf(c);
       const green = mine.filter((r) => r.cardNo === c.no).reduce((g, r) => g | PATTERNS.completed(r.pattern, m), 0);
-      return cardHTML(st, c.cells, { no: me.startNumber + c.no - 1, marks: m, green, hint: hintFor(m) });
+      return cardHTML(st, c.cells, { no: me.startNumber + c.no - 1, marks: m, green, hint: bestFor(m), note: noteFor(m) });
     }).join('');
   };
   $('#cards').onclick = async (e) => {
