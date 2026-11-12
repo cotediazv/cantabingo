@@ -166,3 +166,29 @@ button, .btn, .cell, .bn { touch-action: manipulation; -webkit-tap-highlight-col
 .tile:hover { border-color: #a79bff; }
 .tile-icon { font-size: 2.2rem; line-height: 1; margin-bottom: 6px; }
 .tiles { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+
+/* Rueda de palabras */
+.wheels { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); align-items: center; }
+.wheel-box { min-width: 0; transition: opacity .3s; }
+.wheel-box.off { opacity: .5; }
+.wheel { display: block; width: 100%; max-width: min(92vh, 720px); margin: 0 auto; color: var(--ink); font-family: inherit; }
+.wheel g.cur circle { animation: wpulse 1s ease-in-out infinite; }
+@keyframes wpulse { 50% { stroke-width: 2.4; } }
+.wheel g.pick { cursor: pointer; }
+.w-letter { width: 84px; height: 84px; border-radius: 50%; background: #2f55d4; color: #fff; display: grid; place-items: center; font-size: 2.6rem; font-weight: 800; flex: none; }
+.w-question { margin: 16px 0; padding: 14px; border-radius: var(--radius); background: var(--bg); border: 1px solid var(--line); font-size: 1.1rem; min-height: 76px; }
+.w-answer { margin-top: 8px; color: #5fe0a0; }
+.w-keys { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.w-keys button { padding: 18px 8px; font-size: 1.1rem; font-weight: 700; border-radius: 14px; color: #fff; border: 0; }
+.w-keys kbd { display: block; font: 600 .7rem ui-monospace, monospace; opacity: .75; margin-top: 4px; }
+.w-hit { background: #22a862; } .w-miss { background: #d64545; } .w-pass { background: #b9820f; }
+body.wheel-screen main { max-width: none; padding: 12px; }
+.pw-title { text-align: center; margin: 4px 0 10px; }
+body.wheel-screen .wheels.n1 .wheel { max-width: min(88vh, 96vw); }
+/* Fuente de navegador en OBS: sin fondo, solo la rueda */
+html:has(body.obs), body.obs { background: transparent; }
+body.obs .wheel { color: #fff; }
+body.obs .wheel text { paint-order: stroke; stroke: rgba(0,0,0,.55); stroke-width: .6px; }
+@media (prefers-reduced-motion: reduce) { .wheel g.cur circle { animation: none; } }
+/* En celular, la rueda del concursante en turno va primero */
+@media (max-width: 700px) { body.wheel-screen .wheel-box.on { order: -1; } }

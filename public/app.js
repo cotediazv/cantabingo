@@ -142,10 +142,10 @@ async function pickSession(kind) {
   return { cleanup: undefined };
 }
 // Pantalla de espera: revisa cada pocos segundos si el moderador ya abrió una partida
-function waiting() {
+function waiting(check = activeSessions) {
   app.innerHTML = `<div class="panel" style="max-width:460px;margin:8vh auto 0;text-align:center"><h1>Todavía no hay partida</h1>
-    <p class="muted">Cuando el moderador inicie el bingo, esta pantalla cambiará sola. No cierres la página.</p></div>`;
-  const timer = setInterval(async () => { if ((await activeSessions()).length) route(); }, 5000);
+    <p class="muted">Cuando el moderador inicie el juego, esta pantalla cambiará sola. No cierres la página.</p></div>`;
+  const timer = setInterval(async () => { if ((await check()).length) route(); }, 5000);
   return () => clearInterval(timer);
 }
 const qr = (text) => `<img class="qr" alt="Código QR" src="/api/qr?text=${encodeURIComponent(text)}">`;
@@ -186,6 +186,7 @@ const isAdmin = async () => Boolean(store.get('adminToken')) && (await api('GET'
 // Catálogo de juegos de la plataforma. Para sumar uno: agregar aquí su entrada y sus vistas.
 const GAMES = [
   { id: 'bingo', icon: '🎱', name: 'Bingo', desc: 'Cartones virtuales en el celular, sorteo en vivo y ganadores automáticos.', href: '#/proyectos' },
+  { id: 'rueda', icon: '🎡', name: 'Rueda de palabras', desc: 'Una rueda de letras por concursante, con reloj. Tú marcas acierto, fallo o paso; el público ve la rueda.', href: '#/ruedas' },
 ];
 
 views.home = async () => {
@@ -521,4 +522,5 @@ async function route() {
   }
 }
 window.addEventListener('hashchange', route);
-route();
+// Arranca cuando ya cargaron los archivos de todos los juegos
+window.addEventListener('DOMContentLoaded', route);

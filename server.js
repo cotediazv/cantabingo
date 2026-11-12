@@ -444,6 +444,9 @@ app.get('/api/sessions/:sid/events', (req, res) => {
   req.on('close', () => { clearInterval(ping); clients[s.id]?.delete(res); });
 });
 
+// Segundo juego de la plataforma
+require('./wheel.js')({ app, db, save, requireAdmin, fail });
+
 app.get('/api/qr', async (req, res) => {
   try {
     res.type('image/svg+xml').send(await QRCode.toString(String(req.query.text || '').slice(0, 500), { type: 'svg', margin: 1 }));

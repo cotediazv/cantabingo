@@ -1,0 +1,190 @@
+// Juego «Rueda de palabras»: una rueda de letras por concursante, con reloj.
+// El moderador marca acierto, fallo o paso desde su panel; el público solo ve la rueda.
+const crypto = require('crypto');
+
+const LETTERS = 'ABCDEFGHIJLMNÑOPQRSTUVXYZ';
+const OPEN = (st) => st === 'pending' || st === 'pass';
+
+module.exports = function wheelGame({ app, db, save, requireAdmin, fail }) {
+  db.wheels ||= {};
+  const clients = {}; // id -> Set<res>
+  const timers = {}; // id -> temporizador de fin de reloj
+  for (const w of Object.values(db.wheels)) { w.runningSince = null; w.history = []; } // tras reiniciar, el reloj queda en pausa
+
+  const str = (v, max, def = '') => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : def);
+  const clamp = (v, lo, hi, def) => { v = parseInt(v, 10); return Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : def; };
+  const newId = () => {
+    const abc = 'abcdefghjkmnpqrstuvwxyz23456789';
+    let out;
+    do out = Array.from(crypto.randomBytes(6), (b) => abc[b % abc.length]).join(''); while (db.wheels[out]);
+    return out;
+  };
+
+  const freshPlayers = (w) => w.setup.players.map((name) => ({
+    name, status: Array.from(w.letters, () => 'pending'), current: 0, remainingMs: w.seconds * 1000,
+  }));
+  const active = (c) => c.remainingMs > 0 && c.status.some(OPEN);
+  const liveRemaining = (w, i) => {
+    const c = w.players[i];
+    return w.runningSince && i === w.turn ? Math.max(0, c.remainingMs - (Date.now() - w.runningSince)) : c.remainingMs;
+  };
+  // Detiene el reloj y descuenta el tiempo transcurrido
+  function settle(w) {
+    clearTimeout(timers[w.id]);
+    if (w.runningSince) { w.players[w.turn].remainingMs = liveRemaining(w, w.turn); w.runningSince = null; }
+  }
+  function run(w) {
+    const c = w.players[w.turn];
+    if (w.runningSince || !active(c)) return;
+    w.runningSince = Date.now();
+    timers[w.id] = setTimeout(() => { settle(w); passTurn(w); broadcast(w); }, c.remainingMs + 30);
+  }
+  // Avanza a la siguiente letra abierta del concursante; false si ya no le quedan
+  function nextLetter(c) {
+    const n = c.status.length;
+    for (let k = 1; k <= n; k++) {
+      const i = (c.current + k) % n;
+      if (OPEN(c.status[i])) { c.current = i; return true; }
+    }
+    return false;
+  }
+  const nextTurn = (w) => {
+    for (let k = 1; k < w.players.length; k++) {
+      const i = (w.turn + k) % w.players.length;
+      if (active(w.players[i])) return i;
+    }
+    return -1;
+  };
+  // Entrega el turno a otro concursante activo (con el reloj en pausa). Devuelve si lo hubo.
+  function passTurn(w) {
+    const other = nextTurn(w);
+    if (other < 0) return false;
+    settle(w);
+    w.turn = other;
+    return true;
+  }
+  function remember(w) {
+    w.history.push(JSON.stringify({ turn: w.turn, players: w.players.map((c, i) => ({ ...c, remainingMs: liveRemaining(w, i) })) }));
+    if (w.history.length > 40) w.history.shift();
+  }
+  function act(w, action, b) {
+    const c = w.players[w.turn];
+    switch (action) {
+      case 'hit':
+      case 'miss':
+      case 'pass': {
+        if (!OPEN(c.status[c.current])) return 'Esa letra ya está resuelta';
+        remember(w);
+        c.status[c.current] = action;
+        const more = nextLetter(c);
+        if (!more) { settle(w); passTurn(w); } // terminó su rueda
+        else if (action !== 'hit') passTurn(w); // fallo o paso: sigue otro, si queda alguno
+        return null;
+      }
+      case 'start': run(w); return null;
+      case 'pause': settle(w); return null;
+      case 'turn': remember(w); settle(w); w.turn = (w.turn + 1) % w.players.length; return null;
+      case 'select': {
+        const i = clamp(b.index, 0, w.letters.length - 1, -1);
+        const p = w.players[clamp(b.player, 0, w.players.length - 1, w.turn)];
+        if (i < 0) return 'Letra no válida';
+        remember(w);
+        if (!OPEN(p.status[i])) p.status[i] = 'pending'; // reabrir una letra para corregir
+        p.current = i;
+        return null;
+      }
+      case 'undo': {
+        const last = w.history.pop();
+        if (!last) return 'No hay nada que deshacer';
+        settle(w);
+        Object.assign(w, JSON.parse(last));
+        return null;
+      }
+      case 'reset': settle(w); w.history = []; w.turn = 0; w.players = freshPlayers(w); return null;
+      default: return 'Acción desconocida';
+    }
+  }
+
+  const publicState = (w) => ({
+    id: w.id, name: w.name, letters: w.letters, turn: w.turn, runningSince: w.runningSince, now: Date.now(),
+    finished: !w.players.some(active), canUndo: w.history.length > 0,
+    players: w.players.map((c) => ({
+      name: c.name, status: c.status, current: c.current, remainingMs: c.remainingMs, active: active(c),
+      hits: c.status.filter((x) => x === 'hit').length, misses: c.status.filter((x) => x === 'miss').length,
+    })),
+  });
+  function broadcast(w) {
+    save();
+    const msg = `data: ${JSON.stringify(publicState(w))}\n\n`;
+    for (const res of clients[w.id] || []) res.write(msg);
+  }
+  const find = (req, res) => { const w = db.wheels[req.params.id]; if (!w) fail(res, 404, 'Esa rueda no existe o fue eliminada'); return w; };
+
+  // ---------- API ----------
+  app.use('/api/wheels', (req, res, next) => (req.method === 'GET' && /^\/[^/]+\/events$/.test(req.path) ? next() : requireAdmin(req, res, next)));
+
+  app.get('/api/wheels', (_req, res) => {
+    res.json(Object.values(db.wheels).sort((a, b) => b.created - a.created)
+      .map((w) => ({ id: w.id, name: w.name, players: w.setup.players, seconds: w.seconds, letters: w.letters.length, created: w.created })));
+  });
+
+  app.post('/api/wheels', (req, res) => {
+    const b = req.body || {};
+    const letters = [...new Set([...str(b.letters, 40, LETTERS).toUpperCase()].filter((ch) => /\p{L}/u.test(ch)))];
+    if (letters.length < 5) return fail(res, 400, 'La rueda necesita al menos 5 letras');
+    const players = (Array.isArray(b.players) ? b.players : []).map((x) => str(x, 30)).filter(Boolean).slice(0, 4);
+    if (!players.length) players.push('Concursante');
+    // Preguntas opcionales: por concursante, una por letra { q, a }
+    const questions = players.map((_, pi) => letters.map((ch) => {
+      const item = ((Array.isArray(b.questions) && b.questions[pi]) || {})[ch] || {};
+      return { q: str(item.q, 300), a: str(item.a, 80) };
+    }));
+    const w = {
+      id: newId(), name: str(b.name, 50, 'Rueda de palabras'), created: Date.now(), letters, seconds: clamp(b.seconds, 20, 900, 150),
+      setup: { players }, questions, turn: 0, runningSince: null, history: [],
+    };
+    w.players = freshPlayers(w);
+    db.wheels[w.id] = w;
+    save();
+    res.json({ id: w.id });
+  });
+
+  app.get('/api/wheels/:id', (req, res) => { const w = find(req, res); if (w) res.json({ ...publicState(w), questions: w.questions }); });
+
+  app.delete('/api/wheels/:id', (req, res) => {
+    const w = find(req, res);
+    if (!w) return;
+    settle(w);
+    for (const c of clients[w.id] || []) { c.write('data: {"closed":true}\n\n'); c.end(); }
+    delete clients[w.id];
+    delete db.wheels[w.id];
+    save();
+    res.json({ ok: true });
+  });
+
+  app.post('/api/wheels/:id/act', (req, res) => {
+    const w = find(req, res);
+    if (!w) return;
+    const error = act(w, String((req.body || {}).action), req.body || {});
+    if (error) return fail(res, 400, error);
+    broadcast(w);
+    res.json({ ok: true });
+  });
+
+  // Ruedas abiertas: a ellas lleva el enlace fijo del público (sin sesión de moderador)
+  app.get('/api/wheel-current', (_req, res) => {
+    res.json({ wheels: Object.values(db.wheels).sort((a, b) => b.created - a.created).map((w) => ({ id: w.id, name: w.name })) });
+  });
+
+  app.get('/api/wheels/:id/events', (req, res) => {
+    const w = db.wheels[req.params.id];
+    if (!w) return fail(res, 404, 'Esa rueda no existe o fue eliminada');
+    res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
+    res.flushHeaders();
+    res.write(`data: ${JSON.stringify(publicState(w))}\n\n`);
+    (clients[w.id] ||= new Set()).add(res);
+    const ping = setInterval(() => res.write(': ping\n\n'), 25000);
+    req.on('close', () => { clearInterval(ping); clients[w.id]?.delete(res); });
+    return undefined;
+  });
+};
