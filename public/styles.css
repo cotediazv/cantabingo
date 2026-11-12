@@ -194,3 +194,16 @@ body.obs .wheel text { paint-order: stroke; stroke: rgba(0,0,0,.55); stroke-widt
 @media (max-width: 700px) { body.wheel-screen .wheel-box.on { order: -1; } }
 /* El atributo hidden manda siempre, aunque el elemento tenga display propio */
 [hidden] { display: none !important; }
+
+/* OBS: rueda a pantalla completa con el centro vacío y reloj en la esquina */
+body.obs main { padding: 0; }
+body.obs #pw { position: fixed; inset: 0; display: grid; place-items: center; }
+.obs-wheel { width: min(99vh, 99vw); }
+.obs-wheel .wheel { max-width: none; }
+.obs-corner { position: fixed; top: 2vh; left: 2vh; display: grid; gap: 1.2vh; z-index: 2; }
+.obs-player { display: grid; grid-template-columns: auto auto; column-gap: 1.6vh; align-items: center; background: rgba(12, 10, 28, .72); color: #fff; border-radius: 1.6vh; padding: 1vh 2vh; opacity: .6; }
+.obs-player.on { opacity: 1; outline: .4vh solid #fff; }
+.obs-clock { grid-row: span 2; font-size: 8vh; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; min-width: 2ch; text-align: center; }
+.obs-player:not(.on) .obs-clock { font-size: 4.5vh; }
+.obs-name { font-size: 2.6vh; font-weight: 700; }
+.obs-score { font-size: 2.6vh; } .obs-score .ok { color: #4fe39a; } .obs-score .ko { color: #ff8b8b; }

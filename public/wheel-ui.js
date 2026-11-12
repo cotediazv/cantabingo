@@ -8,7 +8,8 @@
   const clock = (ms) => { const s = Math.ceil(ms / 1000); return s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : String(s); };
 
   // La rueda se dibuja en SVG para que escale igual en un celular, una TV o una fuente de OBS
-  function wheelSVG(st, pi, pick = false) {
+  // bare: sin nada en el centro, para dejar ver la cámara del concursante
+  function wheelSVG(st, pi, pick = false, bare = false) {
     const c = st.players[pi];
     const n = st.letters.length;
     const R = 42;
@@ -24,11 +25,12 @@
         <text x="${x}" y="${y}" font-size="${(r * 1.15).toFixed(2)}" text-anchor="middle" dominant-baseline="central" fill="#fff" font-weight="800">${esc(ch)}</text></g>`;
     }).join('');
     return `<svg viewBox="0 0 100 100" class="wheel ${mine ? 'turn' : ''}" role="img" aria-label="Rueda de ${esc(c.name)}">
-      ${dots}
+      ${dots}${bare ? '</svg>' : ''}`
+      + (bare ? '' : `
       <text x="50" y="44" font-size="17" text-anchor="middle" dominant-baseline="central" fill="currentColor" font-weight="800" data-timer="${pi}">${clock(c.remainingMs)}</text>
       <text x="50" y="58" font-size="5" text-anchor="middle" fill="currentColor" font-weight="700">${esc(c.name.slice(0, 18))}</text>
       <text x="50" y="66" font-size="4.6" text-anchor="middle" fill="currentColor"><tspan fill="#35c97a">✔ ${c.hits}</tspan>  <tspan fill="#f07a7a">✘ ${c.misses}</tspan></text>
-    </svg>`;
+    </svg>`);
   }
   // Mantiene los relojes al día entre un aviso del servidor y el siguiente
   function startClocks(getState) {
@@ -211,7 +213,17 @@
     const leave = () => { document.body.classList.remove('wheel-screen', 'obs'); };
     const off = watch(id, (s) => {
       st = s;
-      $('#pw').innerHTML = `${kind === 'obs' ? '' : `<h1 class="pw-title">${esc(st.name)}</h1>`}
+      if (kind === 'obs') {
+        // En OBS: solo la rueda del concursante en turno, con el centro libre para su cámara,
+        // y el reloj con el marcador en una esquina.
+        $('#pw').innerHTML = `<div class="obs-corner">${st.players.map((c, i) => `<div class="obs-player ${i === st.turn && !st.finished ? 'on' : ''}">
+            <span class="obs-clock" data-timer="${i}">${clock(c.remainingMs)}</span>
+            <span class="obs-name">${esc(c.name)}</span>
+            <span class="obs-score"><b class="ok">✔ ${c.hits}</b> <b class="ko">✘ ${c.misses}</b></span></div>`).join('')}</div>
+          <div class="obs-wheel">${wheelSVG(st, st.turn, false, true)}</div>`;
+        return;
+      }
+      $('#pw').innerHTML = `<h1 class="pw-title">${esc(st.name)}</h1>
         <div class="wheels n${st.players.length}">${st.players.map((_, i) => `<div class="wheel-box ${i === st.turn && !st.finished ? 'on' : 'off'}">${wheelSVG(st, i)}</div>`).join('')}</div>`;
     }, () => { leave(); if (location.hash === `#/${kind}`) route(); else location.hash = `#/${kind}`; });
     return () => { off(); stopClocks(); leave(); };
