@@ -94,8 +94,14 @@ table.list th { font-size: .8rem; text-transform: uppercase; letter-spacing: .05
 .cell .emo { font-size: clamp(1.3rem, 6vw, 2rem); line-height: 1; }
 .cell small { font-size: .55rem; font-weight: 600; display: block; margin-top: 3px; }
 .cell.free { background: #ebe6fb; font-size: .7rem; letter-spacing: .05em; }
+/* sombra suave de la figura que se está llenando */
+.cell.hint { background: #e3dcfa; border-color: #a99be6; }
+.cell.free.hint { background: #d3c8f5; }
 .cell.marked { background: var(--mark); color: #fff; border-color: var(--mark); }
 .cell.green { background: var(--win); color: #fff; border-color: var(--win); }
+.cell.nope { animation: nope .3s; border-color: var(--danger); }
+@keyframes nope { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+body.playing .top nav { display: none; }
 button.cell { cursor: pointer; }
 .bingo-banner { background: var(--win); color: #fff; text-align: center; font-weight: 900; font-size: 2rem; letter-spacing: .2em; border-radius: var(--radius); padding: 14px; margin-bottom: 16px; animation: pop .5s; }
 @keyframes pop { from { transform: scale(.6); opacity: 0; } }

@@ -331,6 +331,23 @@ app.post('/api/sessions/:sid/mark', (req, res) => {
   res.json({ marks: s.marks[b.cardNo] });
 });
 
+// Marca por el participante todos los valores ya anunciados que le falten
+app.post('/api/sessions/:sid/sync', (req, res) => {
+  const s = db.sessions[req.params.sid];
+  const pl = s && s.players[(req.body || {}).token];
+  if (!pl) return fail(res, 403, 'No estás en esta sesión');
+  const drawn = new Set(s.drawn);
+  const marks = {};
+  for (const cardNo of pl.cards) {
+    const all = [];
+    cardOf(s, cardNo).forEach((v, i) => { if (v !== 0 && drawn.has(v)) all.push(i); });
+    marks[cardNo] = s.marks[cardNo] = all;
+  }
+  evaluate(s);
+  broadcast(s);
+  res.json({ marks, state: publicState(s) });
+});
+
 // Flujo de eventos en tiempo real (anfitrión, participantes y tablero)
 app.get('/api/sessions/:sid/events', (req, res) => {
   const s = db.sessions[req.params.sid];

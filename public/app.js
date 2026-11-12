@@ -83,12 +83,13 @@ function boardHTML(g, drawn, pick = false) {
   });
   return `<div class="board ${text ? 'text' : ''} ${pick ? 'pick' : ''}" style="--per:${per}">${rows.join('')}</div>`;
 }
-function cardHTML(g, cells, { no = '', marks = 0, green = 0 } = {}) {
+function cardHTML(g, cells, { no = '', marks = 0, green = 0, hint = 0 } = {}) {
   const txt = g.format === 'words' ? 'txt' : '';
   const body = cells.map((v, i) => {
     const cls = v === 0 ? 'free' : green & (1 << i) ? 'green' : marks & (1 << i) ? 'marked' : '';
+    const h = hint & (1 << i) ? 'hint' : '';
     const g2 = v === 0 && green & (1 << i) ? 'green' : '';
-    return `<button class="cell ${txt} ${cls} ${g2}" data-i="${i}">${cellInner(g, v)}</button>`;
+    return `<button class="cell ${txt} ${cls} ${g2} ${h}" data-i="${i}">${cellInner(g, v)}</button>`;
   }).join('');
   return `<div class="card" data-no="${esc(no)}">
     ${no !== '' ? `<div class="card-top"><span>Cartón</span><span>#${esc(no)}</span></div>` : ''}
@@ -379,7 +380,9 @@ views.jugar = async (sid) => {
   app.innerHTML = `<div id="banner"></div>
     <div class="panel"><h2 id="title" style="margin:0"></h2><span class="muted small" id="meta"></span><div id="pats" style="margin-top:8px"></div></div>
     <div class="now" id="now"></div>
-    <div class="cards" id="cards"></div>`;
+    <div class="cards" id="cards"></div>
+    <button class="primary big" id="sync" style="margin-top:16px">↻ Actualizar y marcar lo que falta</button>
+    <p class="muted small" style="margin-top:8px">Marca por ti los valores ya anunciados que se te pasaron.</p>`;
   const render = () => {
     if (round !== null && st.round !== round) me.cards.forEach((c) => marks[c.no].clear());
     round = st.round;
@@ -389,11 +392,13 @@ views.jugar = async (sid) => {
     $('#now').innerHTML = `${ballHTML(st, st.drawn.at(-1), 'mid')}<div><div class="small"><b>Valor actual</b> · anteriores:</div>
       <div class="history">${st.drawn.slice(-7, -1).reverse().map((v) => `<span>${esc(plain(st, v))}</span>`).join('') || '<span>—</span>'}</div></div>`;
     const mine = st.results.filter((r) => r.validated && marks[r.cardNo]);
+    // Sombra de la figura: solo para patrones con una única forma (X, T, marco…)
+    const hint = st.patterns.reduce((a, id) => (PATTERNS.byId[id].variants.length === 1 ? a | PATTERNS.byId[id].variants[0] : a), 0);
     $('#banner').innerHTML = mine.length ? '<div class="bingo-banner">¡BINGO!</div>' : '';
     $('#cards').innerHTML = me.cards.map((c) => {
       const m = maskOf(c);
       const green = mine.filter((r) => r.cardNo === c.no).reduce((g, r) => g | PATTERNS.completed(r.pattern, m), 0);
-      return cardHTML(st, c.cells, { no: me.startNumber + c.no - 1, marks: m, green });
+      return cardHTML(st, c.cells, { no: me.startNumber + c.no - 1, marks: m, green, hint });
     }).join('');
   };
   $('#cards').onclick = async (e) => {
@@ -404,12 +409,33 @@ views.jugar = async (sid) => {
     const v = c.cells[i];
     if (v === 0) return;
     const on = !marks[c.no].has(i);
-    if (on && !st.drawn.includes(v)) return toast('Ese valor todavía no ha sido anunciado');
+    if (on && !st.drawn.includes(v)) {
+      cell.classList.remove('nope');
+      void cell.offsetWidth; // reinicia la animación
+      cell.classList.add('nope');
+      return toast('Ese valor todavía no ha salido: no se puede marcar');
+    }
     on ? marks[c.no].add(i) : marks[c.no].delete(i);
     render();
     try { await api('POST', `/api/sessions/${sid}/mark`, { token: me.token, cardNo: c.no, cell: i, on }); } catch (err) { on ? marks[c.no].delete(i) : marks[c.no].add(i); render(); fail(err); }
   };
-  return subscribe(sid, (s) => { st = s; render(); }, () => { store.del(key); ended(); });
+  $('#sync').onclick = async (e) => {
+    e.target.disabled = true;
+    try {
+      const r = await api('POST', `/api/sessions/${sid}/sync`, { token: me.token });
+      let added = 0;
+      me.cards.forEach((c) => { const next = new Set(r.marks[c.no] || []); added += Math.max(0, next.size - marks[c.no].size); marks[c.no] = next; });
+      st = r.state;
+      round = st.round;
+      render();
+      toast(added ? `Se ${added === 1 ? 'marcó 1 casilla' : `marcaron ${added} casillas`} que faltaban` : 'Todo al día: no te falta marcar nada');
+    } catch (err) { fail(err); }
+    e.target.disabled = false;
+  };
+  // Durante la partida se oculta el menú para que nadie salga por error a las herramientas sueltas
+  document.body.classList.add('playing');
+  const off = subscribe(sid, (s) => { st = s; render(); }, () => { store.del(key); document.body.classList.remove('playing'); ended(); });
+  return () => { off(); document.body.classList.remove('playing'); };
 };
 
 views.tablero = async (sid) => {
