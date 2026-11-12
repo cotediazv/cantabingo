@@ -7,30 +7,46 @@
   const obsUrl = () => `${location.origin}${location.pathname}#/obs`;
   const clock = (ms) => { const s = Math.ceil(ms / 1000); return s >= 60 ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : String(s); };
 
-  // La rueda se dibuja en SVG para que escale igual en un celular, una TV o una fuente de OBS
-  // bare: sin nada en el centro, para dejar ver la cámara del concursante
+  // La rueda se dibuja en SVG para que escale igual en un celular, una TV o una fuente de OBS.
+  // bare: sin nada en el centro, para dejar ver la cámara del concursante.
+  const DEFS = `<defs>
+    <linearGradient id="wg-ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff4fa3"/><stop offset=".22" stop-color="#ff9a3d"/><stop offset=".42" stop-color="#ffe14d"/>
+      <stop offset=".62" stop-color="#3fe08f"/><stop offset=".82" stop-color="#35c6ff"/><stop offset="1" stop-color="#9b5cff"/>
+    </linearGradient>
+    <radialGradient id="wg-pending" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#7f9dff"/><stop offset="1" stop-color="#2f2bd0"/></radialGradient>
+    <radialGradient id="wg-hit" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#7dffb5"/><stop offset="1" stop-color="#0f9d58"/></radialGradient>
+    <radialGradient id="wg-miss" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ff9c9c"/><stop offset="1" stop-color="#d01f3c"/></radialGradient>
+    <radialGradient id="wg-pass" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff3a6"/><stop offset="1" stop-color="#f59e0b"/></radialGradient>
+    <filter id="wg-shadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy=".5" stdDeviation=".7" flood-color="#000" flood-opacity=".45"/></filter>
+    <filter id="wg-glow" x="-80%" y="-80%" width="260%" height="260%"><feDropShadow dx="0" dy="0" stdDeviation="1.6" flood-color="#ffe14d" flood-opacity=".95"/></filter>
+  </defs>`;
   function wheelSVG(st, pi, pick = false, bare = false) {
     const c = st.players[pi];
     const n = st.letters.length;
-    const R = 42;
-    const r = Math.min(6.2, ((2 * Math.PI * R) / n) * 0.44);
+    const R = 42.5;
+    const r = Math.min(6.4, ((2 * Math.PI * R) / n) * 0.46);
     const mine = st.turn === pi;
     const dots = st.letters.map((ch, i) => {
       const a = -Math.PI / 2 + (2 * Math.PI * i) / n;
       const x = (50 + R * Math.cos(a)).toFixed(2);
       const y = (50 + R * Math.sin(a)).toFixed(2);
+      const status = c.status[i];
       const cur = mine && c.active && i === c.current;
-      return `<g class="${cur ? 'cur' : ''} ${pick ? 'pick' : ''}" data-letter="${i}" data-player="${pi}">
-        <circle cx="${x}" cy="${y}" r="${cur ? r * 1.2 : r}" fill="${COLORS[c.status[i]]}" stroke="${cur ? '#fff' : 'rgba(0,0,0,.35)'}" stroke-width="${cur ? 1.1 : 0.4}"/>
-        <text x="${x}" y="${y}" font-size="${(r * 1.15).toFixed(2)}" text-anchor="middle" dominant-baseline="central" fill="#fff" font-weight="800">${esc(ch)}</text></g>`;
+      return `<g class="${cur ? 'cur' : ''} ${pick ? 'pick' : ''}" data-letter="${i}" data-player="${pi}" filter="url(#${cur ? 'wg-glow' : 'wg-shadow'})">
+        <circle cx="${x}" cy="${y}" r="${cur ? r * 1.22 : r}" fill="url(#wg-${status})" stroke="${cur ? '#ffe14d' : '#fff'}" stroke-width="${cur ? 1.3 : 0.55}"/>
+        <text x="${x}" y="${y}" font-size="${(r * (cur ? 1.4 : 1.15)).toFixed(2)}" text-anchor="middle" dominant-baseline="central" fill="${status === 'pass' ? '#4a2c00' : '#fff'}" font-weight="700">${esc(ch)}</text></g>`;
     }).join('');
-    return `<svg viewBox="0 0 100 100" class="wheel ${mine ? 'turn' : ''}" role="img" aria-label="Rueda de ${esc(c.name)}">
-      ${dots}${bare ? '</svg>' : ''}`
-      + (bare ? '' : `
-      <text x="50" y="44" font-size="17" text-anchor="middle" dominant-baseline="central" fill="currentColor" font-weight="800" data-timer="${pi}">${clock(c.remainingMs)}</text>
-      <text x="50" y="58" font-size="5" text-anchor="middle" fill="currentColor" font-weight="700">${esc(c.name.slice(0, 18))}</text>
-      <text x="50" y="66" font-size="4.6" text-anchor="middle" fill="currentColor"><tspan fill="#35c97a">✔ ${c.hits}</tspan>  <tspan fill="#f07a7a">✘ ${c.misses}</tspan></text>
-    </svg>`);
+    const center = bare ? '' : `
+      <text x="50" y="44" font-size="17" text-anchor="middle" dominant-baseline="central" fill="currentColor" font-weight="700" data-timer="${pi}">${clock(c.remainingMs)}</text>
+      <text x="50" y="58" font-size="5" text-anchor="middle" fill="currentColor" font-weight="600">${esc(c.name.slice(0, 18))}</text>
+      <text x="50" y="66" font-size="4.6" text-anchor="middle" fill="currentColor"><tspan fill="#35c97a">✔ ${c.hits}</tspan>  <tspan fill="#f07a7a">✘ ${c.misses}</tspan></text>`;
+    return `<svg viewBox="0 0 100 100" class="wheel ${mine ? 'turn' : ''}" role="img" aria-label="Rueda de ${esc(c.name)}">${DEFS}
+      <circle cx="50" cy="50" r="${R}" fill="none" stroke="url(#wg-ring)" stroke-width="${(r * 1.5).toFixed(2)}" opacity=".9"/>
+      <circle cx="50" cy="50" r="${(R + r * 0.75).toFixed(2)}" fill="none" stroke="#fff" stroke-width=".35" opacity=".8"/>
+      <circle cx="50" cy="50" r="${(R - r * 0.75).toFixed(2)}" fill="none" stroke="#fff" stroke-width=".35" opacity=".8"/>
+      ${dots}${center}
+    </svg>`;
   }
   // Mantiene los relojes al día entre un aviso del servidor y el siguiente
   function startClocks(getState) {
@@ -206,6 +222,17 @@
       id = list[0].id;
     }
     let st = null;
+    let lastQuestion = null;
+    // Tarjeta de la pregunta: insignia con la letra, encabezado («Con la A») y el enunciado
+    const questionCard = (state) => {
+      if (!state.question) return '';
+      const cut = state.question.indexOf(': ');
+      const head = cut > 0 ? state.question.slice(0, cut) : '';
+      const body = cut > 0 ? state.question.slice(cut + 2) : state.question;
+      const c = state.players[state.turn];
+      return `<aside class="obs-question ${state.question !== lastQuestion ? 'pop' : ''}"><span class="obs-badge">${esc(state.letters[c.current])}</span>
+        ${head ? `<span class="obs-head">${esc(head)}</span>` : ''}<span class="obs-text">${esc(body)}</span></aside>`;
+    };
     document.body.classList.add('wheel-screen');
     if (kind === 'obs') document.body.classList.add('obs');
     app.innerHTML = '<div id="pw"></div>';
@@ -221,7 +248,8 @@
             <span class="obs-name">${esc(c.name)}</span>
             <span class="obs-score"><b class="ok">✔ ${c.hits}</b> <b class="ko">✘ ${c.misses}</b></span></div>`).join('')}</div>
           <div class="obs-wheel">${wheelSVG(st, st.turn, false, true)}</div>
-          ${st.question ? `<div class="obs-question">${esc(st.question)}</div>` : ''}`;
+          ${questionCard(st)}`;
+        lastQuestion = st.question;
         return;
       }
       $('#pw').innerHTML = `<h1 class="pw-title">${esc(st.name)}</h1>
