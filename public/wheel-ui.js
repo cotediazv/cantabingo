@@ -161,7 +161,7 @@
             <button class="danger" id="w-reset">Reiniciar</button>
             ${fromBank ? '<button id="w-newq">↻ Preguntas nuevas</button>' : ''}
           </div>
-          <p class="muted small" style="margin-top:12px">Teclado: A acierto, F fallo, P paso, Espacio inicia o pausa el reloj. Toca una letra del rosco para saltar a ella o reabrirla.</p>
+          <p class="muted small" style="margin-top:12px">Teclado: A acierto, F fallo, P paso, Espacio inicia o pausa las preguntas y el reloj. Toca una letra del rosco para saltar a ella o reabrirla.</p>
         </div>
         <div class="panel"><div class="wheels" id="w-wheels"></div></div>
       </div>
@@ -175,10 +175,12 @@
       $('#w-turn').textContent = st.finished ? 'Juego terminado' : `Turno de ${c.name}`;
       $('#w-letter').textContent = c.active ? st.letters[c.current] : '—';
       const q = (questions[st.turn] || [])[c.current] || {};
+      // La pregunta y su respuesta se muestran al moderador solo con el reloj en marcha
       $('#w-question').innerHTML = !c.active ? '<span class="muted">Este concursante ya terminó su rosco.</span>'
+        : !st.runningSince ? '<span class="muted">Pulsa «Iniciar preguntas» para ver la pregunta de esta letra.</span>'
         : q.q ? `${q.cat ? `<div class="small muted" style="margin-bottom:6px">${TAGS[q.cat]} · ${q.level === 'f' ? 'Fácil' : 'Medio'}</div>` : ''}<div>${esc(q.q)}</div>${q.a ? `<div class="w-answer">Respuesta: <b>${esc(q.a)}</b></div>` : ''}` : '<span class="muted">Sin pregunta cargada para esta letra: léela de tu guion.</span>';
       $$('.w-keys button').forEach((b) => { b.disabled = !c.active; });
-      $('#w-clock').textContent = st.runningSince ? '⏸ Pausar reloj' : '▶ Iniciar reloj';
+      $('#w-clock').textContent = st.runningSince ? '⏸ Pausar' : '▶ Iniciar preguntas';
       $('#w-clock').disabled = !c.active;
       $('#w-undo').disabled = !st.canUndo;
       $('#w-swap').hidden = st.players.length < 2;
