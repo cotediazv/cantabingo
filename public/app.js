@@ -128,12 +128,24 @@ function subscribe(sid, onState, onGone) {
 // Enlaces fijos: siempre llevan a la sesión activa, así el QR no cambia de una partida a otra
 const joinUrl = () => `${location.origin}${location.pathname}#/jugar`;
 const boardUrl = () => `${location.origin}${location.pathname}#/tablero`;
-const currentSession = async () => (await api('GET', '/api/current').catch(() => ({}))).id || null;
+const activeSessions = async () => (await api('GET', '/api/current').catch(() => ({}))).sessions || [];
+// Resuelve el enlace fijo: sin sesiones espera, con una entra directo y con varias deja elegir.
+// Devuelve { sid } para continuar o { cleanup } si ya dibujó la pantalla.
+async function pickSession(kind) {
+  const list = await activeSessions();
+  if (!list.length) return { cleanup: waiting() };
+  const mine = list.find((s) => store.get(`tok_${s.id}`)); // ya estaba jugando en una de ellas
+  if (list.length === 1 || (kind === 'jugar' && mine)) return { sid: (mine || list[0]).id };
+  app.innerHTML = `<div class="panel" style="max-width:520px;margin:6vh auto 0"><h1>Elige tu bingo</h1>
+    <p class="muted">Hay ${list.length} partidas abiertas. Toca la que te indicó el moderador.</p>
+    <div style="display:grid;gap:10px;margin-top:14px">${list.map((s) => `<a class="btn primary" style="text-align:center;padding:14px;font-size:1.1rem;border-radius:14px" href="#/${kind}/${s.id}">${esc(s.name)} ${s.locked ? '🔒' : ''}<br><span class="small" style="font-weight:400">Ronda ${s.round}</span></a>`).join('')}</div></div>`;
+  return { cleanup: undefined };
+}
 // Pantalla de espera: revisa cada pocos segundos si el moderador ya abrió una partida
 function waiting() {
   app.innerHTML = `<div class="panel" style="max-width:460px;margin:8vh auto 0;text-align:center"><h1>Todavía no hay partida</h1>
     <p class="muted">Cuando el moderador inicie el bingo, esta pantalla cambiará sola. No cierres la página.</p></div>`;
-  const timer = setInterval(async () => { if (await currentSession()) route(); }, 5000);
+  const timer = setInterval(async () => { if ((await activeSessions()).length) route(); }, 5000);
   return () => clearInterval(timer);
 }
 const qr = (text) => `<img class="qr" alt="Código QR" src="/api/qr?text=${encodeURIComponent(text)}">`;
@@ -381,15 +393,15 @@ views.sesiones = async () => {
 };
 
 views.jugar = async (sid) => {
-  const fixed = !sid;
-  if (fixed) { sid = await currentSession(); if (!sid) return waiting(); }
+  if (!sid) { const r = await pickSession('jugar'); if (!r.sid) return r.cleanup; sid = r.sid; }
+  const backToStart = () => { if (location.hash === '#/jugar') route(); else location.hash = '#/jugar'; };
   const key = `tok_${sid}`;
   let me = null;
   const token = store.get(key);
   if (token) me = await api('POST', `/api/sessions/${sid}/join`, { token }).catch(() => null);
   if (!me) {
     let info;
-    try { info = await api('GET', `/api/sessions/${sid}`); } catch { return ended(); }
+    try { info = await api('GET', `/api/sessions/${sid}`); } catch { backToStart(); return undefined; }
     app.innerHTML = `<form class="panel" id="f" style="max-width:460px;margin:0 auto">
       <h1>${esc(info.name)}</h1><p class="muted">Recibirás ${info.cardsPerPlayer} ${info.cardsPerPlayer > 1 ? 'cartones' : 'cartón'} en este dispositivo. No necesitas cuenta.</p>
       <div class="fields" style="grid-template-columns:1fr">
@@ -474,12 +486,11 @@ views.jugar = async (sid) => {
     } catch (err) { fail(err); }
     e.target.disabled = false;
   };
-  return subscribe(sid, (s) => { st = s; render(); }, () => { store.del(key); if (fixed) route(); else ended(); });
+  return subscribe(sid, (s) => { st = s; render(); }, () => { store.del(key); backToStart(); });
 };
 
 views.tablero = async (sid) => {
-  const fixed = !sid;
-  if (fixed) { sid = await currentSession(); if (!sid) return waiting(); }
+  if (!sid) { const r = await pickSession('tablero'); if (!r.sid) return r.cleanup; sid = r.sid; }
   document.body.classList.add('tv');
   app.innerHTML = '<div id="tv"></div>';
   const off = subscribe(sid, (st) => {
@@ -489,7 +500,7 @@ views.tablero = async (sid) => {
         ${drawsHTML(st, st.drawn)}
         ${qr(joinUrl(sid))}
       </div>${boardHTML(st, st.drawn)}`;
-  }, () => { document.body.classList.remove('tv'); if (fixed) route(); else ended(); });
+  }, () => { document.body.classList.remove('tv'); if (location.hash === '#/tablero') route(); else location.hash = '#/tablero'; });
   return () => { off(); document.body.classList.remove('tv'); };
 };
 

@@ -308,10 +308,10 @@ app.get('/api/sessions/:sid/host', (req, res) => {
   if (s) res.json({ password: s.password, isPublic: s.isPublic });
 });
 
-// Sesión activa más reciente: a ella llevan el enlace y el QR fijos
+// Sesiones activas: a ellas llevan el enlace y el QR fijos
 app.get('/api/current', (_req, res) => {
-  const s = Object.values(db.sessions).sort((a, b) => b.created - a.created)[0];
-  res.json({ id: s ? s.id : null });
+  res.json({ sessions: Object.values(db.sessions).sort((a, b) => b.created - a.created)
+    .map((s) => ({ id: s.id, name: s.name, round: s.round, locked: !!s.password })) });
 });
 
 // Lista pública de sesiones activas
