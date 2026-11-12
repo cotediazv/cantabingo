@@ -97,9 +97,10 @@ table.list th { font-size: .8rem; text-transform: uppercase; letter-spacing: .05
 .cell small { font-size: .55rem; font-weight: 600; display: block; margin-top: 3px; }
 .cell.free { background: var(--line); font-size: .7rem; letter-spacing: .05em; }
 /* sombra suave de la figura que se está llenando */
-.cell.hint { background: #453c8c; border-color: #8f82ee; }
+.cell.hint { background: #4b4196; border: 2px solid #a79bff; }
 .cell.free.hint { background: #5a4fb0; }
 .cell.marked { background: var(--mark); color: #fff; border-color: var(--mark); }
+.cell.marked.hint { border: 3px solid #ffe7c2; }
 .cell.green { background: var(--win); color: #fff; border-color: var(--win); }
 .cell.nope { animation: nope .3s; border-color: var(--danger); }
 @keyframes nope { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }

@@ -390,13 +390,18 @@ views.jugar = async (sid) => {
     $('#now').innerHTML = `${ballHTML(st, st.drawn.at(-1), 'mid')}<div><div class="small"><b>Valor actual</b> · anteriores:</div>
       <div class="history">${st.drawn.slice(-7, -1).reverse().map((v) => `<span>${esc(plain(st, v))}</span>`).join('') || '<span>—</span>'}</div></div>`;
     const mine = st.results.filter((r) => r.validated && marks[r.cardNo]);
-    // Sombra de la figura: solo para patrones con una única forma (X, T, marco…)
-    const hint = st.patterns.reduce((a, id) => (PATTERNS.byId[id].variants.length === 1 ? a | PATTERNS.byId[id].variants[0] : a), 0);
+    // Sombra de la figura. Si el patrón admite varias formas (cualquier línea, dos líneas…),
+    // se sombrea la que este cartón lleva más avanzada.
+    const bits = (x) => { let n = 0; for (; x; x &= x - 1) n++; return n; };
+    const hintFor = (m) => st.patterns.reduce((a, id) => {
+      const best = PATTERNS.byId[id].variants.reduce((p, v) => (bits(v & m) / bits(v) > bits(p & m) / bits(p) ? v : p));
+      return a | best;
+    }, 0);
     $('#banner').innerHTML = mine.length ? '<div class="bingo-banner">¡BINGO!</div>' : '';
     $('#cards').innerHTML = me.cards.map((c) => {
       const m = maskOf(c);
       const green = mine.filter((r) => r.cardNo === c.no).reduce((g, r) => g | PATTERNS.completed(r.pattern, m), 0);
-      return cardHTML(st, c.cells, { no: me.startNumber + c.no - 1, marks: m, green, hint });
+      return cardHTML(st, c.cells, { no: me.startNumber + c.no - 1, marks: m, green, hint: hintFor(m) });
     }).join('');
   };
   $('#cards').onclick = async (e) => {
