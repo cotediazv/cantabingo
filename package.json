@@ -1,0 +1,16 @@
+{
+  "name": "bingo-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Generador de cartones de bingo y sesiones virtuales en tiempo real",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "qrcode": "^1.5.4"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
