@@ -82,13 +82,26 @@
         <label class="f">Segundos por concursante <span class="hint">20 a 900</span><input type="number" name="seconds" min="20" max="900" value="150"></label>
         <label class="f wide">Letras de la rueda <span class="hint">en el orden en que giran</span><input type="text" name="letters" maxlength="40" value="${DEFAULT_LETTERS}"></label>
         <label class="f wide">Concursantes <span class="hint">uno por línea, de 1 a 4; cada uno tiene su rueda y su reloj</span><textarea name="players" style="min-height:90px">Concursante 1</textarea></label>
-        <label class="f wide">Preguntas <span class="hint">opcional, solo las ves tú. Una por línea: <b>Letra; definición; respuesta</b>. Separa las de cada concursante con una línea <b>---</b></span>
+        <label class="f">Preguntas<select name="source"><option value="bank">Automáticas, del banco de preguntas</option><option value="own">Las escribo yo</option></select></label>
+        <div class="wide" id="bank-opts">
+          <div class="row"><b class="small">Temas:</b>
+            <label class="check"><input type="checkbox" name="cat" value="g" checked> Cultura general</label>
+            <label class="check"><input type="checkbox" name="cat" value="m" checked> Música</label>
+            <label class="check"><input type="checkbox" name="cat" value="a" checked> Arte</label></div>
+          <div class="row" style="margin-top:8px"><b class="small">Nivel:</b>
+            <label class="check"><input type="checkbox" name="level" value="f" checked> Fácil</label>
+            <label class="check"><input type="checkbox" name="level" value="m" checked> Medio</label></div>
+          <p class="muted small" style="margin-top:8px">Cada rueda nueva toma las preguntas que menos se han usado, así van rotando solas. Solo las ves tú.</p>
+        </div>
+        <label class="f wide" id="own-opts" hidden>Tus preguntas <span class="hint">una por línea: <b>Letra; definición; respuesta</b>. Separa las de cada concursante con una línea <b>---</b></span>
           <textarea name="questions" placeholder="A; Con la A: fruto del manzano; manzana\nB; Con la B: embarcación pequeña; bote"></textarea></label>
         <div class="wide"><button class="primary big">Crear la rueda</button></div>
       </form>`;
+    $('#wf').source.onchange = (e) => { $('#bank-opts').hidden = e.target.value !== 'bank'; $('#own-opts').hidden = e.target.value !== 'own'; };
     $('#wf').onsubmit = async (e) => {
       e.preventDefault();
-      const d = Object.fromEntries(new FormData(e.target));
+      const fd = new FormData(e.target);
+      const d = Object.fromEntries(fd);
       const questions = d.questions.split(/^\s*-{3,}\s*$/m).map((block) => {
         const map = {};
         block.split(/\r?\n/).forEach((line) => {
@@ -98,7 +111,7 @@
         return map;
       });
       try {
-        const w = await api('POST', '/api/wheels', { name: d.name, seconds: d.seconds, letters: d.letters, players: d.players.split(/\r?\n/), questions });
+        const w = await api('POST', '/api/wheels', { name: d.name, seconds: d.seconds, letters: d.letters, players: d.players.split(/\r?\n/), source: d.source, cats: fd.getAll('cat'), levels: fd.getAll('level'), questions });
         location.hash = `#/ruedactl/${w.id}`;
       } catch (err) { fail(err); }
     };
@@ -109,7 +122,8 @@
   views.ruedactl = async (id) => {
     if (!(await isAdmin())) return viewLogin();
     const first = await api('GET', `/api/wheels/${id}`);
-    const { questions } = first;
+    const { questions, fromBank } = first;
+    const TAGS = { g: 'Cultura general', m: 'Música', a: 'Arte', f: 'Fácil' };
     let st = null;
     const act = (action, extra) => api('POST', `/api/wheels/${id}/act`, { action, ...extra }).catch(fail);
     app.innerHTML = `<p class="back"><a href="#/ruedas">← Ruedas</a></p>
@@ -127,6 +141,7 @@
             <button data-do="undo" id="w-undo">↶ Deshacer</button>
             <button data-do="turn" id="w-swap">Cambiar turno</button>
             <button class="danger" id="w-reset">Reiniciar</button>
+            ${fromBank ? '<button id="w-newq">↻ Preguntas nuevas</button>' : ''}
           </div>
           <p class="muted small" style="margin-top:12px">Teclado: A acierto, F fallo, P paso, Espacio inicia o pausa el reloj. Toca una letra de la rueda para saltar a ella o reabrirla.</p>
         </div>
@@ -143,7 +158,7 @@
       $('#w-letter').textContent = c.active ? st.letters[c.current] : '—';
       const q = (questions[st.turn] || [])[c.current] || {};
       $('#w-question').innerHTML = !c.active ? '<span class="muted">Este concursante ya terminó su rueda.</span>'
-        : q.q ? `<div>${esc(q.q)}</div>${q.a ? `<div class="w-answer">Respuesta: <b>${esc(q.a)}</b></div>` : ''}` : '<span class="muted">Sin pregunta cargada para esta letra: léela de tu guion.</span>';
+        : q.q ? `${q.cat ? `<div class="small muted" style="margin-bottom:6px">${TAGS[q.cat]} · ${q.level === 'f' ? 'Fácil' : 'Medio'}</div>` : ''}<div>${esc(q.q)}</div>${q.a ? `<div class="w-answer">Respuesta: <b>${esc(q.a)}</b></div>` : ''}` : '<span class="muted">Sin pregunta cargada para esta letra: léela de tu guion.</span>';
       $$('.w-keys button').forEach((b) => { b.disabled = !c.active; });
       $('#w-clock').textContent = st.runningSince ? '⏸ Pausar reloj' : '▶ Iniciar reloj';
       $('#w-clock').disabled = !c.active;
@@ -160,6 +175,10 @@
     };
     $('#w-clock').onclick = toggleClock;
     $('#w-reset').onclick = () => { if (confirm('¿Reiniciar la rueda? Se borran aciertos, fallos y relojes.')) act('reset'); };
+    if (fromBank) $('#w-newq').onclick = async () => {
+      if (!confirm('¿Cambiar todas las preguntas por otras del banco? La rueda se reinicia.')) return;
+      try { await api('POST', `/api/wheels/${id}/newquestions`); route(); } catch (err) { fail(err); }
+    };
     const onKey = (e) => {
       if (!st || e.ctrlKey || e.metaKey || e.altKey || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
       const k = e.key.toLowerCase();

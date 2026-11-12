@@ -1,12 +1,14 @@
 // Juego «Rueda de palabras»: una rueda de letras por concursante, con reloj.
 // El moderador marca acierto, fallo o paso desde su panel; el público solo ve la rueda.
 const crypto = require('crypto');
+const { BANK, CONTAINS } = require('./questions-bank.js');
 
 const LETTERS = 'ABCDEFGHIJLMNÑOPQRSTUVXYZ';
 const OPEN = (st) => st === 'pending' || st === 'pass';
 
 module.exports = function wheelGame({ app, db, save, requireAdmin, fail }) {
   db.wheels ||= {};
+  db.bankUsed ||= {}; // cuántas veces se ha usado cada pregunta del banco
   const clients = {}; // id -> Set<res>
   const timers = {}; // id -> temporizador de fin de reloj
   for (const w of Object.values(db.wheels)) { w.runningSince = null; w.history = []; } // tras reiniciar, el reloj queda en pausa
@@ -19,6 +21,25 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail }) {
     do out = Array.from(crypto.randomBytes(6), (b) => abc[b % abc.length]).join(''); while (db.wheels[out]);
     return out;
   };
+
+  // Elige del banco una pregunta por letra y concursante. Prefiere siempre las menos usadas,
+  // así las preguntas van rotando solas de una partida a la siguiente.
+  function pickQuestions(letters, nPlayers, cats, levels) {
+    const taken = new Set();
+    return Array.from({ length: nPlayers }, () => letters.map((ch) => {
+      const free = BANK.filter((b) => b.letter === ch && !taken.has(b.key));
+      const wanted = free.filter((b) => cats.includes(b.cat) && levels.includes(b.level));
+      const pool = wanted.length ? wanted : free; // si no hay de esa categoría para la letra, usa otra
+      if (!pool.length) return { q: '', a: '' };
+      const min = Math.min(...pool.map((b) => db.bankUsed[b.key] || 0));
+      const least = pool.filter((b) => (db.bankUsed[b.key] || 0) === min);
+      const b = least[crypto.randomInt(least.length)];
+      taken.add(b.key);
+      db.bankUsed[b.key] = (db.bankUsed[b.key] || 0) + 1;
+      return { q: `${CONTAINS.has(ch) ? 'Contiene la' : 'Con la'} ${ch}: ${b.q}`, a: b.a, cat: b.cat, level: b.level };
+    }));
+  }
+  const keep = (list, allowed, def) => { const out = (Array.isArray(list) ? list : []).filter((x) => allowed.includes(x)); return out.length ? out : def; };
 
   const freshPlayers = (w) => w.setup.players.map((name) => ({
     name, status: Array.from(w.letters, () => 'pending'), current: 0, remainingMs: w.seconds * 1000,
@@ -134,14 +155,15 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail }) {
     if (letters.length < 5) return fail(res, 400, 'La rueda necesita al menos 5 letras');
     const players = (Array.isArray(b.players) ? b.players : []).map((x) => str(x, 30)).filter(Boolean).slice(0, 4);
     if (!players.length) players.push('Concursante');
-    // Preguntas opcionales: por concursante, una por letra { q, a }
-    const questions = players.map((_, pi) => letters.map((ch) => {
+    // Preguntas: del banco (por defecto) o escritas por el moderador, una por letra { q, a }
+    const bank = b.source === 'own' ? null : { cats: keep(b.cats, ['g', 'm', 'a'], ['g', 'm', 'a']), levels: keep(b.levels, ['f', 'm'], ['f', 'm']) };
+    const questions = bank ? pickQuestions(letters, players.length, bank.cats, bank.levels) : players.map((_, pi) => letters.map((ch) => {
       const item = ((Array.isArray(b.questions) && b.questions[pi]) || {})[ch] || {};
       return { q: str(item.q, 300), a: str(item.a, 80) };
     }));
     const w = {
       id: newId(), name: str(b.name, 50, 'Rueda de palabras'), created: Date.now(), letters, seconds: clamp(b.seconds, 20, 900, 150),
-      setup: { players }, questions, turn: 0, runningSince: null, history: [],
+      setup: { players }, bank, questions, turn: 0, runningSince: null, history: [],
     };
     w.players = freshPlayers(w);
     db.wheels[w.id] = w;
@@ -149,7 +171,18 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail }) {
     res.json({ id: w.id });
   });
 
-  app.get('/api/wheels/:id', (req, res) => { const w = find(req, res); if (w) res.json({ ...publicState(w), questions: w.questions }); });
+  app.get('/api/wheels/:id', (req, res) => { const w = find(req, res); if (w) res.json({ ...publicState(w), questions: w.questions, fromBank: !!w.bank }); });
+
+  // Cambia todas las preguntas por otras del banco y reinicia la rueda
+  app.post('/api/wheels/:id/newquestions', (req, res) => {
+    const w = find(req, res);
+    if (!w) return;
+    if (!w.bank) return fail(res, 400, 'Esta rueda usa preguntas escritas a mano');
+    w.questions = pickQuestions(w.letters, w.players.length, w.bank.cats, w.bank.levels);
+    act(w, 'reset', {});
+    broadcast(w);
+    res.json({ ok: true });
+  });
 
   app.delete('/api/wheels/:id', (req, res) => {
     const w = find(req, res);
