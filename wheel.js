@@ -99,7 +99,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail }) {
         c.status[c.current] = action;
         const more = nextLetter(c);
         if (!more) { settle(w); passTurn(w); } // terminó su rueda
-        else if (action !== 'hit') passTurn(w); // fallo o paso: sigue otro, si queda alguno
+        else if (action !== 'hit') { settle(w); passTurn(w); } // fallo o paso: el reloj se detiene siempre y sigue otro, si queda alguno
         return null;
       }
       case 'start': run(w); return null;
