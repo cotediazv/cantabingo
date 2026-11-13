@@ -550,7 +550,8 @@ views.jugar = async (sid) => {
   app.innerHTML = `<div class="now" id="now"></div>
     <div id="banner"></div>
     <div class="cards" id="cards"></div>
-    <div class="live" id="live"><div id="live-player"></div></div>
+    <div class="live" id="live"><div id="live-player"></div>
+      <div class="live-bar"><button type="button" id="live-audio">🔇 Activar audio</button><button type="button" id="live-full">⛶ Pantalla completa</button></div></div>
     <button class="primary big" id="sync" style="margin-top:16px">↻ Actualizar y marcar lo que falta</button>
     <p class="muted small" style="margin-top:8px">Marca por ti los valores ya anunciados que se te pasaron.</p>
     <div class="panel" style="margin-top:20px"><h2 id="title" style="margin:0"></h2><span class="muted small" id="meta"></span><div id="pats" style="margin-top:8px"></div></div>`;
@@ -632,12 +633,33 @@ views.jugar = async (sid) => {
       const show = (on) => { const box = $('#live'); if (box) box.classList.toggle('on', on); };
       player.addEventListener(window.Twitch.Player.ONLINE, () => { show(true); try { player.setMuted(true); player.play(); } catch { /* el reproductor decide */ } });
       player.addEventListener(window.Twitch.Player.PLAYING, () => show(true));
-      player.addEventListener(window.Twitch.Player.OFFLINE, () => show(false));
-      player.addEventListener(window.Twitch.Player.ENDED, () => show(false));
+      player.addEventListener(window.Twitch.Player.OFFLINE, () => { show(false); setFull(false); });
+      player.addEventListener(window.Twitch.Player.ENDED, () => { show(false); setFull(false); });
     }).catch(() => { liveFor = null; }); // sin acceso a Twitch: simplemente no se muestra
   };
+  // Audio y pantalla completa, a elección de cada persona (parte siempre silenciado)
+  let muted = true;
+  $('#live-audio').onclick = () => {
+    if (!player) return;
+    muted = !muted;
+    try { player.setMuted(muted); if (!muted) { player.setVolume(1); player.play(); } } catch { /* el reproductor decide */ }
+    $('#live-audio').textContent = muted ? '🔇 Activar audio' : '🔊 Silenciar';
+  };
+  const setFull = (on) => {
+    $('#live').classList.toggle('full', on);
+    document.body.classList.toggle('live-open', on);
+    $('#live-full').textContent = on ? '✕ Cerrar' : '⛶ Pantalla completa';
+    // Donde el navegador lo permite, además se oculta su barra; en iPhone basta con la vista ampliada
+    try {
+      if (on && $('#live').requestFullscreen) $('#live').requestFullscreen().catch(() => {});
+      else if (!on && document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    } catch { /* sin pantalla completa nativa */ }
+  };
+  $('#live-full').onclick = () => setFull(!$('#live').classList.contains('full'));
+  const onFs = () => { if (!document.fullscreenElement && $('#live') && $('#live').classList.contains('full') && $('#live').requestFullscreen) setFull(false); };
+  document.addEventListener('fullscreenchange', onFs);
   const off = subscribe(sid, (s) => { st = s; render(); startLive(); }, () => { store.del(key); backToStart(); }, false, me.token);
-  return () => { off(); liveFor = null; player = null; };
+  return () => { off(); liveFor = null; player = null; document.removeEventListener('fullscreenchange', onFs); document.body.classList.remove('live-open'); };
 };
 // Canal de Twitch de cada local
 const LIVE_CHANNELS = { frida: 'krbstage', tobalaba: 'krbstage3', kennedy: 'krbstage3' };

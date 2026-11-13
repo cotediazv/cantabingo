@@ -630,3 +630,23 @@ body.full #rf .rf-dice { display: block; font-size: 22vh; line-height: 1; animat
 .live { width: 100%; max-width: 460px; margin: 0 auto; height: 0; overflow: hidden; border-radius: 14px; background: #000; }
 .live.on { height: auto; aspect-ratio: 16 / 9; margin-top: 14px; border: 1px solid rgba(255, 255, 255, .15); }
 .live #live-player, .live iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; pointer-events: none; }
+
+/* Transmisión: botones de audio y pantalla completa */
+.live.on { aspect-ratio: auto; }
+.live-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 6px; background: #14121f; }
+.live-bar button { padding: 9px 6px; font-size: .92rem; font-weight: 700; border-radius: 10px; }
+/* Vista ampliada: ocupa toda la pantalla; con el celular en vertical el video se gira para aprovecharla */
+body.live-open { overflow: hidden; }
+.live.full { position: fixed; inset: 0; z-index: 1000; max-width: none; height: auto; margin: 0; border: 0; border-radius: 0; display: grid; place-items: center; }
+.live.full #live-player { width: min(100vw, calc(100vh * 16 / 9)); }
+.live.full .live-bar { position: absolute; left: 50%; bottom: max(10px, env(safe-area-inset-bottom)); transform: translateX(-50%); background: rgba(0, 0, 0, .55); border-radius: 14px; width: min(92vw, 420px); }
+@media (orientation: portrait) {
+  .live.full #live-player { width: min(100vh, calc(100vw * 16 / 9)); transform: rotate(90deg); }
+  .live.full .live-bar { left: 10px; bottom: 50%; transform: translateY(50%) rotate(90deg); transform-origin: center; width: min(80vh, 420px); left: calc(10px - min(80vh, 420px) / 2 + 28px); }
+}
+/* Vista ampliada: el video va centrado de forma absoluta para que el giro no lo desplace */
+.live.full #live-player { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+@media (orientation: portrait) {
+  .live.full #live-player { transform: translate(-50%, -50%) rotate(90deg); }
+  .live.full .live-bar { left: 34px; top: 50%; bottom: auto; transform: translate(-50%, -50%) rotate(90deg); width: min(80vh, 420px); }
+}
