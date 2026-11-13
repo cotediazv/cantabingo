@@ -139,6 +139,7 @@ function publicState(s, full = false) {
     // Celebración a pantalla completa mientras haya ganadores y el moderador no la haya quitado
     bigQr: !!s.bigQr, tieWinner: s.tieWinner || null, rollMs: 6500,
     celebrate: !s.hideWin && s.results.some((r) => r.validated && !r.dismissed),
+    winConfirmed: s.results.some((r) => r.validated && !r.dismissed) && s.results.every((r) => !r.validated || r.dismissed || r.confirmed),
     patterns: s.patterns, drawn: s.drawn, results, finalists: s.finalists || null,
     auto: s.auto, cardsPerPlayer: s.cardsPerPlayer, totalCards: p.cards.length,
     players: Object.values(s.players).length,
@@ -164,7 +165,10 @@ function broadcast(s, now = false) {
   pending[s.id] = setTimeout(() => { delete pending[s.id]; if (db.sessions[s.id]) send(s); }, 150);
 }
 function stopAuto(s) { clearInterval(timers[s.id]); delete timers[s.id]; s.auto.on = false; }
+// Con el ganador confirmado el sorteo terminó: no salen más números hasta la siguiente ronda
+const roundOver = (s) => s.results.some((r) => r.confirmed && !r.dismissed);
 function draw(s, value) {
+  if (roundOver(s)) return false;
   const p = db.projects[s.projectId];
   if (value == null) {
     const drawn = new Set(s.drawn);
@@ -331,10 +335,12 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
   const b = req.body || {};
   switch (req.params.action) {
     case 'draw':
+      if (roundOver(s)) return fail(res, 400, 'El ganador ya fue confirmado: para seguir hay que iniciar la siguiente ronda');
       if (!draw(s, b.value == null ? null : parseInt(b.value, 10))) return fail(res, 400, 'No se pudo generar ese valor');
       break;
     case 'auto':
       stopAuto(s);
+      if (b.on && roundOver(s)) return fail(res, 400, 'El ganador ya fue confirmado: para seguir hay que iniciar la siguiente ronda');
       s.auto.interval = clamp(b.interval, 5, 60, s.auto.interval);
       s.auto.stopOnWin = !!b.stopOnWin;
       if (b.on) {
@@ -356,6 +362,7 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
         // Tras un desempate gana solo el elegido; los demás empatados quedan fuera de la celebración
         if (tied && r.cardNo !== s.tieWinner.cardNo) r.dismissed = true; else r.confirmed = true;
       }
+      stopAuto(s);
       if (tied) { s.hideWin = false; setStage('bingo'); } // vuelve la gráfica del bingo, con la celebración del ganador único
       break;
     }

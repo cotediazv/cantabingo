@@ -29,7 +29,19 @@
       // Con ganadores: se retira la gráfica y queda la celebración a pantalla completa
       if (st.celebrate) {
         bigShown = false;
-        if (winKey(st) !== winShown) { winShown = winKey(st); $('#gc').innerHTML = winScreenHTML(st); }
+        // Ganador ya confirmado: la celebración se recoge a un cartel abajo al centro, para dejar ver la cámara
+        const key = winKey(st) + (st.winConfirmed ? '|ok' : '');
+        if (key !== winShown) {
+          winShown = key;
+          if (st.winConfirmed) {
+            const seen = new Set();
+            const w = st.results.filter((r) => r.validated && !seen.has(r.cardNo) && seen.add(r.cardNo));
+            $('#gc').className = `th-${st.theme}`;
+            $('#gc').innerHTML = `<div class="gc-winlow ${w.length > 1 ? 'many' : ''}"><span class="gc-winlow-tag">¡Bingo! · ${w.length > 1 ? 'Ganadores' : 'Ganador'}</span>
+              <b>${w.slice(0, 4).map((r) => esc(r.name || 'Participante')).join(' · ')}</b>
+              <small>${w.length > 1 ? esc(st.name) : `Cartón #${st.startNumber + w[0].cardNo - 1} · ${esc(PATTERNS.byId[id].name)}`}</small></div>`;
+          } else $('#gc').innerHTML = winScreenHTML(st);
+        }
         return;
       }
       winShown = null;

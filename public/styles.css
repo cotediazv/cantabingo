@@ -595,3 +595,13 @@ body.full #rf .rf-dice { display: block; font-size: 22vh; line-height: 1; animat
 .tie-hint { margin: 12px 0 0; font-weight: 700; font-size: 1rem; }
 .win-actions.single { grid-template-columns: 1fr; }
 .win-actions.single #keepplaying { padding: 10px 8px; font-size: .95rem; font-weight: 600; border-width: 1px; }
+
+/* Ganador confirmado en el GC: cartel abajo al centro, sin tapar la cámara */
+.gc-winlow { position: absolute; left: 50%; bottom: 4vh; transform: translateX(-50%); display: grid; justify-items: center; gap: .6vh; text-align: center; min-width: 60vh; max-width: 150vh; padding: 3.4vh 6vh 2.2vh;
+  color: #fff; background: var(--gc-dots), var(--gc-pink); border: var(--gc-line) solid var(--gc-yellow); border-radius: 3vh; box-shadow: 0 1.2vh 3vh rgba(0, 0, 0, .45); animation: winlow .6s cubic-bezier(.2, 1.3, .4, 1) both; }
+@keyframes winlow { from { transform: translate(-50%, 130%); } }
+.gc-winlow-tag { position: absolute; top: 0; left: 50%; transform: translate(-50%, -55%); white-space: nowrap; background: var(--gc-yellow); color: #2a1030; font-size: 3vh; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; padding: .4vh 3vh; border-radius: 99px; }
+.gc-winlow b { font-size: 8vh; font-weight: 900; line-height: 1; text-transform: uppercase; text-shadow: .4vh .4vh 0 var(--gc-shade); overflow-wrap: anywhere; }
+.gc-winlow.many b { font-size: 5vh; }
+.gc-winlow small { font-size: 3vh; font-weight: 700; color: var(--gc-yellow); text-transform: uppercase; }
+@media (prefers-reduced-motion: reduce) { .gc-winlow { animation: none; } }

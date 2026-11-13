@@ -389,7 +389,9 @@ async function hostConsole(p) {
     $('#count').textContent = `Tablero · ${st.drawn.length} de ${st.values}`;
     $('#board').innerHTML = boardHTML(st, st.drawn, manual);
     $('#history').innerHTML = st.drawn.map((v) => `<span>${esc(plain(st, v))}</span>`).join('') || '<span class="muted">Aún no se ha generado ningún valor.</span>';
-    $('#gen').disabled = st.drawn.length >= st.values || st.auto.on;
+    $('#gen').disabled = st.drawn.length >= st.values || st.auto.on || st.winConfirmed; // ganador confirmado = sorteo terminado
+    $('#auto').disabled = !!st.winConfirmed;
+    $('#gen').textContent = st.winConfirmed ? 'Sorteo terminado' : 'Generar un número';
     $('#auto').textContent = st.auto.on ? '⏸ Detener automático' : '▶ Modo automático';
     $('#auto').classList.toggle('on', st.auto.on);
     $('#manual').classList.toggle('on', manual);
