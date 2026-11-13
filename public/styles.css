@@ -448,3 +448,8 @@ a.btn.big { display: block; text-align: center; font-size: 1.15rem; font-weight:
 /* El cartel del QR se centra con una rejilla (no con transform) para que la animación de entrada no lo desplace */
 .gc-big-wrap { position: absolute; inset: 0; display: grid; place-items: center; }
 .gc-big { position: static; left: auto; top: auto; transform: none; }
+
+/* Total de personas que han entrado al bingo, bajo la guirnalda */
+.gc-people { position: absolute; top: 13vh; left: 2.5vh; display: flex; align-items: baseline; gap: 1vh; padding: .6vh 2.4vh; border-radius: 99px; font-size: 3.2vh; font-weight: 700; text-transform: uppercase;
+  background: var(--gc-dots), var(--gc-pink); border: var(--gc-line) solid var(--gc-yellow); box-shadow: 0 .6vh 1.8vh rgba(0,0,0,.4); }
+.gc-people b { font-size: 4.2vh; font-weight: 900; color: var(--gc-yellow); }
