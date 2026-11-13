@@ -3,6 +3,13 @@
 // está pasando en cada momento, en paralelo a la gráfica de OBS. No es transparente.
 (() => {
   // Bingo a pantalla completa: bolita gigante, tablero de los 75 números, figura, QR y participantes
+  // QR a pantalla completa (centro de control): la portada con el QR, aunque haya un juego en curso
+  views.qrFull = async () => {
+    app.innerHTML = `<div id="fb"><div class="fb-idle"><b><i>KRB Stage</i> Sala de juegos</b>
+      <div class="fb-idle-qr">${qr(joinUrl())}</div>
+      <small>Escanea el código QR, pon tu nombre y apellido y participa</small></div></div>`;
+    return () => {};
+  };
   views.bingoFull = async () => {
     app.innerHTML = '<div id="fb"></div>';
     let off = null;

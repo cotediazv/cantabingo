@@ -223,7 +223,8 @@ views.control = async () => {
       <p class="muted small">La pantalla cambia sola al activar un bingo, lanzar un sorteo o cargar un rosco. Aquí puedes cambiarla a mano.</p>
       <div class="control-grid" id="stage">
         <button data-show="bingo"><span>🎱</span>Bingo</button><button data-show="sorteo"><span>🎲</span>Sorteo</button>
-        <button data-show="rueda"><span>🎡</span>El Rosco</button><button data-show="none"><span>⬛</span>Nada</button>
+        <button data-show="rueda"><span>🎡</span>El Rosco</button><button data-show="qr"><span>📱</span>QR en pantalla completa</button>
+        <button data-show="none" class="wide"><span>⬛</span>Nada</button>
       </div>
       <p class="small" style="margin-top:16px"><b>Enlace para OBS</b> (1920×1080, no pide usuario ni contraseña):<br><a class="link" href="${stageUrl()}" target="_blank">${esc(stageUrl())}</a></p>
     </div>`;
@@ -638,6 +639,7 @@ views.tablero = async () => {
         app.innerHTML = '';
         if (show === 'sorteo') stop = await views.sorteo();
         else if (show === 'rueda') stop = await views.rueda();
+        else if (show === 'qr') stop = await views.qrFull();
         else stop = await views.bingoFull(); // bingo, o la portada si no hay nada en juego
       }
       mark();
@@ -698,6 +700,7 @@ views.escena = async () => {
         if (show === 'bingo') stop = await views.gc();
         else if (show === 'rueda') stop = await views.obs();
         else if (show === 'sorteo') stop = await views.sorteo();
+        else if (show === 'qr') stop = await views.qrBig();
         document.body.classList.add('obs');
       }
     } finally { busy = false; }

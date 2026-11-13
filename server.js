@@ -401,7 +401,7 @@ app.get('/api/sessions/:sid/host', (req, res) => {
 // Sesiones activas: a ellas llevan el enlace y el QR fijos
 app.get('/api/current', (_req, res) => {
   res.json({ sessions: Object.values(db.sessions).sort((a, b) => b.created - a.created)
-    .map((s) => ({ id: s.id, name: s.name, round: s.round, locked: !!s.password })) });
+    .map((s) => ({ id: s.id, name: s.name, round: s.round, locked: !!s.password, theme: s.theme || 'frida' })) });
 });
 
 // Lista pública de sesiones activas
@@ -506,7 +506,7 @@ app.get('/api/sessions/:sid/events', (req, res) => {
 // Segundo juego de la plataforma
 // Pantalla única de OBS: qué gráfica se muestra ahora. Cambia sola al activar un bingo,
 // crear un rosco o lanzar un sorteo; el moderador también puede cambiarla a mano.
-const STAGES = ['bingo', 'rueda', 'sorteo', 'none'];
+const STAGES = ['bingo', 'rueda', 'sorteo', 'qr', 'none'];
 const setStage = (show) => { db.stage = show; save(); };
 const wheel = require('./wheel.js')({ app, db, save, requireAdmin, fail, setStage });
 // Tras corregir un nombre, se vuelve a enviar el estado a todas las pantallas abiertas

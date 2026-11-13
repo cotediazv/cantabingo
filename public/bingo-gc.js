@@ -8,6 +8,16 @@
   // En el texto inferior, lo escrito entre asteriscos se resalta en amarillo: *CONTRASEÑA: 1234*
   const rich = (text) => esc(text).replace(/\*([^*]+)\*/g, '<b>$1</b>');
 
+  // QR a pantalla completa, elegido a mano en el centro de control: cartel grande sobre fondo transparente
+  views.qrBig = async () => {
+    document.body.classList.add('obs', 'gc-screen');
+    const s = ((await api('GET', '/api/current').catch(() => ({}))).sessions || [])[0];
+    app.innerHTML = `<div id="gc" class="th-${s ? s.theme : 'frida'}"><div class="gc-big-wrap"><div class="gc-big"><b class="gc-big-title">${s ? esc(s.name) : 'KRB Stage · Sala de juegos'}</b>
+      <div class="gc-big-qr">${qr(joinUrl())}</div>
+      <span class="gc-big-text">Escanea el código QR, pon tu nombre y apellido y participa</span></div></div></div>`;
+    return () => document.body.classList.remove('obs', 'gc-screen');
+  };
+
   views.gc = async () => {
     document.body.classList.add('obs', 'gc-screen');
     app.innerHTML = '<div id="gc"></div>';

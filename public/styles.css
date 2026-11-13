@@ -621,3 +621,5 @@ body.full #rf .rf-dice { display: block; font-size: 22vh; line-height: 1; animat
 @keyframes winlowout { to { opacity: 0; transform: translate(-50%, 130%); visibility: hidden; } }
 @media (prefers-reduced-motion: reduce) { .gc-winlow, .rosco-winlow { animation: winlowout .01s linear 15s forwards; } }
 .w-accept { margin-bottom: 12px; }
+
+.control-grid button.wide { grid-column: 1 / -1; padding: 12px 8px; }
