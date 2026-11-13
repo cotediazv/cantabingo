@@ -1,10 +1,10 @@
-/* global views, app, $, esc, api, fail, toast, isAdmin, viewLogin */
+/* global views, app, $, esc, api, fail, toast, isAdmin, viewLogin, BACK_BINGO */
 // Sorteo de concursantes para El Rosco: panel del moderador y animación para la pantalla de OBS.
 (() => {
   // ---------- Moderador ----------
   views.sorteoctl = async () => {
     if (!(await isAdmin())) return viewLogin();
-    app.innerHTML = `<p class="back"><a href="#/">← Juegos</a></p><h1>Sorteo de concursantes</h1>
+    app.innerHTML = `<h1>Sorteo de concursantes</h1>
       <div class="cols">
         <div class="panel">
           <p class="muted">Elige al azar, entre quienes se unieron al bingo, a las personas que jugarán El Rosco. Cada sorteo se ve en la pantalla de OBS.</p>
@@ -12,7 +12,7 @@
           <h2>Concursantes elegidos</h2>
           <div id="rf-picked" style="margin:10px 0"></div>
           <div class="row">
-            <button class="primary" id="rf-create">🎡 Crear el rosco con ellos</button>
+            <button class="primary" id="rf-create">✔ Aceptar y cargar El Rosco</button>
             <button id="rf-reset">Empezar de nuevo</button>
           </div>
         </div>
@@ -21,7 +21,7 @@
           <p class="muted small">Se agrega cada persona que entra a una sesión de bingo, con el nombre que escribió.</p>
           <div id="rf-people" style="margin-top:10px;max-height:420px;overflow:auto"></div>
         </div>
-      </div>`;
+      </div>${BACK_BINGO}`;
     let picked = [];
     const load = async () => {
       const [r, p] = await Promise.all([api('GET', '/api/raffle'), api('GET', '/api/people')]);

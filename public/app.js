@@ -188,8 +188,8 @@ const isAdmin = async () => Boolean(store.get('adminToken')) && (await api('GET'
 // Catálogo de juegos de la plataforma. Para sumar uno: agregar aquí su entrada y sus vistas.
 const GAMES = [
   { id: 'bingo', icon: '🎱', name: 'Bingo', desc: 'Cartones virtuales en el celular, sorteo en vivo y ganadores automáticos.', href: '#/proyectos' },
-  { id: 'rueda', icon: '🎡', name: 'El Rosco', desc: 'Un rosco de letras por concursante, con reloj. Tú marcas acierto, fallo o paso; el público ve el rosco y la pregunta.', href: '#/ruedas' },
-  { id: 'sorteo', icon: '🎲', name: 'Sorteo de concursantes', desc: 'Elige al azar, entre quienes jugaron el bingo, a los concursantes de El Rosco. Se ve en pantalla.', href: '#/sorteoctl' },
+  { id: 'rueda', hidden: true, icon: '🎡', name: 'El Rosco', desc: 'Un rosco de letras por concursante, con reloj. Tú marcas acierto, fallo o paso; el público ve el rosco y la pregunta.', href: '#/ruedas' },
+  { id: 'sorteo', hidden: true, icon: '🎲', name: 'Sorteo de concursantes', desc: 'Elige al azar, entre quienes jugaron el bingo, a los concursantes de El Rosco. Se ve en pantalla.', href: '#/sorteoctl' },
 ];
 
 views.home = async () => {
@@ -197,9 +197,9 @@ views.home = async () => {
   app.innerHTML = `
     <div class="row between" style="margin-bottom:16px"><h1>Juegos</h1><button id="logout">Cerrar sesión de moderador</button></div>
     <div class="tiles">
-      ${GAMES.map((g) => `<a class="tile" href="${g.href}"><span class="tile-icon">${g.icon}</span><b>${esc(g.name)}</b><span class="muted">${esc(g.desc)}</span></a>`).join('')}
+      ${GAMES.filter((g) => !g.hidden).map((g) => `<a class="tile" href="${g.href}"><span class="tile-icon">${g.icon}</span><b>${esc(g.name)}</b><span class="muted">${esc(g.desc)}</span></a>`).join('')}
     </div>
-    <p class="muted small" style="margin-top:16px">Aquí irán apareciendo los próximos juegos.</p>
+    <p class="muted small" style="margin-top:16px">Activa una sesión de bingo; desde su panel pasas al sorteo de concursantes y a El Rosco.</p>
     <div class="panel" style="margin-top:24px">
       <h2>En pantalla (OBS)</h2>
       <p class="muted small">Una sola fuente de navegador para todo el show. Cambia sola al activar un bingo, lanzar un sorteo o crear un rosco; aquí también puedes cambiarla a mano.</p>
@@ -323,6 +323,7 @@ function hostSetup(p) {
 
 async function hostConsole(p) {
   const sid = p.sessionId;
+  store.set('lastBingo', p.id); // para el botón «Volver al bingo» del sorteo y del rosco
   const info = await api('GET', `/api/sessions/${sid}/host`);
   const act = (action, body) => api('POST', `/api/sessions/${sid}/host/${action}`, body || {}).catch(fail);
   let st = null;
@@ -348,6 +349,7 @@ async function hostConsole(p) {
         </div>
         <div id="pats" style="margin-top:10px"></div>
       </div>
+      <a class="btn primary big" href="#/sorteoctl" style="display:block;text-align:center;margin-bottom:20px">🎲 Sortear participantes de El Rosco</a>
       <div class="cols">
         <div class="panel">
           <div id="draws"></div>
@@ -572,6 +574,15 @@ function winScreenHTML(st) {
       ${winners.length > shown.length ? `<span class="bwin-more">y ${winners.length - shown.length} más</span>` : ''}
       <span class="bwin-sub">${winners.length > 1 ? '¡Felicitaciones a los ganadores!' : '¡Felicitaciones!'}</span></div></div>`;
 }
+
+// Vuelve al panel del bingo en curso y devuelve la pantalla de OBS a su gráfica
+async function backToBingo() {
+  await api('POST', '/api/stage', { show: 'bingo' }).catch(() => {});
+  const id = store.get('lastBingo');
+  location.hash = id ? `#/anfitrion/${id}` : '#/proyectos';
+}
+const BACK_BINGO = '<p style="margin-top:20px"><button class="big" data-back-bingo>← Volver al bingo</button></p>';
+document.addEventListener('click', (e) => { if (e.target.closest('[data-back-bingo]')) backToBingo(); });
 
 // Pantalla única para OBS: muestra la gráfica que el moderador elija en «Juegos».
 // No requiere iniciar sesión y queda transparente cuando no hay nada que mostrar.

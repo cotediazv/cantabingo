@@ -1,4 +1,4 @@
-/* global views, app, $, $$, esc, api, fail, toast, qr, waiting, route, viewLogin, isAdmin */
+/* global views, app, $, $$, esc, api, fail, toast, qr, waiting, route, viewLogin, isAdmin, BACK_BINGO */
 // Interfaz del juego «Rueda de palabras»: lista y creación, panel del moderador y pantalla pública.
 (() => {
   const DEFAULT_LETTERS = 'ABCDEFGHIJLMNÑOPQRSTUVXYZ';
@@ -144,8 +144,7 @@
     const TAGS = { g: 'Cultura general', m: 'Música', a: 'Arte', f: 'Fácil' };
     let st = null;
     const act = (action, extra) => api('POST', `/api/wheels/${id}/act`, { action, ...extra }).catch(fail);
-    app.innerHTML = `<p class="back"><a href="#/ruedas">← Roscos</a></p>
-      <div class="cols">
+    app.innerHTML = `<div class="cols">
         <div class="panel">
           <div class="row between"><div><h1 id="w-name" style="margin:0"></h1><span class="muted" id="w-turn"></span></div><div class="w-letter" id="w-letter"></div></div>
           <div class="w-question" id="w-question"></div>
@@ -168,7 +167,7 @@
       <div class="panel"><h2>Pantalla del público</h2>
         <div class="row between"><div class="small"><b>Enlace para celulares o TV:</b> <a class="link" href="${publicUrl()}" target="_blank">${esc(publicUrl())}</a><br>
           <b>Fuente de navegador para OBS</b> (fondo transparente): <a class="link" href="${obsUrl()}" target="_blank">${esc(obsUrl())}</a><br>
-          <span class="muted">El público ve el rosco, el reloj y el marcador. La pregunta aparece solo mientras el reloj corre; la respuesta, nunca.</span></div>${qr(publicUrl())}</div></div>`;
+          <span class="muted">El público ve el rosco, el reloj y el marcador. La pregunta aparece solo mientras el reloj corre; la respuesta, nunca.</span></div>${qr(publicUrl())}</div></div>${BACK_BINGO}<p class="small" style="margin-top:12px"><a href="#/ruedas">Ver todos los roscos</a></p>`;
     const render = () => {
       const c = st.players[st.turn];
       $('#w-name').textContent = st.name;
