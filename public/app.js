@@ -282,7 +282,12 @@ function hostSetup(p) {
     ${BACK}<h1>Configurar la sesión</h1>
     <form class="panel" id="f">
       <div class="fields">
-        <label class="f">Nombre de la sesión<input type="text" name="name" maxlength="50" value="${esc(p.name)}" required></label>
+        <label class="f">Partida<select name="preset">
+          <option value="frida">El Bingo de Frida</option><option value="tobalaba">El Bingo de Tobalaba</option><option value="kennedy">El Bingo de Kennedy</option>
+          <option value="new">Nueva partida…</option></select></label>
+        <label class="f" id="name-wrap" hidden>Nombre de la partida<input type="text" name="name" maxlength="50" value="El Bingo de Frida" required></label>
+        <label class="f" id="theme-wrap" hidden>Colores de la gráfica<select name="theme">
+          <option value="frida">Magenta (como Frida)</option><option value="tobalaba">Rojo (como Tobalaba)</option><option value="kennedy">Celeste azulado (como Kennedy)</option></select></label>
         <label class="f">Contraseña para unirse <span class="hint">vacía = acceso libre</span><input type="text" name="password" maxlength="40"></label>
         <label class="f">Cartones por participante <span class="hint" id="cap"></span><select name="cardsPerPlayer"><option>1</option><option>2</option><option>3</option><option>4</option></select></label>
         <label class="check"><input type="checkbox" name="isPublic" checked> Mostrar en la lista pública de sesiones</label>
@@ -296,6 +301,13 @@ function hostSetup(p) {
   const f = $('#f');
   const cap = () => { $('#cap').textContent = `alcanza para ${Math.floor(n / Number(f.cardsPerPlayer.value))} personas`; };
   f.cardsPerPlayer.onchange = cap;
+  // Cada local trae su nombre y sus colores; «Nueva partida» deja escribir el nombre y elegir colores
+  f.preset.onchange = () => {
+    const custom = f.preset.value === 'new';
+    $('#name-wrap').hidden = !custom;
+    $('#theme-wrap').hidden = !custom;
+    if (custom) { f.name.value = ''; f.name.focus(); } else { f.name.value = f.preset.selectedOptions[0].textContent; f.theme.value = f.preset.value; }
+  };
   cap();
   f.onsubmit = async (e) => {
     e.preventDefault();
@@ -554,7 +566,7 @@ function winScreenHTML(st) {
   const colors = ['#ffc400', '#0a9a94', '#ff7a1a', '#2338a8', '#56b04c', '#e8262e', '#ffffff'];
   const confetti = Array.from({ length: 70 }, (_, i) => `<i style="left:${(Math.random() * 100).toFixed(1)}%;background:${colors[i % colors.length]};animation-delay:${(Math.random() * 3).toFixed(2)}s;animation-duration:${(3 + Math.random() * 3).toFixed(2)}s"></i>`).join('');
   const shown = winners.slice(0, 6);
-  return `<div class="bwin ${winners.length > 3 ? 'many' : ''}"><div class="confetti">${confetti}</div>
+  return `<div class="bwin th-${st.theme} ${winners.length > 3 ? 'many' : ''}"><div class="confetti">${confetti}</div>
     <div class="bwin-card"><span class="bwin-title">¡BINGO!</span>
       <div class="bwin-names">${shown.map((r) => `<span><b>${esc(r.name || 'Participante')}</b><small>Cartón #${st.startNumber + r.cardNo - 1}</small></span>`).join('')}</div>
       ${winners.length > shown.length ? `<span class="bwin-more">y ${winners.length - shown.length} más</span>` : ''}

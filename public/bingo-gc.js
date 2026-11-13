@@ -31,6 +31,7 @@
         return;
       }
       winShown = null;
+      $('#gc').className = `th-${st.theme}`; // colores según el local
       $('#gc').innerHTML = `
         <header class="gc-top"><b class="gc-title">${esc(st.name)}</b>${st.gc.top ? `<span class="gc-sub">${esc(st.gc.top)}</span>` : ''}</header>
         <div class="gc-bunting">${bunting}</div>
@@ -41,7 +42,7 @@
         </div>
         <div class="gc-figure">
           <div class="gc-grid">${figure}</div>
-          <b>${esc(PATTERNS.byId[id].name)}</b>
+          <b class="${PATTERNS.byId[id].name.length > 10 ? 'long' : ''}">${esc(PATTERNS.byId[id].name)}</b>
         </div>`;
     };
 

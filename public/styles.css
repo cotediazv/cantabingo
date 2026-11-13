@@ -291,8 +291,8 @@ body.gc-screen main { padding: 0; max-width: none; }
 .gc-top, .gc-bottom, .gc-qr, .gc-draw, .gc-figure { background: var(--gc-dots), var(--gc-pink); }
 
 .gc-top { position: absolute; top: 0; left: 0; right: 0; height: 8.15vh; display: flex; align-items: center; gap: 5vh; padding: 0 38vh 0 4vh; white-space: nowrap; }
-.gc-title { font-size: 6vh; font-weight: 900; text-transform: uppercase; line-height: 1; color: var(--gc-yellow); text-shadow: .28vh .28vh 0 rgba(60, 0, 30, .55); overflow: hidden; text-overflow: ellipsis; flex: none; max-width: 62%; }
-.gc-sub { flex: 1; text-align: center; font-size: 4vh; font-weight: 700; text-shadow: .2vh .2vh 0 rgba(60, 0, 30, .5); overflow: hidden; text-overflow: ellipsis; }
+.gc-title { font-size: 6vh; font-weight: 900; text-transform: uppercase; line-height: 1; color: var(--gc-yellow); text-shadow: .28vh .28vh 0 var(--gc-shade, rgba(60, 0, 30, .55)); overflow: hidden; text-overflow: ellipsis; flex: none; max-width: 62%; }
+.gc-sub { flex: 1; text-align: center; font-size: 4vh; font-weight: 700; text-shadow: .2vh .2vh 0 var(--gc-shade, rgba(60, 0, 30, .55)); overflow: hidden; text-overflow: ellipsis; }
 
 /* Guirnalda de banderines bajo la franja superior */
 .gc-bunting { position: absolute; top: 8.15vh; left: 0; right: 35.4vh; height: 3.5vh; display: flex; gap: .65vh; padding: 0 .4vh; border-top: var(--gc-line) solid var(--gc-yellow); }
@@ -307,7 +307,7 @@ body.gc-screen main { padding: 0; max-width: none; }
 .gc-msg b { color: var(--gc-yellow); font-weight: 700; }
 
 .gc-draw { position: absolute; left: 0; bottom: 0; width: 31.3vh; height: 22vh; border-top: var(--gc-line) solid var(--gc-yellow); border-right: var(--gc-line) solid var(--gc-yellow); border-top-right-radius: 3vh; }
-.gc-label { position: absolute; left: 1.8vh; top: 1.2vh; font-size: 3vh; font-weight: 900; text-transform: uppercase; color: var(--gc-yellow); text-shadow: .2vh .2vh 0 rgba(60, 0, 30, .55); }
+.gc-label { position: absolute; left: 1.8vh; top: 1.2vh; font-size: 3vh; font-weight: 900; text-transform: uppercase; color: var(--gc-yellow); text-shadow: .2vh .2vh 0 var(--gc-shade, rgba(60, 0, 30, .55)); }
 .gc-ballwrap { position: absolute; left: 50%; bottom: 1.1vh; transform: translateX(-50%); }
 .ball.gcball { width: 15.6vh; height: 15.6vh; padding: 1vh; border: .5vh solid #fff; box-shadow: 0 .6vh 1.6vh rgba(0,0,0,.45); font-family: inherit; }
 .ball.gcball .l { font-size: 3vh; font-weight: 900; line-height: 1; } .ball.gcball .v { font-size: 7.6vh; font-weight: 900; line-height: 1; }
@@ -317,7 +317,7 @@ body.gc-screen main { padding: 0; max-width: none; }
 
 .gc-figure { position: absolute; right: 0; bottom: 0; width: 23.9vh; height: 29.2vh; padding: 2vh 2.2vh 0; display: grid; align-content: start; justify-items: center; gap: 1.2vh; text-align: center; border-top: var(--gc-line) solid var(--gc-yellow); border-left: var(--gc-line) solid var(--gc-yellow); border-top-left-radius: 3vh; }
 .gc-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: .55vh; width: 100%; }
-.gc-grid i { aspect-ratio: 1; border-radius: .6vh; background: rgba(60, 0, 30, .45); }
+.gc-grid i { aspect-ratio: 1; border-radius: .6vh; background: var(--gc-shade, rgba(60, 0, 30, .55)); }
 .gc-grid i.x { background: var(--gc-yellow); box-shadow: inset 0 -.5vh 0 rgba(0,0,0,.18); }
 .gc-figure b { font-size: 3vh; font-weight: 900; text-transform: uppercase; color: var(--gc-yellow); line-height: 1; white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { .gc-ballwrap.pop { animation: none; } }
@@ -347,16 +347,16 @@ body.raffle-screen main { padding: 0; max-width: none; }
 .bwin { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; overflow: hidden; color: #fff; font-family: "Source Sans 3", "Source Sans Pro", "Segoe UI", system-ui, sans-serif; }
 body.tv .bwin { background: rgba(10, 8, 24, .92); }
 .bwin-card { position: relative; display: grid; justify-items: center; gap: 2.2vh; text-align: center; min-width: 56vw; max-width: 94vw; padding: 4vh 7vh 5vh; border-radius: 5vh; border: .8vh solid #ffc400;
-  background: radial-gradient(circle, rgba(255,255,255,.13) 0 .42vh, transparent .46vh) 0 0 / 4.2vh 4.2vh, #c4175e; box-shadow: 0 2vh 6vh rgba(0,0,0,.55); animation: winpop .7s cubic-bezier(.2, 1.5, .4, 1); }
-.bwin-title { font-size: 24vh; font-weight: 900; line-height: .95; color: #ffc400; letter-spacing: .04em; text-shadow: .8vh .8vh 0 rgba(60, 0, 30, .6); animation: bwinbeat 1s ease-in-out infinite; }
+  background: radial-gradient(circle, rgba(255,255,255,.13) 0 .42vh, transparent .46vh) 0 0 / 4.2vh 4.2vh, var(--gc-pink, #c4175e); box-shadow: 0 2vh 6vh rgba(0,0,0,.55); animation: winpop .7s cubic-bezier(.2, 1.5, .4, 1); }
+.bwin-title { font-size: 24vh; font-weight: 900; line-height: .95; color: #ffc400; letter-spacing: .04em; text-shadow: .8vh .8vh 0 var(--gc-shade, rgba(60, 0, 30, .55)); animation: bwinbeat 1s ease-in-out infinite; }
 @keyframes bwinbeat { 50% { transform: scale(1.06); } }
 .bwin-names { display: flex; flex-wrap: wrap; justify-content: center; gap: 2vh 5vh; max-width: 90vw; }
 .bwin-names span { display: grid; justify-items: center; }
-.bwin-names b { font-size: 11vh; font-weight: 900; line-height: 1; text-transform: uppercase; text-shadow: .5vh .5vh 0 rgba(60, 0, 30, .55); overflow-wrap: anywhere; }
+.bwin-names b { font-size: 11vh; font-weight: 900; line-height: 1; text-transform: uppercase; text-shadow: .5vh .5vh 0 var(--gc-shade, rgba(60, 0, 30, .55)); overflow-wrap: anywhere; }
 .bwin-names small { font-size: 3.4vh; font-weight: 700; opacity: .9; }
 .bwin.many .bwin-title { font-size: 17vh; } .bwin.many .bwin-names b { font-size: 6.4vh; } .bwin.many .bwin-names small { font-size: 2.6vh; }
 .bwin-more { font-size: 4vh; font-weight: 700; }
-.bwin-sub { font-size: 5vh; font-weight: 700; background: rgba(60, 0, 30, .45); border-radius: 99px; padding: .5vh 4vh; }
+.bwin-sub { font-size: 5vh; font-weight: 700; background: var(--gc-shade, rgba(60, 0, 30, .55)); border-radius: 99px; padding: .5vh 4vh; }
 @media (prefers-reduced-motion: reduce) { .bwin-card, .bwin-title { animation: none; } }
 
 /* GC del bingo: bolita más grande y sin rótulo, figura más clara y a la misma altura */
@@ -381,3 +381,13 @@ body.tv .bwin { background: rgba(10, 8, 24, .92); }
   100% { transform: translate(-50%, 0); }
 }
 @media (prefers-reduced-motion: reduce) { .gc-ballwrap.pop { animation: none; } }
+
+/* ---------- Colores de la gráfica según el local ---------- */
+#gc.th-frida, .bwin.th-frida { --gc-pink: #c4175e; --gc-shade: rgba(60, 0, 30, .55); }
+#gc.th-tobalaba, .bwin.th-tobalaba { --gc-pink: #c81e1e; --gc-shade: rgba(70, 0, 0, .55); }
+#gc.th-kennedy, .bwin.th-kennedy { --gc-pink: #1487cf; --gc-shade: rgba(0, 32, 78, .55); }
+
+/* Nombres de figura largos: en dos líneas y letra más chica, para que quepan en el recuadro */
+.gc-figure { overflow: hidden; }
+.gc-figure b.long { white-space: normal; font-size: 2.1vh; line-height: 1.05; text-wrap: balance; }
+.gc-figure:has(b.long) .gc-grid { width: 14vh; }

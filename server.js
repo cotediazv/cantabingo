@@ -128,7 +128,7 @@ function publicState(s, full = false) {
   return {
     id: s.id, name: s.name, round: s.round, closed: !!s.closed, expires: s.expires,
     format: p.format, headers: p.headers, values: p.values, items: p.items, showName: s.showName,
-    gc: s.gc || gcDefaults(), startNumber: p.startNumber,
+    gc: s.gc || gcDefaults(), startNumber: p.startNumber, theme: s.theme || 'frida',
     // Celebración a pantalla completa mientras haya ganadores y el moderador no la haya quitado
     celebrate: !s.hideWin && s.results.some((r) => r.validated),
     patterns: s.patterns, drawn: s.drawn, results, finalists: s.finalists || null,
@@ -300,6 +300,7 @@ app.post('/api/projects/:id/session', (req, res) => {
     id: shortId(), projectId: p.id, name: str(b.name, 50, p.name), password: str(b.password, 40),
     cardsPerPlayer: clamp(b.cardsPerPlayer, 1, 4, 1),
     showName: b.showName !== false, isPublic: b.isPublic !== false, patterns: cleanPatterns(b.patterns),
+    theme: ['frida', 'tobalaba', 'kennedy'].includes(b.theme) ? b.theme : 'frida', // colores de la gráfica según el local
     gc: { ...gcDefaults() }, // textos de la gráfica de OBS: se heredan de la última sesión
     round: 1, drawn: [], results: [], marks: {}, players: {}, finalists: null,
     auto: { on: false, interval: 10, stopOnWin: true },
