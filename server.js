@@ -348,9 +348,17 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
       setStage('bingo'); // la ronda nueva devuelve la pantalla a la gráfica del bingo
       evaluate(s);
       break;
-    case 'confirmwin': // el animador da por buenos a los ganadores que están en pantalla
-      for (const r of s.results) if (r.validated && !r.dismissed) r.confirmed = true;
+    case 'confirmwin': { // el animador da por bueno al ganador que está en pantalla
+      const tied = new Set(s.results.filter((r) => r.validated && !r.dismissed).map((r) => r.cardNo)).size > 1;
+      if (tied && !s.tieWinner) return fail(res, 400, 'Hay un empate: primero hay que desempatar por sorteo');
+      for (const r of s.results) {
+        if (!r.validated || r.dismissed) continue;
+        // Tras un desempate gana solo el elegido; los demás empatados quedan fuera de la celebración
+        if (tied && r.cardNo !== s.tieWinner.cardNo) r.dismissed = true; else r.confirmed = true;
+      }
+      if (tied) { s.hideWin = false; setStage('bingo'); } // vuelve la gráfica del bingo, con la celebración del ganador único
       break;
+    }
     case 'keepplaying': // se descartan los ganadores sin confirmar y el juego sigue: esos cartones ya no vuelven a ganar en la ronda
       for (const r of s.results) if (r.validated && !r.confirmed) r.dismissed = true;
       s.tieWinner = null;

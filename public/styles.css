@@ -590,3 +590,8 @@ body.full #rf .rf-dice { display: block; font-size: 22vh; line-height: 1; animat
 #win-confirmed p { margin: 0; padding: 10px; border-radius: 12px; background: rgba(0, 0, 0, .25); font-size: 1.2rem; font-weight: 800; }
 #win-confirmed a.btn.big { background: #fff; color: #0a6b3c; border-color: #fff; }
 @media (max-width: 360px) { .win-actions { grid-template-columns: 1fr; } }
+
+/* Empate: primero el sorteo, después la confirmación */
+.tie-hint { margin: 12px 0 0; font-weight: 700; font-size: 1rem; }
+.win-actions.single { grid-template-columns: 1fr; }
+.win-actions.single #keepplaying { padding: 10px 8px; font-size: .95rem; font-weight: 600; border-width: 1px; }

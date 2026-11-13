@@ -354,6 +354,7 @@ async function hostConsole(p) {
             <div id="results"></div>
             <div id="final"></div>
             <div id="tie-result"></div>
+            <p class="tie-hint" id="tie-hint" hidden>Hay un empate: primero desempata por sorteo.</p>
             <button class="primary" id="tiebreak" hidden>🎲 Desempatar por sorteo</button>
             <div class="win-actions" id="win-actions" hidden>
               <button id="confirmwin">✔ Confirmar ganador</button>
@@ -406,6 +407,7 @@ async function hostConsole(p) {
     // Con dos o más ganadores se puede desempatar con la tómbola en pantalla
     const winners = new Set(results.filter((r) => r.validated).map((r) => r.cardNo)).size;
     $('#tiebreak').hidden = winners < 2;
+    const tied = winners >= 2;
     $('#tiebreak').textContent = st.tieWinner ? '🎲 Volver a desempatar' : '🎲 Desempatar por sorteo';
     // El resultado se muestra al animador cuando la tómbola ya terminó en pantalla
     const tieDone = st.tieWinner && Date.now() - st.tieWinner.at >= st.rollMs;
@@ -414,10 +416,15 @@ async function hostConsole(p) {
     // Dos opciones ante un ganador: confirmarlo o seguir jugando
     const pending = results.filter((r) => r.validated && !r.confirmed).length;
     const confirmed = won > 0 && pending === 0;
-    $('#win-actions').hidden = !pending;
-    $('#confirmwin').textContent = won === 1 ? '✔ Confirmar ganador' : '✔ Confirmar ganadores';
+    // Con empate, primero se desempata: «Confirmar» aparece recién cuando la tómbola ya eligió a uno
+    const rolling = st.tieWinner && !tieDone;
+    $('#win-actions').hidden = !pending || rolling;
+    $('#confirmwin').hidden = tied && !tieDone;
+    $('#win-actions').classList.toggle('single', tied && !tieDone);
+    $('#confirmwin').textContent = '✔ Confirmar ganador';
+    $('#tie-hint').hidden = !(tied && !st.tieWinner);
     $('#win-confirmed').hidden = !confirmed;
-    $('#win-confirmed p').textContent = won === 1 ? '✔ Ganador confirmado' : '✔ Ganadores confirmados';
+    $('#win-confirmed p').textContent = '✔ Ganador confirmado';
     $('#final').innerHTML = st.finalists ? `<p><b>Selección final:</b> ${st.finalists.map((c) => '#' + (p.startNumber + c - 1)).join(', ') || 'no hay cartones validados'}</p>` : '';
     if (st.drawn.length !== spoken) { if (spoken >= 0 && st.drawn.length > spoken) speak(speakText(st, st.drawn.at(-1))); spoken = st.drawn.length; }
   };
