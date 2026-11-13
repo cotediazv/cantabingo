@@ -15,7 +15,7 @@
       $('#fb').className = '';
       $('#fb').innerHTML = `<div class="fb-idle"><b><i>KRB Stage</i> Sala de juegos</b>
         <div class="fb-idle-qr">${qr(joinUrl())}</div>
-        <small>Escanea el código QR y prepárate: en unos momentos comenzamos</small></div>`;
+        <small>Escanea el código QR y prepárate</small><small class="soon">En unos momentos comenzamos</small></div>`;
     };
 
     const draw = (st) => {

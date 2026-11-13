@@ -545,3 +545,5 @@ body.full.wheel-screen .wheels.n2 .wheel, body.full.wheel-screen .wheels.n3 .whe
 
 .fb-idle b { font-size: 9.5vh; white-space: nowrap; }
 .fb-idle b i { font-style: normal; color: #fff; }
+.fb-idle small { max-width: none; white-space: nowrap; }
+.fb-idle small.soon { margin-top: -1.5vh; color: #ffc400; opacity: 1; }
