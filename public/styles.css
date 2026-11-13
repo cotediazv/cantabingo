@@ -615,3 +615,9 @@ body.full #rf .rf-dice { display: block; font-size: 22vh; line-height: 1; animat
 .rosco-winlow b { font-size: 8vh; font-weight: 700; line-height: 1; text-transform: uppercase; text-shadow: .4vh .4vh 0 rgba(0, 0, 0, .35); overflow-wrap: anywhere; }
 .rosco-winlow small { font-size: 3.2vh; font-weight: 600; color: #ffe14d; text-transform: uppercase; }
 @media (prefers-reduced-motion: reduce) { .rosco-winlow { animation: none; } }
+
+/* El cartel del ganador se retira solo a los 15 segundos */
+.gc-winlow, .rosco-winlow { animation: winlow .6s cubic-bezier(.2, 1.3, .4, 1) both, winlowout .5s ease-in 14.5s forwards; }
+@keyframes winlowout { to { opacity: 0; transform: translate(-50%, 130%); visibility: hidden; } }
+@media (prefers-reduced-motion: reduce) { .gc-winlow, .rosco-winlow { animation: winlowout .01s linear 15s forwards; } }
+.w-accept { margin-bottom: 12px; }
