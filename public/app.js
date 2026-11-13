@@ -453,7 +453,7 @@ views.ronda = async (pid) => {
   if (!p.sessionId) { location.hash = `#/anfitrion/${pid}`; return undefined; }
   const info = await api('GET', `/api/sessions/${p.sessionId}/host`);
   const next = info.round + 1;
-  app.innerHTML = `<p class="back"><a href="#/anfitrion/${pid}">← Volver sin cambiar de ronda</a></p><h1>${esc(p.name)}</h1>
+  app.innerHTML = `<p class="back"><a href="#/anfitrion/${pid}">← Volver al bingo anterior</a></p><h1>${esc(p.name)}</h1>
     <form class="panel" id="f">
       <h2>Ronda ${next}: ¿qué figura se juega?</h2>
       ${patternPicker(info.patterns)}
@@ -666,8 +666,13 @@ function winScreenHTML(st) {
 
 // Vuelve al panel del bingo en curso y devuelve la pantalla de OBS a su gráfica
 async function backToBingo() {
-  await api('POST', '/api/stage', { show: 'bingo' }).catch(() => {});
   const id = store.get('lastBingo');
+  // Si el bingo anterior ya tiene ganador confirmado, no se vuelve a mostrar: se pasa directo a crear el siguiente
+  try {
+    const p = id && await api('GET', `/api/projects/${id}`);
+    if (p && p.sessionId && (await api('GET', `/api/sessions/${p.sessionId}/host`)).roundOver) { location.hash = `#/ronda/${id}`; return; }
+  } catch { /* sin datos: se sigue al panel */ }
+  await api('POST', '/api/stage', { show: 'bingo' }).catch(() => {});
   location.hash = id ? `#/anfitrion/${id}` : '#/proyectos';
 }
 const BACK_BINGO = '<p style="margin-top:20px"><button class="big" data-back-bingo>← Volver al bingo</button></p>';
