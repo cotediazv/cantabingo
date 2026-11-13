@@ -259,7 +259,7 @@ views.nuevo = async () => {
       <label class="f" id="pname-wrap" hidden>Nombre del bingo<input type="text" name="name" maxlength="60" value="El Bingo de Frida"></label>
       <label class="f" id="ptheme-wrap" hidden>Colores en pantalla<select id="ptheme">
         <option value="frida">Magenta (como Frida)</option><option value="tobalaba">Rojo (como Tobalaba)</option><option value="kennedy">Celeste azulado (como Kennedy)</option></select></label>
-      <label class="f">Número de cartones <span class="hint">de 25 a 3.000</span><input type="number" name="count" min="25" max="3000" value="25" required></label>
+      <label class="f">Número de cartones <span class="hint">de 25 a 3.000</span><input type="number" name="count" min="25" max="3000" value="280" required></label>
       <label class="f">Formato<select name="format"><option value="numbers">Números</option><option value="emojis">Emojis</option><option value="words">Palabras / frases</option></select></label>
       <label class="f" data-for="numbers">Cantidad de valores <span class="hint">25 a 150 (75 es lo habitual)</span><input type="number" name="values" min="25" max="150" value="75"></label>
       <label class="f wide" data-for="words" hidden>Tu lista, una palabra o frase por línea <span class="hint">mínimo 25, máximo 150</span><textarea name="words" placeholder="Pega aquí tu lista desde Word o Excel"></textarea></label>

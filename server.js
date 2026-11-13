@@ -269,7 +269,7 @@ app.post('/api/projects', (req, res) => {
     startNumber: clamp(b.startNumber, 1, 999999, 1),
     sessionId: null,
   };
-  p.cards = makeCards(clamp(b.count, 25, 3000, 25), values, p.freeCenter);
+  p.cards = makeCards(clamp(b.count, 25, 3000, 280), values, p.freeCenter);
   db.projects[p.id] = p;
   save();
   res.json(summary(p));
