@@ -77,7 +77,7 @@
   views.sorteo = async () => {
     document.body.classList.add('obs', 'raffle-screen');
     app.innerHTML = `<div id="rf"><div class="rf-title" id="rf-title">Sorteo de concursantes</div>
-      <div class="rf-stage" id="rf-stage"></div><div class="rf-picked" id="rf-list"></div></div>`;
+      <div class="rf-stage" id="rf-stage"></div><div class="rf-picked" id="rf-list"></div><div class="rf-rays"></div></div>`;
     let shownRoll = 0; // sorteo cuya animación ya se inició
     let spin = null;
     const confetti = () => {
@@ -95,7 +95,7 @@
       $('#rf-title').textContent = st.mode === 'tie' ? 'Desempate' : 'Sorteo de concursantes';
       if (!st.roll) {
         clearTimeout(spin); spin = null; shownRoll = 0;
-        $('#rf-stage').innerHTML = `<div class="rf-card"><span class="rf-kicker">${st.pool} participantes</span><span class="rf-name small">¿Quién jugará El Rosco?</span></div>`;
+        $('#rf-stage').innerHTML = `<div class="rf-card"><span class="rf-dice">🎲</span><span class="rf-kicker">${st.pool} participantes</span><span class="rf-name small">¿Quién jugará El Rosco?</span></div>`;
         list(st.picked);
         return;
       }
@@ -107,14 +107,22 @@
       // Mientras gira no se muestra todavía al elegido en la lista de abajo
       list(st.picked.filter((n) => n !== st.roll.winner));
       const rollingText = st.mode === 'tie' ? `Sorteando entre ${st.pool} ganadores…` : 'Sorteando…';
-      $('#rf-stage').innerHTML = `<div class="rf-card rolling"><span class="rf-kicker">${rollingText}</span><span class="rf-name" id="rf-roll"></span></div>`;
+      $('#rf-stage').innerHTML = `<div class="rf-card rolling"><span class="rf-kicker">${rollingText}</span><span class="rf-reel" id="rf-prev"></span><span class="rf-name" id="rf-roll"></span><span class="rf-reel" id="rf-next"></span></div>`;
       let i = 0;
       const end = Date.now() + left;
       const tick = () => {
         const remaining = end - Date.now();
         if (remaining <= 0) { spin = null; reveal(st, true); return; }
         const el = $('#rf-roll');
-        if (el) el.textContent = st.roll.names[i++ % st.roll.names.length];
+        const pool = st.roll.names;
+        if (el) {
+          el.textContent = pool[i % pool.length];
+          const prev = $('#rf-prev');
+          const next = $('#rf-next');
+          if (prev) prev.textContent = pool[(i + pool.length - 1) % pool.length];
+          if (next) next.textContent = pool[(i + 1) % pool.length];
+          i++;
+        }
         // rápido al comienzo (70 ms por nombre) y cada vez más lento en el último segundo y medio
         spin = setTimeout(tick, remaining > 1500 ? 70 : 70 + (1500 - remaining) / 4);
       };

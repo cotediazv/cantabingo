@@ -550,3 +550,33 @@ body.full.wheel-screen .wheels.n2 .wheel, body.full.wheel-screen .wheels.n3 .whe
 .fb-idle small:not(.soon) { font-size: 7vh; font-weight: 900; opacity: 1; }
 .fb-idle-qr .qr { width: 44vh; height: 44vh; }
 .fb-idle { gap: 2.4vh; }
+
+/* ---------- Sorteo y desempate en el tablero del DJ: a pantalla completa ---------- */
+.rf-reel, .rf-rays, .rf-dice { display: none; }
+body.full #rf { grid-template-rows: auto 1fr auto; padding: 3.5vh 4vh 4vh; }
+body.full #rf > * { position: relative; z-index: 1; }
+body.full #rf .rf-rays { display: block; position: fixed; z-index: 0; left: 50%; top: 50%; width: 260vh; height: 260vh; margin: -130vh 0 0 -130vh; border-radius: 50%; pointer-events: none;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 255, 255, .09) 0 9deg, transparent 9deg 18deg); animation: rfspin 50s linear infinite; }
+@keyframes rfspin { to { transform: rotate(360deg); } }
+body.full #rf .rf-title { grid-row: 1; font-size: 7.5vh; padding: 1.4vh 6vh; border-width: .8vh; }
+body.full #rf .rf-stage { grid-row: 2; align-self: center; }
+body.full #rf .rf-picked { grid-row: 3; margin: 0; gap: 2.4vh; min-height: 8vh; }
+body.full #rf .rf-picked span { font-size: 5vh; padding: .8vh 3.4vh .8vh 1vh; border-width: .5vh; }
+body.full #rf .rf-picked b { width: 6.4vh; height: 6.4vh; font-size: 4.2vh; }
+body.full #rf .rf-card { min-width: 82vw; max-width: 94vw; gap: 1.6vh; padding: 4vh 6vh 5vh; border-radius: 6vh; border-width: 1.2vh; box-shadow: 0 3vh 9vh rgba(0,0,0,.55), 0 0 12vh rgba(255, 255, 255, .25); }
+body.full #rf .rf-kicker { font-size: 5.4vh; padding: .6vh 4vh; }
+body.full #rf .rf-name { font-size: 19vh; min-height: 19vh; line-height: 1; white-space: nowrap; max-width: 90vw; overflow: hidden; text-overflow: ellipsis; }
+body.full #rf .rf-name.small { font-size: 10vh; min-height: 0; white-space: normal; }
+body.full #rf .rf-reel { display: block; font-size: 8vh; font-weight: 700; line-height: 1; text-transform: uppercase; white-space: nowrap; opacity: .32; min-height: 8vh; max-width: 88vw; overflow: hidden; text-overflow: ellipsis; }
+body.full #rf .rf-card.rolling { background: linear-gradient(150deg, #2f2bd0, #7b2ff7 55%, #f107a3); }
+body.full #rf .rf-card.rolling .rf-name { text-shadow: 0 0 4vh rgba(255, 255, 255, .7), 0 .8vh 0 rgba(0,0,0,.25); animation: rfshake .12s linear infinite; }
+@keyframes rfshake { 50% { transform: translateY(.5vh); } }
+body.full #rf .rf-card.win { animation: winpop .7s cubic-bezier(.2, 1.5, .4, 1), rfglow 1.4s ease-in-out .7s infinite; }
+@keyframes rfglow { 50% { box-shadow: 0 3vh 9vh rgba(0,0,0,.55), 0 0 22vh rgba(255, 225, 77, .95); transform: scale(1.02); } }
+body.full #rf .rf-card.win .rf-name { font-size: 21vh; min-height: 21vh; }
+body.full #rf .rf-dice { display: block; font-size: 22vh; line-height: 1; animation: rfdice 2.2s ease-in-out infinite; }
+@keyframes rfdice { 25% { transform: rotate(-14deg) translateY(-2vh); } 75% { transform: rotate(14deg) translateY(-2vh); } }
+@media (prefers-reduced-motion: reduce) { body.full #rf .rf-rays, body.full #rf .rf-card.rolling .rf-name, body.full #rf .rf-card.win, body.full #rf .rf-dice { animation: none; } }
+
+/* El confeti del sorteo cae por toda la pantalla, no desde el borde del cuadro */
+#rf .confetti { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 3; }
