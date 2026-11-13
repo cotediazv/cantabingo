@@ -361,7 +361,7 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
 
 app.get('/api/sessions/:sid/host', (req, res) => {
   const s = hostSession(req, res);
-  if (s) res.json({ password: s.password, isPublic: s.isPublic });
+  if (s) res.json({ password: s.password, isPublic: s.isPublic, round: s.round, patterns: s.patterns, gc: s.gc || gcDefaults() });
 });
 
 // Sesiones activas: a ellas llevan el enlace y el QR fijos

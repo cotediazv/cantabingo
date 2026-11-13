@@ -333,35 +333,24 @@ function hostSetup(p) {
   };
 }
 
+// Panel del bingo en curso: solo lo que el animador usa durante el juego.
+// Enlaces, QR, textos de la gráfica y cierre de sesión están en «Administración».
 async function hostConsole(p) {
   const sid = p.sessionId;
   store.set('lastBingo', p.id); // para el botón «Volver al bingo» del sorteo y del rosco
-  const info = await api('GET', `/api/sessions/${sid}/host`);
   const act = (action, body) => api('POST', `/api/sessions/${sid}/host/${action}`, body || {}).catch(fail);
   let st = null;
   let manual = false;
   let spoken = -1;
   app.innerHTML = `
-    <div>${BACK}
+    <div><p class="back"><a href="#/">← Inicio</a></p>
       <div class="panel winners" id="results-panel" hidden>
         <h2 id="results-title"></h2>
         <div id="results" class="scroll-x"></div>
         <div id="final"></div>
         <p style="margin-top:12px"><button id="hidewin" hidden></button></p>
       </div>
-      <div class="panel">
-        <div class="row between">
-          <div><h1 id="title"></h1><div id="meta" class="muted"></div></div>
-          <div class="row">
-            <div class="small"><b>Participantes:</b> <a class="link" href="${joinUrl(sid)}" target="_blank">${esc(joinUrl(sid))}</a><br>
-              <b>Tablero:</b> <a class="link" href="${boardUrl(sid)}" target="_blank">${esc(boardUrl(sid))}</a><br>
-              <b>Contraseña:</b> ${info.password ? esc(info.password) : '<i>sin contraseña</i>'}</div>
-            ${qr(joinUrl(sid))}
-          </div>
-        </div>
-        <div id="pats" style="margin-top:10px"></div>
-      </div>
-      <a class="btn primary big" href="#/sorteoctl" style="display:block;text-align:center;margin-bottom:20px">🎲 Sortear participantes de El Rosco</a>
+      <div class="panel"><h1 id="title"></h1><div id="meta" class="muted"></div></div>
       <div class="cols">
         <div class="panel">
           <div id="draws"></div>
@@ -378,36 +367,14 @@ async function hostConsole(p) {
         </div>
         <div class="panel"><h2 id="count"></h2><div id="board"></div><h2 style="margin-top:16px">Orden de salida</h2><div id="history" class="history"></div></div>
       </div>
-    </div>
-    <div class="panel">
-      <h2>Gráfica para OBS</h2>
-      <p class="muted small">Fuente de navegador de 1920×1080 con fondo transparente, para poner sobre la cámara: título y QR arriba, sorteo actual y figura abajo. Sigue sola a la sesión activa.</p>
-      <p class="small"><a class="link" href="${gcUrl()}" target="_blank">${esc(gcUrl())}</a></p>
-      <div class="fields" style="margin-top:10px">
-        <label class="f">Texto de la franja superior<input type="text" id="gc-top" maxlength="90" placeholder="Escanea el código QR y participa"></label>
-        <label class="f">Texto de la franja inferior<input type="text" id="gc-bottom" maxlength="140" placeholder="Pon tu nombre y apellido y participa"></label>
-      </div>
-      <p class="muted small" style="margin-top:8px">En la franja inferior, lo que escribas entre asteriscos sale resaltado en amarillo: <b>*CONTRASEÑA: 1234*</b></p>
-      <p style="margin-top:10px"><button id="gc-save">Guardar textos</button></p>
-    </div>
-    <div class="panel">
-      <h2>Siguiente ronda</h2>
-      <div id="restart-pats"></div>
-      <div class="row">
-        <button class="primary" id="restart">Reiniciar la sesión</button>
-        <button id="finalbtn">Selección final entre cartones completados</button>
-        <button class="danger" id="close">Cerrar la sesión</button>
-      </div>
+      <a class="btn primary big" href="#/ronda/${p.id}" style="margin-bottom:14px">▶ Siguiente ronda</a>
+      <a class="btn big" href="#/sorteoctl">🎲 Sortear participantes de El Rosco</a>
+      <p class="small" style="text-align:center;margin-top:22px"><a href="#/admin/${p.id}">⚙️ Administración</a></p>
     </div>`;
-  let pickerRound = null;
-  let gcFilled = false;
   const render = () => {
-    if (!gcFilled) { gcFilled = true; $('#gc-top').value = st.gc.top; $('#gc-bottom').value = st.gc.bottom; }
     $('#title').textContent = st.name;
-    if (pickerRound !== st.round) { pickerRound = st.round; $('#restart-pats').innerHTML = patternPicker(st.patterns); }
     const mins = Math.max(0, Math.round((st.expires - Date.now()) / 60000));
     $('#meta').textContent = `Ronda ${st.round} · ${st.players} participantes · ${st.players * st.cardsPerPlayer} de ${st.totalCards} cartones repartidos · quedan ${Math.floor(mins / 60)} h ${mins % 60} min`;
-    $('#pats').innerHTML = patternsInline(st.patterns);
     $('#draws').innerHTML = drawsHTML(st, st.drawn);
     $('#count').textContent = `Tablero · ${st.drawn.length} de ${st.values}`;
     $('#board').innerHTML = boardHTML(st, st.drawn, manual);
@@ -425,7 +392,7 @@ async function hostConsole(p) {
       ${results.map((r) => `<tr><td><b>#${p.startNumber + r.cardNo - 1}</b></td><td>${esc(PATTERNS.byId[r.pattern].name)}</td>
         <td>${esc(r.name)}</td><td>${r.at}</td>
         <td>${r.validated ? '<span class="tag live">¡Bingo!</span>' : '<span class="tag">Le falta marcar</span>'}</td></tr>`).join('')}
-      </table>` : '<p class="muted">Aquí aparecerá cada cartón que complete un patrón.</p>';
+      </table>` : '';
     $('#hidewin').hidden = !won;
     $('#hidewin').textContent = st.celebrate ? 'Quitar la celebración de la pantalla' : 'Volver a mostrar la celebración';
     $('#final').innerHTML = st.finalists ? `<p><b>Selección final:</b> ${st.finalists.map((c) => '#' + (p.startNumber + c - 1)).join(', ') || 'no hay cartones validados'}</p>` : '';
@@ -433,18 +400,72 @@ async function hostConsole(p) {
   };
   $('#gen').onclick = () => act('draw');
   $('#hidewin').onclick = () => act('hidewin', { hide: st.celebrate });
-  $('#gc-save').onclick = async () => { await act('gc', { top: $('#gc-top').value, bottom: $('#gc-bottom').value }); toast('Textos de la gráfica guardados'); };
   $('#auto').onclick = () => act('auto', { on: !st.auto.on, interval: Number($('#interval').value), stopOnWin: $('#stop').checked });
   $('#manual').onclick = () => { manual = !manual; render(); };
   $('#voice').onchange = (e) => { voiceOn = e.target.checked; store.set('voice', voiceOn ? '1' : '0'); };
   $('#board').onclick = (e) => { const v = e.target.dataset.v; if (manual && v && !st.drawn.includes(Number(v))) act('draw', { value: Number(v) }); };
-  $('#restart').onclick = () => { const patterns = readPatterns($('#restart-pats')); if (patterns && confirm('¿Reiniciar la sesión? Los cartones de los participantes se limpian.')) act('restart', { patterns }); };
-  $('#finalbtn').onclick = () => { const keep = prompt('¿Cuántos cartones quieres conservar?', '1'); if (keep) act('final', { keep: Number(keep) }); };
-  $('#close').onclick = async () => { if (confirm('¿Cerrar la sesión para todos?')) { await act('close'); location.hash = '#/proyectos'; } };
-  const off = subscribe(sid, (s) => { st = s; render(); }, () => { location.hash = '#/proyectos'; }, true);
+  const off = subscribe(sid, (s) => { st = s; render(); }, () => { location.hash = '#/'; }, true);
   const tick = setInterval(() => st && render(), 60000);
   return () => { off(); clearInterval(tick); };
 }
+
+// Siguiente ronda: se vuelve a elegir la figura y el sorteo parte de cero.
+// Los participantes conservan su cartón.
+views.ronda = async (pid) => {
+  if (!(await isAdmin())) return viewLogin();
+  const p = await api('GET', `/api/projects/${pid}`);
+  if (!p.sessionId) { location.hash = `#/anfitrion/${pid}`; return undefined; }
+  const info = await api('GET', `/api/sessions/${p.sessionId}/host`);
+  const next = info.round + 1;
+  app.innerHTML = `<p class="back"><a href="#/anfitrion/${pid}">← Volver sin cambiar de ronda</a></p><h1>${esc(p.name)}</h1>
+    <form class="panel" id="f">
+      <h2>Ronda ${next}: ¿qué figura se juega?</h2>
+      ${patternPicker(info.patterns)}
+      <p class="muted small">Se borran los números sorteados y las marcas de la ronda ${info.round}. Cada participante sigue con su mismo cartón.</p>
+      <button class="primary big">Iniciar la ronda ${next}</button>
+    </form>`;
+  $('#f').onsubmit = async (e) => {
+    e.preventDefault();
+    const patterns = readPatterns(e.target);
+    if (!patterns) return;
+    try { await api('POST', `/api/sessions/${p.sessionId}/host/restart`, { patterns }); location.hash = `#/anfitrion/${pid}`; } catch (err) { fail(err); }
+  };
+  return undefined;
+};
+
+// Administración del bingo en curso: lo que no se usa durante el juego
+views.admin = async (pid) => {
+  if (!(await isAdmin())) return viewLogin();
+  const p = await api('GET', `/api/projects/${pid}`);
+  if (!p.sessionId) { location.hash = `#/anfitrion/${pid}`; return undefined; }
+  const sid = p.sessionId;
+  const info = await api('GET', `/api/sessions/${sid}/host`);
+  const act = (action, body) => api('POST', `/api/sessions/${sid}/host/${action}`, body || {});
+  app.innerHTML = `<p class="back"><a href="#/anfitrion/${pid}">← Volver al bingo</a></p><h1>Administración</h1>
+    <div class="panel"><h2>Enlaces y código QR</h2>
+      <div class="row between"><div class="small">
+        <b>Participantes:</b> <a class="link" href="${joinUrl()}" target="_blank">${esc(joinUrl())}</a><br>
+        <b>Pantalla de OBS:</b> <a class="link" href="${stageUrl()}" target="_blank">${esc(stageUrl())}</a><br>
+        <b>Tablero para el DJ:</b> <a class="link" href="${boardUrl()}" target="_blank">${esc(boardUrl())}</a><br>
+        <b>Contraseña:</b> ${info.password ? esc(info.password) : '<i>sin contraseña</i>'}</div>${qr(joinUrl())}</div></div>
+    <div class="panel"><h2>Textos de la gráfica de OBS</h2>
+      <div class="fields" style="margin-top:10px">
+        <label class="f">Franja superior<input type="text" id="gc-top" maxlength="90" value="${esc(info.gc.top)}" placeholder="Escanea el código QR y participa"></label>
+        <label class="f">Franja inferior<input type="text" id="gc-bottom" maxlength="140" value="${esc(info.gc.bottom)}" placeholder="Pon tu nombre y apellido y participa"></label>
+      </div>
+      <p class="muted small" style="margin-top:8px">En la franja inferior, lo que escribas entre asteriscos sale resaltado en amarillo: <b>*CONTRASEÑA: 1234*</b></p>
+      <p style="margin-top:10px"><button id="gc-save">Guardar textos</button></p></div>
+    <div class="panel"><h2>Selección final</h2>
+      <p class="muted small">Si hay varios ganadores, elige al azar cuántos cartones conservar. El resultado aparece en el panel del bingo.</p>
+      <div class="row"><label class="small">Conservar <input type="number" id="keep" min="1" value="1" style="width:80px"> cartones</label><button id="finalbtn">Elegir al azar</button></div></div>
+    <div class="panel"><h2>Cerrar la sesión</h2>
+      <p class="muted small">Termina el bingo para todos: se pierden los cartones repartidos y los participantes tendrán que volver a entrar.</p>
+      <button class="danger" id="close">Cerrar la sesión</button></div>`;
+  $('#gc-save').onclick = async () => { try { await act('gc', { top: $('#gc-top').value, bottom: $('#gc-bottom').value }); toast('Textos de la gráfica guardados'); } catch (err) { fail(err); } };
+  $('#finalbtn').onclick = async () => { try { await act('final', { keep: Number($('#keep').value) || 1 }); toast('Selección hecha: mírala en el panel del bingo'); } catch (err) { fail(err); } };
+  $('#close').onclick = async () => { if (confirm('¿Cerrar la sesión para todos?')) { await act('close').catch(fail); store.del('lastBingo'); location.hash = '#/'; } };
+  return undefined;
+};
 
 views.sesiones = async () => {
   const list = await api('GET', '/api/sessions');

@@ -418,3 +418,6 @@ body.tv .bwin { background: rgba(10, 8, 24, .92); }
 .control-grid button { display: grid; justify-items: center; gap: 4px; padding: 18px 8px; border-radius: 16px; font-size: 1.1rem; font-weight: 700; }
 .control-grid button span { font-size: 2rem; line-height: 1; pointer-events: none; }
 .control-grid button.on { background: var(--win); border-color: #fff; color: #fff; }
+
+/* Enlaces con aspecto de botón grande (pasos del animador) */
+a.btn.big { display: block; text-align: center; font-size: 1.15rem; font-weight: 700; padding: 15px 20px; }
