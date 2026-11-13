@@ -101,6 +101,8 @@ function markMask(s, cardNo) {
 }
 // Detecta patrones completados. Devuelve true si aparece un resultado nuevo.
 function evaluate(s) {
+  // Con el ganador confirmado la ronda terminó: nadie más puede ganar (aunque se reconecte o marque después)
+  if (roundOver(s)) return false;
   const owners = {};
   // Solo puede ganar quien tiene su cartón abierto en este momento (conexión en vivo activa)
   const online = new Set([...(clients[s.id] || [])].map((res) => res.playerToken));
@@ -139,7 +141,7 @@ function publicState(s, full = false) {
     // Celebración a pantalla completa mientras haya ganadores y el moderador no la haya quitado
     bigQr: !!s.bigQr, tieWinner: s.tieWinner || null, rollMs: 6500,
     celebrate: !s.hideWin && s.results.some((r) => r.validated && !r.dismissed),
-    winConfirmed: s.results.some((r) => r.validated && !r.dismissed) && s.results.every((r) => !r.validated || r.dismissed || r.confirmed),
+    winConfirmed: roundOver(s), winConfirmedAt: s.confirmedAt || 0, now: Date.now(),
     patterns: s.patterns, drawn: s.drawn, results, finalists: s.finalists || null,
     auto: s.auto, cardsPerPlayer: s.cardsPerPlayer, totalCards: p.cards.length,
     players: Object.values(s.players).length,
@@ -352,7 +354,7 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
       break;
     case 'restart':
       stopAuto(s);
-      Object.assign(s, { round: s.round + 1, drawn: [], results: [], marks: {}, finalists: null, tieWinner: null, hideWin: false, patterns: cleanPatterns(b.patterns) });
+      Object.assign(s, { round: s.round + 1, drawn: [], results: [], marks: {}, finalists: null, tieWinner: null, hideWin: false, confirmedAt: 0, patterns: cleanPatterns(b.patterns) });
       setStage('bingo'); // la ronda nueva devuelve la pantalla a la gráfica del bingo
       evaluate(s);
       break;
@@ -365,6 +367,9 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
         if (tied && r.cardNo !== s.tieWinner.cardNo) r.dismissed = true; else r.confirmed = true;
       }
       stopAuto(s);
+      s.confirmedAt = Date.now();
+      // Quien no fue confirmado queda fuera: el cartel muestra solo al ganador aceptado
+      for (const r of s.results) if (!r.confirmed) r.dismissed = true;
       if (tied) { s.hideWin = false; setStage('bingo'); } // vuelve la gráfica del bingo, con la celebración del ganador único
       break;
     }

@@ -26,8 +26,9 @@
     let sid = null;
     let lastCount = -1;
     let winShown = null;
+    let winTimer = null;
     let bigShown = false;
-    const leave = () => { if (off) off(); off = null; sid = null; lastCount = -1; winShown = null; bigShown = false; };
+    const leave = () => { clearTimeout(winTimer); if (off) off(); off = null; sid = null; lastCount = -1; winShown = null; bigShown = false; };
 
     const draw = (st) => {
       const current = st.drawn.at(-1);
@@ -40,6 +41,11 @@
       if (st.celebrate) {
         bigShown = false;
         // Ganador ya confirmado: la celebración se recoge a un cartel abajo al centro, para dejar ver la cámara
+        // A los 15 s de confirmado, el cartel se retira y el GC queda limpio
+        const left = st.winConfirmed ? 15000 - (st.now - st.winConfirmedAt) : Infinity;
+        clearTimeout(winTimer);
+        if (left <= 0) { winShown = 'gone'; $('#gc').innerHTML = ''; return; }
+        if (st.winConfirmed) winTimer = setTimeout(() => { winShown = 'gone'; $('#gc').innerHTML = ''; }, left);
         const key = winKey(st) + (st.winConfirmed ? '|ok' : '');
         if (key !== winShown) {
           winShown = key;
@@ -54,7 +60,7 @@
         }
         return;
       }
-      winShown = null;
+      winShown = null; clearTimeout(winTimer);
       $('#gc').className = `th-${st.theme}`; // colores según el local
       // Antes de empezar: cartel con el QR en grande para que la gente entre
       if (st.bigQr) {
