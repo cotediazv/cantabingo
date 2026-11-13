@@ -227,7 +227,29 @@ views.control = async () => {
         <button data-show="none" class="wide"><span>⬛</span>Nada</button>
       </div>
       <p class="small" style="margin-top:16px"><b>Enlace para OBS</b> (1920×1080, no pide usuario ni contraseña):<br><a class="link" href="${stageUrl()}" target="_blank">${esc(stageUrl())}</a></p>
-    </div>`;
+    </div>
+    <div class="panel"><h2>Bingos abiertos</h2>
+      <p class="muted small">Si hay más de uno, a la gente le aparece una lista para elegir. Cierra los que ya no se usan.</p>
+      <div id="open-list"></div></div>`;
+  const paintOpen = async () => {
+    const list = await activeSessions();
+    if (!$('#open-list')) return;
+    $('#open-list').innerHTML = list.length ? `${list.map((s) => `<div class="open-row"><span><b>${esc(s.name)}</b><br><small class="muted">Ronda ${s.round}</small></span><button class="danger" data-close="${s.id}">Cerrar</button></div>`).join('')}
+      ${list.length > 1 ? '<button class="danger big" id="close-all" style="width:100%;margin-top:12px">Cerrar todos</button>' : ''}` : '<p class="muted">No hay ningún bingo abierto.</p>';
+  };
+  const closeOne = (id) => api('POST', `/api/sessions/${id}/host/close`);
+  $('#open-list').onclick = async (e) => {
+    const one = e.target.closest('[data-close]');
+    try {
+      if (one) { if (!confirm('¿Cerrar este bingo para todos? Sus participantes pierden el cartón.')) return; await closeOne(one.dataset.close); }
+      else if (e.target.closest('#close-all')) { if (!confirm('¿Cerrar TODOS los bingos abiertos?')) return; for (const s of await activeSessions()) await closeOne(s.id); }
+      else return;
+      store.del('lastBingo');
+      toast('Listo');
+    } catch (err) { fail(err); }
+    paintOpen();
+  };
+  paintOpen();
   const paintStage = (show) => $$('#stage button').forEach((b) => b.classList.toggle('on', b.dataset.show === show));
   paintStage((await api('GET', '/api/stage').catch(() => ({}))).show);
   $('#stage').onclick = async (e) => {
