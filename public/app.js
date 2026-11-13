@@ -353,6 +353,8 @@ async function hostConsole(p) {
             <h2 id="results-title"></h2>
             <div id="results"></div>
             <div id="final"></div>
+            <div id="tie-result"></div>
+            <button class="primary" id="tiebreak" hidden>🎲 Desempatar por sorteo</button>
             <button id="hidewin" hidden></button>
           </div>
           <div class="row" style="justify-content:center;margin-top:16px"><button class="primary big" id="gen">Generar un número</button></div>
@@ -397,6 +399,14 @@ async function hostConsole(p) {
     // Ganadores en grande; debajo, quienes ya completaron la figura pero aún no marcan su cartón
     $('#results').innerHTML = `<div class="win-names">${results.filter((r) => r.validated).map((r) => `<span><b>${esc(r.name)}</b><small>Cartón #${p.startNumber + r.cardNo - 1}</small></span>`).join('')}</div>
       ${results.filter((r) => !r.validated).map((r) => `<p class="win-pending">${esc(r.name)} · cartón #${p.startNumber + r.cardNo - 1} · le falta marcar</p>`).join('')}`;
+    // Con dos o más ganadores se puede desempatar con la tómbola en pantalla
+    const winners = new Set(results.filter((r) => r.validated).map((r) => r.cardNo)).size;
+    $('#tiebreak').hidden = winners < 2;
+    $('#tiebreak').textContent = st.tieWinner ? '🎲 Volver a desempatar' : '🎲 Desempatar por sorteo';
+    // El resultado se muestra al animador cuando la tómbola ya terminó en pantalla
+    const tieDone = st.tieWinner && Date.now() - st.tieWinner.at >= st.rollMs;
+    $('#tie-result').innerHTML = !st.tieWinner ? '' : tieDone ? `<p class="tie-won">Ganador del desempate<b>${esc(st.tieWinner.name)}</b><small>Cartón #${p.startNumber + st.tieWinner.cardNo - 1}</small></p>` : '<p class="tie-won">Sorteando en pantalla…</p>';
+    if (st.tieWinner && !tieDone) setTimeout(() => st && render(), st.rollMs - (Date.now() - st.tieWinner.at) + 100);
     $('#hidewin').hidden = !won;
     $('#hidewin').textContent = st.celebrate ? 'Quitar la celebración de la pantalla' : 'Volver a mostrar la celebración';
     $('#final').innerHTML = st.finalists ? `<p><b>Selección final:</b> ${st.finalists.map((c) => '#' + (p.startNumber + c - 1)).join(', ') || 'no hay cartones validados'}</p>` : '';
@@ -404,6 +414,7 @@ async function hostConsole(p) {
   };
   $('#gen').onclick = () => act('draw');
   $('#hidewin').onclick = () => act('hidewin', { hide: st.celebrate });
+  $('#tiebreak').onclick = () => api('POST', '/api/raffle/tiebreak', { sid }).catch(fail);
   $('#auto').onclick = () => act('auto', { on: !st.auto.on, interval: Number($('#interval').value), stopOnWin: $('#stop').checked });
   $('#manual').onclick = () => { manual = !manual; render(); };
   $('#bigqr').onclick = () => act('bigqr', { on: !st.bigQr });

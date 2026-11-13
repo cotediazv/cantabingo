@@ -23,7 +23,7 @@
         </div>
       </div>${BACK_BINGO}`;
     let picked = [];
-    api('POST', '/api/stage', { show: 'sorteo' }).catch(() => {});
+    api('POST', '/api/raffle/open').catch(() => {});
     const load = async () => {
       const [r, p] = await Promise.all([api('GET', '/api/raffle'), api('GET', '/api/people')]);
       picked = r.picked;
@@ -76,7 +76,7 @@
   // ---------- Pantalla de OBS ----------
   views.sorteo = async () => {
     document.body.classList.add('obs', 'raffle-screen');
-    app.innerHTML = `<div id="rf"><div class="rf-title">Sorteo de concursantes</div>
+    app.innerHTML = `<div id="rf"><div class="rf-title" id="rf-title">Sorteo de concursantes</div>
       <div class="rf-stage" id="rf-stage"></div><div class="rf-picked" id="rf-list"></div></div>`;
     let shownRoll = 0; // sorteo cuya animación ya se inició
     let spin = null;
@@ -86,12 +86,13 @@
     };
     const list = (names) => { $('#rf-list').innerHTML = names.map((n, i) => `<span><b>${i + 1}</b>${esc(n)}</span>`).join(''); };
     const reveal = (st, celebrate) => {
-      $('#rf-stage').innerHTML = `${celebrate ? confetti() : ''}<div class="rf-card win ${celebrate ? 'pop' : ''}"><span class="rf-kicker">🎉 ¡A jugar El Rosco!</span><span class="rf-name">${esc(st.roll.winner)}</span></div>`;
+      $('#rf-stage').innerHTML = `${celebrate ? confetti() : ''}<div class="rf-card win ${celebrate ? 'pop' : ''}"><span class="rf-kicker">${st.mode === 'tie' ? '🏆 ¡Ganador del bingo!' : '🎉 ¡A jugar El Rosco!'}</span><span class="rf-name">${esc(st.roll.winner)}</span></div>`;
       list(st.picked);
     };
     const poll = async () => {
       const st = await api('GET', '/api/raffle').catch(() => null);
       if (!st) return;
+      $('#rf-title').textContent = st.mode === 'tie' ? 'Desempate' : 'Sorteo de concursantes';
       if (!st.roll) {
         clearTimeout(spin); spin = null; shownRoll = 0;
         $('#rf-stage').innerHTML = `<div class="rf-card"><span class="rf-kicker">${st.pool} participantes</span><span class="rf-name small">¿Quién jugará El Rosco?</span></div>`;
@@ -105,7 +106,8 @@
       if (left <= 200) { reveal(st, false); return; } // ya había terminado: se muestra el resultado sin animar
       // Mientras gira no se muestra todavía al elegido en la lista de abajo
       list(st.picked.filter((n) => n !== st.roll.winner));
-      $('#rf-stage').innerHTML = '<div class="rf-card rolling"><span class="rf-kicker">Sorteando…</span><span class="rf-name" id="rf-roll"></span></div>';
+      const rollingText = st.mode === 'tie' ? `Sorteando entre ${st.pool} ganadores…` : 'Sorteando…';
+      $('#rf-stage').innerHTML = `<div class="rf-card rolling"><span class="rf-kicker">${rollingText}</span><span class="rf-name" id="rf-roll"></span></div>`;
       let i = 0;
       const end = Date.now() + left;
       const tick = () => {

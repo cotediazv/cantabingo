@@ -137,7 +137,7 @@ function publicState(s, full = false) {
     format: p.format, headers: p.headers, values: p.values, items: p.items, showName: s.showName,
     gc: s.gc || gcDefaults(), startNumber: p.startNumber, theme: s.theme || 'frida',
     // Celebración a pantalla completa mientras haya ganadores y el moderador no la haya quitado
-    bigQr: !!s.bigQr,
+    bigQr: !!s.bigQr, tieWinner: s.tieWinner || null, rollMs: 6500,
     celebrate: !s.hideWin && s.results.some((r) => r.validated),
     patterns: s.patterns, drawn: s.drawn, results, finalists: s.finalists || null,
     auto: s.auto, cardsPerPlayer: s.cardsPerPlayer, totalCards: p.cards.length,
@@ -344,7 +344,8 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
       break;
     case 'restart':
       stopAuto(s);
-      Object.assign(s, { round: s.round + 1, drawn: [], results: [], marks: {}, finalists: null, hideWin: false, patterns: cleanPatterns(b.patterns) });
+      Object.assign(s, { round: s.round + 1, drawn: [], results: [], marks: {}, finalists: null, tieWinner: null, hideWin: false, patterns: cleanPatterns(b.patterns) });
+      setStage('bingo'); // la ronda nueva devuelve la pantalla a la gráfica del bingo
       evaluate(s);
       break;
     case 'bigqr': s.bigQr = b.on !== false; break; // cartel con el QR en grande, para antes de empezar

@@ -18,7 +18,10 @@ module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, 
 
   // Lo que ve la pantalla pública: elegidos, el sorteo en curso y cuántas personas hay en la lista
   app.get('/api/raffle', (_req, res) => {
-    res.json({ picked: db.raffle.picked, roll: db.raffle.roll, rollMs: ROLL_MS, now: Date.now(), pool: names().filter((n) => connectedNames().has(n)).length });
+    const r = db.raffle;
+    // Desempate del bingo: la misma tómbola, pero solo entre los ganadores empatados
+    if (r.mode === 'tie' && r.tie) return res.json({ mode: 'tie', picked: [], roll: r.tie, rollMs: ROLL_MS, now: Date.now(), pool: r.tie.tied });
+    return res.json({ mode: 'rosco', picked: r.picked, roll: r.roll, rollMs: ROLL_MS, now: Date.now(), pool: names().filter((n) => connectedNames().has(n)).length });
   });
 
   app.get('/api/people', requireAdmin, (_req, res) => { const on = connectedNames(); res.json({ names: names(), connected: names().filter((n) => on.has(n)) }); });
@@ -79,10 +82,40 @@ module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, 
     // Nombres que desfilan durante la animación (el elegido va incluido)
     const parade = shuffle(eligible.filter((n) => n !== winner)).slice(0, 24);
     r.roll = { winner, names: shuffle([...parade, winner]), at: Date.now() };
+    r.mode = 'rosco';
     r.picked.push(winner);
     setStage('sorteo');
     save();
     res.json({ winner, picked: r.picked });
+  });
+
+  // El panel del sorteo de El Rosco pone la tómbola en pantalla al abrirse
+  app.post('/api/raffle/open', requireAdmin, (_req, res) => {
+    db.raffle.mode = 'rosco';
+    setStage('sorteo');
+    res.json({ ok: true });
+  });
+
+  // Desempate: sortea en pantalla un único ganador entre quienes hicieron bingo en la ronda
+  app.post('/api/raffle/tiebreak', requireAdmin, (req, res) => {
+    const s = (db.sessions || {})[String((req.body || {}).sid || '')];
+    if (!s) return fail(res, 404, 'La sesión de bingo ya no existe');
+    const r = db.raffle;
+    if (r.tie && Date.now() - r.tie.at < ROLL_MS) return fail(res, 400, 'Espera a que termine el sorteo en curso');
+    const seen = new Set();
+    const tied = s.results.filter((x) => x.validated && !seen.has(x.cardNo) && seen.add(x.cardNo));
+    if (tied.length < 2) return fail(res, 400, 'Para desempatar se necesitan al menos 2 ganadores');
+    const pick = tied[crypto.randomInt(tied.length)];
+    // Desfilan los nombres de los empatados, repetidos para que la tómbola tenga recorrido
+    const parade = [];
+    while (parade.length < 16) parade.push(...shuffle(tied.map((x) => x.name)));
+    r.tie = { winner: pick.name, names: parade, at: Date.now(), tied: tied.length };
+    r.mode = 'tie';
+    s.tieWinner = { name: pick.name, cardNo: pick.cardNo, at: r.tie.at };
+    setStage('sorteo');
+    save();
+    refreshAll();
+    res.json({ winner: pick.name });
   });
 
   app.post('/api/raffle/remove', requireAdmin, (req, res) => {
