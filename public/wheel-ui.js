@@ -215,8 +215,15 @@
   async function publicView(kind, id) {
     if (!id) {
       const list = await openWheels();
+      if (!list.length && kind === 'obs') {
+        // En OBS no se muestra ningún cartel de espera: queda transparente hasta que exista un rosco
+        document.body.classList.add('obs');
+        app.innerHTML = '';
+        const timer = setInterval(async () => { if ((await openWheels()).length) route(); }, 4000);
+        return () => { clearInterval(timer); document.body.classList.remove('obs'); };
+      }
       if (!list.length) return waiting(openWheels);
-      if (list.length > 1) {
+      if (list.length > 1 && kind !== 'obs') {
         app.innerHTML = `<div class="panel" style="max-width:520px;margin:6vh auto 0"><h1>Elige el juego</h1>
           <div style="display:grid;gap:10px;margin-top:14px">${list.map((w) => `<a class="btn primary" style="text-align:center;padding:14px;font-size:1.1rem;border-radius:14px" href="#/${kind}/${w.id}">${esc(w.name)}</a>`).join('')}</div></div>`;
         return undefined;
@@ -289,7 +296,7 @@
         ${revealCard(st, 'pw-reveal')}${st.question ? `<div class="pw-question">${esc(st.question)}</div>` : ''}
         <div class="wheels n${st.players.length}">${st.players.map((_, i) => `<div class="wheel-box ${i === st.turn && !st.finished ? 'on' : 'off'}">${wheelSVG(st, i)}</div>`).join('')}</div>`;
       scheduleRevealEnd(st);
-    }, () => { leave(); if (location.hash === `#/${kind}`) route(); else location.hash = `#/${kind}`; });
+    }, () => { leave(); if (location.hash === '#/escena' || location.hash === `#/${kind}`) route(); else location.hash = `#/${kind}`; });
     return () => { off(); stopClocks(); leave(); };
   }
   views.rueda = (id) => publicView('rueda', id);

@@ -129,6 +129,7 @@ function subscribe(sid, onState, onGone, asAdmin = false) {
 const joinUrl = () => `${location.origin}${location.pathname}#/jugar`;
 const boardUrl = () => `${location.origin}${location.pathname}#/tablero`;
 const gcUrl = () => `${location.origin}${location.pathname}#/gc`;
+const stageUrl = () => `${location.origin}${location.pathname}#/escena`;
 const activeSessions = async () => (await api('GET', '/api/current').catch(() => ({}))).sessions || [];
 // Resuelve el enlace fijo: sin sesiones espera, con una entra directo y con varias deja elegir.
 // Devuelve { sid } para continuar o { cleanup } si ya dibujó la pantalla.
@@ -197,7 +198,22 @@ views.home = async () => {
     <div class="tiles">
       ${GAMES.map((g) => `<a class="tile" href="${g.href}"><span class="tile-icon">${g.icon}</span><b>${esc(g.name)}</b><span class="muted">${esc(g.desc)}</span></a>`).join('')}
     </div>
-    <p class="muted small" style="margin-top:16px">Aquí irán apareciendo los próximos juegos.</p>`;
+    <p class="muted small" style="margin-top:16px">Aquí irán apareciendo los próximos juegos.</p>
+    <div class="panel" style="margin-top:24px">
+      <h2>En pantalla (OBS)</h2>
+      <p class="muted small">Una sola fuente de navegador para todo el show. Elige qué gráfica se muestra y cambia sola en un par de segundos, sin tocar OBS.</p>
+      <div class="row" id="stage" style="margin:12px 0">
+        <button data-show="bingo">🎱 Bingo</button><button data-show="rueda">🎡 El Rosco</button><button data-show="none">Nada</button>
+      </div>
+      <p class="small"><b>Enlace para OBS</b> (1920×1080, no pide usuario ni contraseña):<br><a class="link" href="${stageUrl()}" target="_blank">${esc(stageUrl())}</a></p>
+    </div>`;
+  const paintStage = (show) => $$('#stage button').forEach((b) => b.classList.toggle('on', b.dataset.show === show));
+  paintStage((await api('GET', '/api/stage').catch(() => ({}))).show);
+  $('#stage').onclick = async (e) => {
+    const show = e.target.dataset.show;
+    if (!show) return;
+    try { paintStage((await api('POST', '/api/stage', { show })).show); } catch (err) { fail(err); }
+  };
   $('#logout').onclick = () => { store.del('adminToken'); route(); };
   return undefined;
 };
@@ -520,6 +536,34 @@ views.tablero = async (sid) => {
       </div>${boardHTML(st, st.drawn)}`;
   }, () => { document.body.classList.remove('tv'); if (location.hash === '#/tablero') route(); else location.hash = '#/tablero'; });
   return () => { off(); document.body.classList.remove('tv'); };
+};
+
+// Pantalla única para OBS: muestra la gráfica que el moderador elija en «Juegos».
+// No requiere iniciar sesión y queda transparente cuando no hay nada que mostrar.
+views.escena = async () => {
+  let current = null;
+  let stop = null;
+  let busy = false;
+  document.body.classList.add('obs');
+  const apply = async () => {
+    if (busy) return;
+    busy = true;
+    try {
+      const show = (await api('GET', '/api/stage').catch(() => ({}))).show || current || 'none';
+      if (show !== current) {
+        current = show;
+        if (typeof stop === 'function') stop();
+        stop = null;
+        app.innerHTML = '';
+        if (show === 'bingo') stop = await views.gc();
+        else if (show === 'rueda') stop = await views.obs();
+        document.body.classList.add('obs');
+      }
+    } finally { busy = false; }
+  };
+  await apply();
+  const timer = setInterval(apply, 2000);
+  return () => { clearInterval(timer); if (typeof stop === 'function') stop(); document.body.classList.remove('obs'); };
 };
 
 // ---------- Enrutador ----------

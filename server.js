@@ -456,6 +456,18 @@ app.get('/api/sessions/:sid/events', (req, res) => {
 // Segundo juego de la plataforma
 require('./wheel.js')({ app, db, save, requireAdmin, fail });
 
+// Pantalla única de OBS: qué gráfica se muestra ahora (bingo, rueda o nada).
+// Leerla es público, para que la fuente de OBS no necesite iniciar sesión; cambiarla es del moderador.
+const STAGES = ['bingo', 'rueda', 'none'];
+app.get('/api/stage', (_req, res) => res.json({ show: STAGES.includes(db.stage) ? db.stage : 'bingo' }));
+app.post('/api/stage', requireAdmin, (req, res) => {
+  const show = String((req.body || {}).show);
+  if (!STAGES.includes(show)) return fail(res, 400, 'Opción no válida');
+  db.stage = show;
+  save();
+  res.json({ show });
+});
+
 app.get('/api/qr', async (req, res) => {
   try {
     res.type('image/svg+xml').send(await QRCode.toString(String(req.query.text || '').slice(0, 500), { type: 'svg', margin: 1 }));
