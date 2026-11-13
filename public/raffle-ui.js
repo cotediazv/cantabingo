@@ -86,7 +86,7 @@
     };
     const list = (names) => { $('#rf-list').innerHTML = names.map((n, i) => `<span><b>${i + 1}</b>${esc(n)}</span>`).join(''); };
     const reveal = (st, celebrate) => {
-      $('#rf-stage').innerHTML = `${celebrate ? confetti() : ''}<div class="rf-card win ${celebrate ? 'pop' : ''}"><span class="rf-kicker">${st.mode === 'tie' ? '🏆 ¡Ganador del bingo!' : '🎉 ¡A jugar El Rosco!'}</span><span class="rf-name">${esc(st.roll.winner)}</span></div>`;
+      $('#rf-stage').innerHTML = `${celebrate ? confetti() : ''}<div class="rf-card win ${celebrate ? 'pop' : ''}"><span class="rf-kicker">${st.mode === 'tie' ? (st.roll.game === 'rosco' ? '🏆 ¡Ganador de El Rosco!' : '🏆 ¡Ganador del bingo!') : '🎉 ¡A jugar El Rosco!'}</span><span class="rf-name">${esc(st.roll.winner)}</span></div>`;
       list(st.picked);
     };
     const poll = async () => {
@@ -106,7 +106,7 @@
       if (left <= 200) { reveal(st, false); return; } // ya había terminado: se muestra el resultado sin animar
       // Mientras gira no se muestra todavía al elegido en la lista de abajo
       list(st.picked.filter((n) => n !== st.roll.winner));
-      const rollingText = st.mode === 'tie' ? `Sorteando entre ${st.pool} ganadores…` : 'Sorteando…';
+      const rollingText = st.mode === 'tie' ? `Sorteando entre ${st.pool} ${st.roll.game === 'rosco' ? 'concursantes empatados' : 'ganadores'}…` : 'Sorteando…';
       $('#rf-stage').innerHTML = `<div class="rf-card rolling"><span class="rf-kicker">${rollingText}</span><span class="rf-reel" id="rf-prev"></span><span class="rf-name" id="rf-roll"></span><span class="rf-reel" id="rf-next"></span></div>`;
       let i = 0;
       const end = Date.now() + left;

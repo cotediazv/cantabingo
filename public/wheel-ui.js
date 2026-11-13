@@ -148,6 +148,7 @@
         <div class="panel">
           <div class="row between"><div><h1 id="w-name" style="margin:0"></h1><span class="muted" id="w-turn"></span></div><div class="w-letter" id="w-letter"></div></div>
           <div class="w-question" id="w-question"></div>
+          <button class="primary big w-accept" id="w-tie" hidden>🎲 Desempatar por sorteo</button>
           <button class="primary big w-accept" id="w-accept" data-do="acceptwin" hidden>✔ Aceptar ganador</button>
           <div id="w-accepted" hidden><p class="w-accepted">✔ Ganador aceptado</p><button class="primary big w-back" data-back-bingo>← Volver al bingo</button></div>
           <div class="w-keys">
@@ -173,14 +174,15 @@
     const render = () => {
       const c = st.players[st.turn];
       $('#w-name').textContent = st.name;
-      $('#w-turn').textContent = st.winner ? `🏆 ${st.winner.name} completó el rosco` : st.finished ? 'Juego terminado' : `Turno de ${c.name}`;
+      $('#w-turn').textContent = st.winner ? (st.winner.full ? `🏆 ${st.winner.name} completó el rosco` : `🏆 Gana ${st.winner.name} (${st.winner.hits} ✔ · ${st.winner.misses} ✘)${st.winner.byDraw ? ', por sorteo' : ''}`) : st.tie ? `Empate: ${st.tie.names.join(' y ')}` : st.finished ? 'Juego terminado' : `Turno de ${c.name}`;
       $('#w-letter').textContent = c.active ? st.letters[c.current] : '—';
       const q = (questions[st.turn] || [])[c.current] || {};
       // La pregunta y su respuesta se muestran al moderador solo con el reloj en marcha
-      $('#w-question').innerHTML = !c.active ? (st.winner ? (st.winAccepted ? '<b>¡Rosco completo!</b> El nombre del ganador queda abajo al centro de la pantalla.' : '<b>¡Rosco completo!</b> La partida se detuvo y en pantalla se muestra la felicitación. Pulsa «Aceptar ganador», o Deshacer si fue un error.') : '<span class="muted">Este concursante ya terminó su rosco.</span>')
+      $('#w-question').innerHTML = !c.active ? (st.tie ? (st.tie.rolling ? '<b>Sorteando el desempate…</b> Mira la pantalla.' : `<b>Hay un empate</b> entre ${st.tie.names.map(esc).join(' y ')}: mismos aciertos y fallos. Primero desempata por sorteo.`) : st.winner ? (st.winAccepted ? `<b>${st.winner.full ? '¡Rosco completo!' : '¡Tenemos ganador!'}</b> El nombre del ganador queda abajo al centro de la pantalla.` : `<b>${st.winner.full ? '¡Rosco completo!' : `¡Gana ${esc(st.winner.name)}!`}</b> ${st.winner.byDraw ? 'Salió elegido en el desempate.' : 'La partida se detuvo y en pantalla se muestra la felicitación.'} Pulsa «Aceptar ganador», o Deshacer si fue un error.`) : '<span class="muted">Este concursante ya terminó su rosco.</span>')
         : !st.runningSince ? '<span class="muted">Pulsa «Iniciar preguntas» para ver la pregunta de esta letra.</span>'
         : q.q ? `${q.cat ? `<div class="small muted" style="margin-bottom:6px">${TAGS[q.cat]} · ${q.level === 'f' ? 'Fácil' : 'Medio'}</div>` : ''}<div>${esc(q.q)}</div>${q.a ? `<div class="w-answer">Respuesta: <b>${esc(q.a)}</b></div>` : ''}` : '<span class="muted">Sin pregunta cargada para esta letra: léela de tu guion.</span>';
       $('#w-accept').hidden = !st.winner || st.winAccepted;
+      $('#w-tie').hidden = !st.tie || st.tie.rolling;
       $('#w-accepted').hidden = !st.winAccepted;
       $$('.w-keys button').forEach((b) => { b.disabled = !c.active; });
       $('#w-clock').textContent = st.runningSince ? '⏸ Pausar' : '▶ Iniciar preguntas';
@@ -197,6 +199,7 @@
       if (g) act('select', { index: Number(g.dataset.letter), player: Number(g.dataset.player) });
     };
     $('#w-clock').onclick = toggleClock;
+    $('#w-tie').onclick = async () => { try { await api('POST', `/api/wheels/${id}/tiebreak`); } catch (err) { fail(err); } };
     $('#w-reset').onclick = () => { if (confirm('¿Reiniciar el rosco? Se borran aciertos, fallos y relojes.')) act('reset'); };
     if (fromBank) $('#w-newq').onclick = async () => {
       if (!confirm('¿Cambiar todas las preguntas por otras del banco? El rosco se reinicia.')) return;
@@ -290,14 +293,14 @@
         const key = st.winner.name + (low ? '|low' : '');
         if (low && wonBy !== key) {
           wonBy = key;
-          $('#pw').innerHTML = `<div class="rosco-winlow"><span class="rosco-winlow-tag">🏆 Completó el rosco</span><b>${esc(st.winner.name)}</b><small>¡Felicitaciones!</small></div>`;
+          $('#pw').innerHTML = `<div class="rosco-winlow"><span class="rosco-winlow-tag">🏆 ${st.winner.full ? 'Completó el rosco' : 'Ganó El Rosco'}</span><b>${esc(st.winner.name)}</b><small>¡Felicitaciones!</small></div>`;
         } else if (wonBy !== key) {
           wonBy = key;
           const colors = ['#ff4fa3', '#ff9a3d', '#ffe14d', '#3fe08f', '#35c6ff', '#9b5cff'];
           const confetti = Array.from({ length: 60 }, (_, i) => `<i style="left:${(Math.random() * 100).toFixed(1)}%;background:${colors[i % colors.length]};animation-delay:${(Math.random() * 3).toFixed(2)}s;animation-duration:${(3 + Math.random() * 3).toFixed(2)}s"></i>`).join('');
           $('#pw').innerHTML = `<div class="win-screen"><div class="confetti">${confetti}</div>
             <div class="win-card"><span class="win-trophy">🏆</span><span class="win-name">${esc(st.winner.name)}</span>
-              <span class="win-text">¡Completaste el rosco!</span><span class="win-sub">¡Felicitaciones!</span></div></div>`;
+              <span class="win-text">${st.winner.full ? '¡Completaste el rosco!' : `¡Ganaste El Rosco! ${st.winner.hits} aciertos`}</span><span class="win-sub">¡Felicitaciones!</span></div></div>`;
         }
         return;
       }

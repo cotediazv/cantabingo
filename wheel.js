@@ -91,7 +91,26 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     if (w.history.length > 40) w.history.shift();
   }
   // Gana quien acierta todas las letras de su rosco
-  const winnerOf = (w) => w.players.findIndex((c) => c.status.every((x) => x === 'hit'));
+  // Si nadie lo completa y todos terminaron, gana quien tiene más aciertos (y, a igualdad, menos fallos).
+  // Con dos o más igualados hay empate, que el animador resuelve por sorteo en pantalla.
+  const TIE_ROLL_MS = 6500; // lo que dura la tómbola
+  const count = (c, what) => c.status.filter((x) => x === what).length;
+  const score = (c) => count(c, 'hit') * 1000 - count(c, 'miss');
+  const leaders = (w) => {
+    if (w.players.length < 2 || w.players.some(active)) return [];
+    const best = Math.max(...w.players.map(score));
+    return w.players.map((c, i) => (score(c) === best ? i : -1)).filter((i) => i >= 0);
+  };
+  const tieRolling = (w) => !!w.tieWinner && Date.now() - w.tieWinner.at < TIE_ROLL_MS;
+  const winnerOf = (w) => {
+    const full = w.players.findIndex((c) => c.status.every((x) => x === 'hit'));
+    if (full >= 0) return full;
+    const top = leaders(w);
+    if (top.length === 1) return top[0];
+    if (top.length > 1 && w.tieWinner && top.includes(w.tieWinner.index) && !tieRolling(w)) return w.tieWinner.index;
+    return -1;
+  };
+  const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = crypto.randomInt(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
   function act(w, action, b) {
     const c = w.players[w.turn];
     if (winnerOf(w) >= 0 && ['hit', 'miss', 'pass', 'start', 'turn'].includes(action)) return 'La partida terminó: alguien completó el rosco';
@@ -112,7 +131,9 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
       }
       case 'acceptwin': // el animador da por bueno al ganador: la felicitación se recoge abajo al centro
         if (winnerOf(w) < 0) return 'Todavía nadie completó el rosco';
-        w.winAccepted = true; w.winAcceptedAt = Date.now(); return null;
+        w.winAccepted = true; w.winAcceptedAt = Date.now();
+        if (db.stage === 'sorteo') setStage('rueda'); // tras un desempate, la pantalla vuelve al rosco
+        return null;
       case 'start': run(w); return null;
       case 'pause': settle(w); return null;
       case 'turn': remember(w); settle(w); w.turn = (w.turn + 1) % w.players.length; return null;
@@ -122,6 +143,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
         if (i < 0) return 'Letra no válida';
         remember(w);
         if (!OPEN(p.status[i])) p.status[i] = 'pending'; // reabrir una letra para corregir
+        w.tieWinner = null; w.winAccepted = false;
         p.current = i;
         return null;
       }
@@ -130,10 +152,10 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
         if (!last) return 'No hay nada que deshacer';
         settle(w);
         Object.assign(w, JSON.parse(last));
-        w.reveal = null; w.winAccepted = false;
+        w.reveal = null; w.winAccepted = false; w.tieWinner = null;
         return null;
       }
-      case 'reset': settle(w); w.winAccepted = false; w.history = []; w.turn = 0; w.reveal = null; w.players = freshPlayers(w); return null;
+      case 'reset': settle(w); w.winAccepted = false; w.tieWinner = null; w.history = []; w.turn = 0; w.reveal = null; w.players = freshPlayers(w); return null;
       default: return 'Acción desconocida';
     }
   }
@@ -141,7 +163,10 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
   const publicState = (w) => ({
     id: w.id, name: w.name, letters: w.letters, turn: w.turn, runningSince: w.runningSince, now: Date.now(),
     finished: !w.players.some(active), canUndo: w.history.length > 0,
-    winner: winnerOf(w) >= 0 ? { name: w.players[winnerOf(w)].name } : null,
+    winner: winnerOf(w) >= 0 ? { name: w.players[winnerOf(w)].name, full: w.players[winnerOf(w)].status.every((x) => x === 'hit'),
+      hits: count(w.players[winnerOf(w)], 'hit'), misses: count(w.players[winnerOf(w)], 'miss'), byDraw: leaders(w).length > 1 } : null,
+    // Empate pendiente: nombres de los igualados (mientras no se haya sorteado) y si la tómbola está girando
+    tie: winnerOf(w) < 0 && leaders(w).length > 1 ? { names: leaders(w).map((i) => w.players[i].name), rolling: tieRolling(w) } : null,
     winAccepted: winnerOf(w) >= 0 && !!w.winAccepted, winAcceptedAt: w.winAcceptedAt || 0,
     reveal: w.reveal && Date.now() - w.reveal.at < REVEAL_MS ? w.reveal : null,
     // Al público va solo el enunciado de la letra en juego; la respuesta nunca sale del panel del moderador
@@ -221,6 +246,29 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     const error = act(w, String((req.body || {}).action), req.body || {});
     if (error) return fail(res, 400, error);
     broadcast(w);
+    res.json({ ok: true });
+  });
+
+  // Desempate por sorteo: la tómbola de la pantalla elige entre los concursantes igualados
+  app.post('/api/wheels/:id/tiebreak', (req, res) => {
+    const w = find(req, res);
+    if (!w) return;
+    if (winnerOf(w) >= 0) return fail(res, 400, 'Ya hay un ganador');
+    const top = leaders(w);
+    if (top.length < 2) return fail(res, 400, 'No hay un empate que resolver');
+    if (tieRolling(w)) return fail(res, 400, 'Espera a que termine el sorteo en curso');
+    const index = top[crypto.randomInt(top.length)];
+    const names = top.map((i) => w.players[i].name);
+    const parade = [];
+    while (parade.length < 16) parade.push(...shuffle([...names]));
+    const at = Date.now();
+    w.tieWinner = { index, at };
+    db.raffle ||= { picked: [], roll: null };
+    db.raffle.tie = { winner: w.players[index].name, names: parade, at, tied: top.length, game: 'rosco' };
+    db.raffle.mode = 'tie';
+    setStage('sorteo');
+    broadcast(w);
+    setTimeout(() => broadcast(w), TIE_ROLL_MS + 200); // al terminar la tómbola, el panel recibe al ganador
     res.json({ ok: true });
   });
 
