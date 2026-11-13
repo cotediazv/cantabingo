@@ -458,3 +458,14 @@ a.btn.big { display: block; text-align: center; font-size: 1.15rem; font-weight:
 .win-alert #tiebreak { margin-top: 12px; width: 100%; background: #fff; border-color: #fff; color: #0a6b3c; font-weight: 800; }
 .tie-won { margin: 12px 0 0; padding: 10px; border-radius: 12px; background: #ffc400; color: #3b2500; display: grid; font-weight: 700; }
 .tie-won b { font-size: 1.7rem; line-height: 1.15; } .tie-won small { font-size: .9rem; }
+
+/* Sorteo y desempate: el cuadro va abajo al centro, para no tapar al animador en cámara */
+#rf { grid-template-rows: auto auto 1fr auto; padding: 3vh 4vh 3.5vh; }
+#rf .rf-title { grid-row: 1; font-size: 4vh; }
+#rf .rf-picked { grid-row: 2; margin-top: 1.6vh; min-height: 0; }
+#rf .rf-picked span { font-size: 3vh; } #rf .rf-picked b { width: 4vh; height: 4vh; font-size: 2.6vh; }
+#rf .rf-stage { grid-row: 4; align-self: end; }
+#rf .rf-card { gap: 1.2vh; min-width: 44vw; max-width: 80vw; padding: 2.4vh 6vh 3vh; border-radius: 4vh; border-width: .6vh; }
+#rf .rf-kicker { font-size: 3vh; }
+#rf .rf-name { font-size: 10vh; min-height: 10vh; white-space: nowrap; }
+#rf .rf-name.small { font-size: 5.5vh; min-height: 0; }
