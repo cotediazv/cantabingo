@@ -13,7 +13,7 @@
     // Sin nada en juego: portada con el QR, para que la gente vaya entrando desde ya
     const idle = () => {
       $('#fb').className = '';
-      $('#fb').innerHTML = `<div class="fb-idle"><b>KRB Stage Sala de juegos</b>
+      $('#fb').innerHTML = `<div class="fb-idle"><b><i>KRB Stage</i> Sala de juegos</b>
         <div class="fb-idle-qr">${qr(joinUrl())}</div>
         <small>Escanea el código QR y prepárate: en unos momentos comenzamos</small></div>`;
     };

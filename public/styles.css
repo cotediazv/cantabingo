@@ -544,3 +544,4 @@ body.full.wheel-screen .wheels.n2 .wheel, body.full.wheel-screen .wheels.n3 .whe
 @media (prefers-reduced-motion: reduce) { .fb-idle-qr { animation: none; } }
 
 .fb-idle b { font-size: 9.5vh; white-space: nowrap; }
+.fb-idle b i { font-style: normal; color: #fff; }
