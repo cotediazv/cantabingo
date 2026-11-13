@@ -281,3 +281,31 @@ body.obs #pw { grid-template-rows: none; padding: 0; }
 @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
 @media (max-width: 700px) { .win-trophy { font-size: 18vw; } .win-name { font-size: 15vw; } .win-text { font-size: 9vw; } .win-sub { font-size: 6vw; } .win-card { padding: 6vw; } }
 @media (prefers-reduced-motion: reduce) { .confetti { display: none; } .win-card { animation: none; } }
+
+/* ---------- Gráfica del bingo para OBS (GC) ---------- */
+body.gc-screen main { padding: 0; max-width: none; }
+#gc { position: fixed; inset: 0; font-family: Fredoka, "Baloo 2", "Trebuchet MS", system-ui, sans-serif; color: #fff; }
+.gc-top { position: absolute; top: 0; left: 0; right: 0; height: 12vh; display: flex; align-items: center; padding: 0 26vh 0 4vh; background: linear-gradient(90deg, #7b2ff7, #f107a3 70%, #ff8a00); border-bottom: .6vh solid #fff; box-shadow: 0 .8vh 2.4vh rgba(0,0,0,.35); }
+.gc-titles { display: flex; align-items: baseline; gap: 3vh; min-width: 0; white-space: nowrap; }
+.gc-title { font-size: 6.4vh; font-weight: 700; text-transform: uppercase; line-height: 1; text-shadow: 0 .4vh 0 rgba(0,0,0,.25); overflow: hidden; text-overflow: ellipsis; }
+.gc-sub { font-size: 3.6vh; font-weight: 500; overflow: hidden; text-overflow: ellipsis; }
+.gc-qr { position: absolute; top: 2vh; right: 3vh; width: 21vh; height: 21vh; background: #fff; border-radius: 2.4vh; padding: 1.2vh; border: .6vh solid #fff; box-shadow: 0 1vh 3vh rgba(0,0,0,.45); }
+.gc-qr .qr { width: 100%; height: 100%; border: 0; padding: 0; border-radius: 0; display: block; }
+.gc-bottom { position: absolute; bottom: 0; left: 0; right: 0; height: 10vh; display: flex; align-items: center; justify-content: center; padding: 0 30vh; background: linear-gradient(90deg, #ff8a00, #e52e71 45%, #7b2ff7); border-top: .6vh solid #fff; box-shadow: 0 -.8vh 2.4vh rgba(0,0,0,.35); }
+.gc-msg { font-size: 4vh; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gc-label { font-size: 2.4vh; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; background: rgba(12, 10, 28, .8); border-radius: 99px; padding: .3vh 1.8vh; }
+.gc-draw { position: absolute; left: 3vh; bottom: 2vh; display: grid; justify-items: center; gap: 1vh; }
+.ball.gcball { width: 24vh; height: 24vh; padding: 1.5vh; border: .7vh solid #fff; box-shadow: 0 1vh 3vh rgba(0,0,0,.5); font-family: inherit; }
+.ball.gcball .l { font-size: 4.4vh; } .ball.gcball .v { font-size: 11vh; line-height: 1; }
+.ball.gcball.text .v { font-size: 3vh; }
+.gc-draw .pop { animation: gcpop .5s cubic-bezier(.2, 1.5, .4, 1); }
+@keyframes gcpop { from { transform: scale(.3) rotate(-25deg); opacity: 0; } }
+.gc-prev { display: flex; gap: .8vh; min-height: 4vh; }
+.gc-prev span { background: rgba(12, 10, 28, .8); border: .25vh solid #fff; border-radius: 99px; padding: 0 1.3vh; font-size: 2.6vh; font-weight: 600; }
+.gc-figure { position: absolute; right: 3vh; bottom: 2vh; display: grid; justify-items: center; gap: 1vh; width: 24vh; padding: 1.4vh 1.4vh 1.2vh; border-radius: 2.4vh; background: rgba(12, 10, 28, .86); border: .6vh solid #fff; box-shadow: 0 1vh 3vh rgba(0,0,0,.5); text-align: center; }
+.gc-figure .gc-label { background: none; padding: 0; }
+.gc-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: .6vh; width: 100%; }
+.gc-grid i { aspect-ratio: 1; border-radius: .7vh; background: #3a3566; }
+.gc-grid i.x { background: radial-gradient(circle at 35% 30%, #fff3a6, #ffb300); }
+.gc-figure b { font-size: 2.8vh; font-weight: 600; line-height: 1.1; }
+@media (prefers-reduced-motion: reduce) { .gc-draw .pop { animation: none; } }

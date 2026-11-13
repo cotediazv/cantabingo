@@ -128,6 +128,7 @@ function subscribe(sid, onState, onGone, asAdmin = false) {
 // Enlaces fijos: siempre llevan a la sesión activa, así el QR no cambia de una partida a otra
 const joinUrl = () => `${location.origin}${location.pathname}#/jugar`;
 const boardUrl = () => `${location.origin}${location.pathname}#/tablero`;
+const gcUrl = () => `${location.origin}${location.pathname}#/gc`;
 const activeSessions = async () => (await api('GET', '/api/current').catch(() => ({}))).sessions || [];
 // Resuelve el enlace fijo: sin sesiones espera, con una entra directo y con varias deja elegir.
 // Devuelve { sid } para continuar o { cleanup } si ya dibujó la pantalla.
@@ -335,6 +336,16 @@ async function hostConsole(p) {
       </div>
     </div>
     <div class="panel">
+      <h2>Gráfica para OBS</h2>
+      <p class="muted small">Fuente de navegador de 1920×1080 con fondo transparente, para poner sobre la cámara: título y QR arriba, sorteo actual y figura abajo. Sigue sola a la sesión activa.</p>
+      <p class="small"><a class="link" href="${gcUrl()}" target="_blank">${esc(gcUrl())}</a></p>
+      <div class="fields" style="margin-top:10px">
+        <label class="f">Texto de la franja superior<input type="text" id="gc-top" maxlength="90" placeholder="Escanea el código QR y participa"></label>
+        <label class="f">Texto de la franja inferior<input type="text" id="gc-bottom" maxlength="140" placeholder="Sigue la transmisión en twitch.tv/tucanal"></label>
+      </div>
+      <p style="margin-top:10px"><button id="gc-save">Guardar textos</button></p>
+    </div>
+    <div class="panel">
       <h2>Siguiente ronda</h2>
       <div id="restart-pats"></div>
       <div class="row">
@@ -344,7 +355,9 @@ async function hostConsole(p) {
       </div>
     </div>`;
   let pickerRound = null;
+  let gcFilled = false;
   const render = () => {
+    if (!gcFilled) { gcFilled = true; $('#gc-top').value = st.gc.top; $('#gc-bottom').value = st.gc.bottom; }
     $('#title').textContent = st.name;
     if (pickerRound !== st.round) { pickerRound = st.round; $('#restart-pats').innerHTML = patternPicker(st.patterns); }
     const mins = Math.max(0, Math.round((st.expires - Date.now()) / 60000));
@@ -372,6 +385,7 @@ async function hostConsole(p) {
     if (st.drawn.length !== spoken) { if (spoken >= 0 && st.drawn.length > spoken) speak(speakText(st, st.drawn.at(-1))); spoken = st.drawn.length; }
   };
   $('#gen').onclick = () => act('draw');
+  $('#gc-save').onclick = async () => { await act('gc', { top: $('#gc-top').value, bottom: $('#gc-bottom').value }); toast('Textos de la gráfica guardados'); };
   $('#auto').onclick = () => act('auto', { on: !st.auto.on, interval: Number($('#interval').value), stopOnWin: $('#stop').checked });
   $('#manual').onclick = () => { manual = !manual; render(); };
   $('#voice').onchange = (e) => { voiceOn = e.target.checked; store.set('voice', voiceOn ? '1' : '0'); };

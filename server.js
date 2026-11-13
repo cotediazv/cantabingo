@@ -83,6 +83,8 @@ function makeCards(count, n, freeCenter) {
   return cards;
 }
 
+const gcDefaults = () => db.gcDefaults || { top: 'Escanea el código QR y participa', bottom: '' };
+
 // ---------- Lógica de sesión ----------
 const clients = {}; // sessionId -> Set<res> (SSE)
 const timers = {}; // sessionId -> intervalo de modo automático
@@ -126,6 +128,7 @@ function publicState(s, full = false) {
   return {
     id: s.id, name: s.name, round: s.round, closed: !!s.closed, expires: s.expires,
     format: p.format, headers: p.headers, values: p.values, items: p.items, showName: s.showName,
+    gc: s.gc || gcDefaults(),
     patterns: s.patterns, drawn: s.drawn, results, finalists: s.finalists || null,
     auto: s.auto, cardsPerPlayer: s.cardsPerPlayer, totalCards: p.cards.length,
     players: Object.values(s.players).length,
@@ -295,6 +298,7 @@ app.post('/api/projects/:id/session', (req, res) => {
     id: shortId(), projectId: p.id, name: str(b.name, 50, p.name), password: str(b.password, 40),
     cardsPerPlayer: clamp(b.cardsPerPlayer, 1, 4, 1),
     showName: b.showName !== false, isPublic: b.isPublic !== false, patterns: cleanPatterns(b.patterns),
+    gc: { ...gcDefaults() }, // textos de la gráfica de OBS: se heredan de la última sesión
     round: 1, drawn: [], results: [], marks: {}, players: {}, finalists: null,
     auto: { on: false, interval: 10, stopOnWin: true },
     created: Date.now(), expires: Date.now() + SESSION_HOURS * 3600e3,
@@ -327,6 +331,11 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
       stopAuto(s);
       Object.assign(s, { round: s.round + 1, drawn: [], results: [], marks: {}, finalists: null, patterns: cleanPatterns(b.patterns) });
       evaluate(s);
+      break;
+    case 'gc':
+      // Textos de las franjas de la gráfica de OBS; quedan como predeterminados para las próximas sesiones
+      s.gc = { top: str(b.top, 90), bottom: str(b.bottom, 140) };
+      db.gcDefaults = { ...s.gc };
       break;
     case 'final': {
       stopAuto(s);
