@@ -580,3 +580,13 @@ body.full #rf .rf-dice { display: block; font-size: 22vh; line-height: 1; animat
 
 /* El confeti del sorteo cae por toda la pantalla, no desde el borde del cuadro */
 #rf .confetti { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 3; }
+
+/* Ante un ganador: confirmar o seguir jugando */
+.win-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+.win-actions button { padding: 16px 8px; border-radius: 14px; font-size: 1.05rem; font-weight: 800; border: 2px solid #fff; }
+#confirmwin { background: #fff; color: #0a6b3c; }
+#keepplaying { background: #14122a; color: #fff; }
+#win-confirmed { margin-top: 14px; display: grid; gap: 10px; }
+#win-confirmed p { margin: 0; padding: 10px; border-radius: 12px; background: rgba(0, 0, 0, .25); font-size: 1.2rem; font-weight: 800; }
+#win-confirmed a.btn.big { background: #fff; color: #0a6b3c; border-color: #fff; }
+@media (max-width: 360px) { .win-actions { grid-template-columns: 1fr; } }

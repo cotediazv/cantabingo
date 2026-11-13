@@ -103,7 +103,7 @@ module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, 
     const r = db.raffle;
     if (r.tie && Date.now() - r.tie.at < ROLL_MS) return fail(res, 400, 'Espera a que termine el sorteo en curso');
     const seen = new Set();
-    const tied = s.results.filter((x) => x.validated && !seen.has(x.cardNo) && seen.add(x.cardNo));
+    const tied = s.results.filter((x) => x.validated && !x.dismissed && !seen.has(x.cardNo) && seen.add(x.cardNo));
     if (tied.length < 2) return fail(res, 400, 'Para desempatar se necesitan al menos 2 ganadores');
     const pick = tied[crypto.randomInt(tied.length)];
     // Desfilan los nombres de los empatados, repetidos para que la tómbola tenga recorrido

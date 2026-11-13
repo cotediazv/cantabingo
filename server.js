@@ -131,14 +131,14 @@ function evaluate(s) {
 // ganadores (sin nombres), que es lo único que necesitan y pesa mucho menos.
 function publicState(s, full = false) {
   const p = db.projects[s.projectId];
-  const results = full ? s.results : s.results.filter((r) => r.validated).map((r) => ({ cardNo: r.cardNo, pattern: r.pattern, validated: true, name: r.name }));
+  const results = full ? s.results : s.results.filter((r) => r.validated && !r.dismissed).map((r) => ({ cardNo: r.cardNo, pattern: r.pattern, validated: true, name: r.name }));
   return {
     id: s.id, name: s.name, round: s.round, closed: !!s.closed, expires: s.expires,
     format: p.format, headers: p.headers, values: p.values, items: p.items, showName: s.showName,
     gc: s.gc || gcDefaults(), startNumber: p.startNumber, theme: s.theme || 'frida',
     // Celebración a pantalla completa mientras haya ganadores y el moderador no la haya quitado
     bigQr: !!s.bigQr, tieWinner: s.tieWinner || null, rollMs: 6500,
-    celebrate: !s.hideWin && s.results.some((r) => r.validated),
+    celebrate: !s.hideWin && s.results.some((r) => r.validated && !r.dismissed),
     patterns: s.patterns, drawn: s.drawn, results, finalists: s.finalists || null,
     auto: s.auto, cardsPerPlayer: s.cardsPerPlayer, totalCards: p.cards.length,
     players: Object.values(s.players).length,
@@ -347,6 +347,13 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
       Object.assign(s, { round: s.round + 1, drawn: [], results: [], marks: {}, finalists: null, tieWinner: null, hideWin: false, patterns: cleanPatterns(b.patterns) });
       setStage('bingo'); // la ronda nueva devuelve la pantalla a la gráfica del bingo
       evaluate(s);
+      break;
+    case 'confirmwin': // el animador da por buenos a los ganadores que están en pantalla
+      for (const r of s.results) if (r.validated && !r.dismissed) r.confirmed = true;
+      break;
+    case 'keepplaying': // se descartan los ganadores sin confirmar y el juego sigue: esos cartones ya no vuelven a ganar en la ronda
+      for (const r of s.results) if (r.validated && !r.confirmed) r.dismissed = true;
+      s.tieWinner = null;
       break;
     case 'bigqr': s.bigQr = b.on !== false; break; // cartel con el QR en grande, para antes de empezar
     case 'hidewin': s.hideWin = b.hide !== false; break; // quitar o volver a mostrar la celebración en pantalla

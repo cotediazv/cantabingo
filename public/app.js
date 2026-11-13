@@ -355,7 +355,11 @@ async function hostConsole(p) {
             <div id="final"></div>
             <div id="tie-result"></div>
             <button class="primary" id="tiebreak" hidden>🎲 Desempatar por sorteo</button>
-            <button id="hidewin" hidden></button>
+            <div class="win-actions" id="win-actions" hidden>
+              <button id="confirmwin">✔ Confirmar ganador</button>
+              <button id="keepplaying">▶ Seguir jugando</button>
+            </div>
+            <div id="win-confirmed" hidden><p>✔ Ganador confirmado</p><a class="btn big" id="win-next">▶ Siguiente ronda</a></div>
           </div>
           <div class="row" style="justify-content:center;margin-top:16px"><button class="primary big" id="gen">Generar un número</button></div>
           <div class="row" style="justify-content:center;margin-top:14px">
@@ -391,7 +395,7 @@ async function hostConsole(p) {
     $('#bigqr').classList.toggle('on', st.bigQr);
     $('#bigqr').textContent = st.bigQr ? '📱 QR grande en pantalla: quitar' : '📱 Mostrar QR grande en pantalla';
     // Los ganadores van arriba de todo; primero los ya validados
-    const results = [...st.results].sort((a, b) => Number(b.validated) - Number(a.validated) || a.at - b.at);
+    const results = st.results.filter((r) => !r.dismissed).sort((a, b) => Number(b.validated) - Number(a.validated) || a.at - b.at);
     const won = results.filter((r) => r.validated).length;
     $('#results-panel').hidden = !results.length;
     $('#results-panel').classList.toggle('won', won > 0);
@@ -407,13 +411,20 @@ async function hostConsole(p) {
     const tieDone = st.tieWinner && Date.now() - st.tieWinner.at >= st.rollMs;
     $('#tie-result').innerHTML = !st.tieWinner ? '' : tieDone ? `<p class="tie-won">Ganador del desempate<b>${esc(st.tieWinner.name)}</b><small>Cartón #${p.startNumber + st.tieWinner.cardNo - 1}</small></p>` : '<p class="tie-won">Sorteando en pantalla…</p>';
     if (st.tieWinner && !tieDone) setTimeout(() => st && render(), st.rollMs - (Date.now() - st.tieWinner.at) + 100);
-    $('#hidewin').hidden = !won;
-    $('#hidewin').textContent = st.celebrate ? 'Quitar la celebración de la pantalla' : 'Volver a mostrar la celebración';
+    // Dos opciones ante un ganador: confirmarlo o seguir jugando
+    const pending = results.filter((r) => r.validated && !r.confirmed).length;
+    const confirmed = won > 0 && pending === 0;
+    $('#win-actions').hidden = !pending;
+    $('#confirmwin').textContent = won === 1 ? '✔ Confirmar ganador' : '✔ Confirmar ganadores';
+    $('#win-confirmed').hidden = !confirmed;
+    $('#win-confirmed p').textContent = won === 1 ? '✔ Ganador confirmado' : '✔ Ganadores confirmados';
     $('#final').innerHTML = st.finalists ? `<p><b>Selección final:</b> ${st.finalists.map((c) => '#' + (p.startNumber + c - 1)).join(', ') || 'no hay cartones validados'}</p>` : '';
     if (st.drawn.length !== spoken) { if (spoken >= 0 && st.drawn.length > spoken) speak(speakText(st, st.drawn.at(-1))); spoken = st.drawn.length; }
   };
   $('#gen').onclick = () => act('draw');
-  $('#hidewin').onclick = () => act('hidewin', { hide: st.celebrate });
+  $('#confirmwin').onclick = () => act('confirmwin');
+  $('#keepplaying').onclick = () => act('keepplaying');
+  $('#win-next').href = `#/ronda/${p.id}`;
   $('#tiebreak').onclick = () => api('POST', '/api/raffle/tiebreak', { sid }).catch(fail);
   $('#auto').onclick = () => act('auto', { on: !st.auto.on, interval: Number($('#interval').value), stopOnWin: $('#stop').checked });
   $('#manual').onclick = () => { manual = !manual; render(); };
