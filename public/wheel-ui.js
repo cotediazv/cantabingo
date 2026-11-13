@@ -267,13 +267,26 @@
     if (kind === 'obs') document.body.classList.add('obs');
     app.innerHTML = '<div id="pw"></div>';
     const stopClocks = startClocks(() => st);
-    const leave = () => { document.body.classList.remove('wheel-screen', 'obs'); };
+    const WIN_HOLD_MS = 15000;
+    let winTimer = null;
+    const leave = () => { clearTimeout(winTimer); document.body.classList.remove('wheel-screen', 'obs'); };
     const off = watch(id, (s) => {
       st = s;
       if (st.winner) {
         // Rosco completo: se retira todo y queda solo la felicitación, en grande
         // Ganador aceptado, en OBS: la felicitación baja a un cartel al centro para dejar ver a la persona
-        const low = st.winAccepted && kind === 'obs' && !document.body.classList.contains('full');
+        const full = document.body.classList.contains('full');
+        const low = st.winAccepted && kind === 'obs' && !full;
+        // A los 15 s de aceptar al ganador se retira todo: OBS queda limpio y el tablero del DJ pasa al QR
+        const left = st.winAccepted ? WIN_HOLD_MS - (st.now - st.winAcceptedAt) : Infinity;
+        const cleared = () => {
+          wonBy = st.winner.name + '|gone';
+          $('#pw').innerHTML = full ? `<div id="fb"><div class="fb-idle"><b><i>KRB Stage</i> Sala de juegos</b><div class="fb-idle-qr">${qr(joinUrl())}</div>
+            <small>Escanea el código QR y prepárate</small></div></div>` : '';
+        };
+        clearTimeout(winTimer);
+        if (left <= 0) { if (wonBy !== st.winner.name + '|gone') cleared(); return; }
+        if (st.winAccepted) winTimer = setTimeout(cleared, left);
         const key = st.winner.name + (low ? '|low' : '');
         if (low && wonBy !== key) {
           wonBy = key;
@@ -288,7 +301,7 @@
         }
         return;
       }
-      wonBy = null;
+      wonBy = null; clearTimeout(winTimer);
       if (kind === 'obs') {
         // En OBS: solo la rueda del concursante en turno, con el centro libre para su cámara,
         // y el reloj con el marcador en una esquina.
