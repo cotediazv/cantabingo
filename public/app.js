@@ -341,8 +341,9 @@ async function hostConsole(p) {
       <p class="small"><a class="link" href="${gcUrl()}" target="_blank">${esc(gcUrl())}</a></p>
       <div class="fields" style="margin-top:10px">
         <label class="f">Texto de la franja superior<input type="text" id="gc-top" maxlength="90" placeholder="Escanea el código QR y participa"></label>
-        <label class="f">Texto de la franja inferior<input type="text" id="gc-bottom" maxlength="140" placeholder="Sigue la transmisión en twitch.tv/tucanal"></label>
+        <label class="f">Texto de la franja inferior<input type="text" id="gc-bottom" maxlength="140" placeholder="BINGO KRB *CONTRASEÑA: 1234* / TU NOMBRE"></label>
       </div>
+      <p class="muted small" style="margin-top:8px">En la franja inferior, lo que escribas entre asteriscos sale resaltado en amarillo: <b>*CONTRASEÑA: 1234*</b></p>
       <p style="margin-top:10px"><button id="gc-save">Guardar textos</button></p>
     </div>
     <div class="panel">

@@ -283,29 +283,41 @@ body.obs #pw { grid-template-rows: none; padding: 0; }
 @media (prefers-reduced-motion: reduce) { .confetti { display: none; } .win-card { animation: none; } }
 
 /* ---------- Gráfica del bingo para OBS (GC) ---------- */
+/* Medidas en vh: el diseño está pensado para un lienzo de 1920×1080 (1vh = 10,8 px) */
 body.gc-screen main { padding: 0; max-width: none; }
-#gc { position: fixed; inset: 0; font-family: Fredoka, "Baloo 2", "Trebuchet MS", system-ui, sans-serif; color: #fff; }
-.gc-top { position: absolute; top: 0; left: 0; right: 0; height: 12vh; display: flex; align-items: center; padding: 0 26vh 0 4vh; background: linear-gradient(90deg, #7b2ff7, #f107a3 70%, #ff8a00); border-bottom: .6vh solid #fff; box-shadow: 0 .8vh 2.4vh rgba(0,0,0,.35); }
-.gc-titles { display: flex; align-items: baseline; gap: 3vh; min-width: 0; white-space: nowrap; }
-.gc-title { font-size: 6.4vh; font-weight: 700; text-transform: uppercase; line-height: 1; text-shadow: 0 .4vh 0 rgba(0,0,0,.25); overflow: hidden; text-overflow: ellipsis; }
-.gc-sub { font-size: 3.6vh; font-weight: 500; overflow: hidden; text-overflow: ellipsis; }
-.gc-qr { position: absolute; top: 2vh; right: 3vh; width: 21vh; height: 21vh; background: #fff; border-radius: 2.4vh; padding: 1.2vh; border: .6vh solid #fff; box-shadow: 0 1vh 3vh rgba(0,0,0,.45); }
-.gc-qr .qr { width: 100%; height: 100%; border: 0; padding: 0; border-radius: 0; display: block; }
-.gc-bottom { position: absolute; bottom: 0; left: 0; right: 0; height: 10vh; display: flex; align-items: center; justify-content: center; padding: 0 30vh; background: linear-gradient(90deg, #ff8a00, #e52e71 45%, #7b2ff7); border-top: .6vh solid #fff; box-shadow: 0 -.8vh 2.4vh rgba(0,0,0,.35); }
-.gc-msg { font-size: 4vh; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gc-label { font-size: 2.4vh; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; background: rgba(12, 10, 28, .8); border-radius: 99px; padding: .3vh 1.8vh; }
-.gc-draw { position: absolute; left: 3vh; bottom: 2vh; display: grid; justify-items: center; gap: 1vh; }
-.ball.gcball { width: 24vh; height: 24vh; padding: 1.5vh; border: .7vh solid #fff; box-shadow: 0 1vh 3vh rgba(0,0,0,.5); font-family: inherit; }
-.ball.gcball .l { font-size: 4.4vh; } .ball.gcball .v { font-size: 11vh; line-height: 1; }
-.ball.gcball.text .v { font-size: 3vh; }
-.gc-draw .pop { animation: gcpop .5s cubic-bezier(.2, 1.5, .4, 1); }
-@keyframes gcpop { from { transform: scale(.3) rotate(-25deg); opacity: 0; } }
-.gc-prev { display: flex; gap: .8vh; min-height: 4vh; }
-.gc-prev span { background: rgba(12, 10, 28, .8); border: .25vh solid #fff; border-radius: 99px; padding: 0 1.3vh; font-size: 2.6vh; font-weight: 600; }
-.gc-figure { position: absolute; right: 3vh; bottom: 2vh; display: grid; justify-items: center; gap: 1vh; width: 24vh; padding: 1.4vh 1.4vh 1.2vh; border-radius: 2.4vh; background: rgba(12, 10, 28, .86); border: .6vh solid #fff; box-shadow: 0 1vh 3vh rgba(0,0,0,.5); text-align: center; }
-.gc-figure .gc-label { background: none; padding: 0; }
-.gc-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: .6vh; width: 100%; }
-.gc-grid i { aspect-ratio: 1; border-radius: .7vh; background: #3a3566; }
-.gc-grid i.x { background: radial-gradient(circle at 35% 30%, #fff3a6, #ffb300); }
-.gc-figure b { font-size: 2.8vh; font-weight: 600; line-height: 1.1; }
-@media (prefers-reduced-motion: reduce) { .gc-draw .pop { animation: none; } }
+#gc { position: fixed; inset: 0; color: #fff; font-family: "Source Sans 3", "Source Sans Pro", "Segoe UI", system-ui, sans-serif;
+  --gc-pink: #c4175e; --gc-yellow: #ffc400; --gc-line: .37vh;
+  --gc-dots: radial-gradient(circle, rgba(255,255,255,.13) 0 .42vh, transparent .46vh) 0 0 / 4.2vh 4.2vh, radial-gradient(circle, rgba(255,255,255,.13) 0 .42vh, transparent .46vh) 2.1vh 2.1vh / 4.2vh 4.2vh; }
+.gc-top, .gc-bottom, .gc-qr, .gc-draw, .gc-figure { background: var(--gc-dots), var(--gc-pink); }
+
+.gc-top { position: absolute; top: 0; left: 0; right: 0; height: 8.15vh; display: flex; align-items: center; gap: 5vh; padding: 0 38vh 0 4vh; white-space: nowrap; }
+.gc-title { font-size: 6vh; font-weight: 900; text-transform: uppercase; line-height: 1; color: var(--gc-yellow); text-shadow: .28vh .28vh 0 rgba(60, 0, 30, .55); overflow: hidden; text-overflow: ellipsis; flex: none; max-width: 62%; }
+.gc-sub { flex: 1; text-align: center; font-size: 4vh; font-weight: 700; text-shadow: .2vh .2vh 0 rgba(60, 0, 30, .5); overflow: hidden; text-overflow: ellipsis; }
+
+/* Guirnalda de banderines bajo la franja superior */
+.gc-bunting { position: absolute; top: 8.15vh; left: 0; right: 35.4vh; height: 3.5vh; display: flex; gap: .65vh; padding: 0 .4vh; border-top: var(--gc-line) solid var(--gc-yellow); }
+.gc-bunting i { flex: 1; position: relative; clip-path: polygon(0 0, 100% 0, 100% 78%, 84% 100%, 67% 80%, 50% 100%, 33% 80%, 16% 100%, 0 78%); }
+.gc-bunting i::after { content: ""; position: absolute; left: 50%; top: 42%; width: 1vh; height: 1vh; border-radius: 50%; background: #fff; transform: translate(-50%, -50%); }
+
+.gc-qr { position: absolute; top: 0; right: 0; width: 35.4vh; height: 35.9vh; padding: .8vh 0 0 1.2vh; border-left: var(--gc-line) solid var(--gc-yellow); border-bottom: var(--gc-line) solid var(--gc-yellow); border-bottom-left-radius: 3vh; }
+.gc-qr .qr { display: block; width: 33.4vh; height: 33.4vh; background: #fff; border: 0; border-radius: 1.8vh; padding: 2vh; }
+
+.gc-bottom { position: absolute; bottom: 0; left: 0; right: 0; height: 8.5vh; display: flex; align-items: center; justify-content: center; padding: 0 26vh 0 33vh; border-top: var(--gc-line) solid var(--gc-yellow); }
+.gc-msg { font-size: 3.7vh; font-weight: 700; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gc-msg b { color: var(--gc-yellow); font-weight: 700; }
+
+.gc-draw { position: absolute; left: 0; bottom: 0; width: 31.3vh; height: 22vh; border-top: var(--gc-line) solid var(--gc-yellow); border-right: var(--gc-line) solid var(--gc-yellow); border-top-right-radius: 3vh; }
+.gc-label { position: absolute; left: 1.8vh; top: 1.2vh; font-size: 3vh; font-weight: 900; text-transform: uppercase; color: var(--gc-yellow); text-shadow: .2vh .2vh 0 rgba(60, 0, 30, .55); }
+.gc-ballwrap { position: absolute; left: 50%; bottom: 1.1vh; transform: translateX(-50%); }
+.ball.gcball { width: 15.6vh; height: 15.6vh; padding: 1vh; border: .5vh solid #fff; box-shadow: 0 .6vh 1.6vh rgba(0,0,0,.45); font-family: inherit; }
+.ball.gcball .l { font-size: 3vh; font-weight: 900; line-height: 1; } .ball.gcball .v { font-size: 7.6vh; font-weight: 900; line-height: 1; }
+.ball.gcball.text .v { font-size: 2.2vh; }
+.gc-ballwrap.pop { animation: gcpop .5s cubic-bezier(.2, 1.5, .4, 1); }
+@keyframes gcpop { from { transform: translateX(-50%) scale(.3) rotate(-25deg); opacity: 0; } }
+
+.gc-figure { position: absolute; right: 0; bottom: 0; width: 23.9vh; height: 29.2vh; padding: 2vh 2.2vh 0; display: grid; align-content: start; justify-items: center; gap: 1.2vh; text-align: center; border-top: var(--gc-line) solid var(--gc-yellow); border-left: var(--gc-line) solid var(--gc-yellow); border-top-left-radius: 3vh; }
+.gc-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: .55vh; width: 100%; }
+.gc-grid i { aspect-ratio: 1; border-radius: .6vh; background: rgba(60, 0, 30, .45); }
+.gc-grid i.x { background: var(--gc-yellow); box-shadow: inset 0 -.5vh 0 rgba(0,0,0,.18); }
+.gc-figure b { font-size: 3vh; font-weight: 900; text-transform: uppercase; color: var(--gc-yellow); line-height: 1; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .gc-ballwrap.pop { animation: none; } }
