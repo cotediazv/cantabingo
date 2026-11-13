@@ -350,7 +350,7 @@ async function hostConsole(p) {
         <div id="final"></div>
         <p style="margin-top:12px"><button id="hidewin" hidden></button></p>
       </div>
-      <div class="panel"><h1 id="title"></h1><div id="meta" class="muted"></div></div>
+      <div class="panel"><h1 id="title"></h1><div id="meta" class="muted"></div><div id="pats" style="margin-top:10px"></div></div>
       <div class="cols">
         <div class="panel">
           <div id="draws"></div>
@@ -375,6 +375,7 @@ async function hostConsole(p) {
     $('#title').textContent = st.name;
     const mins = Math.max(0, Math.round((st.expires - Date.now()) / 60000));
     $('#meta').textContent = `Ronda ${st.round} · ${st.players} participantes · ${st.players * st.cardsPerPlayer} de ${st.totalCards} cartones repartidos · quedan ${Math.floor(mins / 60)} h ${mins % 60} min`;
+    $('#pats').innerHTML = patternsInline(st.patterns); // figura de la ronda, a la vista del animador
     $('#draws').innerHTML = drawsHTML(st, st.drawn);
     $('#count').textContent = `Tablero · ${st.drawn.length} de ${st.values}`;
     $('#board').innerHTML = boardHTML(st, st.drawn, manual);
