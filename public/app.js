@@ -626,9 +626,10 @@ function winScreenHTML(st) {
   const shown = winners.slice(0, 6);
   return `<div class="bwin th-${st.theme} ${winners.length > 3 ? 'many' : ''}"><div class="confetti">${confetti}</div>
     <div class="bwin-card"><span class="bwin-title">¡BINGO!</span>
+      ${winners.length > 1 ? '<span class="bwin-sub">Completaron la figura</span>' : ''}
       <div class="bwin-names">${shown.map((r) => `<span><b>${esc(r.name || 'Participante')}</b><small>Cartón #${st.startNumber + r.cardNo - 1}</small></span>`).join('')}</div>
       ${winners.length > shown.length ? `<span class="bwin-more">y ${winners.length - shown.length} más</span>` : ''}
-      <span class="bwin-sub">${winners.length > 1 ? '¡Felicitaciones a los ganadores!' : '¡Felicitaciones!'}</span></div></div>`;
+      ${winners.length > 1 ? '' : '<span class="bwin-sub">¡Felicitaciones!</span>'}</div></div>`;
 }
 
 // Vuelve al panel del bingo en curso y devuelve la pantalla de OBS a su gráfica
