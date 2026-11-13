@@ -83,7 +83,7 @@ function makeCards(count, n, freeCenter) {
   return cards;
 }
 
-const gcDefaults = () => db.gcDefaults || { top: 'Escanea el código QR y participa', bottom: '' };
+const gcDefaults = () => db.gcDefaults || { top: 'Escanea el código QR y participa', bottom: 'Pon tu nombre y apellido y participa' };
 
 // ---------- Lógica de sesión ----------
 const clients = {}; // sessionId -> Set<res> (SSE)
@@ -116,7 +116,7 @@ function evaluate(s) {
   }
   // Un cartón se valida solo cuando el jugador marca la última casilla del patrón.
   for (const r of s.results) {
-    if (!r.validated && PATTERNS.completed(r.pattern, markMask(s, r.cardNo))) r.validated = true;
+    if (!r.validated && PATTERNS.completed(r.pattern, markMask(s, r.cardNo))) { r.validated = true; s.hideWin = false; } // cada ganador nuevo vuelve a mostrar la celebración
   }
   return added;
 }
@@ -124,11 +124,13 @@ function evaluate(s) {
 // ganadores (sin nombres), que es lo único que necesitan y pesa mucho menos.
 function publicState(s, full = false) {
   const p = db.projects[s.projectId];
-  const results = full ? s.results : s.results.filter((r) => r.validated).map((r) => ({ cardNo: r.cardNo, pattern: r.pattern, validated: true }));
+  const results = full ? s.results : s.results.filter((r) => r.validated).map((r) => ({ cardNo: r.cardNo, pattern: r.pattern, validated: true, name: r.name }));
   return {
     id: s.id, name: s.name, round: s.round, closed: !!s.closed, expires: s.expires,
     format: p.format, headers: p.headers, values: p.values, items: p.items, showName: s.showName,
-    gc: s.gc || gcDefaults(),
+    gc: s.gc || gcDefaults(), startNumber: p.startNumber,
+    // Celebración a pantalla completa mientras haya ganadores y el moderador no la haya quitado
+    celebrate: !s.hideWin && s.results.some((r) => r.validated),
     patterns: s.patterns, drawn: s.drawn, results, finalists: s.finalists || null,
     auto: s.auto, cardsPerPlayer: s.cardsPerPlayer, totalCards: p.cards.length,
     players: Object.values(s.players).length,
@@ -330,9 +332,10 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
       break;
     case 'restart':
       stopAuto(s);
-      Object.assign(s, { round: s.round + 1, drawn: [], results: [], marks: {}, finalists: null, patterns: cleanPatterns(b.patterns) });
+      Object.assign(s, { round: s.round + 1, drawn: [], results: [], marks: {}, finalists: null, hideWin: false, patterns: cleanPatterns(b.patterns) });
       evaluate(s);
       break;
+    case 'hidewin': s.hideWin = b.hide !== false; break; // quitar o volver a mostrar la celebración en pantalla
     case 'gc':
       // Textos de las franjas de la gráfica de OBS; quedan como predeterminados para las próximas sesiones
       s.gc = { top: str(b.top, 90), bottom: str(b.bottom, 140) };

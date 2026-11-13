@@ -322,6 +322,7 @@ async function hostConsole(p) {
         <h2 id="results-title"></h2>
         <div id="results" class="scroll-x"></div>
         <div id="final"></div>
+        <p style="margin-top:12px"><button id="hidewin" hidden></button></p>
       </div>
       <div class="panel">
         <div class="row between">
@@ -358,7 +359,7 @@ async function hostConsole(p) {
       <p class="small"><a class="link" href="${gcUrl()}" target="_blank">${esc(gcUrl())}</a></p>
       <div class="fields" style="margin-top:10px">
         <label class="f">Texto de la franja superior<input type="text" id="gc-top" maxlength="90" placeholder="Escanea el código QR y participa"></label>
-        <label class="f">Texto de la franja inferior<input type="text" id="gc-bottom" maxlength="140" placeholder="BINGO KRB *CONTRASEÑA: 1234* / TU NOMBRE"></label>
+        <label class="f">Texto de la franja inferior<input type="text" id="gc-bottom" maxlength="140" placeholder="Pon tu nombre y apellido y participa"></label>
       </div>
       <p class="muted small" style="margin-top:8px">En la franja inferior, lo que escribas entre asteriscos sale resaltado en amarillo: <b>*CONTRASEÑA: 1234*</b></p>
       <p style="margin-top:10px"><button id="gc-save">Guardar textos</button></p>
@@ -399,10 +400,13 @@ async function hostConsole(p) {
         <td>${esc(r.name)}</td><td>${r.at}</td>
         <td>${r.validated ? '<span class="tag live">¡Bingo!</span>' : '<span class="tag">Le falta marcar</span>'}</td></tr>`).join('')}
       </table>` : '<p class="muted">Aquí aparecerá cada cartón que complete un patrón.</p>';
+    $('#hidewin').hidden = !won;
+    $('#hidewin').textContent = st.celebrate ? 'Quitar la celebración de la pantalla' : 'Volver a mostrar la celebración';
     $('#final').innerHTML = st.finalists ? `<p><b>Selección final:</b> ${st.finalists.map((c) => '#' + (p.startNumber + c - 1)).join(', ') || 'no hay cartones validados'}</p>` : '';
     if (st.drawn.length !== spoken) { if (spoken >= 0 && st.drawn.length > spoken) speak(speakText(st, st.drawn.at(-1))); spoken = st.drawn.length; }
   };
   $('#gen').onclick = () => act('draw');
+  $('#hidewin').onclick = () => act('hidewin', { hide: st.celebrate });
   $('#gc-save').onclick = async () => { await act('gc', { top: $('#gc-top').value, bottom: $('#gc-bottom').value }); toast('Textos de la gráfica guardados'); };
   $('#auto').onclick = () => act('auto', { on: !st.auto.on, interval: Number($('#interval').value), stopOnWin: $('#stop').checked });
   $('#manual').onclick = () => { manual = !manual; render(); };
@@ -438,7 +442,7 @@ views.jugar = async (sid) => {
     app.innerHTML = `<form class="panel" id="f" style="max-width:460px;margin:0 auto">
       <h1>${esc(info.name)}</h1><p class="muted">Recibirás ${info.cardsPerPlayer} ${info.cardsPerPlayer > 1 ? 'cartones' : 'cartón'} en este dispositivo. No necesitas cuenta.</p>
       <div class="fields" style="grid-template-columns:1fr">
-        <label class="f">Tu nombre<input type="text" name="name" maxlength="30" value="${esc(store.get('playerName') || '')}" required autofocus></label>
+        <label class="f">Tu nombre y apellido<input type="text" name="name" maxlength="30" value="${esc(store.get('playerName') || '')}" required autofocus></label>
         ${info.locked ? '<label class="f">Contraseña de la sesión<input type="text" name="password" required></label>' : ''}
         <button class="primary big">Unirse</button>
       </div></form>`;
@@ -527,8 +531,11 @@ views.jugar = async (sid) => {
 views.tablero = async (sid) => {
   if (!sid) { const r = await pickSession('tablero'); if (!r.sid) return r.cleanup; sid = r.sid; }
   document.body.classList.add('tv');
+  let tvWin = null;
   app.innerHTML = '<div id="tv"></div>';
   const off = subscribe(sid, (st) => {
+    if (st.celebrate) { if (winKey(st) !== tvWin) { tvWin = winKey(st); $('#tv').innerHTML = winScreenHTML(st); } return; }
+    tvWin = null;
     $('#tv').innerHTML = `
       <div class="row between" style="margin-bottom:1.5vw">
         <div><h1 style="margin:0">${esc(st.name)}</h1><span class="muted">Ronda ${st.round} · ${st.drawn.length} de ${st.values}</span><div style="margin-top:8px">${patternsInline(st.patterns)}</div></div>
@@ -538,6 +545,21 @@ views.tablero = async (sid) => {
   }, () => { document.body.classList.remove('tv'); if (location.hash === '#/tablero') route(); else location.hash = '#/tablero'; });
   return () => { off(); document.body.classList.remove('tv'); };
 };
+
+// Celebración de bingo a pantalla completa: «¡BINGO!», confeti y los nombres de quienes ganaron
+const winKey = (st) => st.results.filter((r) => r.validated).map((r) => `${r.cardNo}:${r.name}`).join('|');
+function winScreenHTML(st) {
+  const seen = new Set();
+  const winners = st.results.filter((r) => r.validated && !seen.has(r.cardNo) && seen.add(r.cardNo));
+  const colors = ['#ffc400', '#0a9a94', '#ff7a1a', '#2338a8', '#56b04c', '#e8262e', '#ffffff'];
+  const confetti = Array.from({ length: 70 }, (_, i) => `<i style="left:${(Math.random() * 100).toFixed(1)}%;background:${colors[i % colors.length]};animation-delay:${(Math.random() * 3).toFixed(2)}s;animation-duration:${(3 + Math.random() * 3).toFixed(2)}s"></i>`).join('');
+  const shown = winners.slice(0, 6);
+  return `<div class="bwin ${winners.length > 3 ? 'many' : ''}"><div class="confetti">${confetti}</div>
+    <div class="bwin-card"><span class="bwin-title">¡BINGO!</span>
+      <div class="bwin-names">${shown.map((r) => `<span><b>${esc(r.name || 'Participante')}</b><small>Cartón #${st.startNumber + r.cardNo - 1}</small></span>`).join('')}</div>
+      ${winners.length > shown.length ? `<span class="bwin-more">y ${winners.length - shown.length} más</span>` : ''}
+      <span class="bwin-sub">${winners.length > 1 ? '¡Felicitaciones a los ganadores!' : '¡Felicitaciones!'}</span></div></div>`;
+}
 
 // Pantalla única para OBS: muestra la gráfica que el moderador elija en «Juegos».
 // No requiere iniciar sesión y queda transparente cuando no hay nada que mostrar.

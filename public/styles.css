@@ -342,3 +342,19 @@ body.raffle-screen main { padding: 0; max-width: none; }
 .rf-row { padding: 8px 0; border-bottom: 1px solid var(--line); gap: 8px; }
 .rf-row > span:first-child { min-width: 0; overflow-wrap: anywhere; font-weight: 600; }
 .rf-row button { padding: 6px 12px; font-size: .85rem; }
+
+/* ---------- Celebración de bingo a pantalla completa ---------- */
+.bwin { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; overflow: hidden; color: #fff; font-family: "Source Sans 3", "Source Sans Pro", "Segoe UI", system-ui, sans-serif; }
+body.tv .bwin { background: rgba(10, 8, 24, .92); }
+.bwin-card { position: relative; display: grid; justify-items: center; gap: 2.2vh; text-align: center; min-width: 56vw; max-width: 94vw; padding: 4vh 7vh 5vh; border-radius: 5vh; border: .8vh solid #ffc400;
+  background: radial-gradient(circle, rgba(255,255,255,.13) 0 .42vh, transparent .46vh) 0 0 / 4.2vh 4.2vh, #c4175e; box-shadow: 0 2vh 6vh rgba(0,0,0,.55); animation: winpop .7s cubic-bezier(.2, 1.5, .4, 1); }
+.bwin-title { font-size: 24vh; font-weight: 900; line-height: .95; color: #ffc400; letter-spacing: .04em; text-shadow: .8vh .8vh 0 rgba(60, 0, 30, .6); animation: bwinbeat 1s ease-in-out infinite; }
+@keyframes bwinbeat { 50% { transform: scale(1.06); } }
+.bwin-names { display: flex; flex-wrap: wrap; justify-content: center; gap: 2vh 5vh; max-width: 90vw; }
+.bwin-names span { display: grid; justify-items: center; }
+.bwin-names b { font-size: 11vh; font-weight: 900; line-height: 1; text-transform: uppercase; text-shadow: .5vh .5vh 0 rgba(60, 0, 30, .55); overflow-wrap: anywhere; }
+.bwin-names small { font-size: 3.4vh; font-weight: 700; opacity: .9; }
+.bwin.many .bwin-title { font-size: 17vh; } .bwin.many .bwin-names b { font-size: 6.4vh; } .bwin.many .bwin-names small { font-size: 2.6vh; }
+.bwin-more { font-size: 4vh; font-weight: 700; }
+.bwin-sub { font-size: 5vh; font-weight: 700; background: rgba(60, 0, 30, .45); border-radius: 99px; padding: .5vh 4vh; }
+@media (prefers-reduced-motion: reduce) { .bwin-card, .bwin-title { animation: none; } }

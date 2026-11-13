@@ -1,4 +1,4 @@
-/* global views, app, $, esc, api, subscribe, ballHTML, PATTERNS, qr, joinUrl */
+/* global views, app, $, esc, api, subscribe, ballHTML, PATTERNS, qr, joinUrl, winKey, winScreenHTML */
 // Gráfica del bingo para OBS (GC), con fondo transparente para ir encima de la cámara:
 // franja superior con título y guirnalda, QR arriba a la derecha, sorteo actual abajo a la
 // izquierda, figura abajo a la derecha y una franja inferior con texto libre.
@@ -15,7 +15,8 @@
     let poll = null;
     let sid = null;
     let lastCount = -1;
-    const leave = () => { if (off) off(); off = null; sid = null; lastCount = -1; };
+    let winShown = null;
+    const leave = () => { if (off) off(); off = null; sid = null; lastCount = -1; winShown = null; };
 
     const draw = (st) => {
       const current = st.drawn.at(-1);
@@ -24,6 +25,12 @@
       const id = st.patterns[0];
       const mask = PATTERNS.byId[id].variants[0];
       const figure = Array.from({ length: 25 }, (_, i) => `<i class="${mask & (1 << i) ? 'x' : ''}"></i>`).join('');
+      // Con ganadores: se retira la gráfica y queda la celebración a pantalla completa
+      if (st.celebrate) {
+        if (winKey(st) !== winShown) { winShown = winKey(st); $('#gc').innerHTML = winScreenHTML(st); }
+        return;
+      }
+      winShown = null;
       $('#gc').innerHTML = `
         <header class="gc-top"><b class="gc-title">${esc(st.name)}</b>${st.gc.top ? `<span class="gc-sub">${esc(st.gc.top)}</span>` : ''}</header>
         <div class="gc-bunting">${bunting}</div>
