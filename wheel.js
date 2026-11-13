@@ -110,6 +110,9 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
         else if (action !== 'hit') { settle(w); passTurn(w); } // fallo o paso: el reloj se detiene siempre y sigue otro, si queda alguno
         return null;
       }
+      case 'acceptwin': // el animador da por bueno al ganador: la felicitación se recoge abajo al centro
+        if (winnerOf(w) < 0) return 'Todavía nadie completó el rosco';
+        w.winAccepted = true; return null;
       case 'start': run(w); return null;
       case 'pause': settle(w); return null;
       case 'turn': remember(w); settle(w); w.turn = (w.turn + 1) % w.players.length; return null;
@@ -127,10 +130,10 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
         if (!last) return 'No hay nada que deshacer';
         settle(w);
         Object.assign(w, JSON.parse(last));
-        w.reveal = null;
+        w.reveal = null; w.winAccepted = false;
         return null;
       }
-      case 'reset': settle(w); w.history = []; w.turn = 0; w.reveal = null; w.players = freshPlayers(w); return null;
+      case 'reset': settle(w); w.winAccepted = false; w.history = []; w.turn = 0; w.reveal = null; w.players = freshPlayers(w); return null;
       default: return 'Acción desconocida';
     }
   }
@@ -139,6 +142,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     id: w.id, name: w.name, letters: w.letters, turn: w.turn, runningSince: w.runningSince, now: Date.now(),
     finished: !w.players.some(active), canUndo: w.history.length > 0,
     winner: winnerOf(w) >= 0 ? { name: w.players[winnerOf(w)].name } : null,
+    winAccepted: winnerOf(w) >= 0 && !!w.winAccepted,
     reveal: w.reveal && Date.now() - w.reveal.at < REVEAL_MS ? w.reveal : null,
     // Al público va solo el enunciado de la letra en juego; la respuesta nunca sale del panel del moderador
     // y solo mientras su reloj está corriendo.

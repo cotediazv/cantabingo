@@ -148,6 +148,8 @@
         <div class="panel">
           <div class="row between"><div><h1 id="w-name" style="margin:0"></h1><span class="muted" id="w-turn"></span></div><div class="w-letter" id="w-letter"></div></div>
           <div class="w-question" id="w-question"></div>
+          <button class="primary big w-accept" id="w-accept" data-do="acceptwin" hidden>✔ Aceptar ganador</button>
+          <p class="w-accepted" id="w-accepted" hidden>✔ Ganador aceptado</p>
           <div class="w-keys">
             <button class="w-hit" data-do="hit">✔ Acierto <kbd>A</kbd></button>
             <button class="w-miss" data-do="miss">✘ Fallo <kbd>F</kbd></button>
@@ -175,9 +177,11 @@
       $('#w-letter').textContent = c.active ? st.letters[c.current] : '—';
       const q = (questions[st.turn] || [])[c.current] || {};
       // La pregunta y su respuesta se muestran al moderador solo con el reloj en marcha
-      $('#w-question').innerHTML = !c.active ? (st.winner ? '<b>¡Rosco completo!</b> La partida se detuvo y en pantalla se muestra la felicitación. Usa Deshacer si fue un error, o Reiniciar para jugar de nuevo.' : '<span class="muted">Este concursante ya terminó su rosco.</span>')
+      $('#w-question').innerHTML = !c.active ? (st.winner ? (st.winAccepted ? '<b>¡Rosco completo!</b> El nombre del ganador queda abajo al centro de la pantalla.' : '<b>¡Rosco completo!</b> La partida se detuvo y en pantalla se muestra la felicitación. Pulsa «Aceptar ganador», o Deshacer si fue un error.') : '<span class="muted">Este concursante ya terminó su rosco.</span>')
         : !st.runningSince ? '<span class="muted">Pulsa «Iniciar preguntas» para ver la pregunta de esta letra.</span>'
         : q.q ? `${q.cat ? `<div class="small muted" style="margin-bottom:6px">${TAGS[q.cat]} · ${q.level === 'f' ? 'Fácil' : 'Medio'}</div>` : ''}<div>${esc(q.q)}</div>${q.a ? `<div class="w-answer">Respuesta: <b>${esc(q.a)}</b></div>` : ''}` : '<span class="muted">Sin pregunta cargada para esta letra: léela de tu guion.</span>';
+      $('#w-accept').hidden = !st.winner || st.winAccepted;
+      $('#w-accepted').hidden = !st.winAccepted;
       $$('.w-keys button').forEach((b) => { b.disabled = !c.active; });
       $('#w-clock').textContent = st.runningSince ? '⏸ Pausar' : '▶ Iniciar preguntas';
       $('#w-clock').disabled = !c.active;
@@ -268,8 +272,14 @@
       st = s;
       if (st.winner) {
         // Rosco completo: se retira todo y queda solo la felicitación, en grande
-        if (wonBy !== st.winner.name) {
-          wonBy = st.winner.name;
+        // Ganador aceptado, en OBS: la felicitación baja a un cartel al centro para dejar ver a la persona
+        const low = st.winAccepted && kind === 'obs' && !document.body.classList.contains('full');
+        const key = st.winner.name + (low ? '|low' : '');
+        if (low && wonBy !== key) {
+          wonBy = key;
+          $('#pw').innerHTML = `<div class="rosco-winlow"><span class="rosco-winlow-tag">🏆 Completó el rosco</span><b>${esc(st.winner.name)}</b><small>¡Felicitaciones!</small></div>`;
+        } else if (wonBy !== key) {
+          wonBy = key;
           const colors = ['#ff4fa3', '#ff9a3d', '#ffe14d', '#3fe08f', '#35c6ff', '#9b5cff'];
           const confetti = Array.from({ length: 60 }, (_, i) => `<i style="left:${(Math.random() * 100).toFixed(1)}%;background:${colors[i % colors.length]};animation-delay:${(Math.random() * 3).toFixed(2)}s;animation-duration:${(3 + Math.random() * 3).toFixed(2)}s"></i>`).join('');
           $('#pw').innerHTML = `<div class="win-screen"><div class="confetti">${confetti}</div>
