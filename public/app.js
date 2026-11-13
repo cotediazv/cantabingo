@@ -344,16 +344,16 @@ async function hostConsole(p) {
   let spoken = -1;
   app.innerHTML = `
     <div><p class="back"><a href="#/">← Inicio</a></p>
-      <div class="panel winners" id="results-panel" hidden>
-        <h2 id="results-title"></h2>
-        <div id="results" class="scroll-x"></div>
-        <div id="final"></div>
-        <p style="margin-top:12px"><button id="hidewin" hidden></button></p>
-      </div>
       <div class="panel"><h1 id="title"></h1><div id="meta" class="muted"></div><div id="pats" style="margin-top:10px"></div></div>
       <div class="cols">
         <div class="panel">
           <div id="draws"></div>
+          <div class="win-alert" id="results-panel" hidden>
+            <h2 id="results-title"></h2>
+            <div id="results"></div>
+            <div id="final"></div>
+            <button id="hidewin" hidden></button>
+          </div>
           <div class="row" style="justify-content:center;margin-top:16px"><button class="primary big" id="gen">Generar un número</button></div>
           <div class="row" style="justify-content:center;margin-top:14px">
             <label class="small">Pausa <input type="number" id="interval" min="5" max="60" value="10" style="width:70px"> s</label>
@@ -388,12 +388,11 @@ async function hostConsole(p) {
     const results = [...st.results].sort((a, b) => Number(b.validated) - Number(a.validated) || a.at - b.at);
     const won = results.filter((r) => r.validated).length;
     $('#results-panel').hidden = !results.length;
-    $('#results-title').textContent = won ? `🏆 ${won === 1 ? '1 ganador' : `${won} ganadores`}` : 'Cartones por completar';
-    $('#results').innerHTML = results.length ? `<table class="list"><tr><th>Cartón</th><th>Figura</th><th>Participante</th><th>Valores</th><th>Estado</th></tr>
-      ${results.map((r) => `<tr><td><b>#${p.startNumber + r.cardNo - 1}</b></td><td>${esc(PATTERNS.byId[r.pattern].name)}</td>
-        <td>${esc(r.name)}</td><td>${r.at}</td>
-        <td>${r.validated ? '<span class="tag live">¡Bingo!</span>' : '<span class="tag">Le falta marcar</span>'}</td></tr>`).join('')}
-      </table>` : '';
+    $('#results-panel').classList.toggle('won', won > 0);
+    $('#results-title').textContent = won ? (won === 1 ? '🏆 ¡HAY UN GANADOR!' : `🏆 ¡HAY ${won} GANADORES!`) : 'Hay cartones por completar';
+    // Ganadores en grande; debajo, quienes ya completaron la figura pero aún no marcan su cartón
+    $('#results').innerHTML = `<div class="win-names">${results.filter((r) => r.validated).map((r) => `<span><b>${esc(r.name)}</b><small>Cartón #${p.startNumber + r.cardNo - 1}</small></span>`).join('')}</div>
+      ${results.filter((r) => !r.validated).map((r) => `<p class="win-pending">${esc(r.name)} · cartón #${p.startNumber + r.cardNo - 1} · le falta marcar</p>`).join('')}`;
     $('#hidewin').hidden = !won;
     $('#hidewin').textContent = st.celebrate ? 'Quitar la celebración de la pantalla' : 'Volver a mostrar la celebración';
     $('#final').innerHTML = st.finalists ? `<p><b>Selección final:</b> ${st.finalists.map((c) => '#' + (p.startNumber + c - 1)).join(', ') || 'no hay cartones validados'}</p>` : '';

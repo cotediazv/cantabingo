@@ -421,3 +421,16 @@ body.tv .bwin { background: rgba(10, 8, 24, .92); }
 
 /* Enlaces con aspecto de botón grande (pasos del animador) */
 a.btn.big { display: block; text-align: center; font-size: 1.15rem; font-weight: 700; padding: 15px 20px; }
+
+/* Aviso de ganadores junto al botón de sortear */
+.win-alert { margin-top: 16px; padding: 14px; border-radius: var(--radius); border: 2px solid #5a54a0; background: var(--bg); text-align: center; }
+.win-alert h2 { font-size: 1.1rem; margin: 0 0 8px; }
+.win-alert.won { border: 3px solid #fff; background: linear-gradient(160deg, #1fb86a, #0a8a4c); color: #fff; animation: winpop .5s cubic-bezier(.2, 1.5, .4, 1); }
+.win-alert.won h2 { font-size: 1.9rem; font-weight: 900; line-height: 1.1; }
+.win-names { display: grid; gap: 8px; }
+.win-names span { display: grid; background: rgba(0, 0, 0, .22); border-radius: 12px; padding: 8px 10px; }
+.win-names b { font-size: 1.6rem; line-height: 1.15; overflow-wrap: anywhere; }
+.win-names small { font-size: .9rem; opacity: .9; }
+.win-pending { margin: 8px 0 0; font-size: .9rem; opacity: .85; }
+.win-alert #hidewin { margin-top: 12px; }
+@media (prefers-reduced-motion: reduce) { .win-alert.won { animation: none; } }
