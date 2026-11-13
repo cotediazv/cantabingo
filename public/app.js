@@ -547,15 +547,55 @@ views.jugar = async (sid) => {
   let round = null;
   const marks = Object.fromEntries(me.cards.map((c) => [c.no, new Set(c.marks)]));
   const maskOf = (c) => [...marks[c.no]].reduce((m, i) => m | (1 << i), c.cells[12] === 0 ? 1 << 12 : 0);
-  app.innerHTML = `<div class="now" id="now"></div>
+  app.innerHTML = `<div id="bingo-top"><div class="now" id="now"></div>
     <div id="banner"></div>
-    <div class="cards" id="cards"></div>
+    <div class="cards" id="cards"></div></div>
     <div class="live" id="live"><div id="live-player"></div>
       <div class="live-bar"><button type="button" id="live-audio">🔇 Activar audio</button><button type="button" id="live-full">⛶ Pantalla completa</button></div></div>
-    <button class="primary big" id="sync" style="margin-top:16px">↻ Actualizar y marcar lo que falta</button>
+    <div class="prosco" id="prosco" hidden></div>
+    <div id="bingo-bottom"><button class="primary big" id="sync" style="margin-top:16px">↻ Actualizar y marcar lo que falta</button>
     <p class="muted small" style="margin-top:8px">Marca por ti los valores ya anunciados que se te pasaron.</p>
-    <div class="panel" style="margin-top:20px"><h2 id="title" style="margin:0"></h2><span class="muted small" id="meta"></span><div id="pats" style="margin-top:8px"></div></div>`;
+    <div class="panel" style="margin-top:20px"><h2 id="title" style="margin:0"></h2><span class="muted small" id="meta"></span><div id="pats" style="margin-top:8px"></div></div></div>`;
+  // Durante El Rosco: se guarda el cartón y quedan el video y, debajo, la pregunta en juego
+  let roscoEs = null;
+  let roscoId = null;
+  let rosco = null;
+  let roscoTick = null;
+  const fmtClock = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+  const roscoLeft = () => {
+    const c = rosco.players[rosco.turn];
+    return rosco.runningSince ? c.remainingMs - (Date.now() - rosco.gotAt + rosco.now - rosco.runningSince) : c.remainingMs;
+  };
+  const drawRosco = () => {
+    if (!rosco) { $('#prosco').innerHTML = '<p class="muted">Cargando El Rosco…</p>'; return; }
+    const c = rosco.players[rosco.turn];
+    const reveal = rosco.reveal ? `<div class="prosco-reveal">✔ Letra ${esc(rosco.reveal.letter)}: <b>${esc(rosco.reveal.answer)}</b></div>` : '';
+    const body = rosco.winner ? `<div class="prosco-win">🏆 ${esc(rosco.winner.name)}<small>${rosco.winner.full ? '¡Completó el rosco!' : '¡Ganó El Rosco!'}</small></div>`
+      : rosco.tie ? `<div class="prosco-wait">Empate entre ${rosco.tie.names.map(esc).join(' y ')}. Se define por sorteo.</div>`
+      : rosco.finished ? '<div class="prosco-wait">Juego terminado</div>'
+      : `<div class="prosco-q"><span class="prosco-letter">${esc(rosco.letters[c.current])}</span>
+          <p>${rosco.question ? esc(rosco.question) : '<span class="muted">Esperando la siguiente pregunta…</span>'}</p></div>`;
+    $('#prosco').innerHTML = `<div class="prosco-head"><b>El Rosco</b><span>${rosco.winner || rosco.finished ? '' : `Turno de ${esc(c.name)}`}</span><span class="prosco-clock" id="prosco-clock">${rosco.winner || rosco.finished ? '' : fmtClock(roscoLeft())}</span></div>
+      ${body}${reveal}
+      <div class="prosco-score">${rosco.players.map((p, i) => `<span class="${i === rosco.turn && !rosco.finished ? 'on' : ''}">${esc(p.name)} <b class="ok">✔ ${p.hits}</b> <b class="ko">✘ ${p.misses}</b></span>`).join('')}</div>`;
+  };
+  const stopRosco = () => { if (roscoEs) roscoEs.close(); clearInterval(roscoTick); roscoEs = null; roscoId = null; rosco = null; };
+  const syncStage = () => {
+    const on = st.stage === 'rueda' && !!st.roscoId;
+    $('#bingo-top').hidden = on;
+    $('#bingo-bottom').hidden = on;
+    $('#prosco').hidden = !on;
+    if (!on) { stopRosco(); return; }
+    if (roscoId === st.roscoId) return;
+    stopRosco();
+    roscoId = st.roscoId;
+    drawRosco();
+    roscoEs = new EventSource(`/api/wheels/${roscoId}/events`);
+    roscoEs.onmessage = (e) => { rosco = { ...JSON.parse(e.data), gotAt: Date.now() }; drawRosco(); };
+    roscoTick = setInterval(() => { const el = $('#prosco-clock'); if (el && rosco && rosco.runningSince && !rosco.winner) el.textContent = fmtClock(roscoLeft()); }, 250);
+  };
   const render = () => {
+    syncStage();
     if (round !== null && st.round !== round) me.cards.forEach((c) => marks[c.no].clear());
     round = st.round;
     $('#title').textContent = st.name;
@@ -659,7 +699,7 @@ views.jugar = async (sid) => {
   const onFs = () => { if (!document.fullscreenElement && $('#live') && $('#live').classList.contains('full') && $('#live').requestFullscreen) setFull(false); };
   document.addEventListener('fullscreenchange', onFs);
   const off = subscribe(sid, (s) => { st = s; render(); startLive(); }, () => { store.del(key); backToStart(); }, false, me.token);
-  return () => { off(); liveFor = null; player = null; document.removeEventListener('fullscreenchange', onFs); document.body.classList.remove('live-open'); };
+  return () => { off(); stopRosco(); liveFor = null; player = null; document.removeEventListener('fullscreenchange', onFs); document.body.classList.remove('live-open'); };
 };
 // Canal de Twitch de cada local
 const LIVE_CHANNELS = { frida: 'krbstage', tobalaba: 'krbstage3', kennedy: 'krbstage3' };

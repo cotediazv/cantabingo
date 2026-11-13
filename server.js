@@ -141,6 +141,8 @@ function publicState(s, full = false) {
     // Celebración a pantalla completa mientras haya ganadores y el moderador no la haya quitado
     bigQr: !!s.bigQr, tieWinner: s.tieWinner || null, rollMs: 6500,
     celebrate: !s.hideWin && s.results.some((r) => r.validated && !r.dismissed),
+    // Durante El Rosco los celulares cambian el cartón por las preguntas del rosco en curso
+    stage: db.stage || 'bingo', roscoId: db.stage === 'rueda' ? (Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).id || null : null,
     winConfirmed: roundOver(s), winConfirmedAt: s.confirmedAt || 0, now: Date.now(),
     patterns: s.patterns, drawn: s.drawn, results, finalists: s.finalists || null,
     auto: s.auto, cardsPerPlayer: s.cardsPerPlayer, totalCards: p.cards.length,
@@ -514,7 +516,12 @@ app.get('/api/sessions/:sid/events', (req, res) => {
 // Pantalla única de OBS: qué gráfica se muestra ahora. Cambia sola al activar un bingo,
 // crear un rosco o lanzar un sorteo; el moderador también puede cambiarla a mano.
 const STAGES = ['bingo', 'rueda', 'sorteo', 'qr', 'none'];
-const setStage = (show) => { db.stage = show; save(); };
+const setStage = (show) => {
+  const changed = db.stage !== show;
+  db.stage = show;
+  save();
+  if (changed) for (const s of Object.values(db.sessions)) broadcast(s); // los celulares se enteran del cambio de juego
+};
 const wheel = require('./wheel.js')({ app, db, save, requireAdmin, fail, setStage });
 // Tras corregir un nombre, se vuelve a enviar el estado a todas las pantallas abiertas
 const refreshAll = () => { Object.values(db.sessions).forEach((s) => broadcast(s)); wheel.refresh(); };
