@@ -217,6 +217,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
   app.post('/api/wheels/:id/act', (req, res) => {
     const w = find(req, res);
     if (!w) return;
+    if (db.stage === 'qr') setStage('rueda'); // cualquier acción del rosco retira el QR a pantalla completa
     const error = act(w, String((req.body || {}).action), req.body || {});
     if (error) return fail(res, 400, error);
     broadcast(w);

@@ -178,6 +178,7 @@ function draw(s, value) {
     value = left[crypto.randomInt(left.length)];
   } else if (!(value >= 1 && value <= p.values) || s.drawn.includes(value)) return false;
   s.drawn.push(value);
+  if (db.stage === 'qr') setStage('bingo');
   s.bigQr = false; // al salir el primer número se retira el QR grande de la pantalla
   const added = evaluate(s);
   if ((added && s.auto.stopOnWin) || s.drawn.length >= p.values) stopAuto(s);
@@ -333,6 +334,7 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
   const s = hostSession(req, res);
   if (!s) return;
   const b = req.body || {};
+  if (db.stage === 'qr') setStage('bingo'); // cualquier acción del bingo retira el QR a pantalla completa
   switch (req.params.action) {
     case 'draw':
       if (roundOver(s)) return fail(res, 400, 'El ganador ya fue confirmado: para seguir hay que iniciar la siguiente ronda');
