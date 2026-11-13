@@ -625,3 +625,8 @@ body.full #rf .rf-dice { display: block; font-size: 22vh; line-height: 1; animat
 .control-grid button.wide { grid-column: 1 / -1; padding: 12px 8px; }
 
 .w-back { width: 100%; margin: 10px 0 12px; }
+
+/* Transmisión en vivo bajo el cartón: oculta (sin alto) hasta que el canal esté en vivo */
+.live { width: 100%; max-width: 460px; margin: 0 auto; height: 0; overflow: hidden; border-radius: 14px; background: #000; }
+.live.on { height: auto; aspect-ratio: 16 / 9; margin-top: 14px; border: 1px solid rgba(255, 255, 255, .15); }
+.live #live-player, .live iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; pointer-events: none; }
