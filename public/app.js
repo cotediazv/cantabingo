@@ -200,7 +200,7 @@ views.home = async () => {
   const bingoHref = last ? `#/anfitrion/${last}` : '#/proyectos';
   app.innerHTML = `
     <div class="home">
-      <h1>Sala de juegos</h1>
+      <h1>KRB Stage · Sala de juegos</h1>
       <a class="home-create" href="#/nuevo"><span>🎮</span>Crear sala de juegos</a>
       <div class="home-steps">
         <a class="s1" href="${bingoHref}"><i>1</i><span>🎱</span><b>Bingo</b></a>

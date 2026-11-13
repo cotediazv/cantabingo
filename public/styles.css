@@ -542,3 +542,5 @@ body.full.wheel-screen .wheels.n2 .wheel, body.full.wheel-screen .wheels.n3 .whe
 .fb-idle small { font-size: 4.6vh; max-width: 120vh; }
 .gc-idle-label { position: absolute; top: 37vh; right: 0; width: 35.4vh; text-align: center; font-size: 3vh; font-weight: 900; text-transform: uppercase; color: #fff; text-shadow: 0 .3vh .8vh rgba(0,0,0,.8); }
 @media (prefers-reduced-motion: reduce) { .fb-idle-qr { animation: none; } }
+
+.fb-idle b { font-size: 9.5vh; white-space: nowrap; }
