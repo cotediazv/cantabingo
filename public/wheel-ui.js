@@ -295,7 +295,7 @@
         ${revealCard(st, 'pw-reveal')}${st.question ? `<div class="pw-question">${esc(st.question)}</div>` : ''}
         <div class="wheels n${st.players.length}">${st.players.map((_, i) => `<div class="wheel-box ${i === st.turn && !st.finished ? 'on' : 'off'}">${wheelSVG(st, i)}</div>`).join('')}</div>`;
       scheduleRevealEnd(st);
-    }, () => { leave(); if (location.hash === '#/escena' || location.hash === `#/${kind}`) route(); else location.hash = `#/${kind}`; });
+    }, () => { leave(); if (['#/escena', '#/gc', '#/obs', `#/${kind}`].includes(location.hash)) route(); else location.hash = `#/${kind}`; });
     return () => { off(); stopClocks(); leave(); };
   }
   views.rueda = (id) => publicView('rueda', id);

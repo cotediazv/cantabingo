@@ -2,7 +2,7 @@
 // a quienes pasarán a jugar El Rosco. El sorteo se ve en la pantalla de OBS.
 const crypto = require('crypto');
 
-const ROLL_MS = 4500; // cuánto dura la animación antes de revelar el nombre
+const ROLL_MS = 6500; // cuánto dura la animación antes de revelar el nombre
 const MAX_PICKS = 4; // un rosco admite hasta 4 concursantes
 
 module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, refreshAll }) {

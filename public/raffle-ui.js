@@ -23,6 +23,7 @@
         </div>
       </div>${BACK_BINGO}`;
     let picked = [];
+    api('POST', '/api/stage', { show: 'sorteo' }).catch(() => {});
     const load = async () => {
       const [r, p] = await Promise.all([api('GET', '/api/raffle'), api('GET', '/api/people')]);
       picked = r.picked;
@@ -91,14 +92,14 @@
       const st = await api('GET', '/api/raffle').catch(() => null);
       if (!st) return;
       if (!st.roll) {
-        clearInterval(spin); spin = null; shownRoll = 0;
+        clearTimeout(spin); spin = null; shownRoll = 0;
         $('#rf-stage').innerHTML = `<div class="rf-card"><span class="rf-kicker">${st.pool} participantes</span><span class="rf-name small">¿Quién jugará El Rosco?</span></div>`;
         list(st.picked);
         return;
       }
       if (st.roll.at === shownRoll) { if (!spin) list(st.picked); return; }
       shownRoll = st.roll.at;
-      clearInterval(spin); spin = null;
+      clearTimeout(spin); spin = null;
       const left = st.rollMs - (st.now - st.roll.at);
       if (left <= 200) { reveal(st, false); return; } // ya había terminado: se muestra el resultado sin animar
       // Mientras gira no se muestra todavía al elegido en la lista de abajo
@@ -106,14 +107,18 @@
       $('#rf-stage').innerHTML = '<div class="rf-card rolling"><span class="rf-kicker">Sorteando…</span><span class="rf-name" id="rf-roll"></span></div>';
       let i = 0;
       const end = Date.now() + left;
-      spin = setInterval(() => {
-        if (Date.now() >= end) { clearInterval(spin); spin = null; reveal(st, true); return; }
+      const tick = () => {
+        const remaining = end - Date.now();
+        if (remaining <= 0) { spin = null; reveal(st, true); return; }
         const el = $('#rf-roll');
         if (el) el.textContent = st.roll.names[i++ % st.roll.names.length];
-      }, 90);
+        // rápido al comienzo (70 ms por nombre) y cada vez más lento en el último segundo y medio
+        spin = setTimeout(tick, remaining > 1500 ? 70 : 70 + (1500 - remaining) / 4);
+      };
+      tick();
     };
     await poll();
     const timer = setInterval(poll, 700);
-    return () => { clearInterval(timer); clearInterval(spin); document.body.classList.remove('obs', 'raffle-screen'); };
+    return () => { clearInterval(timer); clearTimeout(spin); document.body.classList.remove('obs', 'raffle-screen'); };
   };
 })();

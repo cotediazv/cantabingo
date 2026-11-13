@@ -655,7 +655,8 @@ async function route() {
   cleanup = null;
   app.onclick = null;
   const [name, arg] = location.hash.replace(/^#\/?/, '').split('/');
-  const view = views[name || 'home'] || views.home;
+  const screen = !arg && (name === 'gc' || name === 'obs') ? 'escena' : name;
+  const view = views[screen || 'home'] || views.home;
   window.scrollTo(0, 0);
   try { cleanup = await view(arg); } catch (e) {
     if (e.status === 401) return viewLogin(); // pantallas de moderador sin sesión iniciada
