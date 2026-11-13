@@ -391,3 +391,10 @@ body.tv .bwin { background: rgba(10, 8, 24, .92); }
 .gc-figure { overflow: hidden; }
 .gc-figure b.long { white-space: normal; font-size: 2.1vh; line-height: 1.05; text-wrap: balance; }
 .gc-figure:has(b.long) .gc-grid { width: 14vh; }
+
+/* Pestañas para elegir el local al crear el bingo */
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg button { flex: 1 1 auto; border-radius: 12px; padding: 12px 14px; font-weight: 600; }
+.seg button[data-venue="frida"].on { background: #c4175e; border-color: #c4175e; }
+.seg button[data-venue="tobalaba"].on { background: #c81e1e; border-color: #c81e1e; }
+.seg button[data-venue="kennedy"].on { background: #1487cf; border-color: #1487cf; }

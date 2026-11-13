@@ -245,7 +245,20 @@ views.nuevo = async () => {
   app.innerHTML = `
     ${BACK}<h1>Nuevo proyecto de bingo</h1>
     <form class="panel fields" id="f">
-      <label class="f">Nombre del proyecto<input type="text" name="name" maxlength="60" placeholder="Bingo de fin de curso"></label>
+      <div class="wide">
+        <span class="f" style="margin-bottom:6px">¿Qué bingo es?</span>
+        <div class="seg" id="venues" role="tablist">
+          <button type="button" role="tab" data-venue="frida" class="on">Frida</button>
+          <button type="button" role="tab" data-venue="tobalaba">Tobalaba</button>
+          <button type="button" role="tab" data-venue="kennedy">Kennedy</button>
+          <button type="button" role="tab" data-venue="new">Otro nombre</button>
+        </div>
+        <p class="muted small" id="venue-note" style="margin-top:8px"></p>
+        <input type="hidden" name="theme" value="frida">
+      </div>
+      <label class="f" id="pname-wrap" hidden>Nombre del bingo<input type="text" name="name" maxlength="60" value="El Bingo de Frida"></label>
+      <label class="f" id="ptheme-wrap" hidden>Colores en pantalla<select id="ptheme">
+        <option value="frida">Magenta (como Frida)</option><option value="tobalaba">Rojo (como Tobalaba)</option><option value="kennedy">Celeste azulado (como Kennedy)</option></select></label>
       <label class="f">Número de cartones <span class="hint">de 25 a 3.000</span><input type="number" name="count" min="25" max="3000" value="25" required></label>
       <label class="f">Formato<select name="format"><option value="numbers">Números</option><option value="emojis">Emojis</option><option value="words">Palabras / frases</option></select></label>
       <label class="f" data-for="numbers">Cantidad de valores <span class="hint">25 a 150 (75 es lo habitual)</span><input type="number" name="values" min="25" max="150" value="75"></label>
@@ -259,6 +272,19 @@ views.nuevo = async () => {
   const f = $('#f');
   const sync = () => $$('[data-for]', f).forEach((el) => { el.hidden = el.dataset.for !== f.format.value; });
   f.format.onchange = sync;
+  // Pestañas de local: cada una fija el nombre y los colores de la pantalla; «Otro nombre» deja elegirlos
+  const VENUES = { frida: ['El Bingo de Frida', 'magenta'], tobalaba: ['El Bingo de Tobalaba', 'rojo'], kennedy: ['El Bingo de Kennedy', 'celeste azulado'] };
+  const pickVenue = (v) => {
+    $$('#venues button').forEach((b) => { b.classList.toggle('on', b.dataset.venue === v); b.setAttribute('aria-selected', b.dataset.venue === v); });
+    const custom = v === 'new';
+    $('#pname-wrap').hidden = !custom;
+    $('#ptheme-wrap').hidden = !custom;
+    if (custom) { f.name.value = ''; f.theme.value = $('#ptheme').value; $('#venue-note').textContent = 'Escribe el nombre y elige los colores de la pantalla.'; f.name.focus(); }
+    else { f.name.value = VENUES[v][0]; f.theme.value = v; $('#venue-note').textContent = `Se llamará «${VENUES[v][0]}» y la pantalla saldrá en ${VENUES[v][1]}.`; }
+  };
+  $('#venues').onclick = (e) => { const v = e.target.dataset.venue; if (v) pickVenue(v); };
+  $('#ptheme').onchange = (e) => { f.theme.value = e.target.value; };
+  pickVenue('frida');
   f.onsubmit = async (e) => {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(f));
@@ -309,6 +335,10 @@ function hostSetup(p) {
     if (custom) { f.name.value = ''; f.name.focus(); } else { f.name.value = f.preset.selectedOptions[0].textContent; f.theme.value = f.preset.value; }
   };
   cap();
+  const fromProject = ['frida', 'tobalaba', 'kennedy'].find((k) => p.theme === k && p.name === f.preset.querySelector(`option[value=${k}]`).textContent);
+  f.preset.value = fromProject || 'new';
+  f.preset.onchange();
+  if (!fromProject) { f.name.value = p.name; f.theme.value = p.theme || 'frida'; }
   f.onsubmit = async (e) => {
     e.preventDefault();
     const patterns = readPatterns(f);

@@ -194,7 +194,7 @@ app.use(express.static(path.join(__dirname, 'public'), { setHeaders: (res) => re
 
 const fail = (res, code, error) => res.status(code).json({ error });
 const summary = (p) => ({
-  id: p.id, name: p.name, format: p.format, count: p.cards.length, values: p.values,
+  id: p.id, name: p.name, theme: p.theme || 'frida', format: p.format, count: p.cards.length, values: p.values,
   created: p.created, sessionId: p.sessionId || null,
 });
 function ownProject(req, res) {
@@ -264,6 +264,7 @@ app.post('/api/projects', (req, res) => {
   const p = {
     id: id(), created: Date.now(), format, values, items,
     name: str(b.name, 60, 'Proyecto de bingo'),
+    theme: ['frida', 'tobalaba', 'kennedy'].includes(b.theme) ? b.theme : 'frida', // colores en pantalla según el local
     headers: headers.slice(0, 5).join(''), freeCenter: b.freeCenter !== false,
     startNumber: clamp(b.startNumber, 1, 999999, 1),
     sessionId: null,
