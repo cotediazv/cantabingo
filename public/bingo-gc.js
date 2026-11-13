@@ -37,7 +37,6 @@
         <div class="gc-qr">${qr(joinUrl())}</div>
         <footer class="gc-bottom">${st.gc.bottom ? `<span class="gc-msg">${rich(st.gc.bottom)}</span>` : ''}</footer>
         <div class="gc-draw">
-          <span class="gc-label">Sorteo actual</span>
           <div class="gc-ballwrap ${fresh ? 'pop' : ''}">${ballHTML(st, current, 'gcball')}</div>
         </div>
         <div class="gc-figure">
