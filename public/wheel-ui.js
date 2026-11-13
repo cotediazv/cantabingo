@@ -149,7 +149,7 @@
           <div class="row between"><div><h1 id="w-name" style="margin:0"></h1><span class="muted" id="w-turn"></span></div><div class="w-letter" id="w-letter"></div></div>
           <div class="w-question" id="w-question"></div>
           <button class="primary big w-accept" id="w-accept" data-do="acceptwin" hidden>✔ Aceptar ganador</button>
-          <p class="w-accepted" id="w-accepted" hidden>✔ Ganador aceptado</p>
+          <div id="w-accepted" hidden><p class="w-accepted">✔ Ganador aceptado</p><button class="primary big w-back" data-back-bingo>← Volver al bingo</button></div>
           <div class="w-keys">
             <button class="w-hit" data-do="hit">✔ Acierto <kbd>A</kbd></button>
             <button class="w-miss" data-do="miss">✘ Fallo <kbd>F</kbd></button>

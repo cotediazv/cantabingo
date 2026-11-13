@@ -623,3 +623,5 @@ body.full #rf .rf-dice { display: block; font-size: 22vh; line-height: 1; animat
 .w-accept { margin-bottom: 12px; }
 
 .control-grid button.wide { grid-column: 1 / -1; padding: 12px 8px; }
+
+.w-back { width: 100%; margin: 10px 0 12px; }
