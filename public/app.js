@@ -260,18 +260,9 @@ views.nuevo = async () => {
       <label class="f" id="ptheme-wrap" hidden>Colores en pantalla<select id="ptheme">
         <option value="frida">Magenta (como Frida)</option><option value="tobalaba">Rojo (como Tobalaba)</option><option value="kennedy">Celeste azulado (como Kennedy)</option></select></label>
       <label class="f">Número de cartones <span class="hint">de 25 a 3.000</span><input type="number" name="count" min="25" max="3000" value="280" required></label>
-      <label class="f">Formato<select name="format"><option value="numbers">Números</option><option value="emojis">Emojis</option><option value="words">Palabras / frases</option></select></label>
-      <label class="f" data-for="numbers">Cantidad de valores <span class="hint">25 a 150 (75 es lo habitual)</span><input type="number" name="values" min="25" max="150" value="75"></label>
-      <label class="f wide" data-for="words" hidden>Tu lista, una palabra o frase por línea <span class="hint">mínimo 25, máximo 150</span><textarea name="words" placeholder="Pega aquí tu lista desde Word o Excel"></textarea></label>
-      <p class="muted small wide" data-for="emojis" hidden>Se usará un conjunto de 75 emojis con su nombre en español.</p>
-      <label class="f">Encabezado de columnas <span class="hint">5 letras</span><input type="text" name="headers" maxlength="5" value="BINGO"></label>
-      <label class="f">Casilla central<select name="freeCenter"><option value="1">Libre</option><option value="0">Con valor</option></select></label>
-      <label class="f">Numerar cartones desde<input type="number" name="startNumber" min="1" value="1"></label>
       <div class="wide"><button class="primary big">Crear los cartones</button></div>
     </form>`;
   const f = $('#f');
-  const sync = () => $$('[data-for]', f).forEach((el) => { el.hidden = el.dataset.for !== f.format.value; });
-  f.format.onchange = sync;
   // Pestañas de local: cada una fija el nombre y los colores de la pantalla; «Otro nombre» deja elegirlos
   const VENUES = { frida: ['El Bingo de Frida', 'magenta'], tobalaba: ['El Bingo de Tobalaba', 'rojo'], kennedy: ['El Bingo de Kennedy', 'celeste azulado'] };
   const pickVenue = (v) => {
@@ -288,10 +279,8 @@ views.nuevo = async () => {
   f.onsubmit = async (e) => {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(f));
-    const body = { ...d, freeCenter: d.freeCenter === '1' };
-    if (d.format === 'words') body.items = d.words.split(/\r?\n|\t/).map((s) => s.trim()).filter(Boolean);
-    if (d.format === 'emojis') body.items = EMOJIS;
-    delete body.words;
+    // Bingo clásico fijo: números del 1 al 75, encabezado BINGO, casilla central con valor y cartones desde el n.º 1
+    const body = { name: d.name, theme: d.theme, count: d.count, format: 'numbers', values: 75, headers: 'BINGO', freeCenter: false, startNumber: 1 };
     try { const p = await api('POST', '/api/projects', body); location.hash = `#/anfitrion/${p.id}`; } catch (err) { fail(err); }
   };
 };
