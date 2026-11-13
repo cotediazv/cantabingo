@@ -533,3 +533,12 @@ body.full .pw-reveal { max-width: 120vh; } body.full .pw-reveal .rv-answer { fon
 .fb-figure .gc-grid { width: 17vh; } .fb-qr .qr { width: 19vh; height: 19vh; }
 body.full.wheel-screen .wheels .wheel { max-width: min(70vh, 94vw); }
 body.full.wheel-screen .wheels.n2 .wheel, body.full.wheel-screen .wheels.n3 .wheel, body.full.wheel-screen .wheels.n4 .wheel { max-width: min(66vh, 46vw); }
+
+/* Sin nada en juego: QR visible */
+.fb-idle { gap: 3vh; }
+.fb-idle b { font-size: 11vh; text-transform: uppercase; color: #ffc400; text-shadow: .5vh .5vh 0 rgba(0,0,0,.35); }
+.fb-idle-qr { padding: 2.5vh; background: #fff; border-radius: 4vh; border: 1vh solid #ffc400; box-shadow: 0 2vh 6vh rgba(0,0,0,.5); animation: fbpulse 3s ease-in-out infinite; }
+.fb-idle-qr .qr { display: block; width: 48vh; height: 48vh; border: 0; padding: 0; border-radius: 0; }
+.fb-idle small { font-size: 4.6vh; max-width: 120vh; }
+.gc-idle-label { position: absolute; top: 37vh; right: 0; width: 35.4vh; text-align: center; font-size: 3vh; font-weight: 900; text-transform: uppercase; color: #fff; text-shadow: 0 .3vh .8vh rgba(0,0,0,.8); }
+@media (prefers-reduced-motion: reduce) { .fb-idle-qr { animation: none; } }

@@ -10,7 +10,13 @@
     let lastCount = -1;
     let shown = null; // qué pantalla especial está dibujada (para no redibujar y cortar animaciones)
     const leave = () => { if (off) off(); off = null; sid = null; lastCount = -1; shown = null; };
-    const idle = () => { $('#fb').innerHTML = '<div class="fb-idle"><span>🎮</span><b>Sala de juegos</b><small>En unos momentos comenzamos</small></div>'; };
+    // Sin nada en juego: portada con el QR, para que la gente vaya entrando desde ya
+    const idle = () => {
+      $('#fb').className = '';
+      $('#fb').innerHTML = `<div class="fb-idle"><b>Sala de juegos</b>
+        <div class="fb-idle-qr">${qr(joinUrl())}</div>
+        <small>Escanea el código QR y prepárate: en unos momentos comenzamos</small></div>`;
+    };
 
     const draw = (st) => {
       $('#fb').className = `th-${st.theme}`;

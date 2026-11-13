@@ -65,17 +65,23 @@
         </div>`;
     };
 
+    // Sin sesión activa: queda solo el QR arriba a la derecha, sobre fondo transparente
+    const idle = () => {
+      $('#gc').className = 'th-frida';
+      $('#gc').innerHTML = `<div class="gc-qr">${qr(joinUrl())}</div><div class="gc-idle-label">Escanea y prepárate</div>`;
+    };
     // Sigue siempre a la sesión activa más reciente; sin sesión, la gráfica queda vacía (transparente)
     const follow = async () => {
       const list = (await api('GET', '/api/current').catch(() => ({}))).sessions || [];
       const next = list.length ? list[0].id : null;
       if (next === sid) return;
       leave();
-      $('#gc').innerHTML = '';
+      idle();
       if (!next) return;
       sid = next;
-      off = subscribe(sid, draw, () => { leave(); $('#gc').innerHTML = ''; });
+      off = subscribe(sid, draw, () => { leave(); idle(); });
     };
+    idle();
     await follow();
     poll = setInterval(follow, 5000);
     return () => { clearInterval(poll); leave(); document.body.classList.remove('obs', 'gc-screen'); };
