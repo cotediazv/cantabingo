@@ -530,6 +530,11 @@ views.jugar = async (sid) => {
     $('#now').innerHTML = `${ballHTML(st, st.drawn.at(-1), 'mid')}<div><div class="small"><b>Valor actual</b> · anteriores:</div>
       <div class="history">${st.drawn.slice(-7, -1).reverse().map((v) => `<span>${esc(plain(st, v))}</span>`).join('') || '<span>—</span>'}</div></div>`;
     const mine = st.results.filter((r) => r.validated && marks[r.cardNo]);
+    // Si este cartón ganó, se marcan solas todas las casillas ya anunciadas (aunque no las haya tocado)
+    for (const r of mine) {
+      const c = me.cards.find((x) => x.no === r.cardNo);
+      c.cells.forEach((v, i) => { if (v !== 0 && st.drawn.includes(v)) marks[c.no].add(i); });
+    }
     // Sombra de la figura. Si el patrón admite varias formas (cualquier línea, dos líneas…),
     // se sombrea la que este cartón lleva más avanzada.
     const bits = (x) => { let n = 0; for (; x; x &= x - 1) n++; return n; };

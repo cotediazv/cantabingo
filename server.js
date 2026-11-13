@@ -102,14 +102,21 @@ function markMask(s, cardNo) {
 // Detecta patrones completados. Devuelve true si aparece un resultado nuevo.
 function evaluate(s) {
   const owners = {};
-  for (const pl of Object.values(s.players)) for (const c of pl.cards) owners[c] = pl.name;
+  // Solo puede ganar quien tiene su cartón abierto en este momento (conexión en vivo activa)
+  const online = new Set([...(clients[s.id] || [])].map((res) => res.playerToken));
+  for (const [token, pl] of Object.entries(s.players)) if (online.has(token)) for (const c of pl.cards) owners[c] = pl.name;
   let added = false;
   for (const cardNo of Object.keys(owners).map(Number)) {
     const dm = drawnMask(s, cardNo);
     for (const pid of s.patterns) {
       if (s.results.some((r) => r.cardNo === cardNo && r.pattern === pid)) continue;
       if (PATTERNS.completed(pid, dm)) {
-        s.results.push({ cardNo, pattern: pid, name: owners[cardNo], validated: false, at: s.drawn.length });
+        // Gana apenas los números sorteados completan la figura, aunque la persona no haya marcado su cartón:
+        // se le marcan solas las casillas ya anunciadas y la celebración sale en todas las pantallas.
+        const drawnNow = new Set(s.drawn);
+        s.marks[cardNo] = cardOf(s, cardNo).reduce((all, v, i) => (v !== 0 && drawnNow.has(v) ? [...all, i] : all), []);
+        s.results.push({ cardNo, pattern: pid, name: owners[cardNo], validated: true, at: s.drawn.length });
+        s.hideWin = false;
         added = true;
       }
     }
@@ -464,8 +471,11 @@ app.get('/api/sessions/:sid/events', (req, res) => {
   res.flushHeaders();
   res.isAdmin = validToken(req.query.admin);
   res.playerToken = String(req.query.token || ''); // permite saber qué participantes están conectados ahora
+  const comesBack = Boolean(s.players[res.playerToken]);
   res.write(`data: ${JSON.stringify(publicState(s, res.isAdmin))}\n\n`);
   (clients[s.id] ||= new Set()).add(res);
+  // Si vuelve alguien cuyo cartón ya completaba la figura, gana en ese momento
+  if (comesBack && evaluate(s)) broadcast(s);
   const ping = setInterval(() => res.write(': ping\n\n'), 25000);
   req.on('close', () => { clearInterval(ping); clients[s.id]?.delete(res); });
 });
