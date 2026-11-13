@@ -598,22 +598,34 @@ views.jugar = async (sid) => {
   return subscribe(sid, (s) => { st = s; render(); }, () => { store.del(key); backToStart(); }, false, me.token);
 };
 
-views.tablero = async (sid) => {
-  if (!sid) { const r = await pickSession('tablero'); if (!r.sid) return r.cleanup; sid = r.sid; }
-  document.body.classList.add('tv');
-  let tvWin = null;
-  app.innerHTML = '<div id="tv"></div>';
-  const off = subscribe(sid, (st) => {
-    if (st.celebrate) { if (winKey(st) !== tvWin) { tvWin = winKey(st); $('#tv').innerHTML = winScreenHTML(st); } return; }
-    tvWin = null;
-    $('#tv').innerHTML = `
-      <div class="row between" style="margin-bottom:1.5vw">
-        <div><h1 style="margin:0">${esc(st.name)}</h1><span class="muted">Ronda ${st.round} · ${st.drawn.length} de ${st.values}</span><div style="margin-top:8px">${patternsInline(st.patterns)}</div></div>
-        ${drawsHTML(st, st.drawn)}
-        ${qr(joinUrl(sid))}
-      </div>${boardHTML(st, st.drawn)}`;
-  }, () => { document.body.classList.remove('tv'); if (location.hash === '#/tablero') route(); else location.hash = '#/tablero'; });
-  return () => { off(); document.body.classList.remove('tv'); };
+// Tablero del DJ: pantalla completa (no transparente) que sigue sola lo que está pasando,
+// igual que la gráfica de OBS: bingo, sorteo o desempate, El Rosco.
+views.tablero = async () => {
+  let current = null;
+  let stop = null;
+  let busy = false;
+  const mark = () => { document.body.classList.add('full'); document.body.classList.remove('obs'); };
+  mark();
+  const apply = async () => {
+    if (busy) return;
+    busy = true;
+    try {
+      const show = (await api('GET', '/api/stage').catch(() => ({}))).show || current || 'none';
+      if (show !== current) {
+        current = show;
+        if (typeof stop === 'function') stop();
+        stop = null;
+        app.innerHTML = '';
+        if (show === 'sorteo') stop = await views.sorteo();
+        else if (show === 'rueda') stop = await views.rueda();
+        else stop = await views.bingoFull(); // bingo, o la portada si no hay nada en juego
+      }
+      mark();
+    } finally { busy = false; }
+  };
+  await apply();
+  const timer = setInterval(apply, 2000);
+  return () => { clearInterval(timer); if (typeof stop === 'function') stop(); document.body.classList.remove('full'); };
 };
 
 // Celebración de bingo a pantalla completa: «¡BINGO!», confeti y los nombres de quienes ganaron

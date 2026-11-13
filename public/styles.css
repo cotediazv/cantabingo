@@ -469,3 +469,67 @@ a.btn.big { display: block; text-align: center; font-size: 1.15rem; font-weight:
 #rf .rf-kicker { font-size: 3vh; }
 #rf .rf-name { font-size: 10vh; min-height: 10vh; white-space: nowrap; }
 #rf .rf-name.small { font-size: 5.5vh; min-height: 0; }
+
+/* ---------- Tablero del DJ: pantalla completa con fondo propio ---------- */
+html:has(body.full), body.full { background: #1b0f3a; }
+body.full { overflow: hidden; }
+body.full main { padding: 0; max-width: none; }
+body.full::before { content: ""; position: fixed; inset: -20%; z-index: 0; pointer-events: none;
+  background: radial-gradient(circle at 20% 25%, rgba(255, 79, 163, .55), transparent 38%), radial-gradient(circle at 80% 20%, rgba(53, 198, 255, .45), transparent 36%),
+    radial-gradient(circle at 70% 85%, rgba(255, 154, 61, .5), transparent 40%), radial-gradient(circle at 15% 85%, rgba(155, 92, 255, .55), transparent 38%);
+  animation: fullglow 16s ease-in-out infinite alternate; }
+@keyframes fullglow { to { transform: rotate(12deg) scale(1.12); } }
+body.full #app { position: relative; z-index: 1; }
+body.full .bwin { background: none; }
+body.full.wheel-screen .wheel, body.full .pw-title { color: #fff; }
+body.full.wheel-screen main { padding: 2vh; }
+body.full.wheel-screen .wheels .wheel { max-width: min(80vh, 94vw); }
+body.full .pw-title { font-size: 6vh; margin: 1vh 0; }
+body.full .pw-question { font-size: 3.6vh; max-width: 120vh; padding: 1.6vh 3vh; border-radius: 2.4vh; }
+body.full .pw-reveal { max-width: 120vh; } body.full .pw-reveal .rv-answer { font-size: 5vh; }
+
+#fb { position: fixed; inset: 0; color: #fff; font-family: "Source Sans 3", "Source Sans Pro", "Segoe UI", system-ui, sans-serif; display: grid; grid-template-columns: 40vh 1fr 30vh; grid-template-rows: auto 1fr; gap: 2.5vh 3vh; padding: 3vh 4vh;
+  --gc-pink: #c4175e; --gc-yellow: #ffc400; --gc-line: .5vh; --gc-shade: rgba(60, 0, 30, .55);
+  --gc-dots: radial-gradient(circle, rgba(255,255,255,.13) 0 .42vh, transparent .46vh) 0 0 / 4.2vh 4.2vh, radial-gradient(circle, rgba(255,255,255,.13) 0 .42vh, transparent .46vh) 2.1vh 2.1vh / 4.2vh 4.2vh; }
+#fb.th-tobalaba { --gc-pink: #c81e1e; --gc-shade: rgba(70, 0, 0, .55); }
+#fb.th-kennedy { --gc-pink: #1487cf; --gc-shade: rgba(0, 32, 78, .55); }
+.fb-top { grid-column: 1 / -1; display: flex; align-items: center; gap: 2.4vh; padding: 1.6vh 3.5vh; border-radius: 3vh; background: var(--gc-dots), var(--gc-pink); border: var(--gc-line) solid var(--gc-yellow); box-shadow: 0 1vh 3vh rgba(0,0,0,.4); white-space: nowrap; }
+.fb-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 7.5vh; font-weight: 900; line-height: 1; text-transform: uppercase; color: var(--gc-yellow); text-shadow: .4vh .4vh 0 var(--gc-shade); }
+.fb-pill { font-size: 3.2vh; font-weight: 700; text-transform: uppercase; background: var(--gc-shade); border-radius: 99px; padding: .6vh 2.4vh; }
+.fb-pill b { font-size: 4.2vh; font-weight: 900; color: var(--gc-yellow); }
+.fb-left { display: grid; align-content: center; justify-items: center; gap: 3vh; }
+.ball.fbball { width: 38vh; height: 38vh; padding: 2vh; border: 1vh solid #fff; box-shadow: 0 2vh 5vh rgba(0,0,0,.5), 0 0 6vh rgba(255, 210, 31, .6); font-family: inherit; }
+.ball.fbball .l { font-size: 8vh; font-weight: 900; line-height: 1; } .ball.fbball .v { font-size: 19vh; font-weight: 900; line-height: .95; }
+.fb-ballwrap.pop { animation: fbdrop 1s cubic-bezier(.3, 0, .7, 1); }
+@keyframes fbdrop { 0% { transform: translateY(-90vh) rotate(-240deg); } 42% { transform: translateY(0) rotate(0) scale(1.08, .9); } 58% { transform: translateY(-11vh) scale(.97, 1.04); } 72% { transform: translateY(0) scale(1.05, .94); } 84% { transform: translateY(-3.5vh); } 100% { transform: none; } }
+.fb-prev { display: flex; gap: 1.2vh; min-height: 8vh; }
+.ball.fbprev { width: 7.4vh; height: 7.4vh; padding: .4vh; border: .3vh solid #fff; box-shadow: none; filter: none; opacity: .92; font-family: inherit; }
+.ball.fbprev .l { font-size: 1.6vh; font-weight: 900; line-height: 1; } .ball.fbprev .v { font-size: 3.4vh; font-weight: 900; line-height: 1; }
+.fb-board { display: grid; grid-template-rows: repeat(5, 1fr); gap: 1.2vh; align-self: center; padding: 2.4vh; border-radius: 3vh; background: rgba(12, 10, 28, .55); border: .4vh solid rgba(255,255,255,.35); }
+.fb-row { display: grid; grid-template-columns: 9vh repeat(15, 1fr); gap: 1vh; align-items: center; }
+.fb-row > b { display: grid; place-items: center; height: 11.5vh; border-radius: 1.8vh; font-size: 7.5vh; font-weight: 900; background: var(--gc-pink); color: var(--gc-yellow); border: .4vh solid var(--gc-yellow); }
+.fb-row > span { display: grid; place-items: center; height: 11.5vh; border-radius: 50%; aspect-ratio: 1; justify-self: center; font-size: 4.6vh; font-weight: 900; color: rgba(255,255,255,.4); background: rgba(255,255,255,.08); }
+.fb-row > span.hit { color: #3b2500; background: radial-gradient(circle at 35% 30%, #fff7b0, #ffc400 70%); box-shadow: 0 .5vh 1.2vh rgba(0,0,0,.35); }
+.fb-row > span.last { color: #fff; background: radial-gradient(circle at 35% 30%, #ff9ac2, var(--gc-pink) 70%); outline: .6vh solid #fff; animation: fbpulse 1s ease-in-out infinite; }
+@keyframes fbpulse { 50% { transform: scale(1.14); } }
+.fb-side { display: grid; align-content: center; gap: 3vh; }
+.fb-figure, .fb-qr { display: grid; justify-items: center; gap: 1.2vh; padding: 2vh; border-radius: 3vh; background: var(--gc-dots), var(--gc-pink); border: var(--gc-line) solid var(--gc-yellow); text-align: center; box-shadow: 0 1vh 3vh rgba(0,0,0,.4); }
+.fb-figure > span, .fb-qr > span { font-size: 2.8vh; font-weight: 900; text-transform: uppercase; }
+.fb-figure .gc-grid { width: 20vh; } .fb-figure b { font-size: 3.2vh; font-weight: 900; text-transform: uppercase; color: var(--gc-yellow); line-height: 1.05; text-wrap: balance; }
+.fb-qr .qr { display: block; width: 22vh; height: 22vh; background: #fff; border: 0; border-radius: 1.6vh; padding: 1.2vh; }
+.fb-idle { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 1.5vh; text-align: center; }
+.fb-idle span { font-size: 18vh; line-height: 1; animation: fbpulse 2.4s ease-in-out infinite; } .fb-idle b { font-size: 12vh; font-weight: 900; line-height: 1; } .fb-idle small { font-size: 4.5vh; font-weight: 700; opacity: .85; }
+#fb .gc-big-wrap { grid-column: 1 / -1; grid-row: 1 / -1; position: static; }
+@media (prefers-reduced-motion: reduce) { body.full::before, .fb-ballwrap.pop, .fb-row > span.last, .fb-idle span { animation: none; } }
+
+/* Tablero del DJ: ajustes para que todo quepa en 16:9 */
+#fb { grid-template-columns: 36vh minmax(0, 1fr) 25vh; }
+.fb-board { min-width: 0; }
+.fb-row { grid-template-columns: 7.5vh repeat(15, minmax(0, 1fr)); gap: .8vh; }
+.fb-row > b { height: 12.4vh; font-size: 7vh; }
+.fb-row > span { width: 100%; height: 12.4vh; aspect-ratio: auto; border-radius: 1.6vh; font-size: 4.2vh; }
+.ball.fbball { width: 34vh; height: 34vh; } .ball.fbball .v { font-size: 17vh; } .ball.fbball .l { font-size: 7vh; }
+.ball.fbprev { width: 6.4vh; height: 6.4vh; } .ball.fbprev .v { font-size: 3vh; }
+.fb-figure .gc-grid { width: 17vh; } .fb-qr .qr { width: 19vh; height: 19vh; }
+body.full.wheel-screen .wheels .wheel { max-width: min(70vh, 94vw); }
+body.full.wheel-screen .wheels.n2 .wheel, body.full.wheel-screen .wheels.n3 .wheel, body.full.wheel-screen .wheels.n4 .wheel { max-width: min(66vh, 46vw); }

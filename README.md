@@ -26,6 +26,7 @@ No hay cartones impresos: todos los cartones se juegan en pantalla.
 
 - `server.js` — API, generación de cartones, lógica de sesión y eventos en tiempo real (SSE). Los datos se guardan en `/var/data/data.json` si existe ese disco permanente; si no, en `data.json` junto al código (se pierde al reiniciar en hostings sin disco).
 - `public/bingo-gc.js` — gráfica del bingo para OBS (`#/gc`): franjas con título, QR, sorteo actual y figura, sobre fondo transparente.
+- `public/board-full.js` — tablero del DJ (`#/tablero`): pantalla completa que sigue lo que está pasando, con fondo propio.
 - `raffle.js` y `public/raffle-ui.js` — sorteo de concursantes del rosco entre quienes se unieron al bingo.
 - `wheel.js` y `public/wheel-ui.js` — juego «El Rosco» (servidor e interfaz).
 - `questions-bank.js` — banco de preguntas de la rueda (cultura general, música y arte; fácil y medio). Se amplía agregando líneas.
