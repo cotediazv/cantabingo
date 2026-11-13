@@ -486,7 +486,8 @@ views.jugar = async (sid) => {
     app.innerHTML = `<form class="panel" id="f" style="max-width:460px;margin:0 auto">
       <h1>${esc(info.name)}</h1><p class="muted">Recibirás ${info.cardsPerPlayer} ${info.cardsPerPlayer > 1 ? 'cartones' : 'cartón'} en este dispositivo. No necesitas cuenta.</p>
       <div class="fields" style="grid-template-columns:1fr">
-        <label class="f">Tu nombre y apellido<input type="text" name="name" maxlength="30" value="${esc(store.get('playerName') || '')}" required autofocus></label>
+        <label class="f">Nombre<input type="text" name="name" maxlength="20" autocomplete="given-name" autocapitalize="words" value="${esc(store.get('playerFirst') || '')}" required autofocus></label>
+        <label class="f">Apellido<input type="text" name="surname" maxlength="25" autocomplete="family-name" autocapitalize="words" value="${esc(store.get('playerLast') || '')}" required></label>
         ${info.locked ? '<label class="f">Contraseña de la sesión<input type="text" name="password" required></label>' : ''}
         <button class="primary big">Unirse</button>
       </div></form>`;
@@ -495,7 +496,8 @@ views.jugar = async (sid) => {
       try {
         const r = await api('POST', `/api/sessions/${sid}/join`, Object.fromEntries(new FormData(e.target)));
         store.set(key, r.token);
-        store.set('playerName', r.name);
+        store.set('playerFirst', e.target.name.value.trim());
+        store.set('playerLast', e.target.surname.value.trim());
         route();
       } catch (err) { fail(err); }
     };

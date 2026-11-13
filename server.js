@@ -393,12 +393,16 @@ app.post('/api/sessions/:sid/join', (req, res) => {
   if (!pl) {
     if (!b.name && !b.password) return fail(res, 401, 'Únete con tu nombre y la contraseña');
     if (s.password && b.password !== s.password) return fail(res, 403, 'Contraseña incorrecta');
+    // Nombre y apellido son obligatorios para entrar
+    const first = str(b.name, 20).replace(/\s+/g, ' ');
+    const last = str(b.surname, 25).replace(/\s+/g, ' ');
+    if (!first || !last) return fail(res, 400, 'Escribe tu nombre y tu apellido para participar');
     const taken = new Set(Object.values(s.players).flatMap((x) => x.cards));
     const cards = [];
     for (let c = 1; c <= p.cards.length && cards.length < s.cardsPerPlayer; c++) if (!taken.has(c)) cards.push(c);
     if (!cards.length) return fail(res, 409, 'Ya no quedan cartones disponibles en esta sesión');
     token = id(12);
-    pl = s.players[token] = { name: str(b.name, 30, 'Participante'), cards };
+    pl = s.players[token] = { name: `${first} ${last}`, cards };
     // Lista de participantes para el sorteo de concursantes del rosco (sin repetir nombres)
     (db.people ||= {})[pl.name.toLowerCase().replace(/\s+/g, ' ')] = { name: pl.name, at: Date.now() };
     evaluate(s);
