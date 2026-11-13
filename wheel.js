@@ -7,7 +7,7 @@ const LETTERS = 'ABCDEFGHIJLMNÑOPQRSTUVXYZ';
 const OPEN = (st) => st === 'pending' || st === 'pass';
 const REVEAL_MS = 4000; // tiempo que la respuesta acertada queda en pantalla
 
-module.exports = function wheelGame({ app, db, save, requireAdmin, fail }) {
+module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStage }) {
   db.wheels ||= {};
   db.bankUsed ||= {}; // cuántas veces se ha usado cada pregunta del banco
   const clients = {}; // id -> Set<res>
@@ -180,6 +180,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail }) {
     };
     w.players = freshPlayers(w);
     db.wheels[w.id] = w;
+    setStage('rueda'); // al crear un rosco, la pantalla de OBS pasa sola a mostrarlo
     save();
     res.json({ id: w.id });
   });

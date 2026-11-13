@@ -304,6 +304,7 @@ app.post('/api/projects/:id/session', (req, res) => {
     created: Date.now(), expires: Date.now() + SESSION_HOURS * 3600e3,
   };
   db.sessions[s.id] = s;
+  setStage('bingo'); // al activar un bingo, la pantalla de OBS pasa sola a su gráfica
   p.sessionId = s.id;
   evaluate(s);
   save();
@@ -393,6 +394,8 @@ app.post('/api/sessions/:sid/join', (req, res) => {
     if (!cards.length) return fail(res, 409, 'Ya no quedan cartones disponibles en esta sesión');
     token = id(12);
     pl = s.players[token] = { name: str(b.name, 30, 'Participante'), cards };
+    // Lista de participantes para el sorteo de concursantes del rosco (sin repetir nombres)
+    (db.people ||= {})[pl.name.toLowerCase().replace(/\s+/g, ' ')] = { name: pl.name, at: Date.now() };
     evaluate(s);
     broadcast(s);
   }
@@ -454,17 +457,19 @@ app.get('/api/sessions/:sid/events', (req, res) => {
 });
 
 // Segundo juego de la plataforma
-require('./wheel.js')({ app, db, save, requireAdmin, fail });
+// Pantalla única de OBS: qué gráfica se muestra ahora. Cambia sola al activar un bingo,
+// crear un rosco o lanzar un sorteo; el moderador también puede cambiarla a mano.
+const STAGES = ['bingo', 'rueda', 'sorteo', 'none'];
+const setStage = (show) => { db.stage = show; save(); };
+require('./wheel.js')({ app, db, save, requireAdmin, fail, setStage });
+require('./raffle.js')({ app, db, save, requireAdmin, fail, setStage });
 
-// Pantalla única de OBS: qué gráfica se muestra ahora (bingo, rueda o nada).
-// Leerla es público, para que la fuente de OBS no necesite iniciar sesión; cambiarla es del moderador.
-const STAGES = ['bingo', 'rueda', 'none'];
+// Leer la pantalla actual es público, para que la fuente de OBS no necesite iniciar sesión; cambiarla es del moderador.
 app.get('/api/stage', (_req, res) => res.json({ show: STAGES.includes(db.stage) ? db.stage : 'bingo' }));
 app.post('/api/stage', requireAdmin, (req, res) => {
   const show = String((req.body || {}).show);
   if (!STAGES.includes(show)) return fail(res, 400, 'Opción no válida');
-  db.stage = show;
-  save();
+  setStage(show);
   res.json({ show });
 });
 

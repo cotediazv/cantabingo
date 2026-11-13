@@ -189,6 +189,7 @@ const isAdmin = async () => Boolean(store.get('adminToken')) && (await api('GET'
 const GAMES = [
   { id: 'bingo', icon: '🎱', name: 'Bingo', desc: 'Cartones virtuales en el celular, sorteo en vivo y ganadores automáticos.', href: '#/proyectos' },
   { id: 'rueda', icon: '🎡', name: 'El Rosco', desc: 'Un rosco de letras por concursante, con reloj. Tú marcas acierto, fallo o paso; el público ve el rosco y la pregunta.', href: '#/ruedas' },
+  { id: 'sorteo', icon: '🎲', name: 'Sorteo de concursantes', desc: 'Elige al azar, entre quienes jugaron el bingo, a los concursantes de El Rosco. Se ve en pantalla.', href: '#/sorteoctl' },
 ];
 
 views.home = async () => {
@@ -201,9 +202,9 @@ views.home = async () => {
     <p class="muted small" style="margin-top:16px">Aquí irán apareciendo los próximos juegos.</p>
     <div class="panel" style="margin-top:24px">
       <h2>En pantalla (OBS)</h2>
-      <p class="muted small">Una sola fuente de navegador para todo el show. Elige qué gráfica se muestra y cambia sola en un par de segundos, sin tocar OBS.</p>
+      <p class="muted small">Una sola fuente de navegador para todo el show. Cambia sola al activar un bingo, lanzar un sorteo o crear un rosco; aquí también puedes cambiarla a mano.</p>
       <div class="row" id="stage" style="margin:12px 0">
-        <button data-show="bingo">🎱 Bingo</button><button data-show="rueda">🎡 El Rosco</button><button data-show="none">Nada</button>
+        <button data-show="bingo">🎱 Bingo</button><button data-show="sorteo">🎲 Sorteo</button><button data-show="rueda">🎡 El Rosco</button><button data-show="none">Nada</button>
       </div>
       <p class="small"><b>Enlace para OBS</b> (1920×1080, no pide usuario ni contraseña):<br><a class="link" href="${stageUrl()}" target="_blank">${esc(stageUrl())}</a></p>
     </div>`;
@@ -557,6 +558,7 @@ views.escena = async () => {
         app.innerHTML = '';
         if (show === 'bingo') stop = await views.gc();
         else if (show === 'rueda') stop = await views.obs();
+        else if (show === 'sorteo') stop = await views.sorteo();
         document.body.classList.add('obs');
       }
     } finally { busy = false; }
