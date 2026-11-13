@@ -187,7 +187,7 @@ const isAdmin = async () => Boolean(store.get('adminToken')) && (await api('GET'
 
 // Catálogo de juegos de la plataforma. Para sumar uno: agregar aquí su entrada y sus vistas.
 const GAMES = [
-  { id: 'bingo', icon: '🎱', name: 'Bingo', desc: 'Cartones virtuales en el celular, sorteo en vivo y ganadores automáticos.', href: '#/proyectos' },
+  { id: 'bingo', icon: '🎮', name: 'Crea sala de juegos', desc: 'El juego n.º 1 es el Bingo.', href: '#/proyectos' },
   { id: 'rueda', hidden: true, icon: '🎡', name: 'El Rosco', desc: 'Un rosco de letras por concursante, con reloj. Tú marcas acierto, fallo o paso; el público ve el rosco y la pregunta.', href: '#/ruedas' },
   { id: 'sorteo', hidden: true, icon: '🎲', name: 'Sorteo de concursantes', desc: 'Elige al azar, entre quienes jugaron el bingo, a los concursantes de El Rosco. Se ve en pantalla.', href: '#/sorteoctl' },
 ];
