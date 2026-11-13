@@ -119,8 +119,9 @@ function speak(text) {
   speechSynthesis.cancel();
   speechSynthesis.speak(u);
 }
-function subscribe(sid, onState, onGone, asAdmin = false) {
-  const es = new EventSource(`/api/sessions/${sid}/events${asAdmin ? `?admin=${encodeURIComponent(store.get('adminToken') || '')}` : ''}`);
+function subscribe(sid, onState, onGone, asAdmin = false, token = '') {
+  const query = asAdmin ? `?admin=${encodeURIComponent(store.get('adminToken') || '')}` : token ? `?token=${encodeURIComponent(token)}` : '';
+  const es = new EventSource(`/api/sessions/${sid}/events${query}`);
   es.onmessage = (e) => { const st = JSON.parse(e.data); if (st.closed) { es.close(); onGone(); } else onState(st); };
   es.onerror = () => { fetch(`/api/sessions/${sid}`).then((r) => { if (r.status === 404) { es.close(); onGone(); } }).catch(() => {}); };
   return () => es.close();
@@ -362,6 +363,7 @@ async function hostConsole(p) {
           </div>
           <div class="row" style="justify-content:center;margin-top:10px">
             <button id="manual">Selección manual</button>
+            <button id="bigqr"></button>
             <label class="check"><input type="checkbox" id="voice" ${voiceOn ? 'checked' : ''}> Voz</label>
           </div>
         </div>
@@ -384,6 +386,8 @@ async function hostConsole(p) {
     $('#auto').textContent = st.auto.on ? '⏸ Detener automático' : '▶ Modo automático';
     $('#auto').classList.toggle('on', st.auto.on);
     $('#manual').classList.toggle('on', manual);
+    $('#bigqr').classList.toggle('on', st.bigQr);
+    $('#bigqr').textContent = st.bigQr ? '📱 QR grande en pantalla: quitar' : '📱 Mostrar QR grande en pantalla';
     // Los ganadores van arriba de todo; primero los ya validados
     const results = [...st.results].sort((a, b) => Number(b.validated) - Number(a.validated) || a.at - b.at);
     const won = results.filter((r) => r.validated).length;
@@ -402,6 +406,7 @@ async function hostConsole(p) {
   $('#hidewin').onclick = () => act('hidewin', { hide: st.celebrate });
   $('#auto').onclick = () => act('auto', { on: !st.auto.on, interval: Number($('#interval').value), stopOnWin: $('#stop').checked });
   $('#manual').onclick = () => { manual = !manual; render(); };
+  $('#bigqr').onclick = () => act('bigqr', { on: !st.bigQr });
   $('#voice').onchange = (e) => { voiceOn = e.target.checked; store.set('voice', voiceOn ? '1' : '0'); };
   $('#board').onclick = (e) => { const v = e.target.dataset.v; if (manual && v && !st.drawn.includes(Number(v))) act('draw', { value: Number(v) }); };
   const off = subscribe(sid, (s) => { st = s; render(); }, () => { location.hash = '#/'; }, true);
@@ -574,7 +579,7 @@ views.jugar = async (sid) => {
     } catch (err) { fail(err); }
     e.target.disabled = false;
   };
-  return subscribe(sid, (s) => { st = s; render(); }, () => { store.del(key); backToStart(); });
+  return subscribe(sid, (s) => { st = s; render(); }, () => { store.del(key); backToStart(); }, false, me.token);
 };
 
 views.tablero = async (sid) => {

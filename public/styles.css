@@ -434,3 +434,17 @@ a.btn.big { display: block; text-align: center; font-size: 1.15rem; font-weight:
 .win-pending { margin: 8px 0 0; font-size: .9rem; opacity: .85; }
 .win-alert #hidewin { margin-top: 12px; }
 @media (prefers-reduced-motion: reduce) { .win-alert.won { animation: none; } }
+
+/* Cartel con el QR en grande, para antes de empezar el bingo */
+.gc-big { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 2.2vh; text-align: center; padding: 4vh 6vh; border-radius: 5vh;
+  border: .8vh solid var(--gc-yellow); background: var(--gc-dots), var(--gc-pink); box-shadow: 0 2vh 6vh rgba(0,0,0,.55); animation: winpop .6s cubic-bezier(.2, 1.4, .4, 1); }
+.gc-big-title { font-size: 8vh; font-weight: 900; line-height: 1; text-transform: uppercase; color: var(--gc-yellow); text-shadow: .4vh .4vh 0 var(--gc-shade, rgba(60, 0, 30, .55)); white-space: nowrap; }
+.gc-big-qr .qr { display: block; width: 50vh; height: 50vh; background: #fff; border: 0; border-radius: 3vh; padding: 2.5vh; }
+.gc-big-text { font-size: 4.2vh; font-weight: 700; max-width: 110vh; line-height: 1.15; }
+.gc-big-count { font-size: 3.4vh; font-weight: 700; background: var(--gc-shade, rgba(60, 0, 30, .55)); border-radius: 99px; padding: .5vh 3vh; }
+.rf-row.off > span:first-child { opacity: .55; }
+@media (prefers-reduced-motion: reduce) { .gc-big { animation: none; } }
+
+/* El cartel del QR se centra con una rejilla (no con transform) para que la animación de entrada no lo desplace */
+.gc-big-wrap { position: absolute; inset: 0; display: grid; place-items: center; }
+.gc-big { position: static; left: auto; top: auto; transform: none; }

@@ -18,7 +18,7 @@
         </div>
         <div class="panel">
           <div class="row between"><h2 id="rf-count"></h2><button class="danger" id="rf-clear">Vaciar la lista</button></div>
-          <p class="muted small">Se agrega cada persona que entra a una sesión de bingo, con el nombre que escribió.</p>
+          <p class="muted small">Solo entran al sorteo quienes tienen su cartón abierto en este momento (🟢). Los demás (⚪) vuelven a entrar si abren de nuevo la página.</p>
           <div id="rf-people" style="margin-top:10px;max-height:420px;overflow:auto"></div>
         </div>
       </div>${BACK_BINGO}`;
@@ -27,12 +27,13 @@
     const load = async () => {
       const [r, p] = await Promise.all([api('GET', '/api/raffle'), api('GET', '/api/people')]);
       picked = r.picked;
-      $('#rf-count').textContent = `${p.names.length} participantes en la lista`;
-      $('#rf-people').innerHTML = p.names.map((n) => `<div class="row between rf-row"><span>${esc(n)}</span><span class="row" style="gap:6px"><button data-edit="${esc(n)}">✏️ Editar</button><button class="danger" data-drop="${esc(n)}">Quitar</button></span></div>`).join('')
+      const online = new Set(p.connected);
+      $('#rf-count').textContent = `${p.connected.length} conectados ahora · ${p.names.length} en la lista`;
+      $('#rf-people').innerHTML = p.names.map((n) => `<div class="row between rf-row ${online.has(n) ? 'on' : 'off'}"><span>${online.has(n) ? '🟢' : '⚪'} ${esc(n)}</span><span class="row" style="gap:6px"><button data-edit="${esc(n)}">✏️ Editar</button><button class="danger" data-drop="${esc(n)}">Quitar</button></span></div>`).join('')
         || '<p class="muted">Aún no hay nadie. Aparecerán al unirse al bingo.</p>';
       $('#rf-picked').innerHTML = picked.length ? picked.map((n, i) => `<div class="row between" style="padding:8px 0;border-bottom:1px solid var(--line)"><b>${i + 1}. ${esc(n)}</b><span class="row" style="gap:6px"><button data-edit="${esc(n)}">✏️ Editar</button><button data-remove="${esc(n)}">Quitar</button></span></div>`).join('')
         : '<p class="muted">Todavía no has sorteado a nadie.</p>';
-      $('#rf-draw').disabled = picked.length >= 4 || p.names.length === 0;
+      $('#rf-draw').disabled = picked.length >= 4 || p.connected.filter((n) => !picked.includes(n)).length === 0;
       $('#rf-create').disabled = !picked.length;
     };
     $('#rf-draw').onclick = async () => {

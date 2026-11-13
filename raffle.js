@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const ROLL_MS = 6500; // cuánto dura la animación antes de revelar el nombre
 const MAX_PICKS = 4; // un rosco admite hasta 4 concursantes
 
-module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, refreshAll }) {
+module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, refreshAll, connectedNames }) {
   const key = (name) => String(name).trim().toLowerCase().replace(/\s+/g, ' ');
   db.people ||= {}; // clave normalizada -> { name, at }
   db.raffle ||= { picked: [], roll: null };
@@ -18,10 +18,10 @@ module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, 
 
   // Lo que ve la pantalla pública: elegidos, el sorteo en curso y cuántas personas hay en la lista
   app.get('/api/raffle', (_req, res) => {
-    res.json({ picked: db.raffle.picked, roll: db.raffle.roll, rollMs: ROLL_MS, now: Date.now(), pool: Object.keys(db.people).length });
+    res.json({ picked: db.raffle.picked, roll: db.raffle.roll, rollMs: ROLL_MS, now: Date.now(), pool: names().filter((n) => connectedNames().has(n)).length });
   });
 
-  app.get('/api/people', requireAdmin, (_req, res) => res.json({ names: names() }));
+  app.get('/api/people', requireAdmin, (_req, res) => { const on = connectedNames(); res.json({ names: names(), connected: names().filter((n) => on.has(n)) }); });
 
   app.delete('/api/people', requireAdmin, (_req, res) => {
     db.people = {};
@@ -71,8 +71,10 @@ module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, 
     if (r.picked.length >= MAX_PICKS) return fail(res, 400, `Ya hay ${MAX_PICKS} concursantes elegidos`);
     if (r.roll && Date.now() - r.roll.at < ROLL_MS) return fail(res, 400, 'Espera a que termine el sorteo en curso');
     const all = names();
-    const eligible = all.filter((n) => !r.picked.includes(n));
-    if (!eligible.length) return fail(res, 400, all.length ? 'Ya no quedan participantes por sortear' : 'Todavía no hay participantes: se agregan al unirse al bingo');
+    // Solo entran al sorteo quienes están conectados en este momento
+    const online = connectedNames();
+    const eligible = all.filter((n) => online.has(n) && !r.picked.includes(n));
+    if (!eligible.length) return fail(res, 400, all.length ? 'No hay participantes conectados por sortear en este momento' : 'Todavía no hay participantes: se agregan al unirse al bingo');
     const winner = eligible[crypto.randomInt(eligible.length)];
     // Nombres que desfilan durante la animación (el elegido va incluido)
     const parade = shuffle(eligible.filter((n) => n !== winner)).slice(0, 24);

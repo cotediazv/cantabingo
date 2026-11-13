@@ -16,7 +16,8 @@
     let sid = null;
     let lastCount = -1;
     let winShown = null;
-    const leave = () => { if (off) off(); off = null; sid = null; lastCount = -1; winShown = null; };
+    let bigShown = false;
+    const leave = () => { if (off) off(); off = null; sid = null; lastCount = -1; winShown = null; bigShown = false; };
 
     const draw = (st) => {
       const current = st.drawn.at(-1);
@@ -27,11 +28,28 @@
       const figure = Array.from({ length: 25 }, (_, i) => `<i class="${mask & (1 << i) ? 'x' : ''}"></i>`).join('');
       // Con ganadores: se retira la gráfica y queda la celebración a pantalla completa
       if (st.celebrate) {
+        bigShown = false;
         if (winKey(st) !== winShown) { winShown = winKey(st); $('#gc').innerHTML = winScreenHTML(st); }
         return;
       }
       winShown = null;
       $('#gc').className = `th-${st.theme}`; // colores según el local
+      // Antes de empezar: cartel con el QR en grande para que la gente entre
+      if (st.bigQr) {
+        lastCount = st.drawn.length;
+        const count = st.players === 1 ? '1 participante ya está dentro' : `${st.players} participantes ya están dentro`;
+        // Se dibuja una sola vez; después solo se actualiza el contador, para que el cartel no salte
+        if (!bigShown || !$('.gc-big-count')) {
+          bigShown = true;
+          $('#gc').innerHTML = `<div class="gc-big-wrap"><div class="gc-big"><b class="gc-big-title">${esc(st.name)}</b>
+            <div class="gc-big-qr">${qr(joinUrl())}</div>
+            <span class="gc-big-text">Escanea el código QR, pon tu nombre y apellido y participa</span>
+            <span class="gc-big-count"></span></div></div>`;
+        }
+        $('.gc-big-count').textContent = count;
+        return;
+      }
+      bigShown = false;
       $('#gc').innerHTML = `
         <header class="gc-top"><b class="gc-title">${esc(st.name)}</b>${st.gc.top ? `<span class="gc-sub">${esc(st.gc.top)}</span>` : ''}</header>
         <div class="gc-bunting">${bunting}</div>

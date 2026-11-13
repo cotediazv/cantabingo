@@ -130,6 +130,7 @@ function publicState(s, full = false) {
     format: p.format, headers: p.headers, values: p.values, items: p.items, showName: s.showName,
     gc: s.gc || gcDefaults(), startNumber: p.startNumber, theme: s.theme || 'frida',
     // Celebración a pantalla completa mientras haya ganadores y el moderador no la haya quitado
+    bigQr: !!s.bigQr,
     celebrate: !s.hideWin && s.results.some((r) => r.validated),
     patterns: s.patterns, drawn: s.drawn, results, finalists: s.finalists || null,
     auto: s.auto, cardsPerPlayer: s.cardsPerPlayer, totalCards: p.cards.length,
@@ -166,6 +167,7 @@ function draw(s, value) {
     value = left[crypto.randomInt(left.length)];
   } else if (!(value >= 1 && value <= p.values) || s.drawn.includes(value)) return false;
   s.drawn.push(value);
+  s.bigQr = false; // al salir el primer número se retira el QR grande de la pantalla
   const added = evaluate(s);
   if ((added && s.auto.stopOnWin) || s.drawn.length >= p.values) stopAuto(s);
   return true;
@@ -301,6 +303,7 @@ app.post('/api/projects/:id/session', (req, res) => {
     id: shortId(), projectId: p.id, name: str(b.name, 50, p.name), password: str(b.password, 40),
     cardsPerPlayer: clamp(b.cardsPerPlayer, 1, 4, 1),
     showName: b.showName !== false, isPublic: b.isPublic !== false, patterns: cleanPatterns(b.patterns),
+    bigQr: true, // la sesión parte mostrando el QR en grande para que la gente entre
     theme: ['frida', 'tobalaba', 'kennedy'].includes(b.theme) ? b.theme : 'frida', // colores de la gráfica según el local
     gc: { ...gcDefaults() }, // textos de la gráfica de OBS: se heredan de la última sesión
     round: 1, drawn: [], results: [], marks: {}, players: {}, finalists: null,
@@ -337,6 +340,7 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
       Object.assign(s, { round: s.round + 1, drawn: [], results: [], marks: {}, finalists: null, hideWin: false, patterns: cleanPatterns(b.patterns) });
       evaluate(s);
       break;
+    case 'bigqr': s.bigQr = b.on !== false; break; // cartel con el QR en grande, para antes de empezar
     case 'hidewin': s.hideWin = b.hide !== false; break; // quitar o volver a mostrar la celebración en pantalla
     case 'gc':
       // Textos de las franjas de la gráfica de OBS; quedan como predeterminados para las próximas sesiones
@@ -459,6 +463,7 @@ app.get('/api/sessions/:sid/events', (req, res) => {
   res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
   res.flushHeaders();
   res.isAdmin = validToken(req.query.admin);
+  res.playerToken = String(req.query.token || ''); // permite saber qué participantes están conectados ahora
   res.write(`data: ${JSON.stringify(publicState(s, res.isAdmin))}\n\n`);
   (clients[s.id] ||= new Set()).add(res);
   const ping = setInterval(() => res.write(': ping\n\n'), 25000);
@@ -473,7 +478,18 @@ const setStage = (show) => { db.stage = show; save(); };
 const wheel = require('./wheel.js')({ app, db, save, requireAdmin, fail, setStage });
 // Tras corregir un nombre, se vuelve a enviar el estado a todas las pantallas abiertas
 const refreshAll = () => { Object.values(db.sessions).forEach((s) => broadcast(s)); wheel.refresh(); };
-require('./raffle.js')({ app, db, save, requireAdmin, fail, setStage, refreshAll });
+// Nombres de quienes tienen su cartón abierto en este momento (conexión en vivo activa)
+const connectedNames = () => {
+  const out = new Set();
+  for (const s of Object.values(db.sessions)) {
+    for (const res of clients[s.id] || []) {
+      const pl = s.players[res.playerToken];
+      if (pl) out.add(pl.name);
+    }
+  }
+  return out;
+};
+require('./raffle.js')({ app, db, save, requireAdmin, fail, setStage, refreshAll, connectedNames });
 
 // Leer la pantalla actual es público, para que la fuente de OBS no necesite iniciar sesión; cambiarla es del moderador.
 app.get('/api/stage', (_req, res) => res.json({ show: STAGES.includes(db.stage) ? db.stage : 'bingo' }));
