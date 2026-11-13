@@ -360,7 +360,7 @@ async function hostConsole(p) {
               <button id="confirmwin">✔ Confirmar ganador</button>
               <button id="keepplaying">▶ Seguir jugando</button>
             </div>
-            <div id="win-confirmed" hidden><p>✔ Ganador confirmado</p><a class="btn big" id="win-next">▶ Siguiente ronda</a></div>
+            <div id="win-confirmed" hidden><p>✔ Ganador confirmado</p><a class="btn big" id="win-next">▶ Siguiente bingo</a><a class="btn big" id="win-rosco" href="#/sorteoctl">🎲 Sorteo para El Rosco</a></div>
           </div>
           <div class="row" style="justify-content:center;margin-top:16px"><button class="primary big" id="gen">Generar un número</button></div>
           <div class="row" style="justify-content:center;margin-top:14px">
@@ -376,7 +376,7 @@ async function hostConsole(p) {
         </div>
         <div class="panel"><h2 id="count"></h2><div id="board"></div><h2 style="margin-top:16px">Orden de salida</h2><div id="history" class="history"></div></div>
       </div>
-      <a class="btn primary big" href="#/ronda/${p.id}" style="margin-bottom:14px">▶ Siguiente ronda</a>
+      <a class="btn primary big" href="#/ronda/${p.id}" style="margin-bottom:14px">▶ Siguiente bingo</a>
       <a class="btn big" href="#/sorteoctl">🎲 Sortear participantes de El Rosco</a>
       <p class="small" style="text-align:center;margin-top:22px"><a href="#/admin/${p.id}">⚙️ Administración</a></p>
     </div>`;
