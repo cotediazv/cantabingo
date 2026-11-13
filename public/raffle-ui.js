@@ -19,7 +19,7 @@
         <div class="panel">
           <div class="row between"><h2 id="rf-count"></h2><button class="danger" id="rf-clear">Vaciar la lista</button></div>
           <p class="muted small">Se agrega cada persona que entra a una sesión de bingo, con el nombre que escribió.</p>
-          <div id="rf-people" class="history" style="margin-top:10px;max-height:320px;overflow:auto"></div>
+          <div id="rf-people" style="margin-top:10px;max-height:420px;overflow:auto"></div>
         </div>
       </div>`;
     let picked = [];
@@ -27,8 +27,9 @@
       const [r, p] = await Promise.all([api('GET', '/api/raffle'), api('GET', '/api/people')]);
       picked = r.picked;
       $('#rf-count').textContent = `${p.names.length} participantes en la lista`;
-      $('#rf-people').innerHTML = p.names.map((n) => `<span>${esc(n)}</span>`).join('') || '<span class="muted">Aún no hay nadie. Aparecerán al unirse al bingo.</span>';
-      $('#rf-picked').innerHTML = picked.length ? picked.map((n, i) => `<div class="row between" style="padding:8px 0;border-bottom:1px solid var(--line)"><b>${i + 1}. ${esc(n)}</b><button data-remove="${esc(n)}">Quitar</button></div>`).join('')
+      $('#rf-people').innerHTML = p.names.map((n) => `<div class="row between rf-row"><span>${esc(n)}</span><span class="row" style="gap:6px"><button data-edit="${esc(n)}">✏️ Editar</button><button class="danger" data-drop="${esc(n)}">Quitar</button></span></div>`).join('')
+        || '<p class="muted">Aún no hay nadie. Aparecerán al unirse al bingo.</p>';
+      $('#rf-picked').innerHTML = picked.length ? picked.map((n, i) => `<div class="row between" style="padding:8px 0;border-bottom:1px solid var(--line)"><b>${i + 1}. ${esc(n)}</b><span class="row" style="gap:6px"><button data-edit="${esc(n)}">✏️ Editar</button><button data-remove="${esc(n)}">Quitar</button></span></div>`).join('')
         : '<p class="muted">Todavía no has sorteado a nadie.</p>';
       $('#rf-draw').disabled = picked.length >= 4 || p.names.length === 0;
       $('#rf-create').disabled = !picked.length;
@@ -36,9 +37,22 @@
     $('#rf-draw').onclick = async () => {
       try { await api('POST', '/api/raffle/draw'); toast('Sorteando en pantalla…'); await load(); } catch (err) { fail(err); }
     };
+    // Corregir un nombre mal escrito o inapropiado; el cambio llega también al bingo y al rosco
+    const edit = async (from) => {
+      const to = prompt('Corrige el nombre:', from);
+      if (to === null || to.trim() === from) return;
+      try { await api('POST', '/api/people/rename', { from, to }); toast('Nombre corregido'); } catch (err) { fail(err); }
+      await load();
+    };
     $('#rf-picked').onclick = async (e) => {
-      const name = e.target.dataset.remove;
-      if (name) { await api('POST', '/api/raffle/remove', { name }).catch(fail); await load(); }
+      const d = e.target.dataset;
+      if (d.edit) return void edit(d.edit);
+      if (d.remove) { await api('POST', '/api/raffle/remove', { name: d.remove }).catch(fail); await load(); }
+    };
+    $('#rf-people').onclick = async (e) => {
+      const d = e.target.dataset;
+      if (d.edit) return void edit(d.edit);
+      if (d.drop && confirm(`¿Quitar a ${d.drop} de la lista? Ya no podrá salir sorteado.`)) { await api('POST', '/api/people/remove', { name: d.drop }).catch(fail); await load(); }
     };
     $('#rf-reset').onclick = async () => { await api('POST', '/api/raffle/reset').catch(fail); await load(); };
     $('#rf-clear').onclick = async () => {

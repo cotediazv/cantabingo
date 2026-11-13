@@ -5,7 +5,8 @@ const crypto = require('crypto');
 const ROLL_MS = 4500; // cuánto dura la animación antes de revelar el nombre
 const MAX_PICKS = 4; // un rosco admite hasta 4 concursantes
 
-module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage }) {
+module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, refreshAll }) {
+  const key = (name) => String(name).trim().toLowerCase().replace(/\s+/g, ' ');
   db.people ||= {}; // clave normalizada -> { name, at }
   db.raffle ||= { picked: [], roll: null };
 
@@ -25,6 +26,42 @@ module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage }
   app.delete('/api/people', requireAdmin, (_req, res) => {
     db.people = {};
     db.raffle = { picked: [], roll: null };
+    save();
+    res.json({ ok: true });
+  });
+
+  // Corregir un nombre mal escrito: se cambia en la lista, entre los elegidos del sorteo,
+  // en las sesiones de bingo abiertas (ganadores incluidos) y en los roscos ya creados.
+  app.post('/api/people/rename', requireAdmin, (req, res) => {
+    const from = String((req.body || {}).from || '');
+    const to = String((req.body || {}).to || '').trim().replace(/\s+/g, ' ').slice(0, 30);
+    if (!to) return fail(res, 400, 'Escribe el nombre corregido');
+    if (!db.people[key(from)]) return fail(res, 404, 'Esa persona ya no está en la lista');
+    if (key(to) !== key(from) && db.people[key(to)]) return fail(res, 400, 'Ya hay otra persona con ese nombre');
+    delete db.people[key(from)];
+    db.people[key(to)] = { name: to, at: Date.now() };
+    const fix = (n) => (n === from ? to : n);
+    db.raffle.picked = db.raffle.picked.map(fix);
+    if (db.raffle.roll) { db.raffle.roll.winner = fix(db.raffle.roll.winner); db.raffle.roll.names = db.raffle.roll.names.map(fix); }
+    for (const s of Object.values(db.sessions || {})) {
+      for (const pl of Object.values(s.players)) pl.name = fix(pl.name);
+      for (const r of s.results) r.name = fix(r.name);
+    }
+    for (const w of Object.values(db.wheels || {})) {
+      w.setup.players = w.setup.players.map(fix);
+      for (const c of w.players) c.name = fix(c.name);
+    }
+    save();
+    refreshAll();
+    res.json({ name: to });
+  });
+
+  // Sacar a alguien de la lista (ya no puede salir sorteado)
+  app.post('/api/people/remove', requireAdmin, (req, res) => {
+    const name = String((req.body || {}).name || '');
+    delete db.people[key(name)];
+    db.raffle.picked = db.raffle.picked.filter((n) => n !== name);
+    if (db.raffle.roll && db.raffle.roll.winner === name) db.raffle.roll = null;
     save();
     res.json({ ok: true });
   });

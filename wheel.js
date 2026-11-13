@@ -8,6 +8,7 @@ const OPEN = (st) => st === 'pending' || st === 'pass';
 const REVEAL_MS = 4000; // tiempo que la respuesta acertada queda en pantalla
 
 module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStage }) {
+  const api = { refresh: () => {} };
   db.wheels ||= {};
   db.bankUsed ||= {}; // cuántas veces se ha usado cada pregunta del banco
   const clients = {}; // id -> Set<res>
@@ -234,4 +235,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     req.on('close', () => { clearInterval(ping); clients[w.id]?.delete(res); });
     return undefined;
   });
+
+  api.refresh = () => Object.values(db.wheels).forEach(broadcast);
+  return api;
 };

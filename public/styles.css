@@ -338,3 +338,7 @@ body.raffle-screen main { padding: 0; max-width: none; }
 .rf-picked span { display: flex; align-items: center; gap: 1.2vh; font-size: 4vh; font-weight: 600; padding: .6vh 2.6vh .6vh .8vh; border-radius: 99px; background: rgba(12, 10, 28, .86); border: .4vh solid #fff; }
 .rf-picked b { display: grid; place-items: center; width: 5vh; height: 5vh; border-radius: 50%; background: #ffc400; color: #4a2c00; font-size: 3.2vh; }
 @media (prefers-reduced-motion: reduce) { .rf-card.pop { animation: none; } }
+
+.rf-row { padding: 8px 0; border-bottom: 1px solid var(--line); gap: 8px; }
+.rf-row > span:first-child { min-width: 0; overflow-wrap: anywhere; font-weight: 600; }
+.rf-row button { padding: 6px 12px; font-size: .85rem; }

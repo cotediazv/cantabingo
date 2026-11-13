@@ -290,7 +290,7 @@ function hostSetup(p) {
       </div>
       <h2 style="margin-top:20px">Patrones a completar</h2>
       ${patternPicker()}
-      <p class="muted small">El generador queda activo 3 horas. Podrás reiniciar la sesión las veces que quieras y cambiar el patrón en cada ronda.</p>
+      <p class="muted small">El generador queda activo 8 horas. Podrás reiniciar la sesión las veces que quieras y cambiar el patrón en cada ronda.</p>
       <button class="primary big">Activar el generador</button>
     </form>`;
   const f = $('#f');

@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3000;
 const DISK_DIR = '/var/data';
 const hasDisk = (() => { try { fs.accessSync(DISK_DIR, fs.constants.W_OK); return true; } catch { return false; } })();
 const DATA_FILE = process.env.DATA_FILE || path.join(hasDisk ? DISK_DIR : __dirname, 'data.json');
-const SESSION_HOURS = 3;
+const SESSION_HOURS = 8; // cuánto dura una sesión de bingo desde que se activa
 
 // ---------- Almacenamiento (JSON en disco) ----------
 let db = { projects: {}, sessions: {} };
@@ -461,8 +461,10 @@ app.get('/api/sessions/:sid/events', (req, res) => {
 // crear un rosco o lanzar un sorteo; el moderador también puede cambiarla a mano.
 const STAGES = ['bingo', 'rueda', 'sorteo', 'none'];
 const setStage = (show) => { db.stage = show; save(); };
-require('./wheel.js')({ app, db, save, requireAdmin, fail, setStage });
-require('./raffle.js')({ app, db, save, requireAdmin, fail, setStage });
+const wheel = require('./wheel.js')({ app, db, save, requireAdmin, fail, setStage });
+// Tras corregir un nombre, se vuelve a enviar el estado a todas las pantallas abiertas
+const refreshAll = () => { Object.values(db.sessions).forEach((s) => broadcast(s)); wheel.refresh(); };
+require('./raffle.js')({ app, db, save, requireAdmin, fail, setStage, refreshAll });
 
 // Leer la pantalla actual es público, para que la fuente de OBS no necesite iniciar sesión; cambiarla es del moderador.
 app.get('/api/stage', (_req, res) => res.json({ show: STAGES.includes(db.stage) ? db.stage : 'bingo' }));
