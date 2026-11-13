@@ -194,36 +194,55 @@ const GAMES = [
 
 views.home = async () => {
   if (!(await isAdmin())) return viewLogin();
+  // Si ya hay un bingo en curso, el paso 1 lleva a su panel; si no, a la lista
+  const last = store.get('lastBingo');
+  const bingoHref = last ? `#/anfitrion/${last}` : '#/proyectos';
   app.innerHTML = `
-    <div class="row between" style="margin-bottom:16px"><h1>Juegos</h1><button id="logout">Cerrar sesión de moderador</button></div>
-    <div class="tiles">
-      ${GAMES.filter((g) => !g.hidden).map((g) => `<a class="tile" href="${g.href}"><span class="tile-icon">${g.icon}</span><b>${esc(g.name)}</b><span class="muted">${esc(g.desc)}</span></a>`).join('')}
-    </div>
-    <p class="muted small" style="margin-top:16px">Activa una sesión de bingo; desde su panel pasas al sorteo de concursantes y a El Rosco.</p>
-    <div class="panel" style="margin-top:24px">
-      <h2>En pantalla (OBS)</h2>
-      <p class="muted small">Una sola fuente de navegador para todo el show. Cambia sola al activar un bingo, lanzar un sorteo o crear un rosco; aquí también puedes cambiarla a mano.</p>
-      <div class="row" id="stage" style="margin:12px 0">
-        <button data-show="bingo">🎱 Bingo</button><button data-show="sorteo">🎲 Sorteo</button><button data-show="rueda">🎡 El Rosco</button><button data-show="none">Nada</button>
+    <div class="home">
+      <h1>Sala de juegos</h1>
+      <a class="home-create" href="#/nuevo"><span>🎮</span>Crear sala de juegos</a>
+      <div class="home-steps">
+        <a class="s1" href="${bingoHref}"><i>1</i><span>🎱</span><b>Bingo</b></a>
+        <a class="s2" href="#/sorteoctl"><i>2</i><span>🎲</span><b>Sorteo</b></a>
+        <a class="s3" href="#/ruedas"><i>3</i><span>🎡</span><b>El Rosco</b></a>
       </div>
-      <p class="small"><b>Enlace para OBS</b> (1920×1080, no pide usuario ni contraseña):<br><a class="link" href="${stageUrl()}" target="_blank">${esc(stageUrl())}</a></p>
+      <a class="home-control" href="#/control">🎛️ Centro de control</a>
+      <p style="margin-top:28px"><button id="logout">Cerrar sesión de moderador</button></p>
+    </div>`;
+  $('#logout').onclick = () => { store.del('adminToken'); route(); };
+  return undefined;
+};
+
+// Centro de control: qué gráfica se ve en la pantalla de OBS
+views.control = async () => {
+  if (!(await isAdmin())) return viewLogin();
+  app.innerHTML = `<p class="back"><a href="#/">← Inicio</a></p><h1>Centro de control</h1>
+    <div class="panel">
+      <h2>En pantalla</h2>
+      <p class="muted small">La pantalla cambia sola al activar un bingo, lanzar un sorteo o cargar un rosco. Aquí puedes cambiarla a mano.</p>
+      <div class="control-grid" id="stage">
+        <button data-show="bingo"><span>🎱</span>Bingo</button><button data-show="sorteo"><span>🎲</span>Sorteo</button>
+        <button data-show="rueda"><span>🎡</span>El Rosco</button><button data-show="none"><span>⬛</span>Nada</button>
+      </div>
+      <p class="small" style="margin-top:16px"><b>Enlace para OBS</b> (1920×1080, no pide usuario ni contraseña):<br><a class="link" href="${stageUrl()}" target="_blank">${esc(stageUrl())}</a></p>
     </div>`;
   const paintStage = (show) => $$('#stage button').forEach((b) => b.classList.toggle('on', b.dataset.show === show));
   paintStage((await api('GET', '/api/stage').catch(() => ({}))).show);
   $('#stage').onclick = async (e) => {
-    const show = e.target.dataset.show;
-    if (!show) return;
-    try { paintStage((await api('POST', '/api/stage', { show })).show); } catch (err) { fail(err); }
+    const btn = e.target.closest('[data-show]');
+    if (!btn) return;
+    try { paintStage((await api('POST', '/api/stage', { show: btn.dataset.show })).show); } catch (err) { fail(err); }
   };
-  $('#logout').onclick = () => { store.del('adminToken'); route(); };
-  return undefined;
+  // Refleja los cambios automáticos mientras el panel está abierto
+  const timer = setInterval(async () => paintStage((await api('GET', '/api/stage').catch(() => ({}))).show), 3000);
+  return () => clearInterval(timer);
 };
 
 views.proyectos = async () => {
   const list = await api('GET', '/api/projects');
   const fmt = { numbers: 'Números', words: 'Palabras', emojis: 'Emojis' };
   app.innerHTML = `
-    <p class="back"><a href="#/">← Juegos</a></p><div class="row between" style="margin-bottom:16px"><h1>Bingo · Mis proyectos</h1><a class="btn primary" href="#/nuevo">⊕ Nuevo proyecto de bingo</a></div>
+    <p class="back"><a href="#/">← Inicio</a></p><div class="row between" style="margin-bottom:16px"><h1>Bingo · Mis proyectos</h1><a class="btn primary" href="#/nuevo">⊕ Nuevo proyecto de bingo</a></div>
     <div class="panel scroll-x">${list.length ? `<table class="list">
       <tr><th>Proyecto</th><th>Formato</th><th>Cartones</th><th>Estado</th><th></th></tr>
       ${list.map((p) => `<tr>

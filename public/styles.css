@@ -398,3 +398,23 @@ body.tv .bwin { background: rgba(10, 8, 24, .92); }
 .seg button[data-venue="frida"].on { background: #c4175e; border-color: #c4175e; }
 .seg button[data-venue="tobalaba"].on { background: #c81e1e; border-color: #c81e1e; }
 .seg button[data-venue="kennedy"].on { background: #1487cf; border-color: #1487cf; }
+
+/* ---------- Inicio del moderador: paso a paso ---------- */
+.home { max-width: 560px; margin: 0 auto; display: grid; gap: 18px; text-align: center; }
+.home h1 { margin: 6px 0 0; }
+.home-create { display: grid; justify-items: center; gap: 6px; padding: 26px 18px; border-radius: 22px; text-decoration: none; color: #fff; font-size: 1.6rem; font-weight: 800;
+  background: linear-gradient(135deg, #ff8a00, #e52e71 55%, #7b2ff7); box-shadow: 0 10px 28px rgba(229, 46, 113, .35); }
+.home-create span { font-size: 3rem; line-height: 1; }
+.home-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.home-steps a { position: relative; display: grid; justify-items: center; gap: 4px; padding: 20px 6px 14px; border-radius: 18px; text-decoration: none; color: #fff; font-size: 1.05rem; box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+.home-steps a span { font-size: 2.4rem; line-height: 1; }
+.home-steps a i { position: absolute; top: -10px; left: -6px; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: #ffc400; color: #3b2500; font-style: normal; font-weight: 800; border: 2px solid var(--bg); }
+.home-steps .s1 { background: linear-gradient(160deg, #e52e71, #b0124f); }
+.home-steps .s2 { background: linear-gradient(160deg, #ff9a1f, #e06400); }
+.home-steps .s3 { background: linear-gradient(160deg, #6f5df0, #3a2bd0); }
+.home-create:active, .home-steps a:active, .home-control:active { transform: scale(.98); }
+.home-control { display: block; padding: 16px; border-radius: 16px; text-decoration: none; color: var(--ink); font-size: 1.2rem; font-weight: 700; background: var(--raised); border: 2px solid #5a54a0; }
+.control-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.control-grid button { display: grid; justify-items: center; gap: 4px; padding: 18px 8px; border-radius: 16px; font-size: 1.1rem; font-weight: 700; }
+.control-grid button span { font-size: 2rem; line-height: 1; pointer-events: none; }
+.control-grid button.on { background: var(--win); border-color: #fff; color: #fff; }
