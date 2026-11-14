@@ -840,6 +840,13 @@ const sfx = (() => {
     pass: () => { note(660, 0, 0.22, 'triangle', 0.25, 330); },
     // Bolita del bingo: campanita tipo triángulo, muy suave y con cola larga
     ball: () => { note(2637, 0, 1.6, 'sine', 0.09); note(5290, 0, 1.1, 'sine', 0.04); note(7980, 0, 0.6, 'sine', 0.02); note(3960, 0, 0.9, 'sine', 0.025); },
+    // Tómbola: golpe seco de la rueda en cada nombre que pasa, y «ta-dá» al salir el elegido
+    ratchet: () => { note(820, 0, 0.045, 'triangle', 0.45, 520); note(2400, 0, 0.02, 'square', 0.12); },
+    tada: () => {
+      [392, 494, 587].forEach((f) => { note(f, 0, 0.16, 'sawtooth', 0.14); note(f * 2, 0, 0.16, 'square', 0.05); });
+      [523, 659, 784, 1047].forEach((f) => { note(f, 0.2, 1.5, 'sawtooth', 0.13); note(f * 2, 0.2, 1.1, 'sine', 0.06); });
+      [2093, 2637, 3136].forEach((f, i) => note(f, 0.25 + i * 0.07, 0.9, 'sine', 0.07));
+    },
     // Reloj: tic y tac secos y fuertes, alternados
     tick: () => { note(1500, 0, 0.05, 'square', 0.4); note(3000, 0, 0.03, 'sine', 0.2); },
     tock: () => { note(950, 0, 0.06, 'square', 0.4); note(1900, 0, 0.03, 'sine', 0.2); },

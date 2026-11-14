@@ -112,11 +112,12 @@
       const end = Date.now() + left;
       const tick = () => {
         const remaining = end - Date.now();
-        if (remaining <= 0) { spin = null; reveal(st, true); return; }
+        if (remaining <= 0) { spin = null; reveal(st, true); if (document.body.classList.contains('full')) { sfx.played.push('tada'); sfx.play('tada'); } return; }
         const el = $('#rf-roll');
         const pool = st.roll.names;
         if (el) {
           el.textContent = pool[i % pool.length];
+          if (document.body.classList.contains('full')) { sfx.ticks++; sfx.play('ratchet'); } // sonido de tómbola en el tablero del DJ
           const prev = $('#rf-prev');
           const next = $('#rf-next');
           if (prev) prev.textContent = pool[(i + pool.length - 1) % pool.length];
