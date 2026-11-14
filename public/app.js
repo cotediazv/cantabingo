@@ -802,6 +802,35 @@ const sfx = (() => {
     o.start(t);
     o.stop(t + dur + 0.05);
   };
+  // Bocina de aire comprimido (la de los estadios): dos tonos ásperos y desafinados que entran
+  // con un pequeño «subidón», saturados para que suenen fuertes y metálicos.
+  const horn = (at, dur) => {
+    const t = ctx.currentTime + at;
+    const out = ctx.createGain();
+    const shape = ctx.createWaveShaper();
+    const curve = new Float32Array(1024);
+    for (let i = 0; i < 1024; i++) { const x = (i / 512) - 1; curve[i] = Math.tanh(3 * x); }
+    shape.curve = curve;
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 3400;
+    out.gain.setValueAtTime(0.0001, t);
+    out.gain.exponentialRampToValueAtTime(0.5, t + 0.03);
+    out.gain.setValueAtTime(0.5, t + dur - 0.08);
+    out.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    shape.connect(lp).connect(out).connect(ctx.destination);
+    for (const [f, v] of [[466, 0.5], [469, 0.4], [587, 0.45], [591, 0.35], [932, 0.15], [1174, 0.1]]) {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(f * 0.93, t);
+      o.frequency.exponentialRampToValueAtTime(f, t + 0.07);
+      g.gain.value = v;
+      o.connect(g).connect(shape);
+      o.start(t);
+      o.stop(t + dur + 0.05);
+    }
+  };
   const sounds = {
     // Acierto: campanita brillante de dos notas
     hit: () => { note(1319, 0, 0.5, 'sine', 0.35); note(2637, 0, 0.35, 'sine', 0.12); note(1760, 0.12, 0.8, 'sine', 0.35); note(3520, 0.12, 0.5, 'sine', 0.1); },
@@ -812,8 +841,8 @@ const sfx = (() => {
     // Reloj: tic y tac secos y fuertes, alternados
     tick: () => { note(1500, 0, 0.05, 'square', 0.4); note(3000, 0, 0.03, 'sine', 0.2); },
     tock: () => { note(950, 0, 0.06, 'square', 0.4); note(1900, 0, 0.03, 'sine', 0.2); },
-    // Se acabó el tiempo: alarma fuerte de dos tonos
-    alarm: () => { for (let i = 0; i < 8; i++) { note(i % 2 ? 660 : 880, i * 0.22, 0.2, 'square', 0.45); note(i % 2 ? 1320 : 1760, i * 0.22, 0.2, 'sawtooth', 0.18); } },
+    // Se acabó el tiempo: tres bocinazos de aire comprimido, el último más largo
+    alarm: () => { horn(0, 0.45); horn(0.62, 0.45); horn(1.24, 1.1); },
     // Ganador: fanfarria ascendente con acorde final
     win: () => {
       [523, 659, 784].forEach((f, i) => { note(f, i * 0.14, 0.2, 'sawtooth', 0.16); note(f, i * 0.14, 0.2, 'square', 0.08); });
