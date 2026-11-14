@@ -361,7 +361,7 @@
         return;
       }
       $('#pw').innerHTML = `<h1 class="pw-title">${esc(st.name)}</h1>
-        ${revealCard(st, 'pw-reveal')}${st.question ? `<div class="pw-question">${esc(st.question)}</div>` : ''}
+        <div class="pw-text">${revealCard(st, 'pw-reveal')}${st.question ? `<div class="pw-question">${esc(st.question)}</div>` : ''}</div>
         <div class="wheels n${st.players.length}">${st.players.map((_, i) => `<div class="wheel-box ${i === st.turn && !st.finished ? 'on' : 'off'}">${wheelSVG(st, i)}</div>`).join('')}</div>`;
       scheduleRevealEnd(st);
     }, () => { leave(); if (['#/escena', '#/gc', '#/obs', '#/tablero', `#/${kind}`].includes(location.hash)) route(); else location.hash = `#/${kind}`; });

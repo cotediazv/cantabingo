@@ -679,3 +679,20 @@ body.live-open { overflow: hidden; }
 
 .live-bar button.wide { grid-column: 1 / -1; font-weight: 600; opacity: .9; }
 .live.full .live-bar button.wide { display: none; }
+
+/* Tablero del DJ · El Rosco: tres franjas de alto fijo (título, textos, ruedas). La pregunta y la
+   respuesta ocupan siempre el mismo espacio, así el rosco no se mueve ni se corta, sea corto o largo el texto. */
+body.full.wheel-screen { overflow: hidden; }
+body.full.wheel-screen #pw { position: fixed; inset: 0; display: grid; grid-template-rows: 8vh 24vh minmax(0, 1fr); padding: 0 2vw 2vh; overflow: hidden; }
+body.full.wheel-screen #pw:has(.win-screen), body.full.wheel-screen #pw:has(#fb) { display: block; padding: 0; }
+body.full .pw-title { margin: 0; align-self: center; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.full .pw-text { display: flex; flex-direction: column; justify-content: center; gap: 1vh; min-height: 0; overflow: hidden; }
+body.full .pw-question { margin: 0 auto; width: min(150vh, 94vw); max-width: none; font-size: 3.3vh; line-height: 1.2; padding: 1.2vh 3vh; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; flex: 0 0 auto; }
+body.full .pw-reveal { margin: 0 auto; width: min(150vh, 94vw); max-width: none; padding: .8vh 3vh; display: flex; align-items: baseline; justify-content: center; gap: 2vh; flex: 0 0 auto; }
+body.full .pw-reveal .rv-head { font-size: 2.2vh; } body.full .pw-reveal .rv-answer { font-size: 4.2vh; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.full.wheel-screen .wheels { min-height: 0; height: 100%; align-content: center; justify-items: center; gap: 2vh 2vw; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); }
+body.full.wheel-screen .wheel-box { display: grid; place-items: center; height: 100%; min-height: 0; width: 100%; }
+body.full.wheel-screen .wheels .wheel { display: block; width: auto; height: auto; max-width: min(64vh, 94vw); max-height: 64vh; aspect-ratio: 1; width: min(64vh, 94vw); }
+body.full.wheel-screen .wheels.n2 .wheel { width: min(64vh, 46vw); max-width: min(64vh, 46vw); }
+body.full.wheel-screen .wheels.n3 .wheel { width: min(64vh, 31vw); max-width: min(64vh, 31vw); }
+body.full.wheel-screen .wheels.n4 .wheel { width: min(64vh, 23vw); max-width: min(64vh, 23vw); }
