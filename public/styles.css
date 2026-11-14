@@ -718,3 +718,11 @@ body.full #rf .rf-card.win .rf-name:not(.small) { font-size: min(21vh, calc(84vw
 .fb-soon { display: grid; place-items: center; text-align: center; font-size: 6vh; font-weight: 900; line-height: 1.1; text-transform: uppercase; color: #ffc400; text-shadow: .5vh .5vh 0 rgba(0, 0, 0, .35); animation: soonbeat 1.4s ease-in-out infinite; min-height: 22vh; }
 @keyframes soonbeat { 50% { transform: scale(1.06); } }
 @media (prefers-reduced-motion: reduce) { .gc-soon, .fb-soon { animation: none; } }
+
+/* Panel del animador de El Rosco: la pregunta en letra grande y de alto contraste, para leerla de corrido */
+.w-question { padding: 16px 16px 18px; background: #0b0a16; border: 2px solid #5a54a0; }
+.w-qtext { font-size: 1.75rem; font-weight: 700; line-height: 1.32; color: #fff; letter-spacing: .005em; word-spacing: .06em; text-wrap: pretty; }
+.w-answer { margin-top: 14px; padding-top: 12px; border-top: 1px dashed #5a54a0; display: grid; gap: 2px; color: #5fe0a0; }
+.w-answer small { font-size: .85rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; opacity: .85; }
+.w-answer b { font-size: 1.75rem; line-height: 1.2; }
+@media (min-width: 900px) { .w-qtext, .w-answer b { font-size: 2.1rem; } }
