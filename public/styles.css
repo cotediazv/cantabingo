@@ -699,3 +699,16 @@ body.full.wheel-screen .wheels.n4 .wheel { width: min(64vh, 23vw); max-width: mi
 
 /* Cartel del ganador sin confirmar todavía: entra y se queda (no cuenta los 15 s hasta que se confirme) */
 .gc-winlow.hold, .rosco-winlow.hold { animation: winlow .6s cubic-bezier(.2, 1.3, .4, 1) both; }
+
+/* Nombres siempre completos: la letra se achica según el largo del nombre (--n = cantidad de letras),
+   en vez de cortarse o partirse en dos líneas. */
+#rf .rf-name:not(.small) { font-size: min(10vh, calc(68vw / (var(--n, 8) * .63))); overflow: visible; text-overflow: clip; display: flex; align-items: center; justify-content: center; }
+body.full #rf .rf-name:not(.small) { font-size: min(19vh, calc(84vw / (var(--n, 8) * .63))); overflow: visible; text-overflow: clip; max-width: none; }
+body.full #rf .rf-card.win .rf-name:not(.small) { font-size: min(21vh, calc(84vw / (var(--n, 8) * .63))); }
+.win-name { font-size: min(15vh, calc(80vw / (var(--n, 8) * .63))); white-space: nowrap; overflow-wrap: normal; }
+.bwin-names b { font-size: min(11vh, calc(80vw / (var(--n, 8) * .59))); white-space: nowrap; overflow-wrap: normal; }
+.bwin.many .bwin-names b { font-size: min(6.4vh, calc(42vw / (var(--n, 8) * .59))); }
+.gc-winlow b { font-size: min(8vh, calc(138vh / (var(--n, 8) * .59))); white-space: nowrap; overflow-wrap: normal; }
+.gc-winlow.many b { font-size: min(5vh, calc(138vh / (var(--n, 8) * .59))); }
+.rosco-winlow b { font-size: min(8vh, calc(138vh / (var(--n, 8) * .63))); white-space: nowrap; overflow-wrap: normal; }
+@media (max-width: 700px) { .win-name { font-size: min(15vw, calc(80vw / (var(--n, 8) * .63))); } }

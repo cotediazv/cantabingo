@@ -340,13 +340,13 @@
         const key = st.winner.name + (low ? (st.winAccepted ? '|ok' : '|low') : '');
         if (low && wonBy !== key) {
           wonBy = key;
-          $('#pw').innerHTML = `<div class="rosco-winlow ${st.winAccepted ? '' : 'hold'}"><span class="rosco-winlow-tag">🏆 ${st.winner.full ? 'Completó el rosco' : 'Ganó El Rosco'}</span><b>${esc(st.winner.name)}</b><small>¡Felicitaciones!</small></div>`;
+          $('#pw').innerHTML = `<div class="rosco-winlow ${st.winAccepted ? '' : 'hold'}"><span class="rosco-winlow-tag">🏆 ${st.winner.full ? 'Completó el rosco' : 'Ganó El Rosco'}</span><b style="--n:${st.winner.name.length}">${esc(st.winner.name)}</b><small>¡Felicitaciones!</small></div>`;
         } else if (wonBy !== key) {
           wonBy = key;
           const colors = ['#ff4fa3', '#ff9a3d', '#ffe14d', '#3fe08f', '#35c6ff', '#9b5cff'];
           const confetti = Array.from({ length: 60 }, (_, i) => `<i style="left:${(Math.random() * 100).toFixed(1)}%;background:${colors[i % colors.length]};animation-delay:${(Math.random() * 3).toFixed(2)}s;animation-duration:${(3 + Math.random() * 3).toFixed(2)}s"></i>`).join('');
           $('#pw').innerHTML = `<div class="win-screen"><div class="confetti">${confetti}</div>
-            <div class="win-card"><span class="win-trophy">🏆</span><span class="win-name">${esc(st.winner.name)}</span>
+            <div class="win-card"><span class="win-trophy">🏆</span><span class="win-name" style="--n:${st.winner.name.length}">${esc(st.winner.name)}</span>
               <span class="win-text">${st.winner.full ? '¡Completaste el rosco!' : `¡Ganaste El Rosco! ${st.winner.hits} aciertos`}</span><span class="win-sub">¡Felicitaciones!</span></div></div>`;
         }
         return;

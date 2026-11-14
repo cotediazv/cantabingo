@@ -916,7 +916,7 @@ function winScreenHTML(st) {
   return `<div class="bwin th-${st.theme} ${winners.length > 3 ? 'many' : ''}"><div class="confetti">${confetti}</div>
     <div class="bwin-card"><span class="bwin-title">¡BINGO!</span>
       ${winners.length > 1 ? '<span class="bwin-sub">Completaron la figura</span>' : ''}
-      <div class="bwin-names">${shown.map((r) => `<span><b>${esc(r.name || 'Participante')}</b><small>Cartón #${st.startNumber + r.cardNo - 1}</small></span>`).join('')}</div>
+      <div class="bwin-names">${shown.map((r) => `<span><b style="--n:${(r.name || 'Participante').length}">${esc(r.name || 'Participante')}</b><small>Cartón #${st.startNumber + r.cardNo - 1}</small></span>`).join('')}</div>
       ${winners.length > shown.length ? `<span class="bwin-more">y ${winners.length - shown.length} más</span>` : ''}
       ${winners.length > 1 ? '' : '<span class="bwin-sub">¡Felicitaciones!</span>'}</div></div>`;
 }
@@ -964,6 +964,20 @@ views.escena = async () => {
   const timer = setInterval(apply, 2000);
   return () => { clearInterval(timer); if (typeof stop === 'function') stop(); document.body.classList.remove('obs'); };
 };
+
+// Red de seguridad para los nombres en pantalla: el CSS ya calcula la letra según el largo, pero si un
+// nombre con letras muy anchas igual no cabe, aquí se achica lo justo. Así nunca se corta.
+const fitNames = () => {
+  for (const el of document.querySelectorAll('[style*="--n"]')) {
+    el.style.fontSize = '';
+    const width = Math.max(el.scrollWidth, el.offsetWidth); // medida del diseño: no la alteran las animaciones de entrada
+    const pad = parseFloat(getComputedStyle(el.parentElement).paddingLeft) + parseFloat(getComputedStyle(el.parentElement).paddingRight);
+    const room = Math.min(innerWidth * 0.92, (el.parentElement.clientWidth - pad) || Infinity);
+    if (width > room && room > 0) el.style.fontSize = `${(parseFloat(getComputedStyle(el).fontSize) * room / width) * 0.97}px`;
+  }
+};
+new MutationObserver(() => requestAnimationFrame(fitNames)).observe(document.getElementById('app'), { childList: true, subtree: true, characterData: true });
+window.addEventListener('resize', fitNames);
 
 // ---------- Enrutador ----------
 let cleanup = null;

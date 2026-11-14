@@ -86,7 +86,7 @@
     };
     const list = (names) => { $('#rf-list').innerHTML = names.map((n, i) => `<span><b>${i + 1}</b>${esc(n)}</span>`).join(''); };
     const reveal = (st, celebrate) => {
-      $('#rf-stage').innerHTML = `${celebrate ? confetti() : ''}<div class="rf-card win ${celebrate ? 'pop' : ''}"><span class="rf-kicker">${st.mode === 'tie' ? (st.roll.game === 'rosco' ? '🏆 ¡Ganador de El Rosco!' : '🏆 ¡Ganador del bingo!') : '🎉 ¡A jugar El Rosco!'}</span><span class="rf-name">${esc(st.roll.winner)}</span></div>`;
+      $('#rf-stage').innerHTML = `${celebrate ? confetti() : ''}<div class="rf-card win ${celebrate ? 'pop' : ''}"><span class="rf-kicker">${st.mode === 'tie' ? (st.roll.game === 'rosco' ? '🏆 ¡Ganador de El Rosco!' : '🏆 ¡Ganador del bingo!') : '🎉 ¡A jugar El Rosco!'}</span><span class="rf-name" style="--n:${st.roll.winner.length}">${esc(st.roll.winner)}</span></div>`;
       list(st.picked);
     };
     const poll = async () => {
@@ -117,6 +117,7 @@
         const pool = st.roll.names;
         if (el) {
           el.textContent = pool[i % pool.length];
+          el.style.setProperty('--n', pool[i % pool.length].length);
           if (document.body.classList.contains('full')) { sfx.ticks++; sfx.play('ratchet'); } // sonido de tómbola en el tablero del DJ
           const prev = $('#rf-prev');
           const next = $('#rf-next');

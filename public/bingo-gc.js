@@ -62,7 +62,7 @@
             const w = st.results.filter((r) => r.validated && !seen.has(r.cardNo) && seen.add(r.cardNo));
             $('#gc').className = `th-${st.theme}`;
             $('#gc').innerHTML = `<div class="gc-winlow ${w.length > 1 ? 'many' : ''} ${st.winConfirmed ? '' : 'hold'}"><span class="gc-winlow-tag">¡Bingo! · ${w.length > 1 ? 'Ganadores' : 'Ganador'}</span>
-              <b>${w.slice(0, 4).map((r) => esc(r.name || 'Participante')).join(' · ')}</b>
+              <b style="--n:${w.slice(0, 4).map((r) => r.name || 'Participante').join(' · ').length}">${w.slice(0, 4).map((r) => esc(r.name || 'Participante')).join(' · ')}</b>
               <small>${w.length > 1 ? esc(st.name) : `Cartón #${st.startNumber + w[0].cardNo - 1} · ${esc(PATTERNS.byId[id].name)}`}</small></div>`;
           } else $('#gc').innerHTML = winScreenHTML(st);
         }
