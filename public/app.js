@@ -134,15 +134,35 @@ const stageUrl = () => `${location.origin}${location.pathname}#/escena`;
 const activeSessions = async () => (await api('GET', '/api/current').catch(() => ({}))).sessions || [];
 // Resuelve el enlace fijo: sin sesiones espera, con una entra directo y con varias deja elegir.
 // Devuelve { sid } para continuar o { cleanup } si ya dibujó la pantalla.
+// Pantallas que deben refrescarse solas cuando el teléfono vuelve a mostrarlas (pestaña vieja, pantalla bloqueada…)
+let refreshOnShow = false;
+document.addEventListener('visibilitychange', () => { if (!document.hidden && refreshOnShow) route(); });
+window.addEventListener('pageshow', (e) => { if (e.persisted) route(); });
 async function pickSession(kind) {
-  const list = await activeSessions();
+  let fresh = null;
+  try { fresh = (await api('GET', '/api/current')).sessions || []; } catch { /* sin conexión: no se toca nada guardado */ }
+  const list = fresh || [];
+  // Limpieza: se olvidan los cartones de bingos que ya se cerraron, para que el teléfono no quede pegado a ellos
+  if (fresh) {
+    try {
+      const alive = new Set(fresh.map((s) => `tok_${s.id}`));
+      for (const k of Object.keys(localStorage)) if (k.startsWith('tok_') && !alive.has(k)) localStorage.removeItem(k);
+    } catch { /* sin almacenamiento */ }
+  }
   if (!list.length) return { cleanup: waiting() };
   const mine = list.find((s) => store.get(`tok_${s.id}`)); // ya estaba jugando en una de ellas
   if (list.length === 1 || (kind === 'jugar' && mine)) return { sid: (mine || list[0]).id };
   app.innerHTML = `<div class="panel" style="max-width:520px;margin:6vh auto 0"><h1>Elige tu bingo</h1>
     <p class="muted">Hay ${list.length} partidas abiertas. Toca la que te indicó el moderador.</p>
     <div style="display:grid;gap:10px;margin-top:14px">${list.map((s) => `<a class="btn primary" style="text-align:center;padding:14px;font-size:1.1rem;border-radius:14px" href="#/${kind}/${s.id}">${esc(s.name)} ${s.locked ? '🔒' : ''}<br><span class="small" style="font-weight:400">Ronda ${s.round}</span></a>`).join('')}</div></div>`;
-  return { cleanup: undefined };
+  // La lista se mantiene al día: si el moderador cierra o abre bingos, esta pantalla cambia sola
+  const shown = list.map((s) => s.id).join();
+  refreshOnShow = true;
+  const timer = setInterval(async () => {
+    const now = await api('GET', '/api/current').catch(() => null);
+    if (now && (now.sessions || []).map((s) => s.id).join() !== shown) route();
+  }, 4000);
+  return { cleanup: () => { clearInterval(timer); refreshOnShow = false; } };
 }
 // Pantalla de espera: revisa cada pocos segundos si el moderador ya abrió una partida
 function waiting(check = activeSessions) {
@@ -561,9 +581,12 @@ views.jugar = async (sid) => {
         store.set('playerFirst', e.target.name.value.trim());
         store.set('playerLast', e.target.surname.value.trim());
         route();
-      } catch (err) { fail(err); }
+      } catch (err) { if (err.status === 404) backToStart(); else fail(err); }
     };
-    return undefined;
+    // Si el moderador cierra este bingo mientras la persona escribe su nombre, se la lleva al bingo vigente
+    refreshOnShow = true;
+    const gone = setInterval(async () => { const r = await fetch(`/api/sessions/${sid}`).catch(() => null); if (r && r.status === 404) backToStart(); }, 5000);
+    return () => { clearInterval(gone); refreshOnShow = false; };
   }
   let st = null;
   let round = null;
