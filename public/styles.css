@@ -712,3 +712,9 @@ body.full #rf .rf-card.win .rf-name:not(.small) { font-size: min(21vh, calc(84vw
 .gc-winlow.many b { font-size: min(5vh, calc(138vh / (var(--n, 8) * .59))); }
 .rosco-winlow b { font-size: min(8vh, calc(138vh / (var(--n, 8) * .63))); white-space: nowrap; overflow-wrap: normal; }
 @media (max-width: 700px) { .win-name { font-size: min(15vw, calc(80vw / (var(--n, 8) * .63))); } }
+
+/* Antes de la primera bolita: aviso en el lugar de la bolita */
+.gc-soon { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 1vh; font-size: 3.3vh; font-weight: 900; line-height: 1.1; text-transform: uppercase; color: var(--gc-yellow); text-shadow: .3vh .3vh 0 var(--gc-shade, rgba(60, 0, 30, .55)); animation: soonbeat 1.4s ease-in-out infinite; }
+.fb-soon { display: grid; place-items: center; text-align: center; font-size: 6vh; font-weight: 900; line-height: 1.1; text-transform: uppercase; color: #ffc400; text-shadow: .5vh .5vh 0 rgba(0, 0, 0, .35); animation: soonbeat 1.4s ease-in-out infinite; min-height: 22vh; }
+@keyframes soonbeat { 50% { transform: scale(1.06); } }
+@media (prefers-reduced-motion: reduce) { .gc-soon, .fb-soon { animation: none; } }

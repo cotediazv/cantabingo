@@ -67,7 +67,7 @@
           <span class="fb-pill"><b>${st.drawn.length}</b> de ${st.values}</span>
         </header>
         <section class="fb-left">
-          <div class="fb-ballwrap ${fresh ? 'pop' : ''}">${ballHTML(st, current, 'fbball')}</div>
+          ${st.drawn.length ? `<div class="fb-ballwrap ${fresh ? 'pop' : ''}">${ballHTML(st, current, 'fbball')}</div>` : '<div class="fb-soon">¡Ya comienza<br>el bingo!</div>'}
           <div class="fb-prev">${previous}</div>
         </section>
         <section class="fb-board">${rows}</section>

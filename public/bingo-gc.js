@@ -93,7 +93,7 @@
         <div class="gc-qr">${qr(joinUrl())}</div>
         <footer class="gc-bottom">${st.gc.bottom ? `<span class="gc-msg">${rich(st.gc.bottom)}</span>` : ''}</footer>
         <div class="gc-draw">
-          <div class="gc-ballwrap ${fresh ? 'pop' : ''}">${ballHTML(st, current, 'gcball')}</div>
+          ${st.drawn.length ? `<div class="gc-ballwrap ${fresh ? 'pop' : ''}">${ballHTML(st, current, 'gcball')}</div>` : '<div class="gc-soon">¡Ya comienza<br>el bingo!</div>'}
         </div>
         <div class="gc-figure">
           <div class="gc-grid">${figure}</div>
