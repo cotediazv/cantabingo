@@ -272,7 +272,7 @@
     const stopClocks = startClocks(() => st);
     const WIN_HOLD_MS = 15000;
     let winTimer = null;
-    const leave = () => { clearTimeout(winTimer); document.body.classList.remove('wheel-screen', 'obs'); };
+    const leave = () => { clearTimeout(tickTimer); clearTimeout(winTimer); document.body.classList.remove('wheel-screen', 'obs'); };
     // Efectos de sonido del tablero del DJ: acierto, fallo, paso y ganador
     let heard = null;
     const soundFor = (s) => {
@@ -284,9 +284,35 @@
       const name = now.win && !was.win ? 'win' : now.hit > was.hit ? 'hit' : now.miss > was.miss ? 'miss' : now.pass > was.pass ? 'pass' : '';
       if (name) { sfx.played.push(name); sfx.play(name); }
     };
+    // Reloj sonoro del tablero del DJ: tic-tac mientras corre el tiempo, cada vez más rápido,
+    // y una alarma cuando se agota.
+    let tickTimer = null;
+    let flip = false;
+    let alarmed = null;
+    let running = null; // { turn, key } del reloj que venía corriendo
+    const alarm = (key) => { if (alarmed === key) return; alarmed = key; sfx.played.push('alarm'); sfx.play('alarm'); };
+    const tickLoop = () => {
+      clearTimeout(tickTimer);
+      tickTimer = null;
+      if (!st || !st.runningSince || st.winner || !document.body.classList.contains('full')) return;
+      const left = st.players[st.turn].remainingMs - (Date.now() + st.offset - st.runningSince);
+      if (left <= 0) { alarm(`${st.turn}:${st.runningSince}`); return; }
+      sfx.ticks++;
+      sfx.play(flip ? 'tock' : 'tick');
+      flip = !flip;
+      const gap = left > 30000 ? 1000 : left > 15000 ? 500 : left > 5000 ? 333 : 200; // se acelera al agotarse el tiempo
+      tickTimer = setTimeout(tickLoop, Math.min(gap, left + 30));
+    };
+    const clockSound = (s) => {
+      // Si el reloj que corría llegó a cero (el servidor ya pasó el turno), suena la alarma
+      if (running && s.players[running.turn] && s.players[running.turn].remainingMs <= 0 && document.body.classList.contains('full')) alarm(running.key);
+      running = s.runningSince && !s.winner ? { turn: s.turn, key: `${s.turn}:${s.runningSince}` } : null;
+      if (!running) { clearTimeout(tickTimer); tickTimer = null; } else if (!tickTimer) tickLoop();
+    };
     const off = watch(id, (s) => {
       st = s;
       soundFor(s);
+      clockSound(s);
       if (st.winner) {
         // Rosco completo: se retira todo y queda solo la felicitación, en grande
         // Ganador aceptado, en OBS: la felicitación baja a un cartel al centro para dejar ver a la persona

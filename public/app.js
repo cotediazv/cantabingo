@@ -809,6 +809,11 @@ const sfx = (() => {
     miss: () => { note(160, 0, 0.6, 'sawtooth', 0.28); note(113, 0, 0.6, 'square', 0.16); },
     // Paso: nota corta que baja
     pass: () => { note(660, 0, 0.22, 'triangle', 0.25, 330); },
+    // Reloj: tic y tac secos y fuertes, alternados
+    tick: () => { note(1500, 0, 0.05, 'square', 0.4); note(3000, 0, 0.03, 'sine', 0.2); },
+    tock: () => { note(950, 0, 0.06, 'square', 0.4); note(1900, 0, 0.03, 'sine', 0.2); },
+    // Se acabó el tiempo: alarma fuerte de dos tonos
+    alarm: () => { for (let i = 0; i < 8; i++) { note(i % 2 ? 660 : 880, i * 0.22, 0.2, 'square', 0.45); note(i % 2 ? 1320 : 1760, i * 0.22, 0.2, 'sawtooth', 0.18); } },
     // Ganador: fanfarria ascendente con acorde final
     win: () => {
       [523, 659, 784].forEach((f, i) => { note(f, i * 0.14, 0.2, 'sawtooth', 0.16); note(f, i * 0.14, 0.2, 'square', 0.08); });
@@ -817,7 +822,7 @@ const sfx = (() => {
     },
   };
   const play = (name) => { if (ready() && sounds[name]) { try { sounds[name](); } catch { /* sin audio */ } } };
-  return { unlock, ready, play, played: [] };
+  return { unlock, ready, play, played: [], ticks: 0 };
 })();
 
 // Tablero del DJ: pantalla completa (no transparente) que sigue sola lo que está pasando,
