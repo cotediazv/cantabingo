@@ -669,3 +669,6 @@ body.live-open { overflow: hidden; }
 .prosco-score .ok { color: #58e39a; } .prosco-score .ko { color: #ff8b8b; }
 
 .open-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255, 255, 255, .08); }
+
+.home-create.open { background: linear-gradient(135deg, #1fae63, #0f8a8a); font-size: 1.35rem; text-align: center; }
+.home-note { margin: 8px 0 0; text-align: center; }

@@ -216,12 +216,17 @@ const GAMES = [
 views.home = async () => {
   if (!(await isAdmin())) return viewLogin();
   // Si ya hay un bingo en curso, el paso 1 lleva a su panel; si no, a la lista
-  const last = store.get('lastBingo');
-  const bingoHref = last ? `#/anfitrion/${last}` : '#/proyectos';
+  // Una sola sala a la vez: si ya hay una abierta, se continúa con ella en vez de crear otra
+  const open = (await activeSessions())[0];
+  if (open) store.set('lastBingo', open.projectId);
+  const last = open ? open.projectId : store.get('lastBingo');
+  const bingoHref = open ? `#/anfitrion/${open.projectId}` : last ? `#/anfitrion/${last}` : '#/proyectos';
   app.innerHTML = `
     <div class="home">
       <h1>KRB Stage · Sala de juegos</h1>
-      <a class="home-create" href="#/nuevo"><span>🎮</span>Crear sala de juegos</a>
+      ${open ? `<a class="home-create open" href="${bingoHref}"><span>▶</span>Continuar: ${esc(open.name)}</a>
+        <p class="muted small home-note">Hay una sala abierta. Para crear otra, primero ciérrala en el Centro de control.</p>`
+    : '<a class="home-create" href="#/nuevo"><span>🎮</span>Crear sala de juegos</a>'}
       <div class="home-steps">
         <a class="s1" href="${bingoHref}"><i>1</i><span>🎱</span><b>Bingo</b></a>
         <a class="s2" href="#/sorteoctl"><i>2</i><span>🎲</span><b>Sorteo</b></a>
@@ -305,6 +310,8 @@ views.proyectos = async () => {
 
 views.nuevo = async () => {
   if (!(await isAdmin())) return viewLogin();
+  // Una sola sala a la vez
+  if ((await activeSessions()).length) { toast('Ya hay una sala abierta: ciérrala en el Centro de control para crear otra'); location.hash = '#/'; return undefined; }
   app.innerHTML = `
     ${BACK}<h1>Nuevo proyecto de bingo</h1>
     <form class="panel fields" id="f">

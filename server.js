@@ -322,6 +322,9 @@ app.post('/api/projects/:id/session', (req, res) => {
   const p = ownProject(req, res);
   if (!p) return;
   if (p.sessionId && db.sessions[p.sessionId]) return res.json({ id: p.sessionId });
+  // Una sola sala a la vez: mientras haya una abierta no se puede activar otra
+  const open = Object.values(db.sessions)[0];
+  if (open) return fail(res, 409, `Ya hay una sala abierta (${open.name}). Ciérrala en el Centro de control para crear otra.`);
   const b = req.body || {};
   const s = {
     id: shortId(), projectId: p.id, name: str(b.name, 50, p.name), password: str(b.password, 40),
@@ -418,7 +421,7 @@ app.get('/api/sessions/:sid/host', (req, res) => {
 // Sesiones activas: a ellas llevan el enlace y el QR fijos
 app.get('/api/current', (_req, res) => {
   res.json({ sessions: Object.values(db.sessions).sort((a, b) => b.created - a.created)
-    .map((s) => ({ id: s.id, name: s.name, round: s.round, locked: !!s.password, theme: s.theme || 'frida' })) });
+    .map((s) => ({ id: s.id, name: s.name, round: s.round, locked: !!s.password, theme: s.theme || 'frida', projectId: s.projectId })) });
 });
 
 // Lista pública de sesiones activas
