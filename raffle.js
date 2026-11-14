@@ -37,7 +37,7 @@ module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, 
   // en las sesiones de bingo abiertas (ganadores incluidos) y en los roscos ya creados.
   app.post('/api/people/rename', requireAdmin, (req, res) => {
     const from = String((req.body || {}).from || '');
-    const to = String((req.body || {}).to || '').trim().replace(/\s+/g, ' ').slice(0, 30);
+    const to = String((req.body || {}).to || '').trim().replace(/\s+/g, ' ').slice(0, 30).toLocaleUpperCase('es');
     if (!to) return fail(res, 400, 'Escribe el nombre corregido');
     if (!db.people[key(from)]) return fail(res, 404, 'Esa persona ya no está en la lista');
     if (key(to) !== key(from) && db.people[key(to)]) return fail(res, 400, 'Ya hay otra persona con ese nombre');

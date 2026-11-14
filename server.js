@@ -16,6 +16,14 @@ const SESSION_HOURS = 8; // cuánto dura una sesión de bingo desde que se activ
 let db = { projects: {}, sessions: {} };
 try { db = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); } catch { /* primera ejecución */ }
 for (const s of Object.values(db.sessions)) s.auto = { on: false, interval: 10, stopOnWin: true };
+// Datos anteriores: los nombres ya guardados también pasan a mayúsculas
+{
+  const up = (n) => String(n || '').toLocaleUpperCase('es');
+  for (const s of Object.values(db.sessions)) { for (const pl of Object.values(s.players || {})) pl.name = up(pl.name); for (const r of s.results || []) r.name = up(r.name); if (s.tieWinner) s.tieWinner.name = up(s.tieWinner.name); }
+  for (const p of Object.values(db.people || {})) p.name = up(p.name);
+  if (db.raffle) { db.raffle.picked = (db.raffle.picked || []).map(up); for (const k of ['roll', 'tie']) if (db.raffle[k]) { db.raffle[k].winner = up(db.raffle[k].winner); db.raffle[k].names = (db.raffle[k].names || []).map(up); } }
+  for (const w of Object.values(db.wheels || {})) { for (const c of w.players || []) c.name = up(c.name); if (w.setup && w.setup.players) w.setup.players = w.setup.players.map(up); }
+}
 let saveTimer = null;
 let writing = false;
 let dirty = false;
@@ -437,8 +445,9 @@ app.post('/api/sessions/:sid/join', (req, res) => {
     if (!b.name && !b.password) return fail(res, 401, 'Únete con tu nombre y la contraseña');
     if (s.password && b.password !== s.password) return fail(res, 403, 'Contraseña incorrecta');
     // Nombre y apellido son obligatorios para entrar
-    const first = str(b.name, 20).replace(/\s+/g, ' ');
-    const last = str(b.surname, 25).replace(/\s+/g, ' ');
+    // Los nombres se guardan siempre en mayúsculas, para que se vean parejos en pantalla
+    const first = str(b.name, 20).replace(/\s+/g, ' ').toLocaleUpperCase('es');
+    const last = str(b.surname, 25).replace(/\s+/g, ' ').toLocaleUpperCase('es');
     if (!first || !last) return fail(res, 400, 'Escribe tu nombre y tu apellido para participar');
     const taken = new Set(Object.values(s.players).flatMap((x) => x.cards));
     const cards = [];

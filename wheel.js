@@ -196,7 +196,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     const b = req.body || {};
     const letters = [...new Set([...str(b.letters, 40, LETTERS).toUpperCase()].filter((ch) => /\p{L}/u.test(ch)))];
     if (letters.length < 5) return fail(res, 400, 'El rosco necesita al menos 5 letras');
-    const players = (Array.isArray(b.players) ? b.players : []).map((x) => str(x, 30)).filter(Boolean).slice(0, 4);
+    const players = (Array.isArray(b.players) ? b.players : []).map((x) => str(x, 30).toLocaleUpperCase('es')).filter(Boolean).slice(0, 4);
     if (!players.length) players.push('Concursante');
     // Preguntas: del banco (por defecto) o escritas por el moderador, una por letra { q, a }
     const bank = b.source === 'own' ? null : { cats: keep(b.cats, ['g', 'm', 'a'], ['g', 'm', 'a']), levels: keep(b.levels, ['f', 'm'], ['f', 'm']) };
