@@ -16,7 +16,7 @@
     let sid = null;
     let lastCount = -1;
     let shown = null; // qué pantalla especial está dibujada (para no redibujar y cortar animaciones)
-    const leave = () => { if (off) off(); off = null; sid = null; lastCount = -1; shown = null; heard = -1; };
+    const leave = () => { if (off) off(); off = null; sid = null; lastCount = -1; shown = null; };
     // Sin nada en juego: portada con el QR, para que la gente vaya entrando desde ya
     const idle = () => {
       $('#fb').className = '';
@@ -25,11 +25,7 @@
         <small>Escanea el código QR y prepárate</small><small class="soon">En unos momentos comenzamos</small></div>`;
     };
 
-    let heard = -1; // bolitas ya anunciadas con sonido
     const draw = (st) => {
-      // Campanita suave por cada bolita nueva (no al cargar la página ni al reiniciar la ronda)
-      if (heard >= 0 && st.drawn.length > heard) { sfx.played.push('ball'); sfx.play('ball'); }
-      heard = st.drawn.length;
       $('#fb').className = `th-${st.theme}`;
       if (st.celebrate) {
         if (shown !== `win:${winKey(st)}`) { shown = `win:${winKey(st)}`; $('#fb').innerHTML = winScreenHTML(st); }
