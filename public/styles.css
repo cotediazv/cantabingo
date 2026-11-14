@@ -676,3 +676,6 @@ body.live-open { overflow: hidden; }
 /* Tablero del DJ: botón para activar los efectos de sonido */
 .sound-btn { position: fixed; right: 2vh; bottom: 2vh; z-index: 50; padding: 1.4vh 2.6vh; font-size: 2.4vh; font-weight: 800; border-radius: 99px; background: #ffc400; color: #2a1030; border: .3vh solid #fff; box-shadow: 0 .8vh 2vh rgba(0, 0, 0, .4); animation: soundpulse 1.6s ease-in-out infinite; }
 @keyframes soundpulse { 50% { transform: scale(1.06); } }
+
+.live-bar button.wide { grid-column: 1 / -1; font-weight: 600; opacity: .9; }
+.live.full .live-bar button.wide { display: none; }

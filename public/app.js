@@ -603,7 +603,7 @@ views.jugar = async (sid) => {
     <div id="banner"></div>
     <div class="cards" id="cards"></div></div>
     <div class="live" id="live"><div id="live-player"></div>
-      <div class="live-bar"><button type="button" id="live-audio">🔇 Activar audio</button><button type="button" id="live-full">⛶ Pantalla completa</button></div></div>
+      <div class="live-bar"><button type="button" id="live-audio">🔇 Activar audio</button><button type="button" id="live-full">⛶ Pantalla completa</button><button type="button" id="live-sync" class="wide">↻ Poner al día el video</button></div></div>
     <div class="prosco" id="prosco" hidden></div>
     <div id="bingo-bottom"><button class="primary big" id="sync" style="margin-top:16px">↻ Actualizar y marcar lo que falta</button>
     <p class="muted small" style="margin-top:8px">Marca por ti los valores ya anunciados que se te pasaron.</p>
@@ -748,10 +748,16 @@ views.jugar = async (sid) => {
     } catch { /* sin pantalla completa nativa */ }
   };
   $('#live-full').onclick = () => setFull(!$('#live').classList.contains('full'));
+  // Poner el video al día: al pausar y reanudar, el reproductor salta al punto más reciente del vivo.
+  // Se hace solo cuando la persona vuelve a la página (el video se atrasa mientras el teléfono está en otra cosa).
+  const resync = () => { if (!player) return; try { player.pause(); setTimeout(() => { try { player.play(); } catch { /* el reproductor decide */ } }, 250); } catch { /* el reproductor decide */ } };
+  $('#live-sync').onclick = () => { resync(); toast('Video al día'); };
+  const onBack = () => { if (!document.hidden && $('#live') && $('#live').classList.contains('on')) resync(); };
+  document.addEventListener('visibilitychange', onBack);
   const onFs = () => { if (!document.fullscreenElement && $('#live') && $('#live').classList.contains('full') && $('#live').requestFullscreen) setFull(false); };
   document.addEventListener('fullscreenchange', onFs);
   const off = subscribe(sid, (s) => { st = s; render(); startLive(); }, () => { store.del(key); backToStart(); }, false, me.token);
-  return () => { off(); stopRosco(); liveFor = null; player = null; document.removeEventListener('fullscreenchange', onFs); document.body.classList.remove('live-open'); };
+  return () => { off(); stopRosco(); liveFor = null; player = null; document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('visibilitychange', onBack); document.body.classList.remove('live-open'); };
 };
 // Canal de Twitch de cada local
 const LIVE_CHANNELS = { frida: 'krbstage', tobalaba: 'krbstage3', kennedy: 'krbstage3' };
