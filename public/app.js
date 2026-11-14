@@ -329,7 +329,7 @@ views.nuevo = async () => {
       <label class="f" id="pname-wrap" hidden>Nombre del bingo<input type="text" name="name" maxlength="60" value="El Bingo de Frida"></label>
       <label class="f" id="ptheme-wrap" hidden>Colores en pantalla<select id="ptheme">
         <option value="frida">Magenta (como Frida)</option><option value="tobalaba">Rojo (como Tobalaba)</option><option value="kennedy">Celeste azulado (como Kennedy)</option></select></label>
-      <label class="f">Número de cartones <span class="hint">de 25 a 3.000</span><input type="number" name="count" min="25" max="3000" value="280" required></label>
+      <label class="f">Número de cartones <span class="hint">de 25 a 3.000</span><input type="number" name="count" min="25" max="3000" value="320" required></label>
       <div class="wide"><button class="primary big">Crear los cartones</button></div>
     </form>`;
   const f = $('#f');
