@@ -111,7 +111,7 @@ function readPatterns(root) {
   if (ids.length !== 1) { toast('Elige el patrón de la ronda'); return null; }
   return ids;
 }
-let voiceOn = store.get('voice') !== '0';
+let voiceOn = false; // la voz que lee los números quedó desactivada: su control ya no se muestra
 function speak(text) {
   if (!voiceOn || !('speechSynthesis' in window)) return;
   const u = new SpeechSynthesisUtterance(text);
@@ -414,14 +414,14 @@ async function hostConsole(p) {
           </div>
           <div class="row" style="justify-content:center;margin-top:16px"><button class="primary big" id="gen">Generar un número</button></div>
           <div class="row" style="justify-content:center;margin-top:14px">
-            <label class="small">Pausa <input type="number" id="interval" min="5" max="60" value="10" style="width:70px"> s</label>
-            <label class="check"><input type="checkbox" id="stop" checked> Detener al completarse un cartón</label>
-            <button id="auto">▶ Modo automático</button>
+            <label class="small" hidden>Pausa <input type="number" id="interval" min="5" max="60" value="10" style="width:70px"> s</label>
+            <label class="check" hidden><input type="checkbox" id="stop" checked> Detener al completarse un cartón</label>
+            <button id="auto" hidden>▶ Modo automático</button>
           </div>
           <div class="row" style="justify-content:center;margin-top:10px">
             <button id="manual">Selección manual</button>
             <button id="bigqr"></button>
-            <label class="check"><input type="checkbox" id="voice" ${voiceOn ? 'checked' : ''}> Voz</label>
+            <label class="check" hidden><input type="checkbox" id="voice" ${voiceOn ? 'checked' : ''}> Voz</label>
           </div>
         </div>
         <div class="panel"><h2 id="count"></h2><div id="board"></div><h2 style="margin-top:16px">Orden de salida</h2><div id="history" class="history"></div></div>
