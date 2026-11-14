@@ -293,5 +293,18 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
   });
 
   api.refresh = () => Object.values(db.wheels).forEach(broadcast);
+  // Borra roscos: todos, o solo los creados antes de cierta fecha. Corta sus conexiones y relojes.
+  api.clear = (before = Infinity) => {
+    let removed = 0;
+    for (const w of Object.values(db.wheels)) {
+      if (w.created >= before) continue;
+      clearTimeout(timers[w.id]);
+      for (const res of clients[w.id] || []) res.end();
+      delete clients[w.id];
+      delete db.wheels[w.id];
+      removed++;
+    }
+    return removed;
+  };
   return api;
 };

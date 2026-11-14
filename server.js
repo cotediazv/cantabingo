@@ -207,10 +207,21 @@ function closeSession(s) {
   const p = db.projects[s.projectId];
   if (p && p.sessionId === s.id) p.sessionId = null;
   delete db.sessions[s.id];
+  if (!Object.keys(db.sessions).length) resetEvent(); // terminó la jornada: no queda nada para la siguiente
   save();
+}
+// Deja en blanco lo que pertenece a una jornada: lista de participantes del sorteo, elegidos y roscos.
+// Se hace al cerrarse la sala (a mano o a las 8 horas) y al crear una nueva.
+function resetEvent() {
+  db.people = {};
+  db.raffle = { picked: [], roll: null };
+  wheel.clear();
+  db.stage = 'bingo';
 }
 setInterval(() => {
   for (const s of Object.values(db.sessions)) if (Date.now() > s.expires) closeSession(s);
+  // Roscos sueltos (creados sin sala abierta) también vencen a las 8 horas
+  if (wheel.clear(Date.now() - SESSION_HOURS * 3600e3)) save();
 }, 30000).unref();
 
 // ---------- API ----------
@@ -339,6 +350,7 @@ app.post('/api/projects/:id/session', (req, res) => {
     auto: { on: false, interval: 10, stopOnWin: true },
     created: Date.now(), expires: Date.now() + SESSION_HOURS * 3600e3,
   };
+  resetEvent(); // una sala nueva parte limpia: sin participantes ni roscos de jornadas anteriores
   db.sessions[s.id] = s;
   setStage('bingo'); // al activar un bingo, la pantalla de OBS pasa sola a su gráfica
   p.sessionId = s.id;
