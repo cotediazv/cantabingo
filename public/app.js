@@ -412,7 +412,8 @@ async function hostConsole(p) {
             </div>
             <div id="win-confirmed" hidden><p>✔ Ganador confirmado</p><a class="btn big" id="win-next">▶ Siguiente bingo</a><a class="btn big" id="win-rosco" href="#/sorteoctl">🎲 Sorteo para El Rosco</a></div>
           </div>
-          <div class="row" style="justify-content:center;margin-top:16px"><button class="primary big" id="gen">Generar un número</button></div>
+          <div class="row" style="justify-content:center;margin-top:16px"><button id="bigqr"></button></div>
+          <div class="row" style="justify-content:center;margin-top:12px"><button class="primary big" id="gen">Generar un número</button></div>
           <div class="row" style="justify-content:center;margin-top:14px">
             <label class="small" hidden>Pausa <input type="number" id="interval" min="5" max="60" value="10" style="width:70px"> s</label>
             <label class="check" hidden><input type="checkbox" id="stop" checked> Detener al completarse un cartón</label>
@@ -420,7 +421,6 @@ async function hostConsole(p) {
           </div>
           <div class="row" style="justify-content:center;margin-top:10px">
             <button id="manual">Selección manual</button>
-            <button id="bigqr"></button>
             <label class="check" hidden><input type="checkbox" id="voice" ${voiceOn ? 'checked' : ''}> Voz</label>
           </div>
         </div>
