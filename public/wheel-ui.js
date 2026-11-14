@@ -300,7 +300,11 @@
       sfx.ticks++;
       sfx.play(flip ? 'tock' : 'tick');
       flip = !flip;
-      const gap = left > 30000 ? 1000 : left > 15000 ? 500 : left > 5000 ? 333 : 200; // se acelera al agotarse el tiempo
+      // El ritmo sube de forma pareja: 1 tic por segundo con el tiempo completo, hasta 5 por segundo
+      // cuando quedan 5 segundos, y así se mantiene hasta el final.
+      const total = Math.max(6, st.seconds || 150) * 1000;
+      const rate = left <= 5000 ? 5 : 1 + 4 * Math.min(1, Math.max(0, (total - left) / (total - 5000)));
+      const gap = 1000 / rate;
       tickTimer = setTimeout(tickLoop, Math.min(gap, left + 30));
     };
     const clockSound = (s) => {
