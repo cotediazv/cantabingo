@@ -768,6 +768,52 @@ const loadTwitch = () => {
   return twitchLoading;
 };
 
+// ---------- Efectos de sonido (tablero del DJ) ----------
+// Se generan en el navegador, sin archivos de audio. El navegador solo deja sonar después de un
+// toque o clic en la página, por eso el tablero muestra «Activar sonido» hasta que alguien lo pulsa.
+const sfx = (() => {
+  let ctx = null;
+  const ready = () => !!ctx && ctx.state === 'running';
+  const unlock = () => {
+    try {
+      ctx ||= new (window.AudioContext || window.webkitAudioContext)();
+      if (ctx.state !== 'running') ctx.resume();
+    } catch { /* sin audio */ }
+    return ctx;
+  };
+  // Una nota: frecuencia, inicio y duración en segundos, forma de onda y volumen
+  const note = (freq, at, dur, type = 'sine', vol = 0.3, slideTo = 0) => {
+    const t = ctx.currentTime + at;
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(ctx.destination);
+    o.start(t);
+    o.stop(t + dur + 0.05);
+  };
+  const sounds = {
+    // Acierto: campanita brillante de dos notas
+    hit: () => { note(1319, 0, 0.5, 'sine', 0.35); note(2637, 0, 0.35, 'sine', 0.12); note(1760, 0.12, 0.8, 'sine', 0.35); note(3520, 0.12, 0.5, 'sine', 0.1); },
+    // Fallo: zumbador grave
+    miss: () => { note(160, 0, 0.6, 'sawtooth', 0.28); note(113, 0, 0.6, 'square', 0.16); },
+    // Paso: nota corta que baja
+    pass: () => { note(660, 0, 0.22, 'triangle', 0.25, 330); },
+    // Ganador: fanfarria ascendente con acorde final
+    win: () => {
+      [523, 659, 784].forEach((f, i) => { note(f, i * 0.14, 0.2, 'sawtooth', 0.16); note(f, i * 0.14, 0.2, 'square', 0.08); });
+      [1047, 784, 659, 523].forEach((f) => { note(f, 0.42, 1.6, 'sawtooth', 0.13); note(f * 2, 0.42, 1.2, 'sine', 0.06); });
+      [1319, 1568, 2093].forEach((f, i) => note(f, 0.9 + i * 0.12, 0.6, 'sine', 0.14));
+    },
+  };
+  const play = (name) => { if (ready() && sounds[name]) { try { sounds[name](); } catch { /* sin audio */ } } };
+  return { unlock, ready, play, played: [] };
+})();
+
 // Tablero del DJ: pantalla completa (no transparente) que sigue sola lo que está pasando,
 // igual que la gráfica de OBS: bingo, sorteo o desempate, El Rosco.
 views.tablero = async () => {
@@ -776,6 +822,17 @@ views.tablero = async () => {
   let busy = false;
   const mark = () => { document.body.classList.add('full'); document.body.classList.remove('obs'); };
   mark();
+  // Sonido: botón visible hasta que alguien toca la pantalla (requisito del navegador)
+  const soundBtn = document.createElement('button');
+  soundBtn.className = 'sound-btn';
+  soundBtn.textContent = '🔊 Activar sonido';
+  document.body.appendChild(soundBtn);
+  const paintSound = () => { soundBtn.hidden = sfx.ready(); };
+  const enableSound = () => { const c = sfx.unlock(); if (c) { c.onstatechange = paintSound; Promise.resolve(c.resume()).then(() => { paintSound(); if (!soundBtn.dataset.done) { soundBtn.dataset.done = '1'; sfx.play('hit'); } }).catch(() => {}); } };
+  document.addEventListener('pointerdown', enableSound);
+  document.addEventListener('keydown', enableSound);
+  sfx.unlock(); // donde el navegador lo permite sin tocar (pantallas en modo quiosco), queda activo de inmediato
+  setTimeout(paintSound, 300);
   const apply = async () => {
     if (busy) return;
     busy = true;
@@ -796,7 +853,7 @@ views.tablero = async () => {
   };
   await apply();
   const timer = setInterval(apply, 2000);
-  return () => { clearInterval(timer); if (typeof stop === 'function') stop(); document.body.classList.remove('full'); };
+  return () => { clearInterval(timer); if (typeof stop === 'function') stop(); document.body.classList.remove('full'); soundBtn.remove(); document.removeEventListener('pointerdown', enableSound); document.removeEventListener('keydown', enableSound); };
 };
 
 // Celebración de bingo a pantalla completa: «¡BINGO!», confeti y los nombres de quienes ganaron

@@ -273,8 +273,20 @@
     const WIN_HOLD_MS = 15000;
     let winTimer = null;
     const leave = () => { clearTimeout(winTimer); document.body.classList.remove('wheel-screen', 'obs'); };
+    // Efectos de sonido del tablero del DJ: acierto, fallo, paso y ganador
+    let heard = null;
+    const soundFor = (s) => {
+      const sum = (what) => s.players.reduce((n, c) => n + c.status.filter((x) => x === what).length, 0);
+      const now = { hit: sum('hit'), miss: sum('miss'), pass: sum('pass'), win: !!s.winner };
+      const was = heard;
+      heard = now;
+      if (!was || !document.body.classList.contains('full')) return; // el primer estado no suena
+      const name = now.win && !was.win ? 'win' : now.hit > was.hit ? 'hit' : now.miss > was.miss ? 'miss' : now.pass > was.pass ? 'pass' : '';
+      if (name) { sfx.played.push(name); sfx.play(name); }
+    };
     const off = watch(id, (s) => {
       st = s;
+      soundFor(s);
       if (st.winner) {
         // Rosco completo: se retira todo y queda solo la felicitación, en grande
         // Ganador aceptado, en OBS: la felicitación baja a un cartel al centro para dejar ver a la persona
