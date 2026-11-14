@@ -696,3 +696,6 @@ body.full.wheel-screen .wheels .wheel { display: block; width: auto; height: aut
 body.full.wheel-screen .wheels.n2 .wheel { width: min(64vh, 46vw); max-width: min(64vh, 46vw); }
 body.full.wheel-screen .wheels.n3 .wheel { width: min(64vh, 31vw); max-width: min(64vh, 31vw); }
 body.full.wheel-screen .wheels.n4 .wheel { width: min(64vh, 23vw); max-width: min(64vh, 23vw); }
+
+/* Cartel del ganador sin confirmar todavía: entra y se queda (no cuenta los 15 s hasta que se confirme) */
+.gc-winlow.hold, .rosco-winlow.hold { animation: winlow .6s cubic-bezier(.2, 1.3, .4, 1) both; }

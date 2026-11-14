@@ -27,8 +27,10 @@
     let lastCount = -1;
     let winShown = null;
     let winTimer = null;
+    let shrinkTimer = null;
+    const FULL_MS = 6000; // cuánto dura la celebración a pantalla completa
     let bigShown = false;
-    const leave = () => { clearTimeout(winTimer); if (off) off(); off = null; sid = null; lastCount = -1; winShown = null; bigShown = false; };
+    const leave = () => { clearTimeout(winTimer); clearTimeout(shrinkTimer); if (off) off(); off = null; sid = null; lastCount = -1; winShown = null; bigShown = false; };
 
     const draw = (st) => {
       const current = st.drawn.at(-1);
@@ -46,21 +48,27 @@
         clearTimeout(winTimer);
         if (left <= 0) { winShown = 'gone'; $('#gc').innerHTML = ''; return; }
         if (st.winConfirmed) winTimer = setTimeout(() => { winShown = 'gone'; $('#gc').innerHTML = ''; }, left);
-        const key = winKey(st) + (st.winConfirmed ? '|ok' : '');
+        // Sin confirmar todavía: la pantalla completa dura 6 s y después baja sola al cartel, que se queda
+        // hasta que el animador confirme (ahí cuenta sus 15 s) o siga jugando.
+        const sinceWin = st.now - (st.celebrateAt || 0);
+        const low = st.winConfirmed || sinceWin >= FULL_MS;
+        clearTimeout(shrinkTimer);
+        if (!low) shrinkTimer = setTimeout(() => draw({ ...st, now: st.now + (FULL_MS - sinceWin) + 50 }), FULL_MS - sinceWin + 50);
+        const key = winKey(st) + (st.winConfirmed ? '|ok' : low ? '|low' : '');
         if (key !== winShown) {
           winShown = key;
-          if (st.winConfirmed) {
+          if (low) {
             const seen = new Set();
             const w = st.results.filter((r) => r.validated && !seen.has(r.cardNo) && seen.add(r.cardNo));
             $('#gc').className = `th-${st.theme}`;
-            $('#gc').innerHTML = `<div class="gc-winlow ${w.length > 1 ? 'many' : ''}"><span class="gc-winlow-tag">¡Bingo! · ${w.length > 1 ? 'Ganadores' : 'Ganador'}</span>
+            $('#gc').innerHTML = `<div class="gc-winlow ${w.length > 1 ? 'many' : ''} ${st.winConfirmed ? '' : 'hold'}"><span class="gc-winlow-tag">¡Bingo! · ${w.length > 1 ? 'Ganadores' : 'Ganador'}</span>
               <b>${w.slice(0, 4).map((r) => esc(r.name || 'Participante')).join(' · ')}</b>
               <small>${w.length > 1 ? esc(st.name) : `Cartón #${st.startNumber + w[0].cardNo - 1} · ${esc(PATTERNS.byId[id].name)}`}</small></div>`;
           } else $('#gc').innerHTML = winScreenHTML(st);
         }
         return;
       }
-      winShown = null; clearTimeout(winTimer);
+      winShown = null; clearTimeout(winTimer); clearTimeout(shrinkTimer);
       $('#gc').className = `th-${st.theme}`; // colores según el local
       // Antes de empezar: cartel con el QR en grande para que la gente entre
       if (st.bigQr) {

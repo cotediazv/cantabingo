@@ -272,7 +272,7 @@
     const stopClocks = startClocks(() => st);
     const WIN_HOLD_MS = 15000;
     let winTimer = null;
-    const leave = () => { clearTimeout(tickTimer); clearTimeout(winTimer); document.body.classList.remove('wheel-screen', 'obs'); };
+    const leave = () => { clearTimeout(shrinkTimer); clearTimeout(tickTimer); clearTimeout(winTimer); document.body.classList.remove('wheel-screen', 'obs'); };
     // Efectos de sonido del tablero del DJ: acierto, fallo, paso y ganador
     let heard = null;
     const soundFor = (s) => {
@@ -313,7 +313,8 @@
       running = s.runningSince && !s.winner ? { turn: s.turn, key: `${s.turn}:${s.runningSince}` } : null;
       if (!running) { clearTimeout(tickTimer); tickTimer = null; } else if (!tickTimer) tickLoop();
     };
-    const off = watch(id, (s) => {
+    let shrinkTimer = null;
+    const onWheel = (s) => {
       st = s;
       soundFor(s);
       clockSound(s);
@@ -321,7 +322,11 @@
         // Rosco completo: se retira todo y queda solo la felicitación, en grande
         // Ganador aceptado, en OBS: la felicitación baja a un cartel al centro para dejar ver a la persona
         const full = document.body.classList.contains('full');
-        const low = st.winAccepted && kind === 'obs' && !full;
+        // En OBS la pantalla completa dura 6 s; después baja sola al cartel, aunque el animador no haya aceptado aún
+        const sinceWin = st.now - (st.wonAt || st.now);
+        const low = kind === 'obs' && !full && (st.winAccepted || sinceWin >= 6000);
+        clearTimeout(shrinkTimer);
+        if (kind === 'obs' && !full && !low) shrinkTimer = setTimeout(() => onWheel({ ...st, now: st.now + (6000 - sinceWin) + 50 }), 6000 - sinceWin + 50);
         // A los 15 s de aceptar al ganador se retira todo: OBS queda limpio y el tablero del DJ pasa al QR
         const left = st.winAccepted ? WIN_HOLD_MS - (st.now - st.winAcceptedAt) : Infinity;
         const cleared = () => {
@@ -332,10 +337,10 @@
         clearTimeout(winTimer);
         if (left <= 0) { if (wonBy !== st.winner.name + '|gone') cleared(); return; }
         if (st.winAccepted) winTimer = setTimeout(cleared, left);
-        const key = st.winner.name + (low ? '|low' : '');
+        const key = st.winner.name + (low ? (st.winAccepted ? '|ok' : '|low') : '');
         if (low && wonBy !== key) {
           wonBy = key;
-          $('#pw').innerHTML = `<div class="rosco-winlow"><span class="rosco-winlow-tag">🏆 ${st.winner.full ? 'Completó el rosco' : 'Ganó El Rosco'}</span><b>${esc(st.winner.name)}</b><small>¡Felicitaciones!</small></div>`;
+          $('#pw').innerHTML = `<div class="rosco-winlow ${st.winAccepted ? '' : 'hold'}"><span class="rosco-winlow-tag">🏆 ${st.winner.full ? 'Completó el rosco' : 'Ganó El Rosco'}</span><b>${esc(st.winner.name)}</b><small>¡Felicitaciones!</small></div>`;
         } else if (wonBy !== key) {
           wonBy = key;
           const colors = ['#ff4fa3', '#ff9a3d', '#ffe14d', '#3fe08f', '#35c6ff', '#9b5cff'];
@@ -346,7 +351,7 @@
         }
         return;
       }
-      wonBy = null; clearTimeout(winTimer);
+      wonBy = null; clearTimeout(winTimer); clearTimeout(shrinkTimer);
       if (kind === 'obs') {
         // En OBS: solo la rueda del concursante en turno, con el centro libre para su cámara,
         // y el reloj con el marcador en una esquina.
@@ -364,7 +369,8 @@
         <div class="pw-text">${revealCard(st, 'pw-reveal')}${st.question ? `<div class="pw-question">${esc(st.question)}</div>` : ''}</div>
         <div class="wheels n${st.players.length}">${st.players.map((_, i) => `<div class="wheel-box ${i === st.turn && !st.finished ? 'on' : 'off'}">${wheelSVG(st, i)}</div>`).join('')}</div>`;
       scheduleRevealEnd(st);
-    }, () => { leave(); if (['#/escena', '#/gc', '#/obs', '#/tablero', `#/${kind}`].includes(location.hash)) route(); else location.hash = `#/${kind}`; });
+    };
+    const off = watch(id, onWheel, () => { leave(); if (['#/escena', '#/gc', '#/obs', '#/tablero', `#/${kind}`].includes(location.hash)) route(); else location.hash = `#/${kind}`; });
     return () => { off(); stopClocks(); leave(); };
   }
   views.rueda = (id) => publicView('rueda', id);

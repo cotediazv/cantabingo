@@ -167,6 +167,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
       hits: count(w.players[winnerOf(w)], 'hit'), misses: count(w.players[winnerOf(w)], 'miss'), byDraw: leaders(w).length > 1 } : null,
     // Empate pendiente: nombres de los igualados (mientras no se haya sorteado) y si la tómbola está girando
     tie: winnerOf(w) < 0 && leaders(w).length > 1 ? { names: leaders(w).map((i) => w.players[i].name), rolling: tieRolling(w) } : null,
+    wonAt: w.wonAt || 0,
     winAccepted: winnerOf(w) >= 0 && !!w.winAccepted, winAcceptedAt: w.winAcceptedAt || 0,
     reveal: w.reveal && Date.now() - w.reveal.at < REVEAL_MS ? w.reveal : null,
     // Al público va solo el enunciado de la letra en juego; la respuesta nunca sale del panel del moderador
@@ -178,6 +179,8 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     })),
   });
   function broadcast(w) {
+    // Desde cuándo hay ganador: a los 6 s el GC recoge la felicitación abajo
+    if (winnerOf(w) >= 0) w.wonAt ||= Date.now(); else w.wonAt = null;
     save();
     const msg = `data: ${JSON.stringify(publicState(w))}\n\n`;
     for (const res of clients[w.id] || []) res.write(msg);

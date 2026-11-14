@@ -127,13 +127,14 @@ function evaluate(s) {
         s.marks[cardNo] = cardOf(s, cardNo).reduce((all, v, i) => (v !== 0 && drawnNow.has(v) ? [...all, i] : all), []);
         s.results.push({ cardNo, pattern: pid, name: owners[cardNo], validated: true, at: s.drawn.length });
         s.hideWin = false;
+        s.celebrateAt = Date.now(); // desde cuándo hay celebración: a los 6 s el GC la recoge abajo
         added = true;
       }
     }
   }
   // Un cartón se valida solo cuando el jugador marca la última casilla del patrón.
   for (const r of s.results) {
-    if (!r.validated && PATTERNS.completed(r.pattern, markMask(s, r.cardNo))) { r.validated = true; s.hideWin = false; } // cada ganador nuevo vuelve a mostrar la celebración
+    if (!r.validated && PATTERNS.completed(r.pattern, markMask(s, r.cardNo))) { r.validated = true; s.hideWin = false; s.celebrateAt = Date.now(); } // cada ganador nuevo vuelve a mostrar la celebración
   }
   return added;
 }
@@ -151,6 +152,7 @@ function publicState(s, full = false) {
     celebrate: !s.hideWin && s.results.some((r) => r.validated && !r.dismissed),
     // Durante El Rosco los celulares cambian el cartón por las preguntas del rosco en curso
     stage: db.stage || 'bingo', roscoId: db.stage === 'rueda' ? (Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).id || null : null,
+    celebrateAt: s.celebrateAt || 0,
     winConfirmed: roundOver(s), winConfirmedAt: s.confirmedAt || 0, now: Date.now(),
     patterns: s.patterns, drawn: s.drawn, results, finalists: s.finalists || null,
     auto: s.auto, cardsPerPlayer: s.cardsPerPlayer, totalCards: p.cards.length,
