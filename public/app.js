@@ -838,6 +838,8 @@ const sfx = (() => {
     miss: () => { note(160, 0, 0.6, 'sawtooth', 0.28); note(113, 0, 0.6, 'square', 0.16); },
     // Paso: nota corta que baja
     pass: () => { note(660, 0, 0.22, 'triangle', 0.25, 330); },
+    // Bolita del bingo: campanita tipo triángulo, muy suave y con cola larga
+    ball: () => { note(2637, 0, 1.6, 'sine', 0.09); note(5290, 0, 1.1, 'sine', 0.04); note(7980, 0, 0.6, 'sine', 0.02); note(3960, 0, 0.9, 'sine', 0.025); },
     // Reloj: tic y tac secos y fuertes, alternados
     tick: () => { note(1500, 0, 0.05, 'square', 0.4); note(3000, 0, 0.03, 'sine', 0.2); },
     tock: () => { note(950, 0, 0.06, 'square', 0.4); note(1900, 0, 0.03, 'sine', 0.2); },
