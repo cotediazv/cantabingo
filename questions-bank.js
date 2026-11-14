@@ -18,7 +18,7 @@ A|g|m|Capital de Grecia|Atenas
 A|g|f|Cuarto mes del año|Abril
 A|g|f|País europeo cuya capital es Berlín|Alemania
 A|g|f|Cordillera que recorre Sudamérica de norte a sur|Andes
-A|g|f|Desierto más árido del mundo, en el norte de Chile|Atacama
+A|g|f|Desierto de Sudamérica considerado el más árido del mundo|Atacama
 A|g|f|Continente más grande y poblado del planeta|Asia
 A|g|f|Continente helado que rodea el polo sur|Antártica
 A|g|f|País y continente a la vez, tierra de canguros y koalas|Australia
@@ -80,8 +80,8 @@ E|a|m|Apellido del ingeniero que da nombre a la torre de hierro de París|Eiffel
 E|m|f|Serie de notas ordenadas de grave a agudo|Escala
 E|g|f|Continente donde están Francia, Italia y Alemania|Europa
 E|g|f|País cuya capital es Washington|Estados Unidos
-E|g|f|Inventor estadounidense de la ampolleta eléctrica|Edison
-E|g|f|Piedra preciosa de color verde; también el nombre de la corbeta de Arturo Prat|Esmeralda
+E|g|f|Inventor estadounidense de la bombilla eléctrica|Edison
+E|g|f|Piedra preciosa de color verde intenso|Esmeralda
 E|g|f|Moneda común que usan Francia, Italia, Alemania y España|Euro
 F|g|f|País cuya capital es París|Francia
 F|m|f|Instrumento de viento con forma de tubo y agujeros, que puede ser dulce o travesera|Flauta
@@ -108,7 +108,7 @@ G|a|m|Estilo medieval de catedrales con arcos apuntados y vitrales|Gótico
 G|g|m|Escritor colombiano autor de «Cien años de soledad»|García Márquez
 G|g|f|Felino doméstico que maúlla|Gato
 G|g|m|Fuerza que atrae los cuerpos hacia el centro de la Tierra|Gravedad
-G|a|f|Poeta chilena, primera latinoamericana en ganar el Nobel de Literatura|Gabriela Mistral
+G|g|f|Luchador que combatía en el Coliseo de la antigua Roma|Gladiador
 G|g|f|Líder pacifista de la independencia de la India|Gandhi
 G|g|f|Conjunto enorme de estrellas, como la Vía Láctea|Galaxia
 H|g|f|Agua en estado sólido|Hielo
@@ -133,7 +133,7 @@ I|m|f|Objeto que sirve para producir sonidos musicales|Instrumento
 I|g|m|Poema épico griego sobre la guerra de Troya|Ilíada
 I|g|f|Red mundial que conecta computadoras|Internet
 I|g|f|País del Big Ben, cuna del fútbol y de Shakespeare|Inglaterra
-I|g|f|Territorio chileno en medio del Pacífico, famoso por sus moáis|Isla de Pascua
+I|g|f|Isla en medio del Pacífico famosa por sus gigantescas estatuas de piedra, los moáis|Isla de Pascua
 I|g|f|País europeo del trébol y de la fiesta de San Patricio|Irlanda
 I|g|f|Idioma más usado en el mundo para los negocios y la música pop|Inglés
 I|g|f|Religión cuyo libro sagrado es el Corán|Islam
@@ -160,8 +160,8 @@ L|g|f|Felino llamado «rey de la selva»|León
 L|m|f|Texto de una canción|Letra
 L|a|m|Arte que usa la palabra escrita como medio de expresión|Literatura
 L|g|f|Lengua de la antigua Roma, de la que nació el castellano|Latín
-L|g|f|Palacio de gobierno de Chile|La Moneda
-L|g|f|Joven líder mapuche que venció a Pedro de Valdivia|Lautaro
+L|g|f|Ciudad de Estados Unidos, en pleno desierto, famosa por sus casinos|Las Vegas
+L|g|f|Nombre de la famosa estatua de Nueva York que sostiene una antorcha|Libertad
 L|g|f|Roca fundida que expulsa un volcán en erupción|Lava
 L|g|f|Animal de carga de los Andes, pariente del guanaco y la alpaca|Llama
 L|g|f|Presidente de Estados Unidos que abolió la esclavitud|Lincoln
@@ -175,7 +175,7 @@ M|a|m|Pintor surrealista nacido en Barcelona, de formas simples y colores vivos|
 M|m|m|Cantante estadounidense llamado «el Rey del pop»|Michael Jackson
 M|a|f|Lugar donde se conservan y exponen obras de arte|Museo
 M|g|m|Mar situado entre Europa, África y Asia|Mediterráneo
-M|g|f|Pueblo originario más numeroso de Chile|Mapuche
+M|g|f|Líder sudafricano que pasó 27 años preso y después fue presidente|Mandela
 M|g|f|Futbolista argentino del gol de «la mano de Dios»|Maradona
 M|g|f|Ciudadela inca en lo alto de las montañas del Perú|Machu Picchu
 M|a|f|Retrato más famoso del mundo, de sonrisa misteriosa|Mona Lisa
@@ -190,7 +190,7 @@ N|m|m|Banda estadounidense de grunge liderada por Kurt Cobain|Nirvana
 N|g|f|Undécimo mes del año|Noviembre
 N|g|m|Premios suecos que se entregan cada año a la ciencia, la literatura y la paz|Nobel
 N|g|f|Emperador francés derrotado en Waterloo|Napoleón
-N|a|f|Antipoeta chileno, hermano de Violeta|Nicanor Parra
+N|g|f|País nórdico famoso por sus fiordos y por su salmón|Noruega
 N|g|f|Personaje bíblico que construyó un arca para salvar a los animales del diluvio|Noé
 N|g|f|Agencia espacial de Estados Unidos|NASA
 N|g|f|Tenista español, múltiple campeón de Roland Garros|Nadal
@@ -204,13 +204,13 @@ N|g|f|Tenista español, múltiple campeón de Roland Garros|Nadal
 Ñ|a|m|Profesional que crea el aspecto de objetos, ropa o gráficos|Diseñador
 Ñ|g|f|Día siguiente al de hoy|Mañana
 Ñ|g|f|Estación del año entre el verano y el invierno|Otoño
-Ñ|m|f|Ciudad chilena del Festival Internacional de la Canción|Viña del Mar
+Ñ|g|f|Una de las tres carabelas de Colón, junto a la Pinta y la Santa María|Niña
 Ñ|g|f|Ave grande de Sudamérica que corre pero no vuela, parecida al avestruz|Ñandú
 Ñ|g|f|Hongo comestible blanco, muy usado en pizzas y salsas|Champiñón
 Ñ|g|f|Camélido andino de lana finísima, pariente del guanaco|Vicuña
 Ñ|g|f|Dedo más pequeño de la mano|Meñique
 Ñ|g|f|Arma antigua de gran calibre; también el Gran desfiladero del Colorado|Cañón
-Ñ|g|f|Pasta italiana de papa que se acostumbra comer los días 29|Ñoquis
+Ñ|g|f|Pasta italiana hecha con papa, en forma de bolitas|Ñoquis
 O|m|f|Conjunto grande de músicos guiados por un director|Orquesta
 O|m|m|Obra de teatro cantada y acompañada por una orquesta|Ópera
 O|g|f|Gran masa de agua salada que separa continentes|Océano
@@ -224,7 +224,7 @@ O|g|m|Continente formado por Australia y las islas del Pacífico|Oceanía
 O|g|f|Monte donde vivían los dioses de la mitología griega|Olimpo
 O|a|f|Premio más famoso del cine, una estatuilla dorada|Oscar
 O|g|f|Sigla con que se llama a un objeto volador no identificado|Ovni
-O|g|f|Libertador y padre de la patria de Chile|O'Higgins
+O|g|f|Capital de Noruega|Oslo
 P|a|f|Pintor español de «Guernica», uno de los creadores del cubismo|Picasso
 P|m|f|Instrumento de teclado con 88 teclas blancas y negras|Piano
 P|g|f|Capital de Francia|París
@@ -235,8 +235,8 @@ P|g|f|País cuya capital es Lima|Perú
 P|a|f|Arte de representar imágenes con colores sobre una superficie|Pintura
 P|m|m|Banda británica autora de «The Wall» y «The Dark Side of the Moon»|Pink Floyd
 P|g|m|Construcciones funerarias de los faraones egipcios|Pirámides
-P|g|f|Héroe naval chileno del Combate de Iquique|Prat
-P|g|f|Región austral que comparten Chile y Argentina|Patagonia
+P|g|f|Matemático griego famoso por su teorema sobre los triángulos|Pitágoras
+P|g|f|Región del extremo sur de Sudamérica, tierra de glaciares y pingüinos|Patagonia
 P|g|f|Futbolista brasileño apodado «O Rei», tres veces campeón del mundo|Pelé
 P|g|f|País europeo vecino de España, cuya capital es Lisboa|Portugal
 P|a|f|Muñeco de madera al que le crece la nariz cuando miente|Pinocho
@@ -250,7 +250,7 @@ Q|m|m|Flauta andina hecha de caña|Quena
 Q|g|m|Lengua de los incas, aún hablada en los Andes|Quechua
 Q|m|f|Grupo de cinco músicos|Quinteto
 Q|g|f|Semilla andina muy nutritiva, alimento de los incas|Quinoa
-Q|g|f|Nombre que se da en Chile al perro mestizo o callejero|Quiltro
+Q|a|f|Jorobado que toca las campanas de la catedral de Notre Dame|Quasimodo
 R|a|m|Movimiento cultural de los siglos XV y XVI que recuperó la Antigüedad clásica|Renacimiento
 R|m|f|Género musical de Elvis Presley y los Rolling Stones|Rock
 R|g|f|Capital de Italia|Roma
@@ -264,7 +264,7 @@ R|g|m|Joven enamorado de Julieta en la tragedia de Shakespeare|Romeo
 R|g|f|Ciudad brasileña del Cristo Redentor y del carnaval más famoso|Río de Janeiro
 R|g|f|Futbolista portugués conocido como CR7|Ronaldo
 R|a|f|Arquero legendario que robaba a los ricos para dar a los pobres|Robin Hood
-R|g|f|Nombre originario de la isla de los moáis|Rapa Nui
+R|m|f|Banda británica de rock liderada por Mick Jagger|Rolling Stones
 S|g|f|Estrella alrededor de la cual gira la Tierra|Sol
 S|g|m|Dramaturgo inglés autor de «Romeo y Julieta»|Shakespeare
 S|g|m|Desierto cálido más grande del mundo|Sahara
@@ -289,12 +289,12 @@ T|g|m|Transatlántico que se hundió en 1912 tras chocar con un iceberg|Titanic
 T|m|m|Voz masculina aguda en la ópera|Tenor
 T|g|f|Felino asiático de pelaje rayado|Tigre
 T|a|m|Mausoleo de mármol blanco situado en la India|Taj Mahal
-T|g|f|Parque nacional de la Patagonia chilena, famoso por sus macizos de granito|Torres del Paine
+T|g|f|Faraón egipcio cuya tumba llena de tesoros se encontró intacta en 1922|Tutankamón
 T|g|f|Ciudad de la Antigüedad conquistada gracias a un caballo de madera|Troya
 T|a|f|Hombre criado por los monos en la selva africana|Tarzán
 T|g|f|Deporte de raqueta que se juega en Wimbledon y Roland Garros|Tenis
 T|g|f|Instrumento que sirve para observar las estrellas y los planetas|Telescopio
-T|g|f|Capital de la Región de La Araucanía|Temuco
+T|g|f|País situado entre Europa y Asia, cuya ciudad más famosa es Estambul|Turquía
 T|g|f|Ola gigante provocada por un terremoto bajo el mar|Tsunami
 U|g|m|País sudamericano cuya capital es Montevideo|Uruguay
 U|g|f|Fruta con la que se elabora el vino|Uva
@@ -317,8 +317,8 @@ V|g|m|País sudamericano cuya capital es Caracas|Venezuela
 V|m|m|Compositor italiano de las óperas «La Traviata» y «Aida»|Verdi
 V|g|m|Montaña que expulsa lava|Volcán
 V|g|m|Segundo planeta del sistema solar|Venus
-V|m|f|Cantautora chilena autora de «Gracias a la vida»|Violeta Parra
-V|g|f|Puerto chileno de cerros y ascensores, Patrimonio de la Humanidad|Valparaíso
+V|g|f|Navegantes y guerreros nórdicos, famosos por sus barcos largos|Vikingos
+V|a|f|Lujoso palacio francés del rey Luis XIV, cerca de París|Versalles
 V|g|f|País más pequeño del mundo, dentro de la ciudad de Roma|Vaticano
 X|m|f|Instrumento de láminas de madera que se golpean con baquetas|Xilófono
 X|g|f|Prueba para evaluar conocimientos|Examen
