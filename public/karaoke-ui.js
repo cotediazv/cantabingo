@@ -34,14 +34,14 @@
       if (!box) return;
       const [a, b] = st.list;
       const html = `
-        <div class="kg-qr">${qr(joinUrl())}<b>¡Pide tu canción!</b></div>
+        <div class="kg-qr">${qr(joinUrl())}<b>Únete a la sesión</b></div>
         ${nextUpHTML('kg-up')}
         <div class="kg-bar">
           <div class="kg-tag"><small>Karaoke ${esc(st.name)}</small><b>🎤 ${a ? 'Ahora canta' : 'Pide tu canción'}</b></div>
           ${a ? `<div class="kg-now"><b ${n(a.name)}>${esc(a.name)}</b><span ${n(a.song)}>${esc(a.song)}</span>${a.artist ? `<i ${n(a.artist)}>${esc(a.artist)}</i>` : ''}</div>`
-    : `<div class="kg-now"><b ${n('¡Escanea el código QR!')}>¡Escanea el código QR!</b><span ${n('y envía tu pedido de karaoke')}>y envía tu pedido de karaoke</span></div>`}
+    : `<div class="kg-now"><b ${n('¡Pide tu canción!')}>¡Pide tu canción!</b><span ${n('Desde el celular')}>Desde el celular</span></div>`}
           ${b ? `<div class="kg-next"><small>Sigue</small><b ${n(b.name)}>${esc(b.name)}</b><span ${n(b.song)}>${esc(b.song)}</span>${b.artist ? `<i ${n(b.artist)}>${esc(b.artist)}</i>` : ''}</div>`
-    : `<div class="kg-next"><small>Sigue</small><b ${n('¿Te animas?')}>¿Te animas?</b><span ${n('Pide tu canción con el QR')}>Pide tu canción con el QR</span></div>`}
+    : `<div class="kg-next"><small>Sigue</small><b ${n('¿Te animas?')}>¿Te animas?</b><span ${n('Pide tu canción desde el celular')}>Pide tu canción desde el celular</span></div>`}
         </div>`;
       // Sale hacia abajo, cambia el contenido y vuelve a entrar
       clearTimeout(swap);
@@ -63,9 +63,9 @@
       box.innerHTML = `
         <header class="kf-top"><b>Karaoke ${esc(st.name)}</b><span>${st.total ? `${st.total} en la lista` : 'Lista abierta'}</span></header>
         <section class="kf-now">${a ? `<small>🎤 Ahora canta</small><b ${n(a.name)}>${esc(a.name)}</b><span ${n(a.song)}>${esc(a.song)}</span>${a.artist ? `<i ${n(a.artist)}>${esc(a.artist)}</i>` : ''}`
-    : '<small>🎤 Karaoke</small><b style="--n:16">¡Pide tu canción!</b><span style="--n:30">Escanea el código QR y envía tu pedido</span>'}</section>
+    : '<small>🎤 Karaoke</small><b style="--n:16">¡Pide tu canción!</b><span style="--n:16">Desde el celular</span>'}</section>
         <aside class="kf-side">
-          <div class="kf-qr">${qr(joinUrl())}<b>¡Pide tu canción!</b></div>
+          <div class="kf-qr">${qr(joinUrl())}<b>Únete a la sesión</b></div>
           ${next.length ? `<div class="kf-next"><small>Luego vienen</small>${next.map((p, i) => `<div><em>${i + 2}</em><p><b ${n(p.name)}>${esc(p.name)}</b><span ${n(p.song + p.artist)}>${esc(p.song)}${p.artist ? ` · ${esc(p.artist)}` : ''}</span></p></div>`).join('')}</div>` : ''}
         </aside>`;
     });
