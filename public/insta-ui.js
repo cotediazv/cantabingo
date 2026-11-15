@@ -1,4 +1,4 @@
-/* global views, app, $, esc, api, qr, joinUrl, isAdmin, viewLogin, fail, toast, activitiesNav */
+/* global views, app, $, esc, api, qr, joinUrl, isAdmin, viewLogin, fail, activitiesNav */
 // «Síguenos en Instagram»: panel del animador, tarjeta del celular, GC de OBS y tablero del DJ.
 (() => {
   const url = (h) => `https://www.instagram.com/${encodeURIComponent(h)}/`;
@@ -6,26 +6,12 @@
   // ---------- Panel del animador ----------
   views.instactl = async () => {
     if (!(await isAdmin())) return viewLogin();
-    let cfg = await api('GET', '/api/insta/config');
-    app.innerHTML = `<div class="panel"><h1 style="margin:0">📸 Instagram</h1><span class="muted" id="ic-sub"></span>
-        <div id="ic-now" style="margin-top:14px"></div>
-        <h2 style="margin-top:18px">Cuenta de cada local</h2>
-        <form id="ic-form" class="fields" style="grid-template-columns:1fr">
-          ${Object.entries(cfg.venues).map(([v, name]) => `<label class="f">${esc(name)}<input type="text" name="${v}" maxlength="80" autocomplete="off" autocapitalize="none" placeholder="@cuenta" value="${esc(cfg.handles[v] ? `@${cfg.handles[v]}` : '')}"></label>`).join('')}
-          <button class="primary">Guardar cuentas</button>
-        </form>
+    const cfg = await api('GET', '/api/insta');
+    // Simple: solo lo que está saliendo, con la cuenta del local de la sala
+    app.innerHTML = `<div class="panel"><h1 style="margin:0">📸 Instagram</h1><span class="muted">${esc(cfg.name)}</span>
+        <div class="vc-read" style="margin-top:14px"><small>En pantalla y en los celulares</small><em>Síguenos en Instagram</em><b>@${esc(cfg.handle)}</b><span>Programación y registros en vivo</span></div>
       </div>${activitiesNav('insta')}`;
     await api('POST', '/api/stage', { show: 'insta' }).catch(fail); // al entrar, pasa a la pantalla y a los celulares
-    const paint = () => {
-      $('#ic-sub').textContent = cfg.name;
-      $('#ic-now').innerHTML = cfg.handle ? `<div class="vc-read"><small>En pantalla y en los celulares</small><em>Síguenos en Instagram</em><b>@${esc(cfg.handle)}</b></div>`
-        : `<p class="vc-next">Falta la cuenta de Instagram de ${esc(cfg.name)}. Escríbela abajo y toca «Guardar cuentas».</p>`;
-    };
-    paint();
-    $('#ic-form').onsubmit = async (e) => {
-      e.preventDefault();
-      try { cfg = await api('POST', '/api/insta/config', { handles: Object.fromEntries(new FormData(e.target)) }); paint(); toast('Cuentas guardadas'); } catch (err) { fail(err); }
-    };
     return undefined;
   };
 
