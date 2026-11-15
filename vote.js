@@ -4,7 +4,7 @@
 // 3) Gran final: los dos primeros se definen con una votación nueva, eligiendo a uno de los dos.
 const crypto = require('crypto');
 
-const MAX_PLAYERS = 12;
+const MAX_PLAYERS = 8;
 
 module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, findPlayer, venue, notify }) {
   const blank = () => ({ title: '', players: [], open: null, last: null, phase: 'voting', rank: [], revealed: 0, final: null, winner: null, winAt: 0, rev: ((db.vote || {}).rev || 0) + 1 });

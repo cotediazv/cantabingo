@@ -112,7 +112,7 @@
       } else if (st.me) body = `<div class="pvote-in">✔ Estás en la lista<b>${badge(st.me.no)}${esc(st.me.thing)}</b><small>Atento al llamado del animador para subir al escenario.</small></div>`;
       else if (st.signup && st.room) {
         body = `<form id="pv-join"><p class="pvote-ask">¿Quieres participar?<b>¡Sube a nuestro escenario!</b></p>
-          <label class="f">¿Con qué participas?<input type="text" id="pv-thing" maxlength="40" required minlength="2" autocomplete="off" placeholder="Ej.: paraguas con luces"></label>
+          <label class="f">¿Con qué participas?<input type="text" id="pv-thing" maxlength="40" required minlength="2" autocomplete="off" placeholder="Descripción de tu objeto"></label>
           <button class="primary big" style="margin-top:10px">Inscribirme</button>
           <p class="muted small" style="text-align:center;margin-top:8px">Te inscribes con el nombre con que entraste a la sala.</p></form>`;
       } else if (st.signup) body = '<p class="pvote-wait">Ya se completaron los cupos para participar.<br>¡Prepárate para votar!</p>';
