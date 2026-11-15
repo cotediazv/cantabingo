@@ -37,10 +37,16 @@ const nextUpHTML = (cls = '') => {
     app.innerHTML = '<div id="sg"></div>';
     const stop = follow((a) => {
       const p = parts(a);
+      const block = a.blocks.find((x) => x.isShow);
       if (!$('#sg')) return;
       $('#sg').className = `th-${a.venue}`;
       $('#sg').innerHTML = p ? `<div class="sg-bar"><div class="sg-tag"><small>${esc(a.name)}</small><b>${esc(a.date)}</b></div>
-        <div class="sg-main">${p.kind ? `<small>${esc(p.kind)}</small>` : ''}<b style="--n:${p.name.length}">${esc(p.name)}</b></div></div>` : '';
+        <div class="sg-main">${p.kind ? `<small>${esc(p.kind)}</small>` : ''}<b style="--n:${p.name.length}">${esc(p.name)}</b></div>
+        <div class="sg-tag sg-side"><small>${block ? 'Horario' : 'KRB Stage'}</small><b>${block ? `${block.time} hrs` : esc(a.name)}</b></div></div>` : '';
+      // Simetría: los dos bloques laterales quedan del mismo ancho, con el artista al centro
+      const tags = [...document.querySelectorAll('#sg .sg-tag')];
+      const wide = Math.max(0, ...tags.map((t) => t.offsetWidth));
+      tags.forEach((t) => { t.style.minWidth = `${wide}px`; });
     });
     return () => { stop(); document.body.classList.remove('obs', 'gc-screen'); };
   };

@@ -846,3 +846,19 @@ body.full #rf .rf-card.win .rf-name:not(.small) { font-size: min(21vh, calc(84vw
 .kg-bar, .sg-bar { position: absolute; }
 
 .sg-tag b { font-size: 3.3vh; }
+
+/* Zócalos simétricos: el bloque principal al centro y los dos laterales del mismo ancho */
+.kg-tag { flex: 1 1 0; min-width: 0; padding: 0 2vh; }
+.kg-now { flex: 1.35 1 0; }
+.kg-next { flex: 1 1 0; }
+.kg-tag b { font-size: min(3.6vh, 1.75vw); }
+.kg-tag small { font-size: min(2.3vh, 1.15vw); }
+.sg-bar { left: 0; right: 0; margin: 0 auto; width: fit-content; max-width: 86vw; animation-name: sgup; }
+@keyframes sgup { from { transform: translateY(160%); } }
+.sg-bar::after { content: ""; flex: 0 0 auto; width: var(--sg-side, 0px); background: var(--gc-dots), var(--k-tag); border-left: var(--gc-line) solid var(--gc-yellow); }
+.sg-main { text-align: center; justify-items: center; }
+.next-up.kg-up { left: 50%; transform: translateX(-50%); }
+
+.sg-bar::after { content: none; }
+.sg-bar { min-height: 15vh; }
+.sg-side { border-left: var(--gc-line) solid var(--gc-yellow); }

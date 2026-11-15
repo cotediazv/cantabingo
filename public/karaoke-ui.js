@@ -40,7 +40,8 @@
           <div class="kg-tag"><small>Karaoke ${esc(st.name)}</small><b>🎤 ${a ? 'Ahora canta' : 'Pide tu canción'}</b></div>
           ${a ? `<div class="kg-now"><b ${n(a.name)}>${esc(a.name)}</b><span ${n(a.song)}>${esc(a.song)}</span>${a.artist ? `<i ${n(a.artist)}>${esc(a.artist)}</i>` : ''}</div>`
     : `<div class="kg-now"><b ${n('¡Escanea el código QR!')}>¡Escanea el código QR!</b><span ${n('y envía tu pedido de karaoke')}>y envía tu pedido de karaoke</span></div>`}
-          ${b ? `<div class="kg-next"><small>Sigue</small><b ${n(b.name)}>${esc(b.name)}</b><span ${n(b.song)}>${esc(b.song)}</span>${b.artist ? `<i ${n(b.artist)}>${esc(b.artist)}</i>` : ''}</div>` : ''}
+          ${b ? `<div class="kg-next"><small>Sigue</small><b ${n(b.name)}>${esc(b.name)}</b><span ${n(b.song)}>${esc(b.song)}</span>${b.artist ? `<i ${n(b.artist)}>${esc(b.artist)}</i>` : ''}</div>`
+    : `<div class="kg-next"><small>Sigue</small><b ${n('¿Te animas?')}>¿Te animas?</b><span ${n('Pide tu canción con el QR')}>Pide tu canción con el QR</span></div>`}
         </div>`;
       // Sale hacia abajo, cambia el contenido y vuelve a entrar
       clearTimeout(swap);
