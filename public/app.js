@@ -1062,22 +1062,23 @@ async function backToBingo() {
 // ---------- Karaoke: buscador de canciones ----------
 // Mientras la persona escribe, se consulta el catálogo de iTunes y se ofrecen canciones reales;
 // al tocar una, se llenan solos la canción y el artista. Es una ayuda: también se puede escribir a mano.
-// La consulta sale del propio celular (JSONP), así no depende de nuestro servidor.
-const songSearch = (term) => new Promise((resolve) => {
-  const cb = `__it${Date.now()}${Math.random().toString(36).slice(2)}`;
-  const s = document.createElement('script');
-  let finished = false;
-  const done = (list) => { if (finished) return; finished = true; delete window[cb]; s.remove(); resolve(list); };
-  window[cb] = (r) => {
-    const seen = new Set();
-    done(((r && r.results) || []).map((x) => ({ song: String(x.trackName || '').trim(), artist: String(x.artistName || '').trim() }))
-      .filter((x) => x.song && x.artist && !seen.has(`${x.song}|${x.artist}`.toLowerCase()) && seen.add(`${x.song}|${x.artist}`.toLowerCase())).slice(0, 5));
-  };
-  s.onerror = () => done([]);
-  s.src = `https://itunes.apple.com/search?media=music&entity=song&limit=10&country=CL&lang=es_es&term=${encodeURIComponent(term)}&callback=${cb}`;
-  document.head.appendChild(s);
-  setTimeout(() => done([]), 6000);
-});
+// La consulta sale del propio celular; si el navegador no lo permite, pasa por nuestro servidor.
+const tidySongs = (results) => {
+  const seen = new Set();
+  return (results || []).map((x) => ({ song: String(x.trackName || x.song || '').trim(), artist: String(x.artistName || x.artist || '').trim() }))
+    .filter((x) => x.song && x.artist && !seen.has(`${x.song}|${x.artist}`.toLowerCase()) && seen.add(`${x.song}|${x.artist}`.toLowerCase())).slice(0, 5);
+};
+let songDirect = true; // se apaga si el celular no logra hablar directo con iTunes
+async function songSearch(term) {
+  if (songDirect) {
+    try {
+      const r = await fetch(`https://itunes.apple.com/search?media=music&entity=song&limit=10&country=CL&term=${encodeURIComponent(term)}`, { signal: AbortSignal.timeout(4000) });
+      if (!r.ok) throw new Error('itunes');
+      return tidySongs((await r.json()).results);
+    } catch { songDirect = false; }
+  }
+  try { return tidySongs((await (await fetch(`/api/songs?q=${encodeURIComponent(term)}`)).json()).list); } catch { return []; }
+}
 function wireSongSearch(form) {
   const pairs = { song: 'artist', altSong: 'altArtist' };
   let timer = null;

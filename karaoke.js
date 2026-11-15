@@ -170,6 +170,28 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
   const learnForms = async () => { for (const v of Object.keys(VENUES)) { try { delete forms[v]; await loadForm(v); } catch { /* se reintenta en la próxima vuelta */ } } };
   setTimeout(learnForms, 4000).unref();
   setInterval(learnForms, 6 * 3600e3).unref();
+  // Buscador de canciones de respaldo: consulta el catálogo de iTunes desde el servidor y recuerda cada
+  // búsqueda 12 horas, para no gastar el cupo de iTunes cuando muchas personas escriben lo mismo.
+  const songCache = new Map();
+  const tidySongs = (results) => {
+    const seen = new Set();
+    return (Array.isArray(results) ? results : []).map((x) => ({ song: clean(x.trackName, 80), artist: clean(x.artistName, 60) }))
+      .filter((x) => x.song && x.artist && !seen.has(`${x.song}|${x.artist}`.toLowerCase()) && seen.add(`${x.song}|${x.artist}`.toLowerCase())).slice(0, 5);
+  };
+  app.get('/api/songs', async (req, res) => {
+    const q = norm(clean(req.query.q, 60));
+    if (q.length < 3) return res.json({ list: [] });
+    const hit = songCache.get(q);
+    if (hit && Date.now() - hit.at < 12 * 3600e3) return res.json({ list: hit.list });
+    try {
+      const r = await fetch(`https://itunes.apple.com/search?media=music&entity=song&limit=10&country=CL&term=${encodeURIComponent(q)}`, { signal: AbortSignal.timeout(5000) });
+      if (!r.ok) throw new Error(`iTunes respondió ${r.status}`);
+      const list = tidySongs((await r.json()).results);
+      if (songCache.size > 3000) songCache.clear();
+      songCache.set(q, { list, at: Date.now() });
+      res.json({ list });
+    } catch (err) { res.json({ list: [], error: clean(err && err.message, 120) }); }
+  });
   // Revisión sin envío: muestra qué preguntas tiene el formulario del local y a cuál iría cada dato
   app.get('/api/karaoke/form-check', requireAdmin, async (req, res) => {
     const venue = VENUES[req.query.venue] ? req.query.venue : venueNow();
