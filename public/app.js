@@ -1193,11 +1193,17 @@ function activitiesNav(current) {
     ['show', '<a class="btn" href="#/showctl"><span>⭐</span>Show</a>'],
     ['karaoke', '<a class="btn" href="#/karaokectl"><span>🎤</span>Karaoke</a>'],
     ['insta', '<a class="btn" href="#/instactl"><span>📸</span>Instagram</a>'],
+    ['qr', '<button type="button" data-stage-qr><span>📱</span>QR en pantalla completa</button>'],
   ];
   return `<div class="act-nav"><small>Ir a otra actividad</small><div>${all.filter(([k]) => k !== current).map(([, h]) => h).join('')}</div></div>`;
 }
 const BACK_BINGO = activitiesNav('rosco');
 document.addEventListener('click', (e) => { if (e.target.closest('[data-back-bingo]')) backToBingo(); });
+// «QR en pantalla completa» desde cualquier panel: lo pone en OBS y en el tablero sin salir de donde estás
+document.addEventListener('click', async (e) => {
+  if (!e.target.closest('[data-stage-qr]')) return;
+  try { await api('POST', '/api/stage', { show: 'qr' }); toast('QR en pantalla completa'); } catch (err) { fail(err); }
+});
 
 // El QR siempre es para entrar a la sala. Las gráficas que no traen el suyo (sorteo, rosco y show)
 // reciben este, en la esquina que cada una tiene libre. Sin lugar indicado, se retira.
