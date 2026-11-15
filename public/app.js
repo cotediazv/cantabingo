@@ -1239,7 +1239,7 @@ views.escena = async () => {
         else if (show === 'voto') stop = await views.votoGC();
         else if (show === 'insta') stop = await views.instaGC();
         else if (show === 'show') stop = await views.showGC();
-        joinQr({ sorteo: 'br', rueda: 'br', show: 'above' }[show]);
+        joinQr({ sorteo: 'br', rueda: 'bl', show: 'above' }[show]);
         document.body.classList.add('obs');
       }
     } finally { busy = false; }
