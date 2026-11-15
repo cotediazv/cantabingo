@@ -62,9 +62,9 @@
           ${st.open || pending ? `<p class="muted small" style="margin-top:6px">${st.open ? 'Cierra la votación en curso para continuar.' : `Falta votar a ${pending} participante${pending > 1 ? 's' : ''}.`}</p>` : ''}` : ''}`;
       } else if (st.phase === 'results') {
         html = `<h2>Resultados</h2>
-          ${st.next ? `<p class="vc-next">Viene: <b>${ord(st.next.place)}</b> · N.º ${st.next.no} · ${esc(withThing(st.next))} · nota ${note(st.next.score)}<small>Solo lo ves tú, hasta que lo reveles.</small></p>
+          ${st.next ? `<div class="vc-read"><small>Viene · solo lo ves tú, hasta que lo reveles</small><em>${ord(st.next.place)}</em><b>${nm(st.next)}</b>${st.next.thing ? `<span>${esc(st.next.thing)}</span>` : ''}<i>Nota ${note(st.next.score)}</i></div>
             <button class="primary big" data-act="reveal">Revelar ${ord(st.next.place)}</button>`
-    : `<p class="vc-next">Quedan las dos finalistas: <b>${st.final.players.map((p) => esc(p.name)).join(' y ')}</b></p>
+    : `<div class="vc-read"><small>Quedan las dos finalistas</small>${st.final.players.map((p) => `<b>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}`).join('<em class="vs">y</em>')}</div>
             <button class="primary big" data-act="final">⚔️ Gran final: abrir votación</button>`}
           <div class="vc-list">${[...st.places].reverse().map((p) => `<div class="vc-row"><p><b>${ord(p.place)} · ${nm(p)}</b>${thing(p)}<small>Nota ${note(p.score)}</small></p></div>`).join('')}</div>`;
       } else if (st.phase === 'final') {
