@@ -991,3 +991,12 @@ body.full #rf .rf-card.win .rf-name:not(.small) { font-size: min(21vh, calc(84vw
 .vf-list p > * { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .vf-list p b { font-size: 3.4vh; font-weight: 900; text-transform: uppercase; line-height: 1.15; }
 .vf-list p span { font-size: 2.6vh; font-weight: 700; opacity: .9; line-height: 1.15; }
+
+/* Objeto que presenta cada participante (opcional) */
+.v-thing { display: block; font-style: normal; font-weight: 600; font-size: .92em; opacity: .9; overflow-wrap: anywhere; }
+.pvote-ask .v-thing { font-size: 1.15rem; color: #ffe14d; margin-top: 2px; }
+.pvote-duel .v-thing { font-size: 1rem; font-weight: 600; margin-top: 4px; }
+.pvote-win .v-thing { font-size: 1.1rem; color: #fff; }
+#vc-add { flex-wrap: wrap; }
+#vc-add #vc-name { flex: 1 1 100% !important; }
+#vc-add #vc-thing { flex: 1 1 0 !important; }

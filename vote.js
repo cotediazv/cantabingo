@@ -19,9 +19,9 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
   const places = () => {
     const s = v();
     const n = s.rank.length;
-    return Array.from({ length: s.revealed }, (_, i) => { const p = by(s.rank[n - 1 - i]); return { place: n - i, name: p.name, score: round1(avg(p)) }; });
+    return Array.from({ length: s.revealed }, (_, i) => { const p = by(s.rank[n - 1 - i]); return { place: n - i, name: p.name, thing: p.thing || '', score: round1(avg(p)) }; });
   };
-  const finalists = () => (v().final ? v().players.filter((p) => v().final.ids.includes(p.id)).map((p) => ({ id: p.id, name: p.name })) : []);
+  const finalists = () => (v().final ? v().players.filter((p) => v().final.ids.includes(p.id)).map((p) => ({ id: p.id, name: p.name, thing: p.thing || '' })) : []);
 
   const pub = () => {
     const s = v();
@@ -29,13 +29,13 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
     const last = by(s.last);
     return {
       rev: s.rev, venue: venue(), title: s.title, phase: s.phase, now: Date.now(),
-      players: s.players.map((p) => ({ id: p.id, name: p.name, done: !!p.done })),
-      open: open ? { id: open.id, name: open.name } : null,
-      last: last ? { id: last.id, name: last.name } : null,
+      players: s.players.map((p) => ({ id: p.id, name: p.name, thing: p.thing || '', done: !!p.done })),
+      open: open ? { id: open.id, name: open.name, thing: open.thing || '' } : null,
+      last: last ? { id: last.id, name: last.name, thing: last.thing || '' } : null,
       places: s.phase === 'voting' ? [] : places(),
       toReveal: s.phase === 'results' ? Math.max(0, s.rank.length - 2 - s.revealed) : 0,
       final: s.final ? { players: finalists(), open: !!s.final.open, closed: !!s.final.closed } : null,
-      winner: s.phase === 'winner' && s.winner ? { name: by(s.winner).name } : null, winAt: s.winAt || 0,
+      winner: s.phase === 'winner' && s.winner ? { name: by(s.winner).name, thing: by(s.winner).thing || '' } : null, winAt: s.winAt || 0,
     };
   };
 
@@ -57,7 +57,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
     const next = s.phase === 'results' && s.revealed < n - 2 ? by(s.rank[n - 1 - s.revealed]) : null;
     const tally = s.final ? Object.fromEntries(s.final.ids.map((id) => [id, Object.values(s.final.votes).filter((x) => x === id).length])) : null;
     return { ...pub(), counts: Object.fromEntries(s.players.map((p) => [p.id, count(p)])),
-      next: next ? { place: n - s.revealed, name: next.name, score: round1(avg(next)) } : null, tally };
+      next: next ? { place: n - s.revealed, name: next.name, thing: next.thing || '', score: round1(avg(next)) } : null, tally };
   };
   app.get('/api/vote/host', requireAdmin, (_req, res) => res.json(hostState()));
 
@@ -88,7 +88,8 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       if (s.phase !== 'voting') return 'El concurso ya pasó a los resultados';
       if (s.players.some((p) => p.name === name)) return 'Ya hay un participante con ese nombre';
       if (s.players.length >= 12) return 'Máximo 12 participantes';
-      s.players.push({ id: crypto.randomBytes(4).toString('hex'), name, votes: {}, done: false });
+      // El objeto (o lo que presenta) es opcional: dos o tres palabras para reconocerlo
+      s.players.push({ id: crypto.randomBytes(4).toString('hex'), name, thing: clean(b.thing, 40), votes: {}, done: false });
       return null;
     },
     remove: (s, b) => {
