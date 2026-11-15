@@ -36,7 +36,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
     const last = by(s.last);
     return {
       rev: s.rev, venue: venue(), title: s.title || TITLE, phase: s.phase, now: Date.now(),
-      signup: s.phase === 'voting' && !!s.signup, clockUntil: s.signup ? s.signupUntil || 0 : s.phase === 'voting' && s.open ? s.openUntil || 0 : 0, clockMs: s.signup ? SIGNUP_MS : OPEN_MS, max: MAX_PLAYERS, room: Math.max(0, MAX_PLAYERS - s.players.length),
+      signup: s.phase === 'voting' && !!s.signup, clockUntil: s.signup ? s.signupUntil || 0 : s.phase === 'voting' && s.open ? s.openUntil || 0 : s.phase === 'final' && s.final && s.final.open ? s.final.until || 0 : 0, clockMs: s.signup ? SIGNUP_MS : OPEN_MS, max: MAX_PLAYERS, room: Math.max(0, MAX_PLAYERS - s.players.length),
       players: s.players.map((p) => ({ id: p.id, no: no(p), name: p.name, thing: p.thing || '', done: !!p.done })),
       open: open ? { id: open.id, no: no(open), name: open.name, thing: open.thing || '' } : null,
       last: last ? { id: last.id, no: no(last), name: last.name, thing: last.thing || '' } : null,
@@ -115,6 +115,8 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
     if (s.signup && s.signupUntil && Date.now() >= s.signupUntil) { s.signup = false; changed(); }
     // La votación de cada participante se cierra sola al agotarse sus 10 segundos
     if (s.phase === 'voting' && s.open && s.openUntil && Date.now() >= s.openUntil + GRACE_MS) { actions.close(s); changed(); }
+    // La gran final también dura 18 segundos y se cierra sola
+    if (s.phase === 'final' && s.final && s.final.open && s.final.until && Date.now() >= s.final.until + GRACE_MS) { actions.closefinal(s); changed(); }
   }, 250).unref();
 
   const actions = {
@@ -183,6 +185,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       if (s.revealed < s.rank.length - 2) return 'Primero revela los lugares anteriores';
       s.phase = 'final';
       s.final.open = true;
+      s.final.until = Date.now() + OPEN_MS;
       s.final.closed = false;
       return null;
     },
