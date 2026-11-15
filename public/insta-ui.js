@@ -40,7 +40,7 @@
       if (st.handle === shown && box.innerHTML) return;
       shown = st.handle;
       box.innerHTML = st.handle ? `<div class="pinsta-head">📸 Síguenos en Instagram</div>
-        <a class="pinsta-go" href="${url(st.handle)}" target="_blank" rel="noopener"><b>@${esc(st.handle)}</b><span>Abrir Instagram y seguir</span></a>
+        <a class="pinsta-go" href="${url(st.handle)}" target="_blank" rel="noopener"><b>@${esc(st.handle)}</b><i>Programación y registros</i><span>Abrir Instagram y seguir</span></a>
         <iframe class="pinsta-frame" title="Instagram de ${esc(st.name)}" src="${url(st.handle)}embed/" loading="lazy" scrolling="no" frameborder="0"></iframe>
         <p class="muted small" style="text-align:center;margin-top:8px">Toca el botón, sigue la cuenta y vuelve aquí para seguir jugando.</p>`
         : '<p class="pvote-wait">Ya volvemos con más juegos.</p>';
@@ -74,8 +74,8 @@
       box.className = `th-${st.venue}`;
       box.innerHTML = st.handle ? `<div class="vg-qr">${qr(url(st.handle))}<b>Escanea y síguenos</b></div>
         <div class="vg-bar">
-          <div class="vg-tag"><small>${esc(st.name)}</small><b>📸 Instagram</b></div>
-          <div class="vg-main"><b style="text-transform:none;--n:${Math.max(6, st.handle.length + 1)}">@${esc(st.handle)}</b><span ${n('Síguenos en Instagram')}>Síguenos en Instagram</span></div>
+          <div class="vg-tag"><small>${esc(st.name)}</small><b>📸 Síguenos en Instagram</b></div>
+          <div class="vg-main"><b style="text-transform:none;--n:${Math.max(6, st.handle.length + 1)}">@${esc(st.handle)}</b><span ${n('Programación y registros')}>Programación y registros</span></div>
           <div class="vg-side"><small ${n('Síguenos')}>Síguenos</small><b ${n('Desde tu celular')}>Desde tu celular</b></div>
         </div>` : '';
       requestAnimationFrame(() => { if ($('#vg')) $('#vg').classList.add('on'); });
@@ -90,7 +90,7 @@
       if (!box) return;
       box.className = `th-${st.venue}`;
       box.innerHTML = `<header class="vf-top"><b>Síguenos en Instagram</b><span>📸 ${esc(st.name)}</span></header>
-        <section class="vf-main"><small>Síguenos en Instagram</small><b style="text-transform:none;--n:${(st.handle || 'KRB Stage').length + 1}">${st.handle ? `@${esc(st.handle)}` : 'KRB Stage'}</b><span style="--n:16">Desde tu celular</span></section>
+        <section class="vf-main"><small>Síguenos en Instagram</small><b style="text-transform:none;--n:${(st.handle || 'KRB Stage').length + 1}">${st.handle ? `@${esc(st.handle)}` : 'KRB Stage'}</b><span style="--n:24">Programación y registros</span></section>
         <aside class="vf-side">${st.handle ? `<div class="vf-qr insta">${qr(url(st.handle))}<b>Escanea y síguenos</b></div>` : ''}</aside>`;
     });
     return () => stop();
