@@ -5,7 +5,10 @@
   const note = (x) => Number(x).toFixed(1).replace('.', ',');
   const ord = (p) => `${p}.º lugar`;
   const title = (st) => st.title || 'Votación';
-  const versus = (st) => st.final.players.map((p) => esc(p.name)).join(' <em>vs</em> ');
+  // Número del participante (orden en que se anotó), para que el animador pueda decir «la número 3»
+  const badge = (x) => (x ? `<u class="v-no">${x}</u>` : '');
+  const nm = (p) => `${badge(p.no)}${esc(p.name)}`;
+  const versus = (st) => st.final.players.map((p) => nm(p)).join(' <em>vs</em> ');
   const CELEBRATE_MS = 6000;
   const thing = (p) => (p.thing ? `<i class="v-thing">${esc(p.thing)}</i>` : '');
   const withThing = (p) => (p.thing ? `${p.name} · ${p.thing}` : p.name);
@@ -40,7 +43,7 @@
           <form id="vc-add" class="row" style="gap:8px"><input type="text" id="vc-name" maxlength="30" placeholder="Nombre" autocomplete="off" style="flex:1;min-width:0"><input type="text" id="vc-thing" maxlength="40" placeholder="Objeto (opcional)" autocomplete="off" style="flex:1.3;min-width:0"><button class="primary">Agregar</button></form>
           <div class="vc-list">${st.players.map((p) => {
     const on = st.open && st.open.id === p.id;
-    return `<div class="vc-row ${on ? 'on' : ''}"><p><b>${esc(p.name)}</b>${thing(p)}<small>${on ? `Votación abierta · ${st.counts[p.id]} votos` : p.done ? `✔ Votación recibida · ${st.counts[p.id]} votos` : 'Pendiente'}</small></p>
+    return `<div class="vc-row ${on ? 'on' : ''}"><p><b>${nm(p)}</b>${thing(p)}<small>${on ? `Votación abierta · ${st.counts[p.id]} votos` : p.done ? `✔ Votación recibida · ${st.counts[p.id]} votos` : 'Pendiente'}</small></p>
               ${on ? '<button class="primary" data-act="close">Cerrar votación</button>' : `<button data-act="open" data-id="${p.id}">${p.done ? 'Reabrir' : 'Abrir votación'}</button>`}
               ${on ? '' : `<button class="vc-x" data-act="remove" data-id="${p.id}" aria-label="Quitar a ${esc(p.name)}">✕</button>`}</div>`;
   }).join('') || '<p class="muted">Anota a cada participante a medida que le preguntas el nombre.</p>'}</div>
@@ -48,22 +51,22 @@
           ${st.open || pending ? `<p class="muted small" style="margin-top:6px">${st.open ? 'Cierra la votación en curso para continuar.' : `Falta votar a ${pending} participante${pending > 1 ? 's' : ''}.`}</p>` : ''}` : ''}`;
       } else if (st.phase === 'results') {
         html = `<h2>Resultados</h2>
-          ${st.next ? `<p class="vc-next">Viene: <b>${ord(st.next.place)}</b> · ${esc(withThing(st.next))} · nota ${note(st.next.score)}<small>Solo lo ves tú, hasta que lo reveles.</small></p>
+          ${st.next ? `<p class="vc-next">Viene: <b>${ord(st.next.place)}</b> · N.º ${st.next.no} · ${esc(withThing(st.next))} · nota ${note(st.next.score)}<small>Solo lo ves tú, hasta que lo reveles.</small></p>
             <button class="primary big" data-act="reveal">Revelar ${ord(st.next.place)}</button>`
     : `<p class="vc-next">Quedan las dos finalistas: <b>${st.final.players.map((p) => esc(p.name)).join(' y ')}</b></p>
             <button class="primary big" data-act="final">⚔️ Gran final: abrir votación</button>`}
-          <div class="vc-list">${[...st.places].reverse().map((p) => `<div class="vc-row"><p><b>${ord(p.place)} · ${esc(p.name)}</b>${thing(p)}<small>Nota ${note(p.score)}</small></p></div>`).join('')}</div>`;
+          <div class="vc-list">${[...st.places].reverse().map((p) => `<div class="vc-row"><p><b>${ord(p.place)} · ${nm(p)}</b>${thing(p)}<small>Nota ${note(p.score)}</small></p></div>`).join('')}</div>`;
       } else if (st.phase === 'final') {
         const total = Object.values(st.tally).reduce((a, b) => a + b, 0);
         html = `<h2>Gran final</h2>
-          <div class="vc-list">${st.final.players.map((p) => `<div class="vc-row"><p><b>${esc(p.name)}</b>${thing(p)}<small>${st.final.open ? 'Recibiendo votos' : `${st.tally[p.id]} votos (solo lo ves tú)`}</small></p></div>`).join('')}</div>
+          <div class="vc-list">${st.final.players.map((p) => `<div class="vc-row"><p><b>${nm(p)}</b>${thing(p)}<small>${st.final.open ? 'Recibiendo votos' : `${st.tally[p.id]} votos (solo lo ves tú)`}</small></p></div>`).join('')}</div>
           <p class="muted small" style="margin-top:6px">${total} votos en la gran final</p>
           ${st.final.open ? '<button class="primary big" data-act="closefinal" style="margin-top:12px">Cerrar votación</button>'
     : '<button class="primary big" data-act="winner" style="margin-top:12px">🏆 Revelar quién ganó</button><button class="big" data-act="final" style="margin-top:10px">Reabrir votación</button>'}`;
       } else {
-        html = `<h2>🏆 Ganó ${esc(st.winner.name)}</h2>
-          <div class="vc-list">${st.final.players.map((p) => `<div class="vc-row"><p><b>${esc(p.name)}</b><small>${st.tally[p.id]} votos en la gran final</small></p></div>`).join('')}
-          ${[...st.places].reverse().map((p) => `<div class="vc-row"><p><b>${ord(p.place)} · ${esc(p.name)}</b><small>Nota ${note(p.score)}</small></p></div>`).join('')}</div>`;
+        html = `<h2>🏆 Ganó ${nm(st.winner)}</h2>
+          <div class="vc-list">${st.final.players.map((p) => `<div class="vc-row"><p><b>${nm(p)}</b><small>${st.tally[p.id]} votos en la gran final</small></p></div>`).join('')}
+          ${[...st.places].reverse().map((p) => `<div class="vc-row"><p><b>${ord(p.place)} · ${nm(p)}</b><small>Nota ${note(p.score)}</small></p></div>`).join('')}</div>`;
       }
       box.innerHTML = html;
       if ($('#vc-name')) { $('#vc-name').value = keep; $('#vc-thing').value = keepThing; if (focus) $(focus).focus(); }
@@ -92,15 +95,15 @@
       shown = sig;
       const head = `<div class="pvote-head"><b>🗳️ ${esc(title(st))}</b></div>`;
       let body;
-      if (st.phase === 'winner') body = `<div class="pvote-win">🏆 ${esc(st.winner.name)}${thing(st.winner)}<small>¡Ganó ${esc(title(st))}!</small></div>`;
+      if (st.phase === 'winner') body = `<div class="pvote-win">🏆 ${nm(st.winner)}${thing(st.winner)}<small>¡Ganó ${esc(title(st))}!</small></div>`;
       else if (st.phase === 'final' && st.final.open) {
         body = `<p class="pvote-ask">Gran final<b>¿Quién quieres que gane?</b></p>
-          <div class="pvote-duel">${st.final.players.map((p) => `<button type="button" data-v="${p.id}" class="${st.mine === p.id ? 'on' : ''}">${esc(p.name)}${thing(p)}</button>`).join('')}</div>
+          <div class="pvote-duel">${st.final.players.map((p) => `<button type="button" data-v="${p.id}" class="${st.mine === p.id ? 'on' : ''}">${nm(p)}${thing(p)}</button>`).join('')}</div>
           ${st.mine ? '<p class="pvote-ok">✔ Voto recibido. Puedes cambiarlo mientras la votación esté abierta.</p>' : ''}`;
       } else if (st.phase === 'final') body = '<p class="pvote-wait">Votación cerrada.<br>¡Mira la pantalla para conocer el resultado!</p>';
-      else if (st.phase === 'results') body = `<p class="pvote-wait">Resultados: ¡mira la pantalla!</p>${[...st.places].reverse().map((p) => `<div class="pvote-place"><b>${ord(p.place)}</b><span>${esc(p.name)}${thing(p)}</span><i>${note(p.score)}</i></div>`).join('')}`;
+      else if (st.phase === 'results') body = `<p class="pvote-wait">Resultados: ¡mira la pantalla!</p>${[...st.places].reverse().map((p) => `<div class="pvote-place"><b>${ord(p.place)}</b><span>${nm(p)}${thing(p)}</span><i>${note(p.score)}</i></div>`).join('')}`;
       else if (st.open) {
-        body = `<p class="pvote-ask">Pon tu nota a<b>${esc(st.open.name)}</b>${thing(st.open)}</p>
+        body = `<p class="pvote-ask">Pon tu nota a<b>${nm(st.open)}</b>${thing(st.open)}</p>
           <div class="pvote-keys">${Array.from({ length: 10 }, (_, i) => `<button type="button" data-v="${i + 1}" data-id="${st.open.id}" class="${st.mine === i + 1 ? 'on' : ''}">${i + 1}</button>`).join('')}</div>
           ${st.mine ? `<p class="pvote-ok">✔ Tu nota: ${st.mine}. Puedes cambiarla mientras la votación esté abierta.</p>` : '<p class="muted small" style="text-align:center">1 es la nota más baja y 10 la más alta.</p>'}`;
       } else body = `<p class="pvote-wait">${st.last ? 'Votación recibida. ¡Gracias!<br>' : ''}Cuando se abra la votación, aquí aparecerá la teclera.</p>`;
@@ -141,24 +144,24 @@
   };
   const winHTML = (st) => `<div class="bwin th-${st.venue}"><div class="confetti">${confetti()}</div>
     <div class="bwin-card"><span class="bwin-sub">${esc(title(st))}</span><span class="vwin-cup">🏆</span>
-      <div class="bwin-names"><span><b ${n(st.winner.name)}>${esc(st.winner.name)}</b>${st.winner.thing ? `<small>${esc(st.winner.thing)}</small>` : ''}</span></div><span class="bwin-sub">¡Felicitaciones!</span></div></div>`;
+      <div class="bwin-names"><span><b ${n(`${st.winner.name}...`)}>${nm(st.winner)}</b>${st.winner.thing ? `<small>${esc(st.winner.thing)}</small>` : ''}</span></div><span class="bwin-sub">¡Felicitaciones!</span></div></div>`;
 
   // Qué decir en cada momento: etiqueta, línea principal, línea secundaria y bloque de la derecha
   const scene = (st) => {
     const lastPlace = st.places[st.places.length - 1];
-    if (st.phase === 'winner') return { tag: 'Ganó', main: st.winner.name, sub: st.winner.thing || title(st), side: ['🏆', '¡Felicitaciones!'] };
+    if (st.phase === 'winner') return { tag: 'Ganó', no: st.winner.no, main: st.winner.name, sub: st.winner.thing || title(st), side: ['🏆', '¡Felicitaciones!'] };
     if (st.phase === 'final') {
       return st.final.open ? { tag: 'Gran final', duel: true, sub: 'Elige en tu celular a quién quieres que gane', side: ['Vota ahora', 'Solo un voto por persona'], qr: true }
         : { tag: 'Gran final', duel: true, sub: 'Votación cerrada', side: ['✔', 'Ya viene el resultado'] };
     }
     if (st.phase === 'results') {
-      return lastPlace ? { tag: 'Resultados', main: lastPlace.name, sub: lastPlace.thing ? `${ord(lastPlace.place)} · ${lastPlace.thing}` : ord(lastPlace.place), score: lastPlace.score }
+      return lastPlace ? { tag: 'Resultados', no: lastPlace.no, main: lastPlace.name, sub: lastPlace.thing ? `${ord(lastPlace.place)} · ${lastPlace.thing}` : ord(lastPlace.place), score: lastPlace.score }
         : { tag: 'Resultados', main: title(st), sub: 'Vamos desde el último lugar hasta la gran final', side: ['🏁', `${st.players.length} participantes`] };
     }
-    if (st.open) return { tag: 'Votación abierta', main: st.open.name, sub: st.open.thing || 'Pon tu nota del 1 al 10 desde tu celular', side: ['Vota del 1 al 10', 'Desde tu celular'], qr: true };
+    if (st.open) return { tag: 'Votación abierta', no: st.open.no, main: st.open.name, sub: st.open.thing || 'Pon tu nota del 1 al 10 desde tu celular', side: ['Vota del 1 al 10', 'Desde tu celular'], qr: true };
     if (st.last) {
       const next = st.players.find((p) => !p.done);
-      return { tag: 'Votación cerrada', main: st.last.name, sub: '✔ Votación recibida', side: next ? ['Sigue', next.name] : ['🏁', 'Ya vienen los resultados'] };
+      return { tag: 'Votación cerrada', no: st.last.no, main: st.last.name, sub: '✔ Votación recibida', side: next ? ['Sigue', `N.º ${next.no} · ${next.name}`] : ['🏁', 'Ya vienen los resultados'] };
     }
     return { tag: 'Votación del público', main: title(st), sub: 'Prepárate para votar desde tu celular', side: ['Entra ahora', 'Escanea el código QR'], qr: true };
   };
@@ -176,7 +179,7 @@
       const html = celebrating ? '' : `${s.qr ? `<div class="vg-qr">${qr(joinUrl())}<b>¡Entra y vota!</b></div>` : ''}
         <div class="vg-bar">
           <div class="vg-tag"><small>${esc(title(st))}</small><b>🗳️ ${esc(s.tag)}</b></div>
-          <div class="vg-main">${s.duel ? `<b class="vg-duel" ${n(st.final.players.map((p) => p.name).join(' vs '))}>${versus(st)}</b>` : `<b ${n(s.main)}>${esc(s.main)}</b>`}<span ${n(s.sub)}>${esc(s.sub)}</span></div>
+          <div class="vg-main">${s.duel ? `<b class="vg-duel" ${n(st.final.players.map((p) => `${p.name}...`).join(' vs '))}>${versus(st)}</b>` : `<b ${n(s.no ? `${s.main}...` : s.main)}>${badge(s.no)}${esc(s.main)}</b>`}<span ${n(s.sub)}>${esc(s.sub)}</span></div>
           ${s.score != null ? `<div class="vg-side score"><small>Nota</small><b>${note(s.score)}</b></div>` : `<div class="vg-side"><small ${n(s.side[0])}>${esc(s.side[0])}</small><b ${n(s.side[1])}>${esc(s.side[1])}</b></div>`}
         </div>`;
       clearTimeout(swap);
@@ -199,12 +202,12 @@
       if (!first && cue && cue !== heard) sfx.play(cue === 'win' ? 'win' : 'hit');
       heard = cue;
       box.className = `th-${st.venue}`;
-      const side = st.phase === 'voting' ? st.players.map((p) => `<div class="${st.open && st.open.id === p.id ? 'on' : ''}"><em>${p.done ? '✔' : st.open && st.open.id === p.id ? '🗳️' : '·'}</em><p><b ${n(p.name)}>${esc(p.name)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}</p></div>`).join('')
-        : [...st.places].reverse().map((p) => `<div><em>${p.place}</em><p><b ${n(p.name)}>${esc(p.name)}</b><span>Nota ${note(p.score)}${p.thing ? ` · ${esc(p.thing)}` : ''}</span></p></div>`).join('');
+      const side = st.phase === 'voting' ? st.players.map((p) => `<div class="${st.open && st.open.id === p.id ? 'on' : ''}"><em>${p.done ? '✔' : st.open && st.open.id === p.id ? '🗳️' : '·'}</em><p><b ${n(p.name)}>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}</p></div>`).join('')
+        : [...st.places].reverse().map((p) => `<div><em>${p.place}</em><p><b ${n(p.name)}>${nm(p)}</b><span>Nota ${note(p.score)}${p.thing ? ` · ${esc(p.thing)}` : ''}</span></p></div>`).join('');
       box.innerHTML = `${celebrating ? winHTML(st) : ''}
         <header class="vf-top"><b>${esc(title(st))}</b><span>🗳️ ${esc(s.tag)}</span></header>
         <section class="vf-main"><small>${esc(s.sub)}</small>
-          ${s.duel ? `<b class="vg-duel" ${n(st.final.players.map((p) => p.name).join(' vs '))}>${versus(st)}</b>` : `<b ${n(s.main)}>${esc(s.main)}</b>`}
+          ${s.duel ? `<b class="vg-duel" ${n(st.final.players.map((p) => `${p.name}...`).join(' vs '))}>${versus(st)}</b>` : `<b ${n(s.no ? `${s.main}...` : s.main)}>${badge(s.no)}${esc(s.main)}</b>`}
           ${s.score != null ? `<i>Nota ${note(s.score)}</i>` : s.side ? `<span ${n(s.side[1])}>${esc(s.side[1])}</span>` : ''}</section>
         <aside class="vf-side">
           <div class="vf-qr">${qr(joinUrl())}<b>¡Entra y vota!</b></div>

@@ -13,15 +13,16 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
   const by = (id) => v().players.find((p) => p.id === id);
   const count = (p) => Object.keys(p.votes).length;
   const avg = (p) => { const n = Object.values(p.votes); return n.length ? n.reduce((a, b) => a + b, 0) / n.length : 0; };
+  const no = (p) => v().players.indexOf(p) + 1; // número del participante: el orden en que se anotó
   const round1 = (x) => Math.round(x * 10) / 10;
 
   // Lugares ya revelados, del último hacia arriba (nunca los dos primeros: esos van a la gran final)
   const places = () => {
     const s = v();
     const n = s.rank.length;
-    return Array.from({ length: s.revealed }, (_, i) => { const p = by(s.rank[n - 1 - i]); return { place: n - i, name: p.name, thing: p.thing || '', score: round1(avg(p)) }; });
+    return Array.from({ length: s.revealed }, (_, i) => { const p = by(s.rank[n - 1 - i]); return { place: n - i, no: no(p), name: p.name, thing: p.thing || '', score: round1(avg(p)) }; });
   };
-  const finalists = () => (v().final ? v().players.filter((p) => v().final.ids.includes(p.id)).map((p) => ({ id: p.id, name: p.name, thing: p.thing || '' })) : []);
+  const finalists = () => (v().final ? v().players.filter((p) => v().final.ids.includes(p.id)).map((p) => ({ id: p.id, no: no(p), name: p.name, thing: p.thing || '' })) : []);
 
   const pub = () => {
     const s = v();
@@ -29,13 +30,13 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
     const last = by(s.last);
     return {
       rev: s.rev, venue: venue(), title: s.title, phase: s.phase, now: Date.now(),
-      players: s.players.map((p) => ({ id: p.id, name: p.name, thing: p.thing || '', done: !!p.done })),
-      open: open ? { id: open.id, name: open.name, thing: open.thing || '' } : null,
-      last: last ? { id: last.id, name: last.name, thing: last.thing || '' } : null,
+      players: s.players.map((p) => ({ id: p.id, no: no(p), name: p.name, thing: p.thing || '', done: !!p.done })),
+      open: open ? { id: open.id, no: no(open), name: open.name, thing: open.thing || '' } : null,
+      last: last ? { id: last.id, no: no(last), name: last.name, thing: last.thing || '' } : null,
       places: s.phase === 'voting' ? [] : places(),
       toReveal: s.phase === 'results' ? Math.max(0, s.rank.length - 2 - s.revealed) : 0,
       final: s.final ? { players: finalists(), open: !!s.final.open, closed: !!s.final.closed } : null,
-      winner: s.phase === 'winner' && s.winner ? { name: by(s.winner).name, thing: by(s.winner).thing || '' } : null, winAt: s.winAt || 0,
+      winner: s.phase === 'winner' && s.winner ? { no: no(by(s.winner)), name: by(s.winner).name, thing: by(s.winner).thing || '' } : null, winAt: s.winAt || 0,
     };
   };
 
@@ -57,7 +58,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
     const next = s.phase === 'results' && s.revealed < n - 2 ? by(s.rank[n - 1 - s.revealed]) : null;
     const tally = s.final ? Object.fromEntries(s.final.ids.map((id) => [id, Object.values(s.final.votes).filter((x) => x === id).length])) : null;
     return { ...pub(), counts: Object.fromEntries(s.players.map((p) => [p.id, count(p)])),
-      next: next ? { place: n - s.revealed, name: next.name, thing: next.thing || '', score: round1(avg(next)) } : null, tally };
+      next: next ? { place: n - s.revealed, no: no(next), name: next.name, thing: next.thing || '', score: round1(avg(next)) } : null, tally };
   };
   app.get('/api/vote/host', requireAdmin, (_req, res) => res.json(hostState()));
 

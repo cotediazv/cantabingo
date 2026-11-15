@@ -1000,3 +1000,7 @@ body.full #rf .rf-card.win .rf-name:not(.small) { font-size: min(21vh, calc(84vw
 #vc-add { flex-wrap: wrap; }
 #vc-add #vc-name { flex: 1 1 100% !important; }
 #vc-add #vc-thing { flex: 1 1 0 !important; }
+
+/* Número del participante */
+.v-no { display: inline-grid; place-items: center; min-width: 1.5em; height: 1.5em; padding: 0 .3em; margin-right: .4em; border-radius: 99px; background: #fff; color: #2a1030; font-size: .62em; font-weight: 900; line-height: 1; text-decoration: none; text-shadow: none; vertical-align: .22em; box-sizing: border-box; }
+.vc-row .v-no, .pvote .v-no { background: #ffc400; }
