@@ -232,6 +232,7 @@ views.home = async () => {
         <a class="s2" href="#/sorteoctl"><i>2</i><span>🎲</span><b>Sorteo</b></a>
         <a class="s3" href="#/ruedas"><i>3</i><span>🎡</span><b>El Rosco</b></a>
         <a class="s4" href="#/karaokectl"><i>4</i><span>🎤</span><b>Karaoke</b></a>
+        <a class="s5" href="#/votoctl"><i>5</i><span>🗳️</span><b>Votación</b></a>
       </div>
       <a class="home-control" href="#/control">🎛️ Centro de control</a>
       <p style="margin-top:28px"><button id="logout">Cerrar sesión de moderador</button></p>
@@ -251,7 +252,7 @@ views.control = async () => {
         <button data-show="bingo"><span>🎱</span>Bingo</button><button data-show="sorteo"><span>🎲</span>Sorteo</button>
         <button data-show="rueda"><span>🎡</span>El Rosco</button><button data-show="qr"><span>📱</span>QR en pantalla completa</button>
         <button data-show="karaoke"><span>🎤</span>Karaoke</button><button data-show="show"><span>⭐</span>Show</button>
-        <button data-show="none" class="wide"><span>⬛</span>Nada</button>
+        <button data-show="voto"><span>🗳️</span>Votación</button><button data-show="none"><span>⬛</span>Nada</button>
       </div>
       <p class="small" style="margin-top:16px"><b>Enlace para OBS</b> (1920×1080, no pide usuario ni contraseña):<br><a class="link" href="${stageUrl()}" target="_blank">${esc(stageUrl())}</a></p>
     </div>
@@ -499,6 +500,7 @@ async function hostConsole(p) {
       <a class="btn primary big" href="#/ronda/${p.id}" style="margin-bottom:14px">▶ Siguiente bingo</a>
       <a class="btn big" href="#/sorteoctl">🎲 Sortear participantes de El Rosco</a>
       <a class="btn big" href="#/karaokectl" style="margin-top:14px">🎤 Karaoke</a>
+      <a class="btn big" href="#/votoctl" style="margin-top:14px">🗳️ Votación</a>
       <p class="small" style="text-align:center;margin-top:22px"><a href="#/admin/${p.id}">⚙️ Administración</a></p>
     </div>`;
   const render = () => {
@@ -678,6 +680,7 @@ views.jugar = async (sid) => {
       <div class="live-bar"><button type="button" id="live-audio">🔇 Activar audio</button><button type="button" id="live-full">⛶ Pantalla completa</button><button type="button" id="live-sync" class="wide">↻ Poner al día el video</button></div></div>
     <div class="prosco" id="prosco" hidden></div>
     <div class="pkar" id="pkar" hidden></div>
+    <div class="pvote" id="pvote" hidden></div>
     <div id="bingo-bottom"><button class="primary big" id="sync" style="margin-top:16px">↻ Actualizar y marcar lo que falta</button>
     <p class="muted small" style="margin-top:8px">Marca por ti los valores ya anunciados que se te pasaron.</p>
     <div class="panel" style="margin-top:20px"><h2 id="title" style="margin:0"></h2><span class="muted small" id="meta"></span><div id="pats" style="margin-top:8px"></div></div></div>`;
@@ -762,8 +765,19 @@ views.jugar = async (sid) => {
     if (!on && karTimer) { clearInterval(karTimer); karTimer = null; karSent = false; }
     return on;
   };
+  // Durante una votación: se guarda el cartón y aparece la teclera (vote-ui.js)
+  let voteTimer = null;
+  let voteRev = null;
+  const syncVote = () => {
+    const on = st.stage === 'voto';
+    $('#pvote').hidden = !on;
+    if (on && !voteTimer) { window.phoneVote.reset(); voteRev = null; voteTimer = setInterval(() => window.phoneVote.draw(sid, me.token), 8000); }
+    if (on && voteRev !== st.voteRev) { voteRev = st.voteRev; window.phoneVote.draw(sid, me.token); }
+    if (!on && voteTimer) { clearInterval(voteTimer); voteTimer = null; }
+    return on;
+  };
   const syncStage = () => {
-    const kar = syncKar();
+    const kar = syncKar() | syncVote();
     const on = (st.stage === 'rueda' && !!st.roscoId) || kar;
     $('#bingo-top').hidden = on;
     $('#bingo-bottom').hidden = on;
@@ -889,7 +903,7 @@ views.jugar = async (sid) => {
   const onFs = () => { if (!document.fullscreenElement && $('#live') && $('#live').classList.contains('full') && $('#live').requestFullscreen) setFull(false); };
   document.addEventListener('fullscreenchange', onFs);
   const off = subscribe(sid, (s) => { st = s; render(); startLive(); }, () => { store.del(key); backToStart(); }, false, me.token);
-  return () => { off(); stopRosco(); clearInterval(karTimer); liveFor = null; player = null; document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('visibilitychange', onBack); document.body.classList.remove('live-open'); };
+  return () => { off(); stopRosco(); clearInterval(karTimer); clearInterval(voteTimer); liveFor = null; player = null; document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('visibilitychange', onBack); document.body.classList.remove('live-open'); };
 };
 // Canal de Twitch de cada local
 const LIVE_CHANNELS = { frida: 'krbstage', tobalaba: 'krbstage3', kennedy: 'krbstage3' };
@@ -1028,6 +1042,7 @@ views.tablero = async () => {
         else if (show === 'rueda') stop = await views.rueda();
         else if (show === 'qr') stop = await views.qrFull();
         else if (show === 'karaoke') stop = await views.karaokeFull();
+        else if (show === 'voto') stop = await views.votoFull();
         else if (show === 'show') stop = await views.showFull();
         else stop = await views.bingoFull(); // bingo, o la portada si no hay nada en juego
       }
@@ -1172,6 +1187,7 @@ views.escena = async () => {
         else if (show === 'sorteo') stop = await views.sorteo();
         else if (show === 'qr') stop = await views.qrBig();
         else if (show === 'karaoke') stop = await views.karaokeGC();
+        else if (show === 'voto') stop = await views.votoGC();
         else if (show === 'show') stop = await views.showGC();
         document.body.classList.add('obs');
       }

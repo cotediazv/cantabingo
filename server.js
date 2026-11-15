@@ -154,6 +154,7 @@ function publicState(s, full = false) {
     // Durante El Rosco los celulares cambian el cartón por las preguntas del rosco en curso
     stage: db.stage || 'bingo', roscoId: db.stage === 'rueda' ? (Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).id || null : null,
     celebrateAt: s.celebrateAt || 0,
+    voteRev: (db.vote || {}).rev || 0, // los celulares vuelven a leer la votación cuando cambia
     winConfirmed: roundOver(s), winConfirmedAt: s.confirmedAt || 0, now: Date.now(),
     patterns: s.patterns, drawn: s.drawn, results, finalists: s.finalists || null,
     auto: s.auto, cardsPerPlayer: s.cardsPerPlayer, totalCards: p.cards.length,
@@ -217,6 +218,7 @@ function resetEvent() {
   db.people = {};
   db.raffle = { picked: [], roll: null };
   wheel.clear();
+  vote.clear();
   db.stage = 'bingo';
 }
 setInterval(() => {
@@ -552,7 +554,7 @@ app.get('/api/sessions/:sid/events', (req, res) => {
 // Segundo juego de la plataforma
 // Pantalla única de OBS: qué gráfica se muestra ahora. Cambia sola al activar un bingo,
 // crear un rosco o lanzar un sorteo; el moderador también puede cambiarla a mano.
-const STAGES = ['bingo', 'rueda', 'sorteo', 'qr', 'karaoke', 'show', 'none'];
+const STAGES = ['bingo', 'rueda', 'sorteo', 'qr', 'karaoke', 'show', 'voto', 'none'];
 const setStage = (show) => {
   const changed = db.stage !== show;
   db.stage = show;
@@ -576,6 +578,11 @@ const connectedNames = () => {
 require('./raffle.js')({ app, db, save, requireAdmin, fail, setStage, refreshAll, connectedNames });
 
 const karaoke = require('./karaoke.js')({ app, db, save, requireAdmin, fail, salaVenue: () => (Object.values(db.sessions)[0] || {}).theme || '', findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null });
+// Votación del público (nota del 1 al 10 desde el celular)
+const vote = require('./vote.js')({ app, db, save, requireAdmin, fail, setStage,
+  findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null,
+  venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
+  notify: () => Object.values(db.sessions).forEach((s) => broadcast(s)) });
 // Programación del local del día: el de la sala abierta o, si no hay, el elegido en la sección Karaoke
 require('./agenda.js')({ app, db, save, requireAdmin, fail, currentVenue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
 
