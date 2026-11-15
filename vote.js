@@ -6,7 +6,7 @@ const crypto = require('crypto');
 
 const MAX_PLAYERS = 8;
 const TITLE = 'El objeto más extraño'; // por ahora el concurso siempre se llama así
-const OPEN_MS = Number(process.env.VOTE_OPEN_MS) || 10000; // cada participante se evalúa durante 10 segundos
+const OPEN_MS = Number(process.env.VOTE_OPEN_MS) || 18000; // cada participante se evalúa durante 18 segundos
 const GRACE_MS = 1000; // margen para los votos que venían en camino al llegar a cero
 const SIGNUP_MS = Number(process.env.VOTE_SIGNUP_MS) || 90000; // el llamado a participar dura 1:30
 
