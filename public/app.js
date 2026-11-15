@@ -482,7 +482,7 @@ async function hostConsole(p) {
               <button id="confirmwin">✔ Confirmar ganador</button>
               <button id="keepplaying">▶ Seguir jugando</button>
             </div>
-            <div id="win-confirmed" hidden><p>✔ Ganador confirmado</p><a class="btn big" id="win-next">▶ Siguiente bingo</a><a class="btn big" id="win-rosco" href="#/sorteoctl">🎲 Sorteo para El Rosco</a><a class="btn big" id="win-karaoke" href="#/karaokectl">🎤 Karaoke</a></div>
+            <div id="win-confirmed" hidden><p>✔ Ganador confirmado</p><a class="btn big" id="win-next">▶ Siguiente bingo</a>${activitiesNav('bingo')}</div>
           </div>
           <div class="row" style="justify-content:center;margin-top:16px"><button id="bigqr"></button></div>
           <div class="row" style="justify-content:center;margin-top:12px"><button class="primary big" id="gen">Generar un número</button></div>
@@ -499,9 +499,7 @@ async function hostConsole(p) {
         <div class="panel"><h2 id="count"></h2><div id="board"></div><h2 style="margin-top:16px">Orden de salida</h2><div id="history" class="history"></div></div>
       </div>
       <a class="btn primary big" href="#/ronda/${p.id}" style="margin-bottom:14px">▶ Siguiente bingo</a>
-      <a class="btn big" href="#/sorteoctl">🎲 Sortear participantes de El Rosco</a>
-      <a class="btn big" href="#/karaokectl" style="margin-top:14px">🎤 Karaoke</a>
-      <a class="btn big" href="#/votoctl" style="margin-top:14px">🗳️ Votación</a>
+      ${activitiesNav('bingo')}
       <p class="small" style="text-align:center;margin-top:22px"><a href="#/admin/${p.id}">⚙️ Administración</a></p>
     </div>`;
   const render = () => {
@@ -1145,8 +1143,7 @@ views.karaokectl = async () => {
       <label class="check" style="margin-top:14px"><input type="checkbox" id="kc-phone"> Permitir pedir canciones desde el celular</label>
       <p class="muted small" style="margin-top:10px">El orden y «Ya cantó» se manejan en la app del equipo. Esta pantalla solo muestra la lista.</p>
     </div>
-    <p style="margin-top:20px"><button class="big" data-back-bingo>← Volver al bingo</button></p>
-    <p style="margin-top:14px"><a class="btn big" href="#/sorteoctl">🎲 Sorteo para El Rosco</a></p>`;
+    ${activitiesNav('karaoke')}`;
   await api('POST', '/api/stage', { show: 'karaoke' }).catch(fail); // al entrar, el karaoke pasa a la pantalla
   let last = '';
   const paint = async () => {
@@ -1167,7 +1164,18 @@ views.karaokectl = async () => {
   return () => clearInterval(timer);
 };
 
-const BACK_BINGO = '<p style="margin-top:20px"><button class="big" data-back-bingo>← Volver al bingo</button></p>';
+// Al terminar cualquier actividad se puede pasar directo a cualquiera de las otras
+function activitiesNav(current) {
+  const all = [
+    ['bingo', '<button type="button" data-back-bingo><span>🎱</span>Bingo</button>'],
+    ['rosco', '<a class="btn" href="#/sorteoctl"><span>🎡</span>El Rosco</a>'],
+    ['voto', '<a class="btn" href="#/votoctl"><span>🗳️</span>El objeto más extraño</a>'],
+    ['show', '<a class="btn" href="#/showctl"><span>⭐</span>Show</a>'],
+    ['karaoke', '<a class="btn" href="#/karaokectl"><span>🎤</span>Karaoke</a>'],
+  ];
+  return `<div class="act-nav"><small>Ir a otra actividad</small><div>${all.filter(([k]) => k !== current).map(([, h]) => h).join('')}</div></div>`;
+}
+const BACK_BINGO = activitiesNav('rosco');
 document.addEventListener('click', (e) => { if (e.target.closest('[data-back-bingo]')) backToBingo(); });
 
 // Pantalla única para OBS: muestra la gráfica que el moderador elija en «Juegos».

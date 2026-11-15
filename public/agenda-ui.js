@@ -58,7 +58,7 @@ const nextUpHTML = (cls = '') => {
         <div id="sc-body" style="margin-top:14px"></div>
         <p class="muted small" style="margin-top:12px">La programación se edita en el <a href="#/control">Centro de control</a>.</p>
       </div>
-      <p style="margin-top:20px"><button class="big" data-back-bingo>← Volver al bingo</button></p>`;
+      ${activitiesNav('show')}`;
     await api('POST', '/api/stage', { show: 'show' }).catch(fail); // al entrar, el show pasa a la pantalla
     const stop = follow((a) => {
       if (!$('#sc-body')) return;

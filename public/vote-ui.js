@@ -1,4 +1,4 @@
-/* global views, app, $, esc, api, qr, joinUrl, isAdmin, viewLogin, fail, sfx */
+/* global views, app, $, esc, api, qr, joinUrl, isAdmin, viewLogin, fail, sfx, activitiesNav */
 // Votación del público: panel del animador, teclera del celular, GC de OBS y tablero del DJ.
 (() => {
   const n = (t) => `style="--n:${Math.max(6, String(t).length)}"`;
@@ -27,7 +27,7 @@
         <label class="f" style="margin-top:12px">Nombre del concurso<input type="text" id="vc-title" maxlength="50" placeholder="Ej.: El objeto más extraño"></label>
         <div id="vc-body" style="margin-top:14px"></div>
       </div>
-      <p style="margin-top:20px"><button class="big" data-back-bingo>← Volver al bingo</button></p>
+      ${activitiesNav('voto')}
       <p style="margin-top:14px"><button class="big" id="vc-reset">🗑 Nuevo concurso (borra este)</button></p>`;
     await api('POST', '/api/stage', { show: 'voto' }).catch(fail);
     let st = null;

@@ -1084,3 +1084,10 @@ body.full #rf .rf-card.win .rf-name:not(.small) { font-size: min(21vh, calc(84vw
 /* Inicio: Votación y Show comparten la última fila */
 .home-steps .s5 { grid-column: auto; }
 .home-steps .s6 { background: linear-gradient(160deg, #8a5cf6, #5b21b6); }
+
+/* Ir a otra actividad: los mismos botones al terminar cualquiera */
+.act-nav { margin-top: 20px; }
+.act-nav > small { display: block; margin-bottom: 8px; font-size: .85rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; opacity: .7; text-align: center; }
+.act-nav > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.act-nav > div > * { display: grid; justify-items: center; align-content: center; gap: 4px; min-height: 84px; padding: 12px 8px; border-radius: 16px; font-size: 1.05rem; font-weight: 700; text-align: center; text-decoration: none; line-height: 1.2; margin: 0; width: auto; }
+.act-nav span { font-size: 1.8rem; line-height: 1; pointer-events: none; }
