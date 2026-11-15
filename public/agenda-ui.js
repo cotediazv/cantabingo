@@ -20,7 +20,7 @@ const nextUpHTML = (cls = '') => {
     const tick = async () => {
       const a = await loadAgenda();
       if (!alive || !a) return;
-      const s = JSON.stringify([a.venue, a.show, a.current]);
+      const s = JSON.stringify([a.venue, a.show, a.current, a.date]);
       if (s === last) return;
       last = s;
       paint(a);
@@ -39,7 +39,7 @@ const nextUpHTML = (cls = '') => {
       const p = parts(a);
       if (!$('#sg')) return;
       $('#sg').className = `th-${a.venue}`;
-      $('#sg').innerHTML = p ? `<div class="sg-bar"><div class="sg-tag"><small>${esc(a.name)}</small><b>⭐ Hoy</b></div>
+      $('#sg').innerHTML = p ? `<div class="sg-bar"><div class="sg-tag"><small>${esc(a.name)}</small><b>${esc(a.date)}</b></div>
         <div class="sg-main">${p.kind ? `<small>${esc(p.kind)}</small>` : ''}<b style="--n:${p.name.length}">${esc(p.name)}</b></div></div>` : '';
     });
     return () => { stop(); document.body.classList.remove('obs', 'gc-screen'); };
@@ -52,7 +52,7 @@ const nextUpHTML = (cls = '') => {
       if (!$('#sf')) return;
       const block = a.blocks.find((b) => b.isShow);
       $('#sf').className = `th-${a.venue}`;
-      $('#sf').innerHTML = p ? `<div class="sf-card"><small>⭐ Hoy en ${esc(a.name)}</small>${p.kind ? `<i>${esc(p.kind)}</i>` : ''}<b style="--n:${p.name.length}">${esc(p.name)}</b>${block ? `<span>${block.time} horas</span>` : ''}</div>`
+      $('#sf').innerHTML = p ? `<div class="sf-card"><small>${esc(a.name)} · ${esc(a.date)}</small>${p.kind ? `<i>${esc(p.kind)}</i>` : ''}<b style="--n:${p.name.length}">${esc(p.name)}</b>${block ? `<span>${block.time} horas</span>` : ''}</div>`
         : `<div class="sf-card"><small>${esc(a.name)}</small><b style="--n:14">KRB Stage</b><span>Hoy no hay show en cartelera</span></div>`;
     });
     return () => stop();

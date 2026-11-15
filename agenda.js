@@ -121,7 +121,9 @@ module.exports = function agenda({ app, db, save, requireAdmin, fail, currentVen
     const current = [...withShow].reverse().find((b) => b.min <= n.min) || null;
     const next = withShow.find((b) => b.min > n.min && !SILENT.test(plain(b.label))) || null;
     const strip = (b) => (b ? { time: b.time, label: b.label, isShow: b.isShow } : null);
-    return { venue, name: VENUES[venue], notice: db.agenda.notice, show, current: strip(current), next: strip(next), blocks: withShow.map(strip) };
+    // Fecha de la noche en curso, como «VIERNES 20/11/26»
+    const date = `${['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][n.weekday]} ${String(n.day).padStart(2, '0')}/${n.month.slice(5)}/${n.month.slice(2, 4)}`;
+    return { venue, name: VENUES[venue], date, notice: db.agenda.notice, show, current: strip(current), next: strip(next), blocks: withShow.map(strip) };
   }
 
   app.get('/api/agenda', (_req, res) => res.json(state()));

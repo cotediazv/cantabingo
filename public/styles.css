@@ -844,3 +844,5 @@ body.full #rf .rf-card.win .rf-name:not(.small) { font-size: min(21vh, calc(84vw
 #kg.th-frida .kg-bar::before, #sg.th-frida .sg-bar::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1.1vh; z-index: 1;
   background: repeating-linear-gradient(90deg, #ffc400 0 6vh, #0a9a94 6vh 12vh, #ff7a1a 12vh 18vh, #2338a8 18vh 24vh, #56b04c 24vh 30vh, #e8262e 30vh 36vh); }
 .kg-bar, .sg-bar { position: absolute; }
+
+.sg-tag b { font-size: 3.3vh; }
