@@ -996,6 +996,10 @@ const sfx = (() => {
     // Reloj: tic y tac secos y fuertes, alternados
     tick: () => { note(1500, 0, 0.05, 'square', 0.4); note(3000, 0, 0.03, 'sine', 0.2); },
     tock: () => { note(950, 0, 0.06, 'square', 0.4); note(1900, 0, 0.03, 'sine', 0.2); },
+    // Reloj de la votación: tic-tac suave, tipo madera, y una campanita al terminar
+    softTick: () => { note(880, 0, 0.07, 'sine', 0.22); note(1760, 0, 0.03, 'sine', 0.06); },
+    softTock: () => { note(660, 0, 0.08, 'sine', 0.22); note(1320, 0, 0.03, 'sine', 0.06); },
+    chime: () => { note(1047, 0, 0.5, 'sine', 0.22); note(1319, 0.14, 0.6, 'sine', 0.2); note(1568, 0.28, 0.9, 'sine', 0.18); },
     // Se acabó el tiempo: tres bocinazos de aire comprimido, el último más largo
     alarm: () => { horn(0, 0.45); horn(0.62, 0.45); horn(1.24, 1.1); },
     // Ganador: fanfarria ascendente con acorde final

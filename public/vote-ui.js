@@ -236,7 +236,7 @@
   views.votoFull = async () => {
     app.innerHTML = '<div id="vf"></div>';
     let heard = '';
-    // Reloj sonoro, como en El Rosco: tic-tac cada vez más rápido (de 1 a 5 por segundo) y bocinas al terminar
+    // Reloj sonoro: tic-tac suave, cada vez más rápido (de 1 a 5 por segundo)
     let tickTimer = null;
     let flip = false;
     let ticking = 0;
@@ -246,9 +246,9 @@
       tickTimer = null;
       if (!ticking || !$('#vf')) return;
       const left = clockLeft();
-      if (left <= 0) { ticking = 0; sfx.played.push('alarm'); sfx.play('alarm'); return; }
+      if (left <= 0) { ticking = 0; const end = total > 30000 ? 'alarm' : 'chime'; sfx.played.push(end); sfx.play(end); return; } // bocinas solo al cerrar el llamado; campanita al terminar cada evaluación
       sfx.ticks++;
-      sfx.play(flip ? 'tock' : 'tick');
+      sfx.play(flip ? 'softTock' : 'softTick');
       flip = !flip;
       const rate = left <= 5000 ? 5 : 1 + 4 * Math.min(1, Math.max(0, (total - left) / (total - 5000)));
       tickTimer = setTimeout(tickLoop, Math.min(1000 / rate, left + 30));
