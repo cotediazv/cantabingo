@@ -249,13 +249,48 @@ views.control = async () => {
       <div class="control-grid" id="stage">
         <button data-show="bingo"><span>🎱</span>Bingo</button><button data-show="sorteo"><span>🎲</span>Sorteo</button>
         <button data-show="rueda"><span>🎡</span>El Rosco</button><button data-show="qr"><span>📱</span>QR en pantalla completa</button>
+        <button data-show="karaoke" class="wide"><span>🎤</span>Karaoke</button>
         <button data-show="none" class="wide"><span>⬛</span>Nada</button>
       </div>
       <p class="small" style="margin-top:16px"><b>Enlace para OBS</b> (1920×1080, no pide usuario ni contraseña):<br><a class="link" href="${stageUrl()}" target="_blank">${esc(stageUrl())}</a></p>
     </div>
+    <div class="panel"><h2>Karaoke</h2>
+      <p class="muted small">Muestra en pantalla la lista de pedidos del sistema de karaoke (formulario y app del equipo). Elige el local de hoy.</p>
+      <div class="venue-tabs" id="kar-venue" role="tablist"></div>
+      <p class="small" id="kar-status" style="margin:10px 0 0"></p>
+      <details style="margin-top:12px"><summary class="small">Direcciones de cada local</summary>
+        <form id="kar-form" class="fields" style="grid-template-columns:1fr;margin-top:10px"></form></details>
+    </div>
     <div class="panel"><h2>Bingos abiertos</h2>
       <p class="muted small">Si hay más de uno, a la gente le aparece una lista para elegir. Cierra los que ya no se usan.</p>
       <div id="open-list"></div></div>`;
+  // Karaoke: local del día y direcciones de la web app y del formulario de cada local
+  const paintKar = (c) => {
+    if (!$('#kar-venue')) return;
+    $('#kar-venue').innerHTML = Object.entries(c.venues).map(([id, name]) => `<button type="button" role="tab" data-kar="${id}" class="${id === c.venue ? 'on' : ''}">${esc(name)}</button>`).join('');
+    const s = c.status;
+    $('#kar-status').innerHTML = !s ? '<span class="muted">Todavía no se ha consultado la lista de este local.</span>'
+      : s.error ? `⚠️ <b>No se pudo leer la lista:</b> ${esc(s.error)}` : `✅ Lista leída: ${s.total} ${s.total === 1 ? 'pedido' : 'pedidos'} por cantar.`;
+    if (!$('#kar-form').dataset.ready) {
+      $('#kar-form').dataset.ready = '1';
+      $('#kar-form').innerHTML = `${Object.entries(c.venues).map(([id, name]) => `
+        <label class="f">${esc(name)} · web app (termina en /exec)<input type="url" name="exec-${id}" value="${esc(c.urls[id].exec)}" placeholder="https://script.google.com/macros/s/…/exec"></label>
+        <label class="f">${esc(name)} · formulario de pedidos<input type="url" name="form-${id}" value="${esc(c.urls[id].form)}" placeholder="https://forms.gle/…"></label>`).join('')}
+        <button class="primary">Guardar y probar</button>`;
+    }
+  };
+  const saveKar = async (body) => {
+    try { const r = await api('POST', '/api/karaoke/config', body); paintKar({ ...karCfg, ...r }); karCfg = { ...karCfg, ...r }; return true; } catch (err) { fail(err); return false; }
+  };
+  let karCfg = await api('GET', '/api/karaoke/config').catch(() => null);
+  if (karCfg) paintKar(karCfg);
+  $('#kar-venue').onclick = (e) => { const b = e.target.closest('[data-kar]'); if (b) saveKar({ venue: b.dataset.kar }); };
+  $('#kar-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const f = new FormData(e.target);
+    const urls = Object.fromEntries(Object.keys(karCfg.venues).map((id) => [id, { exec: f.get(`exec-${id}`), form: f.get(`form-${id}`) }]));
+    if (await saveKar({ urls })) toast('Direcciones guardadas');
+  };
   const paintOpen = async () => {
     const list = await activeSessions();
     if (!$('#open-list')) return;
@@ -895,6 +930,7 @@ views.tablero = async () => {
         if (show === 'sorteo') stop = await views.sorteo();
         else if (show === 'rueda') stop = await views.rueda();
         else if (show === 'qr') stop = await views.qrFull();
+        else if (show === 'karaoke') stop = await views.karaokeFull();
         else stop = await views.bingoFull(); // bingo, o la portada si no hay nada en juego
       }
       mark();
@@ -956,6 +992,7 @@ views.escena = async () => {
         else if (show === 'rueda') stop = await views.obs();
         else if (show === 'sorteo') stop = await views.sorteo();
         else if (show === 'qr') stop = await views.qrBig();
+        else if (show === 'karaoke') stop = await views.karaokeGC();
         document.body.classList.add('obs');
       }
     } finally { busy = false; }
