@@ -77,16 +77,19 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
   app.get('/api/karaoke', (_req, res) => {
     const venue = db.karaoke.venue;
     const c = cache[venue] || { list: [], at: 0, error: '' };
-    res.json({ venue, name: VENUES[venue], form: (db.karaoke.urls[venue] || {}).form || '', list: c.list.slice(0, 8), total: c.list.length, at: c.at, stale: !!c.error });
+    res.json({ venue, name: VENUES[venue], phone: !!db.karaoke.phone, form: (db.karaoke.urls[venue] || {}).form || '', list: c.list.slice(0, 8), total: c.list.length, at: c.at, stale: !!c.error });
   });
 
   // Configuración y diagnóstico para el Centro de control
-  app.get('/api/karaoke/config', requireAdmin, (_req, res) => {
+  app.get('/api/karaoke/config', requireAdmin, async (_req, res) => {
     const venue = db.karaoke.venue;
-    res.json({ venue, venues: VENUES, urls: db.karaoke.urls, status: cache[venue] ? { at: cache[venue].at, error: cache[venue].error, total: cache[venue].list.length } : null });
+    // El Centro de control muestra siempre una lectura del momento, no una guardada
+    if (!cache[venue] || Date.now() - (cache[venue].checked || 0) > 5000) { await refresh(venue); cache[venue].checked = Date.now(); }
+    res.json({ venue, venues: VENUES, phone: !!db.karaoke.phone, urls: db.karaoke.urls, status: cache[venue] ? { at: cache[venue].at, error: cache[venue].error, total: cache[venue].list.length } : null });
   });
   app.post('/api/karaoke/config', requireAdmin, async (req, res) => {
     const b = req.body || {};
+    if (b.phone != null) db.karaoke.phone = !!b.phone; // pedidos desde el celular: activados o no
     if (b.venue != null) {
       if (!VENUES[b.venue]) return fail(res, 400, 'Local no válido');
       db.karaoke.venue = b.venue;
@@ -103,7 +106,7 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
     save();
     await refresh(db.karaoke.venue); // se prueba de inmediato, para avisar si algo quedó mal
     const c = cache[db.karaoke.venue];
-    res.json({ venue: db.karaoke.venue, urls: db.karaoke.urls, status: { at: c.at, error: c.error, total: c.list.length } });
+    res.json({ venue: db.karaoke.venue, phone: !!db.karaoke.phone, urls: db.karaoke.urls, status: { at: c.at, error: c.error, total: c.list.length } });
   });
 
   // ---------- Pedidos desde el celular ----------
@@ -139,6 +142,16 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
       altArtist: pick(fields, (t) => /artista|interprete|banda/.test(t) && alt(t)),
     };
   }
+  // Revisión sin envío: muestra qué preguntas tiene el formulario del local y a cuál iría cada dato
+  app.get('/api/karaoke/form-check', requireAdmin, async (req, res) => {
+    const venue = VENUES[req.query.venue] ? req.query.venue : db.karaoke.venue;
+    try {
+      delete forms[venue];
+      const form = await loadForm(venue);
+      const map = mapFields(form.fields);
+      res.json({ venue, action: form.action, fields: form.fields, map: Object.fromEntries(Object.entries(map).map(([k, f]) => [k, f ? f.title : null])) });
+    } catch (err) { fail(res, 502, clean(err && err.message, 200)); }
+  });
   const recent = {}; // nombre -> último envío, para que nadie mande pedidos en ráfaga
 
   app.post('/api/karaoke/request', async (req, res) => {
@@ -146,6 +159,7 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
     const pl = findPlayer(String(b.sid || ''), String(b.token || ''));
     if (!pl) return fail(res, 403, 'Primero únete a la sala con tu nombre');
     if (db.stage !== 'karaoke') return fail(res, 400, 'El karaoke no está abierto en este momento');
+    if (!db.karaoke.phone) return fail(res, 400, 'Por ahora los pedidos se hacen con el código QR de la pantalla');
     const song = clean(b.song, 80);
     const artist = clean(b.artist, 60);
     const altSong = clean(b.altSong, 80);
