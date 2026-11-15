@@ -1065,13 +1065,14 @@ views.tablero = async () => {
         else if (show === 'insta') stop = await views.instaFull();
         else if (show === 'show') stop = await views.showFull();
         else stop = await views.bingoFull(); // bingo, o la portada si no hay nada en juego
+        joinQr({ sorteo: 'tr', rueda: 'tr', show: 'br' }[show]);
       }
       mark();
     } finally { busy = false; }
   };
   await apply();
   const timer = setInterval(apply, 2000);
-  return () => { clearInterval(timer); if (typeof stop === 'function') stop(); document.body.classList.remove('full'); soundBtn.remove(); document.removeEventListener('pointerdown', enableSound); document.removeEventListener('keydown', enableSound); };
+  return () => { clearInterval(timer); if (typeof stop === 'function') stop(); joinQr(); document.body.classList.remove('full'); soundBtn.remove(); document.removeEventListener('pointerdown', enableSound); document.removeEventListener('keydown', enableSound); };
 };
 
 // Celebración de bingo a pantalla completa: «¡BINGO!», confeti y los nombres de quienes ganaron
@@ -1196,6 +1197,15 @@ function activitiesNav(current) {
 const BACK_BINGO = activitiesNav('rosco');
 document.addEventListener('click', (e) => { if (e.target.closest('[data-back-bingo]')) backToBingo(); });
 
+// El QR siempre es para entrar a la sala. Las gráficas que no traen el suyo (sorteo, rosco y show)
+// reciben este, en la esquina que cada una tiene libre. Sin lugar indicado, se retira.
+function joinQr(spot) {
+  let el = document.getElementById('join-qr');
+  if (!spot) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement('div'); el.id = 'join-qr'; el.innerHTML = `${qr(joinUrl())}<b>Únete a la sesión</b>`; document.body.appendChild(el); }
+  el.className = `join-qr ${spot}`;
+}
+
 // Pantalla única para OBS: muestra la gráfica que el moderador elija en «Juegos».
 // No requiere iniciar sesión y queda transparente cuando no hay nada que mostrar.
 views.escena = async () => {
@@ -1221,13 +1231,14 @@ views.escena = async () => {
         else if (show === 'voto') stop = await views.votoGC();
         else if (show === 'insta') stop = await views.instaGC();
         else if (show === 'show') stop = await views.showGC();
+        joinQr({ sorteo: 'br', rueda: 'br', show: 'above' }[show]);
         document.body.classList.add('obs');
       }
     } finally { busy = false; }
   };
   await apply();
   const timer = setInterval(apply, 2000);
-  return () => { clearInterval(timer); if (typeof stop === 'function') stop(); document.body.classList.remove('obs'); };
+  return () => { clearInterval(timer); if (typeof stop === 'function') stop(); joinQr(); document.body.classList.remove('obs'); };
 };
 
 // Red de seguridad para los nombres en pantalla: el CSS ya calcula la letra según el largo, pero si un
