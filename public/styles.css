@@ -882,3 +882,16 @@ body.full #rf .rf-card.win .rf-name:not(.small) { font-size: min(21vh, calc(84vw
 .pkar-qr { margin: 14px 0 2px; font-weight: 700; text-align: center; }
 
 .pkar form select, form select[name=place] { font-size: 16px; width: 100%; padding: 10px; border-radius: 10px; background: #12101f; color: #fff; border: 1px solid #5a54a0; }
+
+/* Karaoke como cuarto bloque del flujo */
+.home-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.home-steps .s4 { background: linear-gradient(160deg, #12b8a6, #0a7d8c); }
+#win-confirmed #win-karaoke { background: #fff; color: #0a6b3c; border-color: #fff; }
+.kc-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255, 255, 255, .08); }
+.kc-row em { flex: 0 0 auto; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; background: rgba(255, 255, 255, .1); font-style: normal; font-weight: 800; }
+.kc-row.now em { background: #ffc400; }
+.kc-row p { margin: 0; min-width: 0; display: grid; }
+.kc-row small { font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #ffc400; }
+.kc-row b { font-size: 1.15rem; overflow-wrap: anywhere; }
+.kc-row span { opacity: .9; overflow-wrap: anywhere; }
+#kar-venue button:disabled { opacity: .55; }

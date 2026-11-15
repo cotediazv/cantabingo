@@ -231,6 +231,7 @@ views.home = async () => {
         <a class="s1" href="${bingoHref}"><i>1</i><span>🎱</span><b>Bingo</b></a>
         <a class="s2" href="#/sorteoctl"><i>2</i><span>🎲</span><b>Sorteo</b></a>
         <a class="s3" href="#/ruedas"><i>3</i><span>🎡</span><b>El Rosco</b></a>
+        <a class="s4" href="#/karaokectl"><i>4</i><span>🎤</span><b>Karaoke</b></a>
       </div>
       <a class="home-control" href="#/control">🎛️ Centro de control</a>
       <p style="margin-top:28px"><button id="logout">Cerrar sesión de moderador</button></p>
@@ -255,8 +256,9 @@ views.control = async () => {
       <p class="small" style="margin-top:16px"><b>Enlace para OBS</b> (1920×1080, no pide usuario ni contraseña):<br><a class="link" href="${stageUrl()}" target="_blank">${esc(stageUrl())}</a></p>
     </div>
     <div class="panel"><h2>Karaoke</h2>
-      <p class="muted small">Muestra en pantalla la lista de pedidos del sistema de karaoke (formulario y app del equipo). Elige el local de hoy.</p>
+      <p class="muted small">Muestra en pantalla la lista de pedidos del sistema de karaoke (formulario y app del equipo).</p>
       <div class="venue-tabs" id="kar-venue" role="tablist"></div>
+      <p class="muted small" id="kar-note" style="margin:8px 0 0"></p>
       <p class="small" id="kar-status" style="margin:10px 0 0"></p>
       <label class="check" style="margin-top:12px"><input type="checkbox" id="kar-phone"> Permitir pedir canciones desde el celular (quien ya está inscrito en la sala)</label>
       <details style="margin-top:12px"><summary class="small">Direcciones de cada local</summary>
@@ -277,6 +279,8 @@ views.control = async () => {
     $('#kar-venue').innerHTML = Object.entries(c.venues).map(([id, name]) => `<button type="button" role="tab" data-kar="${id}" class="${id === c.venue ? 'on' : ''}">${esc(name)}</button>`).join('');
     const s = c.status;
     $('#kar-phone').checked = !!c.phone;
+    $$('#kar-venue button').forEach((b) => { b.disabled = !!c.fromSala; });
+    $('#kar-note').textContent = c.fromSala ? `Se usa el local de la sala abierta: ${c.venues ? c.venues[c.venue] : ''}. No hace falta elegirlo.` : 'No hay sala abierta: elige el local.';
     $('#kar-status').innerHTML = !s ? '<span class="muted">Todavía no se ha consultado la lista de este local.</span>'
       : s.error ? `⚠️ <b>No se pudo leer la lista:</b> ${esc(s.error)}` : `✅ Lista leída: ${s.total} ${s.total === 1 ? 'pedido' : 'pedidos'} por cantar.`;
     if (!$('#kar-form').dataset.ready) {
@@ -476,7 +480,7 @@ async function hostConsole(p) {
               <button id="confirmwin">✔ Confirmar ganador</button>
               <button id="keepplaying">▶ Seguir jugando</button>
             </div>
-            <div id="win-confirmed" hidden><p>✔ Ganador confirmado</p><a class="btn big" id="win-next">▶ Siguiente bingo</a><a class="btn big" id="win-rosco" href="#/sorteoctl">🎲 Sorteo para El Rosco</a></div>
+            <div id="win-confirmed" hidden><p>✔ Ganador confirmado</p><a class="btn big" id="win-next">▶ Siguiente bingo</a><a class="btn big" id="win-rosco" href="#/sorteoctl">🎲 Sorteo para El Rosco</a><a class="btn big" id="win-karaoke" href="#/karaokectl">🎤 Karaoke</a></div>
           </div>
           <div class="row" style="justify-content:center;margin-top:16px"><button id="bigqr"></button></div>
           <div class="row" style="justify-content:center;margin-top:12px"><button class="primary big" id="gen">Generar un número</button></div>
@@ -494,6 +498,7 @@ async function hostConsole(p) {
       </div>
       <a class="btn primary big" href="#/ronda/${p.id}" style="margin-bottom:14px">▶ Siguiente bingo</a>
       <a class="btn big" href="#/sorteoctl">🎲 Sortear participantes de El Rosco</a>
+      <a class="btn big" href="#/karaokectl" style="margin-top:14px">🎤 Karaoke</a>
       <p class="small" style="text-align:center;margin-top:22px"><a href="#/admin/${p.id}">⚙️ Administración</a></p>
     </div>`;
   const render = () => {
@@ -1051,6 +1056,38 @@ async function backToBingo() {
   await api('POST', '/api/stage', { show: 'bingo' }).catch(() => {});
   location.hash = id ? `#/anfitrion/${id}` : '#/proyectos';
 }
+// ---------- Karaoke: panel del animador ----------
+// Pone el karaoke en pantalla y muestra la cola. El local es el de la sala abierta.
+// El orden y «Ya cantó» se siguen manejando en la app del equipo.
+views.karaokectl = async () => {
+  if (!(await isAdmin())) return viewLogin();
+  app.innerHTML = `<div class="panel"><div class="row between"><div><h1 id="kc-title" style="margin:0">Karaoke</h1><span class="muted" id="kc-sub"></span></div></div>
+      <div id="kc-list" style="margin-top:14px"></div>
+      <label class="check" style="margin-top:14px"><input type="checkbox" id="kc-phone"> Permitir pedir canciones desde el celular</label>
+      <p class="muted small" style="margin-top:10px">El orden y «Ya cantó» se manejan en la app del equipo. Esta pantalla solo muestra la lista.</p>
+    </div>
+    <p style="margin-top:20px"><button class="big" data-back-bingo>← Volver al bingo</button></p>
+    <p style="margin-top:14px"><a class="btn big" href="#/sorteoctl">🎲 Sorteo para El Rosco</a></p>`;
+  await api('POST', '/api/stage', { show: 'karaoke' }).catch(fail); // al entrar, el karaoke pasa a la pantalla
+  let last = '';
+  const paint = async () => {
+    const k = await api('GET', '/api/karaoke').catch(() => null);
+    if (!k || !$('#kc-list')) return;
+    const sig = JSON.stringify(k);
+    if (sig === last) return;
+    last = sig;
+    $('#kc-title').textContent = `Karaoke ${k.name}`;
+    $('#kc-sub').textContent = k.stale ? 'No se pudo leer la lista; se muestra la última conocida' : k.total ? `${k.total} ${k.total === 1 ? 'pedido' : 'pedidos'} por cantar` : 'Todavía no hay pedidos';
+    $('#kc-phone').checked = !!k.phone;
+    $('#kc-list').innerHTML = k.list.length ? k.list.map((p, i) => `<div class="kc-row ${i === 0 ? 'now' : ''}"><em>${i === 0 ? '🎤' : i + 1}</em><p><small>${i === 0 ? 'Ahora canta' : i === 1 ? 'Sigue' : ''}</small><b>${esc(p.name)}</b><span>${esc(p.song)}${p.artist ? ` · ${esc(p.artist)}` : ''}</span></p></div>`).join('')
+      : '<p class="muted">Cuando alguien pida una canción, aparecerá aquí.</p>';
+  };
+  $('#kc-phone').onchange = async (e) => { try { await api('POST', '/api/karaoke/config', { phone: e.target.checked }); last = ''; paint(); } catch (err) { fail(err); } };
+  await paint();
+  const timer = setInterval(paint, 3000);
+  return () => clearInterval(timer);
+};
+
 const BACK_BINGO = '<p style="margin-top:20px"><button class="big" data-back-bingo>← Volver al bingo</button></p>';
 document.addEventListener('click', (e) => { if (e.target.closest('[data-back-bingo]')) backToBingo(); });
 

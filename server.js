@@ -575,7 +575,7 @@ const connectedNames = () => {
 };
 require('./raffle.js')({ app, db, save, requireAdmin, fail, setStage, refreshAll, connectedNames });
 
-const karaoke = require('./karaoke.js')({ app, db, save, requireAdmin, fail, findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null });
+const karaoke = require('./karaoke.js')({ app, db, save, requireAdmin, fail, salaVenue: () => (Object.values(db.sessions)[0] || {}).theme || '', findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null });
 // Programación del local del día: el de la sala abierta o, si no hay, el elegido en la sección Karaoke
 require('./agenda.js')({ app, db, save, requireAdmin, fail, currentVenue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
 

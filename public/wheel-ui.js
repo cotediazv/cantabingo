@@ -150,7 +150,7 @@
           <div class="w-question" id="w-question"></div>
           <button class="primary big w-accept" id="w-tie" hidden>🎲 Desempatar por sorteo</button>
           <button class="primary big w-accept" id="w-accept" data-do="acceptwin" hidden>✔ Aceptar ganador</button>
-          <div id="w-accepted" hidden><p class="w-accepted">✔ Ganador aceptado</p><button class="primary big w-back" data-back-bingo>← Volver al bingo</button></div>
+          <div id="w-accepted" hidden><p class="w-accepted">✔ Ganador aceptado</p><button class="primary big w-back" data-back-bingo>← Volver al bingo</button><a class="btn big w-back" href="#/karaokectl" style="display:block;text-align:center">🎤 Karaoke</a></div>
           <div class="w-keys">
             <button class="w-hit" data-do="hit">✔ Acierto <kbd>A</kbd></button>
             <button class="w-miss" data-do="miss">✘ Fallo <kbd>F</kbd></button>
