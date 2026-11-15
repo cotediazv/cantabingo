@@ -18,6 +18,7 @@ const DEFAULTS = {
 };
 const POLL_MS = 3000; // cada cuánto se consulta a Google mientras el karaoke está en pantalla
 const TIMEOUT_MS = 10000; // Apps Script puede tardar en un arranque en frío
+const MAX_ACTIVE = 2; // pedidos sin cantar que puede tener una persona a la vez
 const SEPARATORS = [' – ', ' • ', ' - ']; // "Canción – Artista": se corta por la última aparición
 
 module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlayer, salaVenue }) {
@@ -78,10 +79,17 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
   }, POLL_MS).unref();
 
   // Lo que ven las pantallas (público, sin iniciar sesión, igual que el resto de las gráficas)
-  app.get('/api/karaoke', (_req, res) => {
+  // Cuántos pedidos sin cantar tiene una persona en la cola, y en qué puesto está el primero
+  const same = (a, b) => clean(a).toLocaleUpperCase('es') === clean(b).toLocaleUpperCase('es');
+  const standing = (venue, name) => {
+    const list = (cache[venue] || {}).list || [];
+    return { count: list.filter((p) => same(p.name, name)).length, first: list.findIndex((p) => same(p.name, name)), max: MAX_ACTIVE };
+  };
+  app.get('/api/karaoke', (req, res) => {
     const venue = venueNow();
     const c = cache[venue] || { list: [], at: 0, error: '' };
-    res.json({ venue, name: VENUES[venue], phone: !!db.karaoke.phone, ask: askFor(venue), form: (db.karaoke.urls[venue] || {}).form || '', list: c.list.slice(0, 8), total: c.list.length, at: c.at, stale: !!c.error });
+    const pl = req.query.token ? findPlayer(String(req.query.sid || ''), String(req.query.token)) : null;
+    res.json({ me: pl ? standing(venue, pl.name) : null, venue, name: VENUES[venue], phone: !!db.karaoke.phone, ask: askFor(venue), form: (db.karaoke.urls[venue] || {}).form || '', list: c.list.slice(0, 8), total: c.list.length, at: c.at, stale: !!c.error });
   });
 
   // Configuración y diagnóstico para el Centro de control
@@ -216,7 +224,9 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
     const altArtist = clean(b.altArtist, 60);
     if (!song || !artist) return fail(res, 400, 'Escribe la canción y su artista');
     if (!altSong || !altArtist) return fail(res, 400, 'Escribe también una canción de reemplazo y su artista');
-    if (recent[pl.name] && Date.now() - recent[pl.name] < 60000) return fail(res, 429, 'Ya enviaste un pedido hace un momento. Espera un minuto para enviar otro.');
+    // Máximo 2 pedidos sin cantar por persona: al cantar uno, puede pedir otro
+    if (standing(venueNow(), pl.name).count >= MAX_ACTIVE) return fail(res, 409, `Ya tienes ${MAX_ACTIVE} canciones en la lista. Priorizamos a quienes no han cantado: cuando cantes una, podrás pedir otra.`);
+    if (recent[pl.name] && Date.now() - recent[pl.name] < 20000) return fail(res, 429, 'Tu pedido anterior se está registrando. Espera unos segundos para enviar otro.');
     try {
       const form = await loadForm(venueNow());
       const map = mapFields(form.fields);

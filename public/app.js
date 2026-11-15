@@ -711,22 +711,29 @@ views.jugar = async (sid) => {
   let karShown = '';
   let karSent = false;
   const drawKar = async () => {
-    const k = await api('GET', '/api/karaoke').catch(() => null);
+    const k = await api('GET', `/api/karaoke?sid=${encodeURIComponent(sid)}&token=${encodeURIComponent(me.token)}`).catch(() => null);
     if (!k || $('#pkar').hidden) return;
-    const mine = k.list.findIndex((p) => p.name.toUpperCase() === me.name.toUpperCase());
+    const mine = k.me ? k.me.first : -1;
+    const count = k.me ? k.me.count : 0;
+    const max = k.me ? k.me.max : 2;
+    // Tras enviar, se espera a que el pedido aparezca en la lista (o 25 s) antes de ofrecer el formulario otra vez
+    if (karSent && (count >= karSent.until || Date.now() - karSent.at > 25000)) karSent = false;
     const now = k.list[0];
-    const sig = JSON.stringify([k.venue, now, mine, karSent, k.total, k.phone, k.ask]);
+    const sig = JSON.stringify([k.venue, now, mine, count, !!karSent, k.total, k.phone, k.ask]);
     if (sig === karShown) return;
     karShown = sig;
-    const turn = mine === 0 ? '<div class="pkar-turn now">🎤 ¡Es tu turno! Te toca cantar</div>'
-      : mine > 0 ? `<div class="pkar-turn">Estás en la lista: ${mine === 1 ? 'eres el siguiente' : `tienes ${mine} personas antes`}</div>`
-      : karSent ? '<div class="pkar-turn">✔ Pedido enviado. Aparecerás en la lista en unos segundos.</div>' : '';
+    const full = count >= max;
+    const turn = `${mine === 0 ? '<div class="pkar-turn now">🎤 ¡Es tu turno! Te toca cantar</div>'
+      : mine > 0 ? `<div class="pkar-turn">Estás en la lista: ${mine === 1 ? 'eres el siguiente' : `tienes ${mine} personas antes`}</div>` : ''}
+      ${karSent ? '<div class="pkar-turn">✔ Pedido enviado. Aparecerá en la lista en unos segundos.</div>' : ''}
+      ${full ? `<p class="pkar-limit">Ya tienes ${max} canciones en la lista.<br><b>Priorizamos a quienes no han cantado:</b> cuando cantes una, podrás pedir otra.</p>` : ''}`;
     const draft = $('#pkar form') ? Object.fromEntries(new FormData($('#pkar form'))) : {};
     $('#pkar').innerHTML = `<div class="pkar-head"><b>🎤 Karaoke ${esc(k.name)}</b><span>${k.total ? `${k.total} en la lista` : 'Lista abierta'}</span></div>
       ${now ? `<div class="pkar-now"><small>Ahora canta</small><b>${esc(now.name)}</b><span>${esc(now.song)}${now.artist ? ` · ${esc(now.artist)}` : ''}</span></div>` : ''}
       ${turn}
-      ${mine >= 0 || karSent ? '' : !k.phone ? '<p class="pkar-qr">🎤 En este momento no se están recibiendo pedidos de karaoke.</p>' : `<form>
-        <h3>Inscribe tu canción y participa</h3>
+      ${full || karSent ? '' : !k.phone ? '<p class="pkar-qr">🎤 En este momento no se están recibiendo pedidos de karaoke.</p>' : `<form>
+        <h3>${count ? 'Pide otra canción' : 'Inscribe tu canción y participa'}</h3>
+        ${count ? `<p class="muted small">Puedes tener hasta ${max} canciones en la lista. Priorizamos a quienes no han cantado.</p>` : ''}
         <p class="muted small">Canta: <b>${esc(me.name)}</b></p>
         <label class="f">Canción<input type="text" name="song" maxlength="80" required autocomplete="off" placeholder="Escribe y elige de la lista" value="${esc(draft.song || '')}"></label>
         <div class="sug" data-sug="song"></div>
@@ -745,7 +752,7 @@ views.jugar = async (sid) => {
       btn.disabled = true;
       const data = Object.fromEntries(new FormData(e.target));
       const answers = Object.fromEntries(Object.entries(data).filter(([key]) => key.startsWith('ans-')).map(([key, v]) => [key.slice(4), v]));
-      try { await api('POST', '/api/karaoke/request', { sid, token: me.token, song: data.song, artist: data.artist, altSong: data.altSong, altArtist: data.altArtist, answers }); karSent = true; karShown = ''; toast('¡Pedido enviado!'); drawKar(); } catch (err) { fail(err); btn.disabled = false; }
+      try { await api('POST', '/api/karaoke/request', { sid, token: me.token, song: data.song, artist: data.artist, altSong: data.altSong, altArtist: data.altArtist, answers }); karSent = { at: Date.now(), until: count + 1 }; karShown = ''; toast('¡Pedido enviado!'); drawKar(); } catch (err) { fail(err); btn.disabled = false; }
     };
   };
   const syncKar = () => {
