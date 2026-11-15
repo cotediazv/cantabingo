@@ -1,10 +1,10 @@
-/* global views, app, $, esc, api, qr */
+/* global views, app, $, esc, api, qr, joinUrl */
 // Karaoke en pantalla: zócalo transparente para OBS («Ahora canta» / «Sigue» + QR para pedir) y
 // versión a pantalla completa para el tablero del DJ. Los pedidos los maneja el sistema de Google;
 // aquí solo se muestran.
 (() => {
   const POLL_MS = 2000;
-  const sign = (st) => JSON.stringify([st.venue, st.form, st.list.slice(0, 6)]);
+  const sign = (st) => JSON.stringify([st.venue, st.list.slice(0, 6)]);
   const n = (t) => `style="--n:${Math.max(6, String(t).length)}"`;
 
   // Sigue la cola y vuelve a dibujar solo cuando cambia, para que no parpadee
@@ -34,7 +34,7 @@
       if (!box) return;
       const [a, b] = st.list;
       const html = `
-        ${st.form ? `<div class="kg-qr">${qr(st.form)}<b>¡Pide tu canción!</b></div>` : ''}
+        <div class="kg-qr">${qr(joinUrl())}<b>¡Pide tu canción!</b></div>
         ${nextUpHTML('kg-up')}
         <div class="kg-bar">
           <div class="kg-tag"><small>Karaoke ${esc(st.name)}</small><b>🎤 ${a ? 'Ahora canta' : 'Pide tu canción'}</b></div>
@@ -65,7 +65,7 @@
         <section class="kf-now">${a ? `<small>🎤 Ahora canta</small><b ${n(a.name)}>${esc(a.name)}</b><span ${n(a.song)}>${esc(a.song)}</span>${a.artist ? `<i ${n(a.artist)}>${esc(a.artist)}</i>` : ''}`
     : '<small>🎤 Karaoke</small><b style="--n:16">¡Pide tu canción!</b><span style="--n:30">Escanea el código QR y envía tu pedido</span>'}</section>
         <aside class="kf-side">
-          ${st.form ? `<div class="kf-qr">${qr(st.form)}<b>¡Pide tu canción!</b></div>` : ''}
+          <div class="kf-qr">${qr(joinUrl())}<b>¡Pide tu canción!</b></div>
           ${next.length ? `<div class="kf-next"><small>Luego vienen</small>${next.map((p, i) => `<div><em>${i + 2}</em><p><b ${n(p.name)}>${esc(p.name)}</b><span ${n(p.song + p.artist)}>${esc(p.song)}${p.artist ? ` · ${esc(p.artist)}` : ''}</span></p></div>`).join('')}</div>` : ''}
         </aside>`;
     });

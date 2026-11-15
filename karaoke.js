@@ -23,6 +23,8 @@ const SEPARATORS = [' – ', ' • ', ' - ']; // "Canción – Artista": se cort
 module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlayer, salaVenue }) {
   db.karaoke ||= {};
   db.karaoke.venue ||= 'frida';
+  // Los pedidos se hacen desde la Sala de juegos: quedan activados (el interruptor del Centro de control los puede apagar)
+  if (!db.karaoke.phoneDefault) { db.karaoke.phone = true; db.karaoke.phoneDefault = true; }
   // Local en uso: el de la sala de juegos abierta (se eligió al crearla); si no hay sala, el elegido en el Centro de control
   const venueNow = () => { const v = salaVenue(); return VENUES[v] ? v : db.karaoke.venue; };
   db.karaoke.urls ||= {};
@@ -185,7 +187,7 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
     const pl = findPlayer(String(b.sid || ''), String(b.token || ''));
     if (!pl) return fail(res, 403, 'Primero únete a la sala con tu nombre');
     if (db.stage !== 'karaoke') return fail(res, 400, 'El karaoke no está abierto en este momento');
-    if (!db.karaoke.phone) return fail(res, 400, 'Por ahora los pedidos se hacen con el código QR de la pantalla');
+    if (!db.karaoke.phone) return fail(res, 400, 'Por ahora no se están recibiendo pedidos desde el celular');
     const song = clean(b.song, 80);
     const artist = clean(b.artist, 60);
     const altSong = clean(b.altSong, 80);

@@ -725,7 +725,7 @@ views.jugar = async (sid) => {
     $('#pkar').innerHTML = `<div class="pkar-head"><b>🎤 Karaoke ${esc(k.name)}</b><span>${k.total ? `${k.total} en la lista` : 'Lista abierta'}</span></div>
       ${now ? `<div class="pkar-now"><small>Ahora canta</small><b>${esc(now.name)}</b><span>${esc(now.song)}${now.artist ? ` · ${esc(now.artist)}` : ''}</span></div>` : ''}
       ${turn}
-      ${mine >= 0 || karSent ? '' : !k.phone ? '<p class="pkar-qr">🎤 Para cantar, escanea el código QR de la pantalla y pide tu canción.</p>' : `<form>
+      ${mine >= 0 || karSent ? '' : !k.phone ? '<p class="pkar-qr">🎤 En este momento no se están recibiendo pedidos de karaoke.</p>' : `<form>
         <h3>Inscribe tu canción y participa</h3>
         <p class="muted small">Canta: <b>${esc(me.name)}</b></p>
         <label class="f">Canción<input type="text" name="song" maxlength="80" required value="${esc(draft.song || '')}"></label>
