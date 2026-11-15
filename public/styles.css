@@ -1106,3 +1106,7 @@ body.full #rf .rf-card.win .rf-name:not(.small) { font-size: min(21vh, calc(84vw
 .pinsta-go i { font-style: normal; font-size: 1.15rem; font-weight: 700; margin-bottom: 8px; }
 .pinsta-go span { background: rgba(0, 0, 0, .28); padding: 6px 16px; border-radius: 99px; }
 #vg .vg-tag b { white-space: nowrap; }
+
+/* Instagram en el tablero: sin QR, la cuenta ocupa todo el ancho */
+#vf.solo { grid-template-columns: minmax(0, 1fr); }
+#vf.solo .vf-main b { font-size: min(22vh, calc(80vw / (var(--n, 8) * .64))); }
