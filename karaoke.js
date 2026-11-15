@@ -77,7 +77,7 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
   app.get('/api/karaoke', (_req, res) => {
     const venue = db.karaoke.venue;
     const c = cache[venue] || { list: [], at: 0, error: '' };
-    res.json({ venue, name: VENUES[venue], phone: !!db.karaoke.phone, form: (db.karaoke.urls[venue] || {}).form || '', list: c.list.slice(0, 8), total: c.list.length, at: c.at, stale: !!c.error });
+    res.json({ venue, name: VENUES[venue], phone: !!db.karaoke.phone, ask: askFor(venue), form: (db.karaoke.urls[venue] || {}).form || '', list: c.list.slice(0, 8), total: c.list.length, at: c.at, stale: !!c.error });
   });
 
   // Configuración y diagnóstico para el Centro de control
@@ -128,12 +128,13 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
       id: q[4][0][0], title: String(q[1] || ''), required: !!q[4][0][2], options: (q[4][0][1] || []).map((o) => o[0]).filter(Boolean),
     }));
     forms[venue] = { action: res.url.replace(/\/viewform.*$/, '/formResponse'), fields, at: Date.now() };
+    remember(venue, forms[venue]);
     return forms[venue];
   }
   // A qué pregunta del formulario corresponde cada dato, según su título
   const pick = (fields, test) => fields.find((f) => test(norm(f.title)));
   function mapFields(fields) {
-    const alt = (t) => /reemplazo|alternativ|segunda|opcion 2|respaldo/.test(t);
+    const alt = (t) => /re+mplazo|alternativ|segunda|opcion 2|respaldo/.test(t);
     return {
       name: pick(fields, (t) => /nombre/.test(t) && !alt(t)),
       song: pick(fields, (t) => /cancion|tema/.test(t) && !alt(t) && !/artista/.test(t)),
@@ -142,6 +143,29 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
       altArtist: pick(fields, (t) => /artista|interprete|banda/.test(t) && alt(t)),
     };
   }
+  // Preguntas de opción del formulario: el lugar donde está la persona, y las demás (dónde canta, adulto o niño…)
+  const isPlace = (f) => /lugar/.test(norm(f.title)) && f.options.length > 0;
+  const placeField = (fields) => fields.find(isPlace) || null;
+  function choiceFields(fields) {
+    const text = new Set(Object.values(mapFields(fields)).filter(Boolean).map((f) => f.id));
+    return fields.filter((f) => f.options.length && !text.has(f.id) && !isPlace(f));
+  }
+  // Lo que cada local pregunta queda guardado, para que la inscripción y el celular lo tengan sin consultar a Google cada vez
+  db.karaoke.ask ||= {};
+  function remember(venue, form) {
+    const place = placeField(form.fields);
+    db.karaoke.ask[venue] = {
+      places: place ? place.options.map((o) => o.trim()).filter(Boolean) : [],
+      choices: choiceFields(form.fields).map((f) => ({ id: String(f.id), title: f.title.trim(), required: f.required, options: f.options.map((o) => o.trim()).filter(Boolean) })),
+      at: Date.now(),
+    };
+    save();
+  }
+  const askFor = (venue) => db.karaoke.ask[venue] || { places: [], choices: [] };
+  // Al arrancar y cada 6 horas se releen los formularios, por si cambian sus opciones
+  const learnForms = async () => { for (const v of Object.keys(VENUES)) { try { delete forms[v]; await loadForm(v); } catch { /* se reintenta en la próxima vuelta */ } } };
+  setTimeout(learnForms, 4000).unref();
+  setInterval(learnForms, 6 * 3600e3).unref();
   // Revisión sin envío: muestra qué preguntas tiene el formulario del local y a cuál iría cada dato
   app.get('/api/karaoke/form-check', requireAdmin, async (req, res) => {
     const venue = VENUES[req.query.venue] ? req.query.venue : db.karaoke.venue;
@@ -149,7 +173,7 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
       delete forms[venue];
       const form = await loadForm(venue);
       const map = mapFields(form.fields);
-      res.json({ venue, action: form.action, fields: form.fields, map: Object.fromEntries(Object.entries(map).map(([k, f]) => [k, f ? f.title : null])) });
+      res.json({ venue, action: form.action, fields: form.fields, map: Object.fromEntries(Object.entries(map).map(([k, f]) => [k, f ? f.title : null])), ask: askFor(venue) });
     } catch (err) { fail(res, 502, clean(err && err.message, 200)); }
   });
   const recent = {}; // nombre -> último envío, para que nadie mande pedidos en ráfaga
@@ -176,12 +200,25 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
       const body = new URLSearchParams();
       const used = new Set();
       for (const [k, f] of Object.entries(map)) { body.append(`entry.${f.id}`, values[k]); used.add(f.id); }
-      // Preguntas obligatorias que aquí no se preguntan (por ejemplo «Dónde canta»): se responde la primera opción
-      for (const f of form.fields) {
-        if (used.has(f.id) || !f.required) continue;
-        if (!f.options.length) throw new Error(`El formulario exige «${f.title}», que no se puede responder desde el celular`);
-        body.append(`entry.${f.id}`, f.options[0]);
+      // Se envía siempre la opción tal como está escrita en el formulario (algunas terminan en espacio)
+      const exact = (f, v) => f.options.find((o) => o.trim() === String(v || '').trim());
+      const answers = b.answers && typeof b.answers === 'object' ? b.answers : {};
+      // Lugar: el que la persona eligió al entrar a la sala; si entró sin él, el que elige al pedir
+      const place = placeField(form.fields);
+      if (place) {
+        const v = exact(place, pl.place) || exact(place, answers.place);
+        if (!v) return fail(res, 400, 'Elige el lugar donde estás');
+        body.append(`entry.${place.id}`, v);
+        used.add(place.id);
       }
+      // Las demás preguntas de opción (dónde quiere cantar, adulto o niño…) las responde la persona
+      for (const f of choiceFields(form.fields)) {
+        const v = exact(f, answers[String(f.id)]);
+        if (!v && f.required) return fail(res, 400, `Falta responder: ${f.title.trim()}`);
+        if (v) body.append(`entry.${f.id}`, v);
+        used.add(f.id);
+      }
+      for (const f of form.fields) if (!used.has(f.id) && f.required) throw new Error(`El formulario exige «${f.title.trim()}», que no se puede responder desde el celular`);
       const out = await fetch(form.action, { method: 'POST', body, redirect: 'follow', signal: AbortSignal.timeout(TIMEOUT_MS) });
       if (!out.ok) throw new Error(`Google no aceptó el pedido (${out.status})`);
       recent[pl.name] = Date.now();
@@ -192,5 +229,5 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
     }
   });
 
-  return { refresh: () => refresh(db.karaoke.venue), venues: VENUES };
+  return { refresh: () => refresh(db.karaoke.venue), venues: VENUES, placesFor: (venue) => askFor(venue).places };
 };

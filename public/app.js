@@ -258,6 +258,7 @@ views.control = async () => {
       <p class="muted small">Muestra en pantalla la lista de pedidos del sistema de karaoke (formulario y app del equipo). Elige el local de hoy.</p>
       <div class="venue-tabs" id="kar-venue" role="tablist"></div>
       <p class="small" id="kar-status" style="margin:10px 0 0"></p>
+      <label class="check" style="margin-top:12px"><input type="checkbox" id="kar-phone"> Permitir pedir canciones desde el celular (quien ya está inscrito en la sala)</label>
       <details style="margin-top:12px"><summary class="small">Direcciones de cada local</summary>
         <form id="kar-form" class="fields" style="grid-template-columns:1fr;margin-top:10px"></form></details>
     </div>
@@ -275,6 +276,7 @@ views.control = async () => {
     if (!$('#kar-venue')) return;
     $('#kar-venue').innerHTML = Object.entries(c.venues).map(([id, name]) => `<button type="button" role="tab" data-kar="${id}" class="${id === c.venue ? 'on' : ''}">${esc(name)}</button>`).join('');
     const s = c.status;
+    $('#kar-phone').checked = !!c.phone;
     $('#kar-status').innerHTML = !s ? '<span class="muted">Todavía no se ha consultado la lista de este local.</span>'
       : s.error ? `⚠️ <b>No se pudo leer la lista:</b> ${esc(s.error)}` : `✅ Lista leída: ${s.total} ${s.total === 1 ? 'pedido' : 'pedidos'} por cantar.`;
     if (!$('#kar-form').dataset.ready) {
@@ -290,6 +292,7 @@ views.control = async () => {
   };
   let karCfg = await api('GET', '/api/karaoke/config').catch(() => null);
   if (karCfg) paintKar(karCfg);
+  $('#kar-phone').onchange = (e) => saveKar({ phone: e.target.checked });
   $('#kar-venue').onclick = (e) => { const b = e.target.closest('[data-kar]'); if (b) saveKar({ venue: b.dataset.kar }); };
   $('#kar-form').onsubmit = async (e) => {
     e.preventDefault();
@@ -517,7 +520,7 @@ async function hostConsole(p) {
     $('#results-panel').classList.toggle('won', won > 0);
     $('#results-title').textContent = won ? (won === 1 ? '🏆 ¡HAY UN GANADOR!' : `🏆 ¡HAY ${won} GANADORES!`) : 'Hay cartones por completar';
     // Ganadores en grande; debajo, quienes ya completaron la figura pero aún no marcan su cartón
-    $('#results').innerHTML = `<div class="win-names">${results.filter((r) => r.validated).map((r) => `<span><b>${esc(r.name)}</b><small>Cartón #${p.startNumber + r.cardNo - 1}</small></span>`).join('')}</div>
+    $('#results').innerHTML = `<div class="win-names">${results.filter((r) => r.validated).map((r) => `<span><b>${esc(r.name)}</b><small>Cartón #${p.startNumber + r.cardNo - 1}${r.place ? ` · 📍 ${esc(r.place)}` : ''}</small></span>`).join('')}</div>
       ${results.filter((r) => !r.validated).map((r) => `<p class="win-pending">${esc(r.name)} · cartón #${p.startNumber + r.cardNo - 1} · le falta marcar</p>`).join('')}`;
     // Con dos o más ganadores se puede desempatar con la tómbola en pantalla
     const winners = new Set(results.filter((r) => r.validated).map((r) => r.cardNo)).size;
@@ -640,6 +643,7 @@ views.jugar = async (sid) => {
       <div class="fields" style="grid-template-columns:1fr">
         <label class="f">Nombre<input type="text" name="name" maxlength="20" autocomplete="given-name" autocapitalize="words" value="${esc(store.get('playerFirst') || '')}" required autofocus></label>
         <label class="f">Apellido<input type="text" name="surname" maxlength="25" autocomplete="family-name" autocapitalize="words" value="${esc(store.get('playerLast') || '')}" required></label>
+        ${info.places && info.places.length ? `<label class="f">¿Dónde estás?<select name="place" required><option value="">Elige tu lugar</option>${info.places.map((x) => `<option>${esc(x)}</option>`).join('')}</select></label>` : ''}
         ${info.locked ? '<label class="f">Contraseña de la sesión<input type="text" name="password" required></label>' : ''}
         <button class="primary big">Unirse</button>
       </div></form>`;
@@ -706,7 +710,7 @@ views.jugar = async (sid) => {
     if (!k || $('#pkar').hidden) return;
     const mine = k.list.findIndex((p) => p.name.toUpperCase() === me.name.toUpperCase());
     const now = k.list[0];
-    const sig = JSON.stringify([k.venue, now, mine, karSent, k.total]);
+    const sig = JSON.stringify([k.venue, now, mine, karSent, k.total, k.phone, k.ask]);
     if (sig === karShown) return;
     karShown = sig;
     const turn = mine === 0 ? '<div class="pkar-turn now">🎤 ¡Es tu turno! Te toca cantar</div>'
@@ -724,12 +728,16 @@ views.jugar = async (sid) => {
         <p class="muted small" style="margin:6px 0 0">Si alguien ya pidió tu canción, cantarás esta otra:</p>
         <label class="f">Canción de reemplazo<input type="text" name="altSong" maxlength="80" required value="${esc(draft.altSong || '')}"></label>
         <label class="f">Artista de reemplazo<input type="text" name="altArtist" maxlength="60" required value="${esc(draft.altArtist || '')}"></label>
+        ${k.ask.places.length && !me.place ? `<label class="f">¿Dónde estás?<select name="ans-place" required><option value="">Elige tu lugar</option>${k.ask.places.map((x) => `<option ${draft['ans-place'] === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label>` : ''}
+        ${k.ask.choices.map((c) => `<label class="f">${esc(c.title)}<select name="ans-${c.id}" ${c.required ? 'required' : ''}><option value="">Elige una opción</option>${c.options.map((x) => `<option ${draft[`ans-${c.id}`] === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label>`).join('')}
         <button class="primary big">🎤 Enviar mi pedido</button></form>`}`;
     if ($('#pkar form')) $('#pkar form').onsubmit = async (e) => {
       e.preventDefault();
       const btn = e.target.querySelector('button');
       btn.disabled = true;
-      try { await api('POST', '/api/karaoke/request', { sid, token: me.token, ...Object.fromEntries(new FormData(e.target)) }); karSent = true; karShown = ''; toast('¡Pedido enviado!'); drawKar(); } catch (err) { fail(err); btn.disabled = false; }
+      const data = Object.fromEntries(new FormData(e.target));
+      const answers = Object.fromEntries(Object.entries(data).filter(([key]) => key.startsWith('ans-')).map(([key, v]) => [key.slice(4), v]));
+      try { await api('POST', '/api/karaoke/request', { sid, token: me.token, song: data.song, artist: data.artist, altSong: data.altSong, altArtist: data.altArtist, answers }); karSent = true; karShown = ''; toast('¡Pedido enviado!'); drawKar(); } catch (err) { fail(err); btn.disabled = false; }
     };
   };
   const syncKar = () => {

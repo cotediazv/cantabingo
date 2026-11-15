@@ -114,7 +114,8 @@ function evaluate(s) {
   const owners = {};
   // Solo puede ganar quien tiene su cartón abierto en este momento (conexión en vivo activa)
   const online = new Set([...(clients[s.id] || [])].map((res) => res.playerToken));
-  for (const [token, pl] of Object.entries(s.players)) if (online.has(token)) for (const c of pl.cards) owners[c] = pl.name;
+  const spots = {};
+  for (const [token, pl] of Object.entries(s.players)) if (online.has(token)) for (const c of pl.cards) { owners[c] = pl.name; spots[c] = pl.place || ''; }
   let added = false;
   for (const cardNo of Object.keys(owners).map(Number)) {
     const dm = drawnMask(s, cardNo);
@@ -125,7 +126,7 @@ function evaluate(s) {
         // se le marcan solas las casillas ya anunciadas y la celebración sale en todas las pantallas.
         const drawnNow = new Set(s.drawn);
         s.marks[cardNo] = cardOf(s, cardNo).reduce((all, v, i) => (v !== 0 && drawnNow.has(v) ? [...all, i] : all), []);
-        s.results.push({ cardNo, pattern: pid, name: owners[cardNo], validated: true, at: s.drawn.length });
+        s.results.push({ cardNo, pattern: pid, name: owners[cardNo], place: spots[cardNo], validated: true, at: s.drawn.length });
         s.hideWin = false;
         s.celebrateAt = Date.now(); // desde cuándo hay celebración: a los 6 s el GC la recoge abajo
         added = true;
@@ -453,7 +454,8 @@ app.get('/api/sessions', (_req, res) => {
 app.get('/api/sessions/:sid', (req, res) => {
   const s = db.sessions[req.params.sid];
   if (!s) return fail(res, 404, 'La sesión no existe o ya terminó');
-  res.json({ id: s.id, name: s.name, locked: !!s.password, cardsPerPlayer: s.cardsPerPlayer });
+  // Lugares del local (los mismos del formulario de karaoke): se eligen al entrar, para saber dónde está cada persona
+  res.json({ id: s.id, name: s.name, locked: !!s.password, cardsPerPlayer: s.cardsPerPlayer, places: karaoke.placesFor(s.theme || 'frida') });
 });
 
 // Un participante se une (o recupera sus cartones con su token)
@@ -472,19 +474,22 @@ app.post('/api/sessions/:sid/join', (req, res) => {
     const first = str(b.name, 20).replace(/\s+/g, ' ').toLocaleUpperCase('es');
     const last = str(b.surname, 25).replace(/\s+/g, ' ').toLocaleUpperCase('es');
     if (!first || !last) return fail(res, 400, 'Escribe tu nombre y tu apellido para participar');
+    const places = karaoke.placesFor(s.theme || 'frida');
+    const place = places.find((x) => x === String(b.place || '').trim()) || '';
+    if (places.length && !place) return fail(res, 400, 'Elige el lugar donde estás');
     const taken = new Set(Object.values(s.players).flatMap((x) => x.cards));
     const cards = [];
     for (let c = 1; c <= p.cards.length && cards.length < s.cardsPerPlayer; c++) if (!taken.has(c)) cards.push(c);
     if (!cards.length) return fail(res, 409, 'Ya no quedan cartones disponibles en esta sesión');
     token = id(12);
-    pl = s.players[token] = { name: `${first} ${last}`, cards };
+    pl = s.players[token] = { name: `${first} ${last}`, cards, place };
     // Lista de participantes para el sorteo de concursantes del rosco (sin repetir nombres)
     (db.people ||= {})[pl.name.toLowerCase().replace(/\s+/g, ' ')] = { name: pl.name, at: Date.now() };
     evaluate(s);
     broadcast(s);
   }
   res.json({
-    token, name: pl.name, startNumber: p.startNumber,
+    token, name: pl.name, place: pl.place || '', startNumber: p.startNumber,
     cards: pl.cards.map((no) => ({ no, cells: p.cards[no - 1], marks: s.marks[no] || [] })),
   });
 });
