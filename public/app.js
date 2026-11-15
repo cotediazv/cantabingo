@@ -127,6 +127,8 @@ function subscribe(sid, onState, onGone, asAdmin = false, token = '') {
   return () => es.close();
 }
 // Enlaces fijos: siempre llevan a la sesión activa, así el QR no cambia de una partida a otra
+// La sala se llama «Los Juegos de Frida»; dentro del bingo, el juego se llama «El Bingo de Frida»
+function bingoName(name) { return String(name || '').replace(/^Los Juegos de /, 'El Bingo de '); }
 const joinUrl = () => `${location.origin}${location.pathname}#/jugar`;
 const boardUrl = () => `${location.origin}${location.pathname}#/tablero`;
 const gcUrl = () => `${location.origin}${location.pathname}#/gc`;
@@ -509,7 +511,7 @@ async function hostConsole(p) {
       <p class="small" style="text-align:center;margin-top:22px"><a href="#/admin/${p.id}">⚙️ Administración</a></p>
     </div>`;
   const render = () => {
-    $('#title').textContent = st.name;
+    $('#title').textContent = bingoName(st.name);
     const mins = Math.max(0, Math.round((st.expires - Date.now()) / 60000));
     $('#meta').textContent = `Ronda ${st.round} · ${st.players} participantes · ${st.players * st.cardsPerPlayer} de ${st.totalCards} cartones repartidos · quedan ${Math.floor(mins / 60)} h ${mins % 60} min`;
     $('#pats').innerHTML = patternsInline(st.patterns); // figura de la ronda, a la vista del animador
@@ -811,7 +813,7 @@ views.jugar = async (sid) => {
     syncStage();
     if (round !== null && st.round !== round) me.cards.forEach((c) => marks[c.no].clear());
     round = st.round;
-    $('#title').textContent = st.name;
+    $('#title').textContent = bingoName(st.name);
     $('#meta').textContent = `${me.name} · Ronda ${st.round} · ${st.drawn.length} valores anunciados`;
     $('#pats').innerHTML = patternsInline(st.patterns);
     $('#now').innerHTML = `${ballHTML(st, st.drawn.at(-1), 'mid')}<div><div class="small"><b>Valor actual</b> · anteriores:</div>
