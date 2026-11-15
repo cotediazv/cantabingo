@@ -222,6 +222,12 @@ setInterval(() => {
   for (const s of Object.values(db.sessions)) if (Date.now() > s.expires) closeSession(s);
   // Roscos sueltos (creados sin sala abierta) también vencen a las 8 horas
   if (wheel.clear(Date.now() - SESSION_HOURS * 3600e3)) save();
+  // Sin sala abierta no debe quedar gente en la lista del sorteo (por ejemplo, de una jornada anterior)
+  if (!Object.keys(db.sessions).length && (Object.keys(db.people || {}).length || ((db.raffle || {}).picked || []).length)) {
+    db.people = {};
+    db.raffle = { picked: [], roll: null };
+    save();
+  }
 }, 30000).unref();
 
 // ---------- API ----------
