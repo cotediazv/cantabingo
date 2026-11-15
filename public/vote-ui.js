@@ -13,7 +13,7 @@
   // Reloj del llamado a participar: cada pantalla lo lleva con su propia hora, a partir de lo que dice el servidor
   let clockEnd = 0;
   let clockKey = 0;
-  const setClock = (st) => { if (st.signupUntil !== clockKey) { clockKey = st.signupUntil; if (st.signupUntil) clockEnd = Date.now() + (st.signupUntil - st.now); } }; // al cerrarse se conserva la hora de término, para saber si fue antes de tiempo
+  const setClock = (st) => { if (st.clockUntil !== clockKey) { clockKey = st.clockUntil; if (st.clockUntil) clockEnd = Date.now() + (st.clockUntil - st.now); } }; // al cerrarse se conserva la hora de término, para saber si fue antes de tiempo
   const clockLeft = () => Math.max(0, clockEnd - Date.now());
   const clockText = () => { const s = Math.ceil(clockLeft() / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
   setInterval(() => { if (clockKey) for (const el of document.querySelectorAll('.v-clock')) el.textContent = clockText(); }, 200);
@@ -54,7 +54,7 @@
           <form id="vc-add" class="row" style="gap:8px"><input type="text" id="vc-name" maxlength="30" placeholder="Nombre" autocomplete="off" style="flex:1;min-width:0"><input type="text" id="vc-thing" maxlength="40" placeholder="Objeto (opcional)" autocomplete="off" style="flex:1.3;min-width:0"><button class="primary">Agregar</button></form>
           <div class="vc-list">${st.players.map((p) => {
     const on = st.open && st.open.id === p.id;
-    return `<div class="vc-row ${on ? 'on' : ''}"><p><b>${nm(p)}</b>${thing(p)}<small>${on ? `Votación abierta · ${st.counts[p.id]} votos` : p.done ? `✔ Votación recibida · ${st.counts[p.id]} votos` : 'Pendiente'}</small></p>
+    return `<div class="vc-row ${on ? 'on' : ''}"><p><b>${nm(p)}</b>${thing(p)}<small>${on ? `Votación abierta · <span class="v-clock">${clockText()}</span> · ${st.counts[p.id]} votos` : p.done ? `✔ Votación recibida · ${st.counts[p.id]} votos` : 'Pendiente'}</small></p>
               ${on ? '<button class="primary" data-act="close">Cerrar votación</button>' : `<button data-act="open" data-id="${p.id}">${p.done ? 'Reabrir' : 'Abrir votación'}</button>`}
               ${on ? '' : `<button class="vc-x" data-act="remove" data-id="${p.id}" aria-label="Quitar a ${esc(p.name)}">✕</button>`}</div>`;
   }).join('') || '<p class="muted">Abre las inscripciones o anota tú a cada participante.</p>'}</div>
@@ -117,6 +117,7 @@
       else if (st.open) {
         body = `<p class="pvote-ask">Pon tu nota a<b>${nm(st.open)}</b>${thing(st.open)}</p>
           <div class="pvote-keys">${Array.from({ length: 10 }, (_, i) => `<button type="button" data-v="${i + 1}" data-id="${st.open.id}" class="${st.mine === i + 1 ? 'on' : ''}">${i + 1}</button>`).join('')}</div>
+          <p class="pvote-clock">Quedan <b class="v-clock">${clockText()}</b></p>
           ${st.mine ? `<p class="pvote-ok">✔ Tu nota: ${st.mine}. Puedes cambiarla mientras la votación esté abierta.</p>` : '<p class="muted small" style="text-align:center">1 es la nota más baja y 10 la más alta.</p>'}`;
       } else if (st.me) body = `<div class="pvote-in">✔ Estás en la lista<b>${badge(st.me.no)}${esc(st.me.thing)}</b><small>Atento al llamado del animador para subir al escenario.</small></div>`;
       else if (st.signup && st.room) {
@@ -191,12 +192,12 @@
       return lastPlace ? { tag: 'Resultados', no: lastPlace.no, main: lastPlace.name, sub: lastPlace.thing ? `${ord(lastPlace.place)} · ${lastPlace.thing}` : ord(lastPlace.place), score: lastPlace.score }
         : { tag: 'Resultados', main: title(st), sub: 'Vamos desde el último lugar hasta la gran final', side: ['🏁', `${st.players.length} participantes`] };
     }
-    if (st.open) return { tag: 'Votación abierta', no: st.open.no, main: st.open.name, sub: st.open.thing || 'Pon tu nota del 1 al 10 desde tu celular', side: ['Vota del 1 al 10', 'Desde tu celular'], qr: true };
+    if (st.open) return { tag: 'Votación abierta', no: st.open.no, main: st.open.name, sub: st.open.thing || 'Pon tu nota del 1 al 10 desde tu celular', clock: 'Vota del 1 al 10', qr: true };
     if (st.last) {
       const next = st.players.find((p) => !p.done);
       return { tag: 'Votación cerrada', no: st.last.no, main: st.last.name, sub: '✔ Votación recibida', side: next ? ['Sigue', `N.º ${next.no} · ${next.name}`] : ['🏁', 'Ya vienen los resultados'] };
     }
-    if (st.signup) return { tag: 'Inscripciones abiertas', main: title(st), sub: '¿Quieres participar? Inscríbete desde tu celular', clock: true, qr: true };
+    if (st.signup) return { tag: 'Inscripciones abiertas', main: title(st), sub: '¿Quieres participar? Inscríbete desde tu celular', clock: 'Tiempo', qr: true };
     return { tag: 'Votación del público', main: title(st), sub: 'Prepárate para votar desde tu celular', side: ['Entra ahora', 'Escanea el código QR'], qr: true };
   };
 
@@ -218,7 +219,7 @@
         <div class="vg-bar">
           <div class="vg-tag"><small>${esc(title(st))}</small><b>🗳️ ${esc(s.tag)}</b></div>
           <div class="vg-main">${s.duel ? `<b class="vg-duel" ${n(st.final.players.map((p) => `${p.name}...`).join(' vs '))}>${versus(st)}</b>` : `<b ${n(s.no ? `${s.main}...` : s.main)}>${badge(s.no)}${esc(s.main)}</b>`}<span ${n(s.sub)}>${esc(s.sub)}</span></div>
-          ${s.clock ? `<div class="vg-side score"><small>Tiempo</small><b class="v-clock">${clockText()}</b></div>` : s.score != null ? `<div class="vg-side score"><small>Nota</small><b>${note(s.score)}</b></div>` : `<div class="vg-side"><small ${n(s.side[0])}>${esc(s.side[0])}</small><b ${n(s.side[1])}>${esc(s.side[1])}</b></div>`}
+          ${s.clock ? `<div class="vg-side score"><small>${esc(s.clock)}</small><b class="v-clock">${clockText()}</b></div>` : s.score != null ? `<div class="vg-side score"><small>Nota</small><b>${note(s.score)}</b></div>` : `<div class="vg-side"><small ${n(s.side[0])}>${esc(s.side[0])}</small><b ${n(s.side[1])}>${esc(s.side[1])}</b></div>`}
         </div>`;
       clearTimeout(swap);
       // Si solo cambió un detalle (llegó otro inscrito), se actualiza en el lugar, sin sacar y volver a entrar el zócalo
@@ -253,9 +254,9 @@
       tickTimer = setTimeout(tickLoop, Math.min(1000 / rate, left + 30));
     };
     const stop = follow((st, celebrating, first) => {
-      total = Math.max(6000, st.signupMs || 120000);
-      if (st.signupUntil && st.signupUntil !== ticking) { ticking = st.signupUntil; tickLoop(); }
-      if (!st.signupUntil && ticking && clockLeft() > 700) { ticking = 0; clearTimeout(tickTimer); } // el animador las cerró antes de tiempo: sin bocinas
+      total = Math.max(5500, st.clockMs || 120000);
+      if (st.clockUntil && st.clockUntil !== ticking) { ticking = st.clockUntil; tickLoop(); }
+      if (!st.clockUntil && ticking && clockLeft() > 700) { ticking = 0; clearTimeout(tickTimer); } // el animador las cerró antes de tiempo: sin bocinas
       const box = $('#vf');
       if (!box) return;
       const s = scene(st);
@@ -268,10 +269,10 @@
         : [...st.places].reverse().map((p) => `<div><em>${p.place}</em><p><b ${n(p.name)}>${nm(p)}</b><span>Nota ${note(p.score)}${p.thing ? ` · ${esc(p.thing)}` : ''}</span></p></div>`).join('');
       box.innerHTML = `${celebrating ? winHTML(st) : ''}
         <header class="vf-top"><b>${esc(title(st))}</b><span>🗳️ ${esc(s.tag)}</span></header>
-        <section class="vf-main">${s.clock ? `<small>¿Quieres participar?</small><b class="v-clock vf-clock">${clockText()}</b><span style="--n:28">Inscríbete desde tu celular</span>`
+        <section class="vf-main">${st.signup ? `<small>¿Quieres participar?</small><b class="v-clock vf-clock">${clockText()}</b><span style="--n:28">Inscríbete desde tu celular</span>`
     : `<small>${esc(s.sub)}</small>
           ${s.duel ? `<b class="vg-duel" ${n(st.final.players.map((p) => `${p.name}...`).join(' vs '))}>${versus(st)}</b>` : `<b ${n(s.no ? `${s.main}...` : s.main)}>${badge(s.no)}${esc(s.main)}</b>`}
-          ${s.score != null ? `<i>Nota ${note(s.score)}</i>` : s.side ? `<span ${n(s.side[1])}>${esc(s.side[1])}</span>` : ''}`}</section>
+          ${s.clock ? `<i class="v-clock">${clockText()}</i>` : s.score != null ? `<i>Nota ${note(s.score)}</i>` : s.side ? `<span ${n(s.side[1])}>${esc(s.side[1])}</span>` : ''}`}</section>
         <aside class="vf-side">
           <div class="vf-qr">${qr(joinUrl())}<b>${st.signup ? '¡Entra y participa!' : '¡Entra y vota!'}</b></div>
           ${side ? `<div class="vf-list"><small>${st.phase === 'voting' ? 'Participantes' : 'Resultados'}</small>${side}</div>` : ''}

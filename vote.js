@@ -5,6 +5,8 @@
 const crypto = require('crypto');
 
 const MAX_PLAYERS = 8;
+const OPEN_MS = Number(process.env.VOTE_OPEN_MS) || 10000; // cada participante se evalúa durante 10 segundos
+const GRACE_MS = 1000; // margen para los votos que venían en camino al llegar a cero
 const SIGNUP_MS = Number(process.env.VOTE_SIGNUP_MS) || 120000; // el llamado a participar dura 2 minutos
 
 module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, findPlayer, venue, notify }) {
@@ -33,7 +35,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
     const last = by(s.last);
     return {
       rev: s.rev, venue: venue(), title: s.title, phase: s.phase, now: Date.now(),
-      signup: s.phase === 'voting' && !!s.signup, signupUntil: s.signup ? s.signupUntil || 0 : 0, signupMs: SIGNUP_MS, max: MAX_PLAYERS, room: Math.max(0, MAX_PLAYERS - s.players.length),
+      signup: s.phase === 'voting' && !!s.signup, clockUntil: s.signup ? s.signupUntil || 0 : s.phase === 'voting' && s.open ? s.openUntil || 0 : 0, clockMs: s.signup ? SIGNUP_MS : OPEN_MS, max: MAX_PLAYERS, room: Math.max(0, MAX_PLAYERS - s.players.length),
       players: s.players.map((p) => ({ id: p.id, no: no(p), name: p.name, thing: p.thing || '', done: !!p.done })),
       open: open ? { id: open.id, no: no(open), name: open.name, thing: open.thing || '' } : null,
       last: last ? { id: last.id, no: no(last), name: last.name, thing: last.thing || '' } : null,
@@ -107,7 +109,12 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
   });
 
   // Al agotarse el reloj, las inscripciones se cierran solas
-  setInterval(() => { const s = v(); if (s.signup && s.signupUntil && Date.now() >= s.signupUntil) { s.signup = false; changed(); } }, 500).unref();
+  setInterval(() => {
+    const s = v();
+    if (s.signup && s.signupUntil && Date.now() >= s.signupUntil) { s.signup = false; changed(); }
+    // La votación de cada participante se cierra sola al agotarse sus 10 segundos
+    if (s.phase === 'voting' && s.open && s.openUntil && Date.now() >= s.openUntil + GRACE_MS) { actions.close(s); changed(); }
+  }, 250).unref();
 
   const actions = {
     signup: (s, b) => {
@@ -139,6 +146,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       if (!by(b.id)) return 'Ese participante ya no está';
       if (s.open && s.open !== b.id) { by(s.open).done = true; s.last = s.open; }
       s.open = b.id;
+      s.openUntil = Date.now() + OPEN_MS;
       s.signup = false; // al empezar a votar se cierran las inscripciones
       return null;
     },
