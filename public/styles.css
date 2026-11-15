@@ -1014,3 +1014,13 @@ body.full #rf .rf-card.win .rf-name:not(.small) { font-size: min(21vh, calc(84vw
 .pvote-in { margin: 14px 0 6px; text-align: center; font-weight: 700; color: #5fe0a0; }
 .pvote-in b { display: block; margin: 8px 0; font-size: 1.5rem; color: #fff; overflow-wrap: anywhere; }
 .pvote-in small { display: block; color: #fff; opacity: .9; font-weight: 600; }
+
+/* Reloj del llamado a participar */
+.v-clock { font-variant-numeric: tabular-nums; }
+.pvote-clock { margin: 10px 0 0; text-align: center; font-weight: 700; }
+.pvote-clock b { font-size: 1.4rem; color: #ffe14d; }
+.vc-signup .v-clock { color: #5fe0a0; }
+
+.vf-main small { white-space: normal; line-height: 1.25; }
+.vf-main b { font-size: min(17vh, calc(46vw / (var(--n, 8) * .64))); }
+.vf-main b.vf-clock { font-size: 34vh; line-height: 1; }

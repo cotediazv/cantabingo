@@ -5,6 +5,7 @@
 const crypto = require('crypto');
 
 const MAX_PLAYERS = 8;
+const SIGNUP_MS = Number(process.env.VOTE_SIGNUP_MS) || 120000; // el llamado a participar dura 2 minutos
 
 module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, findPlayer, venue, notify }) {
   const blank = () => ({ title: '', players: [], open: null, last: null, phase: 'voting', rank: [], revealed: 0, final: null, winner: null, winAt: 0, rev: ((db.vote || {}).rev || 0) + 1 });
@@ -32,7 +33,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
     const last = by(s.last);
     return {
       rev: s.rev, venue: venue(), title: s.title, phase: s.phase, now: Date.now(),
-      signup: s.phase === 'voting' && !!s.signup, room: Math.max(0, MAX_PLAYERS - s.players.length),
+      signup: s.phase === 'voting' && !!s.signup, signupUntil: s.signup ? s.signupUntil || 0 : 0, signupMs: SIGNUP_MS, room: Math.max(0, MAX_PLAYERS - s.players.length),
       players: s.players.map((p) => ({ id: p.id, no: no(p), name: p.name, thing: p.thing || '', done: !!p.done })),
       open: open ? { id: open.id, no: no(open), name: open.name, thing: open.thing || '' } : null,
       last: last ? { id: last.id, no: no(last), name: last.name, thing: last.thing || '' } : null,
@@ -104,10 +105,14 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
     return res.json({ ok: true, no: s.players.length });
   });
 
+  // Al agotarse el reloj, las inscripciones se cierran solas
+  setInterval(() => { const s = v(); if (s.signup && s.signupUntil && Date.now() >= s.signupUntil) { s.signup = false; changed(); } }, 500).unref();
+
   const actions = {
     signup: (s, b) => {
       if (s.phase !== 'voting') return 'El concurso ya pasó a los resultados';
       s.signup = !!b.on;
+      s.signupUntil = s.signup ? Date.now() + SIGNUP_MS : 0; // reloj en cuenta regresiva
       return null;
     },
     title: (s, b) => { s.title = clean(b.title, 50); },
