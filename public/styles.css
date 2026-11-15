@@ -1054,3 +1054,11 @@ body.full #rf .rf-card.win .rf-name:not(.small) { font-size: min(21vh, calc(84vw
 /* Leyenda del QR de la votación: es para quien todavía no entra a la sala */
 .vg-qr b, .vf-qr b { max-width: 22vh; white-space: normal; text-align: center; text-transform: none; font-size: 1.9vh; line-height: 1.2; font-weight: 800; }
 .vf-qr b { max-width: 19vh; font-size: 1.8vh; }
+
+/* El objeto que se está evaluando va grande y destacado, junto al nombre */
+.vg-main.featured { gap: .8vh; }
+.vg-main.featured b { font-size: min(5.4vh, calc(44vw / (var(--n, 8) * .62))); }
+.vg-main.featured span { font-size: min(5.6vh, calc(44vw / (var(--n, 8) * .5))); font-weight: 900; color: #2a1030; background: var(--gc-yellow); padding: .2vh 2.4vh .5vh; border-radius: 99px; line-height: 1.15; box-shadow: .3vh .3vh 0 var(--gc-shade); }
+.vf-main.featured small { font-size: min(8.5vh, calc(46vw / (var(--n, 8) * .62))); letter-spacing: .02em; text-transform: none; color: #2a1030; background: var(--gc-yellow); padding: 1vh 4vh 1.4vh; box-shadow: .5vh .5vh 0 var(--gc-shade); }
+.vf-main.featured b { font-size: min(12vh, calc(46vw / (var(--n, 8) * .64))); }
+.pvote-ask .v-thing { display: inline-block; margin-top: 8px; padding: 4px 16px 6px; border-radius: 99px; background: #ffc400; color: #2a1030; font-size: 1.5rem; font-weight: 800; line-height: 1.2; }
