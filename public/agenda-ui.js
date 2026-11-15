@@ -1,4 +1,4 @@
-/* global views, app, $, esc, api */
+/* global views, app, $, esc, api, isAdmin, viewLogin, fail */
 // Programación del local: el aviso «A continuación…» que se suma a las otras gráficas, y la vista
 // «Show» con el artista de la noche (zócalo para OBS y pantalla completa para el tablero del DJ).
 let agendaState = null;
@@ -49,6 +49,25 @@ const nextUpHTML = (cls = '') => {
       tags.forEach((t) => { t.style.minWidth = `${wide}px`; });
     });
     return () => { stop(); document.body.classList.remove('obs', 'gc-screen'); };
+  };
+
+  // Panel del animador: pone el show de hoy en pantalla y muestra la programación del día
+  views.showctl = async () => {
+    if (!(await isAdmin())) return viewLogin();
+    app.innerHTML = `<div class="panel"><h1 style="margin:0">⭐ Show</h1><span class="muted" id="sc-sub"></span>
+        <div id="sc-body" style="margin-top:14px"></div>
+        <p class="muted small" style="margin-top:12px">La programación se edita en el <a href="#/control">Centro de control</a>.</p>
+      </div>
+      <p style="margin-top:20px"><button class="big" data-back-bingo>← Volver al bingo</button></p>`;
+    await api('POST', '/api/stage', { show: 'show' }).catch(fail); // al entrar, el show pasa a la pantalla
+    const stop = follow((a) => {
+      if (!$('#sc-body')) return;
+      $('#sc-sub').textContent = `${a.name} · ${a.date}`;
+      $('#sc-body').innerHTML = `${a.show ? `<div class="vc-read"><small>En pantalla</small>${a.show.kind ? `<em>${esc(a.show.kind)}</em>` : ''}<b>${esc(a.show.name)}</b></div>`
+    : '<p class="muted">Hoy no hay show en cartelera: la pantalla de OBS queda sin gráfica.</p>'}
+        <div class="vc-list">${a.blocks.map((x) => `<div class="vc-row ${a.current && a.current.time === x.time ? 'on' : ''}"><p><b>${x.time} · ${esc(x.label)}</b><small>${a.current && a.current.time === x.time ? 'Ahora' : x.upcoming ? 'Más tarde' : 'Ya pasó'}</small></p></div>`).join('')}</div>`;
+    });
+    return () => stop();
   };
 
   views.showFull = async () => {

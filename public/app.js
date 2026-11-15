@@ -233,6 +233,7 @@ views.home = async () => {
         <a class="s3" href="#/ruedas"><i>3</i><span>🎡</span><b>El Rosco</b></a>
         <a class="s4" href="#/karaokectl"><i>4</i><span>🎤</span><b>Karaoke</b></a>
         <a class="s5" href="#/votoctl"><i>5</i><span>🗳️</span><b>Votación</b></a>
+        <a class="s6" href="#/showctl"><i>6</i><span>⭐</span><b>Show</b></a>
       </div>
       <a class="home-control" href="#/control">🎛️ Centro de control</a>
       <p style="margin-top:28px"><button id="logout">Cerrar sesión de moderador</button></p>
