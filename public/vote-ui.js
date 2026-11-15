@@ -48,7 +48,7 @@
       if (st.phase === 'voting') {
         const pending = st.players.filter((p) => !p.done).length;
         html = `<div class="vc-signup ${st.signup ? 'on' : ''}"><p><b>${st.signup ? `📲 Inscripciones abiertas · <span class="v-clock">${clockText()}</span>` : 'Inscripciones desde el celular'}</b>
-            <small>${st.signup ? 'A toda la sala le aparece la invitación. Quien se inscribe llega a esta lista con su nombre y lo que trae.' : 'Ábrelas para que la gente se anote sola, con su nombre y lo que trae. Corre un reloj de 1:30.'}</small></p>
+            <small>${st.signup ? 'A toda la sala le aparece la invitación. Quien se inscribe llega a esta lista con su nombre y lo que trae.' : 'Ábrelas para que la gente se anote sola, con su nombre y lo que trae. Corre un reloj de 2:00.'}</small></p>
             <button class="${st.signup ? '' : 'primary'}" data-act="signup" data-on="${st.signup ? '' : '1'}">${st.signup ? 'Cerrar' : 'Abrir inscripciones'}</button></div>
           <h2>Participantes</h2>
           <form id="vc-add" class="row" style="gap:8px"><input type="text" id="vc-name" maxlength="30" placeholder="Nombre" autocomplete="off" style="flex:1;min-width:0"><input type="text" id="vc-thing" maxlength="40" placeholder="Objeto (opcional)" autocomplete="off" style="flex:1.3;min-width:0"><button class="primary">Agregar</button></form>

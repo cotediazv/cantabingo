@@ -8,7 +8,7 @@ const MAX_PLAYERS = 8;
 const TITLE = 'El objeto más extraño'; // por ahora el concurso siempre se llama así
 const OPEN_MS = Number(process.env.VOTE_OPEN_MS) || 18000; // cada participante se evalúa durante 18 segundos
 const GRACE_MS = 1000; // margen para los votos que venían en camino al llegar a cero
-const SIGNUP_MS = Number(process.env.VOTE_SIGNUP_MS) || 90000; // el llamado a participar dura 1:30
+const SIGNUP_MS = Number(process.env.VOTE_SIGNUP_MS) || 120000; // el llamado a participar dura 2:00
 
 module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, findPlayer, venue, notify }) {
   const blank = () => ({ title: TITLE, players: [], open: null, last: null, phase: 'voting', rank: [], revealed: 0, final: null, winner: null, winAt: 0, rev: ((db.vote || {}).rev || 0) + 1 });
