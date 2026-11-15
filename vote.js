@@ -4,6 +4,8 @@
 // 3) Gran final: los dos primeros se definen con una votación nueva, eligiendo a uno de los dos.
 const crypto = require('crypto');
 
+const MAX_PLAYERS = 12;
+
 module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, findPlayer, venue, notify }) {
   const blank = () => ({ title: '', players: [], open: null, last: null, phase: 'voting', rank: [], revealed: 0, final: null, winner: null, winAt: 0, rev: ((db.vote || {}).rev || 0) + 1 });
   db.vote ||= blank();
@@ -30,6 +32,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
     const last = by(s.last);
     return {
       rev: s.rev, venue: venue(), title: s.title, phase: s.phase, now: Date.now(),
+      signup: s.phase === 'voting' && !!s.signup, room: Math.max(0, MAX_PLAYERS - s.players.length),
       players: s.players.map((p) => ({ id: p.id, no: no(p), name: p.name, thing: p.thing || '', done: !!p.done })),
       open: open ? { id: open.id, no: no(open), name: open.name, thing: open.thing || '' } : null,
       last: last ? { id: last.id, no: no(last), name: last.name, thing: last.thing || '' } : null,
@@ -47,6 +50,8 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
     const token = String(req.query.token || '');
     if (token && findPlayer(String(req.query.sid || ''), token)) {
       out.mine = s.final && (s.final.open || s.final.closed) ? s.final.votes[token] || null : s.open ? (by(s.open).votes[token] || null) : null;
+      const own = s.players.find((p) => p.by === token); // si esta persona se inscribió para participar
+      out.me = own ? { no: no(own), thing: own.thing || '' } : null;
     }
     res.json(out);
   });
@@ -81,14 +86,37 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
     return res.json({ ok: true, mine: b.value });
   });
 
+  // Inscripción desde el celular: la persona escribe con qué participa y queda en la lista del animador,
+  // con el nombre con que entró a la sala. Una inscripción por celular.
+  app.post('/api/vote/join', (req, res) => {
+    const b = req.body || {};
+    const token = String(b.token || '');
+    const pl = findPlayer(String(b.sid || ''), token);
+    if (!pl) return fail(res, 403, 'Primero únete a la sala con tu nombre');
+    const s = v();
+    if (s.phase !== 'voting' || !s.signup) return fail(res, 409, 'Las inscripciones están cerradas en este momento');
+    if (s.players.some((p) => p.by === token)) return fail(res, 409, 'Ya estás en la lista');
+    const what = clean(b.thing, 40);
+    if (what.length < 2) return fail(res, 400, 'Escribe con qué vas a participar');
+    if (s.players.length >= MAX_PLAYERS) return fail(res, 409, 'Ya se completaron los cupos');
+    s.players.push({ id: crypto.randomBytes(4).toString('hex'), name: pl.name, thing: what, by: token, votes: {}, done: false });
+    changed();
+    return res.json({ ok: true, no: s.players.length });
+  });
+
   const actions = {
+    signup: (s, b) => {
+      if (s.phase !== 'voting') return 'El concurso ya pasó a los resultados';
+      s.signup = !!b.on;
+      return null;
+    },
     title: (s, b) => { s.title = clean(b.title, 50); },
     add: (s, b) => {
       const name = clean(b.name, 30).toLocaleUpperCase('es');
       if (!name) return 'Escribe el nombre del participante';
       if (s.phase !== 'voting') return 'El concurso ya pasó a los resultados';
       if (s.players.some((p) => p.name === name)) return 'Ya hay un participante con ese nombre';
-      if (s.players.length >= 12) return 'Máximo 12 participantes';
+      if (s.players.length >= MAX_PLAYERS) return `Máximo ${MAX_PLAYERS} participantes`;
       // El objeto (o lo que presenta) es opcional: dos o tres palabras para reconocerlo
       s.players.push({ id: crypto.randomBytes(4).toString('hex'), name, thing: clean(b.thing, 40), votes: {}, done: false });
       return null;
@@ -105,6 +133,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       if (!by(b.id)) return 'Ese participante ya no está';
       if (s.open && s.open !== b.id) { by(s.open).done = true; s.last = s.open; }
       s.open = b.id;
+      s.signup = false; // al empezar a votar se cierran las inscripciones
       return null;
     },
     close: (s) => {

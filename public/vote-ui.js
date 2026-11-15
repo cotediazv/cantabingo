@@ -29,7 +29,7 @@
     const paint = () => {
       const box = $('#vc-body');
       if (!box || !st) return;
-      const sig = JSON.stringify([st.phase, st.players, st.open, st.counts, st.places, st.next, st.final, st.tally, st.winner]);
+      const sig = JSON.stringify([st.phase, st.signup, st.players, st.open, st.counts, st.places, st.next, st.final, st.tally, st.winner]);
       if (sig === last) return;
       last = sig;
       if (document.activeElement !== $('#vc-title')) $('#vc-title').value = st.title;
@@ -39,14 +39,17 @@
       let html = '';
       if (st.phase === 'voting') {
         const pending = st.players.filter((p) => !p.done).length;
-        html = `<h2>Participantes</h2>
+        html = `<div class="vc-signup ${st.signup ? 'on' : ''}"><p><b>${st.signup ? '📲 Inscripciones abiertas' : 'Inscripciones desde el celular'}</b>
+            <small>${st.signup ? 'A toda la sala le aparece la invitación. Quien se inscribe llega a esta lista con su nombre y lo que trae.' : 'Ábrelas para que la gente se anote sola, con su nombre y lo que trae.'}</small></p>
+            <button class="${st.signup ? '' : 'primary'}" data-act="signup" data-on="${st.signup ? '' : '1'}">${st.signup ? 'Cerrar' : 'Abrir inscripciones'}</button></div>
+          <h2>Participantes</h2>
           <form id="vc-add" class="row" style="gap:8px"><input type="text" id="vc-name" maxlength="30" placeholder="Nombre" autocomplete="off" style="flex:1;min-width:0"><input type="text" id="vc-thing" maxlength="40" placeholder="Objeto (opcional)" autocomplete="off" style="flex:1.3;min-width:0"><button class="primary">Agregar</button></form>
           <div class="vc-list">${st.players.map((p) => {
     const on = st.open && st.open.id === p.id;
     return `<div class="vc-row ${on ? 'on' : ''}"><p><b>${nm(p)}</b>${thing(p)}<small>${on ? `Votación abierta · ${st.counts[p.id]} votos` : p.done ? `✔ Votación recibida · ${st.counts[p.id]} votos` : 'Pendiente'}</small></p>
               ${on ? '<button class="primary" data-act="close">Cerrar votación</button>' : `<button data-act="open" data-id="${p.id}">${p.done ? 'Reabrir' : 'Abrir votación'}</button>`}
               ${on ? '' : `<button class="vc-x" data-act="remove" data-id="${p.id}" aria-label="Quitar a ${esc(p.name)}">✕</button>`}</div>`;
-  }).join('') || '<p class="muted">Anota a cada participante a medida que le preguntas el nombre.</p>'}</div>
+  }).join('') || '<p class="muted">Abre las inscripciones o anota tú a cada participante.</p>'}</div>
           ${st.players.length >= 2 ? `<button class="primary big" data-act="results" style="margin-top:16px" ${st.open || pending ? 'disabled' : ''}>🏁 Pasar a los resultados</button>
           ${st.open || pending ? `<p class="muted small" style="margin-top:6px">${st.open ? 'Cierra la votación en curso para continuar.' : `Falta votar a ${pending} participante${pending > 1 ? 's' : ''}.`}</p>` : ''}` : ''}`;
       } else if (st.phase === 'results') {
@@ -72,7 +75,7 @@
       if ($('#vc-name')) { $('#vc-name').value = keep; $('#vc-thing').value = keepThing; if (focus) $(focus).focus(); }
       if ($('#vc-add')) $('#vc-add').onsubmit = async (e) => { e.preventDefault(); const name = $('#vc-name').value; const what = $('#vc-thing').value; if (await act('add', { name, thing: what })) { $('#vc-name').value = ''; $('#vc-thing').value = ''; $('#vc-name').focus(); } };
     };
-    $('#vc-body').onclick = (e) => { const b = e.target.closest('[data-act]'); if (b && !b.disabled) act(b.dataset.act, { id: b.dataset.id }); };
+    $('#vc-body').onclick = (e) => { const b = e.target.closest('[data-act]'); if (b && !b.disabled) act(b.dataset.act, { id: b.dataset.id, on: !!b.dataset.on }); };
     $('#vc-title').onchange = (e) => act('title', { title: e.target.value });
     $('#vc-reset').onclick = () => { if (window.confirm('¿Borrar este concurso y empezar uno nuevo?')) act('reset'); };
     const tick = async () => { const r = await api('GET', '/api/vote/host').catch(() => null); if (r) { st = r; paint(); } };
@@ -90,7 +93,7 @@
       const box = $('#pvote');
       const st = await api('GET', `/api/vote?sid=${encodeURIComponent(sid)}&token=${encodeURIComponent(token)}`).catch(() => null);
       if (!st || !box || box.hidden) return;
-      const sig = JSON.stringify([st.rev, st.mine]);
+      const sig = JSON.stringify([st.rev, st.mine, st.me]);
       if (sig === shown) return;
       shown = sig;
       const head = `<div class="pvote-head"><b>🗳️ ${esc(title(st))}</b></div>`;
@@ -106,8 +109,27 @@
         body = `<p class="pvote-ask">Pon tu nota a<b>${nm(st.open)}</b>${thing(st.open)}</p>
           <div class="pvote-keys">${Array.from({ length: 10 }, (_, i) => `<button type="button" data-v="${i + 1}" data-id="${st.open.id}" class="${st.mine === i + 1 ? 'on' : ''}">${i + 1}</button>`).join('')}</div>
           ${st.mine ? `<p class="pvote-ok">✔ Tu nota: ${st.mine}. Puedes cambiarla mientras la votación esté abierta.</p>` : '<p class="muted small" style="text-align:center">1 es la nota más baja y 10 la más alta.</p>'}`;
-      } else body = `<p class="pvote-wait">${st.last ? 'Votación recibida. ¡Gracias!<br>' : ''}Cuando se abra la votación, aquí aparecerá la teclera.</p>`;
+      } else if (st.me) body = `<div class="pvote-in">✔ Estás en la lista<b>${badge(st.me.no)}${esc(st.me.thing)}</b><small>Atento al llamado del animador para subir al escenario.</small></div>`;
+      else if (st.signup && st.room) {
+        body = `<form id="pv-join"><p class="pvote-ask">¿Quieres participar?<b>¡Sube a nuestro escenario!</b></p>
+          <label class="f">¿Con qué participas?<input type="text" id="pv-thing" maxlength="40" required minlength="2" autocomplete="off" placeholder="Ej.: paraguas con luces"></label>
+          <button class="primary big" style="margin-top:10px">Inscribirme</button>
+          <p class="muted small" style="text-align:center;margin-top:8px">Te inscribes con el nombre con que entraste a la sala.</p></form>`;
+      } else if (st.signup) body = '<p class="pvote-wait">Ya se completaron los cupos para participar.<br>¡Prepárate para votar!</p>';
+      else body = `<p class="pvote-wait">${st.last ? 'Votación recibida. ¡Gracias!<br>' : ''}Cuando se abra la votación, aquí aparecerá la teclera.</p>`;
+      // Si la pantalla se vuelve a dibujar mientras la persona escribe (llegó otra inscripción), no pierde lo escrito
+      const draft = $('#pv-thing') ? $('#pv-thing').value : '';
+      const typing = document.activeElement === $('#pv-thing');
       box.innerHTML = head + body;
+      if ($('#pv-thing')) { $('#pv-thing').value = draft; if (typing) $('#pv-thing').focus(); }
+      if ($('#pv-join')) {
+        $('#pv-join').onsubmit = async (e) => {
+          e.preventDefault();
+          try { await api('POST', '/api/vote/join', { sid, token, thing: $('#pv-thing').value }); } catch (err) { fail(err); }
+          shown = '';
+          window.phoneVote.draw(sid, token);
+        };
+      }
       box.onclick = async (e) => {
         const b = e.target.closest('[data-v]');
         if (!b) return;
@@ -163,6 +185,7 @@
       const next = st.players.find((p) => !p.done);
       return { tag: 'Votación cerrada', no: st.last.no, main: st.last.name, sub: '✔ Votación recibida', side: next ? ['Sigue', `N.º ${next.no} · ${next.name}`] : ['🏁', 'Ya vienen los resultados'] };
     }
+    if (st.signup) return { tag: 'Inscripciones abiertas', main: title(st), sub: '¿Quieres participar? Inscríbete desde tu celular', side: st.players.length ? [`${st.players.length}`, st.players.length === 1 ? 'Inscrito' : 'Inscritos'] : ['¡Participa!', 'Escanea el código QR'], qr: true };
     return { tag: 'Votación del público', main: title(st), sub: 'Prepárate para votar desde tu celular', side: ['Entra ahora', 'Escanea el código QR'], qr: true };
   };
 
@@ -176,7 +199,7 @@
       if (!box) return;
       $('#vg-win').innerHTML = celebrating ? winHTML(st) : '';
       const s = scene(st);
-      const html = celebrating ? '' : `${s.qr ? `<div class="vg-qr">${qr(joinUrl())}<b>¡Entra y vota!</b></div>` : ''}
+      const html = celebrating ? '' : `${s.qr ? `<div class="vg-qr">${qr(joinUrl())}<b>${st.signup ? '¡Entra y participa!' : '¡Entra y vota!'}</b></div>` : ''}
         <div class="vg-bar">
           <div class="vg-tag"><small>${esc(title(st))}</small><b>🗳️ ${esc(s.tag)}</b></div>
           <div class="vg-main">${s.duel ? `<b class="vg-duel" ${n(st.final.players.map((p) => `${p.name}...`).join(' vs '))}>${versus(st)}</b>` : `<b ${n(s.no ? `${s.main}...` : s.main)}>${badge(s.no)}${esc(s.main)}</b>`}<span ${n(s.sub)}>${esc(s.sub)}</span></div>
