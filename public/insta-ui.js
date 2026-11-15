@@ -1,4 +1,4 @@
-/* global views, app, $, esc, api, isAdmin, viewLogin, fail, toast, activitiesNav */
+/* global views, app, $, esc, api, qr, joinUrl, isAdmin, viewLogin, fail, toast, activitiesNav */
 // «Síguenos en Instagram»: panel del animador, tarjeta del celular, GC de OBS y tablero del DJ.
 (() => {
   const url = (h) => `https://www.instagram.com/${encodeURIComponent(h)}/`;
@@ -72,7 +72,8 @@
       const box = $('#vg');
       if (!box) return;
       box.className = `th-${st.venue}`;
-      box.innerHTML = st.handle ? `<div class="vg-bar">
+      box.innerHTML = st.handle ? `<div class="vg-qr">${qr(joinUrl())}<b>Únete a la sesión</b></div>
+        <div class="vg-bar">
           <div class="vg-tag"><small>${esc(st.name)}</small><b>📸 Síguenos en Instagram</b></div>
           <div class="vg-main"><b style="text-transform:none;--n:${Math.max(6, st.handle.length + 1)}">@${esc(st.handle)}</b><span ${n('Programación y registros')}>Programación y registros</span></div>
           <div class="vg-side"><small ${n('Míralo')}>Míralo</small><b ${n('En tu celular')}>En tu celular</b></div>
@@ -87,9 +88,10 @@
     const stop = follow((st) => {
       const box = $('#vf');
       if (!box) return;
-      box.className = `th-${st.venue} solo`;
+      box.className = `th-${st.venue}`;
       box.innerHTML = `<header class="vf-top"><b>Síguenos en Instagram</b><span>📸 ${esc(st.name)}</span></header>
-        <section class="vf-main"><small>Síguenos en Instagram</small><b style="text-transform:none;--n:${(st.handle || 'KRB Stage').length + 1}">${st.handle ? `@${esc(st.handle)}` : 'KRB Stage'}</b><span style="--n:24">Programación y registros</span></section>`;
+        <section class="vf-main"><small>Síguenos en Instagram</small><b style="text-transform:none;--n:${(st.handle || 'KRB Stage').length + 1}">${st.handle ? `@${esc(st.handle)}` : 'KRB Stage'}</b><span style="--n:24">Programación y registros</span></section>
+        <aside class="vf-side"><div class="vf-qr insta">${qr(joinUrl())}<b>Únete a la sesión</b></div></aside>`;
     });
     return () => stop();
   };
