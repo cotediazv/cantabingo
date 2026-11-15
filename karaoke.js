@@ -36,6 +36,8 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
   let busy = false;
 
   const clean = (v, max = 80) => String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, max);
+  // Título sin lo que venga entre paréntesis: «Como la Flor (Live)» → «Como la Flor». Si no queda nada, se deja como estaba.
+  const bare = (v) => { const t = clean(v, 200); return clean(t.replace(/\s*[(（][^)）]*[)）]?/g, ' '), 80) || clean(t, 80); };
   const split = (text) => {
     const t = clean(text, 160);
     for (const sep of SEPARATORS) {
@@ -183,7 +185,7 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
   const songCache = new Map();
   const tidySongs = (results) => {
     const seen = new Set();
-    return (Array.isArray(results) ? results : []).map((x) => ({ song: clean(x.trackName, 80), artist: clean(x.artistName, 60) }))
+    return (Array.isArray(results) ? results : []).map((x) => ({ song: bare(x.trackName), artist: clean(x.artistName, 60) }))
       .filter((x) => x.song && x.artist && !seen.has(`${x.song}|${x.artist}`.toLowerCase()) && seen.add(`${x.song}|${x.artist}`.toLowerCase())).slice(0, 5);
   };
   app.get('/api/songs', async (req, res) => {
@@ -218,9 +220,9 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
     if (!pl) return fail(res, 403, 'Primero únete a la sala con tu nombre');
     if (db.stage !== 'karaoke') return fail(res, 400, 'El karaoke no está abierto en este momento');
     if (!db.karaoke.phone) return fail(res, 400, 'Por ahora no se están recibiendo pedidos desde el celular');
-    const song = clean(b.song, 80);
+    const song = bare(b.song);
     const artist = clean(b.artist, 60);
-    const altSong = clean(b.altSong, 80);
+    const altSong = bare(b.altSong);
     const altArtist = clean(b.altArtist, 60);
     if (!song || !artist) return fail(res, 400, 'Escribe la canción y su artista');
     if (!altSong || !altArtist) return fail(res, 400, 'Escribe también una canción de reemplazo y su artista');

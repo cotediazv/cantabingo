@@ -1072,7 +1072,7 @@ async function backToBingo() {
 // La consulta sale del propio celular; si el navegador no lo permite, pasa por nuestro servidor.
 const tidySongs = (results) => {
   const seen = new Set();
-  return (results || []).map((x) => ({ song: String(x.trackName || x.song || '').trim(), artist: String(x.artistName || x.artist || '').trim() }))
+  return (results || []).map((x) => ({ song: (String(x.trackName || x.song || '').replace(/\s*[(（][^)）]*[)）]?/g, ' ').replace(/\s+/g, ' ').trim() || String(x.trackName || x.song || '').trim()), artist: String(x.artistName || x.artist || '').trim() }))
     .filter((x) => x.song && x.artist && !seen.has(`${x.song}|${x.artist}`.toLowerCase()) && seen.add(`${x.song}|${x.artist}`.toLowerCase())).slice(0, 5);
 };
 let songDirect = true; // se apaga si el celular no logra hablar directo con iTunes
