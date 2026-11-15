@@ -20,7 +20,7 @@ const POLL_MS = 3000; // cada cuánto se consulta a Google mientras el karaoke e
 const TIMEOUT_MS = 10000; // Apps Script puede tardar en un arranque en frío
 const SEPARATORS = [' – ', ' • ', ' - ']; // "Canción – Artista": se corta por la última aparición
 
-module.exports = function karaoke({ app, db, save, requireAdmin, fail }) {
+module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlayer }) {
   db.karaoke ||= {};
   db.karaoke.venue ||= 'frida';
   db.karaoke.urls ||= {};
@@ -104,6 +104,78 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail }) {
     await refresh(db.karaoke.venue); // se prueba de inmediato, para avisar si algo quedó mal
     const c = cache[db.karaoke.venue];
     res.json({ venue: db.karaoke.venue, urls: db.karaoke.urls, status: { at: c.at, error: c.error, total: c.list.length } });
+  });
+
+  // ---------- Pedidos desde el celular ----------
+  // La persona ya está inscrita en la sala con su nombre: solo escribe la canción y la de reemplazo.
+  // El pedido se envía al MISMO formulario de Google del local, como si lo hubiera llenado a mano,
+  // así el detector de repetidas, la planilla y la app del equipo siguen funcionando igual.
+  const forms = {}; // local -> { action, fields: [{ id, title, required, options }] } (estructura leída del formulario)
+  const norm = (t) => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  async function loadForm(venue) {
+    if (forms[venue] && Date.now() - forms[venue].at < 6 * 3600e3) return forms[venue];
+    const url = (db.karaoke.urls[venue] || {}).form;
+    if (!url) throw new Error('Falta el formulario de pedidos de este local');
+    const res = await fetch(url, { redirect: 'follow', signal: AbortSignal.timeout(TIMEOUT_MS) });
+    const html = await res.text();
+    const m = html.match(/FB_PUBLIC_LOAD_DATA_\s*=\s*(\[[\s\S]*?\]);\s*<\/script>/);
+    if (!m) throw new Error('No se pudo leer la estructura del formulario');
+    const data = JSON.parse(m[1]);
+    const fields = (data[1][1] || []).filter((q) => Array.isArray(q[4]) && q[4][0]).map((q) => ({
+      id: q[4][0][0], title: String(q[1] || ''), required: !!q[4][0][2], options: (q[4][0][1] || []).map((o) => o[0]).filter(Boolean),
+    }));
+    forms[venue] = { action: res.url.replace(/\/viewform.*$/, '/formResponse'), fields, at: Date.now() };
+    return forms[venue];
+  }
+  // A qué pregunta del formulario corresponde cada dato, según su título
+  const pick = (fields, test) => fields.find((f) => test(norm(f.title)));
+  function mapFields(fields) {
+    const alt = (t) => /reemplazo|alternativ|segunda|opcion 2|respaldo/.test(t);
+    return {
+      name: pick(fields, (t) => /nombre/.test(t) && !alt(t)),
+      song: pick(fields, (t) => /cancion|tema/.test(t) && !alt(t) && !/artista/.test(t)),
+      artist: pick(fields, (t) => /artista|interprete|banda/.test(t) && !alt(t)),
+      altSong: pick(fields, (t) => /cancion|tema/.test(t) && alt(t) && !/artista/.test(t)),
+      altArtist: pick(fields, (t) => /artista|interprete|banda/.test(t) && alt(t)),
+    };
+  }
+  const recent = {}; // nombre -> último envío, para que nadie mande pedidos en ráfaga
+
+  app.post('/api/karaoke/request', async (req, res) => {
+    const b = req.body || {};
+    const pl = findPlayer(String(b.sid || ''), String(b.token || ''));
+    if (!pl) return fail(res, 403, 'Primero únete a la sala con tu nombre');
+    if (db.stage !== 'karaoke') return fail(res, 400, 'El karaoke no está abierto en este momento');
+    const song = clean(b.song, 80);
+    const artist = clean(b.artist, 60);
+    const altSong = clean(b.altSong, 80);
+    const altArtist = clean(b.altArtist, 60);
+    if (!song || !artist) return fail(res, 400, 'Escribe la canción y su artista');
+    if (!altSong || !altArtist) return fail(res, 400, 'Escribe también una canción de reemplazo y su artista');
+    if (recent[pl.name] && Date.now() - recent[pl.name] < 60000) return fail(res, 429, 'Ya enviaste un pedido hace un momento. Espera un minuto para enviar otro.');
+    try {
+      const form = await loadForm(db.karaoke.venue);
+      const map = mapFields(form.fields);
+      const missing = ['name', 'song', 'artist', 'altSong', 'altArtist'].filter((k) => !map[k]);
+      if (missing.length) throw new Error(`El formulario no tiene preguntas reconocibles para: ${missing.join(', ')}`);
+      const values = { name: pl.name, song, artist, altSong, altArtist };
+      const body = new URLSearchParams();
+      const used = new Set();
+      for (const [k, f] of Object.entries(map)) { body.append(`entry.${f.id}`, values[k]); used.add(f.id); }
+      // Preguntas obligatorias que aquí no se preguntan (por ejemplo «Dónde canta»): se responde la primera opción
+      for (const f of form.fields) {
+        if (used.has(f.id) || !f.required) continue;
+        if (!f.options.length) throw new Error(`El formulario exige «${f.title}», que no se puede responder desde el celular`);
+        body.append(`entry.${f.id}`, f.options[0]);
+      }
+      const out = await fetch(form.action, { method: 'POST', body, redirect: 'follow', signal: AbortSignal.timeout(TIMEOUT_MS) });
+      if (!out.ok) throw new Error(`Google no aceptó el pedido (${out.status})`);
+      recent[pl.name] = Date.now();
+      refresh(db.karaoke.venue);
+      res.json({ ok: true });
+    } catch (err) {
+      fail(res, 502, `No se pudo enviar el pedido: ${clean(err && err.message, 160)}. Puedes pedirlo con el código QR de la pantalla.`);
+    }
   });
 
   return { refresh: () => refresh(db.karaoke.venue), venues: VENUES };

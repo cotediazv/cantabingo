@@ -570,7 +570,7 @@ const connectedNames = () => {
 };
 require('./raffle.js')({ app, db, save, requireAdmin, fail, setStage, refreshAll, connectedNames });
 
-const karaoke = require('./karaoke.js')({ app, db, save, requireAdmin, fail });
+const karaoke = require('./karaoke.js')({ app, db, save, requireAdmin, fail, findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null });
 
 // Leer la pantalla actual es público, para que la fuente de OBS no necesite iniciar sesión; cambiarla es del moderador.
 app.get('/api/stage', (_req, res) => res.json({ show: STAGES.includes(db.stage) ? db.stage : 'bingo' }));
