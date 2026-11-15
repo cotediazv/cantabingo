@@ -4,9 +4,12 @@ const VENUES = { frida: 'Frida Kahlo', kennedy: 'Kennedy', tobalaba: 'Tobalaba' 
 
 module.exports = function insta({ app, db, save, requireAdmin, fail, venue }) {
   db.insta ||= { handles: {} };
+  // Cuentas de cada local; se pueden corregir en el panel de Instagram
+  const DEFAULTS = { kennedy: 'krbstage', tobalaba: 'krbstage3', frida: 'krbstage4' };
+  for (const [v, h] of Object.entries(DEFAULTS)) db.insta.handles[v] ||= h;
   // Acepta «@cuenta», «cuenta» o el enlace completo del perfil; guarda solo el nombre de la cuenta
   const clean = (v) => {
-    const t = String(v == null ? '' : v).trim().replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/^@/, '').split(/[/?#]/)[0];
+    const t = String(v == null ? '' : v).trim().replace(/^(https?:\/\/)?(www\.)?instagram\.com\//i, '').replace(/^@/, '').split(/[/?#]/)[0];
     return /^[A-Za-z0-9._]{1,30}$/.test(t) ? t : '';
   };
   const state = () => { const v = venue(); return { venue: v, name: VENUES[v] || v, handle: db.insta.handles[v] || '' }; };
