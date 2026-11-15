@@ -5,12 +5,13 @@
 const crypto = require('crypto');
 
 const MAX_PLAYERS = 8;
+const TITLE = 'El objeto más extraño'; // por ahora el concurso siempre se llama así
 const OPEN_MS = Number(process.env.VOTE_OPEN_MS) || 10000; // cada participante se evalúa durante 10 segundos
 const GRACE_MS = 1000; // margen para los votos que venían en camino al llegar a cero
 const SIGNUP_MS = Number(process.env.VOTE_SIGNUP_MS) || 90000; // el llamado a participar dura 1:30
 
 module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, findPlayer, venue, notify }) {
-  const blank = () => ({ title: '', players: [], open: null, last: null, phase: 'voting', rank: [], revealed: 0, final: null, winner: null, winAt: 0, rev: ((db.vote || {}).rev || 0) + 1 });
+  const blank = () => ({ title: TITLE, players: [], open: null, last: null, phase: 'voting', rank: [], revealed: 0, final: null, winner: null, winAt: 0, rev: ((db.vote || {}).rev || 0) + 1 });
   db.vote ||= blank();
   const v = () => db.vote;
   const clean = (t, max) => String(t == null ? '' : t).replace(/\s+/g, ' ').trim().slice(0, max);
@@ -34,7 +35,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
     const open = by(s.open);
     const last = by(s.last);
     return {
-      rev: s.rev, venue: venue(), title: s.title, phase: s.phase, now: Date.now(),
+      rev: s.rev, venue: venue(), title: s.title || TITLE, phase: s.phase, now: Date.now(),
       signup: s.phase === 'voting' && !!s.signup, clockUntil: s.signup ? s.signupUntil || 0 : s.phase === 'voting' && s.open ? s.openUntil || 0 : 0, clockMs: s.signup ? SIGNUP_MS : OPEN_MS, max: MAX_PLAYERS, room: Math.max(0, MAX_PLAYERS - s.players.length),
       players: s.players.map((p) => ({ id: p.id, no: no(p), name: p.name, thing: p.thing || '', done: !!p.done })),
       open: open ? { id: open.id, no: no(open), name: open.name, thing: open.thing || '' } : null,
@@ -123,7 +124,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       s.signupUntil = s.signup ? Date.now() + SIGNUP_MS : 0; // reloj en cuenta regresiva
       return null;
     },
-    title: (s, b) => { s.title = clean(b.title, 50); },
+    title: (s, b) => { s.title = clean(b.title, 50) || TITLE; },
     add: (s, b) => {
       const name = clean(b.name, 30).toLocaleUpperCase('es');
       if (!name) return 'Escribe el nombre del participante';
