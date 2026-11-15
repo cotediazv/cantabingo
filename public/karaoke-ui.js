@@ -35,6 +35,7 @@
       const [a, b] = st.list;
       const html = `
         ${st.form ? `<div class="kg-qr">${qr(st.form)}<b>¡Pide tu canción!</b></div>` : ''}
+        ${nextUpHTML('kg-up')}
         <div class="kg-bar">
           <div class="kg-tag"><small>Karaoke ${esc(st.name)}</small><b>🎤 ${a ? 'Ahora canta' : 'Pide tu canción'}</b></div>
           ${a ? `<div class="kg-now"><b ${n(a.name)}>${esc(a.name)}</b><span ${n(a.song)}>${esc(a.song)}</span>${a.artist ? `<i ${n(a.artist)}>${esc(a.artist)}</i>` : ''}</div>`

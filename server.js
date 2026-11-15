@@ -547,7 +547,7 @@ app.get('/api/sessions/:sid/events', (req, res) => {
 // Segundo juego de la plataforma
 // Pantalla única de OBS: qué gráfica se muestra ahora. Cambia sola al activar un bingo,
 // crear un rosco o lanzar un sorteo; el moderador también puede cambiarla a mano.
-const STAGES = ['bingo', 'rueda', 'sorteo', 'qr', 'karaoke', 'none'];
+const STAGES = ['bingo', 'rueda', 'sorteo', 'qr', 'karaoke', 'show', 'none'];
 const setStage = (show) => {
   const changed = db.stage !== show;
   db.stage = show;
@@ -571,6 +571,8 @@ const connectedNames = () => {
 require('./raffle.js')({ app, db, save, requireAdmin, fail, setStage, refreshAll, connectedNames });
 
 const karaoke = require('./karaoke.js')({ app, db, save, requireAdmin, fail });
+// Programación del local del día: el de la sala abierta o, si no hay, el elegido en la sección Karaoke
+require('./agenda.js')({ app, db, save, requireAdmin, fail, currentVenue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
 
 // Leer la pantalla actual es público, para que la fuente de OBS no necesite iniciar sesión; cambiarla es del moderador.
 app.get('/api/stage', (_req, res) => res.json({ show: STAGES.includes(db.stage) ? db.stage : 'bingo' }));

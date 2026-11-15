@@ -249,7 +249,7 @@ views.control = async () => {
       <div class="control-grid" id="stage">
         <button data-show="bingo"><span>🎱</span>Bingo</button><button data-show="sorteo"><span>🎲</span>Sorteo</button>
         <button data-show="rueda"><span>🎡</span>El Rosco</button><button data-show="qr"><span>📱</span>QR en pantalla completa</button>
-        <button data-show="karaoke" class="wide"><span>🎤</span>Karaoke</button>
+        <button data-show="karaoke"><span>🎤</span>Karaoke</button><button data-show="show"><span>⭐</span>Show</button>
         <button data-show="none" class="wide"><span>⬛</span>Nada</button>
       </div>
       <p class="small" style="margin-top:16px"><b>Enlace para OBS</b> (1920×1080, no pide usuario ni contraseña):<br><a class="link" href="${stageUrl()}" target="_blank">${esc(stageUrl())}</a></p>
@@ -260,6 +260,12 @@ views.control = async () => {
       <p class="small" id="kar-status" style="margin:10px 0 0"></p>
       <details style="margin-top:12px"><summary class="small">Direcciones de cada local</summary>
         <form id="kar-form" class="fields" style="grid-template-columns:1fr;margin-top:10px"></form></details>
+    </div>
+    <div class="panel"><h2>Programación</h2>
+      <div id="ag-now" class="small"></div>
+      <label class="check" style="margin-top:12px"><input type="checkbox" id="ag-notice"> Anunciar en pantalla el bloque que viene («A continuación…»)</label>
+      <details style="margin-top:12px"><summary class="small">Editar horarios y cartelera del mes</summary>
+        <form id="ag-form" class="fields" style="grid-template-columns:1fr;margin-top:10px"></form></details>
     </div>
     <div class="panel"><h2>Bingos abiertos</h2>
       <p class="muted small">Si hay más de uno, a la gente le aparece una lista para elegir. Cierra los que ya no se usan.</p>
@@ -291,6 +297,28 @@ views.control = async () => {
     const urls = Object.fromEntries(Object.keys(karCfg.venues).map((id) => [id, { exec: f.get(`exec-${id}`), form: f.get(`form-${id}`) }]));
     if (await saveKar({ urls })) toast('Direcciones guardadas');
   };
+  // Programación: bloque actual, el que viene, y editor con el mismo formato de la cartelera mensual
+  const paintAg = (a) => {
+    if (!$('#ag-now')) return;
+    $('#ag-notice').checked = a.notice;
+    $('#ag-now').innerHTML = `<b>${esc(a.name)}</b> · ${a.blocks.length ? a.blocks.map((b) => `<span class="ag-b ${a.current && a.current.time === b.time ? 'on' : ''}">${b.time} ${esc(b.label)}</span>`).join(' ') : '<span class="muted">hoy no hay bloques programados</span>'}
+      <br>${a.next ? `Sigue: <b>${a.next.time} · ${esc(a.next.label)}</b>` : '<span class="muted">No hay nada más que anunciar hoy.</span>'}`;
+    if (!$('#ag-form').dataset.ready) {
+      $('#ag-form').dataset.ready = '1';
+      $('#ag-form').innerHTML = `<label class="f">Mes de la cartelera <span class="hint">año-mes, ej. 2026-11</span><input type="text" name="month" value="${esc(a.month)}" pattern="\\d{4}-\\d{2}"></label>
+        ${Object.entries(a.venues).map(([id, name]) => `<label class="f">${esc(name)} <span class="hint">horarios por día y, debajo, el show de cada fecha</span><textarea name="text-${id}" rows="8" style="font-size:14px">${esc(a.text[id])}</textarea></label>`).join('')}
+        <button class="primary">Guardar programación</button>`;
+    }
+  };
+  const loadAg = async () => { const a = await api('GET', '/api/agenda/config').catch(() => null); if (a) paintAg(a); };
+  $('#ag-notice').onchange = async (e) => { try { paintAg(await api('POST', '/api/agenda/config', { notice: e.target.checked })); } catch (err) { fail(err); } };
+  $('#ag-form').onsubmit = async (e) => {
+    e.preventDefault();
+    const f = new FormData(e.target);
+    const text = Object.fromEntries([...f.keys()].filter((k) => k.startsWith('text-')).map((k) => [k.slice(5), f.get(k)]));
+    try { paintAg(await api('POST', '/api/agenda/config', { month: f.get('month'), text })); toast('Programación guardada'); } catch (err) { fail(err); }
+  };
+  loadAg();
   const paintOpen = async () => {
     const list = await activeSessions();
     if (!$('#open-list')) return;
@@ -931,6 +959,7 @@ views.tablero = async () => {
         else if (show === 'rueda') stop = await views.rueda();
         else if (show === 'qr') stop = await views.qrFull();
         else if (show === 'karaoke') stop = await views.karaokeFull();
+        else if (show === 'show') stop = await views.showFull();
         else stop = await views.bingoFull(); // bingo, o la portada si no hay nada en juego
       }
       mark();
@@ -993,6 +1022,7 @@ views.escena = async () => {
         else if (show === 'sorteo') stop = await views.sorteo();
         else if (show === 'qr') stop = await views.qrBig();
         else if (show === 'karaoke') stop = await views.karaokeGC();
+        else if (show === 'show') stop = await views.showGC();
         document.body.classList.add('obs');
       }
     } finally { busy = false; }

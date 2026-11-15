@@ -785,3 +785,35 @@ body.full #rf .rf-card.win .rf-name:not(.small) { font-size: min(21vh, calc(84vw
 #kar-venue { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 10px; }
 #kar-venue button { padding: 12px 6px; border-radius: 12px; font-weight: 700; }
 #kar-venue button.on { background: var(--win); border-color: #fff; color: #fff; }
+
+/* ---------- Programación: aviso «A continuación» y vista del show ---------- */
+.next-up { position: absolute; left: 50%; bottom: 10.5vh; transform: translateX(-50%); display: flex; align-items: center; gap: 1.6vh; max-width: 110vh; padding: .8vh 3vh; border-radius: 99px; white-space: nowrap;
+  background: rgba(14, 12, 30, .92); border: .35vh solid var(--gc-yellow, #ffc400); color: #fff; font-family: "Source Sans 3", "Source Sans Pro", "Segoe UI", system-ui, sans-serif; box-shadow: 0 .8vh 2vh rgba(0, 0, 0, .4); }
+.next-up small { font-size: 2.1vh; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; color: var(--gc-yellow, #ffc400); }
+.next-up b { font-size: 2.9vh; font-weight: 900; }
+.next-up span { font-size: min(2.9vh, calc(70vh / (var(--n, 8) * .52))); font-weight: 700; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; }
+.next-up.kg-up { bottom: 25.5vh; left: 3vw; transform: none; }
+.ag-b { display: inline-block; margin: 2px 2px 2px 0; padding: 2px 8px; border-radius: 99px; background: rgba(255, 255, 255, .08); white-space: nowrap; }
+.ag-b.on { background: var(--win); color: #fff; font-weight: 700; }
+#sg, #sf { --gc-pink: #c4175e; --gc-shade: rgba(60, 0, 30, .55); --gc-yellow: #ffc400; --gc-line: .5vh;
+  --gc-dots: radial-gradient(circle, rgba(255,255,255,.13) 0 .42vh, transparent .46vh) 0 0 / 4.2vh 4.2vh, radial-gradient(circle, rgba(255,255,255,.13) 0 .42vh, transparent .46vh) 2.1vh 2.1vh / 4.2vh 4.2vh;
+  position: fixed; inset: 0; overflow: hidden; color: #fff; font-family: "Source Sans 3", "Source Sans Pro", "Segoe UI", system-ui, sans-serif; }
+#sg.th-tobalaba, #sf.th-tobalaba { --gc-pink: #c81e1e; --gc-shade: rgba(70, 0, 0, .55); }
+#sg.th-kennedy, #sf.th-kennedy { --gc-pink: #1487cf; --gc-shade: rgba(0, 32, 78, .55); }
+/* GC del show: zócalo abajo a la izquierda, deja libre el escenario */
+.sg-bar { position: absolute; left: 3vw; bottom: 5vh; max-width: 62vw; display: flex; align-items: stretch; border-radius: 3vh; overflow: hidden; border: var(--gc-line) solid var(--gc-yellow); box-shadow: 0 1.2vh 3vh rgba(0, 0, 0, .5); animation: sgin .7s cubic-bezier(.3, .9, .3, 1) both; }
+@keyframes sgin { from { transform: translateX(-120%); } }
+.sg-tag { display: grid; align-content: center; justify-items: center; gap: .4vh; padding: 0 3vh; background: var(--gc-dots), rgba(14, 12, 30, .94); text-align: center; white-space: nowrap; }
+.sg-tag small { font-size: 2.2vh; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--gc-yellow); }
+.sg-tag b { font-size: 4vh; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+.sg-main { min-width: 0; display: grid; align-content: center; gap: .2vh; padding: 1.8vh 4vh 2vh; background: var(--gc-dots), var(--gc-pink); border-left: var(--gc-line) solid var(--gc-yellow); }
+.sg-main small { font-size: 3vh; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+.sg-main b { font-size: min(8vh, calc(44vw / (var(--n, 8) * .59))); font-weight: 900; line-height: 1.05; text-transform: uppercase; color: var(--gc-yellow); text-shadow: .35vh .35vh 0 var(--gc-shade); white-space: nowrap; }
+/* Tablero del DJ: el show en grande */
+#sf { display: grid; place-items: center; }
+.sf-card { display: grid; justify-items: center; gap: 2vh; max-width: 92vw; padding: 6vh 8vh 7vh; text-align: center; border-radius: 6vh; background: var(--gc-dots), var(--gc-pink); border: 1vh solid var(--gc-yellow); box-shadow: 0 3vh 9vh rgba(0, 0, 0, .5); }
+.sf-card > small { font-size: 4.4vh; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; background: var(--gc-shade); padding: .8vh 4vh; border-radius: 99px; white-space: nowrap; }
+.sf-card > i { font-size: 6.5vh; font-weight: 700; font-style: normal; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+.sf-card > b { font-size: min(22vh, calc(80vw / (var(--n, 8) * .59))); font-weight: 900; line-height: 1; text-transform: uppercase; color: var(--gc-yellow); text-shadow: .7vh .7vh 0 var(--gc-shade); white-space: nowrap; }
+.sf-card > span { font-size: 4.4vh; font-weight: 700; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) { .sg-bar { animation: none; } }

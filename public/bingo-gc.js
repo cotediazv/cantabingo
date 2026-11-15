@@ -90,6 +90,7 @@
         <header class="gc-top"><b class="gc-title">${esc(st.name)}</b>${st.gc.top ? `<span class="gc-sub">${esc(st.gc.top)}</span>` : ''}</header>
         <div class="gc-bunting">${bunting}</div>
         <div class="gc-people">👥 <b>${st.players}</b> ${st.players === 1 ? 'participante' : 'participantes'}</div>
+        ${nextUpHTML()}
         <div class="gc-qr">${qr(joinUrl())}</div>
         <footer class="gc-bottom">${st.gc.bottom ? `<span class="gc-msg">${rich(st.gc.bottom)}</span>` : ''}</footer>
         <div class="gc-draw">
