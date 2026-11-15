@@ -1091,3 +1091,14 @@ body.full #rf .rf-card.win .rf-name:not(.small) { font-size: min(21vh, calc(84vw
 .act-nav > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .act-nav > div > * { display: grid; justify-items: center; align-content: center; gap: 4px; min-height: 84px; padding: 12px 8px; border-radius: 16px; font-size: 1.05rem; font-weight: 700; text-align: center; text-decoration: none; line-height: 1.2; margin: 0; width: auto; }
 .act-nav span { font-size: 1.8rem; line-height: 1; pointer-events: none; }
+
+/* ---------- Síguenos en Instagram ---------- */
+.home-steps .s7 { grid-column: 1 / -1; background: linear-gradient(135deg, #f9a825, #e1306c 45%, #833ab4); }
+.pinsta-head { font-size: 1.15rem; font-weight: 800; color: #ffe14d; }
+.pinsta-go { display: grid; justify-items: center; gap: 4px; margin: 12px 0; padding: 18px 12px; border-radius: 16px; text-decoration: none; color: #fff; background: linear-gradient(135deg, #f9a825, #e1306c 45%, #833ab4); box-shadow: 0 6px 18px rgba(0, 0, 0, .35); }
+.pinsta-go b { font-size: 1.7rem; font-weight: 900; line-height: 1.15; overflow-wrap: anywhere; text-align: center; }
+.pinsta-go span { font-size: 1.1rem; font-weight: 700; }
+.pinsta-frame { display: block; width: 100%; height: 430px; border: 0; border-radius: 12px; background: #fff; }
+.vf-qr.insta { align-self: center; }
+.vf-qr.insta .qr { width: 34vh; height: 34vh; }
+.vf-qr.insta b { max-width: 34vh; font-size: 3vh; }

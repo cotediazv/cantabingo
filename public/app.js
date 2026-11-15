@@ -234,6 +234,7 @@ views.home = async () => {
         <a class="s5" href="#/votoctl"><i>4</i><span>🗳️</span><b>Votación</b></a>
         <a class="s6" href="#/showctl"><i>5</i><span>⭐</span><b>Show</b></a>
         <a class="s4" href="#/karaokectl"><i>6</i><span>🎤</span><b>Karaoke</b></a>
+        <a class="s7" href="#/instactl"><i>7</i><span>📸</span><b>Síguenos en Instagram</b></a>
       </div>
       <a class="home-control" href="#/control">🎛️ Centro de control</a>
       <p style="margin-top:28px"><button id="logout">Cerrar sesión de moderador</button></p>
@@ -253,7 +254,8 @@ views.control = async () => {
         <button data-show="bingo"><span>🎱</span>Bingo</button><button data-show="sorteo"><span>🎲</span>Sorteo</button>
         <button data-show="rueda"><span>🎡</span>El Rosco</button><button data-show="qr"><span>📱</span>QR en pantalla completa</button>
         <button data-show="karaoke"><span>🎤</span>Karaoke</button><button data-show="show"><span>⭐</span>Show</button>
-        <button data-show="voto"><span>🗳️</span>Votación</button><button data-show="none"><span>⬛</span>Nada</button>
+        <button data-show="voto"><span>🗳️</span>Votación</button><button data-show="insta"><span>📸</span>Instagram</button>
+        <button data-show="none" class="wide"><span>⬛</span>Nada</button>
       </div>
       <p class="small" style="margin-top:16px"><b>Enlace para OBS</b> (1920×1080, no pide usuario ni contraseña):<br><a class="link" href="${stageUrl()}" target="_blank">${esc(stageUrl())}</a></p>
     </div>
@@ -680,6 +682,7 @@ views.jugar = async (sid) => {
     <div class="prosco" id="prosco" hidden></div>
     <div class="pkar" id="pkar" hidden></div>
     <div class="pvote" id="pvote" hidden></div>
+    <div class="pvote pinsta" id="pinsta" hidden></div>
     <div id="bingo-bottom"><button class="primary big" id="sync" style="margin-top:16px">↻ Actualizar y marcar lo que falta</button>
     <p class="muted small" style="margin-top:8px">Marca por ti los valores ya anunciados que se te pasaron.</p>
     <div class="panel" style="margin-top:20px"><h2 id="title" style="margin:0"></h2><span class="muted small" id="meta"></span><div id="pats" style="margin-top:8px"></div></div></div>`;
@@ -775,8 +778,17 @@ views.jugar = async (sid) => {
     if (!on && voteTimer) { clearInterval(voteTimer); voteTimer = null; }
     return on;
   };
+  // «Síguenos en Instagram»: se guarda el cartón y aparece la cuenta del local (insta-ui.js)
+  let instaOn = false;
+  const syncInsta = () => {
+    const on = st.stage === 'insta';
+    $('#pinsta').hidden = !on;
+    if (on && !instaOn) { window.phoneInsta.reset(); window.phoneInsta.draw(); instaOn = setInterval(() => window.phoneInsta.draw(), 10000); } // se vuelve a leer por si el animador corrige la cuenta
+    if (!on && instaOn) { clearInterval(instaOn); instaOn = false; }
+    return on;
+  };
   const syncStage = () => {
-    const kar = syncKar() | syncVote();
+    const kar = syncKar() | syncVote() | syncInsta();
     const on = (st.stage === 'rueda' && !!st.roscoId) || kar;
     $('#bingo-top').hidden = on;
     $('#bingo-bottom').hidden = on;
@@ -902,7 +914,7 @@ views.jugar = async (sid) => {
   const onFs = () => { if (!document.fullscreenElement && $('#live') && $('#live').classList.contains('full') && $('#live').requestFullscreen) setFull(false); };
   document.addEventListener('fullscreenchange', onFs);
   const off = subscribe(sid, (s) => { st = s; render(); startLive(); }, () => { store.del(key); backToStart(); }, false, me.token);
-  return () => { off(); stopRosco(); clearInterval(karTimer); clearInterval(voteTimer); liveFor = null; player = null; document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('visibilitychange', onBack); document.body.classList.remove('live-open'); };
+  return () => { off(); stopRosco(); clearInterval(karTimer); clearInterval(voteTimer); clearInterval(instaOn); liveFor = null; player = null; document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('visibilitychange', onBack); document.body.classList.remove('live-open'); };
 };
 // Canal de Twitch de cada local
 const LIVE_CHANNELS = { frida: 'krbstage', tobalaba: 'krbstage3', kennedy: 'krbstage3' };
@@ -1046,6 +1058,7 @@ views.tablero = async () => {
         else if (show === 'qr') stop = await views.qrFull();
         else if (show === 'karaoke') stop = await views.karaokeFull();
         else if (show === 'voto') stop = await views.votoFull();
+        else if (show === 'insta') stop = await views.instaFull();
         else if (show === 'show') stop = await views.showFull();
         else stop = await views.bingoFull(); // bingo, o la portada si no hay nada en juego
       }
@@ -1172,6 +1185,7 @@ function activitiesNav(current) {
     ['voto', '<a class="btn" href="#/votoctl"><span>🗳️</span>El objeto más extraño</a>'],
     ['show', '<a class="btn" href="#/showctl"><span>⭐</span>Show</a>'],
     ['karaoke', '<a class="btn" href="#/karaokectl"><span>🎤</span>Karaoke</a>'],
+    ['insta', '<a class="btn" href="#/instactl"><span>📸</span>Instagram</a>'],
   ];
   return `<div class="act-nav"><small>Ir a otra actividad</small><div>${all.filter(([k]) => k !== current).map(([, h]) => h).join('')}</div></div>`;
 }
@@ -1201,6 +1215,7 @@ views.escena = async () => {
         else if (show === 'qr') stop = await views.qrBig();
         else if (show === 'karaoke') stop = await views.karaokeGC();
         else if (show === 'voto') stop = await views.votoGC();
+        else if (show === 'insta') stop = await views.instaGC();
         else if (show === 'show') stop = await views.showGC();
         document.body.classList.add('obs');
       }
