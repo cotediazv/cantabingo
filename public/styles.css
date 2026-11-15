@@ -862,3 +862,20 @@ body.full #rf .rf-card.win .rf-name:not(.small) { font-size: min(21vh, calc(84vw
 .sg-bar::after { content: none; }
 .sg-bar { min-height: 15vh; }
 .sg-side { border-left: var(--gc-line) solid var(--gc-yellow); }
+/* Karaoke en el celular del público: quién canta, mi lugar en la lista y el formulario para pedir */
+.pkar { max-width: 460px; margin: 14px auto 0; padding: 14px; border-radius: 16px; background: linear-gradient(160deg, #3a1560, #7a1650); border: 1px solid rgba(255, 255, 255, .18); }
+.pkar-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.pkar-head b { font-size: 1.15rem; color: #ffe14d; }
+.pkar-head span { font-size: .85rem; font-weight: 700; background: rgba(0, 0, 0, .3); padding: 3px 10px; border-radius: 99px; white-space: nowrap; }
+.pkar-now { display: grid; gap: 1px; margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: rgba(0, 0, 0, .28); }
+.pkar-now small { font-size: .72rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #ffe14d; }
+.pkar-now b { font-size: 1.2rem; line-height: 1.2; overflow-wrap: anywhere; }
+.pkar-now span { font-size: .95rem; opacity: .92; overflow-wrap: anywhere; }
+.pkar-turn { margin-top: 12px; padding: 12px; border-radius: 12px; background: #1fae63; font-weight: 700; text-align: center; }
+.pkar-turn.now { background: #ffc400; color: #2a1030; font-size: 1.15rem; }
+.pkar form { display: grid; gap: 10px; margin-top: 14px; }
+.pkar form h3 { margin: 0; font-size: 1.25rem; }
+.pkar form p { margin: 0; }
+.pkar form .f { display: grid; gap: 4px; font-weight: 600; }
+.pkar form input { font-size: 16px; }
+.pkar form button { width: 100%; margin-top: 4px; }

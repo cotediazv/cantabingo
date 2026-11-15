@@ -668,6 +668,7 @@ views.jugar = async (sid) => {
     <div class="live" id="live"><div id="live-player"></div>
       <div class="live-bar"><button type="button" id="live-audio">🔇 Activar audio</button><button type="button" id="live-full">⛶ Pantalla completa</button><button type="button" id="live-sync" class="wide">↻ Poner al día el video</button></div></div>
     <div class="prosco" id="prosco" hidden></div>
+    <div class="pkar" id="pkar" hidden></div>
     <div id="bingo-bottom"><button class="primary big" id="sync" style="margin-top:16px">↻ Actualizar y marcar lo que falta</button>
     <p class="muted small" style="margin-top:8px">Marca por ti los valores ya anunciados que se te pasaron.</p>
     <div class="panel" style="margin-top:20px"><h2 id="title" style="margin:0"></h2><span class="muted small" id="meta"></span><div id="pats" style="margin-top:8px"></div></div></div>`;
@@ -695,10 +696,55 @@ views.jugar = async (sid) => {
       <div class="prosco-score">${rosco.players.map((p, i) => `<span class="${i === rosco.turn && !rosco.finished ? 'on' : ''}">${esc(p.name)} <b class="ok">✔ ${p.hits}</b> <b class="ko">✘ ${p.misses}</b></span>`).join('')}</div>`;
   };
   const stopRosco = () => { if (roscoEs) roscoEs.close(); clearInterval(roscoTick); roscoEs = null; roscoId = null; rosco = null; };
+  // Durante el karaoke: se guarda el cartón y aparece el formulario para pedir canción.
+  // El nombre no se pregunta: es el mismo con que la persona entró a la sala.
+  let karTimer = null;
+  let karShown = '';
+  let karSent = false;
+  const drawKar = async () => {
+    const k = await api('GET', '/api/karaoke').catch(() => null);
+    if (!k || $('#pkar').hidden) return;
+    const mine = k.list.findIndex((p) => p.name.toUpperCase() === me.name.toUpperCase());
+    const now = k.list[0];
+    const sig = JSON.stringify([k.venue, now, mine, karSent, k.total]);
+    if (sig === karShown) return;
+    karShown = sig;
+    const turn = mine === 0 ? '<div class="pkar-turn now">🎤 ¡Es tu turno! Te toca cantar</div>'
+      : mine > 0 ? `<div class="pkar-turn">Estás en la lista: ${mine === 1 ? 'eres el siguiente' : `tienes ${mine} personas antes`}</div>`
+      : karSent ? '<div class="pkar-turn">✔ Pedido enviado. Aparecerás en la lista en unos segundos.</div>' : '';
+    const draft = $('#pkar form') ? Object.fromEntries(new FormData($('#pkar form'))) : {};
+    $('#pkar').innerHTML = `<div class="pkar-head"><b>🎤 Karaoke ${esc(k.name)}</b><span>${k.total ? `${k.total} en la lista` : 'Lista abierta'}</span></div>
+      ${now ? `<div class="pkar-now"><small>Ahora canta</small><b>${esc(now.name)}</b><span>${esc(now.song)}${now.artist ? ` · ${esc(now.artist)}` : ''}</span></div>` : ''}
+      ${turn}
+      ${mine >= 0 || karSent ? '' : `<form>
+        <h3>Inscribe tu canción y participa</h3>
+        <p class="muted small">Canta: <b>${esc(me.name)}</b></p>
+        <label class="f">Canción<input type="text" name="song" maxlength="80" required value="${esc(draft.song || '')}"></label>
+        <label class="f">Artista<input type="text" name="artist" maxlength="60" required value="${esc(draft.artist || '')}"></label>
+        <p class="muted small" style="margin:6px 0 0">Si alguien ya pidió tu canción, cantarás esta otra:</p>
+        <label class="f">Canción de reemplazo<input type="text" name="altSong" maxlength="80" required value="${esc(draft.altSong || '')}"></label>
+        <label class="f">Artista de reemplazo<input type="text" name="altArtist" maxlength="60" required value="${esc(draft.altArtist || '')}"></label>
+        <button class="primary big">🎤 Enviar mi pedido</button></form>`}`;
+    if ($('#pkar form')) $('#pkar form').onsubmit = async (e) => {
+      e.preventDefault();
+      const btn = e.target.querySelector('button');
+      btn.disabled = true;
+      try { await api('POST', '/api/karaoke/request', { sid, token: me.token, ...Object.fromEntries(new FormData(e.target)) }); karSent = true; karShown = ''; toast('¡Pedido enviado!'); drawKar(); } catch (err) { fail(err); btn.disabled = false; }
+    };
+  };
+  const syncKar = () => {
+    const on = st.stage === 'karaoke';
+    $('#pkar').hidden = !on;
+    if (on && !karTimer) { karShown = ''; drawKar(); karTimer = setInterval(drawKar, 5000); }
+    if (!on && karTimer) { clearInterval(karTimer); karTimer = null; karSent = false; }
+    return on;
+  };
   const syncStage = () => {
-    const on = st.stage === 'rueda' && !!st.roscoId;
+    const kar = syncKar();
+    const on = (st.stage === 'rueda' && !!st.roscoId) || kar;
     $('#bingo-top').hidden = on;
     $('#bingo-bottom').hidden = on;
+    if (kar) { $('#prosco').hidden = true; stopRosco(); return; }
     $('#prosco').hidden = !on;
     if (!on) { stopRosco(); return; }
     if (roscoId === st.roscoId) return;
@@ -820,7 +866,7 @@ views.jugar = async (sid) => {
   const onFs = () => { if (!document.fullscreenElement && $('#live') && $('#live').classList.contains('full') && $('#live').requestFullscreen) setFull(false); };
   document.addEventListener('fullscreenchange', onFs);
   const off = subscribe(sid, (s) => { st = s; render(); startLive(); }, () => { store.del(key); backToStart(); }, false, me.token);
-  return () => { off(); stopRosco(); liveFor = null; player = null; document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('visibilitychange', onBack); document.body.classList.remove('live-open'); };
+  return () => { off(); stopRosco(); clearInterval(karTimer); liveFor = null; player = null; document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('visibilitychange', onBack); document.body.classList.remove('live-open'); };
 };
 // Canal de Twitch de cada local
 const LIVE_CHANNELS = { frida: 'krbstage', tobalaba: 'krbstage3', kennedy: 'krbstage3' };
