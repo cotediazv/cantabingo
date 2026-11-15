@@ -20,7 +20,7 @@ const nextUpHTML = (cls = '') => {
     const tick = async () => {
       const a = await loadAgenda();
       if (!alive || !a) return;
-      const s = JSON.stringify([a.venue, a.show, a.current, a.date]);
+      const s = JSON.stringify([a.venue, a.show, a.current, a.date, a.blocks]);
       if (s === last) return;
       last = s;
       paint(a);
@@ -42,7 +42,7 @@ const nextUpHTML = (cls = '') => {
       $('#sg').className = `th-${a.venue}`;
       $('#sg').innerHTML = p ? `<div class="sg-bar"><div class="sg-tag"><small>${esc(a.name)}</small><b>${esc(a.date)}</b></div>
         <div class="sg-main">${p.kind ? `<small>${esc(p.kind)}</small>` : ''}<b style="--n:${p.name.length}">${esc(p.name)}</b></div>
-        <div class="sg-tag sg-side"><small>${block ? 'Horario' : 'KRB Stage'}</small><b>${block ? `${block.time} hrs` : esc(a.name)}</b></div></div>` : '';
+        ${block && block.upcoming ? `<div class="sg-tag sg-side"><small>Horario</small><b>${block.time} hrs</b></div>` : ''}</div>` : '';
       // Simetría: los dos bloques laterales quedan del mismo ancho, con el artista al centro
       const tags = [...document.querySelectorAll('#sg .sg-tag')];
       const wide = Math.max(0, ...tags.map((t) => t.offsetWidth));
@@ -58,7 +58,7 @@ const nextUpHTML = (cls = '') => {
       if (!$('#sf')) return;
       const block = a.blocks.find((b) => b.isShow);
       $('#sf').className = `th-${a.venue}`;
-      $('#sf').innerHTML = p ? `<div class="sf-card"><small>${esc(a.name)} · ${esc(a.date)}</small>${p.kind ? `<i>${esc(p.kind)}</i>` : ''}<b style="--n:${p.name.length}">${esc(p.name)}</b>${block ? `<span>${block.time} horas</span>` : ''}</div>`
+      $('#sf').innerHTML = p ? `<div class="sf-card"><small>${esc(a.name)} · ${esc(a.date)}</small>${p.kind ? `<i>${esc(p.kind)}</i>` : ''}<b style="--n:${p.name.length}">${esc(p.name)}</b>${block && block.upcoming ? `<span>${block.time} horas</span>` : ''}</div>`
         : `<div class="sf-card"><small>${esc(a.name)}</small><b style="--n:14">KRB Stage</b><span>Hoy no hay show en cartelera</span></div>`;
     });
     return () => stop();
