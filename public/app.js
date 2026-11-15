@@ -404,7 +404,7 @@ views.nuevo = async () => {
         <p class="muted small" id="venue-note" style="margin-top:8px"></p>
         <input type="hidden" name="theme" value="frida">
       </div>
-      <label class="f" id="pname-wrap" hidden>Nombre del bingo<input type="text" name="name" maxlength="60" value="El Bingo de Frida"></label>
+      <label class="f" id="pname-wrap" hidden>Nombre del bingo<input type="text" name="name" maxlength="60" value="Los Juegos de Frida"></label>
       <label class="f" id="ptheme-wrap" hidden>Colores en pantalla<select id="ptheme">
         <option value="frida">Magenta (como Frida)</option><option value="tobalaba">Rojo (como Tobalaba)</option><option value="kennedy">Celeste azulado (como Kennedy)</option></select></label>
       <label class="f">Número de cartones <span class="hint">de 25 a 3.000</span><input type="number" name="count" min="25" max="3000" value="320" required></label>
@@ -412,7 +412,7 @@ views.nuevo = async () => {
     </form>`;
   const f = $('#f');
   // Pestañas de local: cada una fija el nombre y los colores de la pantalla; «Otro nombre» deja elegirlos
-  const VENUES = { frida: ['El Bingo de Frida', 'magenta'], tobalaba: ['El Bingo de Tobalaba', 'rojo'], kennedy: ['El Bingo de Kennedy', 'celeste azulado'] };
+  const VENUES = { frida: ['Los Juegos de Frida', 'magenta'], tobalaba: ['Los Juegos de Tobalaba', 'rojo'], kennedy: ['Los Juegos de Kennedy', 'celeste azulado'] };
   const pickVenue = (v) => {
     $$('#venues button').forEach((b) => { b.classList.toggle('on', b.dataset.venue === v); b.setAttribute('aria-selected', b.dataset.venue === v); });
     const custom = v === 'new';

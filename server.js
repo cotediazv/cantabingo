@@ -16,6 +16,10 @@ const SESSION_HOURS = 8; // cuánto dura una sesión de bingo desde que se activ
 let db = { projects: {}, sessions: {} };
 try { db = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); } catch { /* primera ejecución */ }
 for (const s of Object.values(db.sessions)) s.auto = { on: false, interval: 10, stopOnWin: true };
+// Las salas se llaman «Los Juegos de…»; las ya creadas con el nombre anterior se renombran al arrancar
+for (const x of [...Object.values(db.sessions || {}), ...Object.values(db.projects || {})]) {
+  if (typeof x.name === 'string') x.name = x.name.replace(/^El Bingo de /, 'Los Juegos de ');
+}
 // Datos anteriores: los nombres ya guardados también pasan a mayúsculas
 {
   const up = (n) => String(n || '').toLocaleUpperCase('es');
