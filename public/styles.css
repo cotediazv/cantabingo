@@ -817,3 +817,30 @@ body.full #rf .rf-card.win .rf-name:not(.small) { font-size: min(21vh, calc(84vw
 .sf-card > b { font-size: min(22vh, calc(80vw / (var(--n, 8) * .59))); font-weight: 900; line-height: 1; text-transform: uppercase; color: var(--gc-yellow); text-shadow: .7vh .7vh 0 var(--gc-shade); white-space: nowrap; }
 .sf-card > span { font-size: 4.4vh; font-weight: 700; white-space: nowrap; }
 @media (prefers-reduced-motion: reduce) { .sg-bar { animation: none; } }
+
+/* ---------- Guiño a la estética propia de cada local ----------
+   Frida: magenta con franja verde petróleo (papel picado). Kennedy: azul rey con dorado.
+   Tobalaba: morado de muro de ladrillo, con frambuesa y dorado. */
+#gc.th-kennedy, .bwin.th-kennedy, #fb.th-kennedy { --gc-pink: #1a4bd6; --gc-shade: rgba(4, 18, 80, .6); }
+#kg, #kf, #sg, #sf { --k-tag: rgba(14, 12, 30, .94); --k-next: rgba(14, 12, 30, .94); }
+#kg.th-frida, #kf.th-frida, #sg.th-frida, #sf.th-frida { --gc-pink: #c4175e; --k-tag: #05686e; --k-next: #7d1040; --gc-yellow: #ffc400; }
+#kg.th-kennedy, #kf.th-kennedy, #sg.th-kennedy, #sf.th-kennedy { --gc-pink: #1a3fb8; --gc-shade: rgba(3, 12, 60, .65); --k-tag: #0a1238; --k-next: #0f1d5c; --gc-yellow: #e6b445; }
+#kg.th-tobalaba, #kf.th-tobalaba, #sg.th-tobalaba, #sf.th-tobalaba { --gc-pink: #5b2a86; --gc-shade: rgba(30, 6, 50, .65); --k-tag: #d1345b; --k-next: #2a1440; --gc-yellow: #f0c14b; }
+.kg-bar { background: var(--k-next); }
+.kg-tag, .sg-tag { background: var(--gc-dots), var(--k-tag); }
+.kg-next { background: var(--gc-dots), var(--k-next); }
+.kf-next { background: var(--k-next); }
+.kf-top { background: var(--gc-dots), var(--k-tag); }
+/* Tobalaba: muro de ladrillo en los bloques principales */
+#kg.th-tobalaba .kg-now, #kf.th-tobalaba .kf-now, #sg.th-tobalaba .sg-main, #sf.th-tobalaba .sf-card {
+  background: repeating-linear-gradient(0deg, transparent 0 5.6vh, rgba(0, 0, 0, .22) 5.6vh 6vh), repeating-linear-gradient(90deg, transparent 0 13vh, rgba(0, 0, 0, .18) 13vh 13.4vh), linear-gradient(135deg, #5b2a86, #7a2350); }
+#kg.th-tobalaba .kg-tag small, #sg.th-tobalaba .sg-tag small, #kf.th-tobalaba .kf-top b { color: #fff; }
+/* Kennedy: telón azul con líneas verticales y dorado */
+#kg.th-kennedy .kg-now, #kf.th-kennedy .kf-now, #sg.th-kennedy .sg-main, #sf.th-kennedy .sf-card {
+  background: repeating-linear-gradient(90deg, rgba(255, 255, 255, .05) 0 .5vh, transparent .5vh 1.6vh), linear-gradient(180deg, #2350d8, #0f2c96); }
+#kg.th-kennedy .kg-now b, #kf.th-kennedy .kf-now b, #sg.th-kennedy .sg-main b, #sf.th-kennedy .sf-card > b, #kf.th-kennedy .kf-top b {
+  background: linear-gradient(180deg, #f3d27a, #c98f2b); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; filter: drop-shadow(.3vh .3vh 0 rgba(3, 12, 60, .7)); }
+/* Frida: guirnalda de papel picado sobre el zócalo */
+#kg.th-frida .kg-bar::before, #sg.th-frida .sg-bar::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1.1vh; z-index: 1;
+  background: repeating-linear-gradient(90deg, #ffc400 0 6vh, #0a9a94 6vh 12vh, #ff7a1a 12vh 18vh, #2338a8 18vh 24vh, #56b04c 24vh 30vh, #e8262e 30vh 36vh); }
+.kg-bar, .sg-bar { position: absolute; }
