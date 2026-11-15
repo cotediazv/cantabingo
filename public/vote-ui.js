@@ -205,18 +205,26 @@
     document.body.classList.add('obs', 'gc-screen');
     app.innerHTML = '<div id="vg"></div><div id="vg-win"></div>';
     let swap = null;
+    let sceneKey = '';
     const stop = follow((st, celebrating) => {
       const box = $('#vg');
       if (!box) return;
       $('#vg-win').innerHTML = celebrating ? winHTML(st) : '';
       const s = scene(st);
-      const html = celebrating ? '' : `${s.qr ? `<div class="vg-qr">${qr(joinUrl())}<b>${st.signup ? '¡Entra y participa!' : '¡Entra y vota!'}</b></div>` : ''}
+      // Lista de inscritos: se ve durante el llamado y hasta que empieza la primera votación
+      const roster = st.phase === 'voting' && !st.open && !st.last && st.players.length
+        ? `<div class="vg-list"><small>Inscritos <b>${st.players.length}/${st.max}</b></small>${st.players.map((p) => `<div><p><b>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}</p></div>`).join('')}</div>` : '';
+      const html = celebrating ? '' : `${roster}${s.qr ? `<div class="vg-qr">${qr(joinUrl())}<b>${st.signup ? '¡Entra y participa!' : '¡Entra y vota!'}</b></div>` : ''}
         <div class="vg-bar">
           <div class="vg-tag"><small>${esc(title(st))}</small><b>🗳️ ${esc(s.tag)}</b></div>
           <div class="vg-main">${s.duel ? `<b class="vg-duel" ${n(st.final.players.map((p) => `${p.name}...`).join(' vs '))}>${versus(st)}</b>` : `<b ${n(s.no ? `${s.main}...` : s.main)}>${badge(s.no)}${esc(s.main)}</b>`}<span ${n(s.sub)}>${esc(s.sub)}</span></div>
           ${s.clock ? `<div class="vg-side score"><small>Tiempo</small><b class="v-clock">${clockText()}</b></div>` : s.score != null ? `<div class="vg-side score"><small>Nota</small><b>${note(s.score)}</b></div>` : `<div class="vg-side"><small ${n(s.side[0])}>${esc(s.side[0])}</small><b ${n(s.side[1])}>${esc(s.side[1])}</b></div>`}
         </div>`;
       clearTimeout(swap);
+      // Si solo cambió un detalle (llegó otro inscrito), se actualiza en el lugar, sin sacar y volver a entrar el zócalo
+      const key = celebrating ? '' : JSON.stringify([s.tag, s.main, s.sub, !!s.qr]);
+      if (key && key === sceneKey && box.classList.contains('on')) { box.innerHTML = html; return; }
+      sceneKey = key;
       box.className = `th-${st.venue}`;
       swap = setTimeout(() => { if ($('#vg')) { $('#vg').innerHTML = html; $('#vg').className = `th-${st.venue} ${html ? 'on' : ''}`; } }, box.innerHTML ? 650 : 0);
     });

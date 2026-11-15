@@ -33,7 +33,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
     const last = by(s.last);
     return {
       rev: s.rev, venue: venue(), title: s.title, phase: s.phase, now: Date.now(),
-      signup: s.phase === 'voting' && !!s.signup, signupUntil: s.signup ? s.signupUntil || 0 : 0, signupMs: SIGNUP_MS, room: Math.max(0, MAX_PLAYERS - s.players.length),
+      signup: s.phase === 'voting' && !!s.signup, signupUntil: s.signup ? s.signupUntil || 0 : 0, signupMs: SIGNUP_MS, max: MAX_PLAYERS, room: Math.max(0, MAX_PLAYERS - s.players.length),
       players: s.players.map((p) => ({ id: p.id, no: no(p), name: p.name, thing: p.thing || '', done: !!p.done })),
       open: open ? { id: open.id, no: no(open), name: open.name, thing: open.thing || '' } : null,
       last: last ? { id: last.id, no: no(last), name: last.name, thing: last.thing || '' } : null,
@@ -101,6 +101,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
     if (what.length < 2) return fail(res, 400, 'Escribe con qué vas a participar');
     if (s.players.length >= MAX_PLAYERS) return fail(res, 409, 'Ya se completaron los cupos');
     s.players.push({ id: crypto.randomBytes(4).toString('hex'), name: pl.name, thing: what, by: token, votes: {}, done: false });
+    if (s.players.length >= MAX_PLAYERS) s.signup = false; // se completaron los cupos: el llamado termina sin esperar al reloj
     changed();
     return res.json({ ok: true, no: s.players.length });
   });
