@@ -728,14 +728,17 @@ views.jugar = async (sid) => {
       ${mine >= 0 || karSent ? '' : !k.phone ? '<p class="pkar-qr">🎤 En este momento no se están recibiendo pedidos de karaoke.</p>' : `<form>
         <h3>Inscribe tu canción y participa</h3>
         <p class="muted small">Canta: <b>${esc(me.name)}</b></p>
-        <label class="f">Canción<input type="text" name="song" maxlength="80" required value="${esc(draft.song || '')}"></label>
+        <label class="f">Canción<input type="text" name="song" maxlength="80" required autocomplete="off" placeholder="Escribe y elige de la lista" value="${esc(draft.song || '')}"></label>
+        <div class="sug" data-sug="song"></div>
         <label class="f">Artista<input type="text" name="artist" maxlength="60" required value="${esc(draft.artist || '')}"></label>
         <p class="muted small" style="margin:6px 0 0">Si alguien ya pidió tu canción, cantarás esta otra:</p>
-        <label class="f">Canción de reemplazo<input type="text" name="altSong" maxlength="80" required value="${esc(draft.altSong || '')}"></label>
+        <label class="f">Canción de reemplazo<input type="text" name="altSong" maxlength="80" required autocomplete="off" placeholder="Escribe y elige de la lista" value="${esc(draft.altSong || '')}"></label>
+        <div class="sug" data-sug="altSong"></div>
         <label class="f">Artista de reemplazo<input type="text" name="altArtist" maxlength="60" required value="${esc(draft.altArtist || '')}"></label>
         ${k.ask.places.length && !me.place ? `<label class="f">¿Dónde estás?<select name="ans-place" required><option value="">Elige tu lugar</option>${k.ask.places.map((x) => `<option ${draft['ans-place'] === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label>` : ''}
         ${k.ask.choices.map((c) => `<label class="f">${esc(c.title)}<select name="ans-${c.id}" ${c.required ? 'required' : ''}><option value="">Elige una opción</option>${c.options.map((x) => `<option ${draft[`ans-${c.id}`] === x ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></label>`).join('')}
         <button class="primary big">🎤 Enviar mi pedido</button></form>`}`;
+    if ($('#pkar form')) wireSongSearch($('#pkar form'));
     if ($('#pkar form')) $('#pkar form').onsubmit = async (e) => {
       e.preventDefault();
       const btn = e.target.querySelector('button');
@@ -1056,6 +1059,54 @@ async function backToBingo() {
   await api('POST', '/api/stage', { show: 'bingo' }).catch(() => {});
   location.hash = id ? `#/anfitrion/${id}` : '#/proyectos';
 }
+// ---------- Karaoke: buscador de canciones ----------
+// Mientras la persona escribe, se consulta el catálogo de iTunes y se ofrecen canciones reales;
+// al tocar una, se llenan solos la canción y el artista. Es una ayuda: también se puede escribir a mano.
+// La consulta sale del propio celular (JSONP), así no depende de nuestro servidor.
+const songSearch = (term) => new Promise((resolve) => {
+  const cb = `__it${Date.now()}${Math.random().toString(36).slice(2)}`;
+  const s = document.createElement('script');
+  let finished = false;
+  const done = (list) => { if (finished) return; finished = true; delete window[cb]; s.remove(); resolve(list); };
+  window[cb] = (r) => {
+    const seen = new Set();
+    done(((r && r.results) || []).map((x) => ({ song: String(x.trackName || '').trim(), artist: String(x.artistName || '').trim() }))
+      .filter((x) => x.song && x.artist && !seen.has(`${x.song}|${x.artist}`.toLowerCase()) && seen.add(`${x.song}|${x.artist}`.toLowerCase())).slice(0, 5));
+  };
+  s.onerror = () => done([]);
+  s.src = `https://itunes.apple.com/search?media=music&entity=song&limit=10&country=CL&lang=es_es&term=${encodeURIComponent(term)}&callback=${cb}`;
+  document.head.appendChild(s);
+  setTimeout(() => done([]), 6000);
+});
+function wireSongSearch(form) {
+  const pairs = { song: 'artist', altSong: 'altArtist' };
+  let timer = null;
+  let turn = 0;
+  form.addEventListener('input', (e) => {
+    const field = e.target.name;
+    if (!pairs[field]) return;
+    const box = form.querySelector(`[data-sug="${field}"]`);
+    const term = e.target.value.trim();
+    clearTimeout(timer);
+    if (term.length < 3) { box.innerHTML = ''; return; }
+    const mine = ++turn;
+    timer = setTimeout(async () => {
+      const list = await songSearch(term);
+      if (mine !== turn || !form.isConnected) return; // llegó tarde: la persona siguió escribiendo
+      box.innerHTML = list.map((x) => `<button type="button" data-song="${esc(x.song)}" data-artist="${esc(x.artist)}"><b>${esc(x.song)}</b><span>${esc(x.artist)}</span></button>`).join('');
+    }, 350);
+  });
+  form.addEventListener('click', (e) => {
+    const pick = e.target.closest('.sug button');
+    if (!pick) return;
+    const field = pick.parentElement.dataset.sug;
+    form.elements[field].value = pick.dataset.song.slice(0, 80);
+    form.elements[pairs[field]].value = pick.dataset.artist.slice(0, 60);
+    pick.parentElement.innerHTML = '';
+    turn++;
+  });
+}
+
 // ---------- Karaoke: panel del animador ----------
 // Pone el karaoke en pantalla y muestra la cola. El local es el de la sala abierta.
 // El orden y «Ya cantó» se siguen manejando en la app del equipo.
