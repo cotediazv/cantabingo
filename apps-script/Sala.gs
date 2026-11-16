@@ -24,7 +24,8 @@ function doPost(e) {
     if (!p) throw new Error('Ese pedido ya no está en la lista');
     if (b.accion === 'cantado') {
       if (String(p.nombre) !== String(b.nombre) || String(p.cancion) !== String(b.cancion)) throw new Error('La lista cambió; vuelve a intentarlo');
-      ss.getSheetByName('Cantados').appendRow([fechaHoraDeId_(p.id) + ' ' + p.nombre + ' ' + p.cancion, new Date()]);
+      const hoja = ss.getSheetByName('Cantados');
+      hoja.appendRow([fechaHoraDeId_(p.id, formatoClave_(hoja)) + ' ' + p.nombre + ' ' + p.cancion, new Date()]);
     } else if (b.accion === 'subir') {
       ss.getSheetByName('Orden').appendRow([p.id, -1]);
     } else if (b.accion === 'bajar') {
@@ -43,11 +44,26 @@ function doPost(e) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-// La clave de «Cantados» empieza con la fecha y hora del pedido tal como la escribe AppSheet
-// (MM/dd/yyyy HH:mm:ss, ej. 11/13/2026 21:48:21). El ID es «P» + la marca temporal en segundos
-// (número de serie de la planilla × 86400), así que de ahí sale exacta, sin depender de la columna Hora.
-function fechaHoraDeId_(id) {
+// La clave de «Cantados» empieza con la hora del pedido tal como la escribe AppSheet en ese local:
+// en Tobalaba con fecha (11/13/2026 21:48:21) y en Kennedy solo la hora (01:27:30).
+// El formato se copia de la última fila de «Cantados» que tenga uno de los dos; si no hay ninguna, solo la hora.
+// Si algún día hace falta fijarlo a mano: propiedad del script SALA_FORMATO_HORA (ej. MM/dd/yyyy HH:mm:ss).
+function formatoClave_(hoja) {
+  const fijo = PropertiesService.getScriptProperties().getProperty('SALA_FORMATO_HORA');
+  if (fijo) return fijo;
+  const filas = hoja.getDataRange().getDisplayValues();
+  for (let i = filas.length - 1; i >= 1; i--) {
+    const c = String(filas[i][0]).trim();
+    if (/^\d{1,2}\/\d{1,2}\/\d{4} \d{1,2}:\d{2}:\d{2} /.test(c)) return 'MM/dd/yyyy HH:mm:ss';
+    if (/^\d{1,2}:\d{2}:\d{2} /.test(c)) return 'HH:mm:ss';
+  }
+  return 'HH:mm:ss';
+}
+
+// El ID es «P» + la marca temporal en segundos (número de serie de la planilla × 86400),
+// así que de ahí sale la fecha y hora exactas del pedido, con segundos.
+function fechaHoraDeId_(id, formato) {
   const segundos = Number(String(id).replace(/^P/, ''));
   const ms = Math.round((segundos / 86400 - 25569) * 86400000); // 25569 = días entre 30/12/1899 y 1/1/1970
-  return Utilities.formatDate(new Date(ms), 'UTC', 'MM/dd/yyyy HH:mm:ss');
+  return Utilities.formatDate(new Date(ms), 'UTC', formato || 'HH:mm:ss');
 }
