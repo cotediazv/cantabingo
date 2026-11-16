@@ -1230,3 +1230,62 @@ body.rot-screen main { padding: 0; max-width: none; }
   #fb .fb-row > span { height: 2.75vh; font-size: 2.3vh; }
 }
 @media (orientation: portrait) and (min-width: 700px) { #fb .fb-row > b { line-height: 1; font-size: 3.2vh; } }
+
+/* Tablero vertical: las demás actividades en formato alto y angosto */
+@media (orientation: portrait) and (min-width: 700px) {
+  /* QR para entrar a la sala: abajo a la derecha, en tamaño de pantalla de pie */
+  body.full .join-qr { top: auto; right: 3vw; bottom: 2vh; padding: 1.4vw 1.4vw 1vw; border-radius: 2.4vw; border-width: .6vw; gap: .6vw; }
+  body.full .join-qr .qr { width: 17vw; height: 17vw; }
+  body.full .join-qr b { font-size: 2.1vw; }
+  /* Sorteo */
+  body.full #rf { padding: 3vh 4vw 4vh; }
+  body.full #rf .rf-title { font-size: 6vw; padding: 1.2vh 5vw; border-width: .8vw; text-align: center; }
+  body.full #rf .rf-card { min-width: 0; width: 92vw; max-width: 92vw; padding: 4vh 4vw 5vh; border-radius: 6vw; border-width: 1.2vw; gap: 2vh; }
+  body.full #rf .rf-kicker { font-size: 4.4vw; padding: .6vh 4vw; }
+  body.full #rf .rf-dice { font-size: 30vw; }
+  body.full #rf .rf-name:not(.small), body.full #rf .rf-card.win .rf-name:not(.small) { font-size: min(13vh, calc(82vw / (var(--n, 8) * .63))); min-height: 0; }
+  body.full #rf .rf-name.small { font-size: 8vw; white-space: normal; line-height: 1.1; }
+  body.full #rf .rf-reel { font-size: 6vw; min-height: 6vw; max-width: 84vw; }
+  body.full #rf .rf-picked { flex-wrap: wrap; justify-content: center; gap: 1.2vh 2vw; min-height: 0; padding-right: 24vw; }
+  body.full #rf .rf-picked span { font-size: 3.6vw; padding: .6vh 3vw .6vh .8vw; border-width: .4vw; }
+  body.full #rf .rf-picked b { width: 5.4vw; height: 5.4vw; font-size: 3.4vw; }
+  /* El Rosco: título, pregunta y las ruedas; con 3 o 4 concursantes van de a dos por fila */
+  body.full.wheel-screen #pw { grid-template-rows: 5vh 15vh minmax(0, 1fr); padding: 1vh 3vw 15vh; }
+  body.full .pw-title { font-size: 4.4vh; }
+  body.full .pw-question { width: 94vw; font-size: 2.9vh; -webkit-line-clamp: 4; padding: 1.2vh 3vw; border-radius: 3vw; }
+  body.full .pw-reveal { width: 94vw; flex-wrap: wrap; } body.full .pw-reveal .rv-answer { font-size: 3.6vh; }
+  body.full.wheel-screen .wheels { grid-template-columns: minmax(0, 1fr); gap: 1.5vh 2vw; align-content: center; height: 100%; }
+  body.full.wheel-screen .wheels.n3, body.full.wheel-screen .wheels.n4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body.full.wheel-screen .wheel-box { height: auto; }
+  body.full.wheel-screen .wheels .wheel { width: 88vw; max-width: 88vw; max-height: none; }
+  body.full.wheel-screen .wheels.n2 .wheel { width: 60vw; max-width: 60vw; }
+  body.full.wheel-screen .wheels.n3 .wheel, body.full.wheel-screen .wheels.n4 .wheel { width: 45vw; max-width: 45vw; }
+  /* Show */
+  #sf .sf-card { width: 92vw; max-width: 92vw; padding: 5vh 4vw 6vh; border-radius: 6vw; border-width: 1.2vw; gap: 2.4vh; }
+  #sf .sf-card > small { font-size: 3.4vw; padding: .8vh 3vw; white-space: normal; line-height: 1.3; }
+  #sf .sf-card > i { font-size: 6vw; }
+  #sf .sf-card > b { font-size: min(14vh, calc(82vw / (var(--n, 8) * .6))); }
+  #sf .sf-card > span { font-size: 5vw; }
+  /* Votación e Instagram: título, bloque principal y, abajo, la lista con el QR */
+  #vf { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; gap: 2vh; padding: 2vh 3vw; }
+  #vf .vf-top { flex-direction: column; gap: 1vh; padding: 1.6vh 3vw; border-radius: 3vw; }
+  #vf .vf-top b { font-size: 6.4vw; white-space: normal; text-align: center; line-height: 1.05; }
+  #vf .vf-top span { font-size: 3.2vw; padding: .5vh 3vw; }
+  #vf .vf-main { padding: 3vh 3vw; gap: 2.4vh; border-radius: 4vw; }
+  #vf .vf-main small { font-size: 4vw; padding: .8vh 3vw; }
+  #vf .vf-main b { font-size: min(11vh, calc(84vw / (var(--n, 8) * .64))); }
+  #vf .vf-main b.vf-clock { font-size: 34vw; }
+  #vf .vf-main span { font-size: min(5vh, calc(84vw / (var(--n, 8) * .52))); }
+  #vf .vf-main i { font-size: 12vw; }
+  #vf .vf-main.featured small { font-size: min(6vh, calc(80vw / (var(--n, 8) * .6))); padding: 1vh 4vw 1.4vh; }
+  #vf .vf-main.featured b { font-size: min(9vh, calc(84vw / (var(--n, 8) * .64))); }
+  #vf .vf-side { grid-template-rows: none; grid-template-columns: minmax(0, 1fr) auto; gap: 3vw; align-items: stretch; }
+  #vf .vf-side:has(.vf-qr:only-child) { grid-template-columns: minmax(0, 1fr); justify-items: center; }
+  #vf .vf-list { order: -1; padding: 1.6vh 3vw; gap: .7vh; border-radius: 3vw; }
+  #vf .vf-list > small { font-size: 2.8vw; }
+  #vf .vf-list em { width: 4.6vw; height: 4.6vw; font-size: 2.6vw; }
+  #vf .vf-list p b { font-size: 3.4vw; } #vf .vf-list p span { font-size: 2.6vw; }
+  #vf .vf-qr { align-self: center; padding: 2vw 2vw 1.4vw; border-radius: 3vw; }
+  #vf .vf-qr .qr, #vf .vf-qr.insta .qr { width: 22vw; height: 22vw; }
+  #vf .vf-qr b, #vf .vf-qr.insta b { max-width: 22vw; font-size: 2.2vw; }
+}
