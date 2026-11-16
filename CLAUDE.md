@@ -45,7 +45,6 @@ Pantallas: `#/jugar` (celular del público), `#/tablero` (pantalla del local), `
 
 ## Pendiente
 
-- Rama `qr-centro-vertical`: en el tablero vertical el QR queda siempre abajo al centro y el formato vertical funciona también en ventanas chicas. Probado; **espera el "publica" de Cote**.
 - Manejar la lista de karaoke desde la Sala ("Ya cantó", Subir/Bajar): propuesta anotada en el documento compartido; esperar los datos del lado karaoke y la decisión de Cote. No tocar las planillas hasta que diga "dale".
 - Poner al día la pestaña "Todo lo realizado" del documento compartido (faltan Rosco en Línea, mejora del ranking y tablero vertical).
 
