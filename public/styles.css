@@ -1173,7 +1173,7 @@ body.rot-screen main { padding: 0; max-width: none; }
 .rot-frame { position: fixed; left: 50%; top: 50%; width: 100vh; height: 100vw; border: 0; transform: translate(-50%, -50%) rotate(90deg); }
 
 /* Diseños en formato alto y angosto (pantalla grande de pie; no cambia nada en los celulares) */
-@media (orientation: portrait) and (min-width: 700px) {
+@media (orientation: portrait) and (min-width: 300px) {
   /* Bingo: arriba el título, al medio la bolita con la figura y el QR, abajo el tablero con B-I-N-G-O en columnas */
   #fb { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); grid-template-areas: "top top" "left side" "board board"; gap: 1.4vh 3vw; padding: 2vh 3vw; }
   #fb .fb-top { grid-area: top; flex-wrap: wrap; justify-content: center; gap: 1vh 2vw; padding: 1.4vh 3vw; border-radius: 3vw; }
@@ -1216,7 +1216,7 @@ body.rot-screen main { padding: 0; max-width: none; }
   #kf .kf-qr { align-self: center; padding: 2vw 2vw 1.4vw; border-radius: 3vw; }
   #kf .kf-qr .qr { width: 24vw; height: 24vw; } #kf .kf-qr b { font-size: 2.8vw; }
 }
-@media (orientation: portrait) and (min-width: 700px) {
+@media (orientation: portrait) and (min-width: 300px) {
   /* Ajuste de medidas: que los 75 números entren completos bajo la bolita */
   #fb { grid-template-rows: auto auto auto; align-content: space-between; }
   #fb > * { min-width: 0; }
@@ -1229,12 +1229,13 @@ body.rot-screen main { padding: 0; max-width: none; }
   #fb .fb-row > b { height: 4.4vh; padding: 0; font-size: 3.6vh; }
   #fb .fb-row > span { height: 2.75vh; font-size: 2.3vh; }
 }
-@media (orientation: portrait) and (min-width: 700px) { #fb .fb-row > b { line-height: 1; font-size: 3.2vh; } }
+@media (orientation: portrait) and (min-width: 300px) { #fb .fb-row > b { line-height: 1; font-size: 3.2vh; } }
 
 /* Tablero vertical: las demás actividades en formato alto y angosto */
-@media (orientation: portrait) and (min-width: 700px) {
-  /* QR para entrar a la sala: abajo a la derecha, en tamaño de pantalla de pie */
-  body.full .join-qr { top: auto; right: 3vw; bottom: 2vh; padding: 1.4vw 1.4vw 1vw; border-radius: 2.4vw; border-width: .6vw; gap: .6vw; }
+@media (orientation: portrait) and (min-width: 300px) {
+  /* QR para entrar a la sala: siempre abajo al centro, en tamaño de pantalla de pie */
+  body.full .join-qr { top: auto; right: auto; left: 50%; transform: translateX(-50%); bottom: 2vh; padding: 1.4vw 1.4vw 1vw; border-radius: 2.4vw; border-width: .6vw; gap: .6vw; }
+  body.full .join-qr.br { bottom: 2vh; }
   body.full .join-qr .qr { width: 17vw; height: 17vw; }
   body.full .join-qr b { font-size: 2.1vw; }
   /* Sorteo */
