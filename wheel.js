@@ -2,6 +2,7 @@
 // El moderador marca acierto, fallo o paso desde su panel; el público solo ve la rueda.
 const crypto = require('crypto');
 const { BANK, CONTAINS } = require('./questions-bank.js');
+const ALTERNATIVES = require('./questions-alternatives.js');
 
 const LETTERS = 'ABCDEFGHIJLMNÑOPQRSTUVXYZ';
 const OPEN = (st) => st === 'pending' || st === 'pass';
@@ -118,7 +119,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
   const crowdOf = (w) => (w.crowd ||= { opts: {}, ans: {}, shown: {}, last: '', winner: null });
   const liveKey = (w) => (w.runningSince && active(w.players[w.turn]) ? `${w.turn}:${w.players[w.turn].current}` : '');
   const answerOf = (w, key) => { const [p, l] = key.split(':').map(Number); return ((w.questions[p] || [])[l] || {}).a || ''; };
-  // Las 3 alternativas de una pregunta: la correcta y dos respuestas de otras preguntas de la misma letra
+  // Las 3 alternativas de una pregunta: la correcta y dos falsas del mismo tipo
   function optionsFor(w, key) {
     const cr = crowdOf(w);
     if (cr.opts[key]) return cr.opts[key];
@@ -126,7 +127,9 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     if (!right) return null;
     const ch = w.letters[Number(key.split(':')[1])];
     const used = new Set([norm(right)]);
-    const wrong = [];
+    // Primero las alternativas escritas para esa respuesta (mismo tipo y misma letra); si la pregunta
+    // la escribió el moderador y no las tiene, se completa con respuestas del banco de la misma letra.
+    const wrong = (ALTERNATIVES[right] || []).filter((x) => !used.has(norm(x)) && used.add(norm(x))).slice(0, 2);
     for (const b of [...shuffle(BANK.filter((x) => x.letter === ch)), ...shuffle(BANK.filter((x) => x.letter !== ch))]) {
       if (wrong.length >= 2) break;
       if (used.has(norm(b.a))) continue;
