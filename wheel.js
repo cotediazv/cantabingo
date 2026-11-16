@@ -145,17 +145,25 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     w.players.forEach((c, p) => c.status.forEach((st, l) => { if (st === 'hit' || st === 'miss') out[`${p}:${l}`] = answerOf(w, `${p}:${l}`); }));
     return out;
   };
+  // La tabla se calcula una sola vez por cada novedad del escenario y se comparte con todos los celulares:
+  // con 150 personas, al resolverse una letra son 150 consultas seguidas y antes cada una la recalculaba entera.
+  const rankCache = {}; // id del rosco -> { table, place: token -> puesto }
+  const fresh = (w) => { delete rankCache[w.id]; };
   function standings(w) {
+    if (rankCache[w.id]) return rankCache[w.id].table;
     const solved = solvedKeys(w);
     const tot = {};
     for (const [key, by] of Object.entries(crowdOf(w).ans)) {
+      const done = key in solved;
       for (const [token, r] of Object.entries(by)) {
         const t = (tot[token] ||= { token, name: r.name, score: 0, hits: 0, answered: 0 });
         t.answered++;
-        if (key in solved && norm(r.text) === norm(solved[key])) { t.score += points(r.ms); t.hits++; }
+        if (done && (r.ok === undefined ? norm(r.text) === norm(solved[key]) : r.ok)) { t.score += points(r.ms); t.hits++; }
       }
     }
-    return Object.values(tot).sort((a, b) => b.score - a.score || b.hits - a.hits);
+    const table = Object.values(tot).sort((a, b) => b.score - a.score || b.hits - a.hits);
+    rankCache[w.id] = { table, place: new Map(table.map((t, i) => [t.token, i])), top: table.filter((t) => t.score > 0).slice(0, 5).map((t) => ({ name: t.name, score: t.score })) };
+    return table;
   }
 
   function act(w, action, b) {
@@ -240,6 +248,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
   function broadcast(w) {
     // Desde cuándo hay ganador: a los 6 s el GC recoge la felicitación abajo
     if (winnerOf(w) >= 0) w.wonAt ||= Date.now(); else w.wonAt = null;
+    fresh(w); // cambió algo en el escenario: la tabla del público se vuelve a calcular en la próxima consulta
     // Desde cuándo está a la vista la pregunta en juego: de ahí sale el puntaje por rapidez
     { const cr = crowdOf(w); const k = liveKey(w); if (k && cr.last !== k) cr.shown[k] = Date.now(); cr.last = k; }
     save();
@@ -258,11 +267,12 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     const token = String(req.query.token || '');
     if (!findPlayer(String(req.query.sid || ''), token)) return fail(res, 403, 'Primero únete a la sala con tu nombre');
     const table = standings(w);
-    const i = table.findIndex((t) => t.token === token);
+    const rank = rankCache[w.id];
+    const i = rank.place.has(token) ? rank.place.get(token) : -1;
     const mine = {};
     // A quien ya respondió se le dice de inmediato si acertó (su alternativa queda verde o roja)
-    for (const [key, by] of Object.entries(crowdOf(w).ans)) if (by[token]) mine[key] = { text: by[token].text, ok: norm(by[token].text) === norm(answerOf(w, key)) };
-    res.json({ top: table.filter((t) => t.score > 0).slice(0, 5).map((t) => ({ name: t.name, score: t.score })), players: table.length, me: i >= 0 ? { score: table[i].score, hits: table[i].hits, answered: table[i].answered, rank: i + 1 } : null, mine });
+    for (const [key, by] of Object.entries(crowdOf(w).ans)) { const r = by[token]; if (r) mine[key] = { text: r.text, ok: r.ok === undefined ? norm(r.text) === norm(answerOf(w, key)) : r.ok }; }
+    res.json({ top: rank.top, players: table.length, me: i >= 0 ? { score: table[i].score, hits: table[i].hits, answered: table[i].answered, rank: i + 1 } : null, mine });
   });
   // Una respuesta por pregunta, solo mientras está en juego en el escenario
   app.post('/api/wheels/:id/crowd', (req, res) => {
@@ -280,9 +290,10 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     const cr = crowdOf(w);
     const by = (cr.ans[key] ||= {});
     if (by[token]) return fail(res, 409, 'Ya respondiste esta pregunta');
-    by[token] = { text, name: pl.name, ms: Math.max(0, Date.now() - (cr.shown[key] || Date.now())) };
+    const ok = norm(text) === norm(answerOf(w, key)); // se decide una vez, al responder
+    by[token] = { text, name: pl.name, ok, ms: Math.max(0, Date.now() - (cr.shown[key] || Date.now())) };
     save();
-    res.json({ ok: true, correct: norm(text) === norm(answerOf(w, key)) });
+    res.json({ ok: true, correct: ok });
   });
 
   app.get('/api/wheels', (_req, res) => {
