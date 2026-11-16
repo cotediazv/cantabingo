@@ -1144,3 +1144,10 @@ body.full .join-qr.br { bottom: 11vh; } /* en el tablero, sobre el botón «Acti
 .pcrowd-score b { color: #ffe14d; }
 .pcrowd-win { color: #fff; }
 #w-crowd-res i { font-style: normal; }
+
+/* Rosco en línea: la alternativa tocada se pone verde (correcta) o roja (incorrecta) */
+.pcrowd button:disabled { opacity: .45; }
+.pcrowd button.ok, .pcrowd button.ko, .pcrowd button.wait { opacity: 1; color: #fff; }
+.pcrowd button.ok { background: #1fae63; border-color: #fff; }
+.pcrowd button.ko { background: #b3323c; border-color: #fff; }
+.pcrowd button.wait { background: #5a54a0; border-color: #fff; }

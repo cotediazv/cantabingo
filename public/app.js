@@ -721,14 +721,13 @@ views.jugar = async (sid) => {
     if (rosco.crowdWinner) return `<div class="prosco-win pcrowd-win">🏅 ${esc(rosco.crowdWinner.name)}<small>Ganó el Rosco en línea con ${rosco.crowdWinner.score} puntos</small></div>`;
     const cq = rosco.winner || rosco.finished ? null : rosco.crowd;
     const sent = cq && crowdMine[cq.key];
-    const solved = rosco.crowdSolved || {};
-    const lastKey = crowdOrder.filter((k) => k in solved).pop();
-    const last = !lastKey ? '' : crowdMine[lastKey] === solved[lastKey] ? `<div class="pcrowd-res ok">✔ ¡Tú acertaste! <b>${esc(solved[lastKey])}</b></div>`
-      : `<div class="pcrowd-res ko">✘ Tu respuesta falló: era <b>${esc(solved[lastKey])}</b></div>`;
-    const play = !cq ? '' : sent ? `<div class="pcrowd-sent">Tu respuesta: <b>${esc(sent)}</b><small>Se corrige cuando la letra se resuelva en el escenario.</small></div>`
-      : `<div class="pcrowd"><small>Juega tú también: mientras más rápido, más puntos</small>${cq.options.map((o) => `<button type="button" data-crowd="${esc(o)}" data-key="${cq.key}">${esc(o)}</button>`).join('')}</div>`;
+    // Al tocar, la alternativa elegida se pone verde con ✔ si es correcta o roja con ✘ si no lo es
+    const mark = (o) => (!sent || o !== sent.text ? '' : sent.ok === true ? 'ok' : sent.ok === false ? 'ko' : 'wait');
+    const sign = (o) => (mark(o) === 'ok' ? '✔ ' : mark(o) === 'ko' ? '✘ ' : '');
+    const play = !cq ? '' : `<div class="pcrowd ${sent ? 'done' : ''}"><small>${sent ? (sent.ok === true ? '¡Correcto!' : sent.ok === false ? 'Esta vez no' : 'Enviando…') : 'Juega tú también: mientras más rápido, más puntos'}</small>
+      ${cq.options.map((o) => `<button type="button" class="${mark(o)}" data-crowd="${esc(o)}" data-key="${cq.key}" ${sent ? 'disabled' : ''}>${sign(o)}${esc(o)}</button>`).join('')}</div>`;
     const score = crowdInfo && crowdInfo.me ? `<div class="pcrowd-score">Rosco en línea: <b>${crowdInfo.me.score} puntos</b> · puesto ${crowdInfo.me.rank} de ${crowdInfo.players}</div>` : '';
-    return `${last}${play}${score}`; // el resultado de la anterior queda a la vista aunque ya haya otra pregunta en juego
+    return `${play}${score}`;
   };
   const drawRosco = () => {
     if (!rosco) { $('#prosco').innerHTML = '<p class="muted">Cargando El Rosco…</p>'; return; }
@@ -842,8 +841,8 @@ views.jugar = async (sid) => {
       const key = b.dataset.key;
       const choice = b.dataset.crowd;
       if (crowdMine[key]) return;
-      crowdMine[key] = choice; crowdOrder.push(key); drawRosco();
-      try { await api('POST', `/api/wheels/${roscoId}/crowd`, { sid, token: me.token, key, choice }); } catch (err) {
+      crowdMine[key] = { text: choice }; crowdOrder.push(key); drawRosco();
+      try { const r = await api('POST', `/api/wheels/${roscoId}/crowd`, { sid, token: me.token, key, choice }); crowdMine[key] = { text: choice, ok: !!r.correct }; if (rosco) drawRosco(); crowdSoon(); } catch (err) {
         if (!/Ya respondiste/.test(err.message)) { delete crowdMine[key]; crowdOrder = crowdOrder.filter((k) => k !== key); fail(err); if (rosco) drawRosco(); }
       }
     };
