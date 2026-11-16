@@ -24,7 +24,7 @@ function doPost(e) {
     if (!p) throw new Error('Ese pedido ya no está en la lista');
     if (b.accion === 'cantado') {
       if (String(p.nombre) !== String(b.nombre) || String(p.cancion) !== String(b.cancion)) throw new Error('La lista cambió; vuelve a intentarlo');
-      ss.getSheetByName('Cantados').appendRow([p.hora + ' ' + p.nombre + ' ' + p.cancion, new Date()]);
+      ss.getSheetByName('Cantados').appendRow([fechaHoraDeId_(p.id) + ' ' + p.nombre + ' ' + p.cancion, new Date()]);
     } else if (b.accion === 'subir') {
       ss.getSheetByName('Orden').appendRow([p.id, -1]);
     } else if (b.accion === 'bajar') {
@@ -41,4 +41,13 @@ function doPost(e) {
   }
   return ContentService.createTextOutput(JSON.stringify(salida))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+// La clave de «Cantados» empieza con la fecha y hora del pedido tal como la escribe AppSheet
+// (MM/dd/yyyy HH:mm:ss, ej. 11/13/2026 21:48:21). El ID es «P» + la marca temporal en segundos
+// (número de serie de la planilla × 86400), así que de ahí sale exacta, sin depender de la columna Hora.
+function fechaHoraDeId_(id) {
+  const segundos = Number(String(id).replace(/^P/, ''));
+  const ms = Math.round((segundos / 86400 - 25569) * 86400000); // 25569 = días entre 30/12/1899 y 1/1/1970
+  return Utilities.formatDate(new Date(ms), 'UTC', 'MM/dd/yyyy HH:mm:ss');
 }
