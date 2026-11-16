@@ -726,20 +726,22 @@ views.jugar = async (sid) => {
     const sign = (o) => (mark(o) === 'ok' ? '✔ ' : mark(o) === 'ko' ? '✘ ' : '');
     const play = !cq ? '' : `<div class="pcrowd ${sent ? 'done' : ''}"><small>${sent ? (sent.ok === true ? '¡Correcto!' : sent.ok === false ? 'Esta vez no' : 'Enviando…') : 'Juega tú también: mientras más rápido, más puntos'}</small>
       ${cq.options.map((o) => `<button type="button" class="${mark(o)}" data-crowd="${esc(o)}" data-key="${cq.key}" ${sent ? 'disabled' : ''}>${sign(o)}${esc(o)}</button>`).join('')}</div>`;
-    const score = crowdInfo && crowdInfo.me ? `<div class="pcrowd-score">Rosco en línea: <b>${crowdInfo.me.score} puntos</b> · puesto ${crowdInfo.me.rank} de ${crowdInfo.players}</div>` : '';
-    return `${play}${score}`;
+    return play;
   };
   const drawRosco = () => {
     if (!rosco) { $('#prosco').innerHTML = '<p class="muted">Cargando El Rosco…</p>'; return; }
     const c = rosco.players[rosco.turn];
-    const reveal = rosco.reveal ? `<div class="prosco-reveal">✔ Letra ${esc(rosco.reveal.letter)}: <b>${esc(rosco.reveal.answer)}</b></div>` : '';
+    const reveal = ''; // en el celular no se muestra la respuesta correcta: solo si la propia alternativa fue verde o roja
     const body = rosco.winner ? `<div class="prosco-win">🏆 ${esc(rosco.winner.name)}<small>${rosco.winner.full ? '¡Completó el rosco!' : '¡Ganó El Rosco!'}</small></div>`
       : rosco.tie ? `<div class="prosco-wait">Empate entre ${rosco.tie.names.map(esc).join(' y ')}. Se define por sorteo.</div>`
       : rosco.finished ? '<div class="prosco-wait">Juego terminado</div>'
       : `<div class="prosco-q"><span class="prosco-letter">${esc(rosco.letters[c.current])}</span>
           <p>${rosco.question ? esc(rosco.question) : '<span class="muted">Esperando la siguiente pregunta…</span>'}</p></div>`;
-    // Los 10 primeros del público, solo con su puntaje
-    const top = crowdInfo && crowdInfo.top && crowdInfo.top.length ? `<div class="pcrowd-top"><small>Top 10</small>${crowdInfo.top.map((t, i) => `<div class="${t.name === me.name ? 'me' : ''}"><em>${i + 1}</em><span>${esc(t.name)}</span><b>${t.score}</b></div>`).join('')}</div>` : '';
+    // Los 5 primeros del público con su puntaje y, en la sexta fila y con otro color, el puesto de esta persona
+    const mine = crowdInfo && crowdInfo.me;
+    const inTop = mine && mine.rank <= 5 && mine.score > 0;
+    const top = crowdInfo && ((crowdInfo.top && crowdInfo.top.length) || mine) ? `<div class="pcrowd-top"><small>Top 5</small>${(crowdInfo.top || []).map((t, i) => `<div class="${inTop && i === mine.rank - 1 ? 'me' : ''}"><em>${i + 1}</em><span>${esc(t.name)}</span><b>${t.score}</b></div>`).join('')}
+      ${mine && !inTop ? `<div class="you"><em>${mine.rank}.º</em><span>${esc(me.name)}</span><b>${mine.score}</b></div>` : ''}</div>` : '';
     $('#prosco').innerHTML = `<div class="prosco-head big"><b>El Rosco en Línea</b><span></span><span class="prosco-clock" id="prosco-clock">${rosco.winner || rosco.finished ? '' : fmtClock(roscoLeft())}</span></div>
       ${body}${reveal}${crowdHTML()}
       ${top}`;

@@ -1161,3 +1161,7 @@ body.full .join-qr.br { bottom: 11vh; } /* en el tablero, sobre el botón «Acti
 .pcrowd-top em { flex: 0 0 auto; width: 1.7em; height: 1.7em; display: grid; place-items: center; border-radius: 50%; background: #ffc400; color: #2a1030; font-style: normal; font-weight: 900; font-size: .85rem; }
 .pcrowd-top span { flex: 1; min-width: 0; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pcrowd-top b { font-variant-numeric: tabular-nums; }
+
+/* Top 5 y, en otra fila de otro color, el puesto propio */
+.pcrowd-top > div.you { margin-top: 6px; background: #2f7bff; }
+.pcrowd-top > div.you em { width: auto; min-width: 1.7em; padding: 0 .5em; border-radius: 99px; background: #fff; color: #12306b; }
