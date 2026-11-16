@@ -46,11 +46,17 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
     }
     return [t, ''];
   };
-  // Acepta el formato de Kennedy y Frida ({hora, nombre, cancion, lugar}) y tolera variantes
+  // Acepta el formato de Kennedy y Frida ({hora, nombre, cancion, lugar, id}) y tolera variantes.
+  // Se guardan también el ID y los textos tal como vienen de la planilla: «Ya cantó», Subir y Bajar los necesitan.
   const normalize = (raw) => (Array.isArray(raw) ? raw : []).map((p) => {
     const [song, artistFromSong] = split(p.cancion || p.cancionFinal || p.song || '');
-    return { name: clean(p.nombre || p.name, 60), song, artist: clean(p.artista || artistFromSong, 80), place: clean(p.lugar, 60) };
+    return {
+      name: clean(p.nombre || p.name, 60), song, artist: clean(p.artista || artistFromSong, 80), place: clean(p.lugar, 60),
+      id: /^P\d{1,20}$/.test(String(p.id || '').trim()) ? String(p.id).trim() : '',
+      raw: { nombre: String(p.nombre == null ? '' : p.nombre).slice(0, 200), cancion: String(p.cancion == null ? '' : p.cancion).slice(0, 300) },
+    };
   }).filter((p) => p.name && p.song);
+  const pub = ({ raw, id, ...p }) => p; // las pantallas no necesitan el ID ni los textos originales
 
   const validUrl = (u, hosts) => {
     try { const x = new URL(u); return x.protocol === 'https:' && hosts.some((h) => x.hostname === h || x.hostname.endsWith(`.${h}`)); } catch { return false; }
@@ -91,7 +97,7 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
     const venue = venueNow();
     const c = cache[venue] || { list: [], at: 0, error: '' };
     const pl = req.query.token ? findPlayer(String(req.query.sid || ''), String(req.query.token)) : null;
-    res.json({ me: pl ? standing(venue, pl.name) : null, venue, name: VENUES[venue], phone: !!db.karaoke.phone, ask: askFor(venue), form: (db.karaoke.urls[venue] || {}).form || '', list: c.list.slice(0, 8), total: c.list.length, at: c.at, stale: !!c.error });
+    res.json({ me: pl ? standing(venue, pl.name) : null, venue, name: VENUES[venue], phone: !!db.karaoke.phone, ask: askFor(venue), form: (db.karaoke.urls[venue] || {}).form || '', list: c.list.slice(0, 8).map(pub), total: c.list.length, at: c.at, stale: !!c.error });
   });
 
   // Configuración y diagnóstico para el Centro de control
@@ -121,6 +127,45 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
     await refresh(venueNow()); // se prueba de inmediato, para avisar si algo quedó mal
     const c = cache[venueNow()];
     res.json({ venue: venueNow(), fromSala: !!VENUES[salaVenue()], phone: !!db.karaoke.phone, urls: db.karaoke.urls, status: { at: c.at, error: c.error, total: c.list.length } });
+  });
+
+  // ---------- «Ya cantó», Subir y Bajar desde el panel del animador ----------
+  // Hace lo mismo que los botones de AppSheet, a través de la función Sala.gs del Apps Script del local
+  // (doPost): solo agrega una fila en «Cantados» o en «Orden». La clave va en la variable KARAOKE_CLAVE
+  // de Render y en la propiedad SALA_CLAVE del script; nunca en el repositorio.
+  // Los botones aparecen solo cuando hay clave y la lista del local ya trae el ID de cada pedido.
+  const KEY = String(process.env.KARAOKE_CLAVE || '');
+  const editable = (venue) => !!KEY && ((cache[venue] || {}).list || []).some((p) => p.id);
+  app.get('/api/karaoke/cola', requireAdmin, (_req, res) => {
+    const venue = venueNow();
+    const c = cache[venue] || { list: [], at: 0, error: '' };
+    res.json({ venue, name: VENUES[venue], phone: !!db.karaoke.phone, edit: editable(venue), list: c.list.map(({ raw, ...p }) => p), total: c.list.length, at: c.at, stale: !!c.error });
+  });
+  let acting = false;
+  app.post('/api/karaoke/accion', requireAdmin, async (req, res) => {
+    const b = req.body || {};
+    const venue = venueNow();
+    if (!KEY) return fail(res, 400, 'Falta configurar la clave del karaoke en el servidor (KARAOKE_CLAVE)');
+    if (!['cantado', 'subir', 'bajar'].includes(b.accion)) return fail(res, 400, 'Acción no válida');
+    const exec = (db.karaoke.urls[venue] || {}).exec;
+    if (!exec) return fail(res, 400, 'Falta la dirección de la web app de este local');
+    const p = ((cache[venue] || {}).list || []).find((x) => x.id && x.id === String(b.id || ''));
+    if (!p) return fail(res, 409, 'Ese pedido ya no está en la lista. Revisa la lista actualizada.');
+    if (acting) return fail(res, 429, 'Se está guardando el cambio anterior. Intenta de nuevo en un segundo.');
+    acting = true;
+    try {
+      const body = { clave: KEY, accion: b.accion, id: p.id, nombre: p.raw.nombre, cancion: p.raw.cancion };
+      // /exec responde con una redirección; fetch la sigue con GET y ahí viene la respuesta del script
+      const r = await fetch(exec, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body), redirect: 'follow', signal: AbortSignal.timeout(TIMEOUT_MS) });
+      const text = await r.text();
+      let data;
+      try { data = JSON.parse(text); } catch { throw new Error(r.ok ? 'La web app no respondió como se esperaba (¿falta instalar Sala.gs y publicar con Nueva versión?)' : `Google respondió ${r.status}`); }
+      if (!data || data.error || !data.ok) throw new Error(clean(data && data.error, 200) || 'La planilla no confirmó el cambio');
+      await refresh(venue);
+      res.json({ ok: true });
+    } catch (err) {
+      fail(res, 502, `No se pudo guardar: ${clean(err && err.message, 200)}`);
+    } finally { acting = false; }
   });
 
   // ---------- Pedidos desde el celular ----------

@@ -1209,28 +1209,47 @@ function wireSongSearch(form) {
 
 // ---------- Karaoke: panel del animador ----------
 // Pone el karaoke en pantalla y muestra la cola. El local es el de la sala abierta.
-// El orden y «Ya cantó» se siguen manejando en la app del equipo.
+// «Ya cantó», Subir y Bajar: cuando el local ya tiene instalado Sala.gs, se pueden usar aquí o en la app del equipo.
 views.karaokectl = async () => {
   if (!(await isAdmin())) return viewLogin();
   app.innerHTML = `<div class="panel"><div class="row between"><div><h1 id="kc-title" style="margin:0">Karaoke</h1><span class="muted" id="kc-sub"></span></div></div>
       <div id="kc-list" style="margin-top:14px"></div>
       <label class="check" style="margin-top:14px"><input type="checkbox" id="kc-phone"> Permitir pedir canciones desde el celular</label>
-      <p class="muted small" style="margin-top:10px">El orden y «Ya cantó» se manejan en la app del equipo. Esta pantalla solo muestra la lista.</p>
+      <p class="muted small" id="kc-note" style="margin-top:10px"></p>
     </div>
     ${activitiesNav('karaoke')}`;
   await api('POST', '/api/stage', { show: 'karaoke' }).catch(fail); // al entrar, el karaoke pasa a la pantalla
   let last = '';
+  let busy = false;
   const paint = async () => {
-    const k = await api('GET', '/api/karaoke').catch(() => null);
-    if (!k || !$('#kc-list')) return;
+    if (busy) return;
+    const k = await api('GET', '/api/karaoke/cola').catch(() => null);
+    if (!k || !$('#kc-list') || busy) return;
     const sig = JSON.stringify(k);
     if (sig === last) return;
     last = sig;
     $('#kc-title').textContent = `Karaoke ${k.name}`;
     $('#kc-sub').textContent = k.stale ? 'No se pudo leer la lista; se muestra la última conocida' : k.total ? `${k.total} ${k.total === 1 ? 'pedido' : 'pedidos'} por cantar` : 'Todavía no hay pedidos';
     $('#kc-phone').checked = !!k.phone;
-    $('#kc-list').innerHTML = k.list.length ? k.list.map((p, i) => `<div class="kc-row ${i === 0 ? 'now' : ''}"><em>${i === 0 ? '🎤' : i + 1}</em><p><small>${i === 0 ? 'Ahora canta' : i === 1 ? 'Sigue' : ''}</small><b>${esc(p.name)}</b><span>${esc(p.song)}${p.artist ? ` · ${esc(p.artist)}` : ''}</span></p></div>`).join('')
+    $('#kc-note').textContent = k.edit ? '«Ya cantó», Subir y Bajar también se pueden usar en la app del equipo.' : 'El orden y «Ya cantó» se manejan en la app del equipo. Esta pantalla solo muestra la lista.';
+    const n = k.list.length;
+    $('#kc-list').innerHTML = n ? k.list.map((p, i) => `<div class="kc-row ${i === 0 ? 'now' : ''}"><em>${i === 0 ? '🎤' : i + 1}</em><p><small>${i === 0 ? 'Ahora canta' : i === 1 ? 'Sigue' : ''}</small><b>${esc(p.name)}</b><span>${esc(p.song)}${p.artist ? ` · ${esc(p.artist)}` : ''}</span></p>${k.edit && p.id ? `<div class="kc-act">
+        <button type="button" class="kc-up" data-kc="subir" data-id="${esc(p.id)}" ${i === 0 ? 'disabled' : ''} title="Subir" aria-label="Subir">▲</button><button type="button" class="kc-down" data-kc="bajar" data-id="${esc(p.id)}" ${i === n - 1 ? 'disabled' : ''} title="Bajar" aria-label="Bajar">▼</button><button type="button" class="kc-done" data-kc="cantado" data-id="${esc(p.id)}">Ya cantó</button></div>` : ''}</div>`).join('')
       : '<p class="muted">Cuando alguien pida una canción, aparecerá aquí.</p>';
+  };
+  $('#kc-list').onclick = async (e) => {
+    const btn = e.target.closest('[data-kc]');
+    if (!btn || busy) return;
+    busy = true;
+    $('#kc-list').querySelectorAll('[data-kc]').forEach((x) => { x.disabled = true; });
+    btn.classList.add('wait');
+    try {
+      await api('POST', '/api/karaoke/accion', { accion: btn.dataset.kc, id: btn.dataset.id });
+      toast(btn.dataset.kc === 'cantado' ? 'Marcado: ya cantó' : btn.dataset.kc === 'subir' ? 'Subió un puesto' : 'Bajó un puesto');
+    } catch (err) { fail(err); }
+    busy = false;
+    last = '';
+    paint();
   };
   $('#kc-phone').onchange = async (e) => { try { await api('POST', '/api/karaoke/config', { phone: e.target.checked }); last = ''; paint(); } catch (err) { fail(err); } };
   await paint();

@@ -1290,3 +1290,12 @@ body.rot-screen main { padding: 0; max-width: none; }
   #vf .vf-qr .qr, #vf .vf-qr.insta .qr { width: 22vw; height: 22vw; }
   #vf .vf-qr b, #vf .vf-qr.insta b { max-width: 22vw; font-size: 2.2vw; }
 }
+
+/* Karaoke, panel del animador: «Ya cantó», Subir y Bajar en cada pedido */
+.kc-row p { flex: 1 1 auto; }
+.kc-act { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; }
+.kc-act button { min-width: 44px; height: 44px; padding: 0 10px; border-radius: 12px; font-weight: 800; font-size: 1rem; }
+.kc-act .kc-done { background: #ffc400; color: #1a1a1a; padding: 0 14px; }
+.kc-act button:disabled { opacity: .35; }
+.kc-act button.wait { opacity: .7; }
+@media (max-width: 520px) { .kc-row { flex-wrap: wrap; } .kc-act { width: 100%; justify-content: flex-end; padding-left: 50px; } }
