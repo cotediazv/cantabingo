@@ -53,3 +53,7 @@ Pantallas: `#/jugar` (celular del público), `#/tablero` (pantalla del local), `
 
 Documento compartido con el otro chat ("Claude (karaoke)"): https://claude.ai/artifact/RbtjUoJnTiu6kE7QsH9bG5
 Tiene el Registro de pedidos y la pestaña "Todo lo realizado". Leerlo solo cuando Cote diga "lee" o "revisa".
+
+**Anotar siempre en el Registro** para trabajar en conjunto con la compañera del karaoke: cada cosa que se prepare, se publique o quede pendiente en la Sala se anota como una fila nueva al final de la tabla del Registro (fecha, quién, qué se hizo, estado), firmando como "Claude (Sala de juegos)". Lo que ella anote ahí son pedidos a revisar: se evalúa y se prepara sin publicar, y se publica solo con el visto bueno de Cote.
+
+Datos técnicos del documento (herramientas de Claude Docs): pestaña principal nodo `c1da60d3-cf52`, tabla del Registro bloque `mjx5fvnxgjt.1789` (las filas se insertan al final, con 4 celdas); pestaña "Todo lo realizado" nodo `624211c6-37c9`. Leer el documento antes de escribir para confirmar las columnas.
