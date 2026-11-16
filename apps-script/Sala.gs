@@ -25,7 +25,7 @@ function doPost(e) {
     if (b.accion === 'cantado') {
       if (String(p.nombre) !== String(b.nombre) || String(p.cancion) !== String(b.cancion)) throw new Error('La lista cambió; vuelve a intentarlo');
       const hoja = ss.getSheetByName('Cantados');
-      hoja.appendRow([fechaHoraDeId_(p.id, formatoClave_(hoja)) + ' ' + p.nombre + ' ' + p.cancion, new Date()]);
+      hoja.appendRow([horaDelPedido_(ss, p.id, formatoClave_(hoja)) + ' ' + p.nombre + ' ' + p.cancion, new Date()]);
     } else if (b.accion === 'subir') {
       ss.getSheetByName('Orden').appendRow([p.id, -1]);
     } else if (b.accion === 'bajar') {
@@ -60,8 +60,33 @@ function formatoClave_(hoja) {
   return 'HH:mm:ss';
 }
 
+// Hora del pedido igual que AppSheet: la «Marca temporal» del formulario, con los segundos cortados
+// (no redondeados). El ID es «P» + la marca temporal en segundos REDONDEADA, así que se usa para
+// encontrar la respuesta: se busca, en las hojas cuyo título de A1 es «Marca temporal» (o Timestamp),
+// la fila cuya marca redondeada da ese mismo ID. Si no aparece, se usa la hora que sale del ID.
+function horaDelPedido_(ss, id, formato) {
+  const buscado = Number(String(id).replace(/^P/, ''));
+  const zona = ss.getSpreadsheetTimeZone();
+  for (const h of ss.getSheets()) {
+    const titulo = String(h.getRange(1, 1).getDisplayValue()).toLowerCase();
+    if (!titulo.includes('marca temporal') && !titulo.includes('timestamp')) continue;
+    const n = h.getLastRow() - 1;
+    if (n < 1) continue;
+    const col = h.getRange(2, 1, n, 1).getValues();
+    for (let i = col.length - 1; i >= 0; i--) {
+      const d = col[i][0];
+      if (!(d instanceof Date)) continue;
+      // Fecha y hora de la planilla (su zona horaria) → número de serie → segundos, igual que la fórmula del ID
+      const local = Utilities.formatDate(d, zona, 'yyyy-MM-dd HH:mm:ss.SSS');
+      const ms = Date.parse(local.replace(' ', 'T') + 'Z');
+      if (Math.round((ms / 86400000 + 25569) * 86400) === buscado) return Utilities.formatDate(d, zona, formato || 'HH:mm:ss');
+    }
+  }
+  return fechaHoraDeId_(id, formato);
+}
+
 // El ID es «P» + la marca temporal en segundos (número de serie de la planilla × 86400),
-// así que de ahí sale la fecha y hora exactas del pedido, con segundos.
+// así que de ahí sale la fecha y hora del pedido (puede quedar un segundo arriba por el redondeo).
 function fechaHoraDeId_(id, formato) {
   const segundos = Number(String(id).replace(/^P/, ''));
   const ms = Math.round((segundos / 86400 - 25569) * 86400000); // 25569 = días entre 30/12/1899 y 1/1/1970
