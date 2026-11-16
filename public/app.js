@@ -1086,11 +1086,13 @@ views.tablero = async () => {
   soundBtn.className = 'sound-btn';
   soundBtn.textContent = '🔊 Activar sonido';
   document.body.appendChild(soundBtn);
-  const paintSound = () => { soundBtn.hidden = sfx.ready(); };
-  const enableSound = () => { const c = sfx.unlock(); if (c) { c.onstatechange = paintSound; Promise.resolve(c.resume()).then(() => { paintSound(); if (!soundBtn.dataset.done) { soundBtn.dataset.done = '1'; sfx.play('hit'); } }).catch(() => {}); } };
+  // El tablero vertical va mudo (?mudo=1), para que no suene doble junto al tablero principal
+  const mute = new URLSearchParams(location.search).has('mudo');
+  const paintSound = () => { soundBtn.hidden = mute || sfx.ready(); };
+  const enableSound = () => { if (mute) return; const c = sfx.unlock(); if (c) { c.onstatechange = paintSound; Promise.resolve(c.resume()).then(() => { paintSound(); if (!soundBtn.dataset.done) { soundBtn.dataset.done = '1'; sfx.play('hit'); } }).catch(() => {}); } };
   document.addEventListener('pointerdown', enableSound);
   document.addEventListener('keydown', enableSound);
-  sfx.unlock(); // donde el navegador lo permite sin tocar (pantallas en modo quiosco), queda activo de inmediato
+  if (!mute) sfx.unlock(); // donde el navegador lo permite sin tocar (pantallas en modo quiosco), queda activo de inmediato
   setTimeout(paintSound, 300);
   const apply = async () => {
     if (busy) return;
@@ -1118,6 +1120,15 @@ views.tablero = async () => {
   await apply();
   const timer = setInterval(apply, 2000);
   return () => { clearInterval(timer); if (typeof stop === 'function') stop(); joinQr(); document.body.classList.remove('full'); soundBtn.remove(); document.removeEventListener('pointerdown', enableSound); document.removeEventListener('keydown', enableSound); };
+};
+
+// Tablero para una pantalla puesta de pie (girada 90° a la izquierda) que recibe la señal horizontal de siempre:
+// el mismo tablero se dibuja en formato vertical dentro de un marco y se entrega girado 90° a la derecha,
+// igual que se hace con los videos para esa pantalla. Va sin sonido.
+views['tablero-v'] = async () => {
+  document.body.classList.add('rot-screen');
+  app.innerHTML = `<iframe class="rot-frame" title="Tablero vertical" src="${location.pathname}?mudo=1#/tablero"></iframe>`;
+  return () => document.body.classList.remove('rot-screen');
 };
 
 // Celebración de bingo a pantalla completa: «¡BINGO!», confeti y los nombres de quienes ganaron

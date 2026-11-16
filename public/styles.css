@@ -1165,3 +1165,68 @@ body.full .join-qr.br { bottom: 11vh; } /* en el tablero, sobre el botón «Acti
 /* Top 5 y, en otra fila de otro color, el puesto propio */
 .pcrowd-top > div.you { margin-top: 6px; background: #2f7bff; }
 .pcrowd-top > div.you em { width: auto; min-width: 1.7em; padding: 0 .5em; border-radius: 99px; background: #fff; color: #12306b; }
+
+/* ---------- Tablero vertical girado ---------- */
+/* El marco mide lo que la pantalla de pie (ancho = alto de la señal) y se gira 90° a la derecha */
+body.rot-screen { overflow: hidden; background: #000; }
+body.rot-screen main { padding: 0; max-width: none; }
+.rot-frame { position: fixed; left: 50%; top: 50%; width: 100vh; height: 100vw; border: 0; transform: translate(-50%, -50%) rotate(90deg); }
+
+/* Diseños en formato alto y angosto (pantalla grande de pie; no cambia nada en los celulares) */
+@media (orientation: portrait) and (min-width: 700px) {
+  /* Bingo: arriba el título, al medio la bolita con la figura y el QR, abajo el tablero con B-I-N-G-O en columnas */
+  #fb { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); grid-template-areas: "top top" "left side" "board board"; gap: 1.4vh 3vw; padding: 2vh 3vw; }
+  #fb .fb-top { grid-area: top; flex-wrap: wrap; justify-content: center; gap: 1vh 2vw; padding: 1.4vh 3vw; border-radius: 3vw; }
+  #fb .fb-title { flex: 1 1 100%; text-align: center; font-size: 7vw; }
+  #fb .fb-pill { font-size: 2.6vw; padding: .5vh 2.4vw; }
+  #fb .fb-pill b { font-size: 3.4vw; }
+  #fb .fb-left { grid-area: left; gap: 1.2vh; }
+  #fb .fb-side { grid-area: side; grid-template-columns: 1fr 1fr; gap: 2vw; align-items: stretch; }
+  #fb .fb-board { grid-area: board; }
+  #fb .ball.fbball { width: 40vw; height: 40vw; padding: 2vw; border-width: 1vw; }
+  #fb .ball.fbball .l { font-size: 8vw; } #fb .ball.fbball .v { font-size: 20vw; }
+  #fb .ball.fbprev { width: 7.6vw; height: 7.6vw; } #fb .ball.fbprev .v { font-size: 3.6vw; } #fb .ball.fbprev .l { font-size: 1.8vw; }
+  #fb .fb-prev { gap: 1vw; min-height: 7.6vw; }
+  #fb .fb-soon { font-size: 6vw; min-height: 30vw; }
+  #fb .fb-figure, #fb .fb-qr { padding: 1.6vw; border-radius: 3vw; gap: .8vh; align-content: center; }
+  #fb .fb-figure > span, #fb .fb-qr > span { font-size: 2.4vw; }
+  #fb .fb-figure .gc-grid { width: 15vw; } #fb .fb-figure b { font-size: 2.6vw; }
+  #fb .fb-qr .qr { width: 16vw; height: 16vw; padding: 1vw; border-radius: 1.4vw; }
+  #fb .fb-board { grid-template-rows: none; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 1.4vw; padding: 1.6vw; align-self: stretch; border-radius: 3vw; }
+  #fb .fb-row { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto repeat(15, minmax(0, 1fr)); gap: .45vh; align-items: stretch; height: 100%; }
+  #fb .fb-row > b { height: auto; padding: .6vh 0; font-size: 6.5vw; border-radius: 1.6vw; }
+  #fb .fb-row > span { height: auto; min-height: 0; width: 100%; border-radius: 1.2vw; font-size: min(3.1vh, 5.2vw); }
+  #fb .fb-idle b { font-size: 9vw; white-space: normal; } #fb .fb-idle small:not(.soon) { font-size: 5.4vw; white-space: normal; } #fb .fb-idle small { font-size: 4vw; white-space: normal; }
+  #fb .fb-idle-qr .qr, .fb-idle-qr .qr { width: 62vw; height: 62vw; }
+  /* Karaoke: título, «Ahora canta» en grande, los que siguen y el QR */
+  #kf { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; gap: 2vh; padding: 2vh 3vw; }
+  #kf .kf-top { flex-direction: column; gap: 1vh; padding: 1.6vh 3vw; border-radius: 3vw; }
+  #kf .kf-top b { font-size: 7vw; white-space: normal; text-align: center; }
+  #kf .kf-top span { font-size: 3.2vw; padding: .5vh 3vw; }
+  #kf .kf-now { padding: 3vh 3vw; gap: 2vh; border-radius: 4vw; }
+  #kf .kf-now small { font-size: 5vw; padding: .8vh 4vw; }
+  #kf .kf-now b { font-size: min(11vh, calc(86vw / (var(--n, 8) * .6))); }
+  #kf .kf-now span { font-size: min(6vh, calc(86vw / (var(--n, 8) * .52))); }
+  #kf .kf-now i { font-size: min(4.6vh, calc(86vw / (var(--n, 8) * .52))); }
+  #kf .kf-side { grid-template-rows: none; grid-template-columns: minmax(0, 1fr) auto; gap: 3vw; align-items: stretch; }
+  #kf .kf-next { order: -1; padding: 1.6vh 3vw; gap: 1vh; border-radius: 3vw; }
+  #kf .kf-next > small { font-size: 3vw; }
+  #kf .kf-next em { width: 5.4vw; height: 5.4vw; font-size: 3vw; }
+  #kf .kf-next p b { font-size: 3.8vw; } #kf .kf-next p span { font-size: 2.8vw; }
+  #kf .kf-qr { align-self: center; padding: 2vw 2vw 1.4vw; border-radius: 3vw; }
+  #kf .kf-qr .qr { width: 24vw; height: 24vw; } #kf .kf-qr b { font-size: 2.8vw; }
+}
+@media (orientation: portrait) and (min-width: 700px) {
+  /* Ajuste de medidas: que los 75 números entren completos bajo la bolita */
+  #fb { grid-template-rows: auto auto auto; align-content: space-between; }
+  #fb > * { min-width: 0; }
+  #fb .ball.fbball { width: 34vw; height: 34vw; } #fb .ball.fbball .v { font-size: 17vw; } #fb .ball.fbball .l { font-size: 6.6vw; }
+  #fb .fb-side { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-self: center; }
+  #fb .fb-figure .gc-grid { width: 13vw; } #fb .fb-qr .qr { width: 14vw; height: 14vw; }
+  #fb .fb-figure > span, #fb .fb-qr > span { font-size: 2.1vw; } #fb .fb-figure b { font-size: 2.2vw; }
+  #fb .fb-board { align-self: end; }
+  #fb .fb-row { grid-template-rows: none; grid-auto-rows: auto; height: auto; gap: .4vh; }
+  #fb .fb-row > b { height: 4.4vh; padding: 0; font-size: 3.6vh; }
+  #fb .fb-row > span { height: 2.75vh; font-size: 2.3vh; }
+}
+@media (orientation: portrait) and (min-width: 700px) { #fb .fb-row > b { line-height: 1; font-size: 3.2vh; } }
