@@ -16,6 +16,8 @@ const DEFAULTS = {
   kennedy: { exec: '', form: 'https://docs.google.com/forms/d/e/1FAIpQLSd98_5VYafBCp0BoMKwbMRqloo7rGkz6WYIH5RTCbMmJy5uNg/viewform' },
   tobalaba: { exec: '', form: '' },
 };
+const TOBALABA_EXEC = 'https://script.google.com/macros/s/AKfycbx7ZEyg6MmDsxtV9Bfl3fRLFKD__V15ew-qwZ0woYotwpXnOd19odhPyd9QWDJBP8Rm/exec';
+DEFAULTS.tobalaba.exec = TOBALABA_EXEC;
 const POLL_MS = 3000; // cada cuánto se consulta a Google mientras el karaoke está en pantalla
 const TIMEOUT_MS = 10000; // Apps Script puede tardar en un arranque en frío
 const MAX_ACTIVE = 2; // pedidos sin cantar que puede tener una persona a la vez
@@ -30,6 +32,13 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
   const venueNow = () => { const v = salaVenue(); return VENUES[v] ? v : db.karaoke.venue; };
   db.karaoke.urls ||= {};
   for (const v of Object.keys(VENUES)) db.karaoke.urls[v] = { ...DEFAULTS[v], ...(db.karaoke.urls[v] || {}) };
+  // Tobalaba: la web app correcta es la implementación que tiene Sala.gs (16 nov, decisión de Cote).
+  // Se pone una sola vez; si después se cambia en el Centro de control, se respeta.
+  if (!db.karaoke.tobalabaExec16nov) {
+    db.karaoke.urls.tobalaba.exec = TOBALABA_EXEC;
+    db.karaoke.tobalabaExec16nov = true;
+    save();
+  }
 
   // Lo último que se leyó bien de cada local. Si una consulta falla, se sigue mostrando esto.
   const cache = {}; // local -> { list, at, error }
