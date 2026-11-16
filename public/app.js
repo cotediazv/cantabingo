@@ -738,9 +738,11 @@ views.jugar = async (sid) => {
       : rosco.finished ? '<div class="prosco-wait">Juego terminado</div>'
       : `<div class="prosco-q"><span class="prosco-letter">${esc(rosco.letters[c.current])}</span>
           <p>${rosco.question ? esc(rosco.question) : '<span class="muted">Esperando la siguiente pregunta…</span>'}</p></div>`;
-    $('#prosco').innerHTML = `<div class="prosco-head"><b>El Rosco</b><span>${rosco.winner || rosco.finished ? '' : `Turno de ${esc(c.name)}`}</span><span class="prosco-clock" id="prosco-clock">${rosco.winner || rosco.finished ? '' : fmtClock(roscoLeft())}</span></div>
+    // Los 10 primeros del público, solo con su puntaje
+    const top = crowdInfo && crowdInfo.top && crowdInfo.top.length ? `<div class="pcrowd-top"><small>Top 10</small>${crowdInfo.top.map((t, i) => `<div class="${t.name === me.name ? 'me' : ''}"><em>${i + 1}</em><span>${esc(t.name)}</span><b>${t.score}</b></div>`).join('')}</div>` : '';
+    $('#prosco').innerHTML = `<div class="prosco-head big"><b>El Rosco en Línea</b><span></span><span class="prosco-clock" id="prosco-clock">${rosco.winner || rosco.finished ? '' : fmtClock(roscoLeft())}</span></div>
       ${body}${reveal}${crowdHTML()}
-      <div class="prosco-score">${rosco.players.map((p, i) => `<span class="${i === rosco.turn && !rosco.finished ? 'on' : ''}">${esc(p.name)} <b class="ok">✔ ${p.hits}</b> <b class="ko">✘ ${p.misses}</b></span>`).join('')}</div>`;
+      ${top}`;
   };
   const stopRosco = () => { if (roscoEs) roscoEs.close(); clearInterval(roscoTick); clearTimeout(crowdTimer); roscoEs = null; roscoId = null; rosco = null; crowdMine = {}; crowdOrder = []; crowdInfo = null; };
   // Durante el karaoke: se guarda el cartón y aparece el formulario para pedir canción.

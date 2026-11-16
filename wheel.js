@@ -262,7 +262,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     const mine = {};
     // A quien ya respondió se le dice de inmediato si acertó (su alternativa queda verde o roja)
     for (const [key, by] of Object.entries(crowdOf(w).ans)) if (by[token]) mine[key] = { text: by[token].text, ok: norm(by[token].text) === norm(answerOf(w, key)) };
-    res.json({ players: table.length, me: i >= 0 ? { score: table[i].score, hits: table[i].hits, answered: table[i].answered, rank: i + 1 } : null, mine });
+    res.json({ top: table.filter((t) => t.score > 0).slice(0, 10).map((t) => ({ name: t.name, score: t.score })), players: table.length, me: i >= 0 ? { score: table[i].score, hits: table[i].hits, answered: table[i].answered, rank: i + 1 } : null, mine });
   });
   // Una respuesta por pregunta, solo mientras está en juego en el escenario
   app.post('/api/wheels/:id/crowd', (req, res) => {

@@ -1151,3 +1151,13 @@ body.full .join-qr.br { bottom: 11vh; } /* en el tablero, sobre el botón «Acti
 .pcrowd button.ok { background: #1fae63; border-color: #fff; }
 .pcrowd button.ko { background: #b3323c; border-color: #fff; }
 .pcrowd button.wait { background: #5a54a0; border-color: #fff; }
+
+/* Rosco en línea: título grande y los 10 primeros con su puntaje */
+.prosco-head.big b { font-size: 1.6rem; line-height: 1.1; }
+.pcrowd-top { display: grid; gap: 4px; margin-top: 14px; }
+.pcrowd-top > small { font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #ffe14d; }
+.pcrowd-top > div { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 10px; background: rgba(0, 0, 0, .25); }
+.pcrowd-top > div.me { background: rgba(255, 196, 0, .22); outline: 1px solid #ffc400; }
+.pcrowd-top em { flex: 0 0 auto; width: 1.7em; height: 1.7em; display: grid; place-items: center; border-radius: 50%; background: #ffc400; color: #2a1030; font-style: normal; font-weight: 900; font-size: .85rem; }
+.pcrowd-top span { flex: 1; min-width: 0; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pcrowd-top b { font-variant-numeric: tabular-nums; }
