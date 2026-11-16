@@ -7,7 +7,7 @@ const LETTERS = 'ABCDEFGHIJLMNÑOPQRSTUVXYZ';
 const OPEN = (st) => st === 'pending' || st === 'pass';
 const REVEAL_MS = 4000; // tiempo que la respuesta acertada queda en pantalla
 
-module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStage }) {
+module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStage, findPlayer }) {
   const api = { refresh: () => {} };
   db.wheels ||= {};
   db.bankUsed ||= {}; // cuántas veces se ha usado cada pregunta del banco
@@ -111,6 +111,50 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     return -1;
   };
   const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = crypto.randomInt(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  // ---------- Rosco en línea ----------
+  // El público juega la misma pregunta desde su celular, eligiendo entre 3 alternativas. Vale más responder rápido.
+  // La respuesta correcta solo se conoce cuando la letra se resuelve en el escenario (acierto o fallo).
+  const norm = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+  const crowdOf = (w) => (w.crowd ||= { opts: {}, ans: {}, shown: {}, last: '', winner: null });
+  const liveKey = (w) => (w.runningSince && active(w.players[w.turn]) ? `${w.turn}:${w.players[w.turn].current}` : '');
+  const answerOf = (w, key) => { const [p, l] = key.split(':').map(Number); return ((w.questions[p] || [])[l] || {}).a || ''; };
+  // Las 3 alternativas de una pregunta: la correcta y dos respuestas de otras preguntas de la misma letra
+  function optionsFor(w, key) {
+    const cr = crowdOf(w);
+    if (cr.opts[key]) return cr.opts[key];
+    const right = answerOf(w, key);
+    if (!right) return null;
+    const ch = w.letters[Number(key.split(':')[1])];
+    const used = new Set([norm(right)]);
+    const wrong = [];
+    for (const b of [...shuffle(BANK.filter((x) => x.letter === ch)), ...shuffle(BANK.filter((x) => x.letter !== ch))]) {
+      if (wrong.length >= 2) break;
+      if (used.has(norm(b.a))) continue;
+      used.add(norm(b.a));
+      wrong.push(b.a);
+    }
+    cr.opts[key] = shuffle([right, ...wrong]);
+    return cr.opts[key];
+  }
+  const points = (ms) => Math.max(40, Math.round(100 - (ms / 1000) * 6)); // 100 al instante, baja 6 por segundo, mínimo 40
+  const solvedKeys = (w) => {
+    const out = {};
+    w.players.forEach((c, p) => c.status.forEach((st, l) => { if (st === 'hit' || st === 'miss') out[`${p}:${l}`] = answerOf(w, `${p}:${l}`); }));
+    return out;
+  };
+  function standings(w) {
+    const solved = solvedKeys(w);
+    const tot = {};
+    for (const [key, by] of Object.entries(crowdOf(w).ans)) {
+      for (const [token, r] of Object.entries(by)) {
+        const t = (tot[token] ||= { token, name: r.name, score: 0, hits: 0, answered: 0 });
+        t.answered++;
+        if (key in solved && norm(r.text) === norm(solved[key])) { t.score += points(r.ms); t.hits++; }
+      }
+    }
+    return Object.values(tot).sort((a, b) => b.score - a.score || b.hits - a.hits);
+  }
+
   function act(w, action, b) {
     const c = w.players[w.turn];
     if (winnerOf(w) >= 0 && ['hit', 'miss', 'pass', 'start', 'turn'].includes(action)) return 'La partida terminó: alguien completó el rosco';
@@ -127,6 +171,14 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
         const more = nextLetter(c);
         if (!more) { settle(w); if (winnerOf(w) < 0) passTurn(w); } // terminó su rosco; si lo completó, la partida se detiene
         else if (action !== 'hit') { settle(w); passTurn(w); } // fallo o paso: el reloj se detiene siempre y sigue otro, si queda alguno
+        return null;
+      }
+      case 'crowdwin': { // el animador da a conocer al ganador del público
+        const table = standings(w).filter((t) => t.score > 0);
+        if (!table.length) return 'Nadie sumó puntos en el Rosco en línea';
+        const top = table.filter((t) => t.score === table[0].score && t.hits === table[0].hits);
+        const pick = top[crypto.randomInt(top.length)];
+        crowdOf(w).winner = { name: pick.name, score: pick.score, hits: pick.hits, players: standings(w).length, at: Date.now() };
         return null;
       }
       case 'acceptwin': // el animador da por bueno al ganador: la felicitación se recoge abajo al centro
@@ -155,7 +207,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
         w.reveal = null; w.winAccepted = false; w.tieWinner = null;
         return null;
       }
-      case 'reset': settle(w); w.winAccepted = false; w.tieWinner = null; w.history = []; w.turn = 0; w.reveal = null; w.players = freshPlayers(w); return null;
+      case 'reset': settle(w); if (w.crowd) { w.crowd.ans = {}; w.crowd.shown = {}; w.crowd.winner = null; } w.winAccepted = false; w.tieWinner = null; w.history = []; w.turn = 0; w.reveal = null; w.players = freshPlayers(w); return null;
       default: return 'Acción desconocida';
     }
   }
@@ -173,6 +225,10 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     // Al público va solo el enunciado de la letra en juego; la respuesta nunca sale del panel del moderador
     // y solo mientras su reloj está corriendo.
     question: w.runningSince && active(w.players[w.turn]) ? ((w.questions[w.turn] || [])[w.players[w.turn].current] || {}).q || '' : '',
+    // Rosco en línea: alternativas de la pregunta en juego, respuestas de las letras ya resueltas y ganador del público
+    crowd: liveKey(w) && optionsFor(w, liveKey(w)) ? { key: liveKey(w), options: optionsFor(w, liveKey(w)) } : null,
+    crowdSolved: solvedKeys(w),
+    crowdWinner: (w.crowd || {}).winner || null,
     players: w.players.map((c) => ({
       name: c.name, status: c.status, current: c.current, remainingMs: c.remainingMs, active: active(c),
       hits: c.status.filter((x) => x === 'hit').length, misses: c.status.filter((x) => x === 'miss').length,
@@ -181,6 +237,8 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
   function broadcast(w) {
     // Desde cuándo hay ganador: a los 6 s el GC recoge la felicitación abajo
     if (winnerOf(w) >= 0) w.wonAt ||= Date.now(); else w.wonAt = null;
+    // Desde cuándo está a la vista la pregunta en juego: de ahí sale el puntaje por rapidez
+    { const cr = crowdOf(w); const k = liveKey(w); if (k && cr.last !== k) cr.shown[k] = Date.now(); cr.last = k; }
     save();
     const msg = `data: ${JSON.stringify(publicState(w))}\n\n`;
     for (const res of clients[w.id] || []) res.write(msg);
@@ -188,7 +246,40 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
   const find = (req, res) => { const w = db.wheels[req.params.id]; if (!w) fail(res, 404, 'Ese rosco no existe o fue eliminado'); return w; };
 
   // ---------- API ----------
-  app.use('/api/wheels', (req, res, next) => (req.method === 'GET' && /^\/[^/]+\/events$/.test(req.path) ? next() : requireAdmin(req, res, next)));
+  app.use('/api/wheels', (req, res, next) => ((req.method === 'GET' && /^\/[^/]+\/events$/.test(req.path)) || /^\/[^/]+\/crowd$/.test(req.path) ? next() : requireAdmin(req, res, next)));
+
+  // Rosco en línea: puntaje y puesto de una persona del público, y lo que ya respondió
+  app.get('/api/wheels/:id/crowd', (req, res) => {
+    const w = find(req, res);
+    if (!w) return;
+    const token = String(req.query.token || '');
+    if (!findPlayer(String(req.query.sid || ''), token)) return fail(res, 403, 'Primero únete a la sala con tu nombre');
+    const table = standings(w);
+    const i = table.findIndex((t) => t.token === token);
+    const mine = {};
+    for (const [key, by] of Object.entries(crowdOf(w).ans)) if (by[token]) mine[key] = by[token].text;
+    res.json({ players: table.length, me: i >= 0 ? { score: table[i].score, hits: table[i].hits, answered: table[i].answered, rank: i + 1 } : null, mine });
+  });
+  // Una respuesta por pregunta, solo mientras está en juego en el escenario
+  app.post('/api/wheels/:id/crowd', (req, res) => {
+    const w = find(req, res);
+    if (!w) return;
+    const b = req.body || {};
+    const token = String(b.token || '');
+    const pl = findPlayer(String(b.sid || ''), token);
+    if (!pl) return fail(res, 403, 'Primero únete a la sala con tu nombre');
+    const key = liveKey(w);
+    if (!key || key !== String(b.key)) return fail(res, 409, 'Esa pregunta ya se resolvió');
+    const options = optionsFor(w, key) || [];
+    const text = options.find((o) => o === b.choice);
+    if (!text) return fail(res, 400, 'Elige una de las alternativas');
+    const cr = crowdOf(w);
+    const by = (cr.ans[key] ||= {});
+    if (by[token]) return fail(res, 409, 'Ya respondiste esta pregunta');
+    by[token] = { text, name: pl.name, ms: Math.max(0, Date.now() - (cr.shown[key] || Date.now())) };
+    save();
+    res.json({ ok: true });
+  });
 
   app.get('/api/wheels', (_req, res) => {
     res.json(Object.values(db.wheels).sort((a, b) => b.created - a.created)
@@ -226,6 +317,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     if (!w) return;
     if (!w.bank) return fail(res, 400, 'Este rosco usa preguntas escritas a mano');
     w.questions = pickQuestions(w.letters, w.players.length, w.bank.cats, w.bank.levels);
+    w.crowd = null; // preguntas nuevas: alternativas y respuestas del público parten de cero
     act(w, 'reset', {});
     broadcast(w);
     res.json({ ok: true });

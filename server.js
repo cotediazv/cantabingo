@@ -565,7 +565,7 @@ const setStage = (show) => {
   save();
   if (changed) for (const s of Object.values(db.sessions)) broadcast(s); // los celulares se enteran del cambio de juego
 };
-const wheel = require('./wheel.js')({ app, db, save, requireAdmin, fail, setStage });
+const wheel = require('./wheel.js')({ app, db, save, requireAdmin, fail, setStage, findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null });
 // Tras corregir un nombre, se vuelve a enviar el estado a todas las pantallas abiertas
 const refreshAll = () => { Object.values(db.sessions).forEach((s) => broadcast(s)); wheel.refresh(); };
 // Nombres de quienes tienen su cartón abierto en este momento (conexión en vivo activa)

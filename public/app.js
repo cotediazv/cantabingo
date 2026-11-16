@@ -702,6 +702,34 @@ views.jugar = async (sid) => {
     const c = rosco.players[rosco.turn];
     return rosco.runningSince ? c.remainingMs - (Date.now() - rosco.gotAt + rosco.now - rosco.runningSince) : c.remainingMs;
   };
+  // Rosco en línea: lo que esta persona respondió (pregunta → alternativa), en orden, y su puntaje
+  let crowdMine = {};
+  let crowdOrder = [];
+  let crowdInfo = null;
+  let crowdTimer = null;
+  const loadCrowd = async () => {
+    if (!roscoId) return;
+    const r = await api('GET', `/api/wheels/${roscoId}/crowd?sid=${encodeURIComponent(sid)}&token=${encodeURIComponent(me.token)}`).catch(() => null);
+    if (!r || !rosco) return;
+    crowdInfo = r;
+    for (const [k, t] of Object.entries(r.mine)) { if (!(k in crowdMine)) crowdOrder.push(k); crowdMine[k] = t; }
+    drawRosco();
+  };
+  // Tras cada novedad del escenario se vuelve a pedir el puntaje, con una pequeña espera distinta en cada celular
+  const crowdSoon = () => { clearTimeout(crowdTimer); crowdTimer = setTimeout(loadCrowd, 500 + Math.random() * 1500); };
+  const crowdHTML = () => {
+    if (rosco.crowdWinner) return `<div class="prosco-win pcrowd-win">🏅 ${esc(rosco.crowdWinner.name)}<small>Ganó el Rosco en línea con ${rosco.crowdWinner.score} puntos</small></div>`;
+    const cq = rosco.winner || rosco.finished ? null : rosco.crowd;
+    const sent = cq && crowdMine[cq.key];
+    const solved = rosco.crowdSolved || {};
+    const lastKey = crowdOrder.filter((k) => k in solved).pop();
+    const last = !lastKey ? '' : crowdMine[lastKey] === solved[lastKey] ? `<div class="pcrowd-res ok">✔ ¡Tú acertaste! <b>${esc(solved[lastKey])}</b></div>`
+      : `<div class="pcrowd-res ko">✘ Tu respuesta falló: era <b>${esc(solved[lastKey])}</b></div>`;
+    const play = !cq ? '' : sent ? `<div class="pcrowd-sent">Tu respuesta: <b>${esc(sent)}</b><small>Se corrige cuando la letra se resuelva en el escenario.</small></div>`
+      : `<div class="pcrowd"><small>Juega tú también: mientras más rápido, más puntos</small>${cq.options.map((o) => `<button type="button" data-crowd="${esc(o)}" data-key="${cq.key}">${esc(o)}</button>`).join('')}</div>`;
+    const score = crowdInfo && crowdInfo.me ? `<div class="pcrowd-score">Rosco en línea: <b>${crowdInfo.me.score} puntos</b> · puesto ${crowdInfo.me.rank} de ${crowdInfo.players}</div>` : '';
+    return `${last}${play}${score}`; // el resultado de la anterior queda a la vista aunque ya haya otra pregunta en juego
+  };
   const drawRosco = () => {
     if (!rosco) { $('#prosco').innerHTML = '<p class="muted">Cargando El Rosco…</p>'; return; }
     const c = rosco.players[rosco.turn];
@@ -712,10 +740,10 @@ views.jugar = async (sid) => {
       : `<div class="prosco-q"><span class="prosco-letter">${esc(rosco.letters[c.current])}</span>
           <p>${rosco.question ? esc(rosco.question) : '<span class="muted">Esperando la siguiente pregunta…</span>'}</p></div>`;
     $('#prosco').innerHTML = `<div class="prosco-head"><b>El Rosco</b><span>${rosco.winner || rosco.finished ? '' : `Turno de ${esc(c.name)}`}</span><span class="prosco-clock" id="prosco-clock">${rosco.winner || rosco.finished ? '' : fmtClock(roscoLeft())}</span></div>
-      ${body}${reveal}
+      ${body}${reveal}${crowdHTML()}
       <div class="prosco-score">${rosco.players.map((p, i) => `<span class="${i === rosco.turn && !rosco.finished ? 'on' : ''}">${esc(p.name)} <b class="ok">✔ ${p.hits}</b> <b class="ko">✘ ${p.misses}</b></span>`).join('')}</div>`;
   };
-  const stopRosco = () => { if (roscoEs) roscoEs.close(); clearInterval(roscoTick); roscoEs = null; roscoId = null; rosco = null; };
+  const stopRosco = () => { if (roscoEs) roscoEs.close(); clearInterval(roscoTick); clearTimeout(crowdTimer); roscoEs = null; roscoId = null; rosco = null; crowdMine = {}; crowdOrder = []; crowdInfo = null; };
   // Durante el karaoke: se guarda el cartón y aparece el formulario para pedir canción.
   // El nombre no se pregunta: es el mismo con que la persona entró a la sala.
   let karTimer = null;
@@ -806,7 +834,19 @@ views.jugar = async (sid) => {
     roscoId = st.roscoId;
     drawRosco();
     roscoEs = new EventSource(`/api/wheels/${roscoId}/events`);
-    roscoEs.onmessage = (e) => { rosco = { ...JSON.parse(e.data), gotAt: Date.now() }; drawRosco(); };
+    roscoEs.onmessage = (e) => { rosco = { ...JSON.parse(e.data), gotAt: Date.now() }; drawRosco(); crowdSoon(); };
+    // Tocar una alternativa: queda marcada al instante y se envía; solo se puede responder una vez por pregunta
+    $('#prosco').onclick = async (e) => {
+      const b = e.target.closest('[data-crowd]');
+      if (!b || !roscoId) return;
+      const key = b.dataset.key;
+      const choice = b.dataset.crowd;
+      if (crowdMine[key]) return;
+      crowdMine[key] = choice; crowdOrder.push(key); drawRosco();
+      try { await api('POST', `/api/wheels/${roscoId}/crowd`, { sid, token: me.token, key, choice }); } catch (err) {
+        if (!/Ya respondiste/.test(err.message)) { delete crowdMine[key]; crowdOrder = crowdOrder.filter((k) => k !== key); fail(err); if (rosco) drawRosco(); }
+      }
+    };
     roscoTick = setInterval(() => { const el = $('#prosco-clock'); if (el && rosco && rosco.runningSince && !rosco.winner) el.textContent = fmtClock(roscoLeft()); }, 250);
   };
   const render = () => {

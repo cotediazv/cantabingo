@@ -150,7 +150,9 @@
           <div class="w-question" id="w-question"></div>
           <button class="primary big w-accept" id="w-tie" hidden>🎲 Desempatar por sorteo</button>
           <button class="primary big w-accept" id="w-accept" data-do="acceptwin" hidden>✔ Aceptar ganador</button>
-          <div id="w-accepted" hidden><p class="w-accepted">✔ Ganador aceptado</p>${BACK_BINGO}</div>
+          <div id="w-accepted" hidden><p class="w-accepted">✔ Ganador aceptado</p>
+            <button class="primary big w-accept" id="w-crowd" data-do="crowdwin">🏅 Mostrar ganador del Rosco en línea</button>
+            <div class="vc-read" id="w-crowd-res" hidden></div>${BACK_BINGO}</div>
           <div class="w-keys">
             <button class="w-hit" data-do="hit">✔ Acierto <kbd>A</kbd></button>
             <button class="w-miss" data-do="miss">✘ Fallo <kbd>F</kbd></button>
@@ -184,6 +186,9 @@
       $('#w-accept').hidden = !st.winner || st.winAccepted;
       $('#w-tie').hidden = !st.tie || st.tie.rolling;
       $('#w-accepted').hidden = !st.winAccepted;
+      $('#w-crowd').hidden = !!st.crowdWinner;
+      $('#w-crowd-res').hidden = !st.crowdWinner;
+      if (st.crowdWinner) $('#w-crowd-res').innerHTML = `<small>Ganó el Rosco en línea</small><b>${esc(st.crowdWinner.name)}</b><i>${st.crowdWinner.score} puntos · ${st.crowdWinner.hits} aciertos</i><small>Jugaron ${st.crowdWinner.players} personas</small>`;
       $$('.w-keys button').forEach((b) => { b.disabled = !c.active; });
       $('#w-clock').textContent = st.runningSince ? '⏸ Pausar' : '▶ Iniciar preguntas';
       $('#w-clock').disabled = !c.active;
@@ -318,6 +323,28 @@
       st = s;
       soundFor(s);
       clockSound(s);
+      // Ganador del Rosco en línea (el público): 15 segundos en pantalla y después se retira
+      if (st.crowdWinner) {
+        const full = document.body.classList.contains('full');
+        const cw = st.crowdWinner;
+        const key = `crowd|${cw.at}`;
+        const left = WIN_HOLD_MS - (st.now - cw.at);
+        clearTimeout(winTimer); clearTimeout(shrinkTimer);
+        const gone = () => {
+          wonBy = `${key}|gone`;
+          $('#pw').innerHTML = full ? `<div id="fb"><div class="fb-idle"><b><i>KRB Stage</i> Sala de juegos</b><div class="fb-idle-qr">${qr(joinUrl())}</div>
+            <small>Escanea el código QR y prepárate</small></div></div>` : '';
+        };
+        if (left <= 0) { if (wonBy !== `${key}|gone`) gone(); return; }
+        winTimer = setTimeout(gone, left);
+        if (wonBy === key) return;
+        wonBy = key;
+        if (full) sfx.play('win');
+        $('#pw').innerHTML = full ? `<div class="win-screen"><div class="win-card"><span class="win-trophy">🏅</span><span class="win-name" style="--n:${cw.name.length}">${esc(cw.name)}</span>
+              <span class="win-text">¡Ganó el Rosco en línea! ${cw.score} puntos</span><span class="win-sub">¡Felicitaciones!</span></div></div>`
+          : `<div class="rosco-winlow"><span class="rosco-winlow-tag">🏅 Ganó el Rosco en línea</span><b style="--n:${cw.name.length}">${esc(cw.name)}</b><small>${cw.score} puntos · ¡Felicitaciones!</small></div>`;
+        return;
+      }
       if (st.winner) {
         // Rosco completo: se retira todo y queda solo la felicitación, en grande
         // Ganador aceptado, en OBS: la felicitación baja a un cartel al centro para dejar ver a la persona

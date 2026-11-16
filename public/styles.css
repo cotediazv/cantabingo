@@ -1128,3 +1128,19 @@ body.full #rf .rf-card.win .rf-name:not(.small) { font-size: min(21vh, calc(84vw
 .join-qr.above { right: 3vw; bottom: 27vh; }
 body.full .join-qr.br { bottom: 11vh; } /* en el tablero, sobre el botón «Activar sonido» */
 .join-qr.bl { left: 2vw; bottom: 3.5vh; } /* rosco en OBS: abajo a la izquierda, lejos de la pregunta y la respuesta */
+
+/* ---------- Rosco en línea (el público juega desde el celular) ---------- */
+.pcrowd { display: grid; gap: 8px; margin-top: 12px; }
+.pcrowd small { font-weight: 700; color: #ffe14d; text-align: center; }
+.pcrowd button { padding: 16px 12px; border-radius: 14px; font-size: 1.2rem; font-weight: 800; background: #12101f; border: 2px solid #5a54a0; color: #fff; overflow-wrap: anywhere; }
+.pcrowd button:active { background: #ffc400; color: #2a1030; }
+.pcrowd-sent { margin-top: 12px; padding: 12px; border-radius: 12px; background: rgba(0, 0, 0, .3); text-align: center; font-weight: 600; }
+.pcrowd-sent b { display: block; font-size: 1.3rem; color: #ffe14d; }
+.pcrowd-sent small { display: block; margin-top: 4px; opacity: .8; font-weight: 500; }
+.pcrowd-res { margin-top: 10px; padding: 10px 12px; border-radius: 12px; font-weight: 700; text-align: center; }
+.pcrowd-res.ok { background: #1fae63; }
+.pcrowd-res.ko { background: #b3323c; }
+.pcrowd-score { margin-top: 10px; padding: 8px 12px; border-radius: 99px; background: rgba(0, 0, 0, .3); text-align: center; font-size: .95rem; }
+.pcrowd-score b { color: #ffe14d; }
+.pcrowd-win { color: #fff; }
+#w-crowd-res i { font-style: normal; }
