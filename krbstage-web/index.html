@@ -125,6 +125,8 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .opcion[aria-pressed="true"]{border-color:var(--c);background:color-mix(in srgb,var(--c) 18%,var(--noche))}
 .cargando{color:var(--tenue);font-size:14px;padding-top:10px}
 .fuente{margin:0;font-size:13px;color:var(--tenue)}
+.fuente b{color:var(--texto);font-weight:700}
+.semana{font-size:13px;font-weight:700;color:var(--texto);margin:0 0 8px;padding-top:9px}
 @media (max-width:720px){.elige .fila{grid-template-columns:1fr;gap:6px}.elige .tit{padding-top:0}.elige{padding:16px}}
 .momentos{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
 .momento{border:1px solid var(--linea);background:var(--tarima);border-radius:999px;padding:9px 16px;font-size:14px;font-weight:700;cursor:pointer;display:flex;gap:8px;align-items:center;position:relative;overflow:hidden}
@@ -442,7 +444,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
 
       <div class="elige">
         <div class="fila"><span class="tit">Elige el local</span><div class="opciones" id="locales-btn"></div></div>
-        <div class="fila"><span class="tit">Elige el día</span><div class="opciones" id="dias-btn"></div></div>
+        <div class="fila"><span class="tit">Elige el día</span><div><div class="semana">Esta semana</div><div class="opciones" id="dias-btn"></div></div></div>
         <p class="fuente" id="fuente"></p>
       </div>
       <div class="controles">
@@ -616,7 +618,10 @@ const API='https://cantabingo.onrender.com/api/light/cartelera?local=';
 const RESPALDO={"kennedy":[{"day":"JUEVES","date":19,"month":11,"show":"STAND UP KENNEDY: GONZALO TRUJILLO","hours":[{"time":"19:00","label":"MÚSICA Y VIDEOS"},{"time":"20:00","label":"PREVIA"},{"time":"20:20","label":"LOS JUEGOS DE KENNEDY"},{"time":"21:00","label":"SHOW"},{"time":"22:00","label":"KARAOKE"}]},{"day":"VIERNES","date":20,"month":11,"show":"PIANO MAN","hours":[{"time":"19:00","label":"MÚSICA Y VIDEOS"},{"time":"20:30","label":"PREVIA"},{"time":"21:15","label":"SHOW"},{"time":"22:15","label":"KARAOKE"}]},{"day":"SABADO","date":21,"month":11,"show":"ESPECIAL CARIBE TROPICAL","hours":[{"time":"19:00","label":"MÚSICA Y VIDEOS"},{"time":"20:30","label":"PREVIA"},{"time":"21:00","label":"SHOW"},{"time":"22:00","label":"KARAOKE"}]}],"frida":[{"day":"VIERNES","date":20,"month":11,"show":"DOBLE DE SHAKIRA","hours":[{"time":"19:00","label":"MÚSICA Y VIDEOS"},{"time":"19:30","label":"PREVIA"},{"time":"20:00","label":"KARAOKE"},{"time":"21:00","label":"SHOW"},{"time":"22:00","label":"KARAOKE"}]},{"day":"SABADO","date":21,"month":11,"show":"TRIBUTO A CRISTIAN CASTRO","hours":[{"time":"19:00","label":"MÚSICA Y VIDEOS"},{"time":"19:30","label":"PREVIA"},{"time":"20:00","label":"KARAOKE"},{"time":"21:00","label":"SHOW"},{"time":"22:00","label":"KARAOKE"}]},{"day":"DOMINGO","date":22,"month":11,"show":"EL BINGO DE FRIDA","hours":[{"time":"13:30","label":"MÚSICA Y VIDEOS"},{"time":"14:00","label":"LOS JUEGOS DE FRIDA"}]}],"tobalaba":[{"day":"VIERNES","date":20,"month":11,"show":"ESPECIAL MÉXICO (VERÓNICA YAÑEZ)","hours":[{"time":"18:30","label":"MÚSICA Y VIDEOS"},{"time":"19:00","label":"PREVIA"},{"time":"19:30","label":"LOS JUEGOS DE TOBALABA"},{"time":"20:15","label":"SHOW"},{"time":"21:15","label":"KARAOKE"}]}]};
 const DIAS={LUNES:'Lunes',MARTES:'Martes',MIERCOLES:'Miércoles',JUEVES:'Jueves',VIERNES:'Viernes',SABADO:'Sábado',DOMINGO:'Domingo'};
 const plano=t=>String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().trim();
+const MESES_L=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 const diaTxt=d=>`${DIAS[plano(d.day)]||d.day} ${d.date}`;
+const diaLargo=d=>`${diaTxt(d)}${d.month?` de ${MESES_L[d.month-1]}`:''}`;
+const hoyTxt=()=>{const t=new Date().toLocaleDateString('es-CL',{timeZone:'America/Santiago',weekday:'long',day:'numeric',month:'long'});const u=t.replace(',','');return u.charAt(0).toUpperCase()+u.slice(1)};
 const titulo=t=>{const s=String(t||'').toLowerCase();return s.charAt(0).toUpperCase()+s.slice(1)};
 const MENORES=new Set(['de','del','la','las','el','los','y','a','en','con','al']);
 const nomShow=t=>String(t||'').toLowerCase().split(/(\s+|\()/).map((w,i)=>!w.trim()||w==='('||(i>0&&MENORES.has(w))?w:w.charAt(0).toUpperCase()+w.slice(1)).join('');
@@ -641,10 +646,10 @@ async function elegirLocal(k){
   $('#rot-local').textContent=L.nombre;$('#pie-tv').textContent=`Los Juegos de ${L.corto}`;
   bDia.innerHTML='<span class="cargando">Cargando cartelera…</span>';
   const d=await cargar(k);if(loc!==k)return;
-  fuente.textContent=d.vivo?'Horarios y shows reales de los próximos días, tomados en vivo de la cartelera de cada local.':'Horarios y shows reales de la cartelera de cada local.';
+  fuente.innerHTML=`<b>Hoy: ${esc(hoyTxt())}</b> · ${d.vivo?'Horarios y shows actualizados en vivo desde la cartelera de cada local.':'Horarios y shows de la cartelera de cada local.'}`;
   bDia.innerHTML='';
   if(!d.week.length){bDia.innerHTML='<span class="cargando">Sin funciones programadas esta semana.</span>';return}
-  d.week.forEach((w,i)=>{const b=document.createElement('button');b.className='opcion';b.style.setProperty('--c',L.color);b.innerHTML=`${esc(diaTxt(w))}${w.show?`<small>${esc(nomShow(w.show))}</small>`:''}`;b.onclick=()=>{parar();elegirDia(i)};bDia.appendChild(b)});
+  d.week.forEach((w,i)=>{const b=document.createElement('button');b.className='opcion';b.style.setProperty('--c',L.color);b.innerHTML=`${esc(diaLargo(w))}${w.show?`<small>${esc(nomShow(w.show))}</small>`:''}`;b.onclick=()=>{parar();elegirDia(i)};bDia.appendChild(b)});
   elegirDia(0);
 }
 
