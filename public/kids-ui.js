@@ -80,48 +80,44 @@
     // así cada pieza se ve distinta. Al terminar el último, pantalla de triunfo.
     puzzle(stage, round = 0) {
       const LEVELS = [4, 4, 4, 4, 4, 4, 6, 8, 10, 12, 14, 16];
-      const GRID = { 4: [2, 2], 6: [2, 3], 8: [2, 4], 10: [2, 5], 12: [3, 4], 14: [2, 7], 16: [4, 4] }; // [columnas, filas]
+      const GRID = { 4: [2, 2], 6: [2, 3], 8: [2, 4], 10: [2, 5], 12: [3, 4], 14: [2, 7], 16: [4, 4] }; // [columnas, filas] de un tablero 4:5 que no cambia de forma
       document.body.dataset.kzLevel = String(Math.min(6, Math.floor(round / 2) + 1));
       const dots = `<div class="kz-dots">${LEVELS.map((_, i) => `<i class="${i < round ? 'on' : ''}"></i>`).join('')}</div>`;
       if (round >= LEVELS.length) { finale(stage, () => games.puzzle(stage, 0)); return null; }
       const n = LEVELS.at(round);
       const [cols, rows] = GRID[n];
       const pics = ['🦁', '🐸', '🚀', '🦄', '🐙', '🌻', '🐢', '🚒', '🐳', '🦒', '🍉', '🐝'];
-      const S = 120;
+      // El tablero tiene siempre la misma forma (4 de ancho por 5 de alto) y se divide en más piezas por nivel
       const c = document.createElement('canvas');
-      c.width = cols * S; c.height = rows * S;
+      c.width = 480; c.height = 600;
       const g = c.getContext('2d');
       const h0 = Math.floor(Math.random() * 360);
       const grad = g.createLinearGradient(0, 0, c.width, c.height);
       grad.addColorStop(0, `hsl(${h0} 85% 60%)`); grad.addColorStop(0.5, `hsl(${(h0 + 90) % 360} 85% 58%)`); grad.addColorStop(1, `hsl(${(h0 + 180) % 360} 85% 55%)`);
       g.fillStyle = grad; g.fillRect(0, 0, c.width, c.height);
-      // Lunares de colores, distintos en cada zona, para que ninguna pieza se vea igual a otra
-      for (let i = 0; i < cols * rows * 3; i++) {
+      // Lunares de colores repartidos, para que ninguna pieza se vea igual a otra
+      for (let i = 0; i < 40; i++) {
         g.fillStyle = `hsl(${Math.floor(Math.random() * 360)} 90% 75% / .55)`;
-        g.beginPath(); g.arc(Math.random() * c.width, Math.random() * c.height, 8 + Math.random() * 16, 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.arc(Math.random() * c.width, Math.random() * c.height, 10 + Math.random() * 18, 0, Math.PI * 2); g.fill();
       }
-      // Si el dibujo es alto o ancho, van varios a lo largo, así ninguna pieza queda vacía
-      const tall = rows >= cols;
-      const k = Math.max(1, Math.round(Math.max(cols, rows) / Math.min(cols, rows)));
-      const seg = (tall ? c.height : c.width) / k;
-      const big = Math.min(tall ? c.width : c.height, seg) * 0.82;
-      const chosen = shuffle(pics).slice(0, k);
-      g.fillStyle = '#000'; g.font = `${big}px serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
-      chosen.forEach((e, i) => {
-        const x = tall ? c.width / 2 : seg * (i + 0.5);
-        const y = tall ? seg * (i + 0.5) : c.height / 2;
-        g.fillText(e, x, y + big * 0.06);
-      });
+      // Un dibujo grande al centro y uno chico en cada esquina
+      const chosen = shuffle(pics).slice(0, 5);
+      g.fillStyle = '#000'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.font = '330px serif'; g.fillText(chosen[0], c.width / 2, c.height / 2 + 20);
+      g.font = '110px serif';
+      g.fillText(chosen[1], 75, 80); g.fillText(chosen[2], c.width - 75, 80); g.fillText(chosen[3], 75, c.height - 70); g.fillText(chosen[4], c.width - 75, c.height - 70);
       const img = c.toDataURL();
       let order = [...Array(n).keys()];
       while (order.every((v, i) => v === i)) order = shuffle(order);
       let sel = null;
-      // Tamaño de cada pieza: lo que quepa en la pantalla del celular
-      const side = Math.floor(Math.min((Math.min(innerWidth, 640) - 40) / cols, (innerHeight - 250) / rows));
+      // Tamaño del tablero: lo que quepa en la pantalla del celular, siempre con la forma 4:5
+      const boardW = Math.floor(Math.min(Math.min(innerWidth, 640) - 40, (innerHeight - 260) * 0.8));
+      const pw = Math.floor(boardW / cols);
+      const ph = Math.floor(boardW * 1.25 / rows);
       const pos = (p) => `${cols > 1 ? (p % cols) / (cols - 1) * 100 : 0}% ${rows > 1 ? Math.floor(p / cols) / (rows - 1) * 100 : 0}%`;
       const draw = () => {
-        stage.innerHTML = `${dots}<div class="kz-peek" style="background-image:url(${img});aspect-ratio:${cols}/${rows};width:${cols >= rows ? 84 : Math.round(84 * cols / rows)}px;height:auto"></div>
-          <div class="kz-puzzle" style="grid-template-columns:repeat(${cols}, ${side}px);width:auto">${order.map((p, i) => `<button type="button" class="kz-piece ${sel === i ? 'sel' : ''}" data-i="${i}" style="width:${side}px;background-image:url(${img});background-size:${cols * 100}% ${rows * 100}%;background-position:${pos(p)}"></button>`).join('')}</div>`;
+        stage.innerHTML = `${dots}<div class="kz-peek" style="background-image:url(${img});width:72px;height:90px"></div>
+          <div class="kz-puzzle" style="grid-template-columns:repeat(${cols}, ${pw}px);width:auto">${order.map((p, i) => `<button type="button" class="kz-piece ${sel === i ? 'sel' : ''}" data-i="${i}" style="width:${pw}px;height:${ph}px;aspect-ratio:auto;background-image:url(${img});background-size:${cols * 100}% ${rows * 100}%;background-position:${pos(p)}"></button>`).join('')}</div>`;
         stage.querySelectorAll('[data-i]').forEach((b) => { b.onclick = () => {
           const i = Number(b.dataset.i);
           if (sel === null) { sel = i; draw(); return; }
