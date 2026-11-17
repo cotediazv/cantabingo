@@ -720,7 +720,7 @@ views.jugar = async (sid) => {
   // Tras cada novedad del escenario se vuelve a pedir el puntaje, con una pequeña espera distinta en cada celular
   const crowdSoon = () => { clearTimeout(crowdTimer); crowdTimer = setTimeout(loadCrowd, 500 + Math.random() * 1500); };
   const crowdHTML = () => {
-    if (rosco.crowdWinner) return `<div class="prosco-win pcrowd-win">🏅 ${esc(rosco.crowdWinner.name)}<small>Ganó el Rosco en línea con ${rosco.crowdWinner.score} puntos</small></div>`;
+    if (rosco.crowdWinner) return `<div class="prosco-win pcrowd-win">🏅 ${esc(rosco.crowdWinner.name)}<small>Ganó la Trivia del Rosco con ${rosco.crowdWinner.score} puntos</small></div>`;
     const cq = rosco.winner || rosco.finished ? null : rosco.crowd;
     const sent = cq && crowdMine[cq.key];
     // Al tocar, la alternativa elegida se pone verde con ✔ si es correcta o roja con ✘ si no lo es
@@ -744,7 +744,7 @@ views.jugar = async (sid) => {
     const inTop = mine && mine.rank <= 5 && mine.score > 0;
     const top = crowdInfo && ((crowdInfo.top && crowdInfo.top.length) || mine) ? `<div class="pcrowd-top"><small>Top 5</small>${(crowdInfo.top || []).map((t, i) => `<div class="${inTop && i === mine.rank - 1 ? 'me' : ''}"><em>${i + 1}</em><span>${esc(t.name)}</span><b>${t.score}</b></div>`).join('')}
       ${mine && !inTop ? `<div class="you"><em>${mine.rank}.º</em><span>${esc(me.name)}</span><b>${mine.score}</b></div>` : ''}</div>` : '';
-    $('#prosco').innerHTML = `<div class="prosco-head big"><b>El Rosco en Línea</b><span></span><span class="prosco-clock" id="prosco-clock">${rosco.winner || rosco.finished ? '' : fmtClock(roscoLeft())}</span></div>
+    $('#prosco').innerHTML = `<div class="prosco-head big"><b>Trivia del Rosco</b><span></span><span class="prosco-clock" id="prosco-clock">${rosco.winner || rosco.finished ? '' : fmtClock(roscoLeft())}</span></div>
       ${body}${reveal}${crowdHTML()}
       ${top}`;
   };

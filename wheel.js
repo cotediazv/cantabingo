@@ -186,7 +186,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
       }
       case 'crowdwin': { // el animador da a conocer al ganador del público
         const table = standings(w).filter((t) => t.score > 0);
-        if (!table.length) return 'Nadie sumó puntos en el Rosco en línea';
+        if (!table.length) return 'Nadie sumó puntos en la Trivia del Rosco';
         const top = table.filter((t) => t.score === table[0].score && t.hits === table[0].hits);
         const pick = top[crypto.randomInt(top.length)];
         crowdOf(w).winner = { name: pick.name, score: pick.score, hits: pick.hits, players: standings(w).length, at: Date.now() };

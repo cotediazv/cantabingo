@@ -151,7 +151,7 @@
           <button class="primary big w-accept" id="w-tie" hidden>🎲 Desempatar por sorteo</button>
           <button class="primary big w-accept" id="w-accept" data-do="acceptwin" hidden>✔ Aceptar ganador</button>
           <div id="w-accepted" hidden><p class="w-accepted">✔ Ganador aceptado</p>
-            <button class="primary big w-accept" id="w-crowd" data-do="crowdwin">🏅 Mostrar ganador del Rosco en línea</button>
+            <button class="primary big w-accept" id="w-crowd" data-do="crowdwin">🏅 Mostrar ganador de la Trivia del Rosco</button>
             <div class="vc-read" id="w-crowd-res" hidden></div>${BACK_BINGO}</div>
           <div class="w-keys">
             <button class="w-hit" data-do="hit">✔ Acierto <kbd>A</kbd></button>
@@ -188,7 +188,7 @@
       $('#w-accepted').hidden = !st.winAccepted;
       $('#w-crowd').hidden = !!st.crowdWinner;
       $('#w-crowd-res').hidden = !st.crowdWinner;
-      if (st.crowdWinner) $('#w-crowd-res').innerHTML = `<small>Ganó el Rosco en línea</small><b>${esc(st.crowdWinner.name)}</b><i>${st.crowdWinner.score} puntos · ${st.crowdWinner.hits} aciertos</i><small>Jugaron ${st.crowdWinner.players} personas</small>`;
+      if (st.crowdWinner) $('#w-crowd-res').innerHTML = `<small>Ganó la Trivia del Rosco</small><b>${esc(st.crowdWinner.name)}</b><i>${st.crowdWinner.score} puntos · ${st.crowdWinner.hits} aciertos</i><small>Jugaron ${st.crowdWinner.players} personas</small>`;
       $$('.w-keys button').forEach((b) => { b.disabled = !c.active; });
       $('#w-clock').textContent = st.runningSince ? '⏸ Pausar' : '▶ Iniciar preguntas';
       $('#w-clock').disabled = !c.active;
@@ -341,8 +341,8 @@
         wonBy = key;
         if (full) sfx.play('win');
         $('#pw').innerHTML = full ? `<div class="win-screen"><div class="win-card"><span class="win-trophy">🏅</span><span class="win-name" style="--n:${cw.name.length}">${esc(cw.name)}</span>
-              <span class="win-text">¡Ganó el Rosco en línea! ${cw.score} puntos</span><span class="win-sub">¡Felicitaciones!</span></div></div>`
-          : `<div class="rosco-winlow"><span class="rosco-winlow-tag">🏅 Ganó el Rosco en línea</span><b style="--n:${cw.name.length}">${esc(cw.name)}</b><small>${cw.score} puntos · ¡Felicitaciones!</small></div>`;
+              <span class="win-text">¡Ganó la Trivia del Rosco! ${cw.score} puntos</span><span class="win-sub">¡Felicitaciones!</span></div></div>`
+          : `<div class="rosco-winlow"><span class="rosco-winlow-tag">🏅 Ganó la Trivia del Rosco</span><b style="--n:${cw.name.length}">${esc(cw.name)}</b><small>${cw.score} puntos · ¡Felicitaciones!</small></div>`;
         return;
       }
       if (st.winner) {
