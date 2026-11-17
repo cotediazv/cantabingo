@@ -40,9 +40,10 @@
     // Pintar: se toca un color y después una parte del dibujo. 8 dibujos que van teniendo más partes;
     // en los últimos 4 hay un modelo chico arriba y hay que pintar igual (un color equivocado no pinta).
     // La barra se llena con cada dibujo terminado; al final, el trofeo.
-    pintar(stage, round = 0) {
+    pintar(stage, round = 0, total = 0) {
       const INK = '#3b2a4d';
-      const P = ['#e63946', '#ff8c1a', '#ffc400', '#2bb24c', '#3a86ff', '#8e44ad', '#ff5fa2', '#8d5524'];
+      const P = ['#e63946', '#ff8c1a', '#ffc400', '#2bb24c', '#3a86ff', '#8e44ad', '#ff5fa2', '#8d5524', '#c9f2ff', '#ffe8a3'];
+      const BG = ['#c9f2ff', '#ffe8a3']; // colores claros de la paleta, para el fondo
       // Cada dibujo: partes que se pintan [etiqueta SVG, atributos] y detalles fijos (ojos, líneas)
       const D = [
         { parts: [['ellipse', 'cx="95" cy="100" rx="58" ry="40"'], ['polygon', 'points="150,100 185,70 185,130"'], ['polygon', 'points="85,62 110,35 120,64"'], ['circle', 'cx="40" cy="45" r="12"']],
@@ -62,30 +63,40 @@
         { parts: [['path', 'd="M75 150 v-80 q25 -60 50 0 v80 z"'], ['path', 'd="M75 72 q25 -62 50 0 z"'], ['circle', 'cx="100" cy="100" r="17"'], ['circle', 'cx="100" cy="100" r="10"'], ['path', 'd="M75 120 l-25 35 h25 z"'], ['path', 'd="M125 120 l25 35 h-25 z"'], ['path', 'd="M80 150 q20 50 40 0 z"'], ['path', 'd="M90 150 q10 28 20 0 z"'], ['polygon', 'points="35,40 39,50 50,50 41,57 45,68 35,61 25,68 29,57 20,50 31,50"'], ['polygon', 'points="165,70 168,78 177,78 170,83 173,92 165,87 157,92 160,83 153,78 162,78"']],
           deco: '' },
       ];
-      const MODEL_FROM = 4; // desde el 5.º dibujo, pintar igual que el modelo
+      // Siempre hay un modelo grande arriba. Ningún color está mal: igual se pinta y se puede terminar.
+      // Al terminar, de 1 a 5 estrellas según cuánto se parece al modelo; las estrellas se van sumando.
       document.body.dataset.kzLevel = String(Math.min(6, round + 1));
-      if (round >= D.length) { finale(stage, () => games.pintar(stage, 0)); return null; }
+      if (round >= D.length) { finale(stage, () => games.pintar(stage, 0, 0)); return null; }
       const d = D.at(round);
-      const model = round >= MODEL_FROM;
-      const target = d.parts.map((_, i) => P.at((i * 3 + round) % P.length));
-      const fills = d.parts.map(() => null);
+      // El fondo es una parte más que se pinta (va primero, detrás del dibujo)
+      const parts = [['rect', 'x="2" y="2" width="196" height="196" rx="18"'], ...d.parts];
+      const target = parts.map((_, i) => (i === 0 ? BG.at(round % BG.length) : P.at((i * 3 + round) % 8)));
+      const fills = parts.map(() => null);
+      let done = false;
       let color = P.at(0);
-      const svg = (paintWith, cls) => `<svg viewBox="0 0 200 200" class="${cls}">${d.parts.map(([tag, attrs], i) => `<${tag} ${attrs} data-r="${i}" fill="${paintWith(i) || '#fff'}" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>`).join('')}<g pointer-events="none">${d.deco}</g></svg>`;
+      const svg = (paintWith, cls) => `<svg viewBox="0 0 200 200" class="${cls}">${parts.map(([tag, attrs], i) => `<${tag} ${attrs} data-r="${i}" fill="${paintWith(i) || '#fff'}" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>`).join('')}<g pointer-events="none">${d.deco}</g></svg>`;
       const draw = () => {
-        stage.innerHTML = `${bar(round / D.length)}${model ? `<div class="kz-model">${svg((i) => target.at(i), '')}</div>` : ''}
+        stage.innerHTML = `<div class="kz-paint-top">${bar(round / D.length)}<span class="kz-total">⭐ ${total}</span></div><div class="kz-model">${svg((i) => target.at(i), '')}</div>
           <div class="kz-canvas">${svg((i) => fills.at(i), 'kz-paint')}</div>
           <div class="kz-palette">${P.map((c) => `<button type="button" class="${c === color ? 'on' : ''}" data-c="${c}" style="--c:${c}" aria-label="Color"></button>`).join('')}</div>`;
         stage.querySelectorAll('[data-c]').forEach((b) => { b.onclick = () => { color = b.dataset.c; stage.querySelectorAll('[data-c]').forEach((x) => x.classList.toggle('on', x === b)); }; });
         stage.querySelectorAll('.kz-paint [data-r]').forEach((el) => { el.onclick = () => {
+          if (done) return;
           const i = Number(el.dataset.r);
-          if (model && color !== target.at(i)) { el.classList.remove('kz-no'); void el.getBoundingClientRect(); el.classList.add('kz-no'); return; }
           fills[i] = color;
           el.setAttribute('fill', color);
           if (fills.every(Boolean)) {
+            done = true;
+            const same = fills.filter((c, k) => c === target.at(k)).length;
+            const stars = Math.max(1, Math.round((same / fills.length) * 5));
             stage.querySelector('.kz-canvas').classList.add('kz-yes');
             setBar(stage, (round + 1) / D.length);
             confetti();
-            setTimeout(() => { if (stage.isConnected) games.pintar(stage, round + 1); }, 2000);
+            const pop = document.createElement('div');
+            pop.className = 'kz-stars-pop';
+            pop.innerHTML = [1, 2, 3, 4, 5].map((k) => `<i class="${k <= stars ? 'on' : ''}" style="animation-delay:${k * 0.12}s">★</i>`).join('');
+            stage.appendChild(pop);
+            setTimeout(() => { if (stage.isConnected) games.pintar(stage, round + 1, total + stars); }, 2600);
           }
         }; });
       };

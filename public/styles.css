@@ -1572,3 +1572,13 @@ body.kids .krb-mark { left: 50%; transform: translateX(-50%); height: clamp(22px
 .lp-key { padding: 12px 0; border-top: 1px solid rgba(255, 255, 255, .08); }
 .lp-key-row { display: flex; gap: 8px; margin-top: 8px; }
 .lp-key-row input { flex: 1 1 auto; min-width: 0; }
+/* KRB Kids, Pintar: modelo grande arriba, total de estrellas, estrellas al terminar, paleta de 10 colores */
+.kz-paint-top { display: flex; align-items: center; gap: 12px; width: min(100%, 420px); }
+.kz-paint-top .kz-bar { flex: 1 1 auto; }
+.kz-total { flex: 0 0 auto; padding: 4px 12px; border-radius: 99px; background: #fff; color: #4a2c8a; font-weight: 800; font-size: 1.15rem; box-shadow: 0 3px 0 rgba(0, 0, 0, .15); }
+.kz-model { width: 150px; }
+.kz-canvas { width: min(100%, 330px); }
+.kz-palette { grid-template-columns: repeat(5, 1fr); width: min(100%, 300px); gap: 8px; }
+.kz-stars-pop { position: fixed; left: 50%; top: 42%; transform: translate(-50%, -50%); z-index: 70; display: flex; gap: 6px; padding: 14px 20px; border-radius: 26px; background: rgba(255, 255, 255, .95); box-shadow: 0 8px 0 rgba(0, 0, 0, .15); }
+.kz-stars-pop i { font-style: normal; font-size: 3.2rem; line-height: 1; color: #d9d2ea; animation: kz-bounce .5s backwards; }
+.kz-stars-pop i.on { color: #ffc400; text-shadow: 0 3px 0 #e09b00; }
