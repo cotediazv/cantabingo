@@ -130,8 +130,7 @@
           <label class="f">Nombre<input type="text" name="name" maxlength="20" required autocomplete="given-name" autocapitalize="words"></label>
           <label class="f">Apellido<input type="text" name="surname" maxlength="25" required autocomplete="family-name" autocapitalize="words"></label>
           ${info.places.length ? `<label class="f">¿Dónde estás?<select name="place" required><option value="">Elige tu lugar</option>${info.places.map((x) => `<option>${esc(x)}</option>`).join('')}</select></label>` : ''}
-          <button class="primary big">Entrar</button></form></div>
-        <a class="btn kids-entry" href="#/kids">🧸 <b>KRB Kids</b><span>Juegos para niños de 3 a 5 años</span></a>`;
+          <button class="primary big">Entrar</button></form></div>`;
       $('#lj').onsubmit = async (e) => {
         e.preventDefault();
         try { me = await api('POST', `/api/light/${id}/join`, Object.fromEntries(new FormData(e.target))); store.set(key, JSON.stringify({ token: me.token })); main(); } catch (err) { fail(err); }
@@ -144,7 +143,8 @@
     const main = () => {
       app.innerHTML = `<div class="panel lm"><h1 style="margin:0">${esc(info.title)}</h1><p class="muted small" style="margin:4px 0 0">Hola, <b>${esc(me.name)}</b></p>
         <div class="lm-tabs"><button data-tab="karaoke">🎤 Karaoke</button><button data-tab="cartelera">📅 Cartelera</button><button data-tab="redes">📸 Redes</button></div>
-        <div id="lm-body"></div></div>`;
+        <div id="lm-body"></div></div>
+        <a class="btn kids-entry" href="#/kids">🧸 <b>KRB Kids</b><span>Juegos para niños de 3 a 5 años</span></a>`;
       app.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = () => { tab = b.dataset.tab; shown = ''; draw(); }; });
       draw();
       clearInterval(timer);

@@ -134,14 +134,20 @@
   };
   const MENU = [['globos', '🎈'], ['memoria', '🃏'], ['puzzle', '🧩'], ['bloques', '🟦']];
 
+  // Se recuerda desde qué pantalla se entró, para volver ahí con «Volver a la sala»
+  document.addEventListener('click', (e) => {
+    if (e.target.closest && e.target.closest('.kids-entry')) { try { sessionStorage.setItem('kidsBack', location.hash); } catch { /* sin almacenamiento */ } }
+  }, true);
+  const backTo = () => { let h = ''; try { h = sessionStorage.getItem('kidsBack') || ''; } catch { /* nada */ } return h && !h.startsWith('#/kids') ? h : '#/'; };
+
   views.kids = async (which) => {
     document.body.classList.add('kids');
     let stop = null;
     if (!games[which]) {
-      app.innerHTML = `<div class="kz"><div class="kz-top"><button type="button" class="kz-back" data-exit>←</button></div>
+      app.innerHTML = `<div class="kz"><div class="kz-top"><button type="button" class="kz-back" data-exit>← Volver a la sala</button></div>
         <h1 class="kz-title">🧸 KRB Kids</h1>
         <div class="kz-menu">${MENU.map(([k, i]) => `<a class="kz-game" href="#/kids/${k}" aria-label="${k}">${i}</a>`).join('')}</div></div>`;
-      $('[data-exit]').onclick = () => { if (history.length > 1) history.back(); else location.hash = '#/'; };
+      $('[data-exit]').onclick = () => { location.hash = backTo(); };
     } else {
       app.innerHTML = `<div class="kz"><div class="kz-top"><button type="button" class="kz-back" data-back>←</button><span class="kz-icon">${MENU.find((m) => m[0] === which)[1]}</span></div><div id="kz-stage" class="kz-stage"></div></div>`;
       $('[data-back]').onclick = () => { location.hash = '#/kids'; };

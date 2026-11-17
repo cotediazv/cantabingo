@@ -1469,3 +1469,4 @@ body.kids main { max-width: 640px; }
 .kz-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: min(100%, 360px); }
 .kz-pad button { padding: 18px 0; border: 0; border-radius: 22px; background: #fff; color: #4a2c8a; font-size: 2rem; box-shadow: 0 5px 0 rgba(74, 44, 138, .25); touch-action: manipulation; }
 .kz-pad button:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(74, 44, 138, .25); }
+.kids-entry { margin-top: 22px; margin-bottom: 8px; }
