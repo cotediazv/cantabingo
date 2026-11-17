@@ -1216,13 +1216,14 @@ views.karaokectl = async (local) => {
   // Con un local (#/karaokectl/kennedy) es el karaoke de la sala light: no cambia la pantalla de la sala principal
   const light = ['frida', 'kennedy', 'tobalaba'].includes(local) ? local : '';
   const lq = light ? `?local=${light}` : '';
-  app.innerHTML = `<div class="panel"><div class="row between"><div><h1 id="kc-title" style="margin:0">Karaoke</h1><span class="muted" id="kc-sub"></span></div></div>
+  app.innerHTML = `${light ? '<div class="panel" id="kc-lt"></div>' : ''}<div class="panel"><div class="row between"><div><h1 id="kc-title" style="margin:0">Karaoke</h1><span class="muted" id="kc-sub"></span></div></div>
       <div id="kc-list" style="margin-top:14px"></div>
       <div id="kc-sung-box" hidden><button type="button" id="kc-sung-btn" class="kc-sung-btn">✓ Ya cantaron</button><div id="kc-sung"></div></div>
       <label class="check" style="margin-top:14px"><input type="checkbox" id="kc-phone"> Permitir pedir canciones desde el celular</label>
       <p class="muted small" id="kc-note" style="margin-top:10px"></p>
     </div>
-    ${light ? '<p class="back" style="margin-top:14px"><a href="#/light">← Volver a la sala light</a></p>' : activitiesNav('karaoke')}`;
+    ${light ? '<div class="panel" id="kc-lb"></div><p class="back"><a href="#/control">← Centro de control</a></p>' : activitiesNav('karaoke')}`;
+  const stopBar = light && views.lightBar ? views.lightBar($('#kc-lt'), $('#kc-lb')) : null;
   if (!light) await api('POST', '/api/stage', { show: 'karaoke' }).catch(fail); // al entrar, el karaoke pasa a la pantalla
   let last = '';
   let k = null; // lo último que se mostró (la lista del servidor, o con los cambios recién tocados)
@@ -1230,7 +1231,7 @@ views.karaokectl = async (local) => {
   // Dibuja la lista. Los botones siguen activos mientras se guarda: los cambios se guardan uno tras otro.
   const render = () => {
     if (!k || !$('#kc-list')) return;
-    $('#kc-title').textContent = `Karaoke ${k.name}${light ? ' · sala light' : ''}`;
+    $('#kc-title').textContent = light ? '🎤 Lista del karaoke' : `Karaoke ${k.name}`;
     $('#kc-sub').textContent = queue.length ? 'Guardando en la planilla…' : k.stale ? 'No se pudo leer la lista; se muestra la última conocida' : k.total ? `${k.total} ${k.total === 1 ? 'pedido' : 'pedidos'} por cantar` : 'Todavía no hay pedidos';
     $('#kc-phone').checked = !!k.phone;
     $('#kc-sung-box').hidden = !k.edit;
@@ -1324,7 +1325,7 @@ views.karaokectl = async (local) => {
   await paint();
   if (k && k.edit) paintSung();
   const timer = setInterval(paint, 3000);
-  return () => clearInterval(timer);
+  return () => { clearInterval(timer); if (stopBar) stopBar(); };
 };
 
 // Al terminar cualquier actividad se puede pasar directo a cualquiera de las otras

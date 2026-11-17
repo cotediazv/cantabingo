@@ -46,7 +46,14 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
 
   const clean = (v, max = 80) => String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, max);
   // Título sin lo que venga entre paréntesis: «Como la Flor (Live)» → «Como la Flor». Si no queda nada, se deja como estaba.
-  const bare = (v) => { const t = clean(v, 200); return clean(t.replace(/\s*[(（][^)）]*[)）]?/g, ' '), 80) || clean(t, 80); };
+  // Excepción (decisión de Cote): se conservan los paréntesis que indican una versión especial, para que el DJ
+  // ponga la correcta (ej. «No me ames (Versión Salsa)»). Los demás se quitan («Remastered», «feat.»…).
+  const VERSION_RE = /versi[oó]n|tropical|salsa|ac[uú]stic|en vivo|\blive\b|remix|balada|cumbia|bachata|merengue|unplugged|mariachi/i;
+  const bare = (v) => {
+    const t = clean(v, 200);
+    const keep = (m, inner) => (inner && VERSION_RE.test(inner) && !/remaster|feat\.?|ft\./i.test(inner) ? ` (${inner.trim()})` : ' ');
+    return clean(t.replace(/\s*[(（]([^)）]*)[)）]?/g, keep), 80) || clean(t, 80);
+  };
   const split = (text) => {
     const t = clean(text, 160);
     for (const sep of SEPARATORS) {

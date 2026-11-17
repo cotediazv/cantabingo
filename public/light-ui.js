@@ -27,23 +27,39 @@
         $('#lp-new').onsubmit = async (e) => { e.preventDefault(); try { await api('POST', '/api/light', { venue: new FormData(e.target).get('venue') }); last = ''; paint(); } catch (err) { fail(err); } };
         return;
       }
-      $('#lp').innerHTML = `<div class="panel"><h1 style="margin:0">${esc(st.title)}</h1><span class="muted">${st.players} ${st.players === 1 ? 'persona entró' : 'personas entraron'} a la sala</span>
-          <h2 style="margin-top:18px">En pantalla (GC)</h2>
-          <div class="lp-stages">${STAGES.map(([k, i, t]) => `<button type="button" data-st="${k}" class="${st.stage === k ? 'on' : ''}"><span>${i}</span>${t}</button>`).join('')}</div>
-          <a class="btn primary big" style="margin-top:14px;display:block;text-align:center" href="#/karaokectl/${st.venue}">🎤 Lista del karaoke: Ya cantó, Subir y Bajar</a>
-        </div>
-        <div class="panel"><h2 style="margin-top:0">Direcciones</h2>
-          <div class="lp-links"><div>${qr(lightJoin(st.id))}</div><div>
-            <p class="small"><b>Para entrar desde el celular</b> (es el QR de la sala light):<br><a href="${esc(lightJoin(st.id))}" target="_blank">${esc(lightJoin(st.id))}</a></p>
-            <p class="small"><b>GC para OBS</b> (fuente de navegador):<br><a href="${esc(gcUrl())}" target="_blank">${esc(gcUrl())}</a></p></div></div>
-          <button type="button" id="lp-close" class="danger" style="margin-top:14px">Cerrar sala light</button></div>`;
-      $('#lp').querySelectorAll('[data-st]').forEach((b) => { b.onclick = async () => { try { await api('POST', '/api/light/stage', { show: b.dataset.st }); last = ''; paint(); } catch (err) { fail(err); } }; });
-      $('#lp-close').onclick = async () => {
-        if (!confirm('¿Cerrar la sala light? Las personas conectadas tendrán que volver a entrar.')) return;
-        try { await api('DELETE', '/api/light'); last = ''; paint(); } catch (err) { fail(err); }
-      };
+      // Abierta: todo se maneja en una sola pantalla (GC + lista del karaoke + direcciones)
+      location.replace(`#/karaokectl/${st.venue}`);
     };
     await paint();
+    const timer = setInterval(paint, 4000);
+    return () => clearInterval(timer);
+  };
+
+  // Botones del GC (arriba) y direcciones (abajo) de la sala light, dentro del panel del karaoke de su local
+  views.lightBar = (top, bottom) => {
+    let last = '';
+    const paint = async () => {
+      const st = await api('GET', '/api/light').catch(() => null);
+      if (!st || !top.isConnected) return;
+      if (!st.open) { location.hash = '#/light'; return; }
+      const sig = JSON.stringify(st);
+      if (sig === last) return;
+      last = sig;
+      top.innerHTML = `<h1 style="margin:0">${esc(st.title)}</h1><span class="muted">${st.players} ${st.players === 1 ? 'persona entró' : 'personas entraron'} a la sala</span>
+        <h2 style="margin:16px 0 10px">En pantalla (GC)</h2>
+        <div class="lp-stages">${STAGES.map(([k, i, t]) => `<button type="button" data-st="${k}" class="${st.stage === k ? 'on' : ''}"><span>${i}</span>${t}</button>`).join('')}</div>`;
+      bottom.innerHTML = `<h2 style="margin-top:0">Direcciones</h2>
+        <div class="lp-links"><div>${qr(lightJoin(st.id))}</div><div>
+          <p class="small"><b>Para entrar desde el celular</b> (es el QR de la sala light):<br><a href="${esc(lightJoin(st.id))}" target="_blank">${esc(lightJoin(st.id))}</a></p>
+          <p class="small"><b>GC para OBS</b> (fuente de navegador):<br><a href="${esc(gcUrl())}" target="_blank">${esc(gcUrl())}</a></p></div></div>
+        <button type="button" id="lp-close" class="danger" style="margin-top:14px">Cerrar sala light</button>`;
+      top.querySelectorAll('[data-st]').forEach((b) => { b.onclick = async () => { try { await api('POST', '/api/light/stage', { show: b.dataset.st }); last = ''; paint(); } catch (err) { fail(err); } }; });
+      bottom.querySelector('#lp-close').onclick = async () => {
+        if (!confirm('¿Cerrar la sala light? Las personas que entraron tendrán que volver a entrar.')) return;
+        try { await api('DELETE', '/api/light'); location.hash = '#/light'; } catch (err) { fail(err); }
+      };
+    };
+    paint();
     const timer = setInterval(paint, 4000);
     return () => clearInterval(timer);
   };

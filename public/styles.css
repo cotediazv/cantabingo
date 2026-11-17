@@ -1367,3 +1367,18 @@ body.rot-screen main { padding: 0; max-width: none; }
 .lg-bottom, .lg-week, .lg-qr { background: var(--gc-dots, none), rgba(14, 12, 30, .94); }
 .lg-main, .lg-day.today, .lg-list > div:first-of-type { background: var(--gc-dots, none), var(--gc-pink); }
 #lg { --gc-dots: radial-gradient(circle, rgba(255,255,255,.13) 0 .42vh, transparent .46vh) 0 0 / 4.2vh 4.2vh, radial-gradient(circle, rgba(255,255,255,.13) 0 .42vh, transparent .46vh) 2.1vh 2.1vh / 4.2vh 4.2vh; }
+
+/* GC del karaoke: «Ahora canta» y «Sigue» con la misma estructura y tamaño (nombre y artista del mismo color,
+   canción en blanco); si un texto es muy largo, se achica y, como último recurso, termina en «…» */
+.kg-now, .kg-next { flex: 1 1 0; gap: .4vh; padding: 1.2vh 2.6vh; }
+.kg-now small, .kg-next small { font-size: 2.2vh; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; color: #fff; opacity: .85; }
+.kg-now b, .kg-next b { font-size: min(5.4vh, calc(34vw / (var(--n, 8) * .6))); font-weight: 900; color: var(--gc-yellow); text-transform: uppercase; text-shadow: .3vh .3vh 0 var(--gc-shade, rgba(0, 0, 0, .4)); }
+.kg-now span, .kg-next span { font-size: min(3.8vh, calc(34vw / (var(--n, 8) * .52))); font-weight: 700; color: #fff; }
+.kg-now i, .kg-next i { font-size: min(3.2vh, calc(34vw / (var(--n, 8) * .52))); font-weight: 800; font-style: normal; color: var(--gc-yellow); opacity: 1; }
+.kg-now > *, .kg-next > * { overflow: hidden; text-overflow: ellipsis; }
+/* Nombres del mismo tamaño en las dos columnas; un nombre largo pasa a dos líneas en vez de achicarse */
+.kg-now, .kg-next { gap: .2vh; padding: 1vh 2.4vh; }
+.kg-now small, .kg-next small { font-size: 2vh; }
+.kg-now b, .kg-next b { font-size: 3.9vh; line-height: 1.04; white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.kg-now span, .kg-next span { font-size: min(3.4vh, calc(34vw / (var(--n, 8) * .52))); }
+.kg-now i, .kg-next i { font-size: min(2.9vh, calc(34vw / (var(--n, 8) * .52))); }

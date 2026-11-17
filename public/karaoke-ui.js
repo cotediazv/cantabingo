@@ -39,9 +39,9 @@
         <div class="kg-qr">${qr(o.join || joinUrl())}<b>Únete a la sesión</b></div>
         ${o.nextUp != null ? o.nextUp : nextUpHTML('kg-up')}
         <div class="kg-bar">
-          <div class="kg-tag"><small>Karaoke ${esc(st.name)}</small><b>🎤 ${a ? 'Ahora canta' : 'Pide tu canción'}</b></div>
-          ${a ? `<div class="kg-now"><b ${n(a.name)}>${esc(a.name)}</b><span ${n(a.song)}>${esc(a.song)}</span>${a.artist ? `<i ${n(a.artist)}>${esc(a.artist)}</i>` : ''}</div>`
-    : `<div class="kg-now"><b ${n('¡Pide tu canción!')}>¡Pide tu canción!</b><span ${n('Desde el celular')}>Desde el celular</span></div>`}
+          <div class="kg-tag"><small>${esc(st.name)}</small><b>🎤 Karaoke</b></div>
+          ${a ? `<div class="kg-now"><small>Ahora canta</small><b ${n(a.name)}>${esc(a.name)}</b><span ${n(a.song)}>${esc(a.song)}</span>${a.artist ? `<i ${n(a.artist)}>${esc(a.artist)}</i>` : ''}</div>`
+    : `<div class="kg-now"><small>Ahora canta</small><b ${n('¡Pide tu canción!')}>¡Pide tu canción!</b><span ${n('Desde el celular')}>Desde el celular</span></div>`}
           ${b ? `<div class="kg-next"><small>Sigue</small><b ${n(b.name)}>${esc(b.name)}</b><span ${n(b.song)}>${esc(b.song)}</span>${b.artist ? `<i ${n(b.artist)}>${esc(b.artist)}</i>` : ''}</div>`
     : `<div class="kg-next"><small>Sigue</small><b ${n('¿Te animas?')}>¿Te animas?</b><span ${n('Pide tu canción desde el celular')}>Pide tu canción desde el celular</span></div>`}
         </div>`;
