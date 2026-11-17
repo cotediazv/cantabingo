@@ -2,6 +2,14 @@
 // KRB Kids: juegos para niños de 3 a 5 años en el celular de los papás, mientras los adultos juegan.
 // Sin sonido, sin preguntas y sin texto: solo tocar y jugar. Nadie pierde.
 (() => {
+  // Logo de KRB Kids: un racimo de globos, y el nombre con cada letra de un color
+  const kidsBalloons = () => {
+    const b = (cx, cy, c, d) => `<path d="M${cx} ${cy + 22} q-4 14 3 26" stroke="#fff" stroke-width="2" fill="none" opacity=".9"/><ellipse cx="${cx}" cy="${cy}" rx="16" ry="20" fill="${c}"/><ellipse cx="${cx + 5}" cy="${cy + 4}" rx="11" ry="15" fill="${d}" opacity=".35"/><ellipse cx="${cx - 6}" cy="${cy - 8}" rx="4" ry="6.5" fill="#fff" opacity=".6"/><path d="M${cx - 3} ${cy + 22} h6 l-3 -4z" fill="${c}"/>`;
+    return `<svg class="kz-logo" viewBox="0 0 100 100" aria-hidden="true">${b(30, 34, '#ff4d6d', '#b5172f')}${b(70, 30, '#3a86ff', '#1747a6')}${b(50, 46, '#ffbe0b', '#c27c00')}${b(18, 58, '#2bb24c', '#147a2e')}${b(82, 56, '#b56cff', '#6a1fb5')}</svg>`;
+  };
+  const LETTER_COLORS = ['#ff4d6d', '#ff9f1c', '#ffd23f', '#2bb24c', '#3a86ff', '#b56cff', '#ff5fa2'];
+  const kidsName = () => `<span class="kz-name-word">${[...'KRB'].map((ch, i) => `<i style="color:${LETTER_COLORS.at(i)}">${ch}</i>`).join('')}</span> <span class="kz-name-word">${[...'Kids'].map((ch, i) => `<i style="color:${LETTER_COLORS.at(i + 3)}">${ch}</i>`).join('')}</span>`;
+  window.krbKidsButton = () => `<a class="btn kids-entry kids-entry2" href="#/kids">${kidsBalloons()}<span class="kz-entry-text"><b class="kz-name">${kidsName()}</b><span class="kz-tag">Juegos para niños de 3 a 5 años</span></span></a>`;
   const pick = (a) => a[Math.floor(Math.random() * a.length)];
   const shuffle = (a) => { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
   const COLORS = ['#e63946', '#1d6fe0', '#ffc400', '#2bb24c', '#ff5fa2', '#8e44ad', '#ff8c1a'];
@@ -296,7 +304,7 @@
     let stop = null;
     if (!games[which]) {
       app.innerHTML = `${stamps()}<div class="kz"><div class="kz-top"><button type="button" class="kz-back" data-exit>← Volver a la sala</button></div>
-        <h1 class="kz-title">🧸 KRB Kids</h1>
+        <h1 class="kz-title">${kidsBalloons()}<span class="kz-name">${kidsName()}</span></h1>
         <div class="kz-menu">${MENU.map(([k]) => `<a class="kz-game" href="#/kids/${k}" aria-label="${k}">${ICONS[k]}</a>`).join('')}</div></div>`;
       $('[data-exit]').onclick = () => { location.hash = backTo(); };
     } else {
