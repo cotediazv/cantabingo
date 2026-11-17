@@ -1470,3 +1470,23 @@ body.kids main { max-width: 640px; }
 .kz-pad button { padding: 18px 0; border: 0; border-radius: 22px; background: #fff; color: #4a2c8a; font-size: 2rem; box-shadow: 0 5px 0 rgba(74, 44, 138, .25); touch-action: manipulation; }
 .kz-pad button:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(74, 44, 138, .25); }
 .kids-entry { margin-top: 22px; margin-bottom: 8px; }
+/* KRB Kids, memoria por niveles: las cartas se acomodan según el nivel (hasta 16 = 4 x 4) */
+.kz-memo { grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr)); width: 100%; max-width: calc(var(--cols, 2) * 120px); gap: 10px; }
+.kz-memo .kz-mcard { font-size: calc(min(92vw, var(--cols, 2) * 120px) / var(--cols, 2) * .55); border-radius: 16px; }
+.kz-stars { display: flex; justify-content: center; gap: 6px; font-size: 1.6rem; }
+.kz-stars i { font-style: normal; color: rgba(255, 255, 255, .35); }
+.kz-stars i.on { color: #ffd23f; text-shadow: 0 2px 0 rgba(0, 0, 0, .2); }
+/* El fondo cambia de color en cada nivel, para que se note que avanza */
+body.kids { transition: background .8s; }
+body.kids[data-kz-level="1"] { background: linear-gradient(160deg, #4cc9f0 0%, #4361ee 100%) fixed; }
+body.kids[data-kz-level="2"] { background: linear-gradient(160deg, #80ed99 0%, #22a06b 100%) fixed; }
+body.kids[data-kz-level="3"] { background: linear-gradient(160deg, #ffd166 0%, #f77f00 100%) fixed; }
+body.kids[data-kz-level="4"] { background: linear-gradient(160deg, #ff8fab 0%, #d6336c 100%) fixed; }
+body.kids[data-kz-level="5"] { background: linear-gradient(160deg, #b388ff 0%, #5a189a 100%) fixed; }
+body.kids[data-kz-level="6"] { background: radial-gradient(circle at 50% 30%, #fff3b0 0%, #ffb703 40%, #fb5607 100%) fixed; }
+/* Desenlace final */
+.kz-final { display: grid; justify-items: center; gap: 18px; margin-top: 4vh; }
+.kz-trophy { font-size: clamp(8rem, 50vw, 14rem); line-height: 1; animation: kz-win 1.4s ease-in-out infinite; filter: drop-shadow(0 10px 0 rgba(0, 0, 0, .15)); }
+.kz-final-stars { font-size: 3rem; letter-spacing: .3rem; animation: kz-bounce 1s infinite; }
+.kz-again { width: 96px; height: 96px; border: 0; border-radius: 50%; background: #fff; font-size: 3rem; box-shadow: 0 6px 0 rgba(0, 0, 0, .2); }
+@keyframes kz-win { 0%, 100% { transform: rotate(-6deg) scale(1); } 50% { transform: rotate(6deg) scale(1.08); } }

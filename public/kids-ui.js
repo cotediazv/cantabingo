@@ -36,14 +36,27 @@
       return () => clearInterval(t);
     },
     // Memoria: 4 cartas; después 6
+    // Memoria por niveles: 4 → 6 → 8 → 12 → 16 → 16 cartas. Cada nivel cambia el color del fondo y suma una
+    // estrella arriba; al terminar el último, pantalla de triunfo con trofeo y un botón para jugar de nuevo.
     memoria(stage, round = 0) {
-      const MEMO = ['🍎', '🚗', '⭐', '🐻', '🌈', '⚽', '🐶', '🦋'];
-      const pairs = round > 0 ? 3 : 2;
+      const MEMO = ['🍎', '🚗', '⭐', '🐻', '🌈', '⚽', '🐶', '🦋', '🍓', '🚀', '🐸', '🎈'];
+      const LEVELS = [2, 3, 4, 6, 8, 8]; // parejas por nivel
+      const COLS = { 2: 2, 3: 3, 4: 4, 6: 4, 8: 4 };
+      document.body.dataset.kzLevel = String(Math.min(round, LEVELS.length));
+      const stars = (n) => `<div class="kz-stars">${LEVELS.map((_, i) => `<i class="${i < n ? 'on' : ''}">★</i>`).join('')}</div>`;
+      if (round >= LEVELS.length) {
+        stage.innerHTML = `<div class="kz-final"><span class="kz-trophy">🏆</span><div class="kz-final-stars">⭐⭐⭐</div>
+          <button type="button" class="kz-again" aria-label="Jugar otra vez">🔄</button></div>`;
+        confetti(); setTimeout(confetti, 700); setTimeout(confetti, 1400);
+        stage.querySelector('.kz-again').onclick = () => games.memoria(stage, 0);
+        return null;
+      }
+      const pairs = LEVELS.at(round);
       const cards = shuffle(shuffle(MEMO).slice(0, pairs).flatMap((e) => [e, e]));
       let open = [];
       let done = 0;
       let lock = false;
-      stage.innerHTML = `<div class="kz-memo ${pairs === 3 ? 'six' : ''}">${cards.map((e, i) => `<button type="button" class="kz-mcard" data-i="${i}"><span>${e}</span></button>`).join('')}</div>`;
+      stage.innerHTML = `${stars(round)}<div class="kz-memo" style="--cols:${COLS[pairs]}">${cards.map((e, i) => `<button type="button" class="kz-mcard" data-i="${i}"><span>${e}</span></button>`).join('')}</div>`;
       stage.querySelectorAll('[data-i]').forEach((b) => { b.onclick = () => {
         if (lock || b.classList.contains('up')) return;
         b.classList.add('up');
@@ -53,7 +66,7 @@
         open = [];
         if (cards[x.dataset.i] === cards[y.dataset.i]) {
           x.classList.add('kz-yes'); y.classList.add('kz-yes'); done++;
-          if (done === pairs) { confetti(); setTimeout(() => { if (stage.isConnected) games.memoria(stage, round + 1); }, 2000); }
+          if (done === pairs) { confetti(); setTimeout(() => { if (stage.isConnected) games.memoria(stage, round + 1); }, 1800); }
         } else {
           lock = true;
           setTimeout(() => { x.classList.remove('up'); y.classList.remove('up'); lock = false; }, 900);
@@ -153,6 +166,6 @@
       $('[data-back]').onclick = () => { location.hash = '#/kids'; };
       stop = games[which]($('#kz-stage'));
     }
-    return () => { document.body.classList.remove('kids'); if (typeof stop === 'function') stop(); };
+    return () => { document.body.classList.remove('kids'); delete document.body.dataset.kzLevel; if (typeof stop === 'function') stop(); };
   };
 })();
