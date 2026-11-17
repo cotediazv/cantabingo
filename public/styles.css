@@ -1595,3 +1595,9 @@ body.kids .krb-mark { left: 50%; transform: translateX(-50%); height: clamp(22px
 .kz-pad4 { grid-template-columns: repeat(3, 1fr); width: min(100%, 300px); gap: 8px; }
 .kz-pad4 button { padding: 12px 0; }
 .kz-menu .kz-game:last-child:nth-child(odd) { grid-column: 1 / -1; justify-self: center; width: calc(50% - 8px); }
+/* KRB Kids: al acertar, el fondo cambia de color un momento; sin zoom ni movimiento (pedido de Cote: marea a los niños) */
+body.kids::before { content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0; transition: opacity .3s; background: radial-gradient(circle at 50% 40%, #d8ffb0 0%, #5fd068 55%, #1f9d55 100%); }
+body.kids.kz-acierto::before { opacity: 1; }
+body.kids .kz, body.kids .kz-stamps { position: relative; z-index: 1; }
+body.kids .kz-stamps { position: fixed; }
+.kz-yes, .kz-flash, .kz-stars-pop i, .kz-snake i.fruit, .kz-final-stars, .kz-trophy, .kz-next { animation: none; }

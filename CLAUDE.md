@@ -24,7 +24,7 @@ Sitio: https://cantabingo.onrender.com · Render (plan Starter, disco de 1 GB) �
 
 - **Sala de juegos completa:** jueves en Kennedy, viernes en Tobalaba, domingo en Frida.
 - **Sala light:** viernes y sábado en Kennedy y en Frida.
-- **Jueves en Kennedy:** después de los juegos queda el karaoke con el animador y el DJ (los mismos del viernes y sábado). Ellos manejan el karaoke desde la sala light de Kennedy (`#/equipo/kennedy`) y, a la vez, Cote y el equipo desde la aplicación completa. Las dos leen y cambian la misma lista (la planilla de Kennedy). Para que el público de la sala completa siga pidiendo canciones, el escenario de la sala completa debe quedar en Karaoke: **todos los jueves a las 21:30, si la sala abierta es la de Kennedy, pasa solo a Karaoke** (`AUTO_KARAOKE` en `server.js`, una vez por jueves; después se puede cambiar a mano).
+- **Jueves en Kennedy:** después de los juegos queda el karaoke con el animador y el DJ (los mismos del viernes y sábado). Ellos manejan el karaoke desde la sala light de Kennedy (`#/equipo/kennedy`) y, a la vez, Cote y el equipo desde la aplicación completa. Las dos leen y cambian la misma lista (la planilla de Kennedy). Para que el público de la sala completa siga pidiendo canciones, el escenario de la sala completa debe quedar en Karaoke: **todos los jueves a las 21:45, si la sala abierta es la de Kennedy, pasa solo a Karaoke** (`AUTO_KARAOKE` en `server.js`, una vez por jueves; después se puede cambiar a mano).
 
 ## Cómo está armado
 

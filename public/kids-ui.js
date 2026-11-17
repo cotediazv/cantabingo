@@ -13,7 +13,15 @@
   const pick = (a) => a[Math.floor(Math.random() * a.length)];
   const shuffle = (a) => { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
   const COLORS = ['#e63946', '#1d6fe0', '#ffc400', '#2bb24c', '#ff5fa2', '#8e44ad', '#ff8c1a'];
+  // Al acertar: el fondo cambia de color un momento (sin zoom ni movimiento, para no marear a los niños)
+  let cheerTimer = null;
   const confetti = () => {
+    document.body.classList.add('kz-acierto');
+    clearTimeout(cheerTimer);
+    cheerTimer = setTimeout(() => document.body.classList.remove('kz-acierto'), 1300);
+  };
+  // Lluvia de papelitos: solo en la pantalla final del trofeo
+  const party = () => {
     const box = document.createElement('div');
     box.className = 'kz-confetti';
     box.innerHTML = Array.from({ length: 40 }, (_, i) => `<i style="left:${Math.random() * 100}%;background:${COLORS[i % COLORS.length]};animation-delay:${(Math.random() * 0.4).toFixed(2)}s"></i>`).join('');
@@ -30,7 +38,7 @@
     stage.innerHTML = `<div class="kz-final"><span class="kz-trophy">🏆</span><div class="kz-final-stars">⭐⭐⭐</div>
       <div class="kz-final-row"><button type="button" class="kz-again" aria-label="Jugar otra vez">🔄</button>
       <a class="kz-next" href="#/kids/${next}" aria-label="Siguiente juego">${ICONS[next]}<span class="kz-next-arrow">➜</span></a></div></div>`;
-    confetti(); setTimeout(confetti, 700); setTimeout(confetti, 1400);
+    confetti(); party(); setTimeout(party, 700); setTimeout(party, 1400);
     stage.querySelector('.kz-again').onclick = again;
   };
   // Barra de progreso común a todos los juegos: se llena hasta el trofeo
@@ -125,7 +133,7 @@
         const [x, y] = open;
         open = [];
         if (cards[x.dataset.i] === cards[y.dataset.i]) {
-          x.classList.add('kz-yes'); y.classList.add('kz-yes'); done++;
+          x.classList.add('kz-yes'); y.classList.add('kz-yes'); done++; confetti();
           if (done === pairs) { confetti(); setTimeout(() => { if (stage.isConnected) games.memoria(stage, round + 1); }, 1800); }
         } else {
           lock = true;
@@ -424,6 +432,6 @@
       $('[data-back]').onclick = () => { location.hash = '#/kids'; };
       stop = games[which]($('#kz-stage'));
     }
-    return () => { document.body.classList.remove('kids'); delete document.body.dataset.kzLevel; if (typeof stop === 'function') stop(); };
+    return () => { document.body.classList.remove('kids', 'kz-acierto'); delete document.body.dataset.kzLevel; if (typeof stop === 'function') stop(); };
   };
 })();

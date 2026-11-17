@@ -679,10 +679,10 @@ app.post('/api/stage', requireAdmin, (req, res) => {
   res.json({ show });
 });
 
-// Pedido de Cote: todos los jueves a las 21:30 (hora de Chile), si la sala abierta es la de Kennedy, el escenario
+// Pedido de Cote: todos los jueves a las 21:45 (hora de Chile), si la sala abierta es la de Kennedy, el escenario
 // pasa solo a Karaoke, para que el público siga pidiendo canciones desde su celular. Una vez por jueves; después
-// se puede cambiar a mano. Si el servicio estaba reiniciándose justo a esa hora, se hace apenas vuelve (hasta las 21:45).
-const AUTO_KARAOKE = { venue: 'kennedy', dow: 'Thu', from: 21 * 60 + 30, until: 21 * 60 + 45 };
+// se puede cambiar a mano. Si el servicio estaba reiniciándose justo a esa hora, se hace apenas vuelve (hasta las 22:00).
+const AUTO_KARAOKE = { venue: 'kennedy', dow: 'Thu', from: 21 * 60 + 45, until: 22 * 60 };
 setInterval(() => {
   const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
     .formatToParts(new Date()).map((x) => [x.type, x.value]));
@@ -692,7 +692,7 @@ setInterval(() => {
   const s = Object.values(db.sessions)[0];
   if (!s || s.theme !== AUTO_KARAOKE.venue) return;
   db.autoKaraoke = day;
-  if (db.stage !== 'karaoke') { setStage('karaoke'); karaoke.refresh(); console.log('Escenario a Karaoke automático (jueves 21:30, Kennedy)'); }
+  if (db.stage !== 'karaoke') { setStage('karaoke'); karaoke.refresh(); console.log('Escenario a Karaoke automático (jueves 21:45, Kennedy)'); }
   save();
 }, 20e3);
 
