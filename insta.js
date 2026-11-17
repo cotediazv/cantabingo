@@ -28,4 +28,5 @@ module.exports = function insta({ app, db, save, requireAdmin, fail, venue }) {
     save();
     return res.json({ ...state(), handles: db.insta.handles, venues: VENUES });
   });
+  return { handleOf: (v) => db.insta.handles[v] || '' };
 };

@@ -23,7 +23,7 @@ const TIMEOUT_MS = 10000; // Apps Script puede tardar en un arranque en frío
 const MAX_ACTIVE = 2; // pedidos sin cantar que puede tener una persona a la vez
 const SEPARATORS = [' – ', ' • ', ' - ']; // "Canción – Artista": se corta por la última aparición
 
-module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlayer, salaVenue }) {
+module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlayer, salaVenue, lightVenue = () => '', extraVenues = () => [] }) {
   db.karaoke ||= {};
   db.karaoke.venue ||= 'frida';
   // Los pedidos se hacen desde la Sala de juegos: quedan activados (el interruptor del Centro de control los puede apagar)
@@ -93,12 +93,20 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
     }
   }
 
-  // Solo se consulta a Google mientras el karaoke está en pantalla, para cuidar la cuota de Apps Script
+  // Solo se consulta a Google mientras el karaoke está en pantalla, para cuidar la cuota de Apps Script.
+  // La sala light pide además el local que ella usa (extraVenues).
   setInterval(async () => {
-    if (db.stage !== 'karaoke' || busy) return;
+    if (busy) return;
+    const venues = [...new Set([...(db.stage === 'karaoke' ? [venueNow()] : []), ...extraVenues().filter((v) => VENUES[v])])];
+    if (!venues.length) return;
     busy = true;
-    try { await refresh(venueNow()); } finally { busy = false; }
+    try { for (const v of venues) await refresh(v); } finally { busy = false; }
   }, POLL_MS).unref();
+  // Local de una consulta: el que se pide (sala light, ?local=), o el de la sala principal
+  const pickVenue = (req) => {
+    const l = String((req.query || {}).local || (req.body || {}).local || '');
+    return VENUES[l] ? l : (lightVenue(String((req.query || {}).sid || (req.body || {}).sid || '')) || venueNow());
+  };
 
   // Lo que ven las pantallas (público, sin iniciar sesión, igual que el resto de las gráficas)
   // Cuántos pedidos sin cantar tiene una persona en la cola, y en qué puesto está el primero
@@ -108,7 +116,7 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
     return { count: list.filter((p) => same(p.name, name)).length, first: list.findIndex((p) => same(p.name, name)), max: MAX_ACTIVE };
   };
   app.get('/api/karaoke', (req, res) => {
-    const venue = venueNow();
+    const venue = pickVenue(req);
     const c = cache[venue] || { list: [], at: 0, error: '' };
     const pl = req.query.token ? findPlayer(String(req.query.sid || ''), String(req.query.token)) : null;
     res.json({ me: pl ? standing(venue, pl.name) : null, venue, name: VENUES[venue], phone: !!db.karaoke.phone, ask: askFor(venue), form: (db.karaoke.urls[venue] || {}).form || '', list: c.list.slice(0, 8).map(pub), total: c.list.length, at: c.at, stale: !!c.error });
@@ -160,8 +168,8 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
     }
     return !!KEY && !!db.karaoke.withIds[venue];
   };
-  app.get('/api/karaoke/cola', requireAdmin, (_req, res) => {
-    const venue = venueNow();
+  app.get('/api/karaoke/cola', requireAdmin, (req, res) => {
+    const venue = pickVenue(req);
     const c = cache[venue] || { list: [], at: 0, error: '' };
     res.json({ venue, name: VENUES[venue], phone: !!db.karaoke.phone, edit: editable(venue), list: c.list.map(({ raw, ...p }) => p), total: c.list.length, at: c.at, stale: !!c.error });
   });
@@ -180,7 +188,7 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
   let acting = false;
   app.post('/api/karaoke/accion', requireAdmin, async (req, res) => {
     const b = req.body || {};
-    const venue = venueNow();
+    const venue = pickVenue(req);
     if (!['cantado', 'subir', 'bajar'].includes(b.accion)) return fail(res, 400, 'Acción no válida');
     const p = ((cache[venue] || {}).list || []).find((x) => x.id && x.id === String(b.id || ''));
     if (!p) return fail(res, 409, 'Ese pedido ya no está en la lista. Revisa la lista actualizada.');
@@ -205,9 +213,9 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
   });
   // «Ya cantaron»: marcas de esta noche en «Cantados», para revisar y deshacer un error
   const timeRe = /^(\d{1,2}\/\d{1,2}\/\d{4} )?(\d{1,2}:\d{2})(:\d{2})? /;
-  app.get('/api/karaoke/cantados', requireAdmin, async (_req, res) => {
+  app.get('/api/karaoke/cantados', requireAdmin, async (req, res) => {
     try {
-      const data = await callScript(venueNow(), { accion: 'cantados' });
+      const data = await callScript(pickVenue(req), { accion: 'cantados' });
       const list = (Array.isArray(data.lista) ? data.lista : []).map((x) => {
         const key = String(x.clave || '').slice(0, 400);
         const m = key.match(timeRe);
@@ -223,9 +231,9 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
     if (acting) return fail(res, 429, 'Se está guardando el cambio anterior. Intenta de nuevo en un segundo.');
     acting = true;
     try {
-      await callScript(venueNow(), { accion: 'volver', fila, claveFila: String(b.key || '').slice(0, 400) });
+      await callScript(pickVenue(req), { accion: 'volver', fila, claveFila: String(b.key || '').slice(0, 400) });
       writes++;
-      refresh(venueNow()); // el pedido vuelve a la lista cuando Google lo confirma
+      refresh(pickVenue(req)); // el pedido vuelve a la lista cuando Google lo confirma
       res.json({ ok: true });
     } catch (err) {
       fail(res, 502, `No se pudo deshacer: ${clean(err && err.message, 200)}`);
@@ -327,7 +335,10 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
     const b = req.body || {};
     const pl = findPlayer(String(b.sid || ''), String(b.token || ''));
     if (!pl) return fail(res, 403, 'Primero únete a la sala con tu nombre');
-    if (db.stage !== 'karaoke') return fail(res, 400, 'El karaoke no está abierto en este momento');
+    // En la sala light el karaoke está siempre abierto; en la principal, solo cuando está en pantalla
+    const light = lightVenue(String(b.sid || ''));
+    const venue = light || venueNow();
+    if (!light && db.stage !== 'karaoke') return fail(res, 400, 'El karaoke no está abierto en este momento');
     if (!db.karaoke.phone) return fail(res, 400, 'Por ahora no se están recibiendo pedidos desde el celular');
     const song = bare(b.song);
     const artist = clean(b.artist, 60);
@@ -336,10 +347,10 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
     if (!song || !artist) return fail(res, 400, 'Escribe la canción y su artista');
     if (!altSong || !altArtist) return fail(res, 400, 'Escribe también una canción de reemplazo y su artista');
     // Máximo 2 pedidos sin cantar por persona: al cantar uno, puede pedir otro
-    if (standing(venueNow(), pl.name).count >= MAX_ACTIVE) return fail(res, 409, `Ya tienes ${MAX_ACTIVE} canciones en la lista. Priorizamos a quienes no han cantado: cuando cantes una, podrás pedir otra.`);
+    if (standing(venue, pl.name).count >= MAX_ACTIVE) return fail(res, 409, `Ya tienes ${MAX_ACTIVE} canciones en la lista. Priorizamos a quienes no han cantado: cuando cantes una, podrás pedir otra.`);
     if (recent[pl.name] && Date.now() - recent[pl.name] < 20000) return fail(res, 429, 'Tu pedido anterior se está registrando. Espera unos segundos para enviar otro.');
     try {
-      const form = await loadForm(venueNow());
+      const form = await loadForm(venue);
       const map = mapFields(form.fields);
       const missing = ['name', 'song', 'artist', 'altSong', 'altArtist'].filter((k) => !map[k]);
       if (missing.length) throw new Error(`El formulario no tiene preguntas reconocibles para: ${missing.join(', ')}`);
@@ -369,12 +380,12 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
       const out = await fetch(form.action, { method: 'POST', body, redirect: 'follow', signal: AbortSignal.timeout(TIMEOUT_MS) });
       if (!out.ok) throw new Error(`Google no aceptó el pedido (${out.status})`);
       recent[pl.name] = Date.now();
-      refresh(venueNow());
+      refresh(venue);
       res.json({ ok: true });
     } catch (err) {
       fail(res, 502, `No se pudo enviar el pedido: ${clean(err && err.message, 160)}. Puedes pedirlo con el código QR de la pantalla.`);
     }
   });
 
-  return { refresh: () => refresh(venueNow()), venues: VENUES, placesFor: (venue) => askFor(venue).places };
+  return { refresh: () => refresh(venueNow()), refreshVenue: (v) => (VENUES[v] ? refresh(v) : null), venues: VENUES, placesFor: (venue) => askFor(venue).places };
 };

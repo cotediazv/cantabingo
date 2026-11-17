@@ -8,11 +8,11 @@
   const n = (t) => `style="--n:${Math.max(6, String(t).length)}"`;
 
   // Sigue la cola y vuelve a dibujar solo cuando cambia, para que no parpadee
-  const follow = (paint) => {
+  const follow = (paint, local = '') => {
     let last = '';
     let alive = true;
     const tick = async () => {
-      const st = await api('GET', '/api/karaoke').catch(() => null);
+      const st = await api('GET', `/api/karaoke${local ? `?local=${local}` : ''}`).catch(() => null);
       if (!alive || !st) return;
       const s = sign(st);
       if (s === last) return;
@@ -25,7 +25,9 @@
   };
 
   // ---------- GC de OBS ----------
-  views.karaokeGC = async () => {
+  // Con opciones lo usa la sala light: su local, su enlace para entrar y sin el aviso de la sala principal
+  views.karaokeGC = async (opts = {}) => {
+    const o = opts && typeof opts === 'object' ? opts : {};
     document.body.classList.add('obs', 'gc-screen');
     app.innerHTML = '<div id="kg"></div>';
     let swap = null;
@@ -34,8 +36,8 @@
       if (!box) return;
       const [a, b] = st.list;
       const html = `
-        <div class="kg-qr">${qr(joinUrl())}<b>Únete a la sesión</b></div>
-        ${nextUpHTML('kg-up')}
+        <div class="kg-qr">${qr(o.join || joinUrl())}<b>Únete a la sesión</b></div>
+        ${o.nextUp != null ? o.nextUp : nextUpHTML('kg-up')}
         <div class="kg-bar">
           <div class="kg-tag"><small>Karaoke ${esc(st.name)}</small><b>🎤 ${a ? 'Ahora canta' : 'Pide tu canción'}</b></div>
           ${a ? `<div class="kg-now"><b ${n(a.name)}>${esc(a.name)}</b><span ${n(a.song)}>${esc(a.song)}</span>${a.artist ? `<i ${n(a.artist)}>${esc(a.artist)}</i>` : ''}</div>`
@@ -47,7 +49,7 @@
       clearTimeout(swap);
       box.className = `th-${st.venue}`;
       swap = setTimeout(() => { if ($('#kg')) { $('#kg').innerHTML = html; $('#kg').className = `th-${st.venue} on`; } }, box.innerHTML ? 650 : 0);
-    });
+    }, o.local || '');
     return () => { stop(); clearTimeout(swap); document.body.classList.remove('obs', 'gc-screen'); };
   };
 

@@ -581,14 +581,19 @@ const connectedNames = () => {
 };
 require('./raffle.js')({ app, db, save, requireAdmin, fail, setStage, refreshAll, connectedNames });
 
-const karaoke = require('./karaoke.js')({ app, db, save, requireAdmin, fail, salaVenue: () => (Object.values(db.sessions)[0] || {}).theme || '', findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null });
+let lightApi = null; // sala light (light.js): se conecta más abajo
+const karaoke = require('./karaoke.js')({ app, db, save, requireAdmin, fail, salaVenue: () => (Object.values(db.sessions)[0] || {}).theme || '',
+  findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || (lightApi ? lightApi.findPlayer(sid, token) : null),
+  lightVenue: (sid) => (lightApi ? lightApi.venueOf(sid) : ''), extraVenues: () => (lightApi ? lightApi.pollVenues() : []) });
 // Votación del público (nota del 1 al 10 desde el celular)
 const vote = require('./vote.js')({ app, db, save, requireAdmin, fail, setStage,
   findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null,
   venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
   notify: () => Object.values(db.sessions).forEach((s) => broadcast(s)) });
 // «Síguenos en Instagram»: la cuenta del local de la sala abierta
-require('./insta.js')({ app, db, save, requireAdmin, fail, venue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
+const insta = require('./insta.js')({ app, db, save, requireAdmin, fail, venue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
+// Sala light: karaoke, show y cartelera en otro local, al mismo tiempo que la sala principal
+lightApi = require('./light.js')({ app, db, save, requireAdmin, fail, karaoke, insta });
 // Programación del local del día: el de la sala abierta o, si no hay, el elegido en la sección Karaoke
 require('./agenda.js')({ app, db, save, requireAdmin, fail, currentVenue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
 

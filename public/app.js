@@ -249,6 +249,7 @@ views.home = async () => {
 views.control = async () => {
   if (!(await isAdmin())) return viewLogin();
   app.innerHTML = `<p class="back"><a href="#/">← Inicio</a></p><h1>Centro de control</h1>
+    <a class="btn lp-open" href="#/light">💡 Sala light · karaoke, show y cartelera en otro local</a>
     <div class="panel">
       <h2>En pantalla</h2>
       <p class="muted small">La pantalla cambia sola al activar un bingo, lanzar un sorteo o cargar un rosco. Aquí puedes cambiarla a mano.</p>
@@ -1210,23 +1211,26 @@ function wireSongSearch(form) {
 // ---------- Karaoke: panel del animador ----------
 // Pone el karaoke en pantalla y muestra la cola. El local es el de la sala abierta.
 // «Ya cantó», Subir y Bajar: cuando el local ya tiene instalado Sala.gs, se pueden usar aquí o en la app del equipo.
-views.karaokectl = async () => {
+views.karaokectl = async (local) => {
   if (!(await isAdmin())) return viewLogin();
+  // Con un local (#/karaokectl/kennedy) es el karaoke de la sala light: no cambia la pantalla de la sala principal
+  const light = ['frida', 'kennedy', 'tobalaba'].includes(local) ? local : '';
+  const lq = light ? `?local=${light}` : '';
   app.innerHTML = `<div class="panel"><div class="row between"><div><h1 id="kc-title" style="margin:0">Karaoke</h1><span class="muted" id="kc-sub"></span></div></div>
       <div id="kc-list" style="margin-top:14px"></div>
       <div id="kc-sung-box" hidden><button type="button" id="kc-sung-btn" class="kc-sung-btn">✓ Ya cantaron</button><div id="kc-sung"></div></div>
       <label class="check" style="margin-top:14px"><input type="checkbox" id="kc-phone"> Permitir pedir canciones desde el celular</label>
       <p class="muted small" id="kc-note" style="margin-top:10px"></p>
     </div>
-    ${activitiesNav('karaoke')}`;
-  await api('POST', '/api/stage', { show: 'karaoke' }).catch(fail); // al entrar, el karaoke pasa a la pantalla
+    ${light ? '<p class="back" style="margin-top:14px"><a href="#/light">← Volver a la sala light</a></p>' : activitiesNav('karaoke')}`;
+  if (!light) await api('POST', '/api/stage', { show: 'karaoke' }).catch(fail); // al entrar, el karaoke pasa a la pantalla
   let last = '';
   let k = null; // lo último que se mostró (la lista del servidor, o con los cambios recién tocados)
   const queue = []; // cambios tocados que todavía se están guardando en Google, en orden
   // Dibuja la lista. Los botones siguen activos mientras se guarda: los cambios se guardan uno tras otro.
   const render = () => {
     if (!k || !$('#kc-list')) return;
-    $('#kc-title').textContent = `Karaoke ${k.name}`;
+    $('#kc-title').textContent = `Karaoke ${k.name}${light ? ' · sala light' : ''}`;
     $('#kc-sub').textContent = queue.length ? 'Guardando en la planilla…' : k.stale ? 'No se pudo leer la lista; se muestra la última conocida' : k.total ? `${k.total} ${k.total === 1 ? 'pedido' : 'pedidos'} por cantar` : 'Todavía no hay pedidos';
     $('#kc-phone').checked = !!k.phone;
     $('#kc-sung-box').hidden = !k.edit;
@@ -1238,7 +1242,7 @@ views.karaokectl = async () => {
   };
   const paint = async () => {
     if (queue.length) return; // mientras se guarda, se deja lo que se tocó (la lista del servidor aún no lo trae)
-    const r = await api('GET', '/api/karaoke/cola').catch(() => null);
+    const r = await api('GET', `/api/karaoke/cola${lq}`).catch(() => null);
     if (!r || !$('#kc-list') || queue.length) return;
     const sig = JSON.stringify(r);
     if (sig === last) return;
@@ -1269,7 +1273,7 @@ views.karaokectl = async () => {
     while (queue.length) {
       const job = queue[0];
       try {
-        await api('POST', '/api/karaoke/accion', job);
+        await api('POST', '/api/karaoke/accion', { ...job, local: light || undefined });
         if (job.accion === 'cantado') toast('Marcado: ya cantó');
         queue.shift();
       } catch (err) {
@@ -1299,7 +1303,7 @@ views.karaokectl = async () => {
     $('#kc-sung-btn').textContent = '✓ Ya cantaron · ocultar';
     if (!$('#kc-sung').innerHTML) $('#kc-sung').innerHTML = '<p class="muted small">Cargando…</p>';
     try {
-      const r = await api('GET', '/api/karaoke/cantados');
+      const r = await api('GET', `/api/karaoke/cantados${lq}`);
       if (!sungOpen || !$('#kc-sung')) return;
       $('#kc-sung').innerHTML = r.list.length ? r.list.map((x) => `<div class="kc-row kc-sung-row"><em>✓</em><p><small>${x.at ? `Marcado a las ${esc(hhmm(x.at))}` : ''}</small><b>${esc(x.text)}</b></p><div class="kc-act"><button type="button" class="kc-back" data-fila="${x.fila}" data-key="${esc(x.key)}">Volver a la lista</button></div></div>`).join('')
         : '<p class="muted small">Esta noche todavía nadie aparece como «ya cantó».</p>';
@@ -1311,7 +1315,7 @@ views.karaokectl = async () => {
     if (!btn || queue.length || btn.disabled) return;
     $('#kc-sung').querySelectorAll('[data-fila]').forEach((x) => { x.disabled = true; });
     btn.closest('.kc-row').style.opacity = '.4'; // se ve al instante que se está devolviendo
-    try { await api('POST', '/api/karaoke/volver', { fila: Number(btn.dataset.fila), key: btn.dataset.key }); toast('Volvió a la lista'); } catch (err) { fail(err); }
+    try { await api('POST', '/api/karaoke/volver', { fila: Number(btn.dataset.fila), key: btn.dataset.key, local: light || undefined }); toast('Volvió a la lista'); } catch (err) { fail(err); }
     last = '';
     paint();
     paintSung();
