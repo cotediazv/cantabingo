@@ -1490,3 +1490,9 @@ body.kids[data-kz-level="6"] { background: radial-gradient(circle at 50% 30%, #f
 .kz-final-stars { font-size: 3rem; letter-spacing: .3rem; animation: kz-bounce 1s infinite; }
 .kz-again { width: 96px; height: 96px; border: 0; border-radius: 50%; background: #fff; font-size: 3rem; box-shadow: 0 6px 0 rgba(0, 0, 0, .2); }
 @keyframes kz-win { 0%, 100% { transform: rotate(-6deg) scale(1); } 50% { transform: rotate(6deg) scale(1.08); } }
+/* KRB Kids, puzzle por niveles: puntos de progreso y piezas que caben en la pantalla */
+.kz-dots { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px; }
+.kz-dots i { width: 14px; height: 14px; border-radius: 50%; background: rgba(255, 255, 255, .35); }
+.kz-dots i.on { background: #ffd23f; box-shadow: 0 2px 0 rgba(0, 0, 0, .2); }
+.kz-puzzle { gap: 4px; padding: 4px; max-width: none; justify-content: center; }
+.kz-piece { aspect-ratio: 1; border-radius: 10px; }

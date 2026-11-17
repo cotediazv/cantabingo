@@ -13,6 +13,13 @@
     setTimeout(() => box.remove(), 2200);
   };
 
+  // Desenlace final de un juego por niveles: trofeo, estrellas, confeti y botón para jugar de nuevo
+  const finale = (stage, again) => {
+    stage.innerHTML = `<div class="kz-final"><span class="kz-trophy">🏆</span><div class="kz-final-stars">⭐⭐⭐</div>
+      <button type="button" class="kz-again" aria-label="Jugar otra vez">🔄</button></div>`;
+    confetti(); setTimeout(confetti, 700); setTimeout(confetti, 1400);
+    stage.querySelector('.kz-again').onclick = again;
+  };
   const games = {
     // Globos: suben sin parar; se revientan tocándolos
     globos(stage) {
@@ -44,13 +51,7 @@
       const COLS = { 2: 2, 3: 3, 4: 4, 6: 4, 8: 4 };
       document.body.dataset.kzLevel = String(Math.min(round, LEVELS.length));
       const stars = (n) => `<div class="kz-stars">${LEVELS.map((_, i) => `<i class="${i < n ? 'on' : ''}">★</i>`).join('')}</div>`;
-      if (round >= LEVELS.length) {
-        stage.innerHTML = `<div class="kz-final"><span class="kz-trophy">🏆</span><div class="kz-final-stars">⭐⭐⭐</div>
-          <button type="button" class="kz-again" aria-label="Jugar otra vez">🔄</button></div>`;
-        confetti(); setTimeout(confetti, 700); setTimeout(confetti, 1400);
-        stage.querySelector('.kz-again').onclick = () => games.memoria(stage, 0);
-        return null;
-      }
+      if (round >= LEVELS.length) { finale(stage, () => games.memoria(stage, 0)); return null; }
       const pairs = LEVELS.at(round);
       const cards = shuffle(shuffle(MEMO).slice(0, pairs).flatMap((e) => [e, e]));
       let open = [];
@@ -74,31 +75,64 @@
       }; });
       return null;
     },
-    // Puzzle: un dibujo en 4 piezas desordenadas; se tocan dos piezas para cambiarlas de lugar
-    puzzle(stage) {
-      const pics = ['🦁', '🐸', '🚀', '🦄', '🐙', '🌻', '🐢', '🚒'];
+    // Puzzle por niveles: 6 puzzles de 4 piezas y después 6, 8, 10, 12, 14 y 16 piezas.
+    // Se tocan dos piezas para cambiarlas de lugar. El fondo del dibujo cambia de color de una esquina a otra,
+    // así cada pieza se ve distinta. Al terminar el último, pantalla de triunfo.
+    puzzle(stage, round = 0) {
+      const LEVELS = [4, 4, 4, 4, 4, 4, 6, 8, 10, 12, 14, 16];
+      const GRID = { 4: [2, 2], 6: [2, 3], 8: [2, 4], 10: [2, 5], 12: [3, 4], 14: [2, 7], 16: [4, 4] }; // [columnas, filas]
+      document.body.dataset.kzLevel = String(Math.min(6, Math.floor(round / 2) + 1));
+      const dots = `<div class="kz-dots">${LEVELS.map((_, i) => `<i class="${i < round ? 'on' : ''}"></i>`).join('')}</div>`;
+      if (round >= LEVELS.length) { finale(stage, () => games.puzzle(stage, 0)); return null; }
+      const n = LEVELS.at(round);
+      const [cols, rows] = GRID[n];
+      const pics = ['🦁', '🐸', '🚀', '🦄', '🐙', '🌻', '🐢', '🚒', '🐳', '🦒', '🍉', '🐝'];
+      const S = 120;
       const c = document.createElement('canvas');
-      c.width = c.height = 400;
+      c.width = cols * S; c.height = rows * S;
       const g = c.getContext('2d');
-      const bg = pick(COLORS);
-      g.fillStyle = bg; g.fillRect(0, 0, 400, 400);
-      g.fillStyle = 'rgba(255,255,255,.35)'; g.beginPath(); g.arc(200, 200, 170, 0, Math.PI * 2); g.fill();
-      g.fillStyle = '#000'; g.font = '280px serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
-      g.fillText(pick(pics), 200, 215);
+      const h0 = Math.floor(Math.random() * 360);
+      const grad = g.createLinearGradient(0, 0, c.width, c.height);
+      grad.addColorStop(0, `hsl(${h0} 85% 60%)`); grad.addColorStop(0.5, `hsl(${(h0 + 90) % 360} 85% 58%)`); grad.addColorStop(1, `hsl(${(h0 + 180) % 360} 85% 55%)`);
+      g.fillStyle = grad; g.fillRect(0, 0, c.width, c.height);
+      // Lunares de colores, distintos en cada zona, para que ninguna pieza se vea igual a otra
+      for (let i = 0; i < cols * rows * 3; i++) {
+        g.fillStyle = `hsl(${Math.floor(Math.random() * 360)} 90% 75% / .55)`;
+        g.beginPath(); g.arc(Math.random() * c.width, Math.random() * c.height, 8 + Math.random() * 16, 0, Math.PI * 2); g.fill();
+      }
+      // Si el dibujo es alto o ancho, van varios a lo largo, así ninguna pieza queda vacía
+      const tall = rows >= cols;
+      const k = Math.max(1, Math.round(Math.max(cols, rows) / Math.min(cols, rows)));
+      const seg = (tall ? c.height : c.width) / k;
+      const big = Math.min(tall ? c.width : c.height, seg) * 0.82;
+      const chosen = shuffle(pics).slice(0, k);
+      g.fillStyle = '#000'; g.font = `${big}px serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+      chosen.forEach((e, i) => {
+        const x = tall ? c.width / 2 : seg * (i + 0.5);
+        const y = tall ? seg * (i + 0.5) : c.height / 2;
+        g.fillText(e, x, y + big * 0.06);
+      });
       const img = c.toDataURL();
-      let order = [0, 1, 2, 3];
+      let order = [...Array(n).keys()];
       while (order.every((v, i) => v === i)) order = shuffle(order);
       let sel = null;
+      // Tamaño de cada pieza: lo que quepa en la pantalla del celular
+      const side = Math.floor(Math.min((Math.min(innerWidth, 640) - 40) / cols, (innerHeight - 250) / rows));
+      const pos = (p) => `${cols > 1 ? (p % cols) / (cols - 1) * 100 : 0}% ${rows > 1 ? Math.floor(p / cols) / (rows - 1) * 100 : 0}%`;
       const draw = () => {
-        stage.innerHTML = `<div class="kz-peek" style="background-image:url(${img})"></div>
-          <div class="kz-puzzle">${order.map((p, i) => `<button type="button" class="kz-piece ${sel === i ? 'sel' : ''}" data-i="${i}" style="background-image:url(${img});background-position:${p % 2 ? '100%' : '0'} ${p > 1 ? '100%' : '0'}"></button>`).join('')}</div>`;
+        stage.innerHTML = `${dots}<div class="kz-peek" style="background-image:url(${img});aspect-ratio:${cols}/${rows};width:${cols >= rows ? 84 : Math.round(84 * cols / rows)}px;height:auto"></div>
+          <div class="kz-puzzle" style="grid-template-columns:repeat(${cols}, ${side}px);width:auto">${order.map((p, i) => `<button type="button" class="kz-piece ${sel === i ? 'sel' : ''}" data-i="${i}" style="width:${side}px;background-image:url(${img});background-size:${cols * 100}% ${rows * 100}%;background-position:${pos(p)}"></button>`).join('')}</div>`;
         stage.querySelectorAll('[data-i]').forEach((b) => { b.onclick = () => {
           const i = Number(b.dataset.i);
           if (sel === null) { sel = i; draw(); return; }
           [order[sel], order[i]] = [order[i], order[sel]];
           sel = null;
           draw();
-          if (order.every((v, k) => v === k)) { stage.querySelector('.kz-puzzle').classList.add('kz-yes'); confetti(); setTimeout(() => { if (stage.isConnected) games.puzzle(stage); }, 2200); }
+          if (order.every((v, k) => v === k)) {
+            stage.querySelector('.kz-puzzle').classList.add('kz-yes');
+            confetti();
+            setTimeout(() => { if (stage.isConnected) games.puzzle(stage, round + 1); }, 2000);
+          }
         }; });
       };
       draw();
