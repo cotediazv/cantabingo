@@ -174,6 +174,26 @@
         }
         return false;
       };
+      // 4 o más del mismo color seguidos en una fila: desaparecen y lo de arriba cae
+      const rowMatch = () => {
+        let hit = false;
+        for (let y = 0; y < H; y++) {
+          let x = 0;
+          while (x < W) {
+            const c = grid[y][x];
+            let e = x;
+            while (c && e + 1 < W && grid[y][e + 1] === c) e++;
+            if (c && e - x + 1 >= 4) { for (let k = x; k <= e; k++) grid[y][k] = null; hit = true; }
+            x = e + 1;
+          }
+        }
+        if (!hit) return false;
+        for (let x = 0; x < W; x++) {
+          const left = grid.map((r) => r[x]).filter(Boolean);
+          for (let k = 0; k < H; k++) grid[k][x] = k < H - left.length ? null : left[k - (H - left.length)];
+        }
+        return true;
+      };
       const land = () => {
         grid[cur.y][cur.x] = cur.c;
         let changed = true;
@@ -183,6 +203,7 @@
           const full = grid.findIndex((r) => r.every(Boolean));
           if (full >= 0) { grid.splice(full, 1); grid.unshift(Array(W).fill(null)); changed = true; flash(); continue; }
           for (let x = 0; x < W; x++) if (columnMatch(x)) { changed = true; flash(); }
+          if (rowMatch()) { changed = true; flash(); }
         }
         spawn();
       };
