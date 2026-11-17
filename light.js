@@ -21,6 +21,11 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
   // Una sala light por local (Kennedy, Frida y Tobalaba pueden estar abiertas a la vez)
   db.lights ||= {};
   if (db.light) { db.lights[db.light.venue] = db.light; db.light = null; } // salas guardadas antes de este cambio
+  // Siempre activas (decisión de Cote): cada local tiene su sala light, con su QR fijo; no se crea ni se cierra
+  for (const v of Object.keys(VENUES)) {
+    if (!db.lights[v]) db.lights[v] = { id: `L${crypto.randomBytes(4).toString('hex')}`, venue: v, stage: 'karaoke', players: {}, created: Date.now() };
+  }
+  save();
   const clean = (v, max = 80) => String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, max);
   const plain = (t) => clean(t, 40).normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
   const byId = (sid) => Object.values(db.lights).find((l) => l && l.id === sid) || null;
@@ -112,13 +117,6 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
     save();
     karaoke.refreshVenue(venue);
     res.json(pub(venue));
-  });
-  app.delete('/api/light', requireLocal, (req, res) => {
-    const v = String((req.query || {}).local || '');
-    if (!VENUES[v]) return fail(res, 400, 'Falta el local');
-    delete db.lights[v];
-    save();
-    res.json(pub(v));
   });
   app.post('/api/light/stage', requireLocal, (req, res) => {
     const b = req.body || {};

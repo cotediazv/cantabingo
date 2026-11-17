@@ -1569,3 +1569,6 @@ body.kids .krb-mark { left: 50%; transform: translateX(-50%); height: clamp(22px
 .cs-card dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; font-size: .95rem; }
 .cs-card dt { color: rgba(255, 255, 255, .6); font-weight: 700; }
 .cs-card dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.lp-key { padding: 12px 0; border-top: 1px solid rgba(255, 255, 255, .08); }
+.lp-key-row { display: flex; gap: 8px; margin-top: 8px; }
+.lp-key-row input { flex: 1 1 auto; min-width: 0; }

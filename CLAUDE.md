@@ -17,7 +17,7 @@ Sitio: https://cantabingo.onrender.com · Render (plan Starter, disco de 1 GB) �
 - La sala se llama "Los Juegos de <local>"; dentro del bingo el título es "El Bingo de <local>".
 - Las claves del moderador son variables de entorno en Render (`ADMIN_USER`, `ADMIN_PASS`). **Nunca escribirlas en este repositorio, que es público.**
 - Solo Kennedy usa pantallas verticales.
-- La clave del karaoke (`KARAOKE_CLAVE`) también va solo en Render. La clave del equipo de los locales la pone Cote en Centro de control → Salas light (se guarda cifrada en los datos, nunca en el repositorio).
+- La clave del karaoke (`KARAOKE_CLAVE`) también va solo en Render. Las claves del equipo (una por local) las pone Cote en Centro de control → Salas light (se guardan cifradas en los datos, nunca en el repositorio).
 - Nombres del equipo: **Code 1** = este chat (Sala de juegos); **Code 2** = guía de código de la página web; **Claude 1** = karaoke, planillas y GC (antes «Claude (karaoke)»); **Claude 2** = desarrollo y publicación de la página web. **Gabriel** (`gabodiazc`, hijo de Cote) desarrolla juegos en su propia rama; se revisan y se publican con el «publica» de Cote.
 
 ## Cómo está armado
@@ -26,7 +26,7 @@ Sitio: https://cantabingo.onrender.com · Render (plan Starter, disco de 1 GB) �
 - Interfaz en JavaScript simple, una sola página con rutas por `#` (`views[...]` en `public/app.js`).
 - `public/styles.css`: los cambios se agregan al final, sin reescribir lo anterior.
 - **Sala principal** (bingo y juegos): una sola abierta a la vez, en `db.sessions`; su escenario (`db.stage`) puede ser `bingo`, `rueda`, `sorteo`, `qr`, `karaoke`, `show`, `voto`, `insta`, `none`.
-- **Salas light** (karaoke, show, cartelera y redes): una por local, al mismo tiempo que la principal y sin tocarla, en `db.lights[<local>]`; su GC puede mostrar `karaoke`, `show`, `cartelera`, `qr`, `none`.
+- **Salas light** (karaoke, show, cartelera y redes): una por local, **siempre activas** (no se crean ni se cierran; QR fijo), al mismo tiempo que la principal y sin tocarla, en `db.lights[<local>]`; su GC puede mostrar `karaoke`, `show`, `cartelera`, `qr`, `none`.
 - Muchas partes usan «la primera sala abierta» (`Object.values(db.sessions)[0]`) como la sala del día: por eso las salas light van aparte.
 
 | Actividad | Servidor | Interfaz |
@@ -43,7 +43,7 @@ Sitio: https://cantabingo.onrender.com · Render (plan Starter, disco de 1 GB) �
 | Código de Apps Script de las planillas (Sala.gs: «Ya cantó», Subir, Bajar, Ya cantaron) | `apps-script/` (se pega a mano en cada planilla) | — |
 
 Pantallas: `#/jugar` (celular del público), `#/tablero` (pantalla del local), `#/tablero-v` (pantalla de pie girada, Kennedy), `#/escena` (OBS), `#/control` (Centro de control).
-Sala light: `#/light` (salas light, enlaces y clave del equipo), `#/karaokectl/<local>` (panel: GC + lista del karaoke), `#/light-gc/<local>` (OBS), `#/l/<sala>` (celular), `#/equipo/<local>` (ingreso del equipo con la clave común). Consola general: `#/consola`. KRB Kids: `#/kids` (enlace directo, sin iniciar sesión).
+Sala light: `#/light` (salas light, enlaces y clave del equipo), `#/karaokectl/<local>` (panel: GC + lista del karaoke), `#/light-gc/<local>` (OBS), `#/l/<sala>` (celular), `#/equipo/<local>` (ingreso del equipo con la clave de su local). Consola general: `#/consola`. KRB Kids: `#/kids` (enlace directo, sin iniciar sesión).
 
 Datos externos: la lista del karaoke sale del Apps Script de cada local (`?modo=json`); show, cartelera y horarios salen de la GLOSA a través del GC Show de cada local (`?modo=json`, direcciones en `light.js`). Logo: `public/krb-stage.png`.
 
@@ -56,7 +56,7 @@ Datos externos: la lista del karaoke sale del Apps Script de cada local (`?modo=
 
 ## Pendiente
 
-- Cote: poner la clave del equipo; actualizar en OBS el GC de la sala light (`#/light-gc/kennedy`, `#/light-gc/frida`); pasar a cada equipo su enlace.
+- Cote: poner la clave de cada local; actualizar en OBS el GC de la sala light (`#/light-gc/kennedy`, `#/light-gc/frida`); pasar a cada equipo su enlace.
 - Logos de los locales (Mercado Kennedy, Costanera Center, Mall Plaza Tobalaba): esperar las imágenes de Cote (la red de este entorno no deja bajarlos).
 - Juego de trivia con escalera de premios de Gabriel: nombre propio (no el del programa de TV); revisar e integrar cuando avise.
 - Página web: la trabajan Code 2 y Claude 2 (documento «Página web»: https://claude.ai/artifact/NVRyTTV3vG331n4G6TRA79).

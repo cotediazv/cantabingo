@@ -314,24 +314,31 @@ app.post('/api/login', (req, res) => {
   const exp = Date.now() + TOKEN_MS;
   res.json({ token: `${exp}.${sign(exp)}` });
 });
-app.get('/api/staff/clave', requireAdmin, (_req, res) => res.json({ set: Boolean((db.staff || {}).hash) }));
+// Una clave por local (decisión de Cote). Si quedó guardada la clave común de antes, sirve para los 3 hasta cambiarla.
+db.staff ||= {};
+if (db.staff.hash) { const old = { salt: db.staff.salt, hash: db.staff.hash }; db.staff = {}; for (const v of STAFF_VENUES) db.staff[v] = old; }
+app.get('/api/staff/clave', requireAdmin, (_req, res) => res.json(Object.fromEntries(STAFF_VENUES.map((v) => [v, Boolean((db.staff[v] || {}).hash)]))));
 app.post('/api/staff/clave', requireAdmin, (req, res) => {
-  const clave = String((req.body || {}).clave || '').trim();
-  if (clave.length < 4) return fail(res, 400, 'La clave del equipo debe tener al menos 4 caracteres');
+  const b = req.body || {};
+  const v = String(b.local || '');
+  const clave = String(b.clave || '').trim();
+  if (!STAFF_VENUES.includes(v)) return fail(res, 400, 'Elige el local');
+  if (clave.length < 4) return fail(res, 400, 'La clave debe tener al menos 4 caracteres');
   if (clave.toLowerCase() === 'admin') return fail(res, 400, 'Elige una clave distinta de «admin»');
   const salt = crypto.randomBytes(16).toString('hex');
-  db.staff = { salt, hash: staffHash(clave, salt), at: Date.now() };
+  db.staff[v] = { salt, hash: staffHash(clave, salt), at: Date.now() };
   save();
-  res.json({ set: true });
+  res.json({ ok: true });
 });
 app.post('/api/staff/login', (req, res) => {
   const b = req.body || {};
   const v = String(b.local || '');
   if (!STAFF_VENUES.includes(v)) return fail(res, 400, 'Local no válido');
-  if (!AUTH_READY || !(db.staff || {}).hash) return fail(res, 503, 'Todavía no hay clave del equipo. Pídesela a Cote.');
+  const k = db.staff[v] || {};
+  if (!AUTH_READY || !k.hash) return fail(res, 503, 'Todavía no hay clave para este local. Pídesela a Cote.');
   const a = attempts[`staff:${req.ip || 'x'}`] ||= { n: 0, until: 0 };
   if (Date.now() < a.until) return fail(res, 429, 'Demasiados intentos. Espera 10 minutos.');
-  const ok = crypto.timingSafeEqual(Buffer.from(staffHash(String(b.clave || ''), db.staff.salt), 'hex'), Buffer.from(db.staff.hash, 'hex'));
+  const ok = crypto.timingSafeEqual(Buffer.from(staffHash(String(b.clave || ''), k.salt), 'hex'), Buffer.from(k.hash, 'hex'));
   if (!ok) { a.n++; if (a.n >= 8) { a.n = 0; a.until = Date.now() + 10 * 60e3; } return fail(res, 401, 'Clave incorrecta'); }
   a.n = 0;
   const exp = Date.now() + STAFF_MS;

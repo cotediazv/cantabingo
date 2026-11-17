@@ -24,19 +24,15 @@
       if (sig === last) return;
       last = sig;
       const open = st.lights || [];
-      const closed = Object.keys(VENUES).filter((v) => !open.some((l) => l.venue === v));
       $('#lp').innerHTML = `<div class="panel"><h1 style="margin-top:0">Salas light</h1>
-          <p class="muted">Karaoke, show, lo que viene y cartelera de la semana, con su propio QR. Puede haber una por local, al mismo tiempo que la sala principal.</p>
-          ${open.length ? `<div class="lp-open-list">${open.map((l) => `<a class="btn primary big" href="#/karaokectl/${l.venue}">💡 ${esc(l.title)} · ${l.players} ${l.players === 1 ? 'persona' : 'personas'}</a>`).join('')}</div>` : '<p class="muted">No hay salas light abiertas.</p>'}
-          ${closed.length ? `<form id="lp-new" class="fields" style="grid-template-columns:1fr;margin-top:14px"><label class="f">Abrir en<select name="venue">${closed.map((v) => `<option value="${v}">${esc(VENUES[v])}</option>`).join('')}</select></label>
-          <button class="primary">Abrir sala light</button></form>` : ''}</div>
-        <div class="panel"><h2 style="margin-top:0">Enlaces del equipo</h2>
-          <p class="muted small">Con estos enlaces y la clave del equipo, cada local maneja solo su sala light: no puede tocar la sala principal ni otros locales.</p>
-          ${Object.keys(VENUES).map((v) => `<p class="small"><b>${esc(VENUES[v])}:</b><br><a href="${esc(teamUrl(v))}" target="_blank">${esc(teamUrl(v))}</a></p>`).join('')}
-          <form id="lp-key" class="fields" style="grid-template-columns:1fr"><label class="f">${key.set ? 'Cambiar la clave del equipo' : 'Clave del equipo (todavía no hay)'}<input type="text" name="clave" minlength="4" required autocomplete="off" placeholder="Al menos 4 caracteres, que no sea admin"></label>
-          <button class="primary">Guardar clave</button></form></div>`;
-      if ($('#lp-new')) $('#lp-new').onsubmit = async (e) => { e.preventDefault(); const v = new FormData(e.target).get('venue'); try { await api('POST', '/api/light', { venue: v }); location.hash = `#/karaokectl/${v}`; } catch (err) { fail(err); } };
-      $('#lp-key').onsubmit = async (e) => { e.preventDefault(); try { await api('POST', '/api/staff/clave', { clave: new FormData(e.target).get('clave') }); toast('Clave del equipo guardada'); last = ''; paint(); } catch (err) { fail(err); } };
+          <p class="muted">Karaoke, show, lo que viene y cartelera de la semana, con su propio QR. Están siempre activas, una por local, al mismo tiempo que la sala principal.</p>
+          <div class="lp-open-list">${open.map((l) => `<a class="btn primary big" href="#/karaokectl/${l.venue}">💡 ${esc(l.title)} · ${l.players} ${l.players === 1 ? 'persona' : 'personas'}</a>`).join('')}</div></div>
+        <div class="panel"><h2 style="margin-top:0">Enlaces y claves del equipo</h2>
+          <p class="muted small">Cada local tiene su enlace y su clave: con ellos, el equipo maneja solo su sala light. No puede tocar la sala principal ni otros locales.</p>
+          ${Object.keys(VENUES).map((v) => `<form class="lp-key" data-v="${v}"><b>${esc(VENUES[v])}</b> <span class="muted small">${key[v] ? '· clave puesta' : '· todavía sin clave'}</span><br>
+            <a class="small" href="${esc(teamUrl(v))}" target="_blank">${esc(teamUrl(v))}</a>
+            <div class="lp-key-row"><input type="text" name="clave" minlength="4" required autocomplete="off" placeholder="${key[v] ? 'Cambiar la clave' : 'Clave de este local'}"><button class="primary">Guardar</button></div></form>`).join('')}</div>`;
+      document.querySelectorAll('.lp-key').forEach((f) => { f.onsubmit = async (e) => { e.preventDefault(); try { await api('POST', '/api/staff/clave', { local: f.dataset.v, clave: new FormData(f).get('clave') }); toast(`Clave de ${VENUES[f.dataset.v]} guardada`); last = ''; paint(); } catch (err) { fail(err); } }; });
     };
     await paint();
     const timer = setInterval(paint, 5000);
@@ -48,7 +44,7 @@
     if (!VENUES[v]) { app.innerHTML = '<div class="panel"><h1>Enlace incompleto</h1><p class="muted">Pide a Cote el enlace de tu local.</p></div>'; return undefined; }
     const go = async () => {
       // Si la sala light del local no está abierta, el equipo la abre al entrar
-      try { await api('POST', '/api/light', { venue: v, local: v }); location.hash = `#/karaokectl/${v}`; } catch (err) { fail(err); }
+      location.hash = `#/karaokectl/${v}`; // la sala light del local está siempre activa
     };
     if ((await isAdmin()) || (await staffVenue()) === v) return go();
     app.innerHTML = `<form class="panel" id="eq" style="max-width:460px;margin:0 auto"><h1 style="margin-top:0">Sala light · ${esc(VENUES[v])}</h1>
@@ -68,7 +64,6 @@
     const paint = async () => {
       const st = await api('GET', `/api/light?local=${v}`).catch(() => null);
       if (!st || !top.isConnected) return;
-      if (!st.open) { location.hash = staff ? `#/equipo/${v}` : '#/light'; return; }
       const sig = JSON.stringify(st);
       if (sig === last) return;
       last = sig;
@@ -79,12 +74,8 @@
         <div class="lp-links"><div>${qr(lightJoin(st.id))}</div><div>
           <p class="small"><b>Para entrar desde el celular</b> (es el QR de la sala light):<br><a href="${esc(lightJoin(st.id))}" target="_blank">${esc(lightJoin(st.id))}</a></p>
           <p class="small"><b>GC para OBS</b> (fuente de navegador):<br><a href="${esc(gcUrl(v))}" target="_blank">${esc(gcUrl(v))}</a></p></div></div>
-        <button type="button" id="lp-close" class="danger" style="margin-top:14px">Cerrar sala light</button>`;
+`;
       top.querySelectorAll('[data-st]').forEach((b) => { b.onclick = async () => { try { await api('POST', '/api/light/stage', { show: b.dataset.st, local: v }); last = ''; paint(); } catch (err) { fail(err); } }; });
-      bottom.querySelector('#lp-close').onclick = async () => {
-        if (!confirm('¿Cerrar la sala light? Las personas que entraron tendrán que volver a entrar.')) return;
-        try { await api('DELETE', `/api/light?local=${v}`); location.hash = staff ? `#/equipo/${v}` : '#/light'; } catch (err) { fail(err); }
-      };
     };
     paint();
     const timer = setInterval(paint, 4000);
