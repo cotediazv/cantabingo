@@ -202,6 +202,17 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .local p{margin:0;color:var(--tenue);font-size:15px;position:relative}
 .local .dias{font-family:var(--f-dato);font-size:12px;color:var(--texto);letter-spacing:.06em;margin-top:8px}
 
+
+/* instagram */
+.instagram{background:var(--tarima);border-top:1px solid var(--linea)}
+.ig-grilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px;margin-top:56px;align-items:start}
+.ig-item{display:grid;gap:10px;min-width:0}
+.ig-local{font-family:var(--f-dato);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--c)}
+.ig-item .instagram-media{margin:0!important;min-width:0!important;width:100%!important;max-width:100%!important}
+blockquote.instagram-media{border:1px solid var(--linea);border-radius:8px;background:var(--noche);padding:0}
+.ig-respaldo{display:grid;gap:4px;padding:28px 24px;text-decoration:none}
+.ig-respaldo strong{font-size:22px}
+.ig-respaldo span{color:var(--tenue);font-size:14px}
 /* contacto */
 .contacto{border-top:1px solid var(--linea)}
 .contacto .envoltura{display:grid;grid-template-columns:1fr 1fr;gap:64px}
@@ -270,6 +281,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
       <li><a href="#hacemos">Qué hacemos</a></li>
       <li><a href="#funciona">Cómo funciona</a></li>
       <li><a href="#locales">Locales</a></li>
+      <li><a href="#instagram">Instagram</a></li>
       <li><a href="#contacto">Contacto</a></li>
     </ul>
   </div>
@@ -418,6 +430,46 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
           <div class="dias">Viernes</div>
           <a class="ig" href="https://www.instagram.com/krbstage3/" target="_blank" rel="noopener">@krbstage3</a>
         </article>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="banda instagram" id="instagram">
+    <div class="envoltura">
+      <div class="etiqueta">Instagram</div>
+      <h2>Lo que pasa en cada local</h2>
+      <div class="ig-grilla">
+        <div class="ig-item" style="--c:var(--kennedy)">
+          <div class="ig-local">Mercado Kennedy</div>
+          <blockquote class="instagram-media" data-instgrm-permalink="https://www.instagram.com/krbstage/?utm_source=ig_embed" data-instgrm-version="14">
+            <a class="ig-respaldo" href="https://www.instagram.com/krbstage/" target="_blank" rel="noopener"><strong>@krbstage</strong><span>Ver en Instagram</span></a>
+          </blockquote>
+        </div>
+        <div class="ig-item" style="--c:var(--frida)">
+          <div class="ig-local">Frida Kahlo</div>
+          <blockquote class="instagram-media" data-instgrm-permalink="https://www.instagram.com/krbstage4/?utm_source=ig_embed" data-instgrm-version="14">
+            <a class="ig-respaldo" href="https://www.instagram.com/krbstage4/" target="_blank" rel="noopener"><strong>@krbstage4</strong><span>Ver en Instagram</span></a>
+          </blockquote>
+        </div>
+        <div class="ig-item" style="--c:var(--tobalaba)">
+          <div class="ig-local">Tobalaba</div>
+          <blockquote class="instagram-media" data-instgrm-permalink="https://www.instagram.com/krbstage3/?utm_source=ig_embed" data-instgrm-version="14">
+            <a class="ig-respaldo" href="https://www.instagram.com/krbstage3/" target="_blank" rel="noopener"><strong>@krbstage3</strong><span>Ver en Instagram</span></a>
+          </blockquote>
+        </div>
+        <div class="ig-item" style="--c:var(--foco)">
+          <div class="ig-local">Panorámico</div>
+          <blockquote class="instagram-media" data-instgrm-permalink="https://www.instagram.com/krbstage1/?utm_source=ig_embed" data-instgrm-version="14">
+            <a class="ig-respaldo" href="https://www.instagram.com/krbstage1/" target="_blank" rel="noopener"><strong>@krbstage1</strong><span>Ver en Instagram</span></a>
+          </blockquote>
+        </div>
+        <div class="ig-item" style="--c:var(--foco)">
+          <div class="ig-local">La Florida</div>
+          <blockquote class="instagram-media" data-instgrm-permalink="https://www.instagram.com/krbstage2/?utm_source=ig_embed" data-instgrm-version="14">
+            <a class="ig-respaldo" href="https://www.instagram.com/krbstage2/" target="_blank" rel="noopener"><strong>@krbstage2</strong><span>Ver en Instagram</span></a>
+          </blockquote>
+        </div>
       </div>
     </div>
   </section>
@@ -665,5 +717,6 @@ ir(0);
 })();
 </script>
 
+<script async src="https://www.instagram.com/embed.js"></script>
 </body>
 </html>
