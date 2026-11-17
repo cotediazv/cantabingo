@@ -3,7 +3,8 @@
 // Las claves NO van en el repositorio: se ponen en Render como IG_TOKEN_KENNEDY, IG_TOKEN_FRIDA, IG_TOKEN_TOBALABA.
 // Las claves duran 60 días; el servidor las renueva solo cada ~30 días y guarda la renovada en los datos.
 const VENUES = ['kennedy', 'frida', 'tobalaba'];
-const API = process.env.IG_TEST_URL || 'https://graph.instagram.com'; // IG_TEST_URL solo para pruebas locales
+const API = process.env.IG_TEST_URL || 'https://graph.instagram.com'; // IG_TEST_URL / FB_TEST_URL solo para pruebas locales
+const FB = process.env.FB_TEST_URL || 'https://graph.facebook.com/v21.0';
 const CACHE_MS = 30 * 60e3;
 const REFRESH_MS = 30 * 24 * 3600e3;
 const PER_VENUE = 3;
@@ -20,9 +21,10 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
     return (db.webIg[v] || {}).token || '';
   };
 
+  // Las claves de Instagram («IG…») duran 60 días y se renuevan solas; las de Facebook (usuario del sistema) no caducan
   async function refresh(v) {
     const s = db.webIg[v];
-    if (!s || !s.token || Date.now() - s.at < REFRESH_MS) return;
+    if (!s || !s.token || !/^IG/.test(s.token) || Date.now() - s.at < REFRESH_MS) return;
     try {
       const r = await fetch(`${API}/refresh_access_token?grant_type=ig_refresh_token&access_token=${encodeURIComponent(s.token)}`, { signal: AbortSignal.timeout(10000) });
       const j = await r.json();
@@ -30,26 +32,52 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
     } catch (_) { /* se reintenta en la próxima lectura */ }
   }
 
+  const getJson = async (url) => {
+    const r = await fetch(url, { signal: AbortSignal.timeout(10000) });
+    const j = await r.json();
+    if (!j || j.error) throw new Error(String((j && j.error && j.error.message) || 'Respuesta vacía').slice(0, 200));
+    return j;
+  };
+  const FIELDS = 'id,media_type,media_url,thumbnail_url,permalink,timestamp';
+  const igIds = {}; // local -> id de la cuenta de Instagram (camino de Facebook)
+
+  // Camino 1: clave de Instagram (graph.instagram.com/me/media)
+  const mediaInstagram = (token) => getJson(`${API}/me/media?fields=${FIELDS}&limit=30&access_token=${encodeURIComponent(token)}`);
+  // Camino 2: clave de Facebook (usuario del sistema): se busca la cuenta de Instagram del local y se leen sus publicaciones
+  async function mediaFacebook(v, token) {
+    const t = encodeURIComponent(token);
+    if (!igIds[v]) {
+      const handle = String((insta && insta.handleOf && insta.handleOf(v)) || '').toLowerCase();
+      const pages = await getJson(`${FB}/me/accounts?fields=instagram_business_account{id,username}&limit=100&access_token=${t}`);
+      const cuentas = (pages.data || []).map((p) => p.instagram_business_account).filter(Boolean);
+      const mia = cuentas.find((c) => String(c.username || '').toLowerCase() === handle) || (cuentas.length === 1 ? cuentas[0] : null);
+      if (!mia) throw new Error(`No se encontró la cuenta @${handle} entre las páginas de la clave (${cuentas.map((c) => '@' + c.username).join(', ') || 'ninguna'})`);
+      igIds[v] = mia.id;
+    }
+    return getJson(`${FB}/${igIds[v]}/media?fields=${FIELDS}&limit=30&access_token=${t}`);
+  }
+
   async function videosOf(v) {
     const c = cache[v];
-    if (c && Date.now() - c.at < CACHE_MS) return c.videos;
+    if (c && Date.now() - c.at < CACHE_MS) return c;
     const token = tokenOf(v);
-    if (!token) return [];
+    if (!token) return { videos: [], error: 'Falta la clave' };
     await refresh(v);
-    try {
-      const fields = 'id,media_type,media_url,thumbnail_url,permalink,timestamp';
-      const r = await fetch(`${API}/me/media?fields=${fields}&limit=30&access_token=${encodeURIComponent(db.webIg[v].token)}`, { signal: AbortSignal.timeout(10000) });
-      const j = await r.json();
-      if (!j || !Array.isArray(j.data)) throw new Error((j && j.error && j.error.message) || 'Respuesta vacía');
+    const tk = db.webIg[v].token;
+    const errores = [];
+    let j = null;
+    for (const intento of [() => mediaInstagram(tk), () => mediaFacebook(v, tk)]) {
+      try { j = await intento(); break; } catch (e) { errores.push(e.message); }
+    }
+    if (j && Array.isArray(j.data)) {
       const videos = j.data.filter((m) => m.media_type === 'VIDEO' && m.media_url).slice(0, PER_VENUE)
         .map((m) => ({ url: m.media_url, poster: m.thumbnail_url || '', link: m.permalink || '', date: m.timestamp || '' }));
-      cache[v] = { videos, at: Date.now() };
-      return videos;
-    } catch (_) {
+      cache[v] = { videos, error: '', at: Date.now() };
+    } else {
       // Si falla, se sigue mostrando lo último bueno y se reintenta en 2 minutos
-      cache[v] = { videos: (c || {}).videos || [], at: Date.now() - CACHE_MS + 2 * 60e3 };
-      return cache[v].videos;
+      cache[v] = { videos: (c || {}).videos || [], error: errores.join(' | '), at: Date.now() - CACHE_MS + 2 * 60e3 };
     }
+    return cache[v];
   }
 
   // Pública (solo lectura): la usa la página web
@@ -57,7 +85,9 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
     res.set('Access-Control-Allow-Origin', '*');
     const out = {};
     await Promise.all(VENUES.map(async (v) => {
-      out[v] = { handle: (insta && insta.handleOf && insta.handleOf(v)) || '', videos: await videosOf(v) };
+      const r = await videosOf(v);
+      // «error» ayuda a revisar la conexión; nunca incluye la clave
+      out[v] = { handle: (insta && insta.handleOf && insta.handleOf(v)) || '', videos: r.videos, error: r.error || '' };
     }));
     res.json(out);
   });
