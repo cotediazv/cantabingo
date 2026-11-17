@@ -1496,3 +1496,9 @@ body.kids[data-kz-level="6"] { background: radial-gradient(circle at 50% 30%, #f
 .kz-dots i.on { background: #ffd23f; box-shadow: 0 2px 0 rgba(0, 0, 0, .2); }
 .kz-puzzle { gap: 4px; padding: 4px; max-width: none; justify-content: center; }
 .kz-piece { aspect-ratio: 1; border-radius: 10px; }
+/* KRB Kids: barra de progreso común (se llena hasta el trofeo) */
+.kz-bar { position: relative; width: min(100%, 420px); height: 22px; margin: 0 auto; border-radius: 99px; background: rgba(255, 255, 255, .35); box-shadow: inset 0 2px 0 rgba(0, 0, 0, .1); }
+.kz-bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, #ffd23f, #ff9f1c); box-shadow: 0 2px 0 rgba(0, 0, 0, .15); transition: width .6s ease; }
+.kz-bar span { position: absolute; right: -6px; top: 50%; transform: translateY(-50%); font-size: 1.7rem; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, .2)); }
+.kz-stage { gap: 12px; }
+.kz-sky { height: calc(100vh - 150px); }

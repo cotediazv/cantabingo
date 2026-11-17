@@ -20,27 +20,54 @@
     confetti(); setTimeout(confetti, 700); setTimeout(confetti, 1400);
     stage.querySelector('.kz-again').onclick = again;
   };
+  // Barra de progreso común a todos los juegos: se llena hasta el trofeo
+  const bar = (frac) => `<div class="kz-bar"><i style="width:${Math.round(Math.max(0, Math.min(1, frac)) * 100)}%"></i><span>🏆</span></div>`;
+  const setBar = (stage, frac) => { const i = stage.querySelector('.kz-bar i'); if (i) i.style.width = `${Math.round(Math.max(0, Math.min(1, frac)) * 100)}%`; };
   const games = {
-    // Globos: suben sin parar; se revientan tocándolos
+    // Globos por etapas: en cada etapa hay que reventar algunos globos más; suben un poco más rápido
+    // y el fondo cambia. La barra se llena con cada globo. Al terminar la última etapa, el trofeo.
     globos(stage) {
-      stage.innerHTML = '<div class="kz-sky"></div>';
-      const sky = stage.querySelector('.kz-sky');
-      const launch = () => {
-        if (!sky.isConnected) return;
-        const b = document.createElement('button');
-        b.type = 'button';
-        b.className = 'kz-balloon kz-rise';
-        b.setAttribute('aria-label', 'Globo');
-        b.style.setProperty('--c', pick(COLORS));
-        b.style.left = `${5 + Math.random() * 70}%`;
-        b.style.animationDuration = `${6 + Math.random() * 4}s`;
-        b.onpointerdown = () => { b.classList.add('kz-pop'); setTimeout(() => b.remove(), 400); };
-        b.onanimationend = (e) => { if (e.animationName === 'kz-rise') b.remove(); };
-        sky.appendChild(b);
+      const STAGES = [{ goal: 12, rise: 11, every: 1400 }, { goal: 16, rise: 9.5, every: 1200 }, { goal: 20, rise: 8, every: 1050 }, { goal: 24, rise: 7, every: 950 }];
+      let st = 0;
+      let popped = 0;
+      let timer = null;
+      const start = () => {
+        clearInterval(timer);
+        document.body.dataset.kzLevel = String(st + 1);
+        stage.innerHTML = `${bar(st / STAGES.length)}<div class="kz-sky"></div>`;
+        const sky = stage.querySelector('.kz-sky');
+        const conf = STAGES.at(st);
+        const launch = () => {
+          if (!sky.isConnected) return;
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'kz-balloon kz-rise';
+          b.setAttribute('aria-label', 'Globo');
+          b.style.setProperty('--c', pick(COLORS));
+          b.style.left = `${5 + Math.random() * 70}%`;
+          b.style.animationDuration = `${conf.rise + Math.random() * 3}s`;
+          b.onpointerdown = () => {
+            if (b.classList.contains('kz-pop')) return;
+            b.classList.add('kz-pop');
+            setTimeout(() => b.remove(), 400);
+            popped++;
+            setBar(stage, (st + popped / conf.goal) / STAGES.length);
+            if (popped >= conf.goal) {
+              clearInterval(timer);
+              confetti();
+              st++;
+              popped = 0;
+              setTimeout(() => { if (!stage.isConnected) return; if (st >= STAGES.length) finale(stage, () => { st = 0; start(); }); else start(); }, 1600);
+            }
+          };
+          b.onanimationend = (e) => { if (e.animationName === 'kz-rise') b.remove(); };
+          sky.appendChild(b);
+        };
+        for (let i = 0; i < 3; i++) setTimeout(launch, i * 500);
+        timer = setInterval(launch, conf.every);
       };
-      for (let i = 0; i < 3; i++) setTimeout(launch, i * 500);
-      const t = setInterval(launch, 1100);
-      return () => clearInterval(t);
+      start();
+      return () => clearInterval(timer);
     },
     // Memoria: 4 cartas; después 6
     // Memoria por niveles: 4 → 6 → 8 → 12 → 16 → 16 cartas. Cada nivel cambia el color del fondo y suma una
@@ -50,14 +77,13 @@
       const LEVELS = [2, 3, 4, 6, 8, 8]; // parejas por nivel
       const COLS = { 2: 2, 3: 3, 4: 4, 6: 4, 8: 4 };
       document.body.dataset.kzLevel = String(Math.min(round, LEVELS.length));
-      const stars = (n) => `<div class="kz-stars">${LEVELS.map((_, i) => `<i class="${i < n ? 'on' : ''}">★</i>`).join('')}</div>`;
       if (round >= LEVELS.length) { finale(stage, () => games.memoria(stage, 0)); return null; }
       const pairs = LEVELS.at(round);
       const cards = shuffle(shuffle(MEMO).slice(0, pairs).flatMap((e) => [e, e]));
       let open = [];
       let done = 0;
       let lock = false;
-      stage.innerHTML = `${stars(round)}<div class="kz-memo" style="--cols:${COLS[pairs]}">${cards.map((e, i) => `<button type="button" class="kz-mcard" data-i="${i}"><span>${e}</span></button>`).join('')}</div>`;
+      stage.innerHTML = `${bar(round / LEVELS.length)}<div class="kz-memo" style="--cols:${COLS[pairs]}">${cards.map((e, i) => `<button type="button" class="kz-mcard" data-i="${i}"><span>${e}</span></button>`).join('')}</div>`;
       stage.querySelectorAll('[data-i]').forEach((b) => { b.onclick = () => {
         if (lock || b.classList.contains('up')) return;
         b.classList.add('up');
@@ -82,7 +108,6 @@
       const LEVELS = [4, 4, 4, 4, 4, 4, 6, 8, 10, 12, 14, 16];
       const GRID = { 4: [2, 2], 6: [2, 3], 8: [2, 4], 10: [2, 5], 12: [3, 4], 14: [2, 7], 16: [4, 4] }; // [columnas, filas] de un tablero 4:5 que no cambia de forma
       document.body.dataset.kzLevel = String(Math.min(6, Math.floor(round / 2) + 1));
-      const dots = `<div class="kz-dots">${LEVELS.map((_, i) => `<i class="${i < round ? 'on' : ''}"></i>`).join('')}</div>`;
       if (round >= LEVELS.length) { finale(stage, () => games.puzzle(stage, 0)); return null; }
       const n = LEVELS.at(round);
       const [cols, rows] = GRID[n];
@@ -116,7 +141,7 @@
       const ph = Math.floor(boardW * 1.25 / rows);
       const pos = (p) => `${cols > 1 ? (p % cols) / (cols - 1) * 100 : 0}% ${rows > 1 ? Math.floor(p / cols) / (rows - 1) * 100 : 0}%`;
       const draw = () => {
-        stage.innerHTML = `${dots}<div class="kz-peek" style="background-image:url(${img});width:72px;height:90px"></div>
+        stage.innerHTML = `${bar(round / LEVELS.length)}<div class="kz-peek" style="background-image:url(${img});width:72px;height:90px"></div>
           <div class="kz-puzzle" style="grid-template-columns:repeat(${cols}, ${pw}px);width:auto">${order.map((p, i) => `<button type="button" class="kz-piece ${sel === i ? 'sel' : ''}" data-i="${i}" style="width:${pw}px;height:${ph}px;aspect-ratio:auto;background-image:url(${img});background-size:${cols * 100}% ${rows * 100}%;background-position:${pos(p)}"></button>`).join('')}</div>`;
         stage.querySelectorAll('[data-i]').forEach((b) => { b.onclick = () => {
           const i = Number(b.dataset.i);
@@ -134,87 +159,92 @@
       draw();
       return null;
     },
-    // Bloques: caen cuadrados de colores; se mueven con las flechas; una fila llena desaparece. Nunca se pierde.
+    // Bloques por etapas: parten con cubos grandes (pocas columnas) y lentos; cada etapa dura unos 2 minutos
+    // (la barra se llena con el tiempo y más rápido al borrar cubos). Luego el tablero crece y baja un poco más rápido.
+    // 4 del mismo color seguidos (en columna o en fila) desaparecen, y una fila completa también. Nunca se pierde.
     bloques(stage) {
-      const W = 6;
-      const H = 9;
-      let grid = Array.from({ length: H }, () => Array(W).fill(null));
-      let cur = null;
-      stage.innerHTML = `<div class="kz-well" style="--w:${W};--h:${H}"></div>
-        <div class="kz-pad"><button type="button" data-m="-1" aria-label="Izquierda">◀</button><button type="button" data-m="0" aria-label="Bajar">▼</button><button type="button" data-m="1" aria-label="Derecha">▶</button></div>`;
-      const well = stage.querySelector('.kz-well');
-      // 4 colores: así se juntan seguido 4 iguales en una columna
-      const BLOCK_COLORS = ['#e63946', '#1d6fe0', '#ffc400', '#2bb24c'];
-      const spawn = () => { cur = { x: Math.floor(Math.random() * W), y: 0, c: pick(BLOCK_COLORS) }; if (grid[0][cur.x]) { grid = grid.map((r) => r.map(() => null)); } };
-      const paint = () => {
-        well.innerHTML = grid.map((r, y) => r.map((v, x) => {
-          const c = cur && cur.x === x && cur.y === y ? cur.c : v;
-          return `<i ${c ? `style="background:${c}"` : ''}></i>`;
-        }).join('')).join('');
-      };
-      const flash = () => { well.classList.remove('kz-flash'); void well.offsetWidth; well.classList.add('kz-flash'); confetti(); };
-      // 4 o más del mismo color seguidos en una columna: desaparecen y lo de arriba baja
-      const columnMatch = (x) => {
-        let y = 0;
-        while (y < H) {
-          const c = grid[y][x];
-          let e = y;
-          while (c && e + 1 < H && grid[e + 1][x] === c) e++;
-          if (c && e - y + 1 >= 4) {
-            for (let k = y; k <= e; k++) grid[k][x] = null;
+      const STAGES = [{ W: 4, H: 6, ms: 1300 }, { W: 5, H: 7, ms: 1150 }, { W: 6, H: 8, ms: 1050 }, { W: 6, H: 9, ms: 950 }];
+      const STAGE_MS = 120000; // unos 2 minutos por etapa
+      const BLOCK_COLORS = ['#e63946', '#1d6fe0', '#ffc400', '#2bb24c']; // 4 colores: así se juntan seguido
+      let st = 0;
+      let timer = null;
+      const start = () => {
+        clearInterval(timer);
+        const { W, H, ms } = STAGES.at(st);
+        document.body.dataset.kzLevel = String(st + 1);
+        let grid = Array.from({ length: H }, () => Array(W).fill(null));
+        let cur = null;
+        let bonus = 0;
+        const t0 = Date.now();
+        stage.innerHTML = `${bar(st / STAGES.length)}<div class="kz-well" style="--w:${W};--h:${H}"></div>
+          <div class="kz-pad"><button type="button" data-m="-1" aria-label="Izquierda">◀</button><button type="button" data-m="0" aria-label="Bajar">▼</button><button type="button" data-m="1" aria-label="Derecha">▶</button></div>`;
+        const well = stage.querySelector('.kz-well');
+        const spawn = () => { cur = { x: Math.floor(Math.random() * W), y: 0, c: pick(BLOCK_COLORS) }; if (grid[0][cur.x]) { grid = grid.map((r) => r.map(() => null)); } };
+        const paint = () => {
+          well.innerHTML = grid.map((r, y) => r.map((v, x) => {
+            const c = cur && cur.x === x && cur.y === y ? cur.c : v;
+            return `<i ${c ? `style="background:${c}"` : ''}></i>`;
+          }).join('')).join('');
+        };
+        const gravity = () => {
+          for (let x = 0; x < W; x++) {
             const left = grid.map((r) => r[x]).filter(Boolean);
             for (let k = 0; k < H; k++) grid[k][x] = k < H - left.length ? null : left[k - (H - left.length)];
-            return true;
           }
-          y = e + 1;
-        }
-        return false;
-      };
-      // 4 o más del mismo color seguidos en una fila: desaparecen y lo de arriba cae
-      const rowMatch = () => {
-        let hit = false;
-        for (let y = 0; y < H; y++) {
-          let x = 0;
-          while (x < W) {
+        };
+        const flash = () => { well.classList.remove('kz-flash'); void well.offsetWidth; well.classList.add('kz-flash'); confetti(); bonus += 0.12; };
+        // 4 o más del mismo color seguidos, en columna o en fila: desaparecen y lo de arriba cae
+        const matches = () => {
+          const kill = new Set();
+          for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
             const c = grid[y][x];
-            let e = x;
-            while (c && e + 1 < W && grid[y][e + 1] === c) e++;
-            if (c && e - x + 1 >= 4) { for (let k = x; k <= e; k++) grid[y][k] = null; hit = true; }
-            x = e + 1;
+            if (!c) continue;
+            let e = x; while (e + 1 < W && grid[y][e + 1] === c) e++;
+            if (e - x + 1 >= 4) for (let k = x; k <= e; k++) kill.add(`${y},${k}`);
+            let f = y; while (f + 1 < H && grid[f + 1][x] === c) f++;
+            if (f - y + 1 >= 4) for (let k = y; k <= f; k++) kill.add(`${k},${x}`);
           }
-        }
-        if (!hit) return false;
-        for (let x = 0; x < W; x++) {
-          const left = grid.map((r) => r[x]).filter(Boolean);
-          for (let k = 0; k < H; k++) grid[k][x] = k < H - left.length ? null : left[k - (H - left.length)];
-        }
-        return true;
-      };
-      const land = () => {
-        grid[cur.y][cur.x] = cur.c;
-        let changed = true;
-        while (changed) {
-          changed = false;
-          // Fila completa: desaparece y todo baja una línea
-          const full = grid.findIndex((r) => r.every(Boolean));
-          if (full >= 0) { grid.splice(full, 1); grid.unshift(Array(W).fill(null)); changed = true; flash(); continue; }
-          for (let x = 0; x < W; x++) if (columnMatch(x)) { changed = true; flash(); }
-          if (rowMatch()) { changed = true; flash(); }
-        }
+          if (!kill.size) return false;
+          kill.forEach((key) => { const [y, x] = key.split(',').map(Number); grid[y][x] = null; });
+          gravity();
+          return true;
+        };
+        const land = () => {
+          grid[cur.y][cur.x] = cur.c;
+          let changed = true;
+          while (changed) {
+            changed = false;
+            const full = grid.findIndex((r) => r.every(Boolean));
+            if (full >= 0) { grid.splice(full, 1); grid.unshift(Array(W).fill(null)); changed = true; flash(); continue; }
+            if (matches()) { changed = true; flash(); }
+          }
+          spawn();
+        };
+        const progress = () => Math.min(1, (Date.now() - t0) / STAGE_MS + bonus);
+        const step = () => {
+          if (cur.y + 1 < H && !grid[cur.y + 1][cur.x]) cur.y++; else land();
+          paint();
+          setBar(stage, (st + progress()) / STAGES.length);
+          if (progress() >= 1) {
+            clearInterval(timer);
+            confetti();
+            st++;
+            setTimeout(() => { if (!stage.isConnected) return; if (st >= STAGES.length) finale(stage, () => { st = 0; start(); }); else start(); }, 1600);
+          }
+        };
+        stage.querySelectorAll('[data-m]').forEach((b) => { b.onpointerdown = (e) => {
+          e.preventDefault();
+          const m = Number(b.dataset.m);
+          if (!m) { while (cur.y + 1 < H && !grid[cur.y + 1][cur.x]) cur.y++; land(); paint(); return; }
+          const nx = cur.x + m;
+          if (nx >= 0 && nx < W && !grid[cur.y][nx]) { cur.x = nx; paint(); }
+        }; });
         spawn();
+        paint();
+        timer = setInterval(step, ms);
       };
-      const step = () => { if (cur.y + 1 < H && !grid[cur.y + 1][cur.x]) cur.y++; else land(); paint(); };
-      stage.querySelectorAll('[data-m]').forEach((b) => { b.onpointerdown = (e) => {
-        e.preventDefault();
-        const m = Number(b.dataset.m);
-        if (!m) { while (cur.y + 1 < H && !grid[cur.y + 1][cur.x]) cur.y++; land(); paint(); return; }
-        const nx = cur.x + m;
-        if (nx >= 0 && nx < W && !grid[cur.y][nx]) { cur.x = nx; paint(); }
-      }; });
-      spawn();
-      paint();
-      const t = setInterval(step, 933); // un 25 % más lento que antes (700 ms)
-      return () => clearInterval(t);
+      start();
+      return () => clearInterval(timer);
     },
   };
   const MENU = [['globos', '🎈'], ['memoria', '🃏'], ['puzzle', '🧩'], ['bloques', '🟦']];
