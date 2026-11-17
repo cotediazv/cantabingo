@@ -1601,3 +1601,7 @@ body.kids.kz-acierto::before { opacity: 1; }
 body.kids .kz, body.kids .kz-stamps { position: relative; z-index: 1; }
 body.kids .kz-stamps { position: fixed; }
 .kz-yes, .kz-flash, .kz-stars-pop i, .kz-snake i.fruit, .kz-final-stars, .kz-trophy, .kz-next { animation: none; }
+/* La Víbora: en los tableros grandes (13 y 14 casillas) las casillas no deben salirse del marco */
+.kz-snake { grid-template-columns: repeat(var(--n), minmax(0, 1fr)); box-sizing: border-box; }
+.kz-snake.walls { padding: 8px; }
+.kz-snake i { min-width: 0; overflow: hidden; font-size: calc(min(100vw, 360px) / var(--n) * .7); }
