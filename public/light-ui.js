@@ -91,6 +91,48 @@
     return () => clearInterval(timer);
   };
 
+  // ---------- Consola general: los 3 locales en una sola pantalla (solo el moderador) ----------
+  views.consola = async () => {
+    if (!(await isAdmin())) return viewLogin();
+    const ORDER = ['kennedy', 'frida', 'tobalaba'];
+    app.innerHTML = `<p class="back"><a href="#/control">← Centro de control</a></p><h1 style="margin-top:0">Consola general</h1>
+      <div class="cs-grid">${ORDER.map((v) => `<section class="cs-card th-${v}" id="cs-${v}"><header><b>${esc(VENUES[v])}</b><span class="cs-badge" data-k="badge"></span></header>
+        <div class="cs-screen"><iframe data-k="frame" title="Pantalla de ${esc(VENUES[v])}" tabindex="-1"></iframe><p class="cs-off" data-k="off">Sin sala abierta</p></div>
+        <dl><dt>En pantalla</dt><dd data-k="stage">—</dd><dt>Horario</dt><dd data-k="block">—</dd><dt>Karaoke</dt><dd data-k="kar">—</dd><dt>Personas</dt><dd data-k="people">—</dd></dl>
+        <a class="btn" data-k="go" href="#/control">Abrir panel</a></section>`).join('')}</div>`;
+    // Las mini pantallas son la página real del GC, achicada al ancho del cuadro
+    const fit = () => document.querySelectorAll('.cs-screen').forEach((box) => { const f = box.querySelector('iframe'); if (f) f.style.transform = `scale(${box.clientWidth / 1280})`; });
+    const ro = new ResizeObserver(fit);
+    document.querySelectorAll('.cs-screen').forEach((b) => ro.observe(b));
+    const paint = async () => {
+      const r = await api('GET', '/api/consola').catch(() => null);
+      if (!r || !$('.cs-grid')) return;
+      for (const l of r.locales) {
+        const card = $(`#cs-${l.venue}`);
+        const q = (k) => card.querySelector(`[data-k="${k}"]`);
+        const src = l.light ? `#/light-gc/${l.venue}` : l.main ? '#/escena' : '';
+        const frame = q('frame');
+        if ((frame.dataset.src || '') !== src) { frame.dataset.src = src; frame.src = src ? `${location.pathname}?mudo=1${src}` : 'about:blank'; }
+        frame.hidden = !src; q('off').hidden = !!src;
+        q('badge').textContent = l.light && l.main ? 'Sala principal + light' : l.light ? 'Sala light' : l.main ? 'Sala principal' : 'Cerrado';
+        q('badge').className = `cs-badge ${l.light || l.main ? 'on' : ''}`;
+        q('stage').textContent = [l.main && `Principal: ${l.main.stageName}`, l.light && `Light: ${l.light.stageName}`].filter(Boolean).join(' · ') || '—';
+        const b = l.block || {};
+        q('block').textContent = [b.current && `Ahora ${b.current.time} ${b.current.label}`, b.next && `Sigue ${b.next.time} ${b.next.label}`, b.show && `Show: ${b.show}`].filter(Boolean).join(' · ') || 'Sin horario hoy';
+        const k = l.karaoke || {};
+        q('kar').textContent = k.at ? (k.now ? `Canta ${k.now.name} · ${k.now.song} · ${k.total} en la lista` : 'Lista vacía') : 'Sin lectura (karaoke no está en pantalla)';
+        q('people').textContent = [l.main && `${l.main.players} en la sala principal`, l.light && `${l.light.players} en la sala light`].filter(Boolean).join(' · ') || '—';
+        const go = q('go');
+        go.href = l.light ? `#/karaokectl/${l.venue}` : l.main ? '#/control' : '#/light';
+        go.textContent = l.light ? 'Abrir panel de la sala light' : l.main ? 'Abrir Centro de control' : 'Abrir una sala light';
+      }
+      fit();
+    };
+    await paint();
+    const timer = setInterval(paint, 5000);
+    return () => { clearInterval(timer); ro.disconnect(); };
+  };
+
   // ---------- GC para OBS ----------
   const weekHTML = (c) => c.week.map((d) => `<div class="lg-day ${d.today ? 'today' : ''}"><b>${esc(dayName(d.day))} ${d.date}</b>
       ${d.show ? `<span class="lg-show">⭐ ${esc(d.show)}</span>` : ''}

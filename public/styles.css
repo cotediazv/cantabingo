@@ -1554,3 +1554,18 @@ body.kids .krb-mark { left: 50%; transform: translateX(-50%); height: clamp(22px
 .kz-next svg { width: 78%; height: 78%; }
 .kz-next-arrow { position: absolute; right: -10px; bottom: -10px; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: #2bb24c; color: #fff; font-size: 1.5rem; font-weight: 800; border: 3px solid #fff; }
 .lp-open-list { display: grid; gap: 10px; }
+
+/* ---------- Consola general ---------- */
+.cs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+.cs-card { display: grid; gap: 10px; padding: 14px; border-radius: 18px; background: rgba(255, 255, 255, .05); border: 2px solid var(--cs, #555); }
+.cs-card.th-frida { --cs: #c4175e; } .cs-card.th-kennedy { --cs: #1487cf; } .cs-card.th-tobalaba { --cs: #c81e1e; }
+.cs-card header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cs-card header b { font-size: 1.3rem; }
+.cs-badge { padding: 4px 10px; border-radius: 99px; font-size: .8rem; font-weight: 800; background: rgba(255, 255, 255, .1); }
+.cs-badge.on { background: var(--cs); color: #fff; }
+.cs-screen { position: relative; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 12px; background: repeating-conic-gradient(#1b1930 0 25%, #222038 0 50%) 0 0 / 24px 24px; }
+.cs-screen iframe { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; border: 0; transform-origin: 0 0; pointer-events: none; }
+.cs-off { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; color: rgba(255, 255, 255, .6); font-weight: 700; }
+.cs-card dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; font-size: .95rem; }
+.cs-card dt { color: rgba(255, 255, 255, .6); font-weight: 700; }
+.cs-card dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }

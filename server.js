@@ -640,6 +640,25 @@ const vote = require('./vote.js')({ app, db, save, requireAdmin, fail, setStage,
 const insta = require('./insta.js')({ app, db, save, requireAdmin, fail, venue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
 // Sala light: karaoke, show y cartelera en otro local, al mismo tiempo que la sala principal
 lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta });
+
+// Consola general: en qué está cada local (sala principal o sala light), su bloque del horario y su karaoke
+const STAGE_NAMES = { bingo: 'Bingo', rueda: 'El Rosco', sorteo: 'Sorteo', qr: 'QR grande', karaoke: 'Karaoke', show: 'Show', voto: 'Votación', insta: 'Instagram', none: 'Nada', cartelera: 'Cartelera de la semana' };
+app.get('/api/consola', requireAdmin, async (_req, res) => {
+  const main = Object.values(db.sessions)[0] || null;
+  const out = await Promise.all(['kennedy', 'frida', 'tobalaba'].map(async (v) => {
+    const light = lightApi.pubOf(v);
+    const isMain = !!main && (main.theme || 'frida') === v;
+    const c = await lightApi.carteleraOf(v).catch(() => null);
+    return {
+      venue: v,
+      main: isMain ? { name: main.name, stage: db.stage || 'bingo', stageName: STAGE_NAMES[db.stage || 'bingo'] || db.stage, players: Object.keys(main.players || {}).length } : null,
+      light: light.open ? { ...light, stageName: STAGE_NAMES[light.stage] || light.stage } : null,
+      block: c ? { current: c.current, next: c.next, show: c.show } : null,
+      karaoke: karaoke.nowOf(v),
+    };
+  }));
+  res.json({ locales: out, at: Date.now() });
+});
 // Programación del local del día: el de la sala abierta o, si no hay, el elegido en la sección Karaoke
 require('./agenda.js')({ app, db, save, requireAdmin, fail, currentVenue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
 

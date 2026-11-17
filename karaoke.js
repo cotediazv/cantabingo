@@ -394,5 +394,5 @@ module.exports = function karaoke({ app, db, save, requireAdmin, requireLocal = 
     }
   });
 
-  return { refresh: () => refresh(venueNow()), refreshVenue: (v) => (VENUES[v] ? refresh(v) : null), venues: VENUES, placesFor: (venue) => askFor(venue).places };
+  return { nowOf: (v) => { const c = cache[v] || { list: [] }; return { now: c.list[0] ? { name: c.list[0].name, song: c.list[0].song } : null, total: c.list.length, at: c.at || 0, stale: !!c.error }; }, refresh: () => refresh(venueNow()), refreshVenue: (v) => (VENUES[v] ? refresh(v) : null), venues: VENUES, placesFor: (venue) => askFor(venue).places };
 };

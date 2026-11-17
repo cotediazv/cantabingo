@@ -162,6 +162,8 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
   // Para el karaoke: quién es el participante y de qué local es la sala; qué locales consultar en Google
   const last = {};
   return {
+    pubOf: pub, // para la consola general
+    carteleraOf: cartelera,
     findPlayer: (sid, token) => { const l = byId(sid); return l ? l.players[token] || null : null; },
     venueOf: (sid) => { const l = byId(sid); return l ? l.venue : ''; },
     // Mientras el karaoke o el QR con la lista están en pantalla, se lee la lista cada 3 s; si no, cada ~15 s
