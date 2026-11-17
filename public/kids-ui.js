@@ -248,7 +248,7 @@
     },
   };
   // Fondo del inicio: animales estampados como con timbre, repartidos por toda la pantalla
-  const ANIMALS = ['🐨', '🦒', '🐻', '🐶', '🐱', '🦊', '🐰', '🐼', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐔', '🐧', '🐦', '🦆', '🦉', '🐴', '🦄', '🐝', '🦋', '🐌', '🐞', '🐢', '🐍', '🦎', '🐙', '🦀', '🐠', '🐬', '🐳', '🦈', '🐊', '🐘', '🦛', '🦏', '🐪', '🦘', '🦓', '🦍', '🐑', '🦙', '🐐', '🦌', '🐿️', '🦔', '🦇', '🦩', '🦜', '🦢', '🦚', '🦦', '🦥', '🦫', '🦝', '🐁', '🐇', '🐓', '🦃', '🐋', '🦭', '🦕', '🦖', '🐉', '🦬', '🐆', '🐅', '🐃'];
+  const ANIMALS = ['🐶', '🐱', '🦊', '🐰', '🐨', '🐼', '🐻', '🦁', '🐯', '🐮', '🐷', '🐸', '🐵', '🐭', '🐹', '🐔', '🐣', '🐧', '🦄', '🐺', '🐴', '🐲', '🐻‍❄️', '🐙', '🐳', '🐬', '🦉', '🐝', '🐞', '🦋', '🐢', '🦒', '🦓', '🐘', '🦔', '🦦', '🦥', '🦩', '🦜', '🐤'];
   const stamps = () => {
     const step = 64;
     const cols = Math.ceil(Math.min(innerWidth, 900) / step) + 1;
@@ -264,7 +264,17 @@
     }
     return `<div class="kz-stamps" aria-hidden="true">${html}</div>`;
   };
-  const MENU = [['globos', '🎈'], ['memoria', '🃏'], ['puzzle', '🧩'], ['bloques', '🟦']];
+  // Íconos ilustrados de cada juego
+  const shine = (x, y, rx, ry) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="#fff" opacity=".55"/>`;
+  const balloon = (cx, cy, c, d) => `<path d="M${cx} ${cy + 24} q-4 14 3 26" stroke="#8a7a9a" stroke-width="1.6" fill="none"/><ellipse cx="${cx}" cy="${cy}" rx="17" ry="21" fill="${c}"/><ellipse cx="${cx + 5}" cy="${cy + 4}" rx="12" ry="16" fill="${d}" opacity=".35"/>${shine(cx - 6, cy - 8, 4.5, 7)}<path d="M${cx - 3} ${cy + 24} h6 l-3 -4z" fill="${c}"/>`;
+  const cube = (x, y, s, c, light, dark) => `<path d="M${x} ${y} l${s / 2} ${-s / 4} l${s / 2} ${s / 4} l${-s / 2} ${s / 4}z" fill="${light}"/><path d="M${x} ${y} v${s * 0.6} l${s / 2} ${s / 4} v${-s * 0.6}z" fill="${c}"/><path d="M${x + s} ${y} v${s * 0.6} l${-s / 2} ${s / 4} v${-s * 0.6}z" fill="${dark}"/>`;
+  const ICONS = {
+    globos: `<svg viewBox="0 0 100 100" aria-hidden="true">${balloon(32, 40, '#ff4d6d', '#b5172f')}${balloon(68, 36, '#3a86ff', '#1747a6')}${balloon(50, 52, '#ffbe0b', '#c27c00')}</svg>`,
+    memoria: `<svg viewBox="0 0 100 100" aria-hidden="true"><g transform="rotate(-14 40 52)"><rect x="18" y="22" width="44" height="60" rx="8" fill="#ff8fab"/><rect x="23" y="27" width="34" height="50" rx="5" fill="none" stroke="#fff" stroke-width="2.5" stroke-dasharray="4 4"/></g><g transform="rotate(10 62 50)"><rect x="40" y="18" width="44" height="60" rx="8" fill="#fff" stroke="#e7d3ff" stroke-width="2"/><path d="M62 62 C44 50 48 36 56 36 c4 0 6 3 6 5 c0 -2 2 -5 6 -5 c8 0 12 14 -6 26z" fill="#ff3d6e"/>${shine(55, 42, 3, 2)}<path d="M48 26 l2 4 4 .6 -3 2.8 .8 4 -3.8 -2 -3.6 2 .7 -4 -3 -2.8 4 -.6z" fill="#ffbe0b"/></g></svg>`,
+    puzzle: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="kz-pz" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7ae582"/><stop offset="1" stop-color="#25a244"/></linearGradient><linearGradient id="kz-pz2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd166"/><stop offset="1" stop-color="#f77f00"/></linearGradient></defs><path d="M14 30 H32 a8 8 0 1 1 16 0 H62 V46 a8 8 0 1 1 0 16 V80 H46 a8 8 0 1 0 -16 0 H14 V62 a8 8 0 1 0 0 -16 Z" fill="url(#kz-pz)" stroke="#1b7a35" stroke-width="2"/>${shine(26, 40, 6, 4)}<g transform="rotate(14 74 30)"><path d="M62 16 H86 V40 H62 Z" fill="url(#kz-pz2)" stroke="#b35900" stroke-width="2"/>${shine(70, 22, 4, 2.5)}</g></svg>`,
+    bloques: `<svg viewBox="0 0 100 100" aria-hidden="true">${cube(14, 62, 24, '#e63946', '#ff8a94', '#a4161a')}${cube(38, 62, 24, '#1d6fe0', '#7fb3ff', '#0b3d91')}${cube(62, 62, 24, '#2bb24c', '#8ef0a7', '#147a2e')}${cube(26, 44, 24, '#ffc400', '#ffe38a', '#b58900')}${cube(50, 44, 24, '#e63946', '#ff8a94', '#a4161a')}${cube(38, 26, 24, '#1d6fe0', '#7fb3ff', '#0b3d91')}</svg>`,
+  };
+  const MENU = [['globos'], ['memoria'], ['puzzle'], ['bloques']];
 
   // Se recuerda desde qué pantalla se entró, para volver ahí con «Volver a la sala»
   document.addEventListener('click', (e) => {
@@ -278,10 +288,10 @@
     if (!games[which]) {
       app.innerHTML = `${stamps()}<div class="kz"><div class="kz-top"><button type="button" class="kz-back" data-exit>← Volver a la sala</button></div>
         <h1 class="kz-title">🧸 KRB Kids</h1>
-        <div class="kz-menu">${MENU.map(([k, i]) => `<a class="kz-game" href="#/kids/${k}" aria-label="${k}">${i}</a>`).join('')}</div></div>`;
+        <div class="kz-menu">${MENU.map(([k]) => `<a class="kz-game" href="#/kids/${k}" aria-label="${k}">${ICONS[k]}</a>`).join('')}</div></div>`;
       $('[data-exit]').onclick = () => { location.hash = backTo(); };
     } else {
-      app.innerHTML = `<div class="kz"><div class="kz-top"><button type="button" class="kz-back" data-back>←</button><span class="kz-icon">${MENU.find((m) => m[0] === which)[1]}</span></div><div id="kz-stage" class="kz-stage"></div></div>`;
+      app.innerHTML = `<div class="kz"><div class="kz-top"><button type="button" class="kz-back" data-back>←</button><span class="kz-icon">${ICONS[which]}</span></div><div id="kz-stage" class="kz-stage"></div></div>`;
       $('[data-back]').onclick = () => { location.hash = '#/kids'; };
       stop = games[which]($('#kz-stage'));
     }
