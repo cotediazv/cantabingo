@@ -1401,3 +1401,6 @@ body.logo-in-box .krb-mark { display: none; }
 .kg-tag > div { display: grid; justify-items: center; gap: .6vh; }
 .kg-tag .kg-logo { position: static; transform: none; height: 8vh; opacity: .95; }
 .kg-now, .kg-next { padding-left: 2.4vh; padding-right: 2.4vh; }
+/* GC: logo más chico y, junto a «Local / Karaoke», centrado en su cuadro */
+.kg-tag { justify-content: center; gap: 1.6vh; }
+.kg-tag .kg-logo { height: 5.4vh; }
