@@ -39,7 +39,7 @@
         <div class="kg-qr">${qr(o.join || joinUrl())}<b>Únete a la sesión</b></div>
         ${o.nextUp != null ? o.nextUp : nextUpHTML('kg-up')}
         <div class="kg-bar">
-          <div class="kg-tag"><img class="kg-logo" src="krb-stage.png" alt="KRB Stage"><div><small>${esc(st.name)}</small><b>🎤 Karaoke</b></div></div>
+          <div class="kg-tag"><img class="kg-logo" src="krb-stage.svg" alt="KRB Stage"><div><small>${esc(st.name)}</small><b>🎤 Karaoke</b></div></div>
           ${a ? `<div class="kg-now"><small>Ahora canta</small><b ${n(a.name)}>${esc(a.name)}</b><span ${n(a.song)}>${esc(a.song)}</span>${a.artist ? `<i ${n(a.artist)}>${esc(a.artist)}</i>` : ''}</div>`
     : `<div class="kg-now"><small>Ahora canta</small><b ${n('¡Pide tu canción!')}>¡Pide tu canción!</b><span ${n('Desde el celular')}>Desde el celular</span></div>`}
           ${b ? `<div class="kg-next"><small>Sigue</small><b ${n(b.name)}>${esc(b.name)}</b><span ${n(b.song)}>${esc(b.song)}</span>${b.artist ? `<i ${n(b.artist)}>${esc(b.artist)}</i>` : ''}</div>`
@@ -65,7 +65,7 @@
       box.className = `th-${st.venue}`;
       box.innerHTML = `
         <header class="kf-top"><b>Karaoke ${esc(st.name)}</b><span>${st.total ? `${st.total} en la lista` : 'Lista abierta'}</span></header>
-        <section class="kf-now"><img class="kg-logo" src="krb-stage.png" alt="KRB Stage">${a ? `<small>🎤 Ahora canta</small><b ${n(a.name)}>${esc(a.name)}</b><span ${n(a.song)}>${esc(a.song)}</span>${a.artist ? `<i ${n(a.artist)}>${esc(a.artist)}</i>` : ''}`
+        <section class="kf-now"><img class="kg-logo" src="krb-stage.svg" alt="KRB Stage">${a ? `<small>🎤 Ahora canta</small><b ${n(a.name)}>${esc(a.name)}</b><span ${n(a.song)}>${esc(a.song)}</span>${a.artist ? `<i ${n(a.artist)}>${esc(a.artist)}</i>` : ''}`
     : '<small>🎤 Karaoke</small><b style="--n:16">¡Pide tu canción!</b><span style="--n:16">Desde el celular</span>'}</section>
         <aside class="kf-side">
           <div class="kf-qr">${qr(joinUrl())}<b>Únete a la sesión</b></div>

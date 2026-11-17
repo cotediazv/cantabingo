@@ -51,7 +51,7 @@ Sitio: https://cantabingo.onrender.com · Render (plan Starter, disco de 1 GB) �
 Pantallas: `#/jugar` (celular del público), `#/tablero` (pantalla del local), `#/tablero-v` (pantalla de pie girada, Kennedy), `#/escena` (OBS), `#/control` (Centro de control).
 Sala light: `#/light` (salas light, enlaces y clave del equipo), `#/karaokectl/<local>` (panel: GC + lista del karaoke), `#/light-gc/<local>` (OBS), `#/l/<sala>` (celular), `#/equipo/<local>` (ingreso del equipo con la clave de su local). Consola general: `#/consola`. KRB Kids: `#/kids` (enlace directo, sin iniciar sesión).
 
-Datos externos: la lista del karaoke sale del Apps Script de cada local (`?modo=json`); show, cartelera y horarios salen de la GLOSA a través del GC Show de cada local (`?modo=json`, direcciones en `light.js`). Logo: `public/krb-stage.png`.
+Datos externos: la lista del karaoke sale del Apps Script de cada local (`?modo=json`); show, cartelera y horarios salen de la GLOSA a través del GC Show de cada local (`?modo=json`, direcciones en `light.js`). Logo: `public/krb-stage.svg` (vectorial, alta definición; el `.png` original queda de respaldo).
 
 ## Probar y publicar
 
