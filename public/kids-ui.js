@@ -37,9 +37,8 @@
   const bar = (frac) => `<div class="kz-bar"><i style="width:${Math.round(Math.max(0, Math.min(1, frac)) * 100)}%"></i><span>🏆</span></div>`;
   const setBar = (stage, frac) => { const i = stage.querySelector('.kz-bar i'); if (i) i.style.width = `${Math.round(Math.max(0, Math.min(1, frac)) * 100)}%`; };
   const games = {
-    // Pintar: se toca un color y después una parte del dibujo. 8 dibujos que van teniendo más partes;
-    // en los últimos 4 hay un modelo chico arriba y hay que pintar igual (un color equivocado no pinta).
-    // La barra se llena con cada dibujo terminado; al final, el trofeo.
+    // Pintar: se toca un color y después una parte del dibujo (también el fondo). 8 dibujos que van teniendo
+    // más partes, siempre con el modelo arriba. La barra se llena con cada dibujo terminado; al final, el trofeo.
     pintar(stage, round = 0, total = 0) {
       const INK = '#3b2a4d';
       const P = ['#e63946', '#ff8c1a', '#ffc400', '#2bb24c', '#3a86ff', '#8e44ad', '#ff5fa2', '#8d5524', '#c9f2ff', '#ffe8a3'];
@@ -197,14 +196,18 @@
     // (la barra se llena con el tiempo y más rápido al borrar cubos). Luego el tablero crece y baja un poco más rápido.
     // 4 del mismo color seguidos (en columna o en fila) desaparecen, y una fila completa también. Nunca se pierde.
     bloques(stage) {
-      const STAGES = [{ W: 4, H: 6, ms: 1300 }, { W: 5, H: 7, ms: 1150 }, { W: 6, H: 8, ms: 1050 }, { W: 6, H: 9, ms: 950 }];
+      // Cada vez más difícil: el pozo crece, los bloques caen más rápido y en las últimas etapas hay más colores.
+      // Dentro de cada etapa la caída también se va acelerando de a poco (hasta un 25 % más rápido al final).
+      const STAGES = [{ W: 4, H: 6, ms: 1300, n: 3 }, { W: 5, H: 7, ms: 1150, n: 4 }, { W: 6, H: 8, ms: 1000, n: 4 },
+        { W: 6, H: 9, ms: 860, n: 5 }, { W: 7, H: 10, ms: 740, n: 5 }, { W: 7, H: 10, ms: 640, n: 6 }];
       const STAGE_MS = 120000; // unos 2 minutos por etapa
-      const BLOCK_COLORS = ['#e63946', '#1d6fe0', '#ffc400', '#2bb24c']; // 4 colores: así se juntan seguido
+      const ALL_COLORS = ['#e63946', '#1d6fe0', '#ffc400', '#2bb24c', '#8e44ad', '#ff8c1a']; // pocos colores al inicio: se juntan seguido
       let st = 0;
       let timer = null;
       const start = () => {
-        clearInterval(timer);
-        const { W, H, ms } = STAGES.at(st);
+        clearTimeout(timer);
+        const { W, H, ms, n } = STAGES.at(st);
+        const BLOCK_COLORS = ALL_COLORS.slice(0, n);
         document.body.dataset.kzLevel = String(st + 1);
         let grid = Array.from({ length: H }, () => Array(W).fill(null));
         let cur = null;
@@ -260,11 +263,13 @@
           paint();
           setBar(stage, (st + progress()) / STAGES.length);
           if (progress() >= 1) {
-            clearInterval(timer);
+            clearTimeout(timer);
             confetti();
             st++;
             setTimeout(() => { if (!stage.isConnected) return; if (st >= STAGES.length) finale(stage, () => { st = 0; start(); }); else start(); }, 1600);
+            return;
           }
+          timer = setTimeout(step, ms * (1 - 0.25 * progress()));
         };
         stage.querySelectorAll('[data-m]').forEach((b) => { b.onpointerdown = (e) => {
           e.preventDefault();
@@ -275,10 +280,100 @@
         }; });
         spawn();
         paint();
-        timer = setInterval(step, ms);
+        timer = setTimeout(step, ms);
       };
       start();
-      return () => clearInterval(timer);
+      return () => clearTimeout(timer);
+    },
+    // La Víbora: se mueve sola; con las flechas (o deslizando el dedo) se cambia de dirección. Cada fruta la hace
+    // crecer. Por niveles: el tablero crece, la víbora va más rápido, se necesitan más frutas; desde el nivel 3 los
+    // bordes son paredes y desde el 5 aparecen piedras. Si choca, el nivel parte de nuevo (nadie pierde).
+    vibora(stage) {
+      const LEVELS = [
+        { N: 9, ms: 430, fruits: 5, walls: false, rocks: 0 }, { N: 10, ms: 380, fruits: 6, walls: false, rocks: 0 },
+        { N: 11, ms: 340, fruits: 7, walls: true, rocks: 0 }, { N: 12, ms: 300, fruits: 8, walls: true, rocks: 0 },
+        { N: 13, ms: 265, fruits: 9, walls: true, rocks: 4 }, { N: 14, ms: 235, fruits: 10, walls: true, rocks: 7 },
+      ];
+      const FRUITS = ['🍎', '🍓', '🍌', '🍇', '🍒', '🍊', '🍉', '🍐'];
+      let lv = 0;
+      let timer = null;
+      let unbind = null;
+      const start = () => {
+        clearTimeout(timer);
+        if (unbind) unbind();
+        document.body.dataset.kzLevel = String(lv + 1);
+        if (lv >= LEVELS.length) { finale(stage, () => { lv = 0; start(); }); return; }
+        const { N, ms, fruits, walls, rocks } = LEVELS.at(lv);
+        const mid = Math.floor(N / 2);
+        let snake = [[mid, 2], [mid, 1], [mid, 0]].map(([y, x]) => ({ x, y }));
+        let dir = { x: 1, y: 0 };
+        let want = dir;
+        let eaten = 0;
+        let grow = 0;
+        let waiting = true; // parte quieta hasta que el niño toca una flecha
+        const busy = (x, y) => snake.some((s) => s.x === x && s.y === y) || stones.some((s) => s.x === x && s.y === y);
+        const free = () => { for (;;) { const x = Math.floor(Math.random() * N); const y = Math.floor(Math.random() * N); if (!busy(x, y) && !(fruit && fruit.x === x && fruit.y === y) && !(y === mid && x < 6)) return { x, y }; } };
+        let fruit = null;
+        const stones = [];
+        for (let k = 0; k < rocks; k++) stones.push(free());
+        fruit = { ...free(), e: pick(FRUITS) };
+        stage.innerHTML = `${bar(lv / LEVELS.length)}<div class="kz-snake${walls ? ' walls' : ''}" style="--n:${N}"></div>
+          <div class="kz-pad kz-pad4"><span></span><button type="button" data-d="0,-1" aria-label="Arriba">▲</button><span></span>
+          <button type="button" data-d="-1,0" aria-label="Izquierda">◀</button><button type="button" data-d="0,1" aria-label="Abajo">▼</button><button type="button" data-d="1,0" aria-label="Derecha">▶</button></div>`;
+        const board = stage.querySelector('.kz-snake');
+        const paint = () => {
+          const cells = Array(N * N).fill('<i></i>');
+          stones.forEach((s) => { cells[s.y * N + s.x] = '<i class="rock"></i>'; });
+          cells[fruit.y * N + fruit.x] = `<i class="fruit">${fruit.e}</i>`;
+          snake.forEach((s, k) => { cells[s.y * N + s.x] = k ? `<i class="body" style="--k:${k % 2}"></i>` : `<i class="head" style="--r:${Math.atan2(dir.y, dir.x)}rad"></i>`; });
+          board.innerHTML = cells.join('');
+        };
+        const turn = (dx, dy) => { if (dx === -dir.x && dy === -dir.y) return; want = { x: dx, y: dy }; if (waiting) { waiting = false; timer = setTimeout(step, ms); } };
+        const crash = () => {
+          board.classList.remove('kz-shake'); void board.offsetWidth; board.classList.add('kz-shake');
+          setTimeout(() => { if (stage.isConnected) start(); }, 900);
+        };
+        function step() {
+          dir = want;
+          let x = snake[0].x + dir.x;
+          let y = snake[0].y + dir.y;
+          if (!walls) { x = (x + N) % N; y = (y + N) % N; }
+          const tail = snake.at(-1);
+          const hitSelf = snake.some((s) => s.x === x && s.y === y && !(s === tail && !grow));
+          if (x < 0 || y < 0 || x >= N || y >= N || hitSelf || stones.some((s) => s.x === x && s.y === y)) { crash(); return; }
+          snake.unshift({ x, y });
+          if (grow) grow--; else snake.pop();
+          if (x === fruit.x && y === fruit.y) {
+            eaten++; grow += 1;
+            board.classList.remove('kz-flash'); void board.offsetWidth; board.classList.add('kz-flash');
+            setBar(stage, (lv + eaten / fruits) / LEVELS.length);
+            if (eaten >= fruits) { paint(); confetti(); lv++; setTimeout(() => { if (stage.isConnected) start(); }, 1600); return; }
+            fruit = { ...free(), e: pick(FRUITS) };
+          }
+          paint();
+          timer = setTimeout(step, ms);
+        }
+        stage.querySelectorAll('[data-d]').forEach((b) => { b.onpointerdown = (e) => { e.preventDefault(); const [dx, dy] = b.dataset.d.split(',').map(Number); turn(dx, dy); }; });
+        // Deslizar el dedo sobre el tablero también cambia la dirección
+        let t0 = null;
+        board.addEventListener('touchstart', (e) => { t0 = e.touches[0]; }, { passive: true });
+        board.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
+        board.addEventListener('touchend', (e) => {
+          if (!t0) return;
+          const t = e.changedTouches[0];
+          const dx = t.clientX - t0.clientX;
+          const dy = t.clientY - t0.clientY;
+          t0 = null;
+          if (Math.max(Math.abs(dx), Math.abs(dy)) < 20) return;
+          if (Math.abs(dx) > Math.abs(dy)) turn(Math.sign(dx), 0); else turn(0, Math.sign(dy));
+        });
+        const keys = (e) => { const m = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key]; if (m) { e.preventDefault(); turn(...m); } };
+        document.addEventListener('keydown', keys);
+        unbind = () => document.removeEventListener('keydown', keys);
+        paint();
+      };
+      start();
+      return () => { clearTimeout(timer); if (unbind) unbind(); };
     },
   };
   // Fondo del inicio: animales estampados como con timbre, repartidos por toda la pantalla
@@ -306,8 +401,9 @@
     memoria: `<svg viewBox="0 0 100 100" aria-hidden="true"><g transform="rotate(-14 40 52)"><rect x="18" y="22" width="44" height="60" rx="8" fill="#ff8fab"/><rect x="23" y="27" width="34" height="50" rx="5" fill="none" stroke="#fff" stroke-width="2.5" stroke-dasharray="4 4"/></g><g transform="rotate(10 62 50)"><rect x="40" y="18" width="44" height="60" rx="8" fill="#fff" stroke="#e7d3ff" stroke-width="2"/><path d="M62 62 C44 50 48 36 56 36 c4 0 6 3 6 5 c0 -2 2 -5 6 -5 c8 0 12 14 -6 26z" fill="#ff3d6e"/>${shine(55, 42, 3, 2)}<path d="M48 26 l2 4 4 .6 -3 2.8 .8 4 -3.8 -2 -3.6 2 .7 -4 -3 -2.8 4 -.6z" fill="#ffbe0b"/></g></svg>`,
     puzzle: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="kz-pz" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7ae582"/><stop offset="1" stop-color="#25a244"/></linearGradient><linearGradient id="kz-pz2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd166"/><stop offset="1" stop-color="#f77f00"/></linearGradient></defs><path d="M14 30 H32 a8 8 0 1 1 16 0 H62 V46 a8 8 0 1 1 0 16 V80 H46 a8 8 0 1 0 -16 0 H14 V62 a8 8 0 1 0 0 -16 Z" fill="url(#kz-pz)" stroke="#1b7a35" stroke-width="2"/>${shine(26, 40, 6, 4)}<g transform="rotate(14 74 30)"><path d="M62 16 H86 V40 H62 Z" fill="url(#kz-pz2)" stroke="#b35900" stroke-width="2"/>${shine(70, 22, 4, 2.5)}</g></svg>`,
     bloques: `<svg viewBox="0 0 100 100" aria-hidden="true">${cube(14, 62, 24, '#e63946', '#ff8a94', '#a4161a')}${cube(38, 62, 24, '#1d6fe0', '#7fb3ff', '#0b3d91')}${cube(62, 62, 24, '#2bb24c', '#8ef0a7', '#147a2e')}${cube(26, 44, 24, '#ffc400', '#ffe38a', '#b58900')}${cube(50, 44, 24, '#e63946', '#ff8a94', '#a4161a')}${cube(38, 26, 24, '#1d6fe0', '#7fb3ff', '#0b3d91')}</svg>`,
+    vibora: `<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M18 78 C18 62 40 62 46 70 S70 84 74 66 S60 44 44 46 S26 34 36 24 S60 16 66 26" fill="none" stroke="#1f8a3a" stroke-width="15" stroke-linecap="round"/><path d="M18 78 C18 62 40 62 46 70 S70 84 74 66 S60 44 44 46 S26 34 36 24 S60 16 66 26" fill="none" stroke="#4cd964" stroke-width="10" stroke-linecap="round" stroke-dasharray="1 9"/><circle cx="68" cy="27" r="11" fill="#2bb24c"/><circle cx="71" cy="23" r="3.2" fill="#fff"/><circle cx="72" cy="23" r="1.6" fill="#3b2a4d"/><path d="M79 30 l7 2 m-7 -2 l6 5" stroke="#e63946" stroke-width="2" stroke-linecap="round"/><circle cx="84" cy="78" r="9" fill="#e63946"/><path d="M84 69 q2 -6 7 -7" stroke="#2bb24c" stroke-width="3" fill="none"/>${shine(81, 75, 2.5, 2)}</svg>`,
   };
-  const MENU = [['pintar'], ['memoria'], ['puzzle'], ['bloques']];
+  const MENU = [['pintar'], ['memoria'], ['puzzle'], ['bloques'], ['vibora']];
 
   // Se recuerda desde qué pantalla se entró, para volver ahí con «Volver a la sala»
   document.addEventListener('click', (e) => {
