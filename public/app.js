@@ -1214,6 +1214,7 @@ views.karaokectl = async () => {
   if (!(await isAdmin())) return viewLogin();
   app.innerHTML = `<div class="panel"><div class="row between"><div><h1 id="kc-title" style="margin:0">Karaoke</h1><span class="muted" id="kc-sub"></span></div></div>
       <div id="kc-list" style="margin-top:14px"></div>
+      <div id="kc-sung-box" hidden><button type="button" id="kc-sung-btn" class="kc-sung-btn">✓ Ya cantaron</button><div id="kc-sung"></div></div>
       <label class="check" style="margin-top:14px"><input type="checkbox" id="kc-phone"> Permitir pedir canciones desde el celular</label>
       <p class="muted small" id="kc-note" style="margin-top:10px"></p>
     </div>
@@ -1231,6 +1232,7 @@ views.karaokectl = async () => {
     $('#kc-title').textContent = `Karaoke ${k.name}`;
     $('#kc-sub').textContent = k.stale ? 'No se pudo leer la lista; se muestra la última conocida' : k.total ? `${k.total} ${k.total === 1 ? 'pedido' : 'pedidos'} por cantar` : 'Todavía no hay pedidos';
     $('#kc-phone').checked = !!k.phone;
+    $('#kc-sung-box').hidden = !k.edit;
     $('#kc-note').textContent = k.edit ? '«Ya cantó», Subir y Bajar también se pueden usar en la app del equipo.' : 'El orden y «Ya cantó» se manejan en la app del equipo. Esta pantalla solo muestra la lista.';
     const n = k.list.length;
     $('#kc-list').innerHTML = n ? k.list.map((p, i) => `<div class="kc-row ${i === 0 ? 'now' : ''}"><em>${i === 0 ? '🎤' : i + 1}</em><p><small>${i === 0 ? 'Ahora canta' : i === 1 ? 'Sigue' : ''}</small><b>${esc(p.name)}</b><span>${esc(p.song)}${p.artist ? ` · ${esc(p.artist)}` : ''}</span></p>${k.edit && p.id ? `<div class="kc-act">
@@ -1250,6 +1252,32 @@ views.karaokectl = async () => {
     busy = false;
     last = '';
     paint();
+  };
+  // «Ya cantaron»: las marcas de esta noche, para revisar y deshacer un error (igual que «Volver» en AppSheet)
+  let sungOpen = false;
+  const hhmm = (ms) => (ms ? new Date(ms).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Santiago' }) : '');
+  const paintSung = async () => {
+    if (!sungOpen) { $('#kc-sung').innerHTML = ''; $('#kc-sung-btn').textContent = '✓ Ya cantaron'; return; }
+    $('#kc-sung-btn').textContent = '✓ Ya cantaron · ocultar';
+    $('#kc-sung').innerHTML = '<p class="muted small">Cargando…</p>';
+    try {
+      const r = await api('GET', '/api/karaoke/cantados');
+      if (!sungOpen || !$('#kc-sung')) return;
+      $('#kc-sung').innerHTML = r.list.length ? r.list.map((x) => `<div class="kc-row kc-sung-row"><em>✓</em><p><small>${x.at ? `Marcado a las ${esc(hhmm(x.at))}` : ''}</small><b>${esc(x.text)}</b></p><div class="kc-act"><button type="button" class="kc-back" data-fila="${x.fila}" data-key="${esc(x.key)}">Volver a la lista</button></div></div>`).join('')
+        : '<p class="muted small">Esta noche todavía nadie aparece como «ya cantó».</p>';
+    } catch (err) { if ($('#kc-sung')) $('#kc-sung').innerHTML = `<p class="muted small">⚠️ ${esc(err.message)}</p>`; }
+  };
+  $('#kc-sung-btn').onclick = () => { sungOpen = !sungOpen; paintSung(); };
+  $('#kc-sung').onclick = async (e) => {
+    const btn = e.target.closest('[data-fila]');
+    if (!btn || busy) return;
+    busy = true;
+    $('#kc-sung').querySelectorAll('[data-fila]').forEach((x) => { x.disabled = true; });
+    try { await api('POST', '/api/karaoke/volver', { fila: Number(btn.dataset.fila), key: btn.dataset.key }); toast('Volvió a la lista'); } catch (err) { fail(err); }
+    busy = false;
+    last = '';
+    paint();
+    paintSung();
   };
   $('#kc-phone').onchange = async (e) => { try { await api('POST', '/api/karaoke/config', { phone: e.target.checked }); last = ''; paint(); } catch (err) { fail(err); } };
   await paint();

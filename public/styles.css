@@ -1299,3 +1299,10 @@ body.rot-screen main { padding: 0; max-width: none; }
 .kc-act button:disabled { opacity: .35; }
 .kc-act button.wait { opacity: .7; }
 @media (max-width: 520px) { .kc-row { flex-wrap: wrap; } .kc-act { width: 100%; justify-content: flex-end; padding-left: 50px; } }
+
+/* Karaoke, panel del animador: «Ya cantaron» para revisar y deshacer */
+.kc-sung-btn { margin-top: 14px; width: 100%; }
+#kc-sung { margin-top: 6px; }
+.kc-sung-row em { background: rgba(86, 176, 76, .35); }
+.kc-act .kc-back { padding: 0 14px; }
+@media (max-width: 520px) { .kc-row p { flex: 1 1 0; } }

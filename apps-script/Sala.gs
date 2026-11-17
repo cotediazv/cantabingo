@@ -3,6 +3,8 @@
 //   «Ya cantó» → agrega una fila en «Cantados»: Clave = Hora Participante Canción / Artista, Fecha = ahora
 //   Subir      → agrega una fila en «Orden»: ID del pedido y -1
 //   Bajar      → agrega una fila en «Orden»: ID del pedido y +1
+//   Ya cantaron → muestra las marcas de «Cantados» de esta noche (solo lee)
+//   Volver     → borra UNA fila de «Cantados», igual que el botón «Volver» de AppSheet (el pedido vuelve a la lista)
 // No cambia ni borra ninguna otra hoja, columna ni fórmula.
 // Pide una clave guardada en Configuración del proyecto → Propiedades del script → SALA_CLAVE.
 // La clave nunca se escribe en este código ni en documentos compartidos.
@@ -19,6 +21,11 @@ function doPost(e) {
     lock.waitLock(10000); // si AppSheet o la Sala están escribiendo al mismo tiempo, espera su turno
     conLock = true;
     const ss = SpreadsheetApp.getActive();
+    if (b.accion === 'cantados' || b.accion === 'volver') {
+      salida = b.accion === 'cantados' ? { ok: true, lista: cantadosDeHoy_(ss) } : volver_(ss, b);
+      SpreadsheetApp.flush();
+      return ContentService.createTextOutput(JSON.stringify(salida)).setMimeType(ContentService.MimeType.JSON);
+    }
     // Solo se aceptan pedidos que están en la lista de este momento
     const p = getPedidos().find(x => String(x.id || '') !== '' && String(x.id) === String(b.id || ''));
     if (!p) throw new Error('Ese pedido ya no está en la lista');
@@ -91,4 +98,35 @@ function fechaHoraDeId_(id, formato) {
   const segundos = Number(String(id).replace(/^P/, ''));
   const ms = Math.round((segundos / 86400 - 25569) * 86400000); // 25569 = días entre 30/12/1899 y 1/1/1970
   return Utilities.formatDate(new Date(ms), 'UTC', formato || 'HH:mm:ss');
+}
+
+// Marcas de «Cantados» desde el inicio del día de karaoke (corte a las 6 AM), la más reciente primero.
+// Cada una lleva su número de fila y su clave tal cual, para poder borrar exactamente esa.
+function cantadosDeHoy_(ss) {
+  const hoja = ss.getSheetByName('Cantados');
+  const filas = hoja.getDataRange().getValues();
+  const ahora = new Date();
+  const inicio = new Date(ahora);
+  inicio.setHours(6, 0, 0, 0);
+  if (ahora < inicio) inicio.setDate(inicio.getDate() - 1);
+  const out = [];
+  for (let i = filas.length - 1; i >= 1 && out.length < 60; i--) {
+    const clave = String(filas[i][0] || '').trim();
+    if (!clave) continue;
+    const f = filas[i][1] instanceof Date ? filas[i][1] : new Date(String(filas[i][1] || ''));
+    if (isNaN(f.getTime())) continue;
+    if (f < inicio) break; // las filas van en orden: lo que sigue hacia arriba es de días anteriores
+    out.push({ fila: i + 1, clave: clave, at: f.getTime() });
+  }
+  return out;
+}
+
+// Borra la fila indicada de «Cantados», solo si todavía tiene exactamente esa clave
+function volver_(ss, b) {
+  const hoja = ss.getSheetByName('Cantados');
+  const fila = Number(b.fila);
+  if (!(fila >= 2) || fila > hoja.getLastRow()) throw new Error('Esa marca ya no está');
+  if (String(hoja.getRange(fila, 1).getValue()).trim() !== String(b.claveFila || '').trim()) throw new Error('La lista de cantados cambió; vuelve a abrirla');
+  hoja.deleteRow(fila);
+  return { ok: true };
 }

@@ -150,30 +150,60 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
     const c = cache[venue] || { list: [], at: 0, error: '' };
     res.json({ venue, name: VENUES[venue], phone: !!db.karaoke.phone, edit: editable(venue), list: c.list.map(({ raw, ...p }) => p), total: c.list.length, at: c.at, stale: !!c.error });
   });
+  // Llama a Sala.gs del local con la clave. /exec responde con una redirección; fetch la sigue con GET y ahí viene la respuesta.
+  async function callScript(venue, body) {
+    if (!KEY) throw new Error('Falta configurar la clave del karaoke en el servidor (KARAOKE_CLAVE)');
+    const exec = (db.karaoke.urls[venue] || {}).exec;
+    if (!exec) throw new Error('Falta la dirección de la web app de este local');
+    const r = await fetch(exec, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ clave: KEY, ...body }), redirect: 'follow', signal: AbortSignal.timeout(TIMEOUT_MS) });
+    const text = await r.text();
+    let data;
+    try { data = JSON.parse(text); } catch { throw new Error(r.ok ? 'La web app no respondió como se esperaba (¿falta instalar Sala.gs y publicar con Nueva versión?)' : `Google respondió ${r.status}`); }
+    if (!data || data.error || !data.ok) throw new Error(clean(data && data.error, 200) || 'La planilla no confirmó el cambio');
+    return data;
+  }
   let acting = false;
   app.post('/api/karaoke/accion', requireAdmin, async (req, res) => {
     const b = req.body || {};
     const venue = venueNow();
-    if (!KEY) return fail(res, 400, 'Falta configurar la clave del karaoke en el servidor (KARAOKE_CLAVE)');
     if (!['cantado', 'subir', 'bajar'].includes(b.accion)) return fail(res, 400, 'Acción no válida');
-    const exec = (db.karaoke.urls[venue] || {}).exec;
-    if (!exec) return fail(res, 400, 'Falta la dirección de la web app de este local');
     const p = ((cache[venue] || {}).list || []).find((x) => x.id && x.id === String(b.id || ''));
     if (!p) return fail(res, 409, 'Ese pedido ya no está en la lista. Revisa la lista actualizada.');
     if (acting) return fail(res, 429, 'Se está guardando el cambio anterior. Intenta de nuevo en un segundo.');
     acting = true;
     try {
-      const body = { clave: KEY, accion: b.accion, id: p.id, nombre: p.raw.nombre, cancion: p.raw.cancion };
-      // /exec responde con una redirección; fetch la sigue con GET y ahí viene la respuesta del script
-      const r = await fetch(exec, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body), redirect: 'follow', signal: AbortSignal.timeout(TIMEOUT_MS) });
-      const text = await r.text();
-      let data;
-      try { data = JSON.parse(text); } catch { throw new Error(r.ok ? 'La web app no respondió como se esperaba (¿falta instalar Sala.gs y publicar con Nueva versión?)' : `Google respondió ${r.status}`); }
-      if (!data || data.error || !data.ok) throw new Error(clean(data && data.error, 200) || 'La planilla no confirmó el cambio');
+      await callScript(venue, { accion: b.accion, id: p.id, nombre: p.raw.nombre, cancion: p.raw.cancion });
       await refresh(venue);
       res.json({ ok: true });
     } catch (err) {
       fail(res, 502, `No se pudo guardar: ${clean(err && err.message, 200)}`);
+    } finally { acting = false; }
+  });
+  // «Ya cantaron»: marcas de esta noche en «Cantados», para revisar y deshacer un error
+  const timeRe = /^(\d{1,2}\/\d{1,2}\/\d{4} )?(\d{1,2}:\d{2})(:\d{2})? /;
+  app.get('/api/karaoke/cantados', requireAdmin, async (_req, res) => {
+    try {
+      const data = await callScript(venueNow(), { accion: 'cantados' });
+      const list = (Array.isArray(data.lista) ? data.lista : []).map((x) => {
+        const key = String(x.clave || '').slice(0, 400);
+        const m = key.match(timeRe);
+        return { fila: Number(x.fila) || 0, key, hora: m ? m[2] : '', text: clean(m ? key.slice(m[0].length) : key, 200), at: Number(x.at) || 0 };
+      }).filter((x) => x.fila >= 2);
+      res.json({ list });
+    } catch (err) { fail(res, 502, `No se pudo leer «Ya cantaron»: ${clean(err && err.message, 200)}`); }
+  });
+  app.post('/api/karaoke/volver', requireAdmin, async (req, res) => {
+    const b = req.body || {};
+    const fila = Number(b.fila);
+    if (!(fila >= 2)) return fail(res, 400, 'Marca no válida');
+    if (acting) return fail(res, 429, 'Se está guardando el cambio anterior. Intenta de nuevo en un segundo.');
+    acting = true;
+    try {
+      await callScript(venueNow(), { accion: 'volver', fila, claveFila: String(b.key || '').slice(0, 400) });
+      await refresh(venueNow());
+      res.json({ ok: true });
+    } catch (err) {
+      fail(res, 502, `No se pudo deshacer: ${clean(err && err.message, 200)}`);
     } finally { acting = false; }
   });
 
