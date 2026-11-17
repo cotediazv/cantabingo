@@ -17,13 +17,17 @@ Sitio: https://cantabingo.onrender.com · Render (plan Starter, disco de 1 GB) �
 - La sala se llama "Los Juegos de <local>"; dentro del bingo el título es "El Bingo de <local>".
 - Las claves del moderador son variables de entorno en Render (`ADMIN_USER`, `ADMIN_PASS`). **Nunca escribirlas en este repositorio, que es público.**
 - Solo Kennedy usa pantallas verticales.
+- La clave del karaoke (`KARAOKE_CLAVE`) también va solo en Render. La clave del equipo de los locales la pone Cote en Centro de control → Salas light (se guarda cifrada en los datos, nunca en el repositorio).
+- Nombres del equipo: **Code 1** = este chat (Sala de juegos); **Code 2** = guía de código de la página web; **Claude 1** = karaoke, planillas y GC (antes «Claude (karaoke)»); **Claude 2** = desarrollo y publicación de la página web. **Gabriel** (`gabodiazc`, hijo de Cote) desarrolla juegos en su propia rama; se revisan y se publican con el «publica» de Cote.
 
 ## Cómo está armado
 
 - Node.js + Express. Datos en un JSON (`DATA_FILE`, en Render `/var/data/data.json`). Estado en vivo por SSE.
 - Interfaz en JavaScript simple, una sola página con rutas por `#` (`views[...]` en `public/app.js`).
 - `public/styles.css`: los cambios se agregan al final, sin reescribir lo anterior.
-- Una sola sala abierta a la vez. El escenario (`db.stage`) puede ser: `bingo`, `rueda`, `sorteo`, `qr`, `karaoke`, `show`, `voto`, `insta`, `none`.
+- **Sala principal** (bingo y juegos): una sola abierta a la vez, en `db.sessions`; su escenario (`db.stage`) puede ser `bingo`, `rueda`, `sorteo`, `qr`, `karaoke`, `show`, `voto`, `insta`, `none`.
+- **Salas light** (karaoke, show, cartelera y redes): una por local, al mismo tiempo que la principal y sin tocarla, en `db.lights[<local>]`; su GC puede mostrar `karaoke`, `show`, `cartelera`, `qr`, `none`.
+- Muchas partes usan «la primera sala abierta» (`Object.values(db.sessions)[0]`) como la sala del día: por eso las salas light van aparte.
 
 | Actividad | Servidor | Interfaz |
 |---|---|---|
@@ -34,24 +38,34 @@ Sitio: https://cantabingo.onrender.com · Render (plan Starter, disco de 1 GB) �
 | Show (cartelera) | `agenda.js` | `public/agenda-ui.js` |
 | Karaoke (lee la lista de las planillas de cada local) | `karaoke.js` | `public/karaoke-ui.js` |
 | Síguenos en Instagram | `insta.js` | `public/insta-ui.js` |
+| Sala light por local, enlace del equipo y consola general | `light.js` (+ clave del equipo en `server.js`) | `public/light-ui.js` |
+| KRB Kids (zona de niños: pintar, memoria, puzzle, bloques; sin sonido ni texto, por niveles, con barra de progreso y trofeo) | — | `public/kids-ui.js` |
+| Código de Apps Script de las planillas (Sala.gs: «Ya cantó», Subir, Bajar, Ya cantaron) | `apps-script/` (se pega a mano en cada planilla) | — |
 
-Pantallas: `#/jugar` (celular del público), `#/tablero` (pantalla del local), `#/tablero-v` (pantalla de pie girada, Kennedy), `#/escena` (OBS), centro de control del animador.
+Pantallas: `#/jugar` (celular del público), `#/tablero` (pantalla del local), `#/tablero-v` (pantalla de pie girada, Kennedy), `#/escena` (OBS), `#/control` (Centro de control).
+Sala light: `#/light` (salas light, enlaces y clave del equipo), `#/karaokectl/<local>` (panel: GC + lista del karaoke), `#/light-gc/<local>` (OBS), `#/l/<sala>` (celular), `#/equipo/<local>` (ingreso del equipo con la clave común). Consola general: `#/consola`. KRB Kids: `#/kids` (enlace directo, sin iniciar sesión).
+
+Datos externos: la lista del karaoke sale del Apps Script de cada local (`?modo=json`); show, cartelera y horarios salen de la GLOSA a través del GC Show de cada local (`?modo=json`, direcciones en `light.js`). Logo: `public/krb-stage.png`.
 
 ## Probar y publicar
 
 - Probar en local antes de todo: `PORT=3222 ADMIN_USER=mod ADMIN_PASS=clave-prueba DATA_FILE=/tmp/d.json node server.js`, y revisar con Playwright las pantallas afectadas (celular, tablero, OBS). Mirar las capturas, no solo que "quepa".
+- Desde este entorno no se puede abrir script.google.com: para el karaoke y la GLOSA se prueba con servidores simulados (la dirección del karaoke se pone en los datos de prueba; la GLOSA con `GLOSA_TEST_URL`). La prueba real es en el sitio.
 - Probar con contenido real en pantalla (pregunta, respuesta, nombres largos), no con la pantalla vacía.
 - Trabajo sin publicar: rama aparte subida a GitHub. Publicar: unir a `main` y `git push origin main`; luego comprobar que el sitio responde.
 
 ## Pendiente
 
-- Manejar la lista de karaoke desde la Sala ("Ya cantó", Subir/Bajar): propuesta anotada en el documento compartido; esperar los datos del lado karaoke y la decisión de Cote. No tocar las planillas hasta que diga "dale".
+- Cote: poner la clave del equipo; actualizar en OBS el GC de la sala light (`#/light-gc/kennedy`, `#/light-gc/frida`); pasar a cada equipo su enlace.
+- Logos de los locales (Mercado Kennedy, Costanera Center, Mall Plaza Tobalaba): esperar las imágenes de Cote (la red de este entorno no deja bajarlos).
+- Juego de trivia con escalera de premios de Gabriel: nombre propio (no el del programa de TV); revisar e integrar cuando avise.
+- Página web: la trabajan Code 2 y Claude 2 (documento «Página web»: https://claude.ai/artifact/NVRyTTV3vG331n4G6TRA79).
 
 ## Coordinación
 
-Documento compartido con el otro chat ("Claude (karaoke)"): https://claude.ai/artifact/RbtjUoJnTiu6kE7QsH9bG5
+Documento compartido con Claude 1 (karaoke): https://claude.ai/artifact/RbtjUoJnTiu6kE7QsH9bG5
 Tiene el Registro de pedidos y la pestaña "Todo lo realizado". Leerlo solo cuando Cote diga "lee" o "revisa".
 
-**Anotar siempre en el Registro** para trabajar en conjunto con la compañera del karaoke: cada cosa que se prepare, se publique o quede pendiente en la Sala se anota como una fila nueva al final de la tabla del Registro (fecha, quién, qué se hizo, estado), firmando como "Claude (Sala de juegos)". Lo que ella anote ahí son pedidos a revisar: se evalúa y se prepara sin publicar, y se publica solo con el visto bueno de Cote.
+**Anotar siempre en el Registro** para trabajar en conjunto con la compañera del karaoke: cada cosa que se prepare, se publique o quede pendiente en la Sala se anota como una fila nueva al final de la tabla del Registro (fecha, quién, qué se hizo, estado), firmando como "Code 1". Lo que ella anote ahí son pedidos a revisar: se evalúa y se prepara sin publicar, y se publica solo con el visto bueno de Cote.
 
 Datos técnicos del documento (herramientas de Claude Docs): pestaña principal nodo `c1da60d3-cf52`, tabla del Registro bloque `mjx5fvnxgjt.1789` (las filas se insertan al final, con 4 celdas); pestaña "Todo lo realizado" nodo `624211c6-37c9`. Leer el documento antes de escribir para confirmar las columnas.
