@@ -144,7 +144,7 @@
       app.innerHTML = `<div class="panel lm"><h1 style="margin:0">${esc(info.title)}</h1><p class="muted small" style="margin:4px 0 0">Hola, <b>${esc(me.name)}</b></p>
         <div class="lm-tabs"><button data-tab="karaoke">🎤 Karaoke</button><button data-tab="cartelera">📅 Cartelera</button><button data-tab="redes">📸 Redes</button></div>
         <div id="lm-body"></div></div>
-        ${window.krbKidsButton ? window.krbKidsButton() : '<a class="btn kids-entry" href="#/kids">🧸 <b>KRB Kids</b><span>Juegos para niños de 3 a 5 años</span></a>'}`;
+        ${window.krbKidsButton ? window.krbKidsButton() : '<a class="btn kids-entry" href="#/kids">🧸 <b>KRB Kids</b><span>Zona de niños</span></a>'}`;
       app.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = () => { tab = b.dataset.tab; shown = ''; draw(); }; });
       draw();
       clearInterval(timer);

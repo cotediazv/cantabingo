@@ -9,7 +9,7 @@
   };
   const LETTER_COLORS = ['#ff4d6d', '#ff9f1c', '#ffd23f', '#2bb24c', '#3a86ff', '#b56cff', '#ff5fa2'];
   const kidsName = () => `<span class="kz-name-word">${[...'KRB'].map((ch, i) => `<i style="color:${LETTER_COLORS.at(i)}">${ch}</i>`).join('')}</span> <span class="kz-name-word">${[...'Kids'].map((ch, i) => `<i style="color:${LETTER_COLORS.at(i + 3)}">${ch}</i>`).join('')}</span>`;
-  window.krbKidsButton = () => `<a class="btn kids-entry kids-entry2" href="#/kids">${kidsBalloons()}<span class="kz-entry-text"><b class="kz-name">${kidsName()}</b><span class="kz-tag">Juegos para niños de 3 a 5 años</span></span></a>`;
+  window.krbKidsButton = () => `<a class="btn kids-entry kids-entry2" href="#/kids">${kidsBalloons()}<span class="kz-entry-text"><b class="kz-name">${kidsName()}</b><span class="kz-tag">Zona de niños</span></span></a>`;
   const pick = (a) => a[Math.floor(Math.random() * a.length)];
   const shuffle = (a) => { const b = [...a]; for (let i = b.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [b[i], b[j]] = [b[j], b[i]]; } return b; };
   const COLORS = ['#e63946', '#1d6fe0', '#ffc400', '#2bb24c', '#ff5fa2', '#8e44ad', '#ff8c1a'];
@@ -23,8 +23,13 @@
 
   // Desenlace final de un juego por niveles: trofeo, estrellas, confeti y botón para jugar de nuevo
   const finale = (stage, again) => {
+    // El siguiente juego del menú (después del último, vuelve al primero)
+    const here = (location.hash.split('/')[2] || '');
+    const i = MENU.findIndex((m) => m[0] === here);
+    const next = MENU.at((i + 1) % MENU.length)[0];
     stage.innerHTML = `<div class="kz-final"><span class="kz-trophy">🏆</span><div class="kz-final-stars">⭐⭐⭐</div>
-      <button type="button" class="kz-again" aria-label="Jugar otra vez">🔄</button></div>`;
+      <div class="kz-final-row"><button type="button" class="kz-again" aria-label="Jugar otra vez">🔄</button>
+      <a class="kz-next" href="#/kids/${next}" aria-label="Siguiente juego">${ICONS[next]}<span class="kz-next-arrow">➜</span></a></div></div>`;
     confetti(); setTimeout(confetti, 700); setTimeout(confetti, 1400);
     stage.querySelector('.kz-again').onclick = again;
   };
