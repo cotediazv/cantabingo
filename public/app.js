@@ -1245,6 +1245,7 @@ views.karaokectl = async () => {
     last = sig;
     k = r;
     render();
+    if (k.edit && sungOpen) paintSung(); // si la lista cambió (también desde AppSheet), «Ya cantaron» se pone al día
   };
   // Aplica el cambio en pantalla al instante
   const applyLocal = (accion, id) => {
@@ -1280,6 +1281,7 @@ views.karaokectl = async () => {
     last = '';
     render();
     paint();
+    paintSung(); // los recién marcados aparecen en «Ya cantaron»
   };
   $('#kc-list').onclick = (e) => {
     const btn = e.target.closest('[data-kc]');
@@ -1290,12 +1292,12 @@ views.karaokectl = async () => {
     drain();
   };
   // «Ya cantaron»: las marcas de esta noche, para revisar y deshacer un error (igual que «Volver» en AppSheet)
-  let sungOpen = false;
+  let sungOpen = true; // a la vista por defecto; se puede esconder
   const hhmm = (ms) => (ms ? new Date(ms).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'America/Santiago' }) : '');
   const paintSung = async () => {
     if (!sungOpen) { $('#kc-sung').innerHTML = ''; $('#kc-sung-btn').textContent = '✓ Ya cantaron'; return; }
     $('#kc-sung-btn').textContent = '✓ Ya cantaron · ocultar';
-    $('#kc-sung').innerHTML = '<p class="muted small">Cargando…</p>';
+    if (!$('#kc-sung').innerHTML) $('#kc-sung').innerHTML = '<p class="muted small">Cargando…</p>';
     try {
       const r = await api('GET', '/api/karaoke/cantados');
       if (!sungOpen || !$('#kc-sung')) return;
@@ -1316,6 +1318,7 @@ views.karaokectl = async () => {
   };
   $('#kc-phone').onchange = async (e) => { try { await api('POST', '/api/karaoke/config', { phone: e.target.checked }); last = ''; paint(); } catch (err) { fail(err); } };
   await paint();
+  if (k && k.edit) paintSung();
   const timer = setInterval(paint, 3000);
   return () => clearInterval(timer);
 };

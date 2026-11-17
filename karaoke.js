@@ -149,7 +149,17 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
   // de Render y en la propiedad SALA_CLAVE del script; nunca en el repositorio.
   // Los botones aparecen solo cuando hay clave y la lista del local ya trae el ID de cada pedido.
   const KEY = String(process.env.KARAOKE_CLAVE || '');
-  const editable = (venue) => !!KEY && ((cache[venue] || {}).list || []).some((p) => p.id);
+  // Un local queda «con botones» cuando su lista trae el ID; se recuerda, para que no desaparezcan
+  // cuando la lista queda vacía (por ejemplo, al marcar «Ya cantó» al último pedido).
+  db.karaoke.withIds ||= {};
+  const editable = (venue) => {
+    const list = (cache[venue] || {}).list || [];
+    if (list.length) {
+      const has = list.some((p) => p.id);
+      if (has !== !!db.karaoke.withIds[venue]) { db.karaoke.withIds[venue] = has; save(); }
+    }
+    return !!KEY && !!db.karaoke.withIds[venue];
+  };
   app.get('/api/karaoke/cola', requireAdmin, (_req, res) => {
     const venue = venueNow();
     const c = cache[venue] || { list: [], at: 0, error: '' };
