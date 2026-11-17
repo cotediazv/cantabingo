@@ -147,21 +147,42 @@
       stage.innerHTML = `<div class="kz-well" style="--w:${W};--h:${H}"></div>
         <div class="kz-pad"><button type="button" data-m="-1" aria-label="Izquierda">◀</button><button type="button" data-m="0" aria-label="Bajar">▼</button><button type="button" data-m="1" aria-label="Derecha">▶</button></div>`;
       const well = stage.querySelector('.kz-well');
-      const spawn = () => { cur = { x: Math.floor(Math.random() * W), y: 0, c: pick(COLORS) }; if (grid[0][cur.x]) { grid = grid.map((r) => r.map(() => null)); } };
+      // 4 colores: así se juntan seguido 4 iguales en una columna
+      const BLOCK_COLORS = ['#e63946', '#1d6fe0', '#ffc400', '#2bb24c'];
+      const spawn = () => { cur = { x: Math.floor(Math.random() * W), y: 0, c: pick(BLOCK_COLORS) }; if (grid[0][cur.x]) { grid = grid.map((r) => r.map(() => null)); } };
       const paint = () => {
         well.innerHTML = grid.map((r, y) => r.map((v, x) => {
           const c = cur && cur.x === x && cur.y === y ? cur.c : v;
           return `<i ${c ? `style="background:${c}"` : ''}></i>`;
         }).join('')).join('');
       };
+      const flash = () => { well.classList.remove('kz-flash'); void well.offsetWidth; well.classList.add('kz-flash'); confetti(); };
+      // 4 o más del mismo color seguidos en una columna: desaparecen y lo de arriba baja
+      const columnMatch = (x) => {
+        let y = 0;
+        while (y < H) {
+          const c = grid[y][x];
+          let e = y;
+          while (c && e + 1 < H && grid[e + 1][x] === c) e++;
+          if (c && e - y + 1 >= 4) {
+            for (let k = y; k <= e; k++) grid[k][x] = null;
+            const left = grid.map((r) => r[x]).filter(Boolean);
+            for (let k = 0; k < H; k++) grid[k][x] = k < H - left.length ? null : left[k - (H - left.length)];
+            return true;
+          }
+          y = e + 1;
+        }
+        return false;
+      };
       const land = () => {
         grid[cur.y][cur.x] = cur.c;
-        const full = grid.findIndex((r) => r.every(Boolean));
-        if (full >= 0) {
-          grid.splice(full, 1);
-          grid.unshift(Array(W).fill(null));
-          well.classList.remove('kz-flash'); void well.offsetWidth; well.classList.add('kz-flash');
-          confetti();
+        let changed = true;
+        while (changed) {
+          changed = false;
+          // Fila completa: desaparece y todo baja una línea
+          const full = grid.findIndex((r) => r.every(Boolean));
+          if (full >= 0) { grid.splice(full, 1); grid.unshift(Array(W).fill(null)); changed = true; flash(); continue; }
+          for (let x = 0; x < W; x++) if (columnMatch(x)) { changed = true; flash(); }
         }
         spawn();
       };
@@ -175,7 +196,7 @@
       }; });
       spawn();
       paint();
-      const t = setInterval(step, 700);
+      const t = setInterval(step, 933); // un 25 % más lento que antes (700 ms)
       return () => clearInterval(t);
     },
   };
