@@ -1404,3 +1404,48 @@ body.logo-in-box .krb-mark { display: none; }
 /* GC: logo más chico y, junto a «Local / Karaoke», centrado en su cuadro */
 .kg-tag { justify-content: center; gap: 1.6vh; }
 .kg-tag .kg-logo { height: 5.4vh; }
+
+/* ---------- KRB Kids ---------- */
+.kids-entry { display: grid; justify-items: center; gap: 2px; max-width: 460px; margin: 14px auto 0; padding: 14px; text-align: center; background: linear-gradient(135deg, #ffb703, #fb5607); color: #1a1a1a; border: 0; }
+.kids-entry b { font-size: 1.15rem; }
+.kids-entry span { font-size: .9rem; font-weight: 600; }
+body.kids { background: linear-gradient(160deg, #6ec6ff 0%, #b388ff 55%, #ff8fab 100%) fixed; }
+body.kids main { max-width: 640px; }
+.kz { min-height: calc(100vh - 32px); display: grid; align-content: start; gap: 14px; color: #fff; font-family: Fredoka, "Baloo 2", "Trebuchet MS", system-ui, sans-serif; user-select: none; -webkit-user-select: none; }
+.kz-top { display: flex; align-items: center; gap: 12px; }
+.kz-back { padding: 10px 18px; border-radius: 99px; background: rgba(255, 255, 255, .9); color: #4a2c8a; font-weight: 700; font-size: 1.1rem; border: 0; }
+.kz-name { font-size: 1.3rem; font-weight: 700; text-shadow: 0 2px 0 rgba(0, 0, 0, .15); }
+.kz-title { margin: 6px 0 0; text-align: center; font-size: 2.6rem; text-shadow: 0 3px 0 rgba(0, 0, 0, .18); }
+.kz-sub { margin: 0; text-align: center; font-size: 1.1rem; font-weight: 600; }
+.kz-menu { display: grid; gap: 14px; margin-top: 8px; }
+.kz-game { display: flex; align-items: center; gap: 16px; padding: 18px 22px; border-radius: 28px; background: #fff; color: #4a2c8a; font-size: 1.5rem; font-weight: 700; text-decoration: none; box-shadow: 0 6px 0 rgba(74, 44, 138, .25); }
+.kz-game span { font-size: 3rem; }
+.kz-game:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(74, 44, 138, .25); }
+.kz-stage { display: grid; justify-items: center; gap: 14px; }
+.kz-q { margin: 6px 0 0; text-align: center; font-size: 1.9rem; font-weight: 700; text-shadow: 0 2px 0 rgba(0, 0, 0, .15); }
+.kz-q b { padding: 0 10px; border-radius: 14px; background: #fff; text-shadow: none; }
+.kz-hear { padding: 10px 18px; border-radius: 99px; border: 0; background: rgba(255, 255, 255, .85); color: #4a2c8a; font-weight: 700; font-size: 1.05rem; }
+.kz-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; }
+.kz-card { aspect-ratio: 1; border: 0; border-radius: 28px; background: #fff; font-size: clamp(3.4rem, 18vw, 5.4rem); box-shadow: 0 6px 0 rgba(74, 44, 138, .25); }
+.kz-balloons { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px 26px; width: min(100%, 420px); }
+.kz-balloon { position: relative; aspect-ratio: 4 / 5; border: 0; border-radius: 50% 50% 48% 48% / 55% 55% 45% 45%; background: radial-gradient(circle at 30% 28%, rgba(255, 255, 255, .7) 0 9%, transparent 10%), var(--c); box-shadow: inset -10px -14px 0 rgba(0, 0, 0, .12); animation: kz-float 3s ease-in-out infinite; }
+.kz-balloon:nth-child(2n) { animation-delay: -1.5s; }
+.kz-balloon::after { content: ''; position: absolute; left: 50%; bottom: -26px; width: 2px; height: 26px; background: rgba(255, 255, 255, .8); }
+.kz-pop { animation: kz-pop .45s forwards; }
+.kz-memo { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; width: min(100%, 380px); }
+.kz-memo.six { grid-template-columns: repeat(3, 1fr); width: 100%; }
+.kz-mcard { aspect-ratio: 3 / 4; border: 0; border-radius: 22px; background: repeating-linear-gradient(45deg, #ffffff 0 12px, #ffe6f0 12px 24px); box-shadow: 0 6px 0 rgba(74, 44, 138, .25); font-size: clamp(3rem, 16vw, 4.6rem); }
+.kz-mcard span { visibility: hidden; }
+.kz-mcard.up { background: #fff; }
+.kz-mcard.up span { visibility: visible; }
+.kz-yes { outline: 6px solid #2bb24c; animation: kz-bounce .5s; }
+.kz-no { animation: kz-shake .45s; }
+.kz-confetti { position: fixed; inset: 0; pointer-events: none; z-index: 60; overflow: hidden; }
+.kz-confetti i { position: absolute; top: -20px; width: 12px; height: 18px; border-radius: 3px; animation: kz-fall 1.8s ease-in forwards; }
+@keyframes kz-fall { to { transform: translateY(110vh) rotate(540deg); } }
+@keyframes kz-float { 50% { transform: translateY(-10px); } }
+@keyframes kz-pop { 40% { transform: scale(1.25); } 100% { transform: scale(0); opacity: 0; } }
+@keyframes kz-bounce { 50% { transform: scale(1.12); } }
+@keyframes kz-shake { 20%, 60% { transform: translateX(-10px); } 40%, 80% { transform: translateX(10px); } }
+.kz-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.kz-card, .kz-mcard, .kz-balloon { min-width: 0; padding: 0; }

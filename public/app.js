@@ -661,7 +661,8 @@ views.jugar = async (sid) => {
         ${info.places && info.places.length ? `<label class="f">¿Dónde estás?<select name="place" required><option value="">Elige tu lugar</option>${info.places.map((x) => `<option>${esc(x)}</option>`).join('')}</select></label>` : ''}
         ${info.locked ? '<label class="f">Contraseña de la sesión<input type="text" name="password" required></label>' : ''}
         <button class="primary big">Unirse</button>
-      </div></form>`;
+      </div></form>
+      <a class="btn kids-entry" href="#/kids">🧸 <b>KRB Kids</b><span>Juegos para niños de 3 a 5 años</span></a>`;
     $('#f').onsubmit = async (e) => {
       e.preventDefault();
       try {
