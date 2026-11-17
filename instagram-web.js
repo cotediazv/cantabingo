@@ -48,10 +48,26 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
     const t = encodeURIComponent(token);
     if (!igIds[v]) {
       const handle = String((insta && insta.handleOf && insta.handleOf(v)) || '').toLowerCase();
-      const pages = await getJson(`${FB}/me/accounts?fields=instagram_business_account{id,username}&limit=100&access_token=${t}`);
-      const cuentas = (pages.data || []).map((p) => p.instagram_business_account).filter(Boolean);
+      const cuentas = [];
+      const sumar = (lista) => lista.filter((c) => c && c.id).forEach((c) => cuentas.push(c));
+      // a) páginas de Facebook asignadas a la clave, con su cuenta de Instagram
+      try { const r = await getJson(`${FB}/me/accounts?fields=instagram_business_account{id,username}&limit=100&access_token=${t}`); sumar((r.data || []).map((p) => p.instagram_business_account)); } catch (_) {}
+      // b) portafolios (negocios) de la clave: sus cuentas de Instagram y las de sus páginas
+      if (!cuentas.length) {
+        try {
+          const bs = await getJson(`${FB}/me/businesses?fields=id&limit=20&access_token=${t}`);
+          for (const bz of bs.data || []) {
+            try { const r = await getJson(`${FB}/${bz.id}/instagram_business_accounts?fields=id,username&limit=100&access_token=${t}`); sumar(r.data || []); } catch (_) {}
+            try { const r = await getJson(`${FB}/${bz.id}/owned_pages?fields=instagram_business_account{id,username}&limit=100&access_token=${t}`); sumar((r.data || []).map((p) => p.instagram_business_account)); } catch (_) {}
+          }
+        } catch (_) {}
+      }
       const mia = cuentas.find((c) => String(c.username || '').toLowerCase() === handle) || (cuentas.length === 1 ? cuentas[0] : null);
-      if (!mia) throw new Error(`No se encontró la cuenta @${handle} entre las páginas de la clave (${cuentas.map((c) => '@' + c.username).join(', ') || 'ninguna'})`);
+      if (!mia) {
+        let quien = '';
+        try { const me = await getJson(`${FB}/me?fields=id,name&access_token=${t}`); if (me.name || me.id) quien = ` (la clave es de «${me.name || me.id}»)`; } catch (_) {}
+        throw new Error(`No se encontró la cuenta @${handle}: la clave no tiene cuentas de Instagram asignadas${cuentas.length ? ' salvo ' + cuentas.map((c) => '@' + c.username).join(', ') : ''}${quien}`);
+      }
       igIds[v] = mia.id;
     }
     return getJson(`${FB}/${igIds[v]}/media?fields=${FIELDS}&limit=30&access_token=${t}`);
