@@ -209,6 +209,12 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .dato{display:grid;gap:2px}
 .dato span{font-family:var(--f-dato);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--tenue)}
 .dato strong{font-size:20px;font-weight:500;user-select:all}
+.redes{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:8px}
+.redes li{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+.redes a{font-size:20px;font-weight:500}
+.redes small{color:var(--tenue);font-size:14px}
+.local .ig{font-family:var(--f-dato);font-size:13px;color:var(--c);margin-top:4px;position:relative;text-decoration:none}
+.local .ig:hover{text-decoration:underline}
 form{display:grid;gap:14px;align-content:start}
 label{display:grid;gap:6px;font-size:13px;color:var(--tenue)}
 input,textarea{width:100%;font:inherit;font-size:16px;color:var(--texto);background:var(--tarima);border:1px solid var(--linea);border-radius:6px;padding:14px 16px}
@@ -396,18 +402,21 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
           <h3>Mercado Kennedy</h3>
           <p>Parque Arauco Oriente, 4.º piso</p>
           <div class="dias">Jueves a sábado</div>
+          <a class="ig" href="https://www.instagram.com/krbstage/" target="_blank" rel="noopener">@krbstage</a>
         </article>
         <article class="local" style="--c:var(--frida)">
           <div class="num">Local 02</div>
           <h3>Frida Kahlo</h3>
           <p>Costanera Center</p>
           <div class="dias">Viernes a domingo</div>
+          <a class="ig" href="https://www.instagram.com/krbstage4/" target="_blank" rel="noopener">@krbstage4</a>
         </article>
         <article class="local" style="--c:var(--tobalaba)">
           <div class="num">Local 03</div>
           <h3>Tobalaba</h3>
           <p>Espacio Gastronómico, Mall Plaza Tobalaba</p>
           <div class="dias">Viernes</div>
+          <a class="ig" href="https://www.instagram.com/krbstage3/" target="_blank" rel="noopener">@krbstage3</a>
         </article>
       </div>
     </div>
@@ -420,7 +429,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
         <h2>Escríbenos</h2>
         <div class="datos">
           <div class="dato"><span>Correo</span><strong>krbstage@gmail.com</strong></div>
-          <div class="dato"><span>Instagram</span><strong><a href="https://www.instagram.com/krbstage/" target="_blank" rel="noopener">@krbstage</a></strong></div>
+          <div class="dato"><span>Instagram</span><ul class="redes"><li><a href="https://www.instagram.com/krbstage/" target="_blank" rel="noopener">@krbstage</a><small>Mercado Kennedy</small></li><li><a href="https://www.instagram.com/krbstage1/" target="_blank" rel="noopener">@krbstage1</a><small>Panorámico</small></li><li><a href="https://www.instagram.com/krbstage2/" target="_blank" rel="noopener">@krbstage2</a><small>La Florida</small></li><li><a href="https://www.instagram.com/krbstage3/" target="_blank" rel="noopener">@krbstage3</a><small>Tobalaba</small></li><li><a href="https://www.instagram.com/krbstage4/" target="_blank" rel="noopener">@krbstage4</a><small>Frida Kahlo</small></li></ul></div>
         </div>
       </div>
       <form id="form" action="https://formsubmit.co/krbstage@gmail.com" method="POST">
