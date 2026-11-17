@@ -12,7 +12,7 @@ const rnd = (n) => Array.from(crypto.getRandomValues(new Uint8Array(n)), (b) => 
 
 async function api(method, url, body) {
   const res = await fetch(url, {
-    method, headers: { 'Content-Type': 'application/json', 'x-admin': store.get('adminToken') || '' },
+    method, headers: { 'Content-Type': 'application/json', 'x-admin': store.get('adminToken') || '', 'x-staff': store.get('staffToken') || '' },
     body: body ? JSON.stringify(body) : undefined,
   });
   const data = await res.json().catch(() => ({}));
@@ -1213,9 +1213,12 @@ function wireSongSearch(form) {
 // Pone el karaoke en pantalla y muestra la cola. El local es el de la sala abierta.
 // «Ya cantó», Subir y Bajar: cuando el local ya tiene instalado Sala.gs, se pueden usar aquí o en la app del equipo.
 views.karaokectl = async (local) => {
-  if (!(await isAdmin())) return viewLogin();
-  // Con un local (#/karaokectl/kennedy) es el karaoke de la sala light: no cambia la pantalla de la sala principal
+  // Con un local (#/karaokectl/kennedy) es el karaoke de la sala light: no cambia la pantalla de la sala principal.
+  // Ahí también entra el equipo de ese local con su clave (sin acceso a lo demás).
   const light = ['frida', 'kennedy', 'tobalaba'].includes(local) ? local : '';
+  const admin = await isAdmin();
+  const staff = !admin && light && store.get('staffToken') && (await api('GET', '/api/staff/me').catch(() => ({}))).venue === light;
+  if (!admin && !staff) { if (light) { location.hash = `#/equipo/${light}`; return undefined; } return viewLogin(); }
   const lq = light ? `?local=${light}` : '';
   app.innerHTML = `${light ? '<div class="panel" id="kc-lt"></div>' : ''}<div class="panel"><div class="row between"><div><h1 id="kc-title" style="margin:0">Karaoke</h1><span class="muted" id="kc-sub"></span></div></div>
       <div id="kc-list" style="margin-top:14px"></div>
@@ -1223,8 +1226,9 @@ views.karaokectl = async (local) => {
       <label class="check" style="margin-top:14px"><input type="checkbox" id="kc-phone"> Permitir pedir canciones desde el celular</label>
       <p class="muted small" id="kc-note" style="margin-top:10px"></p>
     </div>
-    ${light ? '<div class="panel" id="kc-lb"></div><p class="back"><a href="#/control">← Centro de control</a></p>' : activitiesNav('karaoke')}`;
-  const stopBar = light && views.lightBar ? views.lightBar($('#kc-lt'), $('#kc-lb')) : null;
+    ${light ? `<div class="panel" id="kc-lb"></div>${staff ? '' : '<p class="back"><a href="#/light">← Salas light</a></p>'}` : activitiesNav('karaoke')}`;
+  if (staff) $('#kc-phone').closest('label').hidden = true; // permitir pedidos desde el celular: solo el moderador
+  const stopBar = light && views.lightBar ? views.lightBar($('#kc-lt'), $('#kc-lb'), light, staff) : null;
   if (!light) await api('POST', '/api/stage', { show: 'karaoke' }).catch(fail); // al entrar, el karaoke pasa a la pantalla
   let last = '';
   let k = null; // lo último que se mostró (la lista del servidor, o con los cambios recién tocados)

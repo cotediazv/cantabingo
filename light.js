@@ -17,11 +17,13 @@ const NIGHT_STARTS = 6; // la noche cambia a las 6 AM, igual que el karaoke
 const DAYS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 const GLOSA_MS = 10 * 60e3; // la GLOSA se relee cada 10 minutos
 
-module.exports = function light({ app, db, save, requireAdmin, fail, karaoke, insta }) {
-  db.light ||= null;
+module.exports = function light({ app, db, save, requireAdmin, requireLocal = requireAdmin, fail, karaoke, insta }) {
+  // Una sala light por local (Kennedy, Frida y Tobalaba pueden estar abiertas a la vez)
+  db.lights ||= {};
+  if (db.light) { db.lights[db.light.venue] = db.light; db.light = null; } // salas guardadas antes de este cambio
   const clean = (v, max = 80) => String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, max);
   const plain = (t) => clean(t, 40).normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
-  const isLight = (sid) => !!db.light && sid === db.light.id;
+  const byId = (sid) => Object.values(db.lights).find((l) => l && l.id === sid) || null;
 
   // ---------- Fecha de la noche (en Chile, con corte a las 6 AM) ----------
   const parts = (d) => {
@@ -87,68 +89,87 @@ module.exports = function light({ app, db, save, requireAdmin, fail, karaoke, in
   }
 
   // ---------- Estado ----------
-  const pub = () => (db.light ? { open: true, id: db.light.id, venue: db.light.venue, name: VENUES[db.light.venue], title: `Sala light · ${VENUES[db.light.venue]}`, stage: db.light.stage, players: Object.keys(db.light.players).length } : { open: false });
-  app.get('/api/light', (_req, res) => res.json(pub()));
+  const pub = (v) => {
+    const l = db.lights[v];
+    return l ? { open: true, id: l.id, venue: v, name: VENUES[v], title: `Sala light · ${VENUES[v]}`, stage: l.stage, players: Object.keys(l.players).length } : { open: false, venue: v, name: VENUES[v] };
+  };
+  // Sin ?local= devuelve la lista de las salas light abiertas (y, por compatibilidad, la primera)
+  app.get('/api/light', (req, res) => {
+    if (VENUES[req.query.local]) return res.json(pub(req.query.local));
+    const open = Object.keys(db.lights).filter((v) => db.lights[v]).map(pub);
+    res.json({ ...(open[0] || { open: false }), lights: open });
+  });
   app.get('/api/light/cartelera', async (req, res) => {
-    const v = VENUES[req.query.local] ? req.query.local : (db.light || {}).venue;
+    const v = VENUES[req.query.local] ? req.query.local : (Object.keys(db.lights).find((k) => db.lights[k]) || '');
     if (!v) return fail(res, 404, 'No hay una sala light abierta');
     res.json(await cartelera(v));
   });
-  app.post('/api/light', requireAdmin, (req, res) => {
-    const venue = String((req.body || {}).venue || '');
+  app.post('/api/light', requireLocal, (req, res) => {
+    const venue = String((req.body || {}).venue || (req.body || {}).local || '');
     if (!VENUES[venue]) return fail(res, 400, 'Elige el local');
-    if (db.light) return fail(res, 409, `Ya hay una sala light abierta (${VENUES[db.light.venue]}). Ciérrala para abrir otra.`);
-    db.light = { id: `L${crypto.randomBytes(4).toString('hex')}`, venue, stage: 'karaoke', players: {}, created: Date.now() };
+    if (db.lights[venue]) return res.json(pub(venue)); // ya estaba abierta: se entra a la misma
+    db.lights[venue] = { id: `L${crypto.randomBytes(4).toString('hex')}`, venue, stage: 'karaoke', players: {}, created: Date.now() };
     save();
     karaoke.refreshVenue(venue);
-    res.json(pub());
+    res.json(pub(venue));
   });
-  app.delete('/api/light', requireAdmin, (_req, res) => { db.light = null; save(); res.json(pub()); });
-  app.post('/api/light/stage', requireAdmin, (req, res) => {
-    const show = String((req.body || {}).show || '');
-    if (!db.light) return fail(res, 404, 'No hay una sala light abierta');
-    if (!STAGES.includes(show)) return fail(res, 400, 'Opción no válida');
-    db.light.stage = show;
+  app.delete('/api/light', requireLocal, (req, res) => {
+    const v = String((req.query || {}).local || '');
+    if (!VENUES[v]) return fail(res, 400, 'Falta el local');
+    delete db.lights[v];
     save();
-    if (show === 'karaoke' || show === 'qr') karaoke.refreshVenue(db.light.venue);
-    res.json(pub());
+    res.json(pub(v));
+  });
+  app.post('/api/light/stage', requireLocal, (req, res) => {
+    const b = req.body || {};
+    const v = String(b.local || '');
+    const show = String(b.show || '');
+    if (!db.lights[v]) return fail(res, 404, 'No hay una sala light abierta en este local');
+    if (!STAGES.includes(show)) return fail(res, 400, 'Opción no válida');
+    db.lights[v].stage = show;
+    save();
+    if (show === 'karaoke' || show === 'qr') karaoke.refreshVenue(v);
+    res.json(pub(v));
   });
 
   // ---------- Público: entrar desde el celular ----------
   app.get('/api/light/:id', (req, res) => {
-    if (!isLight(req.params.id)) return fail(res, 404, 'Esta sala ya terminó');
-    const v = db.light.venue;
-    res.json({ ...pub(), places: karaoke.placesFor(v), insta: insta.handleOf(v) });
+    const l = byId(req.params.id);
+    if (!l) return fail(res, 404, 'Esta sala ya terminó');
+    res.json({ ...pub(l.venue), places: karaoke.placesFor(l.venue), insta: insta.handleOf(l.venue) });
   });
   app.post('/api/light/:id/join', (req, res) => {
-    if (!isLight(req.params.id)) return fail(res, 404, 'Esta sala ya terminó');
+    const l = byId(req.params.id);
+    if (!l) return fail(res, 404, 'Esta sala ya terminó');
     const b = req.body || {};
     const token = typeof b.token === 'string' ? b.token : '';
-    let pl = db.light.players[token];
+    let pl = l.players[token];
     if (!pl) {
       const first = clean(b.name, 20).toLocaleUpperCase('es');
       const last = clean(b.surname, 25).toLocaleUpperCase('es');
       if (!first || !last) return fail(res, 400, 'Escribe tu nombre y tu apellido');
-      const places = karaoke.placesFor(db.light.venue);
+      const places = karaoke.placesFor(l.venue);
       const place = places.find((x) => x === String(b.place || '').trim()) || '';
       if (places.length && !place) return fail(res, 400, 'Elige el lugar donde estás');
       const t = crypto.randomBytes(9).toString('hex');
-      pl = db.light.players[t] = { name: `${first} ${last}`, place };
+      pl = l.players[t] = { name: `${first} ${last}`, place };
       save();
       return res.json({ token: t, name: pl.name, place: pl.place });
     }
     res.json({ token, name: pl.name, place: pl.place });
   });
 
-  // Para el karaoke: quién es el participante y de qué local es la sala; qué local consultar en Google
+  // Para el karaoke: quién es el participante y de qué local es la sala; qué locales consultar en Google
+  const last = {};
   return {
-    findPlayer: (sid, token) => (isLight(sid) ? db.light.players[token] || null : null),
-    venueOf: (sid) => (isLight(sid) ? db.light.venue : ''),
+    findPlayer: (sid, token) => { const l = byId(sid); return l ? l.players[token] || null : null; },
+    venueOf: (sid) => { const l = byId(sid); return l ? l.venue : ''; },
     // Mientras el karaoke o el QR con la lista están en pantalla, se lee la lista cada 3 s; si no, cada ~15 s
-    pollVenues: (() => { let last = 0; return () => {
-      if (!db.light) return [];
-      if (db.light.stage === 'karaoke' || db.light.stage === 'qr' || Date.now() - last > 15000) { last = Date.now(); return [db.light.venue]; }
-      return [];
-    }; })(),
+    pollVenues: () => Object.keys(db.lights).filter((v) => {
+      const l = db.lights[v];
+      if (!l) return false;
+      if (l.stage === 'karaoke' || l.stage === 'qr' || Date.now() - (last[v] || 0) > 15000) { last[v] = Date.now(); return true; }
+      return false;
+    }),
   };
 };

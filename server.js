@@ -277,6 +277,28 @@ function validToken(token) {
 const requireAdmin = (req, res, next) => (validToken(req.get('x-admin')) ? next() : fail(res, 401, 'Inicia sesión como moderador'));
 const attempts = {}; // ip -> { n, until }: frena los intentos de adivinar la contraseña
 
+// ---------- Acceso del equipo de cada local (sala light) ----------
+// Una clave común del equipo, que el moderador pone en el Centro de control (se guarda cifrada, nunca en el código).
+// Con ella, cada local entra por su enlace (#/equipo/<local>) y solo maneja SU sala light: no la sala principal ni otros locales.
+const STAFF_VENUES = ['frida', 'kennedy', 'tobalaba'];
+const STAFF_MS = 16 * 3600e3;
+const staffSign = (v, exp) => crypto.createHmac('sha256', AUTH_KEY).update(`staff:${v}:${exp}`).digest('hex');
+function staffVenue(token) {
+  if (!AUTH_READY || typeof token !== 'string') return '';
+  const [v, exp, sig] = token.split('.');
+  if (!STAFF_VENUES.includes(v) || !(Number(exp) > Date.now()) || !sig) return '';
+  return crypto.timingSafeEqual(sha(sig), sha(staffSign(v, exp))) ? v : '';
+}
+const reqVenue = (req) => String((req.query || {}).local || (req.body || {}).local || (req.body || {}).venue || '');
+// Moderador, o equipo del mismo local que se está manejando
+const requireLocal = (req, res, next) => {
+  if (validToken(req.get('x-admin'))) return next();
+  const v = staffVenue(req.get('x-staff'));
+  if (v && v === reqVenue(req)) return next();
+  return fail(res, 401, 'Entra con la clave del equipo de este local');
+};
+const staffHash = (clave, salt) => crypto.scryptSync(String(clave), salt, 32).toString('hex');
+
 app.post('/api/login', (req, res) => {
   if (!AUTH_READY) return fail(res, 503, 'El acceso de moderador aún no está configurado en el servidor (ADMIN_USER y ADMIN_PASS)');
   const a = (attempts[req.ip] ||= { n: 0, until: 0 });
@@ -292,6 +314,30 @@ app.post('/api/login', (req, res) => {
   const exp = Date.now() + TOKEN_MS;
   res.json({ token: `${exp}.${sign(exp)}` });
 });
+app.get('/api/staff/clave', requireAdmin, (_req, res) => res.json({ set: Boolean((db.staff || {}).hash) }));
+app.post('/api/staff/clave', requireAdmin, (req, res) => {
+  const clave = String((req.body || {}).clave || '').trim();
+  if (clave.length < 4) return fail(res, 400, 'La clave del equipo debe tener al menos 4 caracteres');
+  if (clave.toLowerCase() === 'admin') return fail(res, 400, 'Elige una clave distinta de «admin»');
+  const salt = crypto.randomBytes(16).toString('hex');
+  db.staff = { salt, hash: staffHash(clave, salt), at: Date.now() };
+  save();
+  res.json({ set: true });
+});
+app.post('/api/staff/login', (req, res) => {
+  const b = req.body || {};
+  const v = String(b.local || '');
+  if (!STAFF_VENUES.includes(v)) return fail(res, 400, 'Local no válido');
+  if (!AUTH_READY || !(db.staff || {}).hash) return fail(res, 503, 'Todavía no hay clave del equipo. Pídesela a Cote.');
+  const a = attempts[`staff:${req.ip || 'x'}`] ||= { n: 0, until: 0 };
+  if (Date.now() < a.until) return fail(res, 429, 'Demasiados intentos. Espera 10 minutos.');
+  const ok = crypto.timingSafeEqual(Buffer.from(staffHash(String(b.clave || ''), db.staff.salt), 'hex'), Buffer.from(db.staff.hash, 'hex'));
+  if (!ok) { a.n++; if (a.n >= 8) { a.n = 0; a.until = Date.now() + 10 * 60e3; } return fail(res, 401, 'Clave incorrecta'); }
+  a.n = 0;
+  const exp = Date.now() + STAFF_MS;
+  res.json({ token: `${v}.${exp}.${staffSign(v, exp)}`, venue: v });
+});
+app.get('/api/staff/me', (req, res) => res.json({ venue: staffVenue(req.get('x-staff')) }));
 app.get('/api/me', (req, res) => res.json({ admin: validToken(req.get('x-admin')) }));
 app.use('/api/projects', requireAdmin);
 app.use('/api/sessions/:sid/host', requireAdmin);
@@ -582,7 +628,7 @@ const connectedNames = () => {
 require('./raffle.js')({ app, db, save, requireAdmin, fail, setStage, refreshAll, connectedNames });
 
 let lightApi = null; // sala light (light.js): se conecta más abajo
-const karaoke = require('./karaoke.js')({ app, db, save, requireAdmin, fail, salaVenue: () => (Object.values(db.sessions)[0] || {}).theme || '',
+const karaoke = require('./karaoke.js')({ app, db, save, requireAdmin, requireLocal, fail, salaVenue: () => (Object.values(db.sessions)[0] || {}).theme || '',
   findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || (lightApi ? lightApi.findPlayer(sid, token) : null),
   lightVenue: (sid) => (lightApi ? lightApi.venueOf(sid) : ''), extraVenues: () => (lightApi ? lightApi.pollVenues() : []) });
 // Votación del público (nota del 1 al 10 desde el celular)
@@ -593,7 +639,7 @@ const vote = require('./vote.js')({ app, db, save, requireAdmin, fail, setStage,
 // «Síguenos en Instagram»: la cuenta del local de la sala abierta
 const insta = require('./insta.js')({ app, db, save, requireAdmin, fail, venue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
 // Sala light: karaoke, show y cartelera en otro local, al mismo tiempo que la sala principal
-lightApi = require('./light.js')({ app, db, save, requireAdmin, fail, karaoke, insta });
+lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta });
 // Programación del local del día: el de la sala abierta o, si no hay, el elegido en la sección Karaoke
 require('./agenda.js')({ app, db, save, requireAdmin, fail, currentVenue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
 

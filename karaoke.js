@@ -23,7 +23,7 @@ const TIMEOUT_MS = 10000; // Apps Script puede tardar en un arranque en frío
 const MAX_ACTIVE = 2; // pedidos sin cantar que puede tener una persona a la vez
 const SEPARATORS = [' – ', ' • ', ' - ']; // "Canción – Artista": se corta por la última aparición
 
-module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlayer, salaVenue, lightVenue = () => '', extraVenues = () => [] }) {
+module.exports = function karaoke({ app, db, save, requireAdmin, requireLocal = requireAdmin, fail, findPlayer, salaVenue, lightVenue = () => '', extraVenues = () => [] }) {
   db.karaoke ||= {};
   db.karaoke.venue ||= 'frida';
   // Los pedidos se hacen desde la Sala de juegos: quedan activados (el interruptor del Centro de control los puede apagar)
@@ -175,7 +175,7 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
     }
     return !!KEY && !!db.karaoke.withIds[venue];
   };
-  app.get('/api/karaoke/cola', requireAdmin, (req, res) => {
+  app.get('/api/karaoke/cola', requireLocal, (req, res) => {
     const venue = pickVenue(req);
     const c = cache[venue] || { list: [], at: 0, error: '' };
     res.json({ venue, name: VENUES[venue], phone: !!db.karaoke.phone, edit: editable(venue), list: c.list.map(({ raw, ...p }) => p), total: c.list.length, at: c.at, stale: !!c.error });
@@ -193,7 +193,7 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
     return data;
   }
   let acting = false;
-  app.post('/api/karaoke/accion', requireAdmin, async (req, res) => {
+  app.post('/api/karaoke/accion', requireLocal, async (req, res) => {
     const b = req.body || {};
     const venue = pickVenue(req);
     if (!['cantado', 'subir', 'bajar'].includes(b.accion)) return fail(res, 400, 'Acción no válida');
@@ -220,7 +220,7 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
   });
   // «Ya cantaron»: marcas de esta noche en «Cantados», para revisar y deshacer un error
   const timeRe = /^(\d{1,2}\/\d{1,2}\/\d{4} )?(\d{1,2}:\d{2})(:\d{2})? /;
-  app.get('/api/karaoke/cantados', requireAdmin, async (req, res) => {
+  app.get('/api/karaoke/cantados', requireLocal, async (req, res) => {
     try {
       const data = await callScript(pickVenue(req), { accion: 'cantados' });
       const list = (Array.isArray(data.lista) ? data.lista : []).map((x) => {
@@ -231,7 +231,7 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
       res.json({ list });
     } catch (err) { fail(res, 502, `No se pudo leer «Ya cantaron»: ${clean(err && err.message, 200)}`); }
   });
-  app.post('/api/karaoke/volver', requireAdmin, async (req, res) => {
+  app.post('/api/karaoke/volver', requireLocal, async (req, res) => {
     const b = req.body || {};
     const fila = Number(b.fila);
     if (!(fila >= 2)) return fail(res, 400, 'Marca no válida');

@@ -4,44 +4,71 @@
 (() => {
   const VENUES = { kennedy: 'Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' };
   const lightJoin = (id) => `${location.origin}${location.pathname}#/l/${id}`;
-  const gcUrl = () => `${location.origin}${location.pathname}#/light-gc`;
+  const gcUrl = (v) => `${location.origin}${location.pathname}#/light-gc/${v}`;
+  const teamUrl = (v) => `${location.origin}${location.pathname}#/equipo/${v}`;
+  // ¿Quién maneja este panel? El moderador, o el equipo del local (clave del equipo)
+  const staffVenue = async () => (store.get('staffToken') ? (await api('GET', '/api/staff/me').catch(() => ({}))).venue || '' : '');
   const STAGES = [['karaoke', '🎤', 'Karaoke'], ['show', '⭐', 'Show y lo que viene'], ['cartelera', '📅', 'Cartelera de la semana'], ['qr', '📱', 'QR grande y lista'], ['none', '⛔', 'Nada']];
   const dayName = (d) => ({ MIERCOLES: 'Miércoles', SABADO: 'Sábado' }[d] || d.charAt(0) + d.slice(1).toLowerCase());
 
-  // ---------- Panel del animador y del DJ ----------
+  // ---------- Panel del moderador: salas light de cada local ----------
   views.light = async () => {
     if (!(await isAdmin())) return viewLogin();
     app.innerHTML = '<p class="back"><a href="#/control">← Centro de control</a></p><div id="lp"></div>';
     let last = '';
     const paint = async () => {
       const st = await api('GET', '/api/light').catch(() => null);
+      const key = await api('GET', '/api/staff/clave').catch(() => ({}));
       if (!st || !$('#lp')) return;
-      const sig = JSON.stringify(st);
+      const sig = JSON.stringify([st.lights, key]);
       if (sig === last) return;
       last = sig;
-      if (!st.open) {
-        $('#lp').innerHTML = `<div class="panel"><h1 style="margin-top:0">Sala light</h1>
-          <p class="muted">Karaoke, show, lo que viene y cartelera de la semana, con su propio QR. Funciona al mismo tiempo que la sala principal, sin tocarla.</p>
-          <form id="lp-new" class="fields" style="grid-template-columns:1fr"><label class="f">Local<select name="venue">${Object.entries(VENUES).map(([v, n]) => `<option value="${v}">${esc(n)}</option>`).join('')}</select></label>
-          <button class="primary big">Abrir sala light</button></form></div>`;
-        $('#lp-new').onsubmit = async (e) => { e.preventDefault(); try { await api('POST', '/api/light', { venue: new FormData(e.target).get('venue') }); last = ''; paint(); } catch (err) { fail(err); } };
-        return;
-      }
-      // Abierta: todo se maneja en una sola pantalla (GC + lista del karaoke + direcciones)
-      location.replace(`#/karaokectl/${st.venue}`);
+      const open = st.lights || [];
+      const closed = Object.keys(VENUES).filter((v) => !open.some((l) => l.venue === v));
+      $('#lp').innerHTML = `<div class="panel"><h1 style="margin-top:0">Salas light</h1>
+          <p class="muted">Karaoke, show, lo que viene y cartelera de la semana, con su propio QR. Puede haber una por local, al mismo tiempo que la sala principal.</p>
+          ${open.length ? `<div class="lp-open-list">${open.map((l) => `<a class="btn primary big" href="#/karaokectl/${l.venue}">💡 ${esc(l.title)} · ${l.players} ${l.players === 1 ? 'persona' : 'personas'}</a>`).join('')}</div>` : '<p class="muted">No hay salas light abiertas.</p>'}
+          ${closed.length ? `<form id="lp-new" class="fields" style="grid-template-columns:1fr;margin-top:14px"><label class="f">Abrir en<select name="venue">${closed.map((v) => `<option value="${v}">${esc(VENUES[v])}</option>`).join('')}</select></label>
+          <button class="primary">Abrir sala light</button></form>` : ''}</div>
+        <div class="panel"><h2 style="margin-top:0">Enlaces del equipo</h2>
+          <p class="muted small">Con estos enlaces y la clave del equipo, cada local maneja solo su sala light: no puede tocar la sala principal ni otros locales.</p>
+          ${Object.keys(VENUES).map((v) => `<p class="small"><b>${esc(VENUES[v])}:</b><br><a href="${esc(teamUrl(v))}" target="_blank">${esc(teamUrl(v))}</a></p>`).join('')}
+          <form id="lp-key" class="fields" style="grid-template-columns:1fr"><label class="f">${key.set ? 'Cambiar la clave del equipo' : 'Clave del equipo (todavía no hay)'}<input type="text" name="clave" minlength="4" required autocomplete="off" placeholder="Al menos 4 caracteres, que no sea admin"></label>
+          <button class="primary">Guardar clave</button></form></div>`;
+      if ($('#lp-new')) $('#lp-new').onsubmit = async (e) => { e.preventDefault(); const v = new FormData(e.target).get('venue'); try { await api('POST', '/api/light', { venue: v }); location.hash = `#/karaokectl/${v}`; } catch (err) { fail(err); } };
+      $('#lp-key').onsubmit = async (e) => { e.preventDefault(); try { await api('POST', '/api/staff/clave', { clave: new FormData(e.target).get('clave') }); toast('Clave del equipo guardada'); last = ''; paint(); } catch (err) { fail(err); } };
     };
     await paint();
-    const timer = setInterval(paint, 4000);
+    const timer = setInterval(paint, 5000);
     return () => clearInterval(timer);
   };
 
+  // ---------- Enlace del equipo de un local: #/equipo/<local> ----------
+  views.equipo = async (v) => {
+    if (!VENUES[v]) { app.innerHTML = '<div class="panel"><h1>Enlace incompleto</h1><p class="muted">Pide a Cote el enlace de tu local.</p></div>'; return undefined; }
+    const go = async () => {
+      // Si la sala light del local no está abierta, el equipo la abre al entrar
+      try { await api('POST', '/api/light', { venue: v, local: v }); location.hash = `#/karaokectl/${v}`; } catch (err) { fail(err); }
+    };
+    if ((await isAdmin()) || (await staffVenue()) === v) return go();
+    app.innerHTML = `<form class="panel" id="eq" style="max-width:460px;margin:0 auto"><h1 style="margin-top:0">Sala light · ${esc(VENUES[v])}</h1>
+      <p class="muted">Ingreso del equipo del local.</p>
+      <label class="f">Clave del equipo<input type="password" name="clave" required autocomplete="current-password"></label>
+      <button class="primary big" style="margin-top:12px">Entrar</button></form>`;
+    $('#eq').onsubmit = async (e) => {
+      e.preventDefault();
+      try { const r = await api('POST', '/api/staff/login', { local: v, clave: new FormData(e.target).get('clave') }); store.set('staffToken', r.token); go(); } catch (err) { fail(err); }
+    };
+    return undefined;
+  };
+
   // Botones del GC (arriba) y direcciones (abajo) de la sala light, dentro del panel del karaoke de su local
-  views.lightBar = (top, bottom) => {
+  views.lightBar = (top, bottom, v, staff = false) => {
     let last = '';
     const paint = async () => {
-      const st = await api('GET', '/api/light').catch(() => null);
+      const st = await api('GET', `/api/light?local=${v}`).catch(() => null);
       if (!st || !top.isConnected) return;
-      if (!st.open) { location.hash = '#/light'; return; }
+      if (!st.open) { location.hash = staff ? `#/equipo/${v}` : '#/light'; return; }
       const sig = JSON.stringify(st);
       if (sig === last) return;
       last = sig;
@@ -51,12 +78,12 @@
       bottom.innerHTML = `<h2 style="margin-top:0">Direcciones</h2>
         <div class="lp-links"><div>${qr(lightJoin(st.id))}</div><div>
           <p class="small"><b>Para entrar desde el celular</b> (es el QR de la sala light):<br><a href="${esc(lightJoin(st.id))}" target="_blank">${esc(lightJoin(st.id))}</a></p>
-          <p class="small"><b>GC para OBS</b> (fuente de navegador):<br><a href="${esc(gcUrl())}" target="_blank">${esc(gcUrl())}</a></p></div></div>
+          <p class="small"><b>GC para OBS</b> (fuente de navegador):<br><a href="${esc(gcUrl(v))}" target="_blank">${esc(gcUrl(v))}</a></p></div></div>
         <button type="button" id="lp-close" class="danger" style="margin-top:14px">Cerrar sala light</button>`;
-      top.querySelectorAll('[data-st]').forEach((b) => { b.onclick = async () => { try { await api('POST', '/api/light/stage', { show: b.dataset.st }); last = ''; paint(); } catch (err) { fail(err); } }; });
+      top.querySelectorAll('[data-st]').forEach((b) => { b.onclick = async () => { try { await api('POST', '/api/light/stage', { show: b.dataset.st, local: v }); last = ''; paint(); } catch (err) { fail(err); } }; });
       bottom.querySelector('#lp-close').onclick = async () => {
         if (!confirm('¿Cerrar la sala light? Las personas que entraron tendrán que volver a entrar.')) return;
-        try { await api('DELETE', '/api/light'); location.hash = '#/light'; } catch (err) { fail(err); }
+        try { await api('DELETE', `/api/light?local=${v}`); location.hash = staff ? `#/equipo/${v}` : '#/light'; } catch (err) { fail(err); }
       };
     };
     paint();
@@ -68,7 +95,7 @@
   const weekHTML = (c) => c.week.map((d) => `<div class="lg-day ${d.today ? 'today' : ''}"><b>${esc(dayName(d.day))} ${d.date}</b>
       ${d.show ? `<span class="lg-show">⭐ ${esc(d.show)}</span>` : ''}
       ${d.hours.length ? `<span class="lg-hours">${d.hours.map((h) => `${esc(h.time)} ${esc(h.label)}`).join(' · ')}</span>` : ''}</div>`).join('');
-  views['light-gc'] = async () => {
+  views['light-gc'] = async (venue) => {
     document.body.classList.add('obs', 'gc-screen');
     app.innerHTML = '<div id="lg"></div>';
     let shown = '';
@@ -76,11 +103,12 @@
     let alive = true;
     const stopSub = () => { if (typeof sub === 'function') sub(); sub = null; };
     const tick = async () => {
-      const st = await api('GET', '/api/light').catch(() => null);
+      // Con local (#/light-gc/kennedy) muestra esa sala; sin local, la primera abierta
+      const st = await api('GET', `/api/light${VENUES[venue] ? `?local=${venue}` : ''}`).catch(() => null);
       if (!alive || !st) return;
       const stage = st.open ? st.stage : 'none';
       let c = null;
-      if (stage === 'show' || stage === 'cartelera') c = await api('GET', '/api/light/cartelera').catch(() => null);
+      if (stage === 'show' || stage === 'cartelera') c = await api('GET', `/api/light/cartelera?local=${st.venue}`).catch(() => null);
       let k = null;
       if (stage === 'qr') k = await api('GET', `/api/karaoke?local=${st.venue}`).catch(() => null);
       if (!alive) return;
