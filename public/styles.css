@@ -1449,3 +1449,23 @@ body.kids main { max-width: 640px; }
 @keyframes kz-shake { 20%, 60% { transform: translateX(-10px); } 40%, 80% { transform: translateX(10px); } }
 .kz-row { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .kz-card, .kz-mcard, .kz-balloon { min-width: 0; padding: 0; }
+/* KRB Kids sin texto: menú de íconos grandes y juegos para tocar */
+.kz-menu { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.kz-game { justify-content: center; aspect-ratio: 1; padding: 0; font-size: clamp(4rem, 26vw, 7rem); border-radius: 32px; }
+.kz-icon { font-size: 2.4rem; }
+.kz-stage { width: 100%; }
+.kz-sky { position: relative; width: 100%; height: calc(100vh - 110px); overflow: hidden; border-radius: 28px; background: rgba(255, 255, 255, .18); touch-action: none; }
+.kz-sky .kz-balloon { position: absolute; bottom: -30%; width: 26%; max-width: 130px; animation-iteration-count: 1; }
+.kz-rise { animation-name: kz-rise; animation-timing-function: linear; animation-fill-mode: forwards; }
+@keyframes kz-rise { from { transform: translateY(0); } to { transform: translateY(calc(-100vh - 40%)); } }
+.kz-sky .kz-balloon.kz-pop { animation: kz-pop .4s forwards; }
+.kz-peek { width: 84px; height: 84px; border-radius: 18px; background-size: cover; border: 4px solid #fff; opacity: .9; }
+.kz-puzzle { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; width: min(100%, 380px); padding: 6px; border-radius: 26px; background: rgba(255, 255, 255, .6); }
+.kz-piece { aspect-ratio: 1; min-width: 0; padding: 0; border: 0; border-radius: 18px; background-size: 200% 200%; box-shadow: 0 4px 0 rgba(74, 44, 138, .25); }
+.kz-piece.sel { outline: 6px solid #ffc400; transform: scale(.94); }
+.kz-well { display: grid; grid-template-columns: repeat(var(--w), 1fr); gap: 4px; width: min(100%, 360px); padding: 8px; border-radius: 22px; background: rgba(255, 255, 255, .25); }
+.kz-well i { aspect-ratio: 1; border-radius: 8px; background: rgba(255, 255, 255, .25); box-shadow: inset 0 -4px 0 rgba(0, 0, 0, .12); }
+.kz-flash { animation: kz-bounce .5s; }
+.kz-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: min(100%, 360px); }
+.kz-pad button { padding: 18px 0; border: 0; border-radius: 22px; background: #fff; color: #4a2c8a; font-size: 2rem; box-shadow: 0 5px 0 rgba(74, 44, 138, .25); touch-action: manipulation; }
+.kz-pad button:active { transform: translateY(3px); box-shadow: 0 2px 0 rgba(74, 44, 138, .25); }
