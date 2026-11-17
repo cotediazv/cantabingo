@@ -71,9 +71,8 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 @media (max-width:720px){
   .portada{min-height:0}
   body .portada .envoltura{padding-bottom:calc(50vw + 40px)}
-  .video-portada{top:auto;height:auto;aspect-ratio:2/1}
-  .velo{background:linear-gradient(180deg,var(--noche) 0%,rgba(12,11,18,.85) 55%,rgba(12,11,18,0) 72%)}
-  .portada.foco .envoltura{opacity:.35}
+  .video-portada{top:auto;height:auto;aspect-ratio:2/1;filter:none}
+  .velo{bottom:50vw;background:linear-gradient(180deg,var(--noche) 0%,rgba(12,11,18,.85) 80%,rgba(12,11,18,0) 100%)}
 }
 .portada .envoltura{position:relative;padding-block:120px 96px;display:grid;gap:28px}
 .portada h1{font-family:var(--f-display);font-weight:900;text-transform:uppercase;font-size:clamp(84px,19vw,248px);line-height:.8;margin:0}
@@ -865,8 +864,7 @@ elegirLocal('kennedy');
   const tactil=matchMedia('(hover: none)').matches;
   if(!tactil){titulo.addEventListener('mouseenter',()=>portada.classList.add('foco'));
   portada.addEventListener('mouseleave',()=>portada.classList.remove('foco'))}
-  // en celular: tocar la portada pone el video al frente; tocar de nuevo lo devuelve
-  portada.addEventListener('click',()=>{if(tactil)portada.classList.toggle('foco')});
+
 })();
 
 /* ===== portada: celulares del público que se conectan con la luz del escenario ===== */
