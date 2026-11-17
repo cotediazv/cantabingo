@@ -1387,3 +1387,12 @@ body.rot-screen main { padding: 0; max-width: none; }
 .krb-mark { position: fixed; left: max(8px, .8vw); bottom: max(4px, .5vh); z-index: 50; height: clamp(16px, 3vh, 34px); width: auto; opacity: .55; pointer-events: none; user-select: none; }
 /* En el tablero vertical la pantalla de afuera solo gira la de adentro, que ya trae su propia marca */
 body.rot-screen .krb-mark { display: none; }
+/* Logo KRB Stage dentro del cuadro rosado de «Ahora canta» (karaoke en OBS, tablero y sala light) */
+.kg-now, .kf-now { position: relative; }
+.kg-logo { position: absolute; top: 1.2vh; right: 1.4vh; height: 5.4vh; width: auto; opacity: .9; pointer-events: none; filter: drop-shadow(0 .3vh .5vh rgba(0, 0, 0, .35)); }
+.kf-now .kg-logo { top: auto; bottom: 2.4vh; right: 2.4vh; height: 9vh; }
+body.logo-in-box .krb-mark { display: none; }
+/* En OBS el cuadro es bajo: el texto deja libre a ambos lados el ancho del logo (queda centrado y no se cruzan) */
+.kg-now { padding-left: 9vh; padding-right: 9vh; }
+.kg-now .kg-logo { top: 50%; right: 1.6vh; transform: translateY(-50%); height: 5vh; }
+.kg-next { padding-left: 9vh; padding-right: 9vh; }
