@@ -1396,3 +1396,8 @@ body.logo-in-box .krb-mark { display: none; }
 .kg-now { padding-left: 9vh; padding-right: 9vh; }
 .kg-now .kg-logo { top: 50%; right: 1.6vh; transform: translateY(-50%); height: 5vh; }
 .kg-next { padding-left: 9vh; padding-right: 9vh; }
+/* GC: el logo va en el cuadro de la izquierda, al lado de «Local / Karaoke»; las columnas de nombres quedan libres */
+.kg-tag { display: flex; align-items: center; gap: 2.2vh; }
+.kg-tag > div { display: grid; justify-items: center; gap: .6vh; }
+.kg-tag .kg-logo { position: static; transform: none; height: 8vh; opacity: .95; }
+.kg-now, .kg-next { padding-left: 2.4vh; padding-right: 2.4vh; }
