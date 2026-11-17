@@ -289,7 +289,7 @@
   document.addEventListener('click', (e) => {
     if (e.target.closest && e.target.closest('.kids-entry')) { try { sessionStorage.setItem('kidsBack', location.hash); } catch { /* sin almacenamiento */ } }
   }, true);
-  const backTo = () => { let h = ''; try { h = sessionStorage.getItem('kidsBack') || ''; } catch { /* nada */ } return h && !h.startsWith('#/kids') ? h : '#/'; };
+  const backTo = () => { let h = ''; try { h = sessionStorage.getItem('kidsBack') || ''; } catch { /* nada */ } return h && !h.startsWith('#/kids') ? h : '#/jugar'; }; // sin sala de origen: al ingreso de clientes
 
   views.kids = async (which) => {
     document.body.classList.add('kids');
