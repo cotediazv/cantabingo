@@ -24,50 +24,60 @@
   const bar = (frac) => `<div class="kz-bar"><i style="width:${Math.round(Math.max(0, Math.min(1, frac)) * 100)}%"></i><span>🏆</span></div>`;
   const setBar = (stage, frac) => { const i = stage.querySelector('.kz-bar i'); if (i) i.style.width = `${Math.round(Math.max(0, Math.min(1, frac)) * 100)}%`; };
   const games = {
-    // Globos por etapas: en cada etapa hay que reventar algunos globos más; suben un poco más rápido
-    // y el fondo cambia. La barra se llena con cada globo. Al terminar la última etapa, el trofeo.
-    globos(stage) {
-      const STAGES = [{ goal: 12, rise: 11, every: 1400 }, { goal: 16, rise: 9.5, every: 1200 }, { goal: 20, rise: 8, every: 1050 }, { goal: 24, rise: 7, every: 950 }];
-      let st = 0;
-      let popped = 0;
-      let timer = null;
-      const start = () => {
-        clearInterval(timer);
-        document.body.dataset.kzLevel = String(st + 1);
-        stage.innerHTML = `${bar(st / STAGES.length)}<div class="kz-sky"></div>`;
-        const sky = stage.querySelector('.kz-sky');
-        const conf = STAGES.at(st);
-        const launch = () => {
-          if (!sky.isConnected) return;
-          const b = document.createElement('button');
-          b.type = 'button';
-          b.className = 'kz-balloon kz-rise';
-          b.setAttribute('aria-label', 'Globo');
-          b.style.setProperty('--c', pick(COLORS));
-          b.style.left = `${5 + Math.random() * 70}%`;
-          b.style.animationDuration = `${conf.rise + Math.random() * 3}s`;
-          b.onpointerdown = () => {
-            if (b.classList.contains('kz-pop')) return;
-            b.classList.add('kz-pop');
-            setTimeout(() => b.remove(), 400);
-            popped++;
-            setBar(stage, (st + popped / conf.goal) / STAGES.length);
-            if (popped >= conf.goal) {
-              clearInterval(timer);
-              confetti();
-              st++;
-              popped = 0;
-              setTimeout(() => { if (!stage.isConnected) return; if (st >= STAGES.length) finale(stage, () => { st = 0; start(); }); else start(); }, 1600);
-            }
-          };
-          b.onanimationend = (e) => { if (e.animationName === 'kz-rise') b.remove(); };
-          sky.appendChild(b);
-        };
-        for (let i = 0; i < 3; i++) setTimeout(launch, i * 500);
-        timer = setInterval(launch, conf.every);
+    // Pintar: se toca un color y después una parte del dibujo. 8 dibujos que van teniendo más partes;
+    // en los últimos 4 hay un modelo chico arriba y hay que pintar igual (un color equivocado no pinta).
+    // La barra se llena con cada dibujo terminado; al final, el trofeo.
+    pintar(stage, round = 0) {
+      const INK = '#3b2a4d';
+      const P = ['#e63946', '#ff8c1a', '#ffc400', '#2bb24c', '#3a86ff', '#8e44ad', '#ff5fa2', '#8d5524'];
+      // Cada dibujo: partes que se pintan [etiqueta SVG, atributos] y detalles fijos (ojos, líneas)
+      const D = [
+        { parts: [['ellipse', 'cx="95" cy="100" rx="58" ry="40"'], ['polygon', 'points="150,100 185,70 185,130"'], ['polygon', 'points="85,62 110,35 120,64"'], ['circle', 'cx="40" cy="45" r="12"']],
+          deco: '<circle cx="65" cy="92" r="6" fill="#3b2a4d"/><path d="M48 112 q10 8 20 0" stroke="#3b2a4d" stroke-width="3" fill="none"/>' },
+        { parts: [['rect', 'x="45" y="95" width="110" height="80"'], ['polygon', 'points="35,98 100,40 165,98"'], ['rect', 'x="88" y="125" width="28" height="50"'], ['rect', 'x="55" y="110" width="24" height="24"'], ['circle', 'cx="165" cy="35" r="18"']],
+          deco: '<circle cx="110" cy="152" r="3" fill="#3b2a4d"/>' },
+        { parts: [['ellipse', 'cx="100" cy="150" rx="45" ry="35"'], ['circle', 'cx="100" cy="85" r="42"'], ['polygon', 'points="64,62 70,20 95,46"'], ['polygon', 'points="136,62 130,20 105,46"'], ['polygon', 'points="92,92 108,92 100,102"'], ['path', 'd="M142 160 q40 -10 30 -50 q-4 -8 -10 0 q6 30 -22 38z"']],
+          deco: '<circle cx="84" cy="78" r="6" fill="#3b2a4d"/><circle cx="116" cy="78" r="6" fill="#3b2a4d"/><path d="M100 102 q-8 10 -16 4 M100 102 q8 10 16 4 M60 92 h-26 M60 98 h-24 M140 92 h26 M140 98 h24" stroke="#3b2a4d" stroke-width="2.5" fill="none"/>' },
+        { parts: [['path', 'd="M40 120 a60 55 0 0 1 120 0 z"'], ['circle', 'cx="172" cy="108" r="18"'], ['ellipse', 'cx="58" cy="132" rx="14" ry="10"'], ['ellipse', 'cx="142" cy="132" rx="14" ry="10"'], ['ellipse', 'cx="80" cy="134" rx="12" ry="9"'], ['ellipse', 'cx="120" cy="134" rx="12" ry="9"'], ['polygon', 'points="40,118 22,126 40,128"']],
+          deco: '<circle cx="177" cy="103" r="4" fill="#3b2a4d"/><path d="M70 92 l15 -18 l15 18 l15 -18 l15 18" stroke="#3b2a4d" stroke-width="3" fill="none"/>' },
+        { parts: [['ellipse', 'cx="100" cy="160" rx="50" ry="34"'], ['circle', 'cx="100" cy="90" r="50"'], ['circle', 'cx="58" cy="48" r="18"'], ['circle', 'cx="142" cy="48" r="18"'], ['circle', 'cx="58" cy="48" r="8"'], ['circle', 'cx="142" cy="48" r="8"'], ['ellipse', 'cx="100" cy="108" rx="24" ry="18"'], ['ellipse', 'cx="100" cy="100" rx="9" ry="6"']],
+          deco: '<circle cx="80" cy="80" r="6" fill="#3b2a4d"/><circle cx="120" cy="80" r="6" fill="#3b2a4d"/><path d="M100 106 v8 q-6 6 -12 2 M100 114 q6 6 12 2" stroke="#3b2a4d" stroke-width="2.5" fill="none"/>' },
+        { parts: [['rect', 'x="20" y="100" width="160" height="45" rx="14"'], ['path', 'd="M55 100 l20 -38 h55 l22 38 z"'], ['path', 'd="M72 98 l12 -26 h18 v26 z"'], ['path', 'd="M110 98 v-26 h16 l13 26 z"'], ['circle', 'cx="60" cy="148" r="20"'], ['circle', 'cx="142" cy="148" r="20"'], ['circle', 'cx="60" cy="148" r="8"'], ['circle', 'cx="142" cy="148" r="8"']],
+          deco: '<rect x="166" y="112" width="12" height="8" rx="2" fill="#ffe066" stroke="#3b2a4d" stroke-width="2"/>' },
+        { parts: [['ellipse', 'cx="62" cy="70" rx="40" ry="34"'], ['ellipse', 'cx="138" cy="70" rx="40" ry="34"'], ['ellipse', 'cx="68" cy="135" rx="30" ry="26"'], ['ellipse', 'cx="132" cy="135" rx="30" ry="26"'], ['ellipse', 'cx="100" cy="110" rx="12" ry="55"'], ['circle', 'cx="100" cy="50" r="14"'], ['circle', 'cx="62" cy="68" r="12"'], ['circle', 'cx="138" cy="68" r="12"'], ['circle', 'cx="82" cy="18" r="7"'], ['circle', 'cx="118" cy="18" r="7"']],
+          deco: '<path d="M94 40 q-6 -14 -10 -18 M106 40 q6 -14 10 -18" stroke="#3b2a4d" stroke-width="2.5" fill="none"/><circle cx="95" cy="48" r="2.5" fill="#3b2a4d"/><circle cx="105" cy="48" r="2.5" fill="#3b2a4d"/>' },
+        { parts: [['path', 'd="M75 150 v-80 q25 -60 50 0 v80 z"'], ['path', 'd="M75 72 q25 -62 50 0 z"'], ['circle', 'cx="100" cy="100" r="17"'], ['circle', 'cx="100" cy="100" r="10"'], ['path', 'd="M75 120 l-25 35 h25 z"'], ['path', 'd="M125 120 l25 35 h-25 z"'], ['path', 'd="M80 150 q20 50 40 0 z"'], ['path', 'd="M90 150 q10 28 20 0 z"'], ['polygon', 'points="35,40 39,50 50,50 41,57 45,68 35,61 25,68 29,57 20,50 31,50"'], ['polygon', 'points="165,70 168,78 177,78 170,83 173,92 165,87 157,92 160,83 153,78 162,78"']],
+          deco: '' },
+      ];
+      const MODEL_FROM = 4; // desde el 5.º dibujo, pintar igual que el modelo
+      document.body.dataset.kzLevel = String(Math.min(6, round + 1));
+      if (round >= D.length) { finale(stage, () => games.pintar(stage, 0)); return null; }
+      const d = D.at(round);
+      const model = round >= MODEL_FROM;
+      const target = d.parts.map((_, i) => P.at((i * 3 + round) % P.length));
+      const fills = d.parts.map(() => null);
+      let color = P.at(0);
+      const svg = (paintWith, cls) => `<svg viewBox="0 0 200 200" class="${cls}">${d.parts.map(([tag, attrs], i) => `<${tag} ${attrs} data-r="${i}" fill="${paintWith(i) || '#fff'}" stroke="${INK}" stroke-width="3" stroke-linejoin="round"/>`).join('')}<g pointer-events="none">${d.deco}</g></svg>`;
+      const draw = () => {
+        stage.innerHTML = `${bar(round / D.length)}${model ? `<div class="kz-model">${svg((i) => target.at(i), '')}</div>` : ''}
+          <div class="kz-canvas">${svg((i) => fills.at(i), 'kz-paint')}</div>
+          <div class="kz-palette">${P.map((c) => `<button type="button" class="${c === color ? 'on' : ''}" data-c="${c}" style="--c:${c}" aria-label="Color"></button>`).join('')}</div>`;
+        stage.querySelectorAll('[data-c]').forEach((b) => { b.onclick = () => { color = b.dataset.c; stage.querySelectorAll('[data-c]').forEach((x) => x.classList.toggle('on', x === b)); }; });
+        stage.querySelectorAll('.kz-paint [data-r]').forEach((el) => { el.onclick = () => {
+          const i = Number(el.dataset.r);
+          if (model && color !== target.at(i)) { el.classList.remove('kz-no'); void el.getBoundingClientRect(); el.classList.add('kz-no'); return; }
+          fills[i] = color;
+          el.setAttribute('fill', color);
+          if (fills.every(Boolean)) {
+            stage.querySelector('.kz-canvas').classList.add('kz-yes');
+            setBar(stage, (round + 1) / D.length);
+            confetti();
+            setTimeout(() => { if (stage.isConnected) games.pintar(stage, round + 1); }, 2000);
+          }
+        }; });
       };
-      start();
-      return () => clearInterval(timer);
+      draw();
+      return null;
     },
     // Memoria: 4 cartas; después 6
     // Memoria por niveles: 4 → 6 → 8 → 12 → 16 → 16 cartas. Cada nivel cambia el color del fondo y suma una
@@ -266,15 +276,14 @@
   };
   // Íconos ilustrados de cada juego
   const shine = (x, y, rx, ry) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="#fff" opacity=".55"/>`;
-  const balloon = (cx, cy, c, d) => `<path d="M${cx} ${cy + 24} q-4 14 3 26" stroke="#8a7a9a" stroke-width="1.6" fill="none"/><ellipse cx="${cx}" cy="${cy}" rx="17" ry="21" fill="${c}"/><ellipse cx="${cx + 5}" cy="${cy + 4}" rx="12" ry="16" fill="${d}" opacity=".35"/>${shine(cx - 6, cy - 8, 4.5, 7)}<path d="M${cx - 3} ${cy + 24} h6 l-3 -4z" fill="${c}"/>`;
   const cube = (x, y, s, c, light, dark) => `<path d="M${x} ${y} l${s / 2} ${-s / 4} l${s / 2} ${s / 4} l${-s / 2} ${s / 4}z" fill="${light}"/><path d="M${x} ${y} v${s * 0.6} l${s / 2} ${s / 4} v${-s * 0.6}z" fill="${c}"/><path d="M${x + s} ${y} v${s * 0.6} l${-s / 2} ${s / 4} v${-s * 0.6}z" fill="${dark}"/>`;
   const ICONS = {
-    globos: `<svg viewBox="0 0 100 100" aria-hidden="true">${balloon(32, 40, '#ff4d6d', '#b5172f')}${balloon(68, 36, '#3a86ff', '#1747a6')}${balloon(50, 52, '#ffbe0b', '#c27c00')}</svg>`,
+    pintar: `<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M50 18 C24 18 10 36 12 54 c2 18 18 28 32 26 c8 -1 6 -10 12 -12 c8 -3 14 6 24 -2 c10 -8 10 -30 -6 -42 c-7 -5 -15 -6 -24 -6z" fill="#f4d7a1" stroke="#b58a4a" stroke-width="2"/><circle cx="32" cy="38" r="7" fill="#e63946"/><circle cx="52" cy="30" r="7" fill="#ffc400"/><circle cx="70" cy="40" r="7" fill="#2bb24c"/><circle cx="28" cy="58" r="7" fill="#3a86ff"/><ellipse cx="54" cy="56" rx="7" ry="6" fill="#fff" stroke="#b58a4a" stroke-width="1.5"/>${shine(30, 35, 2, 1.5)}${shine(50, 27, 2, 1.5)}<g transform="rotate(35 74 66)"><rect x="70" y="40" width="8" height="34" rx="3" fill="#8d5524"/><rect x="69" y="70" width="10" height="6" fill="#c0c0c0"/><path d="M69 76 h10 l-2 12 q-3 4 -6 0z" fill="#8e44ad"/></g></svg>`,
     memoria: `<svg viewBox="0 0 100 100" aria-hidden="true"><g transform="rotate(-14 40 52)"><rect x="18" y="22" width="44" height="60" rx="8" fill="#ff8fab"/><rect x="23" y="27" width="34" height="50" rx="5" fill="none" stroke="#fff" stroke-width="2.5" stroke-dasharray="4 4"/></g><g transform="rotate(10 62 50)"><rect x="40" y="18" width="44" height="60" rx="8" fill="#fff" stroke="#e7d3ff" stroke-width="2"/><path d="M62 62 C44 50 48 36 56 36 c4 0 6 3 6 5 c0 -2 2 -5 6 -5 c8 0 12 14 -6 26z" fill="#ff3d6e"/>${shine(55, 42, 3, 2)}<path d="M48 26 l2 4 4 .6 -3 2.8 .8 4 -3.8 -2 -3.6 2 .7 -4 -3 -2.8 4 -.6z" fill="#ffbe0b"/></g></svg>`,
     puzzle: `<svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="kz-pz" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7ae582"/><stop offset="1" stop-color="#25a244"/></linearGradient><linearGradient id="kz-pz2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd166"/><stop offset="1" stop-color="#f77f00"/></linearGradient></defs><path d="M14 30 H32 a8 8 0 1 1 16 0 H62 V46 a8 8 0 1 1 0 16 V80 H46 a8 8 0 1 0 -16 0 H14 V62 a8 8 0 1 0 0 -16 Z" fill="url(#kz-pz)" stroke="#1b7a35" stroke-width="2"/>${shine(26, 40, 6, 4)}<g transform="rotate(14 74 30)"><path d="M62 16 H86 V40 H62 Z" fill="url(#kz-pz2)" stroke="#b35900" stroke-width="2"/>${shine(70, 22, 4, 2.5)}</g></svg>`,
     bloques: `<svg viewBox="0 0 100 100" aria-hidden="true">${cube(14, 62, 24, '#e63946', '#ff8a94', '#a4161a')}${cube(38, 62, 24, '#1d6fe0', '#7fb3ff', '#0b3d91')}${cube(62, 62, 24, '#2bb24c', '#8ef0a7', '#147a2e')}${cube(26, 44, 24, '#ffc400', '#ffe38a', '#b58900')}${cube(50, 44, 24, '#e63946', '#ff8a94', '#a4161a')}${cube(38, 26, 24, '#1d6fe0', '#7fb3ff', '#0b3d91')}</svg>`,
   };
-  const MENU = [['globos'], ['memoria'], ['puzzle'], ['bloques']];
+  const MENU = [['pintar'], ['memoria'], ['puzzle'], ['bloques']];
 
   // Se recuerda desde qué pantalla se entró, para volver ahí con «Volver a la sala»
   document.addEventListener('click', (e) => {
