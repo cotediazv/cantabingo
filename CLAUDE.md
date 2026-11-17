@@ -20,6 +20,12 @@ Sitio: https://cantabingo.onrender.com · Render (plan Starter, disco de 1 GB) �
 - La clave del karaoke (`KARAOKE_CLAVE`) también va solo en Render. Las claves del equipo (una por local) las pone Cote en Centro de control → Salas light (se guardan cifradas en los datos, nunca en el repositorio).
 - Nombres del equipo: **Code 1** = este chat (Sala de juegos); **Code 2** = guía de código de la página web; **Claude 1** = karaoke, planillas y GC (antes «Claude (karaoke)»); **Claude 2** = desarrollo y publicación de la página web. **Gabriel** (`gabodiazc`, hijo de Cote) desarrolla juegos en su propia rama; se revisan y se publican con el «publica» de Cote.
 
+## Días de uso (no publicar esos días salvo que Cote lo pida)
+
+- **Sala de juegos completa:** jueves en Kennedy, viernes en Tobalaba, domingo en Frida.
+- **Sala light:** viernes y sábado en Kennedy y en Frida.
+- **Jueves en Kennedy:** después de los juegos queda el karaoke con el animador y el DJ (los mismos del viernes y sábado). Ellos manejan el karaoke desde la sala light de Kennedy (`#/equipo/kennedy`) y, a la vez, Cote y el equipo desde la aplicación completa. Las dos leen y cambian la misma lista (la planilla de Kennedy).
+
 ## Cómo está armado
 
 - Node.js + Express. Datos en un JSON (`DATA_FILE`, en Render `/var/data/data.json`). Estado en vivo por SSE.
