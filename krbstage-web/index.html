@@ -245,29 +245,33 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .ig-tarjeta strong{font-family:var(--f-display);font-weight:800;font-size:34px;line-height:1;position:relative;overflow-wrap:anywhere}
 .ig-boton{align-self:flex-start;margin-top:12px;font-size:13px;font-weight:700;border:1px solid var(--linea);border-radius:999px;padding:7px 14px;position:relative;transition:background .2s,color .2s}
 .ig-tarjeta:hover .ig-boton{background:var(--c);color:var(--noche);border-color:var(--c)}
-/* videos */
+/* videos: pantalla + lista de reproducción */
 .videos{background:var(--tarima);border-block:1px solid var(--linea)}
 .cabeza-videos{display:flex;justify-content:space-between;align-items:end;gap:24px;flex-wrap:wrap}
 .canal{display:inline-flex;align-items:center;gap:10px;font-weight:700;font-size:15px;text-decoration:none;border:1px solid var(--linea);border-radius:999px;padding:10px 18px;transition:border-color .2s,background .2s}
 .canal svg{width:24px;height:24px;fill:none;stroke:var(--tobalaba);stroke-width:1.8}
 .canal svg path{fill:var(--tobalaba);stroke:none}
 .canal:hover{border-color:var(--tobalaba);background:color-mix(in srgb,var(--tobalaba) 14%,transparent)}
-.vid-grilla{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 24px;margin-top:48px}
-.vid{display:grid;gap:10px;min-width:0}
-.vid:first-child{grid-column:1/-1}
-.vid-marco{position:relative;aspect-ratio:16/9;border-radius:8px;overflow:hidden;border:1px solid var(--linea);background:var(--noche)}
-.vid-marco button{all:unset;position:absolute;inset:0;cursor:pointer;display:block}
-.vid-marco img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(.85) brightness(.8);transition:filter .3s,transform .5s}
-.vid-marco button:hover img,.vid-marco button:focus-visible img{filter:none;transform:scale(1.03)}
-.vid-marco button:focus-visible{outline:2px solid var(--foco);outline-offset:-2px}
-.vid-play{position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;background:rgba(12,11,18,.7);border:1px solid rgba(243,238,230,.5);display:grid;place-items:center;transition:background .2s}
-.vid-play::before{content:"";border-left:18px solid var(--texto);border-top:11px solid transparent;border-bottom:11px solid transparent;margin-left:5px}
-.vid-marco button:hover .vid-play{background:var(--tobalaba);border-color:var(--tobalaba)}
-.vid-marco iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
-.vid h3{margin:0;font-size:15px;font-weight:700;line-height:1.35;overflow-wrap:anywhere}
-.vid:first-child h3{font-size:22px}
-.vid small{font-family:var(--f-dato);font-size:11px;letter-spacing:.1em;color:var(--tenue);text-transform:uppercase}
-@media (max-width:560px){.vid-grilla{grid-template-columns:1fr}}
+.reproductor{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;margin-top:48px;padding:24px;border:1px solid var(--linea);border-radius:10px;background:radial-gradient(ellipse at 30% 0%,rgba(229,65,58,.10),transparent 60%),var(--noche);align-items:start}
+.pantalla-yt{display:grid;gap:12px;min-width:0}
+.marco-yt{position:relative;aspect-ratio:16/9;border-radius:8px;border:6px solid #050409;background:#000;overflow:hidden;box-shadow:0 30px 60px -30px rgba(229,65,58,.35)}
+.marco-yt iframe,#yt-player{position:absolute;inset:0;width:100%;height:100%;border:0}
+.info-yt{display:flex;justify-content:space-between;gap:16px;align-items:start}
+.info-yt h3{margin:0;font-size:18px;line-height:1.3;overflow-wrap:anywhere}
+.info-yt small{display:block;font-family:var(--f-dato);font-size:11px;letter-spacing:.1em;color:var(--tenue);text-transform:uppercase;margin-top:4px}
+.sonido{flex:none;border:1px solid var(--linea);background:var(--tarima);border-radius:999px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer}
+.sonido:hover{border-color:var(--foco)}
+.lista-yt{display:grid;gap:6px;max-height:520px;overflow-y:auto;padding-right:4px;margin:0;list-style:none;padding-left:0}
+.lista-yt .rotulo{position:sticky;top:0;background:var(--noche);padding-bottom:6px;margin:0;z-index:1}
+.lista-yt button{all:unset;box-sizing:border-box;width:100%;display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:start;padding:8px;border-radius:8px;cursor:pointer;border:1px solid transparent;transition:background .2s,border-color .2s}
+.lista-yt button:hover{background:var(--tarima)}
+.lista-yt button:focus-visible{outline:2px solid var(--foco)}
+.lista-yt button[aria-current="true"]{background:var(--tarima);border-color:var(--tobalaba)}
+.lista-yt img{width:120px;aspect-ratio:16/9;object-fit:cover;border-radius:5px;display:block;background:var(--tarima)}
+.lista-yt b{display:block;font-size:13px;line-height:1.3;font-weight:700;overflow-wrap:anywhere}
+.lista-yt span{display:block;font-family:var(--f-dato);font-size:10px;letter-spacing:.1em;color:var(--tenue);text-transform:uppercase;margin-top:4px}
+.lista-yt [aria-current="true"] span{color:var(--tobalaba)}
+@media (max-width:900px){.reproductor{grid-template-columns:1fr;padding:16px}.lista-yt{max-height:none}}
 /* contacto */
 .contacto{border-top:1px solid var(--linea)}
 .contacto .envoltura{display:grid;grid-template-columns:1fr 1fr;gap:64px}
@@ -477,7 +481,14 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
         </div>
         <a class="canal" href="https://www.youtube.com/@krbstage" target="_blank" rel="noopener"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="7" width="26" height="18" rx="6"/><path d="M13.5 11.5v9l8-4.5z"/></svg>Ver el canal en YouTube</a>
       </div>
-      <div class="vid-grilla" id="vid-grilla"></div>
+      <div class="reproductor">
+        <div class="pantalla-yt">
+          <div class="rotulo"><span>En pantalla</span><span class="ejemplo">YouTube · @krbstage</span></div>
+          <div class="marco-yt"><div id="yt-player"></div></div>
+          <div class="info-yt"><div><h3 id="yt-titulo"></h3><small id="yt-fecha"></small></div><button class="sonido" id="yt-sonido" hidden>Activar sonido</button></div>
+        </div>
+        <ul class="lista-yt" id="lista-yt" aria-label="Lista de reproducción"></ul>
+      </div>
     </div>
   </section>
 
@@ -837,21 +848,44 @@ function kids(){
 }
 elegirLocal('kennedy');
 
-/* ===== Videos: los últimos del canal de YouTube (se actualiza solo) ===== */
+/* ===== Videos: lista de reproducción con los últimos del canal (se actualiza sola) ===== */
 (function(){
   const RESPALDO_YT=[{"id":"lWdVEoW83eE","title":"BACKSTAGE TRIBUTO A BACKSTREET BOYS JUE 30-04-26","published":"2026-05-01T19:08:27+00:00"},{"id":"dRagJkvD_f0","title":"JUEGO DE SEDUCCION - TRIO STEREO EN VIVO","published":"2026-02-28T04:23:58+00:00"},{"id":"rxT68zBbxdY","title":"UN MILLON DE AÑOS LUZ - TRIO STEREO EN VIVO","published":"2026-02-28T03:39:08+00:00"},{"id":"yG2reoYvH38","title":"I WANT TO BREAK FREE - RAPSODIA TRIBUTO A QUEEN - ESPACIO GASTRONOMICO - MALL PLAZA TOBALABA","published":"2025-03-24T16:39:21+00:00"},{"id":"d8TQOCHR72s","title":"BED OF ROSES - ROCK JOVI en vivo Espacio Gastronómico Tobalaba - 1 Febrero 2025","published":"2025-02-02T05:36:34+00:00"}];
   const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   const fecha=t=>{const d=new Date(t);return isNaN(d)?'':`${d.getDate()} ${MESES[d.getMonth()]} ${d.getFullYear()}`};
-  const titulo=t=>String(t||'');
-  const grilla=$('#vid-grilla');
-  function pintar(lista){
-    // uno destacado arriba y los demás de a dos, sin huecos
-    const n=lista.length>=7?7:lista.length>=5?5:lista.length>=3?3:lista.length;
-    grilla.innerHTML=lista.slice(0,n).map(v=>`<article class="vid"><div class="vid-marco"><button data-id="${esc(v.id)}" aria-label="Reproducir: ${esc(titulo(v.title))}"><img src="https://i.ytimg.com/vi/${esc(v.id)}/hqdefault.jpg" alt="" loading="lazy"><span class="vid-play"></span></button></div><h3>${esc(titulo(v.title))}</h3><small>${fecha(v.published)}</small></article>`).join('');
-    grilla.querySelectorAll('button[data-id]').forEach(b=>b.onclick=()=>{const id=b.dataset.id;b.parentElement.innerHTML=`<iframe src="https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0" title="Video de KRB Stage" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen></iframe>`});
+  const seccion=$('#videos'),lista=$('#lista-yt'),sonido=$('#yt-sonido');
+  let videos=RESPALDO_YT,actual=0,player=null,visible=false,listo=false;
+  function pintarLista(){
+    lista.innerHTML='<li class="rotulo"><span>Lista de reproducción</span><span>'+videos.length+' videos</span></li>'+videos.map((v,i)=>`<li><button data-i="${i}" aria-current="${i===actual}"><img src="https://i.ytimg.com/vi/${esc(v.id)}/mqdefault.jpg" alt="" loading="lazy"><div><b>${esc(v.title)}</b><span>${i===actual?'Reproduciendo':fecha(v.published)}</span></div></button></li>`).join('');
+    lista.querySelectorAll('button[data-i]').forEach(b=>b.onclick=()=>poner(+b.dataset.i,true));
   }
-  pintar(RESPALDO_YT);
-  fetch('https://cantabingo.onrender.com/api/web/youtube',{signal:AbortSignal.timeout(8000)}).then(r=>r.json()).then(j=>{if(Array.isArray(j.videos)&&j.videos.length)pintar(j.videos)}).catch(()=>{});
+  function info(){const v=videos[actual];$('#yt-titulo').textContent=v.title;$('#yt-fecha').textContent=fecha(v.published)}
+  function poner(i,elegido){
+    actual=(i+videos.length)%videos.length;pintarLista();info();
+    if(player&&listo){player.loadVideoById(videos[actual].id);if(elegido){player.unMute();sonido.hidden=true}}
+  }
+  // Reproductor de YouTube: parte sin sonido al llegar a la sección (así lo exigen los navegadores)
+  function crear(){
+    if(player)return;
+    player=new YT.Player('yt-player',{videoId:videos[actual].id,host:'https://www.youtube-nocookie.com',
+      playerVars:{autoplay:quieto?0:1,mute:1,rel:0,playsinline:1,modestbranding:1},
+      events:{
+        onReady:e=>{listo=true;e.target.mute();try{if(e.target.getVideoData().video_id!==videos[actual].id)e.target.cueVideoById(videos[actual].id)}catch(_){}sonido.hidden=false;if(visible&&!quieto)e.target.playVideo();else e.target.pauseVideo()},
+        onStateChange:e=>{if(e.data===YT.PlayerState.ENDED)poner(actual+1)}
+      }});
+  }
+  sonido.onclick=()=>{if(player&&listo){player.unMute();player.playVideo();sonido.hidden=true}};
+  function cargarApi(){
+    if(window.YT&&YT.Player)return crear();
+    window.onYouTubeIframeAPIReady=crear;
+    const s=document.createElement('script');s.src='https://www.youtube.com/iframe_api';document.head.appendChild(s);
+  }
+  // Se reproduce al pasar por la sección y se pausa al salir
+  new IntersectionObserver(es=>{es.forEach(en=>{visible=en.isIntersecting&&en.intersectionRatio>=.35;
+    if(visible){if(!player)cargarApi();else if(listo&&!quieto)player.playVideo()}
+    else if(player&&listo)player.pauseVideo()})},{threshold:[0,.35]}).observe($('.marco-yt'));
+  pintarLista();info();
+  fetch('https://cantabingo.onrender.com/api/web/youtube',{signal:AbortSignal.timeout(8000)}).then(r=>r.json()).then(j=>{if(Array.isArray(j.videos)&&j.videos.length&&!player){videos=j.videos;actual=0;pintarLista();info()}}).catch(()=>{});
 })();
 
 
