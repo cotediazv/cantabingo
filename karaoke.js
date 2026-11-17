@@ -71,7 +71,11 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
     try { const x = new URL(u); return x.protocol === 'https:' && hosts.some((h) => x.hostname === h || x.hostname.endsWith(`.${h}`)); } catch { return false; }
   };
 
+  // Cada cambio guardado desde el panel sube este número. Una lectura que empezó ANTES de un cambio
+  // trae la lista vieja: se descarta, para que la lista no salte hacia atrás.
+  let writes = 0;
   async function refresh(venue) {
+    const startedAt = writes;
     const exec = (db.karaoke.urls[venue] || {}).exec;
     if (!exec) { cache[venue] = { list: [], at: 0, error: 'Falta la dirección de la web app de este local' }; return; }
     const url = `${exec}${exec.includes('?') ? '&' : '?'}modo=json`;
@@ -81,6 +85,7 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
       let data;
       try { data = JSON.parse(text); } catch { throw new Error(res.ok ? 'La web app no devolvió la lista (¿falta publicar la versión con ?modo=json o el acceso «Cualquier usuario»?)' : `Google respondió ${res.status}`); }
       if (!Array.isArray(data)) throw new Error(clean(data && data.error, 200) || 'Respuesta inesperada de la web app');
+      if (startedAt !== writes) return;
       cache[venue] = { list: normalize(data), at: Date.now(), error: '' };
     } catch (err) {
       // Se conserva la última lista buena para que la pantalla no quede vacía por un fallo pasajero
@@ -173,7 +178,16 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
     acting = true;
     try {
       await callScript(venue, { accion: b.accion, id: p.id, nombre: p.raw.nombre, cancion: p.raw.cancion });
-      await refresh(venue);
+      // Se responde de inmediato con el cambio ya hecho en la lista; la lectura de Google se hace después
+      writes++;
+      const list = [...((cache[venue] || {}).list || [])];
+      const i = list.findIndex((x) => x.id === p.id);
+      if (i >= 0) {
+        if (b.accion === 'cantado') list.splice(i, 1);
+        else { const j = b.accion === 'subir' ? i - 1 : i + 1; if (j >= 0 && j < list.length) [list[i], list[j]] = [list[j], list[i]]; }
+        cache[venue] = { ...cache[venue], list };
+      }
+      refresh(venue);
       res.json({ ok: true });
     } catch (err) {
       fail(res, 502, `No se pudo guardar: ${clean(err && err.message, 200)}`);
@@ -200,7 +214,8 @@ module.exports = function karaoke({ app, db, save, requireAdmin, fail, findPlaye
     acting = true;
     try {
       await callScript(venueNow(), { accion: 'volver', fila, claveFila: String(b.key || '').slice(0, 400) });
-      await refresh(venueNow());
+      writes++;
+      refresh(venueNow()); // el pedido vuelve a la lista cuando Google lo confirma
       res.json({ ok: true });
     } catch (err) {
       fail(res, 502, `No se pudo deshacer: ${clean(err && err.message, 200)}`);

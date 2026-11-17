@@ -1221,16 +1221,13 @@ views.karaokectl = async () => {
     ${activitiesNav('karaoke')}`;
   await api('POST', '/api/stage', { show: 'karaoke' }).catch(fail); // al entrar, el karaoke pasa a la pantalla
   let last = '';
-  let busy = false;
-  const paint = async () => {
-    if (busy) return;
-    const k = await api('GET', '/api/karaoke/cola').catch(() => null);
-    if (!k || !$('#kc-list') || busy) return;
-    const sig = JSON.stringify(k);
-    if (sig === last) return;
-    last = sig;
+  let k = null; // lo último que se mostró (la lista del servidor, o con los cambios recién tocados)
+  const queue = []; // cambios tocados que todavía se están guardando en Google, en orden
+  // Dibuja la lista. Los botones siguen activos mientras se guarda: los cambios se guardan uno tras otro.
+  const render = () => {
+    if (!k || !$('#kc-list')) return;
     $('#kc-title').textContent = `Karaoke ${k.name}`;
-    $('#kc-sub').textContent = k.stale ? 'No se pudo leer la lista; se muestra la última conocida' : k.total ? `${k.total} ${k.total === 1 ? 'pedido' : 'pedidos'} por cantar` : 'Todavía no hay pedidos';
+    $('#kc-sub').textContent = queue.length ? 'Guardando en la planilla…' : k.stale ? 'No se pudo leer la lista; se muestra la última conocida' : k.total ? `${k.total} ${k.total === 1 ? 'pedido' : 'pedidos'} por cantar` : 'Todavía no hay pedidos';
     $('#kc-phone').checked = !!k.phone;
     $('#kc-sung-box').hidden = !k.edit;
     $('#kc-note').textContent = k.edit ? '«Ya cantó», Subir y Bajar también se pueden usar en la app del equipo.' : 'El orden y «Ya cantó» se manejan en la app del equipo. Esta pantalla solo muestra la lista.';
@@ -1239,19 +1236,58 @@ views.karaokectl = async () => {
         <button type="button" class="kc-up" data-kc="subir" data-id="${esc(p.id)}" ${i === 0 ? 'disabled' : ''} title="Subir" aria-label="Subir">▲</button><button type="button" class="kc-down" data-kc="bajar" data-id="${esc(p.id)}" ${i === n - 1 ? 'disabled' : ''} title="Bajar" aria-label="Bajar">▼</button><button type="button" class="kc-done" data-kc="cantado" data-id="${esc(p.id)}">Ya cantó</button></div>` : ''}</div>`).join('')
       : '<p class="muted">Cuando alguien pida una canción, aparecerá aquí.</p>';
   };
-  $('#kc-list').onclick = async (e) => {
-    const btn = e.target.closest('[data-kc]');
-    if (!btn || busy) return;
-    busy = true;
-    $('#kc-list').querySelectorAll('[data-kc]').forEach((x) => { x.disabled = true; });
-    btn.classList.add('wait');
-    try {
-      await api('POST', '/api/karaoke/accion', { accion: btn.dataset.kc, id: btn.dataset.id });
-      toast(btn.dataset.kc === 'cantado' ? 'Marcado: ya cantó' : btn.dataset.kc === 'subir' ? 'Subió un puesto' : 'Bajó un puesto');
-    } catch (err) { fail(err); }
-    busy = false;
+  const paint = async () => {
+    if (queue.length) return; // mientras se guarda, se deja lo que se tocó (la lista del servidor aún no lo trae)
+    const r = await api('GET', '/api/karaoke/cola').catch(() => null);
+    if (!r || !$('#kc-list') || queue.length) return;
+    const sig = JSON.stringify(r);
+    if (sig === last) return;
+    last = sig;
+    k = r;
+    render();
+  };
+  // Aplica el cambio en pantalla al instante
+  const applyLocal = (accion, id) => {
+    const list = [...k.list];
+    const i = list.findIndex((x) => x.id === id);
+    if (i < 0) return false;
+    if (accion === 'cantado') list.splice(i, 1);
+    else {
+      const j = accion === 'subir' ? i - 1 : i + 1;
+      if (j < 0 || j >= list.length) return false;
+      [list[i], list[j]] = [list[j], list[i]];
+    }
+    k = { ...k, list, total: accion === 'cantado' ? Math.max(0, k.total - 1) : k.total };
+    return true;
+  };
+  // Guarda los cambios en orden. Si Google rechaza uno, se descartan los que venían detrás y se vuelve a la lista real.
+  let saving = false;
+  const drain = async () => {
+    if (saving) return;
+    saving = true;
+    while (queue.length) {
+      const job = queue[0];
+      try {
+        await api('POST', '/api/karaoke/accion', job);
+        if (job.accion === 'cantado') toast('Marcado: ya cantó');
+        queue.shift();
+      } catch (err) {
+        queue.length = 0;
+        fail(err);
+      }
+    }
+    saving = false;
     last = '';
+    render();
     paint();
+  };
+  $('#kc-list').onclick = (e) => {
+    const btn = e.target.closest('[data-kc]');
+    if (!btn || !k) return;
+    if (!applyLocal(btn.dataset.kc, btn.dataset.id)) return;
+    queue.push({ accion: btn.dataset.kc, id: btn.dataset.id });
+    render();
+    drain();
   };
   // «Ya cantaron»: las marcas de esta noche, para revisar y deshacer un error (igual que «Volver» en AppSheet)
   let sungOpen = false;
@@ -1270,11 +1306,10 @@ views.karaokectl = async () => {
   $('#kc-sung-btn').onclick = () => { sungOpen = !sungOpen; paintSung(); };
   $('#kc-sung').onclick = async (e) => {
     const btn = e.target.closest('[data-fila]');
-    if (!btn || busy) return;
-    busy = true;
+    if (!btn || queue.length || btn.disabled) return;
     $('#kc-sung').querySelectorAll('[data-fila]').forEach((x) => { x.disabled = true; });
+    btn.closest('.kc-row').style.opacity = '.4'; // se ve al instante que se está devolviendo
     try { await api('POST', '/api/karaoke/volver', { fila: Number(btn.dataset.fila), key: btn.dataset.key }); toast('Volvió a la lista'); } catch (err) { fail(err); }
-    busy = false;
     last = '';
     paint();
     paintSung();
