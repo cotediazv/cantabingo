@@ -247,6 +247,23 @@
       return () => clearInterval(timer);
     },
   };
+  // Fondo del inicio: animales estampados como con timbre, repartidos por toda la pantalla
+  const ANIMALS = ['🐨', '🦒', '🐻', '🐶', '🐱', '🦊', '🐰', '🐼', '🐯', '🦁', '🐮', '🐷', '🐸', '🐵', '🐔', '🐧', '🐦', '🦆', '🦉', '🐴', '🦄', '🐝', '🦋', '🐌', '🐞', '🐢', '🐍', '🦎', '🐙', '🦀', '🐠', '🐬', '🐳', '🦈', '🐊', '🐘', '🦛', '🦏', '🐪', '🦘', '🦓', '🦍', '🐑', '🦙', '🐐', '🦌', '🐿️', '🦔', '🦇', '🦩', '🦜', '🦢', '🦚', '🦦', '🦥', '🦫', '🦝', '🐁', '🐇', '🐓', '🦃', '🐋', '🦭', '🦕', '🦖', '🐉', '🦬', '🐆', '🐅', '🐃'];
+  const stamps = () => {
+    const step = 64;
+    const cols = Math.ceil(Math.min(innerWidth, 900) / step) + 1;
+    const rows = Math.ceil(Math.max(innerHeight, 700) / step) + 1;
+    const order = shuffle(ANIMALS);
+    let k = 0;
+    let html = '';
+    for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+      const x = c * step + (r % 2 ? step / 2 : 0) - 20 + Math.random() * 12;
+      const y = r * step - 10 + Math.random() * 12;
+      const rot = Math.round(Math.random() * 50 - 25);
+      html += `<i style="left:${x}px;top:${y}px;transform:rotate(${rot}deg);font-size:${34 + Math.round(Math.random() * 14)}px">${order.at(k++ % order.length)}</i>`;
+    }
+    return `<div class="kz-stamps" aria-hidden="true">${html}</div>`;
+  };
   const MENU = [['globos', '🎈'], ['memoria', '🃏'], ['puzzle', '🧩'], ['bloques', '🟦']];
 
   // Se recuerda desde qué pantalla se entró, para volver ahí con «Volver a la sala»
@@ -259,7 +276,7 @@
     document.body.classList.add('kids');
     let stop = null;
     if (!games[which]) {
-      app.innerHTML = `<div class="kz"><div class="kz-top"><button type="button" class="kz-back" data-exit>← Volver a la sala</button></div>
+      app.innerHTML = `${stamps()}<div class="kz"><div class="kz-top"><button type="button" class="kz-back" data-exit>← Volver a la sala</button></div>
         <h1 class="kz-title">🧸 KRB Kids</h1>
         <div class="kz-menu">${MENU.map(([k, i]) => `<a class="kz-game" href="#/kids/${k}" aria-label="${k}">${i}</a>`).join('')}</div></div>`;
       $('[data-exit]').onclick = () => { location.hash = backTo(); };

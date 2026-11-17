@@ -1502,3 +1502,9 @@ body.kids[data-kz-level="6"] { background: radial-gradient(circle at 50% 30%, #f
 .kz-bar span { position: absolute; right: -6px; top: 50%; transform: translateY(-50%); font-size: 1.7rem; filter: drop-shadow(0 2px 0 rgba(0, 0, 0, .2)); }
 .kz-stage { gap: 12px; }
 .kz-sky { height: calc(100vh - 150px); }
+/* KRB Kids, inicio: animales estampados como con timbre (siluetas blancas, semitransparentes) */
+.kz-stamps { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.kz-stamps i { position: absolute; font-style: normal; line-height: 1; filter: brightness(0) invert(1); opacity: .22; }
+.kz-stamps ~ .kz { position: relative; z-index: 1; }
+/* En KRB Kids el logo de KRB Stage va abajo al centro */
+body.kids .krb-mark { left: 50%; transform: translateX(-50%); height: clamp(22px, 4vh, 40px); opacity: .7; }
