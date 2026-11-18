@@ -848,6 +848,18 @@ function pintarFlyers(){
   fila.querySelectorAll('button').forEach(b=>b.onclick=()=>abrirPC(fl.map(x=>({img:x.url})),+b.dataset.i));
   caja.hidden=false;
 }
+// En computador: al pasar el mouse sobre un video, suena (solo ese). Los navegadores lo permiten
+// después de que la persona hizo su primer clic en la página; antes, el video sigue sin sonido.
+const conMouse=matchMedia('(hover: hover) and (pointer: fine)').matches;
+function sonarAlPasar(caja,v){
+  if(!conMouse)return;
+  caja.addEventListener('mouseenter',()=>{
+    if(navigator.userActivation&&!navigator.userActivation.hasBeenActive)return;
+    document.querySelectorAll('.ptl-grilla video,.esp-media video').forEach(o=>{if(o!==v)o.muted=true});
+    v.muted=false;v.volume=1;v.play().catch(()=>{v.muted=true;v.play().catch(()=>{})});
+  });
+  caja.addEventListener('mouseleave',()=>{v.muted=true});
+}
 window.recibirIg=d=>{igDatos=d;pintarFlyers();pintarColumnas()};
 // «Ver cartelera semanal» de cada local: baja a la cartelera con ese local elegido
 document.querySelectorAll('.ptl-cartelera').forEach(a=>a.addEventListener('click',()=>elegirLocal(a.dataset.local)));
@@ -859,6 +871,7 @@ function pintarColumnas(){
     const caja=col.querySelector('.ptl-grilla');caja.hidden=false;
     caja.innerHTML=vids.map((x,i)=>`<button data-i="${i}" aria-label="Ver video ${i+1} en pantalla completa"><video muted playsinline loop preload="none" ${x.poster?`poster="${esc(x.poster)}"`:''} data-src="${esc(x.url)}"></video></button>`).join('');
     const vs=[...caja.querySelectorAll('video')];
+    caja.querySelectorAll('button').forEach(b=>sonarAlPasar(b,b.querySelector('video')));
     const jugar=()=>vs.forEach(v=>{if(!v.getAttribute('src'))v.src=v.dataset.src;if(!quieto)v.play().catch(()=>{})});
     const parar=()=>vs.forEach(v=>v.pause());
     caja.querySelectorAll('button').forEach(b=>b.onclick=()=>{parar();abrirPC(vids.map(x=>({video:x.url,poster:x.poster})),+b.dataset.i,()=>{if(caja._vista)jugar()})});
@@ -901,6 +914,7 @@ function embEncender(el){
 }
 function embApagar(el){if(!el._on)return;el._on=false;el._tw=null;el._toggle=null;el.innerHTML=''}
 function abrirPC(items,i,alCerrar){
+  document.querySelectorAll('.ptl-grilla video,.esp-media video').forEach(o=>o.muted=true);
   pcItems=items;pcAlCerrar=alCerrar||null;pcSonido=true;pcPista.innerHTML='';items.forEach(x=>pcPista.appendChild(pcMedio(x)));
   pc.hidden=false;document.documentElement.style.overflow='hidden';
   try{history.pushState({pc:1},'')}catch(_){}
@@ -1002,7 +1016,7 @@ elegirLocal('kennedy');
   // de a uno (y con un reintento) para no saturar la conexión con Instagram
   function poner(code,x){
     vids[code]=x;const card=cards.find(c=>c.dataset.code===code);if(!card)return;
-    const m=card.querySelector('.esp-media');const v=document.createElement('video');v.muted=true;v.loop=true;v.playsInline=true;v.preload='metadata';if(x.poster)v.poster=x.poster;v.src=x.url;m.prepend(v);vistos.observe(v);
+    const m=card.querySelector('.esp-media');const v=document.createElement('video');v.muted=true;v.loop=true;v.playsInline=true;v.preload='metadata';if(x.poster)v.poster=x.poster;v.src=x.url;m.prepend(v);vistos.observe(v);sonarAlPasar(card,v);
     card.querySelector('.esp-ver').textContent='▶ Pantalla completa';
     card.onclick=e=>{e.preventDefault();const lista=cards.filter(c=>vids[c.dataset.code]);abrirPC(lista.map(c=>({video:vids[c.dataset.code].url,poster:vids[c.dataset.code].poster})),lista.indexOf(card))};
   }
