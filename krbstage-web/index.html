@@ -713,7 +713,7 @@ elegirLocal('kennedy');
       const bloque=document.querySelector(`.local-bloque[data-local="${loc}"]`);if(!bloque)return;
       bloque.querySelector('.ig-cuenta').textContent=`${vids.length} video${vids.length>1?'s':''}`;
       const car=document.createElement('div');car.className='ig-carrusel';
-      car.innerHTML=`<button class="ig-flecha izq" aria-label="Video anterior">‹</button><div class="ig-pista">${vids.map(x=>`<figure class="ig-video"><video muted playsinline loop preload="none" ${x.poster?`poster="${esc(x.poster)}"`:''} src="${esc(x.url)}"></video><button class="ig-son" aria-pressed="false">Activar sonido</button>${x.link?`<a class="ig-ver" href="${esc(x.link)}" target="_blank" rel="noopener">Ver en Instagram</a>`:''}</figure>`).join('')}</div><button class="ig-flecha der" aria-label="Video siguiente">›</button>`;
+      car.innerHTML=`<button class="ig-flecha izq" aria-label="Video anterior">‹</button><div class="ig-pista">${vids.map(x=>`<figure class="ig-video"><video muted playsinline loop preload="none" ${x.poster?`poster="${esc(x.poster)}"`:''} src="${esc(x.url)}"></video><button class="ig-son" aria-pressed="false">Activar sonido</button><button class="ig-ver">Pantalla completa</button></figure>`).join('')}</div><button class="ig-flecha der" aria-label="Video siguiente">›</button>`;
       bloque.querySelector('.local-videos').appendChild(car);
       const pista=car.querySelector('.ig-pista'),items=[...pista.children];
       let enVista=false;
@@ -732,7 +732,10 @@ elegirLocal('kennedy');
       items.forEach(f=>{const v=f.querySelector('video'),b=f.querySelector('.ig-son');
         const sonar=()=>{if(!f.classList.contains('centro')){pista.scrollTo({left:f.offsetLeft+f.offsetWidth/2-pista.clientWidth/2});return}
           const on=v.muted;silenciarOtros(v);v.muted=!on;b.setAttribute('aria-pressed',on);b.textContent=on?'Silenciar':'Activar sonido';if(on)v.play().catch(()=>{})};
-        b.onclick=sonar;v.onclick=sonar});
+        b.onclick=sonar;v.onclick=sonar;
+        // pantalla completa con sonido (en iPhone se usa el reproductor del sistema)
+        f.querySelector('.ig-ver').onclick=()=>{silenciarOtros(v);v.muted=false;b.setAttribute('aria-pressed','true');b.textContent='Silenciar';v.preload='auto';v.play().catch(()=>{});
+          const pc=v.requestFullscreen||v.webkitRequestFullscreen;if(pc){const r=pc.call(v);if(r&&r.catch)r.catch(()=>{})}else if(v.webkitEnterFullscreen)v.webkitEnterFullscreen()}});
       centrar();
     });
   }
