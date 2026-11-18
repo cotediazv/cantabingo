@@ -1676,3 +1676,10 @@ body.vert-in main { padding: 0; max-width: none; }
 .kids-entry2 .kz-entry-text { gap: 2px; }
 .kids-entry2 .kz-name { font-size: 1.25rem; }
 .kids-entry2 .kz-entry-text > .kz-tag, .kids-entry2 .kz-entry-text > span { font-size: .72rem; }
+/* OBS · El Rosco: recuadros de los jugadores más chicos, para que no toquen las letras del rosco */
+.obs-corner { top: 2vh; left: 2vh; gap: 1vh; max-width: 36vh; }
+.obs-player { column-gap: 1.2vh; padding: .8vh 1.6vh .8vh 1.4vh; border-radius: 1.8vh; min-width: 0; }
+.obs-clock { font-size: 6vh; }
+.obs-player:not(.on) .obs-clock { font-size: 3.4vh; }
+.obs-name { font-size: 2vh; min-width: 0; max-width: 24vh; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.obs-score b { font-size: 1.9vh; padding: 0 1vh; }
