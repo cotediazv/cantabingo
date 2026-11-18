@@ -624,6 +624,8 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
             <a class="esp-mont" data-code="DL-mzsnRP_I" href="https://www.instagram.com/reel/DL-mzsnRP_I/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Mecano</b><small>por Danna Sanchez</small></a>
             <a class="esp-mont" data-code="DF4JT1kg5JJ" href="https://www.instagram.com/reel/DF4JT1kg5JJ/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Michael Jackson</b><small>por Ben Ramirez</small></a>
             <a class="esp-mont" data-code="DHOdA7Fx6F1" href="https://www.instagram.com/reel/DHOdA7Fx6F1/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Rock a la carta</b></a>
+            <a class="esp-mont" data-code="Da-bsOQzxl3" href="https://www.instagram.com/reel/Da-bsOQzxl3/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Alanis Morissette</b></a>
+            <a class="esp-mont" data-code="Dd1h9J9O8th" href="https://www.instagram.com/reel/Dd1h9J9O8th/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Bingo con banda</b></a>
           </div>
         </div>
         <div class="esp-ejemplo">
@@ -1009,7 +1011,7 @@ elegirLocal('kennedy');
 
 /* ===== Espectáculos montados: los videos que están en nuestras cuentas se ven aquí mismo ===== */
 (function(){
-  const PROPIOS={'DHOdA7Fx6F1':['kennedy','2025-03-15'],'DF4JT1kg5JJ':['kennedy','2025-02-10'],'DbfKhfKM2E4':['panoramico','2026-08-01'],'C6UHh75RSbH':['kennedy','2024-04-28'],'DL-mzsnRP_I':['kennedy','2025-07-11'],'DbggHTrBw98':['panoramico','2026-08-01'],'DbjoqmEsPWX':['panoramico','2026-08-02'],'DZ2buyOzr6k':['kennedy','2026-06-21'],'DXgxo5XkR4L':['kennedy','2026-04-24'],'DXPdxdZk7zt':['kennedy','2026-04-17'],'DHi-9gmRhqF':['kennedy','2025-03-23'],'C98XDWgRxVh':['kennedy','2024-07-27'],'C3Zi9R4uET9':['kennedy','2024-02-16']};
+  const PROPIOS={'Da-bsOQzxl3':['kennedy','2026-07-19'],'Dd1h9J9O8th':['kennedy','2026-09-28'],'DHOdA7Fx6F1':['kennedy','2025-03-15'],'DF4JT1kg5JJ':['kennedy','2025-02-10'],'DbfKhfKM2E4':['panoramico','2026-08-01'],'C6UHh75RSbH':['kennedy','2024-04-28'],'DL-mzsnRP_I':['kennedy','2025-07-11'],'DbggHTrBw98':['panoramico','2026-08-01'],'DbjoqmEsPWX':['panoramico','2026-08-02'],'DZ2buyOzr6k':['kennedy','2026-06-21'],'DXgxo5XkR4L':['kennedy','2026-04-24'],'DXPdxdZk7zt':['kennedy','2026-04-17'],'DHi-9gmRhqF':['kennedy','2025-03-23'],'C98XDWgRxVh':['kennedy','2024-07-27'],'C3Zi9R4uET9':['kennedy','2024-02-16']};
   const cards=[...document.querySelectorAll('.esp-mont')];const vids={};
   const vistos=new IntersectionObserver(es=>es.forEach(en=>{const v=en.target;if(en.isIntersecting&&!quieto)v.play().catch(()=>{});else v.pause()}),{threshold:.5});
   // de a uno (y con un reintento) para no saturar la conexión con Instagram
