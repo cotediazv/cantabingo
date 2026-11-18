@@ -23,6 +23,24 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
     if (l && l.stage !== 'none' && karaoke.nowOf(v).now) return 'karaoke';
     return null;
   };
+  // Horario de la pantalla (pedido de Cote): en Kennedy, jueves, viernes y sábado pasa sola a «Automático» a las 20:00
+  // y vuelve a «Siempre el video» a las 00:30 de esa noche. Una vez por noche; entremedio se puede cambiar a mano.
+  // Si el servicio estaba reiniciándose justo a esa hora, se hace apenas vuelve (hasta 15 minutos después).
+  const SCHEDULE = { kennedy: { days: ['Thu', 'Fri', 'Sat'], on: 20 * 60, off: 30 } };
+  const NEXT = { Thu: 'Fri', Fri: 'Sat', Sat: 'Sun' };
+  setInterval(() => {
+    const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+      .formatToParts(new Date()).map((x) => [x.type, x.value]));
+    const min = +p.hour * 60 + +p.minute;
+    const day = `${p.year}-${p.month}-${p.day}`;
+    for (const [v, s] of Object.entries(SCHEDULE)) {
+      const c = conf(v);
+      c.sched ||= {};
+      if (s.days.includes(p.weekday) && min >= s.on && min < s.on + 15 && c.sched.on !== day) { c.sched.on = day; c.mode = 'auto'; save(); }
+      if (s.days.some((d) => NEXT[d] === p.weekday) && min >= s.off && min < s.off + 15 && c.sched.off !== day) { c.sched.off = day; c.mode = 'video'; save(); }
+    }
+  }, 20e3);
+
   const stateOf = (v) => {
     const c = conf(v);
     const act = activityOf(v);

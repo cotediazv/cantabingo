@@ -4,6 +4,9 @@
 (() => {
   const VENUES = { kennedy: 'Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' };
   const pick = (v) => (VENUES[v] ? v : 'kennedy');
+  // Kennedy tiene pantallas de pie (la imagen se entrega girada); Tobalaba, una pantalla horizontal (pedido de Cote)
+  const UPRIGHT = { kennedy: true };
+  const SCHEDULE = { kennedy: 'Jueves, viernes y sábado se pone sola en «Automático» a las 20:00 y vuelve a «Siempre el video» a las 00:30.' };
   const base = () => `${location.origin}${location.pathname}`;
 
   // Para el decodificador: la pantalla de pie recibe la señal horizontal, así que se entrega girada 90° a la
@@ -15,7 +18,8 @@
     return () => document.body.classList.remove('rot-screen');
   };
 
-  // La pantalla en sí, en formato alto (sin girar)
+  // La pantalla en sí, sin girar (formato alto en Kennedy; horizontal en Tobalaba: #/pantalla/tobalaba)
+  views.pantalla = (local) => views['vertical-in'](local);
   views['vertical-in'] = async (local) => {
     const v = pick(local);
     document.body.classList.add('vert-in'); // sin el fondo animado de las pantallas (en el iPhone quedaba encima del video)
@@ -62,9 +66,11 @@
   views.verticalctl = async (local) => {
     if (!(await isAdmin())) return viewLogin();
     const v = pick(local);
-    const link = `${base()}#/vertical/${v}`;
+    const up = !!UPRIGHT[v];
+    const screenHash = up ? `#/vertical/${v}` : `#/pantalla/${v}`;
+    const link = `${base()}${screenHash}`;
     app.innerHTML = `<p class="back"><a href="#/control">← Centro de control</a></p>
-      <h1>📺 Pantalla vertical · ${esc(VENUES[v])}</h1>
+      <h1>📺 Pantalla ${up ? 'vertical' : 'horizontal'} · ${esc(VENUES[v])}</h1>
       <p class="vt-locales">${Object.keys(VENUES).map((k) => `<a class="btn${k === v ? ' primary' : ''}" href="#/verticalctl/${k}">${esc(VENUES[k])}</a>`).join('')}</p>
       <div class="panel vt-now"><small>En pantalla ahora</small><b id="vt-show">…</b><span id="vt-why" class="muted small"></span></div>
       <div class="panel"><h2>Qué mostrar</h2>
@@ -72,16 +78,16 @@
           <button data-mode="auto"><span>🔄</span>Automático<small>Video, y la actividad cuando empieza</small></button>
           <button data-mode="video"><span>🎬</span>Siempre el video</button>
           <button data-mode="actividad"><span>🎤</span>Siempre la actividad</button>
-        </div></div>
+        </div>${SCHEDULE[v] ? `<p class="muted small">🕗 ${esc(SCHEDULE[v])}</p>` : ''}</div>
       <div class="panel"><h2>Video de la cartelera</h2>
         <div id="vt-cur"></div>
         <form id="vt-up" class="vt-up"><input type="file" name="f" accept="video/mp4,video/*" required><button class="primary">Subir video</button></form>
         <div class="vt-prog" hidden><i></i><span></span></div>
-        <p class="muted small">Video vertical en MP4, hasta 300 MB. El nuevo reemplaza al anterior y la pantalla lo toma sola.</p></div>
+        <p class="muted small">Video ${up ? 'vertical' : 'horizontal'} en MP4, hasta 300 MB. El nuevo reemplaza al anterior y la pantalla lo toma sola.</p></div>
       <div class="panel"><h2>Enlace para el decodificador</h2>
-        <p class="muted small">Se abre en el navegador del decodificador, en pantalla completa. Va girado, para la pantalla de pie.</p>
-        <p><input class="vt-link" readonly value="${esc(link)}"> <button id="vt-copy">Copiar</button> <a class="btn" href="#/vertical/${v}" target="_blank">Ver</a></p>
-        <p class="muted small">Sin girar (si el decodificador ya gira la imagen): <a href="#/vertical-in/${v}" target="_blank">${esc(`${base()}#/vertical-in/${v}`)}</a></p></div>`;
+        <p class="muted small">Se abre en el navegador del decodificador, en pantalla completa.${up ? ' Va girado, para la pantalla de pie.' : ''}</p>
+        <p><input class="vt-link" readonly value="${esc(link)}"> <button id="vt-copy">Copiar</button> <a class="btn" href="${screenHash}" target="_blank">Ver</a></p>
+        ${up ? `<p class="muted small">Sin girar (si el decodificador ya gira la imagen): <a href="#/vertical-in/${v}" target="_blank">${esc(`${base()}#/vertical-in/${v}`)}</a></p>` : ''}</div>`;
     const NAMES = { video: '🎬 Video de la cartelera', sala: '🎲 Juegos (sala completa)', karaoke: '🎤 Karaoke (sala light)' };
     let alive = true;
     const paint = (st) => {
