@@ -92,11 +92,12 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     if (w.history.length > 40) w.history.shift();
   }
   // Gana quien acierta todas las letras de su rosco
-  // Si nadie lo completa y todos terminaron, gana quien tiene más aciertos (y, a igualdad, menos fallos).
+  // Si nadie lo completa y todos terminaron, gana quien tiene más puntos: cada acierto suma 1 y cada 2 fallos
+  // quitan 1 (pedido de Cote; un fallo suelto no resta). A igualdad de puntos, gana quien tiene menos fallos.
   // Con dos o más igualados hay empate, que el animador resuelve por sorteo en pantalla.
   const TIE_ROLL_MS = 6500; // lo que dura la tómbola
   const count = (c, what) => c.status.filter((x) => x === what).length;
-  const score = (c) => count(c, 'hit') * 1000 - count(c, 'miss');
+  const score = (c) => (count(c, 'hit') - Math.floor(count(c, 'miss') / 2)) * 1000 - count(c, 'miss');
   const leaders = (w) => {
     if (w.players.length < 2 || w.players.some(active)) return [];
     const best = Math.max(...w.players.map(score));

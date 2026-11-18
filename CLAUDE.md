@@ -45,11 +45,12 @@ Sitio: https://cantabingo.onrender.com · Render (plan Starter, disco de 1 GB) �
 | Karaoke (lee la lista de las planillas de cada local) | `karaoke.js` | `public/karaoke-ui.js` |
 | Síguenos en Instagram | `insta.js` | `public/insta-ui.js` |
 | Sala light por local, enlace del equipo y consola general | `light.js` (+ clave del equipo en `server.js`) | `public/light-ui.js` |
-| KRB Kids (zona de niños: pintar, memoria, puzzle, bloques; sin sonido ni texto, por niveles, con barra de progreso y trofeo) | — | `public/kids-ui.js` |
+| Pantalla vertical por local (video de la cartelera del mes que sube Cote; cambia sola a la actividad del local: juegos de la sala completa o karaoke de la sala light con alguien cantando; botón Automático / Siempre el video / Siempre la actividad) | `vertical.js` (video en el disco, junto a los datos) | `public/vertical-ui.js` |
+| KRB Kids (zona de niños: pintar, memoria, puzzle, bloques, la víbora; sin sonido ni texto, por niveles, con barra de progreso y trofeo) | — | `public/kids-ui.js` |
 | Código de Apps Script de las planillas (Sala.gs: «Ya cantó», Subir, Bajar, Ya cantaron) | `apps-script/` (se pega a mano en cada planilla) | — |
 
 Pantallas: `#/jugar` (celular del público), `#/tablero` (pantalla del local), `#/tablero-v` (pantalla de pie girada, Kennedy), `#/escena` (OBS), `#/control` (Centro de control).
-Sala light: `#/light` (salas light, enlaces y clave del equipo), `#/karaokectl/<local>` (panel: GC + lista del karaoke), `#/light-gc/<local>` (OBS), `#/l/<sala>` (celular), `#/equipo/<local>` (ingreso del equipo con la clave de su local). Consola general: `#/consola`. KRB Kids: `#/kids` (enlace directo, sin iniciar sesión).
+Sala light: `#/light` (salas light, enlaces y clave del equipo), `#/karaokectl/<local>` (panel: GC + lista del karaoke), `#/light-gc/<local>` (OBS), `#/l/<sala>` (celular), `#/equipo/<local>` (ingreso del equipo con la clave de su local). Consola general: `#/consola`. KRB Kids: `#/kids` (enlace directo, sin iniciar sesión). Pantalla vertical: `#/verticalctl/<local>` (panel), `#/vertical/<local>` (decodificador, girada), `#/vertical-in/<local>` (sin girar).
 
 Datos externos: la lista del karaoke sale del Apps Script de cada local (`?modo=json`); show, cartelera y horarios salen de la GLOSA a través del GC Show de cada local (`?modo=json`, direcciones en `light.js`). Logo: `public/krb-stage.svg` (vectorial, alta definición; el `.png` original queda de respaldo).
 

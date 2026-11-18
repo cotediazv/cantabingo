@@ -1605,3 +1605,74 @@ body.kids .kz-stamps { position: fixed; }
 .kz-snake { grid-template-columns: repeat(var(--n), minmax(0, 1fr)); box-sizing: border-box; }
 .kz-snake.walls { padding: 8px; }
 .kz-snake i { min-width: 0; overflow: hidden; font-size: calc(min(100vw, 360px) / var(--n) * .7); }
+/* Pantalla vertical: video de la cartelera a pantalla completa o la actividad del local */
+body.vert-in { margin: 0; overflow: hidden; background: #000; }
+body.vert-in .krb-mark { display: none; }
+.vt { position: fixed; inset: 0; background: #000; }
+.vt-video, .vt-act { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; object-fit: contain; background: #000; }
+.vt-empty { position: absolute; inset: 0; display: grid; place-items: center; }
+.vt-empty img { width: 50%; opacity: .8; }
+.vt-locales { display: flex; flex-wrap: wrap; gap: 8px; }
+.vt-now { display: grid; gap: 4px; text-align: center; }
+.vt-now b { font-size: 1.6rem; }
+.vt-modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+.vt-modes button { display: grid; gap: 4px; justify-items: center; padding: 14px 10px; font-size: 1.05rem; font-weight: 700; }
+.vt-modes button span { font-size: 1.8rem; }
+.vt-modes button small { font-weight: 400; font-size: .8rem; opacity: .8; }
+.vt-modes button.on { outline: 3px solid var(--accent, #ff2e88); }
+.vt-prev { display: block; height: 260px; max-width: 100%; margin: 6px 0; border-radius: 10px; background: #000; }
+.vt-up { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.vt-prog { position: relative; height: 26px; margin-top: 10px; border-radius: 13px; background: rgba(255, 255, 255, .15); overflow: hidden; }
+.vt-prog i { position: absolute; inset: 0 auto 0 0; width: 0; background: #2bb24c; }
+.vt-prog span { position: relative; display: block; text-align: center; line-height: 26px; font-size: .85rem; font-weight: 700; }
+.vt-link { width: min(100%, 420px); }
+button.link { background: none; border: 0; padding: 0; color: inherit; text-decoration: underline; cursor: pointer; }
+/* Pantalla vertical: el video y la actividad van solos, encima de todo, sin el fondo animado (en el iPhone se veía solo el fondo) */
+html:has(body.vert-in), body.vert-in { background: #000; }
+body.vert-in main { padding: 0; max-width: none; }
+.vt { z-index: 5; }
+/* QR grande del bingo en pantallas de pie (pantalla vertical y tablero vertical): medidas según el ancho, para que no se salga */
+@media (orientation: portrait) {
+  #fb .fb-bigqr { width: 90vw; box-sizing: border-box; gap: 3vw; padding: 6vw 5vw; border-radius: 5vw; }
+  #fb .fb-bigqr .gc-big-title { font-size: 8.5vw; white-space: normal; text-wrap: balance; }
+  #fb .fb-bigqr .gc-big-qr .qr { width: 66vw; height: 66vw; padding: 3.5vw; border-radius: 4vw; }
+  #fb .fb-bigqr .gc-big-text { font-size: 5vw; max-width: 80vw; }
+  #fb .fb-bigqr .gc-big-count { font-size: 4vw; padding: .8vw 4vw; }
+}
+/* Ganador de El Rosco (y de la Trivia del Rosco) en pantallas de pie: todo según el ancho, sin salirse, y sobre el QR de abajo */
+@media (orientation: portrait) and (min-width: 300px) {
+  body.full .win-screen { box-sizing: border-box; padding-bottom: 24vw; }
+  body.full .win-card { box-sizing: border-box; width: 88vw; max-width: 88vw; gap: 2vw; padding: 6vw 5vw; border-radius: 5vw; border-width: 1vw; }
+  body.full .win-trophy { font-size: 22vw; }
+  body.full .win-name { font-size: min(13vw, calc(78vw / (var(--n, 8) * .63))); }
+  body.full .win-text { font-size: 8vw; }
+  body.full .win-sub { font-size: 6vw; padding: 1vw 5vw; }
+}
+/* Pantallas de pie: celebración del bingo (uno o varios ganadores) según el ancho, y el sorteo con espacio para el QR de abajo */
+@media (orientation: portrait) and (min-width: 300px) {
+  .bwin-card { box-sizing: border-box; min-width: 0; width: 90vw; max-width: 90vw; gap: 2.4vw; padding: 5vw 4vw 6vw; border-radius: 5vw; border-width: 1vw; }
+  .bwin-title { font-size: 21vw; }
+  .bwin-names { max-width: 82vw; gap: 2vw 4vw; }
+  .bwin-names b { font-size: min(11vw, calc(78vw / (var(--n, 8) * .59))); }
+  .bwin-names small { font-size: 3.6vw; }
+  .bwin-more { font-size: 4vw; }
+  .bwin-sub { font-size: 5vw; padding: 1vw 5vw; }
+  .bwin.many .bwin-title { font-size: 16vw; }
+  .bwin.many .bwin-names { flex-direction: column; align-items: center; }
+  .bwin.many .bwin-names b { font-size: min(7.5vw, calc(78vw / (var(--n, 8) * .59))); }
+  .bwin.many .bwin-names small { font-size: 3vw; }
+  body.full #rf { padding-bottom: 32vw; }
+}
+/* El Rosco en pantallas de pie: más alto para la respuesta y la pregunta, y ruedas que caben en lo que queda (no se montan) */
+@media (orientation: portrait) and (min-width: 300px) {
+  body.full.wheel-screen #pw { grid-template-rows: 5vh 19vh minmax(0, 1fr); }
+  body.full.wheel-screen .wheels .wheel { width: min(88vw, 58vh); max-width: min(88vw, 58vh); }
+  body.full.wheel-screen .wheels.n2 .wheel { width: min(60vw, 29vh); max-width: min(60vw, 29vh); }
+  body.full.wheel-screen .wheels.n3 .wheel, body.full.wheel-screen .wheels.n4 .wheel { width: min(45vw, 29vh); max-width: min(45vw, 29vh); }
+}
+/* Botón de KRB Kids a la mitad de su tamaño (pedido de Cote) */
+.kids-entry2 { width: fit-content; max-width: 260px; gap: 8px; padding: 8px 16px; border-width: 3px; border-radius: 99px; box-shadow: 0 4px 0 rgba(0, 0, 0, .2); }
+.kids-entry2 .kz-logo { width: 38px; height: 38px; }
+.kids-entry2 .kz-entry-text { gap: 2px; }
+.kids-entry2 .kz-name { font-size: 1.25rem; }
+.kids-entry2 .kz-entry-text > .kz-tag, .kids-entry2 .kz-entry-text > span { font-size: .72rem; }
