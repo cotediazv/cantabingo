@@ -4,11 +4,11 @@
 // Las claves duran 60 días; el servidor las renueva solo cada ~30 días y guarda la renovada en los datos.
 const VENUES = ['kennedy', 'frida', 'tobalaba'];
 // Lugares que KRB Stage produjo antes: sus videos se muestran solo entre las fechas indicadas (usan la misma clave).
-// @krbstage2 tiene dos lugares: Mercado del 14 (julio 2023 a marzo 2024) y Kairos (desde abril hasta diciembre de 2024).
+// @krbstage2 tiene dos lugares: Mercado del 14 (julio 2023 a marzo 2024; su último video se subió el 1 de abril de 2024 en hora UTC) y Kairos (de abril a diciembre de 2024).
 const HISTORICOS = {
   panoramico: { handle: 'krbstage1', hasta: '2026-10-31' },
-  kairos: { handle: 'krbstage2', desde: '2024-04-01', hasta: '2024-12-31' },
-  laflorida: { handle: 'krbstage2', desde: '2023-07-01', hasta: '2024-03-31' },
+  kairos: { handle: 'krbstage2', desde: '2024-04-02', hasta: '2024-12-31' },
+  laflorida: { handle: 'krbstage2', desde: '2023-07-01', hasta: '2024-04-01' },
 };
 const TODOS = [...VENUES, ...Object.keys(HISTORICOS)];
 const API = process.env.IG_TEST_URL || 'https://graph.instagram.com'; // IG_TEST_URL / FB_TEST_URL solo para pruebas locales
