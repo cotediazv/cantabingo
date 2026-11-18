@@ -105,6 +105,8 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
     res.json({ ...(open[0] || { open: false }), lights: open });
   });
   app.get('/api/light/cartelera', async (req, res) => {
+    // Pública (solo lectura): la página web krbstage.cl la usa para mostrar la cartelera de cada local
+    res.set('Access-Control-Allow-Origin', '*');
     const v = VENUES[req.query.local] ? req.query.local : (Object.keys(db.lights).find((k) => db.lights[k]) || '');
     if (!v) return fail(res, 404, 'No hay una sala light abierta');
     res.json(await cartelera(v));
