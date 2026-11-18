@@ -622,13 +622,17 @@ const plano=t=>String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase
 const MESES_L=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 const diaTxt=d=>`${DIAS[plano(d.day)]||d.day} ${d.date}`;
 const diaLargo=d=>`${diaTxt(d)}${d.month?` de ${MESES_L[d.month-1]}`:''}`;
+// Semana de funciones: de jueves a domingo (la actual si hoy es jueves a domingo; si no, la que viene)
+const hoyChile=()=>{const p=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()).split('-').map(Number);return new Date(Date.UTC(p[0],p[1]-1,p[2]))};
+const semanaRango=()=>{const h=hoyChile(),dow=h.getUTCDay();const desde=dow===0?-3:dow>=4?4-dow:4-dow;const a=new Date(h.getTime()+desde*864e5);return [a,new Date(a.getTime()+3*864e5)]};
+const fechaDe=w=>{const h=hoyChile();let y=h.getUTCFullYear();if(w.month&&w.month<h.getUTCMonth()+1-6)y++;return new Date(Date.UTC(y,(w.month||h.getUTCMonth()+1)-1,w.date))};
+const enSemana=w=>{const [a,b]=semanaRango(),f=fechaDe(w);return f>=a&&f<=b};
 const semanaTxt=()=>{
-  const p=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()).split('-').map(Number);
-  const a=new Date(Date.UTC(p[0],p[1]-1,p[2])),b=new Date(Date.UTC(p[0],p[1]-1,p[2]+6));
+  const [a,b]=semanaRango();
   const d=x=>x.getUTCDate(),m=x=>MESES_L[x.getUTCMonth()],y=x=>x.getUTCFullYear();
-  if(y(a)!==y(b))return `del ${d(a)} de ${m(a)} de ${y(a)} al ${d(b)} de ${m(b)} de ${y(b)}`;
-  if(m(a)!==m(b))return `del ${d(a)} de ${m(a)} al ${d(b)} de ${m(b)} de ${y(b)}`;
-  return `del ${d(a)} al ${d(b)} de ${m(b)} de ${y(b)}`;
+  if(y(a)!==y(b))return `jueves ${d(a)} de ${m(a)} de ${y(a)} al domingo ${d(b)} de ${m(b)} de ${y(b)}`;
+  if(m(a)!==m(b))return `jueves ${d(a)} de ${m(a)} al domingo ${d(b)} de ${m(b)} de ${y(b)}`;
+  return `jueves ${d(a)} al domingo ${d(b)} de ${m(b)} de ${y(b)}`;
 };
 const hoyTxt=()=>{const t=new Date().toLocaleDateString('es-CL',{timeZone:'America/Santiago',weekday:'long',day:'numeric',month:'long'});const u=t.replace(',','');return u.charAt(0).toUpperCase()+u.slice(1)};
 const titulo=t=>{const s=String(t||'').toLowerCase();return s.charAt(0).toUpperCase()+s.slice(1)};
@@ -658,6 +662,7 @@ async function elegirLocal(k){
   fuente.innerHTML=`<b>Hoy: ${esc(hoyTxt())}</b> · ${d.vivo?'Horarios y shows actualizados en vivo desde la cartelera de cada local.':'Horarios y shows de la cartelera de cada local.'}`;
   bDia.innerHTML='';
   $('#semana').innerHTML=`Cartelera semanal <span>· ${esc(semanaTxt())}</span>`;
+  const semana=d.week.filter(enSemana);if(semana.length)d.week=semana;
   if(!d.week.length){bDia.innerHTML='<span class="cargando">Sin funciones programadas esta semana.</span>';return}
   d.week.forEach((w,i)=>{const b=document.createElement('button');b.className='opcion';b.style.setProperty('--c',L.color);b.innerHTML=`${esc(diaLargo(w))}${w.show?`<small>${esc(nomShow(w.show))}</small>`:''}`;b.onclick=()=>{parar();elegirDia(i)};bDia.appendChild(b)});
   elegirDia(0);
