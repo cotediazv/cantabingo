@@ -370,22 +370,10 @@ main,footer{position:relative;z-index:1}
 .flyers-fila button{all:unset;cursor:pointer;display:block;aspect-ratio:4/5;border-radius:10px;overflow:hidden;border:1px solid var(--linea);background:var(--noche);transition:transform .25s,border-color .25s}
 .flyers-fila button:hover,.flyers-fila button:focus-visible{transform:translateY(-3px);border-color:var(--local)}
 .flyers-fila img{width:100%;height:100%;object-fit:cover;display:block}
-.visor{position:fixed;inset:0;z-index:50;background:rgba(6,5,10,.92);display:grid;place-items:center;padding:max(20px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(20px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
-.visor img{max-width:100%;max-height:calc(100vh - 110px);border-radius:10px;box-shadow:0 30px 80px rgba(0,0,0,.6)}
-.visor-cerrar{position:absolute;top:max(16px,env(safe-area-inset-top,0px));right:max(16px,env(safe-area-inset-right,0px));border:1px solid var(--linea);background:var(--tarima);color:var(--texto);border-radius:999px;padding:8px 16px;font-weight:700;cursor:pointer}
-@media (max-width:720px){.flyers-fila{grid-template-columns:repeat(4,58%);overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}.flyers-fila::-webkit-scrollbar{display:none}.flyers-fila button{scroll-snap-align:start}}
-/* videos de Instagram en pantalla completa, uno tras otro (como reels) */
-.reels{position:fixed;inset:0;z-index:60;background:#000}
-.reels-pista{position:absolute;inset:0;touch-action:none;display:grid;place-items:center}
-.reels-pista video{width:100%;height:100%;object-fit:contain;background:#000;display:block;transition:transform .25s,opacity .25s}
-.reels-pista video.sale-arriba{transform:translateY(-12%);opacity:0}
-.reels-pista video.sale-abajo{transform:translateY(12%);opacity:0}
-.reels-nav{position:absolute;right:max(14px,env(safe-area-inset-right,0px));top:50%;transform:translateY(-50%);display:grid;gap:12px}
-.reels-nav button{width:46px;height:46px;border-radius:50%;border:1px solid rgba(243,238,230,.3);background:rgba(12,11,18,.6);color:var(--texto);font-size:16px;cursor:pointer}
-.reels-barra{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:10px;padding:max(14px,env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) 14px max(14px,env(safe-area-inset-left,0px));background:linear-gradient(180deg,rgba(0,0,0,.7),transparent)}
-.reels-local{font-family:var(--f-dato);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--c)}
-.reels-ayuda{font-size:12px;color:var(--tenue);margin-right:auto}
-.reels-barra button{border:1px solid rgba(243,238,230,.3);background:rgba(12,11,18,.7);color:var(--texto);border-radius:999px;padding:7px 14px;font-weight:700;font-size:13px;cursor:pointer}
+/* pantalla completa limpia (videos y flyers): se desliza hacia el lado; hacia abajo para cerrar */
+.pc{position:fixed;inset:0;z-index:60;background:#000;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+.pc-pista{position:absolute;inset:0;display:flex;will-change:transform}
+.pc-pista>*{flex:0 0 100%;width:100%;height:100%;object-fit:contain;background:#000;display:block;-webkit-user-drag:none}
 /* contacto */
 .contacto{border-top:1px solid var(--linea)}
 .contacto .envoltura{display:grid;grid-template-columns:1fr 1fr;gap:64px}
@@ -461,12 +449,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
 </header>
 
 <canvas id="red-fondo" aria-hidden="true"></canvas>
-<div class="reels" id="reels" hidden role="dialog" aria-label="Videos en pantalla completa">
-  <div class="reels-pista" id="reels-pista"><video id="reel-v" playsinline loop preload="auto"></video></div>
-  <div class="reels-barra"><span class="reels-local" id="reels-local"></span><span class="reels-ayuda" id="reels-cont"></span><button id="reels-sonido">Silenciar</button><button id="reels-cerrar">Cerrar</button></div>
-  <div class="reels-nav"><button id="reels-ant" aria-label="Video anterior">▲</button><button id="reels-sig" aria-label="Video siguiente">▼</button></div>
-</div>
-<div class="visor" id="visor" hidden role="dialog" aria-label="Flyer"><img id="visor-img" alt=""><button class="visor-cerrar" id="visor-cerrar">Cerrar</button></div>
+<div class="pc" id="pc" hidden role="dialog" aria-label="Pantalla completa"><div class="pc-pista" id="pc-pista"></div></div>
 <main>
   <section class="portada" id="inicio">
     <video id="video-portada" class="video-portada" muted loop playsinline preload="none" poster="portada.jpg" aria-hidden="true"></video>
@@ -735,13 +718,52 @@ function pintarFlyers(){
   if(!fl||!fl.length){caja.hidden=true;return}
   $('#flyers-local').textContent=LOCALES[loc].nombre;
   fila.innerHTML=fl.map((x,i)=>`<button data-i="${i}" aria-label="Ver flyer ${i+1}"><img src="${esc(x.url)}" alt="Flyer de la cartelera de ${esc(LOCALES[loc].nombre)}" loading="lazy"></button>`).join('');
-  fila.querySelectorAll('button').forEach(b=>b.onclick=()=>{$('#visor-img').src=fl[+b.dataset.i].url;$('#visor').hidden=false});
+  fila.querySelectorAll('button').forEach(b=>b.onclick=()=>abrirPC(fl.map(x=>({img:x.url})),+b.dataset.i));
   caja.hidden=false;
 }
 window.recibirIg=d=>{igDatos=d;pintarFlyers()};
-$('#visor-cerrar').onclick=()=>{$('#visor').hidden=true};
-$('#visor').onclick=e=>{if(e.target.id==='visor')$('#visor').hidden=true};
-addEventListener('keydown',e=>{if(e.key==='Escape')$('#visor').hidden=true});
+// ===== Pantalla completa limpia: deslizar a los lados para pasar, hacia abajo para cerrar (o Esc / atrás) =====
+const pc=$('#pc'),pcPista=$('#pc-pista');let pcItems=[],pcI=0,pcSonido=true,pcAlCerrar=null;
+function pcMedio(x){if(x.img){const im=document.createElement('img');im.src=x.img;im.alt='';im.draggable=false;return im}
+  const v=document.createElement('video');v.playsInline=true;v.loop=true;v.preload='auto';if(x.poster)v.poster=x.poster;v.dataset.src=x.video;return v}
+function pcMostrar(i,animar){
+  pcI=Math.max(0,Math.min(pcItems.length-1,i));
+  pcPista.style.transition=animar?'transform .3s ease':'none';
+  pcPista.style.transform=`translateX(${-pcI*100}%)`;
+  [...pcPista.children].forEach((el,j)=>{if(el.tagName!=='VIDEO')return;
+    if(Math.abs(j-pcI)<=1){if(!el.getAttribute('src'))el.src=el.dataset.src}else if(el.getAttribute('src')){el.pause();el.removeAttribute('src');el.load()}
+    if(j===pcI){el.muted=!pcSonido;el.play().catch(()=>{el.muted=true;pcSonido=false;el.play().catch(()=>{})})}else el.pause()});
+}
+function abrirPC(items,i,alCerrar){
+  pcItems=items;pcAlCerrar=alCerrar||null;pcPista.innerHTML='';items.forEach(x=>pcPista.appendChild(pcMedio(x)));
+  pc.hidden=false;document.documentElement.style.overflow='hidden';
+  try{history.pushState({pc:1},'')}catch(_){}
+  pcMostrar(i,false);
+}
+function cerrarPC(desdeAtras){
+  if(pc.hidden)return;
+  pcPista.querySelectorAll('video').forEach(v=>{v.pause();v.removeAttribute('src');v.load()});pcPista.innerHTML='';
+  pc.hidden=true;document.documentElement.style.overflow='';
+  if(!desdeAtras&&history.state&&history.state.pc){try{history.back()}catch(_){}}
+  if(pcAlCerrar)pcAlCerrar();
+}
+addEventListener('popstate',()=>cerrarPC(true));
+// arrastre con el dedo o el mouse: la imagen sigue al dedo
+let pcX=null,pcY=null,pcT=0,pcMovio=false;
+pc.addEventListener('pointerdown',e=>{try{pc.setPointerCapture(e.pointerId)}catch(_){}pcX=e.clientX;pcY=e.clientY;pcT=Date.now();pcMovio=false;pcPista.style.transition='none'});
+pc.addEventListener('pointermove',e=>{if(pcX==null)return;const dx=e.clientX-pcX,dy=e.clientY-pcY;
+  if(Math.abs(dx)>8||Math.abs(dy)>8)pcMovio=true;
+  if(Math.abs(dx)>Math.abs(dy))pcPista.style.transform=`translateX(calc(${-pcI*100}% + ${dx}px))`;
+  else if(dy>0)pcPista.style.transform=`translateX(${-pcI*100}%) translateY(${dy}px)`});
+const pcSoltar=e=>{if(pcX==null)return;const dx=e.clientX-pcX,dy=e.clientY-pcY;pcX=null;
+  if(Math.abs(dy)>Math.abs(dx)&&dy>90){cerrarPC();return}
+  if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)){pcMostrar(pcI+(dx<0?1:-1),true);return}
+  pcMostrar(pcI,true);
+  // un toque sin arrastrar: activa el sonido si estaba en silencio, o pausa/sigue el video
+  if(!pcMovio&&Date.now()-pcT<400){const el=pcPista.children[pcI];if(el&&el.tagName==='VIDEO'){if(el.muted){el.muted=false;pcSonido=true;el.play().catch(()=>{})}else el.paused?el.play().catch(()=>{}):el.pause()}}};
+pc.addEventListener('pointerup',pcSoltar);pc.addEventListener('pointercancel',pcSoltar);
+let pcRueda=0;pc.addEventListener('wheel',e=>{e.preventDefault();const d=Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY;const t=Date.now();if(t-pcRueda<450||Math.abs(d)<20)return;pcRueda=t;pcMostrar(pcI+(d>0?1:-1),true)},{passive:false});
+addEventListener('keydown',e=>{if(pc.hidden)return;if(e.key==='Escape')cerrarPC();if(e.key==='ArrowRight')pcMostrar(pcI+1,true);if(e.key==='ArrowLeft')pcMostrar(pcI-1,true)});
 
 // Cartelera del día elegido, en un celular
 function elegirDia(i){
@@ -761,41 +783,11 @@ elegirLocal('kennedy');
   function silenciarOtros(yo){document.querySelectorAll('.ig-video video').forEach(v=>{if(v!==yo){v.muted=true;const b=v.parentElement.querySelector('.ig-son');if(b){b.setAttribute('aria-pressed','false');b.textContent='Activar sonido'}}})}
   function cargarVideo(v){if(!v.getAttribute('src')&&v.dataset.src){v.src=v.dataset.src}}
   function soltarVideo(v){if(v.getAttribute('src')){v.pause();v.removeAttribute('src');v.load()}}
-  // Pantalla completa tipo reels: se desliza hacia arriba o abajo para pasar de un video a otro
-  const reels=$('#reels'),rpista=$('#reels-pista'),rv=$('#reel-v');let rlista=[],ri=0,rsonido=true;
-  function mostrar(i,dir){
-    if(!rlista.length)return;
-    ri=(i+rlista.length)%rlista.length;const x=rlista[ri];
-    $('#reels-cont').textContent=`${ri+1} de ${rlista.length} · desliza para ver más`;
-    const poner=()=>{rv.className='';if(x.poster)rv.poster=x.poster;else rv.removeAttribute('poster');rv.src=x.url;rv.muted=!rsonido;
-      rv.play().catch(()=>{rv.muted=true;rsonido=false;$('#reels-sonido').textContent='Activar sonido';rv.play().catch(()=>{})})};
-    if(dir){rv.className=dir>0?'sale-arriba':'sale-abajo';setTimeout(poner,180)}else poner();
-  }
-  function abrirReels(vids,i,local,color){
+  // Pantalla completa: usa el visor limpio de la página (deslizar a los lados)
+  function abrirReels(vids,i){
     document.querySelectorAll('.ig-video video').forEach(soltarVideo);
-    reels.style.setProperty('--c',color||'var(--foco)');$('#reels-local').textContent=local;
-    rlista=vids;reels.hidden=false;document.documentElement.style.overflow='hidden';
-    $('#reels-sonido').textContent=rsonido?'Silenciar':'Activar sonido';
-    mostrar(i,0);
+    abrirPC(vids.map(x=>({video:x.url,poster:x.poster})),i,()=>window.dispatchEvent(new Event('ig-reanudar')));
   }
-  function cerrarReels(){
-    if(reels.hidden)return;
-    rv.pause();rv.removeAttribute('src');rv.load();
-    reels.hidden=true;document.documentElement.style.overflow='';
-    window.dispatchEvent(new Event('ig-reanudar'));
-  }
-  $('#reels-cerrar').onclick=cerrarReels;
-  $('#reels-sig').onclick=()=>mostrar(ri+1,1);
-  $('#reels-ant').onclick=()=>mostrar(ri-1,-1);
-  $('#reels-sonido').onclick=()=>{rsonido=!rsonido;rv.muted=!rsonido;$('#reels-sonido').textContent=rsonido?'Silenciar':'Activar sonido';if(rv.paused)rv.play().catch(()=>{})};
-  rv.onclick=()=>{rv.paused?rv.play().catch(()=>{}):rv.pause()};
-  // deslizar con el dedo: hacia arriba = siguiente, hacia abajo = anterior
-  let ty=null;
-  rpista.addEventListener('touchstart',e=>{ty=e.touches[0].clientY},{passive:true});
-  rpista.addEventListener('touchend',e=>{if(ty==null)return;const dy=e.changedTouches[0].clientY-ty;ty=null;if(Math.abs(dy)>50)mostrar(ri+(dy<0?1:-1),dy<0?1:-1)},{passive:true});
-  let rueda=0;rpista.addEventListener('wheel',e=>{e.preventDefault();const t=Date.now();if(t-rueda<500||Math.abs(e.deltaY)<20)return;rueda=t;mostrar(ri+(e.deltaY>0?1:-1),e.deltaY>0?1:-1)},{passive:false});
-  addEventListener('keydown',e=>{if(reels.hidden)return;if(e.key==='Escape')cerrarReels();
-    if(e.key==='ArrowDown'){e.preventDefault();mostrar(ri+1,1)}if(e.key==='ArrowUp'){e.preventDefault();mostrar(ri-1,-1)}});
   function pintar(data){
     ['kennedy','frida','tobalaba'].forEach(loc=>{
       const vids=((data[loc]||{}).videos||[]).filter(x=>x&&x.url);
@@ -828,7 +820,7 @@ elegirLocal('kennedy');
           cargarVideo(v);const on=v.muted;silenciarOtros(v);v.muted=!on;b.setAttribute('aria-pressed',on);b.textContent=on?'Silenciar':'Activar sonido';if(on)v.play().catch(()=>{})};
         b.onclick=sonar;v.onclick=sonar;
         // pantalla completa con sonido (en iPhone se usa el reproductor del sistema)
-        f.querySelector('.ig-ver').onclick=()=>abrirReels(vids,items.indexOf(f),bloque.querySelector('h3').textContent,bloque.style.getPropertyValue('--c'))});
+        f.querySelector('.ig-ver').onclick=()=>abrirReels(vids,items.indexOf(f))});
       centrar();
     });
   }
