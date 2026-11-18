@@ -95,6 +95,8 @@ main,footer{position:relative;z-index:1}
 .quienes p strong{color:var(--texto)}
 .quienes .esmero{color:var(--foco);font-weight:700;font-size:clamp(19px,2vw,22px)}
 .ficha{border:1px solid var(--linea);background:var(--tarima);border-radius:6px;padding:28px;display:grid;gap:18px;margin-top:30px}
+.ficha-logo{justify-items:start;padding:28px}
+.ficha-logo img{display:block;height:84px;width:auto}
 .ficha .nombre{font-family:var(--f-display);font-weight:800;font-size:40px;line-height:1;text-transform:uppercase}
 .chips{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:0;padding:0}
 .chips li{font-family:var(--f-dato);font-size:12px;letter-spacing:.08em;text-transform:uppercase;border:1px solid var(--linea);border-radius:999px;padding:6px 12px}
@@ -517,11 +519,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
         <p>Creemos que una noche cualquiera puede convertirse en un recuerdo para siempre. Que una canción puede unir a dos desconocidos, a un abuelo con su nieto, a una mesa con todo el salón.</p>
         <p>Por eso creamos momentos: la piel de gallina cuando suena la banda tributo, la sorpresa de ver en escena al artista que admiras, las risas compartidas con el humor y la emoción de jugar todos juntos.</p>
         <p class="esmero">Nos esmeramos para que cada noche sea única.</p>
-        <div class="ficha">
-          <div class="etiqueta">Dirección</div>
-          <div class="nombre">José Miguel Díaz</div>
-          <ul class="chips"><li>Músico</li><li>DJ</li><li>Animador</li><li>Productor</li></ul>
-        </div>
+        <div class="ficha ficha-logo"><img src="krb-stage.svg" alt="KRB Stage" width="160" height="100"></div>
         <div class="producidos">
           <div class="etiqueta">También hemos producido en</div>
           <ul class="chips">
