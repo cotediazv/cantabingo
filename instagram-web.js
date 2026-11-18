@@ -7,7 +7,8 @@ const API = process.env.IG_TEST_URL || 'https://graph.instagram.com'; // IG_TEST
 const FB = process.env.FB_TEST_URL || 'https://graph.facebook.com/v21.0';
 const CACHE_MS = 30 * 60e3;
 const REFRESH_MS = 30 * 24 * 3600e3;
-const PER_VENUE = 3;
+const PER_VENUE = 60; // todos los videos (hasta 60 por local, para que la página cargue liviana)
+const PAGES = 5; // páginas de 100 publicaciones que se revisan como máximo
 
 module.exports = function instagramWeb({ app, db, save, insta }) {
   db.webIg ||= {}; // local -> { token, at } (clave renovada)
@@ -42,7 +43,16 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
   const igIds = {}; // local -> id de la cuenta de Instagram (camino de Facebook)
 
   // Camino 1: clave de Instagram (graph.instagram.com/me/media)
-  const mediaInstagram = (token) => getJson(`${API}/me/media?fields=${FIELDS}&limit=30&access_token=${encodeURIComponent(token)}`);
+  // Sigue las páginas de resultados de Instagram hasta juntar los videos (o revisar PAGES páginas)
+  async function todas(primera) {
+    const data = [...(primera.data || [])];
+    let next = primera.paging && primera.paging.next, n = 1;
+    while (next && n < PAGES && data.filter((m) => m.media_type === 'VIDEO').length < PER_VENUE) {
+      try { const r = await getJson(next); data.push(...(r.data || [])); next = r.paging && r.paging.next; n++; } catch (_) { break; }
+    }
+    return { data };
+  }
+  const mediaInstagram = async (token) => todas(await getJson(`${API}/me/media?fields=${FIELDS}&limit=100&access_token=${encodeURIComponent(token)}`));
   // Camino 2: clave de Facebook (usuario del sistema): se busca la cuenta de Instagram del local y se leen sus publicaciones
   async function mediaFacebook(v, token) {
     const t = encodeURIComponent(token);
@@ -65,7 +75,7 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
       const mia = cuentas.find((c) => String(c.username || '').toLowerCase() === handle);
       // Cuenta sin página propia (ej. Frida, Tobalaba): se leen sus publicaciones públicas a través de otra cuenta del portafolio
       if (!mia && cuentas.length) {
-        const r = await getJson(`${FB}/${cuentas[0].id}?fields=business_discovery.username(${encodeURIComponent(handle)}){media.limit(30){${FIELDS}}}&access_token=${t}`);
+        const r = await getJson(`${FB}/${cuentas[0].id}?fields=business_discovery.username(${encodeURIComponent(handle)}){media.limit(100){${FIELDS}}}&access_token=${t}`);
         const media = (r.business_discovery && r.business_discovery.media) || {};
         return { data: media.data || [] };
       }
@@ -76,7 +86,7 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
       }
       igIds[v] = mia.id;
     }
-    return getJson(`${FB}/${igIds[v]}/media?fields=${FIELDS}&limit=30&access_token=${t}`);
+    return todas(await getJson(`${FB}/${igIds[v]}/media?fields=${FIELDS}&limit=100&access_token=${t}`));
   }
 
   async function videosOf(v) {
