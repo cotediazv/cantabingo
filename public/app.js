@@ -1453,12 +1453,13 @@ async function syncVenueMark() {
   let el = document.getElementById('venue-mark');
   const src = VENUE_LOGOS[v];
   if (!src) { if (el) el.remove(); document.body.classList.remove('has-vm'); return; }
-  if (!el) { el = document.createElement('img'); el.id = 'venue-mark'; el.alt = ''; el.setAttribute('aria-hidden', 'true'); document.body.appendChild(el); }
-  if (el.getAttribute('src') !== src) el.src = src;
+  // Los dos logos juntos y al mismo alto, separados por una línea: KRB Stage | Mercado Kennedy
+  if (!el) { el = document.createElement('div'); el.id = 'venue-mark'; el.setAttribute('aria-hidden', 'true'); document.body.appendChild(el); }
+  if (el.dataset.src !== src) { el.dataset.src = src; el.innerHTML = `<img src="krb-stage.svg" alt=""><i></i><img src="${src}" alt="">`; }
   // Dónde va: en el tablero, en una franja abajo que se le deja libre; en OBS, arriba a la derecha (en el bingo, sobre la bolita)
   const spot = document.body.classList.contains('full') ? 'full' : document.getElementById('gc') ? 'obs-bingo' : 'obs';
   el.className = `venue-mark vm-${spot}`;
-  document.body.classList.toggle('has-vm', spot === 'full');
+  document.body.classList.add('has-vm');
 }
 window.addEventListener('hashchange', () => setTimeout(syncVenueMark, 50));
 setInterval(syncVenueMark, 3000);
