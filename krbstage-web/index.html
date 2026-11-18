@@ -614,12 +614,12 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
           </ul>
           <div class="etiqueta esp-mont-tit">Actualmente tenemos montado</div>
           <div class="esp-montados">
-            <a class="esp-mont" data-code="DLF5OgMMSrT" href="https://www.instagram.com/reel/DLF5OgMMSrT/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Depeche Mode</b><small>por Guillermo Rojas</small></a>
-            <a class="esp-mont" data-code="DF4JT1kg5JJ" href="https://www.instagram.com/reel/DF4JT1kg5JJ/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Michael Jackson</b><small>por Ben Ramirez</small></a>
-            <a class="esp-mont" data-code="DLyYhqsRQPF" href="https://www.instagram.com/reel/DLyYhqsRQPF/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Dua Lipa</b><small>por Josefa Bejarano</small></a>
-            <a class="esp-mont" data-code="DL-mzsnRP_I" href="https://www.instagram.com/reel/DL-mzsnRP_I/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Mecano</b><small>por Danna Sanchez</small></a>
-            <a class="esp-mont" data-code="DHW7dIVSevI" href="https://www.instagram.com/reel/DHW7dIVSevI/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Tom Jones</b><small>por Matias Fajardo</small></a>
-            <a class="esp-mont" data-code="DP_YzysEXeh" href="https://www.instagram.com/reel/DP_YzysEXeh/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Lady Gaga</b><small>por Ninoska Niño</small></a>
+            <a class="esp-mont" data-code="DdJldeaRoKo" href="https://www.instagram.com/reel/DdJldeaRoKo/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Pet Shop Boys</b></a>
+            <a class="esp-mont" data-code="DXPdxdZk7zt" href="https://www.instagram.com/reel/DXPdxdZk7zt/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Nicole</b></a>
+            <a class="esp-mont" data-code="DHi-9gmRhqF" href="https://www.instagram.com/reel/DHi-9gmRhqF/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Tom Jones</b><small>por Matias Fajardo</small></a>
+            <a class="esp-mont" data-code="C98XDWgRxVh" href="https://www.instagram.com/reel/C98XDWgRxVh/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Christina Aguilera</b></a>
+            <a class="esp-mont" data-code="C3Zi9R4uET9" href="https://www.instagram.com/reel/C3Zi9R4uET9/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Fito Páez</b></a>
+            <a class="esp-mont" data-code="DJgLeLktn_a" href="https://www.instagram.com/reel/DJgLeLktn_a/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Mecano</b><small>por Danna Sanchez</small></a>
           </div>
         </div>
         <div class="esp-ejemplo">
@@ -701,9 +701,16 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
             </article>
             <div class="local-videos"></div>
           </div>
+          <div class="local-bloque" data-local="kairos" style="--c:var(--foco)" hidden>
+            <article class="local">
+              <div class="local-nombre"><div class="num">Registros de marzo a diciembre de 2024</div><h3>Kairos</h3></div>
+              <div class="local-ig"><a class="ig" href="https://www.instagram.com/krbstage2/" target="_blank" rel="noopener">@krbstage2</a><span class="ig-cuenta"></span></div>
+            </article>
+            <div class="local-videos"></div>
+          </div>
           <div class="local-bloque" data-local="laflorida" style="--c:var(--foco)" hidden>
             <article class="local">
-              <div class="local-nombre"><div class="num">Registros hasta marzo de 2025</div><h3>Mercado del 14</h3></div>
+              <div class="local-nombre"><div class="num">Registros de julio de 2023 a marzo de 2024</div><h3>Mercado del 14</h3></div>
               <div class="local-datos"><p>Mall Plaza Vespucio, La Florida</p></div>
               <div class="local-ig"><a class="ig" href="https://www.instagram.com/krbstage2/" target="_blank" rel="noopener">@krbstage2</a><span class="ig-cuenta"></span></div>
             </article>
@@ -957,7 +964,7 @@ elegirLocal('kennedy');
     abrirPC(vids.map(x=>({video:x.url,poster:x.poster})),i,()=>window.dispatchEvent(new Event('ig-reanudar')));
   }
   function pintar(data){
-    ['kennedy','frida','tobalaba','panoramico','laflorida'].forEach(loc=>{
+    ['kennedy','frida','tobalaba','panoramico','kairos','laflorida'].forEach(loc=>{
       const vids=((data[loc]||{}).videos||[]).filter(x=>x&&x.url);
       if(!vids.length)return;
       const bh=document.querySelector(`.local-bloque[data-local="${loc}"]`);if(bh&&bh.hidden){bh.hidden=false;$('#historicos').hidden=false}
@@ -998,7 +1005,7 @@ elegirLocal('kennedy');
 
 /* ===== Espectáculos montados: los videos que están en nuestras cuentas se ven aquí mismo ===== */
 (function(){
-  const PROPIOS={'DF4JT1kg5JJ':['kennedy','2025-02-10'],'DL-mzsnRP_I':['kennedy','2025-07-11']};
+  const PROPIOS={'DXPdxdZk7zt':['kennedy','2026-04-17'],'DHi-9gmRhqF':['kennedy','2025-03-23'],'C98XDWgRxVh':['kennedy','2024-07-27'],'C3Zi9R4uET9':['kennedy','2024-02-16']};
   const cards=[...document.querySelectorAll('.esp-mont')];const vids={};
   const vistos=new IntersectionObserver(es=>es.forEach(en=>{const v=en.target;if(en.isIntersecting&&!quieto)v.play().catch(()=>{});else v.pause()}),{threshold:.5});
   Object.entries(PROPIOS).forEach(([code,[loc,dia]])=>{
