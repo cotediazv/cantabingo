@@ -372,6 +372,33 @@ main,footer{position:relative;z-index:1}
 .pc-pista>*{flex:0 0 100%;width:100%;height:100%;object-fit:contain;background:#000;display:block;-webkit-user-drag:none}
 .pc-emb{position:relative;background:#000 center/contain no-repeat}
 .pc-emb iframe,.pc-emb .pc-tw,.pc-emb .pc-tw iframe{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none}
+/* para tu local */
+.ptl-intro{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:end}
+.ptl-intro p{margin:0 0 14px;color:var(--tenue);max-width:58ch}
+.ptl-intro p strong{color:var(--texto)}
+.ptl-frase{font-size:clamp(22px,2.6vw,30px);line-height:1.3;color:var(--texto)!important;font-weight:500}
+.ptl-frase b{color:var(--foco)}
+.ptl-pruebas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-top:48px}
+.ptl-prueba{position:relative;overflow:hidden;border:1px solid var(--linea);border-radius:10px;background:var(--tarima);padding:26px;display:grid;gap:8px;align-content:start;min-height:220px}
+.ptl-prueba::before{content:"";position:absolute;inset:-45% -45% auto auto;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,var(--c) 0%,transparent 65%);opacity:.25}
+.ptl-num{font-family:var(--f-dato);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--c);position:relative}
+.ptl-prueba b{font-family:var(--f-display);font-weight:800;font-size:30px;line-height:1;text-transform:uppercase;position:relative;margin-top:auto}
+.ptl-prueba a{color:var(--c);font-family:var(--f-dato);font-size:13px;position:relative}
+/* espectáculos a la medida */
+.medida{background:rgba(21,19,30,.55);border-block:1px solid var(--linea)}
+.esp-cols{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;margin-top:40px;align-items:start}
+.esp-lista{display:grid;gap:12px;margin:0;padding:0;list-style:none}
+.esp-lista li{display:grid;grid-template-columns:28px 1fr;gap:12px;color:var(--tenue)}
+.esp-lista li::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--foco);margin-top:9px;justify-self:center}
+.esp-lista strong{color:var(--texto)}
+.esp-lista a{color:var(--foco)}
+.esp-dobles{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:20px 0 0;padding:0}
+.esp-dobles li{border:1px solid var(--linea);border-radius:999px;padding:6px 12px;font-size:14px}
+.esp-ejemplo{border:1px solid var(--foco);border-radius:12px;padding:24px;background:linear-gradient(160deg,rgba(244,191,90,.10),rgba(12,11,18,.6))}
+.esp-ejemplo .etiqueta{margin-bottom:6px}
+.esp-ejemplo h3{font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:34px;line-height:1;margin:0 0 10px}
+.esp-ejemplo p{margin:0 0 12px;color:var(--tenue)}
+@media (max-width:900px){.ptl-intro,.esp-cols{grid-template-columns:1fr;gap:24px}.ptl-pruebas{grid-template-columns:1fr}.ptl-prueba{min-height:160px}}
 /* contacto */
 .contacto{border-top:1px solid var(--linea)}
 .contacto .envoltura{display:grid;grid-template-columns:1fr 1fr;gap:64px}
@@ -437,7 +464,9 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
     <button class="hamb" id="hamb" aria-expanded="false" aria-controls="menu">Menú</button>
     <ul class="menu" id="menu">
       <li><a href="#quienes">Quiénes somos</a></li>
+      <li><a href="#tulocal">Para tu local</a></li>
       <li><a href="#hacemos">Qué hacemos</a></li>
+      <li><a href="#medida">A la medida</a></li>
       <li><a href="#funciona">Cartelera</a></li>
       <li><a href="#locales">Locales</a></li>
       <li><a href="#contacto">Contacto</a></li>
@@ -490,6 +519,26 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
     </div>
   </section>
 
+  <section class="banda tulocal" id="tulocal">
+    <div class="envoltura">
+      <div class="ptl-intro">
+        <div>
+          <div class="etiqueta">Para tu local</div>
+          <h2>Tu local vende, tu público disfruta</h2>
+        </div>
+        <div>
+          <p class="ptl-frase">Un local necesita <b>vender</b>. La gente busca <b>conectar y disfrutar</b>.</p>
+          <p>En KRB Stage armamos con cada local una <strong>estrategia en conjunto</strong>: la programación, los shows y las actividades se piensan para su público, sus días y sus horarios.</p>
+        </div>
+      </div>
+      <div class="ptl-pruebas">
+        <article class="ptl-prueba" style="--c:var(--kennedy)"><span class="ptl-num">Mercado Kennedy</span><b>Más de tres años de éxito sostenido</b></article>
+        <article class="ptl-prueba" style="--c:var(--tobalaba)"><span class="ptl-num">Espacio Gastronómico Tobalaba</span><b>Actividades sorprendentes</b><a href="https://www.instagram.com/krbstage3/" target="_blank" rel="noopener">Ver registros en @krbstage3</a></article>
+        <article class="ptl-prueba" style="--c:var(--frida)"><span class="ptl-num">Frida Kahlo</span><b>Un espacio que la gente hizo suyo desde la primera noche</b></article>
+      </div>
+    </div>
+  </section>
+
   <section class="banda hacemos" id="hacemos">
     <div class="envoltura">
       <div class="etiqueta">Qué hacemos</div>
@@ -514,6 +563,33 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
       </ul>
     </div>
   </section>
+
+  <section class="banda medida" id="medida">
+    <div class="envoltura">
+      <div class="etiqueta">Laboratorio KRB Stage</div>
+      <h2>Espectáculos a la medida</h2>
+      <div class="esp-cols">
+        <div>
+          <ul class="esp-lista">
+            <li><span><strong>Kararock Band</strong> (<a href="https://www.instagram.com/kararockband/" target="_blank" rel="noopener">@kararockband</a>): nuestra banda propia de músicos profesionales.</span></li>
+            <li><span><strong>Pistas de ultra calidad</strong> producidas por José Miguel Díaz, con videoclip sincronizado.</span></li>
+            <li><span><strong>Dobles, bailarines, iluminación, humo y pantalla</strong>, en un solo espectáculo.</span></li>
+            <li><span><strong>Exclusivo:</strong> la banda y la producción son de KRB Stage.</span></li>
+          </ul>
+          <ul class="esp-dobles" aria-label="Dobles">
+            <li>Dua Lipa</li><li>Michael Jackson</li><li>Ana Torroja</li><li>Tom Jones</li><li>Fito Páez</li><li>Charly García</li><li>Christina Aguilera</li><li>Alanis Morissette</li><li>Nicole</li><li>Depeche Mode</li><li>Pet Shop Boys</li>
+          </ul>
+        </div>
+        <div class="esp-ejemplo">
+          <div class="etiqueta">Un ejemplo</div>
+          <h3>Fiesta de los 80</h3>
+          <p>Para los 40 años de egreso de un curso armamos un mix de 50 minutos contado como una historia de los 80: Depeche Mode, Madonna, Tom Jones, Enanitos Verdes y Michael Jackson con Thriller y Smooth Criminal.</p>
+          <p>Después siguió la noche con karaoke con banda en vivo y DJ.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
 
   <section class="banda funciona" id="funciona">
     <div class="envoltura">
