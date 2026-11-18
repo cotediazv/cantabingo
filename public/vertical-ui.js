@@ -28,48 +28,26 @@
     let ver = 0;
     let alive = true;
     let lightId = '';
-    // El video se baja entero antes de empezar (pedido de Cote): así la primera vuelta no se queda pegada.
-    // Mientras baja, la pantalla queda en negro (o sigue el video anterior); si la descarga falla, se reproduce directo.
-    let ready = 0; // versión del video ya cargada
-    let blobUrl = '';
-    const load = async (version) => {
-      const url = `/vertical/${v}.mp4?v=${version}`;
-      let src = url;
-      try {
-        const r = await fetch(url);
-        if (!r.ok) throw new Error(String(r.status));
-        const blob = await r.blob();
-        if (!alive || version !== ver) return;
-        src = URL.createObjectURL(blob);
-      } catch { /* sin descarga completa: se reproduce directo */ }
-      if (!alive || version !== ver) return;
-      if (blobUrl) URL.revokeObjectURL(blobUrl);
-      blobUrl = src.startsWith('blob:') ? src : '';
-      video.src = src;
-      ready = version;
-      shown = ''; // vuelve a decidir qué mostrar ahora que el video está listo
-      apply();
-    };
     const apply = async () => {
       const st = await api('GET', `/api/vertical/${v}`).catch(() => null);
       if (!alive || !st) return;
       if (st.video !== ver) {
         ver = st.video;
-        if (ver) load(ver); else { video.removeAttribute('src'); ready = 0; }
+        if (ver) { video.src = `/vertical/${v}.mp4?v=${ver}`; video.play().catch(() => {}); } else video.removeAttribute('src');
       }
       if (st.show === 'karaoke' && !lightId) lightId = ((await api('GET', `/api/light?local=${v}`).catch(() => ({}))) || {}).id || '';
       const want = st.show === 'video' ? 'video' : st.show === 'karaoke' ? `#/karaoke-v/${v}/${lightId}` : '#/tablero';
       if (want === shown) return;
       shown = want;
       const isVideo = want === 'video';
-      video.hidden = !isVideo || !ver || ready !== ver;
-      empty.hidden = !isVideo || !!ver; // el logo solo si no hay video subido; mientras baja, negro
+      video.hidden = !isVideo || !ver;
+      empty.hidden = !isVideo || !!ver;
       frame.hidden = isVideo;
-      if (isVideo) { frame.src = 'about:blank'; if (ver && ready === ver) video.play().catch(() => {}); } else { video.pause(); frame.src = `${location.pathname}?mudo=1${want}`; }
+      if (isVideo) { frame.src = 'about:blank'; if (ver) video.play().catch(() => {}); } else { video.pause(); frame.src = `${location.pathname}?mudo=1${want}`; }
     };
     await apply();
     const timer = setInterval(apply, 3000);
-    return () => { alive = false; clearInterval(timer); if (blobUrl) URL.revokeObjectURL(blobUrl); document.body.classList.remove('vert-in'); };
+    return () => { alive = false; clearInterval(timer); document.body.classList.remove('vert-in'); };
   };
 
   // Karaoke de la sala light de un local a pantalla completa (lo usa la pantalla vertical)
