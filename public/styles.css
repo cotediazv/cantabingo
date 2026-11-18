@@ -1639,3 +1639,12 @@ body.vert-in main { padding: 0; max-width: none; }
   #fb .fb-bigqr .gc-big-text { font-size: 5vw; max-width: 80vw; }
   #fb .fb-bigqr .gc-big-count { font-size: 4vw; padding: .8vw 4vw; }
 }
+/* Ganador de El Rosco (y de la Trivia del Rosco) en pantallas de pie: todo según el ancho, sin salirse, y sobre el QR de abajo */
+@media (orientation: portrait) and (min-width: 300px) {
+  body.full .win-screen { box-sizing: border-box; padding-bottom: 24vw; }
+  body.full .win-card { box-sizing: border-box; width: 88vw; max-width: 88vw; gap: 2vw; padding: 6vw 5vw; border-radius: 5vw; border-width: 1vw; }
+  body.full .win-trophy { font-size: 22vw; }
+  body.full .win-name { font-size: min(13vw, calc(78vw / (var(--n, 8) * .63))); }
+  body.full .win-text { font-size: 8vw; }
+  body.full .win-sub { font-size: 6vw; padding: 1vw 5vw; }
+}
