@@ -58,6 +58,9 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 /* portada */
 .portada{position:relative;overflow:hidden;border-bottom:1px solid var(--linea)}
 #red{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:.7}
+/* red de conexiones en toda la página (detrás del contenido) */
+#red-fondo{position:fixed;inset:0;width:100vw;height:100vh;display:block;z-index:0;pointer-events:none;opacity:.75}
+main,footer{position:relative;z-index:1}
 /* video completo (2:1), sin recortar los costados */
 .portada{min-height:50vw}
 .video-portada{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:var(--noche);filter:saturate(.45) brightness(.75);transition:filter .7s ease}
@@ -95,7 +98,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .producidos{margin-top:30px;display:grid;gap:12px}
 .producidos .chips li{text-transform:none;letter-spacing:0;font-family:var(--f-texto);font-size:14px;color:var(--tenue)}
 
-.hacemos{background:var(--tarima);border-block:1px solid var(--linea)}
+.hacemos{background:rgba(21,19,30,.55);border-block:1px solid var(--linea)}
 .lista{display:grid;grid-template-columns:1fr 1fr;gap:0 56px;margin:56px 0 0;padding:0;list-style:none}
 .lista li{display:grid;grid-template-columns:44px 1fr;gap:18px;padding-block:26px;border-top:1px solid var(--linea)}
 .lista svg{width:30px;height:30px;stroke:var(--foco);fill:none;stroke-width:1.6;margin-top:4px}
@@ -235,7 +238,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 
 
 /* instagram */
-.instagram{background:var(--tarima);border-top:1px solid var(--linea)}
+.instagram{background:rgba(21,19,30,.55);border-top:1px solid var(--linea)}
 .ig-grilla{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:20px;margin-top:56px}
 .ig-tarjeta{position:relative;overflow:hidden;display:flex;flex-direction:column;gap:6px;padding:26px 24px;border:1px solid var(--linea);border-radius:8px;background:var(--noche);text-decoration:none;min-height:230px;transition:transform .3s,border-color .3s}
 .ig-tarjeta::before{content:"";position:absolute;inset:-45% -45% auto auto;width:220px;height:220px;border-radius:50%;background:radial-gradient(circle,var(--c) 0%,transparent 65%);opacity:.22;transition:opacity .3s}
@@ -247,7 +250,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .ig-boton{align-self:flex-start;margin-top:12px;font-size:13px;font-weight:700;border:1px solid var(--linea);border-radius:999px;padding:7px 14px;position:relative;transition:background .2s,color .2s}
 .ig-tarjeta:hover .ig-boton{background:var(--c);color:var(--noche);border-color:var(--c)}
 /* videos: pantalla + lista de reproducción */
-.videos{background:var(--tarima);border-block:1px solid var(--linea)}
+.videos{background:rgba(21,19,30,.55);border-block:1px solid var(--linea)}
 .cabeza-videos{display:flex;justify-content:space-between;align-items:end;gap:24px;flex-wrap:wrap}
 .canal{display:inline-flex;align-items:center;gap:10px;font-weight:700;font-size:15px;text-decoration:none;border:1px solid var(--linea);border-radius:999px;padding:10px 18px;transition:border-color .2s,background .2s}
 .canal svg{width:24px;height:24px;fill:none;stroke:var(--tobalaba);stroke-width:1.8}
@@ -359,6 +362,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
   </div>
 </header>
 
+<canvas id="red-fondo" aria-hidden="true"></canvas>
 <main>
   <section class="portada" id="inicio">
     <video id="video-portada" class="video-portada" muted loop playsinline preload="none" poster="portada.jpg" aria-hidden="true"></video>
@@ -926,6 +930,44 @@ elegirLocal('kennedy');
   if(!tactil){titulo.addEventListener('mouseenter',()=>portada.classList.add('foco'));
   portada.addEventListener('mouseleave',()=>portada.classList.remove('foco'))}
 
+})();
+
+/* ===== red de conexiones en toda la página ===== */
+(function(){
+  const c=$('#red-fondo'),x=c.getContext('2d');
+  const colores=['#47b8e6','#e0338f','#e5413a','#f3eee6','#f4bf5a'];
+  let W,H,pts=[],pulsos=[],corre=true;
+  function armar(){
+    const dpr=Math.min(2,devicePixelRatio||1);
+    W=innerWidth;H=innerHeight;c.width=W*dpr;c.height=H*dpr;x.setTransform(dpr,0,0,dpr,0,0);
+    const n=Math.round(Math.min(120,W*H/11000));
+    pts=Array.from({length:n},()=>({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.22,vy:(Math.random()-.5)*.22,c:colores[Math.random()*colores.length|0]}));
+    pulsos=[];
+  }
+  function dibujar(){
+    x.clearRect(0,0,W,H);
+    for(let i=0;i<pts.length;i++){const a=pts[i];
+      for(let j=i+1;j<pts.length;j++){const b=pts[j],d=Math.hypot(a.x-b.x,a.y-b.y);
+        if(d<120){x.strokeStyle='rgba(243,238,230,'+(1-d/120)*.13+')';x.lineWidth=1;x.beginPath();x.moveTo(a.x,a.y);x.lineTo(b.x,b.y);x.stroke()}}}
+    // impulsos que viajan de un punto a otro cercano, como neuronas
+    for(const p of pulsos){const px=p.a.x+(p.b.x-p.a.x)*p.t,py=p.a.y+(p.b.y-p.a.y)*p.t;
+      x.strokeStyle=p.a.c+'66';x.beginPath();x.moveTo(p.a.x,p.a.y);x.lineTo(px,py);x.stroke();
+      x.fillStyle=p.a.c;x.beginPath();x.arc(px,py,2.2,0,7);x.fill()}
+    for(const a of pts){x.fillStyle=a.c;x.globalAlpha=.8;x.beginPath();x.arc(a.x,a.y,1.7,0,7);x.fill();x.globalAlpha=1}
+  }
+  function nuevoPulso(){const a=pts[Math.random()*pts.length|0];let mejor=null,dm=1e9;for(const b of pts){if(b===a)continue;const d=Math.hypot(a.x-b.x,a.y-b.y);if(d<dm&&d>30){dm=d;mejor=b}}if(mejor)pulsos.push({a,b:mejor,t:0})}
+  function paso(){
+    if(!corre)return;
+    for(const a of pts){a.x+=a.vx;a.y+=a.vy;if(a.x<0||a.x>W)a.vx*=-1;if(a.y<0||a.y>H)a.vy*=-1}
+    if(Math.random()<.08&&pulsos.length<16)nuevoPulso();
+    for(const p of pulsos)p.t+=.02;pulsos=pulsos.filter(p=>p.t<1);
+    dibujar();requestAnimationFrame(paso);
+  }
+  armar();
+  if(quieto){for(let k=0;k<10;k++)nuevoPulso();pulsos.forEach((p,i)=>p.t=.3+(i%5)*.12);dibujar()}else paso();
+  addEventListener('resize',()=>{armar();if(quieto)dibujar()});
+  // ahorra batería cuando la pestaña no se ve
+  document.addEventListener('visibilitychange',()=>{const v=!document.hidden;if(v&&!corre&&!quieto){corre=true;paso()}else if(!v)corre=false});
 })();
 
 /* ===== portada: celulares del público que se conectan con la luz del escenario ===== */
