@@ -406,27 +406,19 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
       <ul class="lista">
         <li>
           <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 4v14"/><circle cx="16" cy="22" r="5"/><path d="M8 9l3 3M24 9l-3 3M4 18h4M24 18h4"/></svg>
-          <div><h3>Parrilla artística</h3><p>Música en vivo, dobles, tributos, stand up, karaoke, bingo y DJ, programados y producidos para cada local.</p></div>
+          <div><h3>Shows en vivo</h3><p>Música en vivo, dobles, tributos, stand up, karaoke y DJ para cada noche.</p></div>
         </li>
         <li>
           <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="9" y="3" width="14" height="26" rx="3"/><path d="M14 25h4"/><path d="M13 12l3 3 5-6"/></svg>
-          <div><h3>Sala de juegos</h3><p>Desde su celular, sin descargar nada, el público juega bingo y El Rosco, vota, pide canciones y ve la cartelera.</p></div>
-        </li>
-        <li>
-          <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="6" width="26" height="16" rx="2"/><path d="M12 27h8M16 22v5"/></svg>
-          <div><h3>Pantallas en tiempo real</h3><p>El tablero del local, las pantallas de pie y la transmisión muestran lo que pasa en vivo, con la marca del local.</p></div>
+          <div><h3>Entretención interactiva</h3><p>El público juega y participa desde su celular, sin descargar nada.</p></div>
         </li>
         <li>
           <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="11" cy="11" r="4"/><circle cx="22" cy="14" r="3"/><path d="M4 27c0-5 3-9 7-9s7 4 7 9M17 27c0-4 2-7 5-7s5 3 5 7"/></svg>
-          <div><h3>KRB Kids</h3><p>Juegos para niños de 3 a 5 años en el celular de los papás: pintar, memoria, puzzle y bloques.</p></div>
+          <div><h3>Para toda la familia</h3><p>Con KRB Kids, los más pequeños también tienen sus propios juegos.</p></div>
         </li>
         <li>
           <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="4" width="24" height="24" rx="7"/><circle cx="16" cy="16" r="5.5"/><circle cx="23" cy="9" r="1"/></svg>
           <div><h3>Redes sociales</h3><p>Difusión de la cartelera y de lo que pasa en cada local.</p></div>
-        </li>
-        <li>
-          <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M5 8h22M5 16h22M5 24h14"/><circle cx="25" cy="24" r="3"/></svg>
-          <div><h3>Programación centralizada</h3><p>La cartelera se carga una vez al mes y llega sola a todas las pantallas y celulares.</p></div>
         </li>
       </ul>
     </div>
@@ -439,21 +431,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
           <div class="etiqueta">Cómo funciona</div>
           <h2>Una noche, todo conectado</h2>
         </div>
-        <p>El escenario, la pantalla del local y el celular de cada persona funcionan sincronizados. Lo que pasa en uno se ve en el otro en segundos.</p>
-      </div>
-
-      <div class="flujo" aria-label="Cómo se conecta todo">
-        <div class="col">
-          <div class="nodo">Cartelera del mes<span>Entra</span></div>
-          <div class="nodo">Animador o DJ<span>Entra</span></div>
-          <div class="nodo">Celular del público<span>Entra</span></div>
-        </div>
-        <div class="nucleo">Sistema<br>KRB</div>
-        <div class="col">
-          <div class="nodo">Tablero del local<span>Se ve</span></div>
-          <div class="nodo">Pantallas de pie<span>Se ve</span></div>
-          <div class="nodo">Transmisión OBS<span>Se ve</span></div>
-        </div>
+        <p>El escenario, las pantallas del local y el celular del público, en una misma experiencia.</p>
       </div>
 
       <div class="elige">
@@ -678,13 +656,13 @@ async function elegirLocal(k){
 // Los momentos de la noche salen de los horarios del día elegido
 let MOMENTOS=[];
 const TXT={
-  musica:'Antes de empezar, las pantallas del local muestran música y videos, y la cartelera del día está en el celular de cada persona.',
-  previa:'La cartelera llega sola desde la planificación del mes. La pantalla anuncia lo que viene y cada persona entra a la sala desde su celular, con su nombre y su mesa, sin descargar nada.',
-  bingo:'Cada persona tiene sus cartones en el celular. Los números salen en la pantalla grande, se marcan solos en el cartón y el sistema avisa cuando alguien gana.',
-  rosco:'Todo el público responde la misma pregunta con 3 alternativas. Gana quien responde bien y más rápido, y el top 5 aparece en pantalla. Prueba respondiendo en el celular.',
-  show:'El show se ve en vivo dentro del mismo sistema: en las pantallas del local y en el celular, junto a lo que viene después.',
-  karaoke:'El público pide su canción desde el celular y ve en qué lugar va. La lista se ordena por vueltas y la pantalla muestra quién canta ahora y quién sigue. Prueba pidiendo una canción.',
-  kids:'Mientras los adultos juegan o ven el show, los niños de 3 a 5 años tienen sus propios juegos en el celular de los papás, sin sonido ni texto.',
+  musica:'Música y videos para abrir la noche.',
+  previa:'Lo que viene, en la pantalla y en tu celular.',
+  bingo:'Bingo en vivo, desde tu celular.',
+  rosco:'Trivia en vivo: juega desde tu celular.',
+  show:'El show de la noche, en vivo.',
+  karaoke:'Karaoke: pide tu canción desde tu celular.',
+  kids:'KRB Kids: juegos para los más pequeños.',
 };
 function elegirDia(i){
   diaSel=i;const d=datos[loc].week[i];
@@ -763,7 +741,7 @@ function bingo(){
   const marcados=new Set([0]);const salidos=[];
   cel.innerHTML=`${sup()}<div><div class="c-eti">${nom}</div><div class="c-tit">Tu cartón</div></div>
    <div class="carton" id="carton">${'BINGO'.split('').map(l=>`<span class="cab">${l}</span>`).join('')}${grid.map(n=>n?`<span data-n="${n}">${n}</span>`:'<span class="libre on">LIBRE</span>').join('')}</div>
-   <div class="aviso-cel" id="av">Los números se marcan solos</div>`;
+   <div class="aviso-cel" id="av">¡Suerte!</div>`;
   const pintarTv=(n)=>{tv.innerHTML=`<div class="t-eti">${nom} · Línea</div>
     <div class="t-fila" style="margin-top:auto;margin-bottom:auto">${n?`<div class="bola"><div><small>${letra(n)}</small>${n}</div></div>`:'<div class="bola" style="opacity:.3"><div>—</div></div>'}
     <div style="display:grid;gap:2cqh"><div class="t-tx">Últimos números</div><div class="ultimos">${salidos.slice(0,-1).slice(-6).reverse().map(x=>`<span>${x}</span>`).join('')||'<span>·</span>'}</div><div class="t-tx">${salidos.length} de 75</div></div></div>`};
@@ -771,7 +749,7 @@ function bingo(){
   let k=0;
   const sacar=()=>{if(k>=orden.length)return;const n=orden[k++];salidos.push(n);pintarTv(n);pulso();
     const el=cel.querySelector(`[data-n="${n}"]`);if(el){el.classList.add('on');marcados.add(n)}
-    if(meta.every(x=>marcados.has(x))){T(()=>{tv.innerHTML=`<div class="t-eti">${nom}</div><div class="t-gr" style="margin:auto 0;color:var(--foco)">¡Bingo!</div><div class="t-md" style="margin-bottom:2cqh">Valentina · Mesa 12</div>`;$('#av').textContent='¡Ganaste! El animador ya lo ve en su panel';pulso()},700);return}
+    if(meta.every(x=>marcados.has(x))){T(()=>{tv.innerHTML=`<div class="t-eti">${nom}</div><div class="t-gr" style="margin:auto 0;color:var(--foco)">¡Bingo!</div><div class="t-md" style="margin-bottom:2cqh">Valentina · Mesa 12</div>`;$('#av').textContent='¡Ganaste!';pulso()},700);return}
     T(sacar,quieto?600:1500)};
   T(sacar,900);
 }
@@ -791,7 +769,7 @@ function rosco(){
     <div class="alts" id="alts-tv">${p.a.map((x,i)=>`<div><em>${L[i]}</em>${x}</div>`).join('')}</div>`;
   cel.innerHTML=`${sup()}<div><div class="c-eti">Trivia del Rosco</div><div style="font-weight:800;font-size:15px;line-height:1.3;margin-top:4px">${p.q}</div></div>
     <div class="alt-cel" id="alt-cel">${p.a.map((x,i)=>`<button data-i="${i}"><em>${L[i]}</em>${x}</button>`).join('')}</div>
-    <div class="aviso-cel" id="av">Responde rápido: suma más puntos</div>`;
+    <div class="aviso-cel" id="av">¡Responde rápido!</div>`;
   let n=0;I(()=>{if(fin)return;n+=Math.floor(Math.random()*9)+3;$('#resp').textContent=`Respondiendo: ${n} personas`},500);
   const reloj=$('#reloj');
   I(()=>{if(fin)return;const r=Math.max(0,1-(Date.now()-t0)/dur);reloj.style.width=(r*100)+'%';if(r<=0)cerrar()},100);
@@ -826,13 +804,13 @@ function karaoke(){
   let pedida=null;
   const pintar=()=>{tv.innerHTML=`<div class="t-eti">Karaoke · Ahora canta</div>
     <div class="t-gr" style="margin-top:2cqh">${ahora.n}</div><div class="t-md" style="color:var(--foco);text-transform:none;font-family:var(--f-texto);font-weight:800;font-size:6cqh">${ahora.c}</div>
-    <div class="cola"><div style="border:0;padding:0"><em>#</em><em>SIGUE</em><em>VUELTA</em></div>${cola.slice(0,4).map((x,i)=>`<div class="${x.yo?'yo':''}"><em>${i+1}</em><span>${x.n} · ${x.c}</span><em>${x.v}</em></div>`).join('')}</div>`;
+    <div class="cola"><div style="border:0;padding:0"><em>#</em><em>SIGUE</em><em></em></div>${cola.slice(0,4).map((x,i)=>`<div class="${x.yo?'yo':''}"><em>${i+1}</em><span>${x.n} · ${x.c}</span><em></em></div>`).join('')}</div>`;
     const pos=cola.findIndex(x=>x.yo);
     if(pedida){$('#av').textContent=pos>=0?`Vas en el lugar ${pos+1} de la lista`:'¡Te toca! Acércate al escenario'}};
   cel.innerHTML=`${sup()}<div><div class="c-eti">Karaoke</div><div class="c-tit">Pide tu canción</div></div>
     <div class="buscador">Buscar canción o artista…</div>
     <div id="canc">${canciones.map(([c,a],i)=>`<div class="cancion"><div>${c}<small>${a}</small></div><button data-i="${i}">Pedir</button></div>`).join('')}</div>
-    <div class="aviso-cel" id="av">La lista se ordena sola por vueltas</div>`;
+    <div class="aviso-cel" id="av">Pide tu canción y espera tu turno</div>`;
   cel.querySelectorAll('#canc button').forEach(b=>b.onclick=()=>{if(pedida)return;pedida=canciones[+b.dataset.i][0];cola.push({n:'Tú · Mesa 12',c:pedida,v:1,yo:true});cel.querySelectorAll('#canc button').forEach(x=>{x.disabled=true});b.textContent='Pedida';pintar();pulso()});
   pintar();
   I(()=>{const sig=cola.shift();if(!sig)return;ahora=sig;cola.push({n:['Fernanda','Mesa 3','Andrés','Paula'][Math.floor(Math.random()*4)],c:['Te amo','Mi gran noche','Gracias a la vida','El listón de tu pelo'][Math.floor(Math.random()*4)],v:2});pintar();pulso();
