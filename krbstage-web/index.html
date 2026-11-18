@@ -382,14 +382,17 @@ main,footer{position:relative;z-index:1}
 .ptl-intro p strong{color:var(--texto)}
 .ptl-frase{font-size:clamp(22px,2.6vw,30px);line-height:1.3;color:var(--texto)!important;font-weight:500}
 .ptl-frase b{color:var(--foco)}
-.ptl-pruebas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-top:48px;align-items:start}
-.ptl-col{display:grid;gap:12px;min-width:0}
+.ptl-pruebas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;margin-top:48px;align-items:stretch}
+.ptl-col{display:grid;gap:12px;min-width:0;grid-template-rows:1fr auto auto}
 .ptl-col .ptl-prueba{min-height:170px}
 .ptl-grilla{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .ptl-grilla button{position:relative;aspect-ratio:9/16;border-radius:8px;overflow:hidden;border:1px solid var(--c);background:var(--noche);padding:0;cursor:pointer}
 .ptl-grilla video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}
 .ptl-ig{justify-self:start;color:var(--c);font-family:var(--f-dato);font-size:13px;text-decoration:none;border:1px solid var(--linea);border-radius:999px;padding:7px 14px}
 .ptl-ig:hover{border-color:var(--c)}
+.ptl-tit{font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:clamp(28px,3.4vw,40px);line-height:1;margin:56px 0 0}
+.ptl-tit+.ptl-pruebas{margin-top:24px}
+.ptl-dato{position:relative;color:var(--tenue);font-size:14px;line-height:1.4}
 .ptl-prueba{position:relative;overflow:hidden;border:1px solid var(--linea);border-radius:10px;background:var(--tarima);padding:26px;display:grid;gap:8px;align-content:start;min-height:220px}
 .ptl-prueba::before{content:"";position:absolute;inset:-45% -45% auto auto;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,var(--c) 0%,transparent 65%);opacity:.25}
 .ptl-num{font-family:var(--f-dato);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--c);position:relative}
@@ -492,7 +495,6 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
       <li><a href="#hacemos">Qué hacemos</a></li>
       <li><a href="#medida">A la medida</a></li>
       <li><a href="#funciona">Cartelera</a></li>
-      <li><a href="#locales">Locales</a></li>
       <li><a href="#contacto">Contacto</a></li>
       <li><a href="#videos">Videos</a></li>
     </ul>
@@ -552,21 +554,40 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
           <p>En KRB Stage ideamos una <strong>estrategia en conjunto</strong> para que cada uno de los espacios que producimos logre su identidad y flujo propio.</p>
         </div>
       </div>
+      <h3 class="ptl-tit">Dónde producimos</h3>
       <div class="ptl-pruebas">
         <div class="ptl-col" data-local="kennedy" style="--c:var(--kennedy)">
-          <article class="ptl-prueba"><span class="ptl-num">Mercado Kennedy</span><b>Más de tres años de éxito sostenido</b></article>
+          <article class="ptl-prueba"><span class="ptl-num">Mercado Kennedy</span><b>Más de tres años de éxito sostenido</b><small class="ptl-dato">Parque Arauco Oriente, 4.º piso · Jueves a sábado</small></article>
           <div class="ptl-grilla" hidden></div>
           <a class="ptl-ig" href="https://www.instagram.com/krbstage/" target="_blank" rel="noopener">Ver registros en @krbstage</a>
         </div>
         <div class="ptl-col" data-local="tobalaba" style="--c:var(--tobalaba)">
-          <article class="ptl-prueba"><span class="ptl-num">Espacio Gastronómico Tobalaba</span><b>Actividades sorprendentes</b></article>
+          <article class="ptl-prueba"><span class="ptl-num">Espacio Gastronómico Tobalaba</span><b>Actividades sorprendentes</b><small class="ptl-dato">Mall Plaza Tobalaba · Viernes</small></article>
           <div class="ptl-grilla" hidden></div>
           <a class="ptl-ig" href="https://www.instagram.com/krbstage3/" target="_blank" rel="noopener">Ver registros en @krbstage3</a>
         </div>
         <div class="ptl-col" data-local="frida" style="--c:var(--frida)">
-          <article class="ptl-prueba"><span class="ptl-num">Frida Kahlo</span><b>Un espacio que la gente hizo suyo desde la primera noche</b></article>
+          <article class="ptl-prueba"><span class="ptl-num">Frida Kahlo</span><b>Un espacio que la gente hizo suyo desde la primera noche</b><small class="ptl-dato">Costanera Center · Viernes a domingo</small></article>
           <div class="ptl-grilla" hidden></div>
           <a class="ptl-ig" href="https://www.instagram.com/krbstage4/" target="_blank" rel="noopener">Ver registros en @krbstage4</a>
+        </div>
+      </div>
+      <h3 class="ptl-tit">También hemos producido en</h3>
+      <div class="ptl-pruebas">
+        <div class="ptl-col" data-local="panoramico" style="--c:var(--foco)">
+          <article class="ptl-prueba"><span class="ptl-num">Registros hasta octubre de 2026</span><b>Zona Gourmet Panorámico</b></article>
+          <div class="ptl-grilla" hidden></div>
+          <a class="ptl-ig" href="https://www.instagram.com/krbstage1/" target="_blank" rel="noopener">Ver registros en @krbstage1</a>
+        </div>
+        <div class="ptl-col" data-local="kairos" style="--c:var(--foco)">
+          <article class="ptl-prueba"><span class="ptl-num">Registros de marzo a diciembre de 2024</span><b>Kairos</b></article>
+          <div class="ptl-grilla" hidden></div>
+          <a class="ptl-ig" href="https://www.instagram.com/krbstage2/" target="_blank" rel="noopener">Ver registros en @krbstage2</a>
+        </div>
+        <div class="ptl-col" data-local="laflorida" style="--c:var(--foco)">
+          <article class="ptl-prueba"><span class="ptl-num">Registros de julio de 2023 a marzo de 2024</span><b>Mercado del 14</b><small class="ptl-dato">Mall Plaza Vespucio, La Florida</small></article>
+          <div class="ptl-grilla" hidden></div>
+          <a class="ptl-ig" href="https://www.instagram.com/krbstage2/" target="_blank" rel="noopener">Ver registros en @krbstage2</a>
         </div>
       </div>
     </div>
@@ -664,69 +685,6 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
       </div>
     </div>
   </section>
-
-
-
-  <section class="banda locales" id="locales">
-    <div class="envoltura">
-      <div class="etiqueta">Locales</div>
-      <h2>Dónde estamos</h2>
-      <div class="bloques">
-        <div class="local-bloque" data-local="kennedy" style="--c:var(--kennedy)">
-          <article class="local">
-            <div class="local-nombre"><div class="num">Local 01</div><h3>Mercado Kennedy</h3></div>
-            <div class="local-datos"><p>Parque Arauco Oriente, 4.º piso</p><div class="dias">Jueves a sábado</div></div>
-            <div class="local-ig"><a class="ig" href="https://www.instagram.com/krbstage/" target="_blank" rel="noopener">@krbstage</a><span class="ig-cuenta"></span></div>
-          </article>
-          <div class="local-videos"></div>
-        </div>
-        <div class="local-bloque" data-local="frida" style="--c:var(--frida)">
-          <article class="local">
-            <div class="local-nombre"><div class="num">Local 02</div><h3>Frida Kahlo</h3></div>
-            <div class="local-datos"><p>Costanera Center</p><div class="dias">Viernes a domingo</div></div>
-            <div class="local-ig"><a class="ig" href="https://www.instagram.com/krbstage4/" target="_blank" rel="noopener">@krbstage4</a><span class="ig-cuenta"></span></div>
-          </article>
-          <div class="local-videos"></div>
-        </div>
-        <div class="local-bloque" data-local="tobalaba" style="--c:var(--tobalaba)">
-          <article class="local">
-            <div class="local-nombre"><div class="num">Local 03</div><h3>Tobalaba</h3></div>
-            <div class="local-datos"><p>Espacio Gastronómico, Mall Plaza Tobalaba</p><div class="dias">Viernes</div></div>
-            <div class="local-ig"><a class="ig" href="https://www.instagram.com/krbstage3/" target="_blank" rel="noopener">@krbstage3</a><span class="ig-cuenta"></span></div>
-          </article>
-          <div class="local-videos"></div>
-        </div>
-      </div>
-      <div class="historicos" id="historicos" hidden>
-        <div class="etiqueta hist-tit">También hemos producido en</div>
-        <div class="bloques">
-          <div class="local-bloque" data-local="panoramico" style="--c:var(--foco)" hidden>
-            <article class="local">
-              <div class="local-nombre"><div class="num">Registros hasta octubre de 2026</div><h3>Zona Gourmet Panorámico</h3></div>
-              <div class="local-ig"><a class="ig" href="https://www.instagram.com/krbstage1/" target="_blank" rel="noopener">@krbstage1</a><span class="ig-cuenta"></span></div>
-            </article>
-            <div class="local-videos"></div>
-          </div>
-          <div class="local-bloque" data-local="kairos" style="--c:var(--foco)" hidden>
-            <article class="local">
-              <div class="local-nombre"><div class="num">Registros de marzo a diciembre de 2024</div><h3>Kairos</h3></div>
-              <div class="local-ig"><a class="ig" href="https://www.instagram.com/krbstage2/" target="_blank" rel="noopener">@krbstage2</a><span class="ig-cuenta"></span></div>
-            </article>
-            <div class="local-videos"></div>
-          </div>
-          <div class="local-bloque" data-local="laflorida" style="--c:var(--foco)" hidden>
-            <article class="local">
-              <div class="local-nombre"><div class="num">Registros de julio de 2023 a marzo de 2024</div><h3>Mercado del 14</h3></div>
-              <div class="local-datos"><p>Mall Plaza Vespucio, La Florida</p></div>
-              <div class="local-ig"><a class="ig" href="https://www.instagram.com/krbstage2/" target="_blank" rel="noopener">@krbstage2</a><span class="ig-cuenta"></span></div>
-            </article>
-            <div class="local-videos"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
 
 
 
