@@ -93,6 +93,7 @@ main,footer{position:relative;z-index:1}
 .quienes .envoltura{display:grid;grid-template-columns:1fr 1.15fr;gap:64px;align-items:start}
 .quienes p{margin:0 0 18px;max-width:58ch;color:var(--tenue)}
 .quienes p strong{color:var(--texto)}
+.quienes .esmero{color:var(--foco);font-weight:700;font-size:clamp(19px,2vw,22px)}
 .ficha{border:1px solid var(--linea);background:var(--tarima);border-radius:6px;padding:28px;display:grid;gap:18px;margin-top:30px}
 .ficha .nombre{font-family:var(--f-display);font-weight:800;font-size:40px;line-height:1;text-transform:uppercase}
 .chips{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:0;padding:0}
@@ -394,6 +395,17 @@ main,footer{position:relative;z-index:1}
 .esp-lista a{color:var(--foco)}
 .esp-dobles{display:flex;flex-wrap:wrap;gap:8px;list-style:none;margin:20px 0 0;padding:0}
 .esp-dobles li{border:1px solid var(--linea);border-radius:999px;padding:6px 12px;font-size:14px}
+.esp-mont-tit{margin:28px 0 12px}
+.esp-montados{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.esp-mont{position:relative;display:grid;gap:4px;text-decoration:none;color:var(--texto);cursor:pointer}
+.esp-media{position:relative;aspect-ratio:4/5;border-radius:10px;overflow:hidden;border:1px solid var(--linea);background:radial-gradient(circle at 30% 20%,rgba(224,51,143,.35),transparent 60%),radial-gradient(circle at 80% 90%,rgba(244,191,90,.3),transparent 60%),var(--noche)}
+.esp-media video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.esp-ver{position:absolute;left:8px;bottom:8px;font-size:12px;font-weight:700;border-radius:999px;padding:5px 10px;background:rgba(12,11,18,.75);border:1px solid rgba(243,238,230,.25)}
+.esp-mont:hover .esp-media{border-color:var(--foco)}
+.esp-mont b{font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:22px;line-height:1}
+.esp-mont small{color:var(--tenue);font-size:13px}
+.esp-boton{display:inline-block;margin-top:4px;color:var(--noche);background:var(--foco);font-weight:700;font-size:14px;border-radius:999px;padding:9px 16px;text-decoration:none}
+@media (max-width:560px){.esp-montados{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .esp-ejemplo{border:1px solid var(--foco);border-radius:12px;padding:24px;background:linear-gradient(160deg,rgba(244,191,90,.10),rgba(12,11,18,.6))}
 .esp-ejemplo .etiqueta{margin-bottom:6px}
 .esp-ejemplo h3{font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:34px;line-height:1;margin:0 0 10px}
@@ -498,12 +510,13 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
   <section class="banda quienes" id="quienes">
     <div class="envoltura">
       <div>
-        <div class="etiqueta">Quiénes somos</div>
-        <h2>Una productora de entretenimiento en vivo</h2>
+        <div class="etiqueta">¿Quiénes somos?</div>
+        <h2>Somos una productora de emociones en vivo.</h2>
       </div>
       <div>
-        <p><strong>KRB Stage</strong> es la marca de entretenimiento de KRB Producciones SpA. Producimos entretenimiento en vivo para restaurantes y espacios gastronómicos de Santiago.</p>
-        <p>Programamos y producimos la parrilla artística de cada local y la conectamos con el público: cada persona participa desde su celular y las pantallas del local cambian en tiempo real.</p>
+        <p>Creemos que una noche cualquiera puede convertirse en un recuerdo para siempre. Que una canción puede unir a dos desconocidos, a un abuelo con su nieto, a una mesa con todo el salón.</p>
+        <p>Por eso creamos momentos: la piel de gallina cuando suena la banda tributo, la sorpresa de ver en escena al artista que admiras, las risas compartidas con el humor y la emoción de jugar todos juntos.</p>
+        <p class="esmero">Nos esmeramos para que cada noche sea única.</p>
         <div class="ficha">
           <div class="etiqueta">Dirección</div>
           <div class="nombre">José Miguel Díaz</div>
@@ -534,7 +547,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
       <div class="ptl-pruebas">
         <article class="ptl-prueba" style="--c:var(--kennedy)"><span class="ptl-num">Mercado Kennedy</span><b>Más de tres años de éxito sostenido</b></article>
         <article class="ptl-prueba" style="--c:var(--tobalaba)"><span class="ptl-num">Espacio Gastronómico Tobalaba</span><b>Actividades sorprendentes</b><a href="https://www.instagram.com/krbstage3/" target="_blank" rel="noopener">Ver registros en @krbstage3</a></article>
-        <article class="ptl-prueba" style="--c:var(--frida)"><span class="ptl-num">Frida Kahlo</span><b>Un espacio que la gente hizo suyo desde la primera noche</b></article>
+        <article class="ptl-prueba" style="--c:var(--frida)"><span class="ptl-num">Frida Kahlo</span><b>Un espacio que la gente hizo suyo desde la primera noche</b><a href="https://www.instagram.com/krbstage4/" target="_blank" rel="noopener">Ver registros en @krbstage4</a></article>
       </div>
     </div>
   </section>
@@ -576,15 +589,22 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
             <li><span><strong>Dobles, bailarines, iluminación, humo y pantalla</strong>, en un solo espectáculo.</span></li>
             <li><span><strong>Exclusivo:</strong> la banda y la producción son de KRB Stage.</span></li>
           </ul>
-          <ul class="esp-dobles" aria-label="Dobles">
-            <li>Dua Lipa</li><li>Michael Jackson</li><li>Ana Torroja</li><li>Tom Jones</li><li>Fito Páez</li><li>Charly García</li><li>Christina Aguilera</li><li>Alanis Morissette</li><li>Nicole</li><li>Depeche Mode</li><li>Pet Shop Boys</li>
-          </ul>
+          <div class="etiqueta esp-mont-tit">Actualmente tenemos montado</div>
+          <div class="esp-montados">
+            <a class="esp-mont" data-code="DLF5OgMMSrT" href="https://www.instagram.com/reel/DLF5OgMMSrT/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Depeche Mode</b><small>por Guillermo Rojas</small></a>
+            <a class="esp-mont" data-code="DF4JT1kg5JJ" href="https://www.instagram.com/reel/DF4JT1kg5JJ/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Michael Jackson</b><small>por Ben Ramirez</small></a>
+            <a class="esp-mont" data-code="DLyYhqsRQPF" href="https://www.instagram.com/reel/DLyYhqsRQPF/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Dua Lipa</b><small>por Josefa Bejarano</small></a>
+            <a class="esp-mont" data-code="DL-mzsnRP_I" href="https://www.instagram.com/reel/DL-mzsnRP_I/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Mecano</b><small>por Danna Sanchez</small></a>
+            <a class="esp-mont" data-code="DHW7dIVSevI" href="https://www.instagram.com/reel/DHW7dIVSevI/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Tom Jones</b><small>por Matias Fajardo</small></a>
+            <a class="esp-mont" data-code="DP_YzysEXeh" href="https://www.instagram.com/reel/DP_YzysEXeh/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Lady Gaga</b><small>por Ninoska Niño</small></a>
+          </div>
         </div>
         <div class="esp-ejemplo">
           <div class="etiqueta">Un ejemplo</div>
           <h3>Fiesta de los 80</h3>
           <p>Para los 40 años de egreso de un curso armamos un mix de 50 minutos contado como una historia de los 80: Depeche Mode, Madonna, Tom Jones, Enanitos Verdes y Michael Jackson con Thriller y Smooth Criminal.</p>
           <p>Después siguió la noche con karaoke con banda en vivo y DJ.</p>
+          <a class="esp-boton" href="https://www.instagram.com/reel/DRm5CfskUtc/" target="_blank" rel="noopener">▶ Ver el video en Instagram</a>
         </div>
       </div>
     </div>
@@ -917,6 +937,22 @@ elegirLocal('kennedy');
     });
   }
   fetch('https://cantabingo.onrender.com/api/web/instagram',{signal:AbortSignal.timeout(10000)}).then(r=>r.json()).then(d=>{if(window.recibirIg)window.recibirIg(d);pintar(d)}).catch(()=>{});
+})();
+
+/* ===== Espectáculos montados: los videos que están en nuestras cuentas se ven aquí mismo ===== */
+(function(){
+  const PROPIOS={'DF4JT1kg5JJ':['kennedy','2025-02-10'],'DL-mzsnRP_I':['kennedy','2025-07-11']};
+  const cards=[...document.querySelectorAll('.esp-mont')];const vids={};
+  const vistos=new IntersectionObserver(es=>es.forEach(en=>{const v=en.target;if(en.isIntersecting&&!quieto)v.play().catch(()=>{});else v.pause()}),{threshold:.5});
+  Object.entries(PROPIOS).forEach(([code,[loc,dia]])=>{
+    fetch(`https://cantabingo.onrender.com/api/web/instagram/buscar?local=${loc}&desde=${dia}&hasta=${dia}`,{signal:AbortSignal.timeout(20000)}).then(r=>r.json()).then(j=>{
+      const x=(j.videos||[]).find(v=>v.link&&v.link.includes(code));if(!x)return;vids[code]=x;
+      const card=cards.find(c=>c.dataset.code===code);if(!card)return;
+      const m=card.querySelector('.esp-media');const v=document.createElement('video');v.muted=true;v.loop=true;v.playsInline=true;v.preload='metadata';if(x.poster)v.poster=x.poster;v.src=x.url;m.prepend(v);vistos.observe(v);
+      card.querySelector('.esp-ver').textContent='▶ Pantalla completa';
+      card.onclick=e=>{e.preventDefault();const lista=cards.filter(c=>vids[c.dataset.code]);abrirPC(lista.map(c=>({video:vids[c.dataset.code].url,poster:vids[c.dataset.code].poster})),lista.indexOf(card))};
+    }).catch(()=>{});
+  });
 })();
 
 /* ===== Videos: YouTube y Twitch mezclados, del más nuevo al más antiguo (se actualiza solo) ===== */
