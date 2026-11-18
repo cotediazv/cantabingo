@@ -19,6 +19,13 @@
     <radialGradient id="wg-miss" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ff9c9c"/><stop offset="1" stop-color="#d01f3c"/></radialGradient>
     <radialGradient id="wg-pass" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff3a6"/><stop offset="1" stop-color="#f59e0b"/></radialGradient>
     <filter id="wg-shadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy=".5" stdDeviation=".7" flood-color="#000" flood-opacity=".45"/></filter>
+    <filter id="wg-neon" x="-30%" y="-60%" width="160%" height="220%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation=".35" result="b1"/><feGaussianBlur in="SourceAlpha" stdDeviation="1.2" result="b2"/><feGaussianBlur in="SourceAlpha" stdDeviation="2.6" result="b3"/>
+      <feFlood flood-color="#ff3fb4"/><feComposite in2="b1" operator="in" result="g1"/>
+      <feFlood flood-color="#ff3fb4" flood-opacity=".9"/><feComposite in2="b2" operator="in" result="g2"/>
+      <feFlood flood-color="#b14dff" flood-opacity=".8"/><feComposite in2="b3" operator="in" result="g3"/>
+      <feMerge><feMergeNode in="g3"/><feMergeNode in="g2"/><feMergeNode in="g1"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
     <filter id="wg-glow" x="-80%" y="-80%" width="260%" height="260%"><feDropShadow dx="0" dy="0" stdDeviation="1.6" flood-color="#ffe14d" flood-opacity=".95"/></filter>
   </defs>`;
   function wheelSVG(st, pi, pick = false, bare = false) {
@@ -37,7 +44,8 @@
         <circle cx="${x}" cy="${y}" r="${cur ? r * 1.22 : r}" fill="url(#wg-${status})" stroke="${cur ? '#ffe14d' : '#fff'}" stroke-width="${cur ? 1.3 : 0.55}"/>
         <text x="${x}" y="${y}" font-size="${(r * (cur ? 1.4 : 1.15)).toFixed(2)}" text-anchor="middle" dominant-baseline="central" fill="${status === 'pass' ? '#4a2c00' : '#fff'}" font-weight="700">${esc(ch)}</text></g>`;
     }).join('');
-    const center = bare ? '' : `
+    // En OBS (centro libre para la cámara): «El Rosco» con letras de neón en la parte de abajo, dentro del rosco
+    const center = bare ? `<text class="wheel-neon" x="50" y="79" font-size="9.5" text-anchor="middle" dominant-baseline="central" fill="#fff4fb" filter="url(#wg-neon)">El Rosco</text>` : `
       <text x="50" y="44" font-size="17" text-anchor="middle" dominant-baseline="central" fill="currentColor" font-weight="700" data-timer="${pi}">${clock(c.remainingMs)}</text>
       <text x="50" y="58" font-size="5" text-anchor="middle" fill="currentColor" font-weight="600">${esc(c.name.slice(0, 18))}</text>
       <text x="50" y="66" font-size="4.6" text-anchor="middle" fill="currentColor"><tspan fill="#35c97a">✔ ${c.hits}</tspan>  <tspan fill="#f07a7a">✘ ${c.misses}</tspan></text>`;
