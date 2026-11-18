@@ -400,6 +400,7 @@ main,footer{position:relative;z-index:1}
 #producidos{padding-top:56px}
 .ptl-prueba .ptl-arroba{font-size:15px;font-weight:700;text-decoration:none;justify-self:center;margin-top:4px}
 .ptl-col .ptl-ig{justify-self:center}
+.ptl-cartelera{justify-self:center;color:var(--c);font-weight:700;font-size:15px;text-decoration:underline;text-underline-offset:4px}
 .ptl-desde{color:var(--c)!important}
 .ptl-dato{position:relative;color:var(--tenue);font-size:14px;line-height:1.4}
 .ptl-prueba{position:relative;overflow:hidden;border:1px solid var(--linea);border-radius:10px;background:var(--tarima);padding:26px;display:grid;gap:8px;align-content:start;min-height:220px}
@@ -578,16 +579,19 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
           <article class="ptl-prueba"><span class="ptl-num">Mercado Kennedy</span><b>Más de tres años de éxito sostenido</b><small class="ptl-dato ptl-desde">Desde mayo de 2023 a la fecha</small><small class="ptl-dato">Parque Arauco Oriente, 4.º piso · Jueves a sábado</small><a class="ptl-arroba" href="https://www.instagram.com/krbstage/" target="_blank" rel="noopener">@krbstage</a></article>
           <div class="ptl-grilla" hidden></div>
           <a class="ptl-ig" href="https://www.instagram.com/krbstage/" target="_blank" rel="noopener">Ver registros en @krbstage</a>
+          <a class="ptl-cartelera" href="#funciona" data-local="kennedy">Ver cartelera semanal</a>
         </div>
         <div class="ptl-col" data-local="tobalaba" style="--c:var(--tobalaba)">
           <article class="ptl-prueba"><span class="ptl-num">Espacio Gastronómico Tobalaba</span><b>Actividades sorprendentes semana a semana</b><small class="ptl-dato ptl-desde">Desde enero de 2025 a la fecha</small><small class="ptl-dato">Mall Plaza Tobalaba · Viernes</small><a class="ptl-arroba" href="https://www.instagram.com/krbstage3/" target="_blank" rel="noopener">@krbstage3</a></article>
           <div class="ptl-grilla" hidden></div>
           <a class="ptl-ig" href="https://www.instagram.com/krbstage3/" target="_blank" rel="noopener">Ver registros en @krbstage3</a>
+          <a class="ptl-cartelera" href="#funciona" data-local="tobalaba">Ver cartelera semanal</a>
         </div>
         <div class="ptl-col" data-local="frida" style="--c:var(--frida)">
           <article class="ptl-prueba"><span class="ptl-num">Frida Kahlo</span><b>Un espacio que la gente hizo suyo desde la primera noche</b><small class="ptl-dato ptl-desde">Desde julio de 2025 a la fecha</small><small class="ptl-dato">Costanera Center · Viernes a domingo</small><a class="ptl-arroba" href="https://www.instagram.com/krbstage4/" target="_blank" rel="noopener">@krbstage4</a></article>
           <div class="ptl-grilla" hidden></div>
           <a class="ptl-ig" href="https://www.instagram.com/krbstage4/" target="_blank" rel="noopener">Ver registros en @krbstage4</a>
+          <a class="ptl-cartelera" href="#funciona" data-local="frida">Ver cartelera semanal</a>
         </div>
       </div>
     </div>
@@ -845,6 +849,8 @@ function pintarFlyers(){
   caja.hidden=false;
 }
 window.recibirIg=d=>{igDatos=d;pintarFlyers();pintarColumnas()};
+// «Ver cartelera semanal» de cada local: baja a la cartelera con ese local elegido
+document.querySelectorAll('.ptl-cartelera').forEach(a=>a.addEventListener('click',()=>elegirLocal(a.dataset.local)));
 // «Para tu local»: debajo de cada local, sus 6 videos más populares de Instagram a la vez, en pequeño (tocar uno = pantalla completa)
 function pintarColumnas(){
   document.querySelectorAll('.ptl-col').forEach(col=>{
