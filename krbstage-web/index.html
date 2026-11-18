@@ -360,6 +360,20 @@ main,footer{position:relative;z-index:1}
   .cartel .semana,.cartel .elige .fila:nth-child(2) .opciones{grid-column:1}
   .cartel .opcion{font-size:13px;padding:7px 12px}
 }
+[hidden]{display:none!important}
+/* flyers de la cartelera (últimas publicaciones de imagen de cada local) */
+.flyers{width:min(760px,100%);display:grid;gap:10px}
+.flyers-tit{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.flyers-tit .tit{font-family:var(--f-dato);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--foco)}
+.flyers-local{font-family:var(--f-dato);font-size:11px;color:var(--tenue);letter-spacing:.08em}
+.flyers-fila{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.flyers-fila button{all:unset;cursor:pointer;display:block;aspect-ratio:4/5;border-radius:10px;overflow:hidden;border:1px solid var(--linea);background:var(--noche);transition:transform .25s,border-color .25s}
+.flyers-fila button:hover,.flyers-fila button:focus-visible{transform:translateY(-3px);border-color:var(--local)}
+.flyers-fila img{width:100%;height:100%;object-fit:cover;display:block}
+.visor{position:fixed;inset:0;z-index:50;background:rgba(6,5,10,.92);display:grid;place-items:center;padding:max(20px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(20px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.visor img{max-width:100%;max-height:calc(100vh - 110px);border-radius:10px;box-shadow:0 30px 80px rgba(0,0,0,.6)}
+.visor-cerrar{position:absolute;top:max(16px,env(safe-area-inset-top,0px));right:max(16px,env(safe-area-inset-right,0px));border:1px solid var(--linea);background:var(--tarima);color:var(--texto);border-radius:999px;padding:8px 16px;font-weight:700;cursor:pointer}
+@media (max-width:720px){.flyers-fila{grid-template-columns:repeat(4,58%);overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}.flyers-fila::-webkit-scrollbar{display:none}.flyers-fila button{scroll-snap-align:start}}
 /* contacto */
 .contacto{border-top:1px solid var(--linea)}
 .contacto .envoltura{display:grid;grid-template-columns:1fr 1fr;gap:64px}
@@ -435,6 +449,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
 </header>
 
 <canvas id="red-fondo" aria-hidden="true"></canvas>
+<div class="visor" id="visor" hidden role="dialog" aria-label="Flyer"><img id="visor-img" alt=""><button class="visor-cerrar" id="visor-cerrar">Cerrar</button></div>
 <main>
   <section class="portada" id="inicio">
     <video id="video-portada" class="video-portada" muted loop playsinline preload="none" poster="portada.jpg" aria-hidden="true"></video>
@@ -517,6 +532,10 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
           <div class="fila"><span class="tit">Elige el local</span><div class="opciones" id="locales-btn"></div></div>
           <div class="fila"><span class="tit">Elige el día</span><div class="semana" id="semana">Cartelera semanal</div><div class="opciones" id="dias-btn"></div></div>
           <p class="fuente" id="fuente"></p>
+        </div>
+        <div class="flyers" id="flyers" hidden>
+          <div class="flyers-tit"><span class="tit">Flyers de la cartelera</span><span class="flyers-local" id="flyers-local"></span></div>
+          <div class="flyers-fila" id="flyers-fila"></div>
         </div>
       </div>
     </div>
@@ -679,6 +698,7 @@ async function elegirLocal(k){
   loc=k;const L=LOCALES[k];
   [...bLoc.children].forEach(b=>b.setAttribute('aria-pressed',b.dataset.k===k));
   $('#funciona').style.setProperty('--local',L.color);
+  pintarFlyers();
   bDia.innerHTML='<span class="cargando">Cargando cartelera…</span>';
   const d=await cargar(k);if(loc!==k)return;
   fuente.innerHTML=`<b>Hoy: ${esc(hoyTxt())}</b><span class="f-larga"> · ${d.vivo?'Horarios y shows actualizados en vivo desde la cartelera de cada local.':'Horarios y shows de la cartelera de cada local.'}</span>`;
@@ -689,6 +709,22 @@ async function elegirLocal(k){
   d.week.forEach((w,i)=>{const b=document.createElement('button');b.className='opcion';b.style.setProperty('--c',L.color);b.innerHTML=`${esc((DIAS[plano(w.day)]||w.day).slice(0,3))} ${w.date}${w.month?` ${MESES_L[w.month-1].slice(0,3)}`:''}`;b.title=w.show?nomShow(w.show):'';b.onclick=()=>elegirDia(i);bDia.appendChild(b)});
   elegirDia(0);
 }
+
+// Flyers de la cartelera del local elegido (llegan con los datos de Instagram)
+let igDatos=null;
+function pintarFlyers(){
+  const caja=$('#flyers'),fila=$('#flyers-fila');
+  const fl=igDatos&&igDatos[loc]&&(igDatos[loc].flyers||[]).filter(x=>x&&x.url);
+  if(!fl||!fl.length){caja.hidden=true;return}
+  $('#flyers-local').textContent=LOCALES[loc].nombre;
+  fila.innerHTML=fl.map((x,i)=>`<button data-i="${i}" aria-label="Ver flyer ${i+1}"><img src="${esc(x.url)}" alt="Flyer de la cartelera de ${esc(LOCALES[loc].nombre)}" loading="lazy"></button>`).join('');
+  fila.querySelectorAll('button').forEach(b=>b.onclick=()=>{$('#visor-img').src=fl[+b.dataset.i].url;$('#visor').hidden=false});
+  caja.hidden=false;
+}
+window.recibirIg=d=>{igDatos=d;pintarFlyers()};
+$('#visor-cerrar').onclick=()=>{$('#visor').hidden=true};
+$('#visor').onclick=e=>{if(e.target.id==='visor')$('#visor').hidden=true};
+addEventListener('keydown',e=>{if(e.key==='Escape')$('#visor').hidden=true});
 
 // Cartelera del día elegido, en un celular
 function elegirDia(i){
@@ -739,7 +775,7 @@ elegirLocal('kennedy');
       centrar();
     });
   }
-  fetch('https://cantabingo.onrender.com/api/web/instagram',{signal:AbortSignal.timeout(10000)}).then(r=>r.json()).then(pintar).catch(()=>{});
+  fetch('https://cantabingo.onrender.com/api/web/instagram',{signal:AbortSignal.timeout(10000)}).then(r=>r.json()).then(d=>{if(window.recibirIg)window.recibirIg(d);pintar(d)}).catch(()=>{});
 })();
 
 /* ===== Videos: lista de reproducción con los últimos del canal (se actualiza sola) ===== */

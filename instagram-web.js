@@ -93,7 +93,7 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
     const c = cache[v];
     if (c && Date.now() - c.at < CACHE_MS) return c;
     const token = tokenOf(v);
-    if (!token) return { videos: [], error: 'Falta la clave' };
+    if (!token) return { videos: [], flyers: [], error: 'Falta la clave' };
     await refresh(v);
     const tk = db.webIg[v].token;
     const errores = [];
@@ -104,10 +104,13 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
     if (j && Array.isArray(j.data)) {
       const videos = j.data.filter((m) => m.media_type === 'VIDEO' && m.media_url).slice(0, PER_VENUE)
         .map((m) => ({ url: m.media_url, poster: m.thumbnail_url || '', link: m.permalink || '', date: m.timestamp || '' }));
-      cache[v] = { videos, error: '', at: Date.now() };
+      // Flyers de la cartelera: las 4 publicaciones de imagen más recientes
+      const flyers = j.data.filter((m) => (m.media_type === 'IMAGE' || m.media_type === 'CAROUSEL_ALBUM') && m.media_url).slice(0, 4)
+        .map((m) => ({ url: m.media_url, link: m.permalink || '', date: m.timestamp || '' }));
+      cache[v] = { videos, flyers, error: '', at: Date.now() };
     } else {
       // Si falla, se sigue mostrando lo último bueno y se reintenta en 2 minutos
-      cache[v] = { videos: (c || {}).videos || [], error: errores.join(' | '), at: Date.now() - CACHE_MS + 2 * 60e3 };
+      cache[v] = { videos: (c || {}).videos || [], flyers: (c || {}).flyers || [], error: errores.join(' | '), at: Date.now() - CACHE_MS + 2 * 60e3 };
     }
     return cache[v];
   }
@@ -119,7 +122,7 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
     await Promise.all(VENUES.map(async (v) => {
       const r = await videosOf(v);
       // «error» ayuda a revisar la conexión; nunca incluye la clave
-      out[v] = { handle: (insta && insta.handleOf && insta.handleOf(v)) || '', videos: r.videos, error: r.error || '' };
+      out[v] = { handle: (insta && insta.handleOf && insta.handleOf(v)) || '', videos: r.videos, flyers: r.flyers || [], error: r.error || '' };
     }));
     res.json(out);
   });
