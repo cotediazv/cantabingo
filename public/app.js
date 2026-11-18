@@ -251,6 +251,7 @@ views.control = async () => {
   app.innerHTML = `<p class="back"><a href="#/">← Inicio</a></p><h1>Centro de control</h1>
     <a class="btn lp-open" href="#/light">💡 Sala light · karaoke, show y cartelera en otro local</a>
     <a class="btn lp-open" href="#/consola">🖥️ Consola general · los 3 locales en una pantalla</a>
+    <a class="btn lp-open" href="#/verticalctl/kennedy">📺 Pantalla vertical · video de la cartelera y actividades</a>
     <div class="panel">
       <h2>En pantalla</h2>
       <p class="muted small">La pantalla cambia sola al activar un bingo, lanzar un sorteo o cargar un rosco. Aquí puedes cambiarla a mano.</p>

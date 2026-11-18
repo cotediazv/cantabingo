@@ -1605,3 +1605,25 @@ body.kids .kz-stamps { position: fixed; }
 .kz-snake { grid-template-columns: repeat(var(--n), minmax(0, 1fr)); box-sizing: border-box; }
 .kz-snake.walls { padding: 8px; }
 .kz-snake i { min-width: 0; overflow: hidden; font-size: calc(min(100vw, 360px) / var(--n) * .7); }
+/* Pantalla vertical: video de la cartelera a pantalla completa o la actividad del local */
+body.vert-in { margin: 0; overflow: hidden; background: #000; }
+body.vert-in .krb-mark { display: none; }
+.vt { position: fixed; inset: 0; background: #000; }
+.vt-video, .vt-act { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; object-fit: contain; background: #000; }
+.vt-empty { position: absolute; inset: 0; display: grid; place-items: center; }
+.vt-empty img { width: 50%; opacity: .8; }
+.vt-locales { display: flex; flex-wrap: wrap; gap: 8px; }
+.vt-now { display: grid; gap: 4px; text-align: center; }
+.vt-now b { font-size: 1.6rem; }
+.vt-modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+.vt-modes button { display: grid; gap: 4px; justify-items: center; padding: 14px 10px; font-size: 1.05rem; font-weight: 700; }
+.vt-modes button span { font-size: 1.8rem; }
+.vt-modes button small { font-weight: 400; font-size: .8rem; opacity: .8; }
+.vt-modes button.on { outline: 3px solid var(--accent, #ff2e88); }
+.vt-prev { display: block; height: 260px; max-width: 100%; margin: 6px 0; border-radius: 10px; background: #000; }
+.vt-up { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.vt-prog { position: relative; height: 26px; margin-top: 10px; border-radius: 13px; background: rgba(255, 255, 255, .15); overflow: hidden; }
+.vt-prog i { position: absolute; inset: 0 auto 0 0; width: 0; background: #2bb24c; }
+.vt-prog span { position: relative; display: block; text-align: center; line-height: 26px; font-size: .85rem; font-weight: 700; }
+.vt-link { width: min(100%, 420px); }
+button.link { background: none; border: 0; padding: 0; color: inherit; text-decoration: underline; cursor: pointer; }
