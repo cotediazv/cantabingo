@@ -756,25 +756,29 @@ elegirLocal('kennedy');
 /* ===== Instagram: últimos videos de cada local (parten solos, sin sonido, al pasar) ===== */
 (function(){
   function silenciarOtros(yo){document.querySelectorAll('.ig-video video').forEach(v=>{if(v!==yo){v.muted=true;const b=v.parentElement.querySelector('.ig-son');if(b){b.setAttribute('aria-pressed','false');b.textContent='Activar sonido'}}})}
+  function cargarVideo(v){if(!v.getAttribute('src')&&v.dataset.src){v.src=v.dataset.src}}
+  function soltarVideo(v){if(v.getAttribute('src')){v.pause();v.removeAttribute('src');v.load()}}
   // Pantalla completa tipo reels: se desliza hacia arriba o abajo para pasar de un video a otro
   const reels=$('#reels'),rpista=$('#reels-pista');let robs=null,rsonido=true;
   function abrirReels(vids,i,local,color){
-    document.querySelectorAll('.ig-video video').forEach(x=>x.pause());
+    document.querySelectorAll('.ig-video video').forEach(soltarVideo);
     reels.style.setProperty('--c',color||'var(--foco)');$('#reels-local').textContent=local;
-    rpista.innerHTML=vids.map(x=>`<div class="reel"><video playsinline loop preload="none" ${x.poster?`poster="${esc(x.poster)}"`:''} src="${esc(x.url)}"></video></div>`).join('');
+    rpista.innerHTML=vids.map(x=>`<div class="reel"><video playsinline loop preload="none" ${x.poster?`poster="${esc(x.poster)}"`:''} data-src="${esc(x.url)}"></video></div>`).join('');
     reels.hidden=false;document.documentElement.style.overflow='hidden';
     const pc=reels.requestFullscreen||reels.webkitRequestFullscreen;if(pc){try{const r=pc.call(reels);if(r&&r.catch)r.catch(()=>{})}catch(_){}}
     rpista.scrollTop=rpista.children[i].offsetTop;
     const vs=[...rpista.querySelectorAll('video')];
-    const tocar=v=>{v.muted=!rsonido;v.preload='auto';v.play().catch(()=>{v.muted=true;rsonido=false;$('#reels-sonido').textContent='Activar sonido';v.play().catch(()=>{})})};
+    const vecinos=v=>{const k=vs.indexOf(v);vs.forEach((x,j)=>{if(Math.abs(j-k)<=1)cargarVideo(x);else soltarVideo(x)})};
+    const tocar=v=>{vecinos(v);v.muted=!rsonido;v.preload='auto';v.play().catch(()=>{v.muted=true;rsonido=false;$('#reels-sonido').textContent='Activar sonido';v.play().catch(()=>{})})};
     robs=new IntersectionObserver(es=>es.forEach(en=>{const v=en.target;if(en.isIntersecting&&en.intersectionRatio>=.6)tocar(v);else v.pause()}),{root:rpista,threshold:[0,.6]});
     vs.forEach(v=>{robs.observe(v);v.onclick=()=>{v.paused?v.play().catch(()=>{}):v.pause()}});
     tocar(vs[i]);
   }
   function cerrarReels(){
     if(reels.hidden)return;
-    if(robs)robs.disconnect();rpista.querySelectorAll('video').forEach(v=>v.pause());rpista.innerHTML='';
+    if(robs)robs.disconnect();rpista.querySelectorAll('video').forEach(soltarVideo);rpista.innerHTML='';
     reels.hidden=true;document.documentElement.style.overflow='';
+    window.dispatchEvent(new Event('ig-reanudar'));
     if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{});
   }
   $('#reels-cerrar').onclick=cerrarReels;
@@ -789,7 +793,7 @@ elegirLocal('kennedy');
       const bloque=document.querySelector(`.local-bloque[data-local="${loc}"]`);if(!bloque)return;
       bloque.querySelector('.ig-cuenta').textContent=`${vids.length} video${vids.length>1?'s':''}`;
       const car=document.createElement('div');car.className='ig-carrusel';
-      car.innerHTML=`<button class="ig-flecha izq" aria-label="Video anterior">‹</button><div class="ig-pista">${vids.map(x=>`<figure class="ig-video"><video muted playsinline loop preload="none" ${x.poster?`poster="${esc(x.poster)}"`:''} src="${esc(x.url)}"></video><button class="ig-son" aria-pressed="false">Activar sonido</button><button class="ig-ver">Pantalla completa</button></figure>`).join('')}</div><button class="ig-flecha der" aria-label="Video siguiente">›</button>`;
+      car.innerHTML=`<button class="ig-flecha izq" aria-label="Video anterior">‹</button><div class="ig-pista">${vids.map(x=>`<figure class="ig-video"><video muted playsinline loop preload="none" ${x.poster?`poster="${esc(x.poster)}"`:''} data-src="${esc(x.url)}"></video><button class="ig-son" aria-pressed="false">Activar sonido</button><button class="ig-ver">Pantalla completa</button></figure>`).join('')}</div><button class="ig-flecha der" aria-label="Video siguiente">›</button>`;
       bloque.querySelector('.local-videos').appendChild(car);
       const pista=car.querySelector('.ig-pista'),items=[...pista.children];
       let enVista=false;
@@ -797,9 +801,13 @@ elegirLocal('kennedy');
       function centrar(){
         const mitad=pista.scrollLeft+pista.clientWidth/2;let mejor=null,dm=1e9;
         items.forEach(f=>{const d=Math.abs(f.offsetLeft+f.offsetWidth/2-mitad);if(d<dm){dm=d;mejor=f}});
-        items.forEach(f=>{const v=f.querySelector('video'),es=f===mejor;f.classList.toggle('centro',es);
+        const c=items.indexOf(mejor);
+        items.forEach((f,j)=>{const v=f.querySelector('video'),es=f===mejor;f.classList.toggle('centro',es);
+          // los celulares aguantan pocos videos activos: solo se cargan el del centro y los de al lado
+          if(Math.abs(j-c)<=1&&enVista){cargarVideo(v)}else{soltarVideo(v)}
           if(es&&enVista&&!quieto){v.preload='auto';v.play().catch(()=>{})}else if(!v.paused){v.pause()}});
       }
+      addEventListener('ig-reanudar',centrar);
       let t;pista.addEventListener('scroll',()=>{clearTimeout(t);t=setTimeout(centrar,120)},{passive:true});
       const paso=()=>items[0].offsetWidth+18;
       car.querySelector('.izq').onclick=()=>pista.scrollBy({left:-paso()});
@@ -807,7 +815,7 @@ elegirLocal('kennedy');
       new IntersectionObserver(es=>es.forEach(en=>{enVista=en.isIntersecting&&en.intersectionRatio>=.5;centrar()}),{threshold:[0,.5]}).observe(car);
       items.forEach(f=>{const v=f.querySelector('video'),b=f.querySelector('.ig-son');
         const sonar=()=>{if(!f.classList.contains('centro')){pista.scrollTo({left:f.offsetLeft+f.offsetWidth/2-pista.clientWidth/2});return}
-          const on=v.muted;silenciarOtros(v);v.muted=!on;b.setAttribute('aria-pressed',on);b.textContent=on?'Silenciar':'Activar sonido';if(on)v.play().catch(()=>{})};
+          cargarVideo(v);const on=v.muted;silenciarOtros(v);v.muted=!on;b.setAttribute('aria-pressed',on);b.textContent=on?'Silenciar':'Activar sonido';if(on)v.play().catch(()=>{})};
         b.onclick=sonar;v.onclick=sonar;
         // pantalla completa con sonido (en iPhone se usa el reproductor del sistema)
         f.querySelector('.ig-ver').onclick=()=>abrirReels(vids,items.indexOf(f),bloque.querySelector('h3').textContent,bloque.style.getPropertyValue('--c'))});
