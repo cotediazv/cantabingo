@@ -318,6 +318,48 @@ main,footer{position:relative;z-index:1}
 .ig-flecha:hover{border-color:var(--c)}
 .ig-flecha.izq{left:16px}.ig-flecha.der{right:16px}
 @media (max-width:720px){.ig-pista{padding-inline:calc(50% - 125px);gap:12px}.ig-video{flex-basis:250px}.ig-flecha{width:40px;height:40px;font-size:18px}.ig-flecha.izq{left:6px}.ig-flecha.der{right:6px}.ig-fila>.ig-tarjeta{padding:16px}.ig-fila>.ig-tarjeta .ig-boton{margin-left:0}}
+
+/* cartelera compacta: la pantalla arriba y los controles abajo, todo en una vista */
+.cartel{display:grid;justify-items:center;gap:16px;margin-top:32px}
+.pantalla-cartel{position:relative;overflow:hidden;width:min(760px,100%);border-radius:12px;border:6px solid #050409;background:#07060c;padding:22px 26px;display:grid;gap:14px;box-shadow:0 30px 70px -30px color-mix(in srgb,var(--local) 60%,transparent)}
+.pc-luces{position:absolute;inset:0;background:conic-gradient(from 200deg at 20% -20%,transparent 0 10deg,color-mix(in srgb,var(--local) 30%,transparent) 16deg,transparent 26deg),conic-gradient(from 150deg at 85% -20%,transparent 0 12deg,rgba(244,191,90,.18) 18deg,transparent 28deg);pointer-events:none}
+.pc-arriba{position:relative;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
+.pc-local{font-family:var(--f-dato);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--local)}
+.pc-dia{font-family:var(--f-dato);font-size:11px;letter-spacing:.1em;text-transform:uppercase;background:var(--local);color:var(--noche);font-weight:700;padding:3px 8px;border-radius:4px}
+.pc-show{position:relative;display:grid;gap:2px}
+.pc-show small{font-family:var(--f-dato);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--tenue)}
+.pc-show b{font-family:var(--f-display);font-weight:900;text-transform:uppercase;font-size:clamp(30px,6vw,56px);line-height:.95;text-wrap:balance}
+.pc-horas{position:relative;list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.pc-horas li{display:flex;gap:8px;align-items:baseline;border:1px solid var(--linea);border-radius:999px;padding:5px 12px;font-size:13px;background:rgba(21,19,30,.7)}
+.pc-horas time{font-family:var(--f-dato);font-size:11px;color:var(--tenue)}
+.pc-horas li.dest{border-color:var(--local);color:var(--local);font-weight:700}
+.pc-horas li.dest time{color:var(--local)}
+.cartel .elige{margin:0;width:min(760px,100%);gap:10px;padding:16px 18px}
+.cartel .elige .fila{grid-template-columns:130px 1fr;gap:4px 12px;align-items:center}
+.cartel .elige .tit{padding-top:0}
+.cartel .semana{grid-column:2;font-size:13px;padding:0;margin:0}
+.cartel .elige .fila:nth-child(2) .opciones{grid-column:2}
+.cartel .opciones{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:6px}
+.cartel .opciones::-webkit-scrollbar{display:none}
+.cartel .opcion{flex:none;padding:8px 14px;font-size:14px;border-radius:999px;white-space:nowrap}
+.cartel .fuente{font-size:12px}
+@media (max-width:720px){
+  .funciona .cabeza p{display:none}
+  .funciona .cabeza{gap:0}
+  .funciona h2{font-size:34px}
+  .funciona .etiqueta{font-size:11px}
+  .cartel .f-larga{display:none}
+  .pc-show b{font-size:28px}
+  .pc-arriba{gap:6px}
+  .cartel{margin-top:12px;gap:10px}
+  .pantalla-cartel{padding:12px 14px;gap:8px;border-width:4px}
+  .pc-horas{gap:5px}
+  .pc-horas li{font-size:12px;padding:3px 9px}
+  .cartel .elige{padding:12px;gap:8px}
+  .cartel .elige .fila{grid-template-columns:1fr}
+  .cartel .semana,.cartel .elige .fila:nth-child(2) .opciones{grid-column:1}
+  .cartel .opcion{font-size:13px;padding:7px 12px}
+}
 /* contacto */
 .contacto{border-top:1px solid var(--linea)}
 .contacto .envoltura{display:grid;grid-template-columns:1fr 1fr;gap:64px}
@@ -469,12 +511,14 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
         <p>El escenario, las pantallas del local y el celular del público, en una misma experiencia.</p>
       </div>
 
-      <div class="elige">
-        <div class="fila"><span class="tit">Elige el local</span><div class="opciones" id="locales-btn"></div></div>
-        <div class="fila"><span class="tit">Elige el día</span><div><div class="semana" id="semana">Cartelera semanal</div><div class="opciones" id="dias-btn"></div></div></div>
-        <p class="fuente" id="fuente"></p>
+      <div class="cartel">
+        <div class="pantalla-cartel" id="cel" aria-live="polite"></div>
+        <div class="elige">
+          <div class="fila"><span class="tit">Elige el local</span><div class="opciones" id="locales-btn"></div></div>
+          <div class="fila"><span class="tit">Elige el día</span><div class="semana" id="semana">Cartelera semanal</div><div class="opciones" id="dias-btn"></div></div>
+          <p class="fuente" id="fuente"></p>
+        </div>
       </div>
-      <div class="cartelera-cel"><div class="cel"><div class="pant" id="cel"></div></div></div>
     </div>
   </section>
 
@@ -637,12 +681,12 @@ async function elegirLocal(k){
   $('#funciona').style.setProperty('--local',L.color);
   bDia.innerHTML='<span class="cargando">Cargando cartelera…</span>';
   const d=await cargar(k);if(loc!==k)return;
-  fuente.innerHTML=`<b>Hoy: ${esc(hoyTxt())}</b> · ${d.vivo?'Horarios y shows actualizados en vivo desde la cartelera de cada local.':'Horarios y shows de la cartelera de cada local.'}`;
+  fuente.innerHTML=`<b>Hoy: ${esc(hoyTxt())}</b><span class="f-larga"> · ${d.vivo?'Horarios y shows actualizados en vivo desde la cartelera de cada local.':'Horarios y shows de la cartelera de cada local.'}</span>`;
   bDia.innerHTML='';
   $('#semana').innerHTML=`Cartelera semanal <span>· ${esc(semanaTxt())}</span>`;
   const semana=d.week.filter(enSemana);if(semana.length)d.week=semana;
   if(!d.week.length){bDia.innerHTML='<span class="cargando">Sin funciones programadas esta semana.</span>';return}
-  d.week.forEach((w,i)=>{const b=document.createElement('button');b.className='opcion';b.style.setProperty('--c',L.color);b.innerHTML=`${esc(diaLargo(w))}${w.show?`<small>${esc(nomShow(w.show))}</small>`:''}`;b.onclick=()=>elegirDia(i);bDia.appendChild(b)});
+  d.week.forEach((w,i)=>{const b=document.createElement('button');b.className='opcion';b.style.setProperty('--c',L.color);b.innerHTML=`${esc((DIAS[plano(w.day)]||w.day).slice(0,3))} ${w.date}${w.month?` ${MESES_L[w.month-1].slice(0,3)}`:''}`;b.title=w.show?nomShow(w.show):'';b.onclick=()=>elegirDia(i);bDia.appendChild(b)});
   elegirDia(0);
 }
 
@@ -652,11 +696,10 @@ function elegirDia(i){
   [...bDia.children].forEach((b,k)=>b.setAttribute('aria-pressed',k===i));
   const hoy=fechaDe(d).getTime()===hoyChile().getTime();
   const show=d.show?nomShow(d.show):'';
-  cel.innerHTML=`<div class="sup"><span>${esc(L.nombre)}</span><span>Cartelera</span></div>
-    <div class="video cart-show"><div class="luces"></div><span class="cart-dia">${hoy?'Hoy · ':''}${esc(diaLargo(d))}</span></div>
-    <div><div class="c-eti">El show de la noche</div><div class="c-tit cart-tit">${show?esc(show):'Cartelera'}</div></div>
-    <div class="c-eti" style="margin-top:4px">Horarios de esta noche</div>
-    ${(d.hours||[]).map(h=>{const es=plano(h.label).includes('SHOW');return `<div class="cancion${es?' cart-dest':''}"><div>${esc(es&&show?show:nomShow(h.label))}<small>${esc(h.time)}</small></div></div>`}).join('')}`;
+  cel.innerHTML=`<div class="pc-luces"></div>
+    <div class="pc-arriba"><span class="pc-local">${esc(L.nombre)}</span><span class="pc-dia">${hoy?'Hoy · ':''}${esc(diaLargo(d))}</span></div>
+    <div class="pc-show"><small>El show de la noche</small><b>${show?esc(show):'Cartelera'}</b></div>
+    <ul class="pc-horas">${(d.hours||[]).map(h=>{const es=plano(h.label).includes('SHOW');return `<li class="${es?'dest':''}"><time>${esc(h.time)}</time>${esc(es?'Show':nomShow(h.label))}</li>`}).join('')}</ul>`;
 }
 elegirLocal('kennedy');
 
