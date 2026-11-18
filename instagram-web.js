@@ -61,7 +61,8 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
       const cuentas = [];
       const sumar = (lista) => lista.filter((c) => c && c.id).forEach((c) => cuentas.push(c));
       // a) páginas de Facebook asignadas a la clave, con su cuenta de Instagram
-      try { const r = await getJson(`${FB}/me/accounts?fields=instagram_business_account{id,username}&limit=100&access_token=${t}`); sumar((r.data || []).map((p) => p.instagram_business_account)); } catch (_) {}
+      let motivo = '';
+      try { const r = await getJson(`${FB}/me/accounts?fields=instagram_business_account{id,username}&limit=100&access_token=${t}`); sumar((r.data || []).map((p) => p.instagram_business_account)); } catch (e) { motivo = e.message; }
       // b) portafolios (negocios) de la clave: sus cuentas de Instagram y las de sus páginas
       if (!cuentas.length) {
         try {
@@ -81,7 +82,8 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
       }
       if (!mia) {
         let quien = '';
-        try { const me = await getJson(`${FB}/me?fields=id,name&access_token=${t}`); if (me.name || me.id) quien = ` (la clave es de «${me.name || me.id}»)`; } catch (_) {}
+        try { const me = await getJson(`${FB}/me?fields=id,name&access_token=${t}`); if (me.name || me.id) quien = ` (la clave es de «${me.name || me.id}»)`; } catch (e) { quien = ` (Facebook dice: ${e.message})`; }
+        if (motivo && !quien.includes(motivo)) quien += ` (páginas: ${motivo})`;
         throw new Error(`No se encontró la cuenta @${handle}: la clave no tiene cuentas de Instagram asignadas${cuentas.length ? ' salvo ' + cuentas.map((c) => '@' + c.username).join(', ') : ''}${quien}`);
       }
       igIds[v] = mia.id;
