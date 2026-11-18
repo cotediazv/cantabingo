@@ -1683,3 +1683,21 @@ body.vert-in main { padding: 0; max-width: none; }
 .obs-player:not(.on) .obs-clock { font-size: 3.4vh; }
 .obs-name { font-size: 2vh; min-width: 0; max-width: 24vh; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .obs-score b { font-size: 1.9vh; padding: 0 1vh; }
+/* Logo del local (Mercado Kennedy) en las pantallas de sus actividades: abajo a la izquierda, junto a la marca de KRB */
+.venue-mark { position: fixed; z-index: 49; height: 4.6vh; width: auto; pointer-events: none; user-select: none; filter: drop-shadow(0 .3vh .6vh rgba(0, 0, 0, .6)); }
+/* Tablero horizontal: franja libre abajo; el logo va al centro de la franja y las pantallas dejan ese espacio */
+@media (orientation: landscape) {
+  .venue-mark.vm-full { left: 50%; bottom: 1.2vh; transform: translateX(-50%); }
+  body.full.has-vm #fb, body.full.has-vm #kf, body.full.has-vm #vf, body.full.has-vm #rf { padding-bottom: 7.5vh; }
+  body.full.has-vm.wheel-screen #pw { padding-bottom: 7.5vh; }
+  body.full.has-vm .win-screen, body.full.has-vm .bwin, body.full.has-vm #sf, body.full.has-vm .gc-big-wrap { bottom: 6.5vh; }
+}
+/* Tablero de pie: abajo a la izquierda (al centro va el QR para entrar), con su franja libre */
+@media (orientation: portrait) {
+  .venue-mark.vm-full { left: calc(max(8px, .8vw) + clamp(16px, 3vh, 34px) * 1.9 + 1.2vh); bottom: max(5px, .6vh); height: 3.2vh; }
+  body.full.has-vm #fb, body.full.has-vm #kf, body.full.has-vm #vf { padding-bottom: 6vh; }
+  body.full.has-vm .bwin, body.full.has-vm .gc-big-wrap { bottom: 5vh; }
+}
+/* OBS: arriba a la derecha; en el bingo, a la izquierda sobre el recuadro de la bolita */
+.venue-mark.vm-obs { top: 2.5vh; right: 2.5vh; height: 6vh; }
+.venue-mark.vm-obs-bingo { left: 2.5vh; bottom: 26vh; height: 5.4vh; }

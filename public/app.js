@@ -1432,3 +1432,34 @@ async function route() {
 window.addEventListener('hashchange', route);
 // Arranca cuando ya cargaron los archivos de todos los juegos
 window.addEventListener('DOMContentLoaded', route);
+
+// Logo del local en las pantallas de sus actividades (pedido de Cote: el de Mercado Kennedy, siempre en las
+// actividades de Kennedy). Solo en pantallas (tablero, OBS, GC de la sala light, karaoke de la pantalla vertical),
+// nunca en celulares ni paneles. El local sale de la dirección (#/light-gc/kennedy) o de la sala completa abierta.
+const VENUE_LOGOS = { kennedy: 'logo-kennedy.png' };
+const SCREEN_ROUTES = ['tablero', 'escena', 'gc', 'obs', 'light-gc', 'karaoke-v'];
+let venueOfSala = '';
+let venueAt = 0;
+async function syncVenueMark() {
+  const [name, arg] = location.hash.replace(/^#\/?/, '').split('/');
+  let v = '';
+  if (SCREEN_ROUTES.includes(name)) {
+    if ((name === 'light-gc' || name === 'karaoke-v') && arg) v = arg;
+    else {
+      if (Date.now() - venueAt > 10000) { venueAt = Date.now(); venueOfSala = (((await api('GET', '/api/current').catch(() => ({}))).sessions || [])[0] || {}).theme || ''; }
+      v = venueOfSala;
+    }
+  }
+  let el = document.getElementById('venue-mark');
+  const src = VENUE_LOGOS[v];
+  if (!src) { if (el) el.remove(); document.body.classList.remove('has-vm'); return; }
+  if (!el) { el = document.createElement('img'); el.id = 'venue-mark'; el.alt = ''; el.setAttribute('aria-hidden', 'true'); document.body.appendChild(el); }
+  if (el.getAttribute('src') !== src) el.src = src;
+  // Dónde va: en el tablero, en una franja abajo que se le deja libre; en OBS, arriba a la derecha (en el bingo, sobre la bolita)
+  const spot = document.body.classList.contains('full') ? 'full' : document.getElementById('gc') ? 'obs-bingo' : 'obs';
+  el.className = `venue-mark vm-${spot}`;
+  document.body.classList.toggle('has-vm', spot === 'full');
+}
+window.addEventListener('hashchange', () => setTimeout(syncVenueMark, 50));
+setInterval(syncVenueMark, 3000);
+syncVenueMark();
