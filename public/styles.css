@@ -1648,3 +1648,25 @@ body.vert-in main { padding: 0; max-width: none; }
   body.full .win-text { font-size: 8vw; }
   body.full .win-sub { font-size: 6vw; padding: 1vw 5vw; }
 }
+/* Pantallas de pie: celebración del bingo (uno o varios ganadores) según el ancho, y el sorteo con espacio para el QR de abajo */
+@media (orientation: portrait) and (min-width: 300px) {
+  .bwin-card { box-sizing: border-box; min-width: 0; width: 90vw; max-width: 90vw; gap: 2.4vw; padding: 5vw 4vw 6vw; border-radius: 5vw; border-width: 1vw; }
+  .bwin-title { font-size: 21vw; }
+  .bwin-names { max-width: 82vw; gap: 2vw 4vw; }
+  .bwin-names b { font-size: min(11vw, calc(78vw / (var(--n, 8) * .59))); }
+  .bwin-names small { font-size: 3.6vw; }
+  .bwin-more { font-size: 4vw; }
+  .bwin-sub { font-size: 5vw; padding: 1vw 5vw; }
+  .bwin.many .bwin-title { font-size: 16vw; }
+  .bwin.many .bwin-names { flex-direction: column; align-items: center; }
+  .bwin.many .bwin-names b { font-size: min(7.5vw, calc(78vw / (var(--n, 8) * .59))); }
+  .bwin.many .bwin-names small { font-size: 3vw; }
+  body.full #rf { padding-bottom: 32vw; }
+}
+/* El Rosco en pantallas de pie: más alto para la respuesta y la pregunta, y ruedas que caben en lo que queda (no se montan) */
+@media (orientation: portrait) and (min-width: 300px) {
+  body.full.wheel-screen #pw { grid-template-rows: 5vh 19vh minmax(0, 1fr); }
+  body.full.wheel-screen .wheels .wheel { width: min(88vw, 58vh); max-width: min(88vw, 58vh); }
+  body.full.wheel-screen .wheels.n2 .wheel { width: min(60vw, 29vh); max-width: min(60vw, 29vh); }
+  body.full.wheel-screen .wheels.n3 .wheel, body.full.wheel-screen .wheels.n4 .wheel { width: min(45vw, 29vh); max-width: min(45vw, 29vh); }
+}
