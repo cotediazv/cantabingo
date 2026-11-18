@@ -44,8 +44,8 @@
         <circle cx="${x}" cy="${y}" r="${cur ? r * 1.22 : r}" fill="url(#wg-${status})" stroke="${cur ? '#ffe14d' : '#fff'}" stroke-width="${cur ? 1.3 : 0.55}"/>
         <text x="${x}" y="${y}" font-size="${(r * (cur ? 1.4 : 1.15)).toFixed(2)}" text-anchor="middle" dominant-baseline="central" fill="${status === 'pass' ? '#4a2c00' : '#fff'}" font-weight="700">${esc(ch)}</text></g>`;
     }).join('');
-    // En OBS (centro libre para la cámara): «El Rosco» con letras de neón en la parte de abajo, dentro del rosco
-    const center = bare ? `<text class="wheel-neon" x="50" y="79" font-size="9.5" text-anchor="middle" dominant-baseline="central" fill="#fff4fb" filter="url(#wg-neon)">El Rosco</text>` : `
+    // En OBS (centro libre para la cámara): «El Rosco» escrito a mano con letras de neón, dentro del rosco (bajo el centro)
+    const center = bare ? `<text class="wheel-neon" x="50" y="68" font-size="13" text-anchor="middle" dominant-baseline="central" fill="#fff4fb" filter="url(#wg-neon)">El Rosco</text>` : `
       <text x="50" y="44" font-size="17" text-anchor="middle" dominant-baseline="central" fill="currentColor" font-weight="700" data-timer="${pi}">${clock(c.remainingMs)}</text>
       <text x="50" y="58" font-size="5" text-anchor="middle" fill="currentColor" font-weight="600">${esc(c.name.slice(0, 18))}</text>
       <text x="50" y="66" font-size="4.6" text-anchor="middle" fill="currentColor"><tspan fill="#35c97a">✔ ${c.hits}</tspan>  <tspan fill="#f07a7a">✘ ${c.misses}</tspan></text>`;
