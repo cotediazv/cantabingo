@@ -1631,3 +1631,11 @@ button.link { background: none; border: 0; padding: 0; color: inherit; text-deco
 html:has(body.vert-in), body.vert-in { background: #000; }
 body.vert-in main { padding: 0; max-width: none; }
 .vt { z-index: 5; }
+/* QR grande del bingo en pantallas de pie (pantalla vertical y tablero vertical): medidas según el ancho, para que no se salga */
+@media (orientation: portrait) {
+  #fb .fb-bigqr { width: 90vw; box-sizing: border-box; gap: 3vw; padding: 6vw 5vw; border-radius: 5vw; }
+  #fb .fb-bigqr .gc-big-title { font-size: 8.5vw; white-space: normal; text-wrap: balance; }
+  #fb .fb-bigqr .gc-big-qr .qr { width: 66vw; height: 66vw; padding: 3.5vw; border-radius: 4vw; }
+  #fb .fb-bigqr .gc-big-text { font-size: 5vw; max-width: 80vw; }
+  #fb .fb-bigqr .gc-big-count { font-size: 4vw; padding: .8vw 4vw; }
+}
