@@ -117,6 +117,45 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
     return cache[v];
   }
 
+  // Búsqueda por fechas en las publicaciones antiguas de un local (ej. la fiesta de los 80, noviembre de 2025)
+  const busquedas = {}; // clave -> { data, at }
+  app.get('/api/web/instagram/buscar', async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    const v = String(req.query.local || '');
+    const desde = String(req.query.desde || ''), hasta = String(req.query.hasta || '');
+    if (!VENUES.includes(v) || !/^\d{4}-\d{2}-\d{2}$/.test(desde) || !/^\d{4}-\d{2}-\d{2}$/.test(hasta)) return res.status(400).json({ error: 'Usa ?local=kennedy&desde=AAAA-MM-DD&hasta=AAAA-MM-DD' });
+    const clave = `${v}|${desde}|${hasta}`;
+    const c = busquedas[clave];
+    if (c && Date.now() - c.at < CACHE_MS) return res.json(c.data);
+    try {
+      const token = tokenOf(v);
+      if (!token) throw new Error('Falta la clave');
+      if (!igIds[v]) await mediaFacebook(v, token);
+      if (!igIds[v]) throw new Error('No se encontró la cuenta del local');
+      const t = encodeURIComponent(db.webIg[v].token);
+      const ini = new Date(`${desde}T00:00:00Z`).getTime(), fin = new Date(`${hasta}T23:59:59Z`).getTime();
+      let url = `${FB}/${igIds[v]}/media?fields=${FIELDS}&limit=100&access_token=${t}`;
+      const hallados = [];
+      for (let n = 0; url && n < 25; n++) {
+        const r = await getJson(url);
+        const data = r.data || [];
+        data.forEach((m) => { const f = new Date(m.timestamp).getTime(); if (f >= ini && f <= fin) hallados.push(m); });
+        const ultimo = data.length ? new Date(data[data.length - 1].timestamp).getTime() : 0;
+        if (!data.length || ultimo < ini) break; // ya se pasó la fecha buscada
+        url = r.paging && r.paging.next;
+      }
+      const out = {
+        local: v, desde, hasta,
+        videos: hallados.filter((m) => m.media_type === 'VIDEO' && m.media_url).map((m) => ({ url: m.media_url, poster: m.thumbnail_url || '', link: m.permalink || '', date: m.timestamp || '' })),
+        imagenes: hallados.filter((m) => m.media_type !== 'VIDEO' && m.media_url).map((m) => ({ url: m.media_url, link: m.permalink || '', date: m.timestamp || '' })),
+      };
+      busquedas[clave] = { data: out, at: Date.now() };
+      res.json(out);
+    } catch (e) {
+      res.status(502).json({ error: String(e.message || e).slice(0, 200) });
+    }
+  });
+
   // Pública (solo lectura): la usa la página web
   app.get('/api/web/instagram', async (_req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
