@@ -1,6 +1,7 @@
-// Videos y transmisiones en vivo de Twitch (twitch.tv/krbstage3 y twitch.tv/krbstage), para la página web krbstage.cl.
+// Videos y transmisiones en vivo de Twitch (un canal por local: krbstage = Frida, krbstagekennedy = Kennedy,
+// krbstage3 = Tobalaba), para la página web krbstage.cl.
 // Necesita una aplicación de Twitch: las claves van SOLO en Render (TWITCH_CLIENT_ID y TWITCH_CLIENT_SECRET), nunca aquí.
-const CANALES = ['krbstage3', 'krbstage'];
+const CANALES = ['krbstage3', 'krbstage', 'krbstagekennedy'];
 const API = process.env.TWITCH_TEST_URL || 'https://api.twitch.tv/helix'; // TWITCH_TEST_URL solo para pruebas locales
 const AUTH = process.env.TWITCH_AUTH_TEST_URL || 'https://id.twitch.tv/oauth2/token';
 const CACHE_MS = 5 * 60e3; // se revisa cada 5 minutos (para saber si están en vivo)

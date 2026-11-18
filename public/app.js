@@ -969,8 +969,8 @@ views.jugar = async (sid) => {
   const off = subscribe(sid, (s) => { st = s; render(); startLive(); }, () => { store.del(key); backToStart(); }, false, me.token);
   return () => { off(); stopRosco(); clearInterval(karTimer); clearInterval(voteTimer); clearInterval(instaOn); liveFor = null; player = null; document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('visibilitychange', onBack); document.body.classList.remove('live-open'); };
 };
-// Canal de Twitch de cada local
-const LIVE_CHANNELS = { frida: 'krbstage', tobalaba: 'krbstage3', kennedy: 'krbstage3' };
+// Canal de Twitch de cada local (uno por local: KRB Stage en Frida, KRB Stage Kennedy en Kennedy, KRB Stage 3 en Tobalaba)
+const LIVE_CHANNELS = { frida: 'krbstage', kennedy: 'krbstagekennedy', tobalaba: 'krbstage3' };
 let twitchLoading = null;
 const loadTwitch = () => {
   if (window.Twitch && window.Twitch.Player) return Promise.resolve();
