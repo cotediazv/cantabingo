@@ -392,6 +392,9 @@ main,footer{position:relative;z-index:1}
 .ptl-ig:hover{border-color:var(--c)}
 .ptl-tit{font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:clamp(28px,3.4vw,40px);line-height:1;margin:56px 0 0}
 .ptl-tit+.ptl-pruebas{margin-top:24px}
+.tulocal .envoltura>.ptl-tit:first-child{margin-top:0}
+.ptl-intro-abajo{margin-top:72px}
+.ptl-prueba .ptl-arroba{font-size:15px;font-weight:700;text-decoration:none}
 .ptl-dato{position:relative;color:var(--tenue);font-size:14px;line-height:1.4}
 .ptl-prueba{position:relative;overflow:hidden;border:1px solid var(--linea);border-radius:10px;background:var(--tarima);padding:26px;display:grid;gap:8px;align-content:start;min-height:220px}
 .ptl-prueba::before{content:"";position:absolute;inset:-45% -45% auto auto;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,var(--c) 0%,transparent 65%);opacity:.25}
@@ -532,42 +535,26 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
         <p>Por eso creamos momentos: la piel de gallina cuando suena la banda tributo, la sorpresa de ver en escena al artista que admiras, las risas compartidas con el humor y la emoción de jugar todos juntos.</p>
         <p class="esmero">Nos esmeramos para que cada noche sea única.</p>
         <div class="ficha ficha-logo"><img src="krb-stage.svg" alt="KRB Stage" width="160" height="100"></div>
-        <div class="producidos">
-          <div class="etiqueta">También hemos producido en</div>
-          <ul class="chips">
-            <li>Zona Gourmet Panorámico</li><li>Mercado del 14</li><li>Kairos</li><li>Helsinki, Vitacura</li><li>La Abuelita Rosa, Pirque</li>
-          </ul>
-        </div>
       </div>
     </div>
   </section>
 
   <section class="banda tulocal" id="tulocal">
     <div class="envoltura">
-      <div class="ptl-intro">
-        <div>
-          <div class="etiqueta">Para tu local</div>
-          <h2>Tu local vende, tu público disfruta</h2>
-        </div>
-        <div>
-          <p class="ptl-frase">Un local necesita <b>vender</b>. La gente busca <b>conectar y disfrutar</b>.</p>
-          <p>En KRB Stage ideamos una <strong>estrategia en conjunto</strong> para que cada uno de los espacios que producimos logre su identidad y flujo propio.</p>
-        </div>
-      </div>
       <h3 class="ptl-tit">Dónde producimos</h3>
       <div class="ptl-pruebas">
         <div class="ptl-col" data-local="kennedy" style="--c:var(--kennedy)">
-          <article class="ptl-prueba"><span class="ptl-num">Mercado Kennedy</span><b>Más de tres años de éxito sostenido</b><small class="ptl-dato">Parque Arauco Oriente, 4.º piso · Jueves a sábado</small></article>
+          <article class="ptl-prueba"><span class="ptl-num">Mercado Kennedy</span><b>Más de tres años de éxito sostenido</b><small class="ptl-dato">Parque Arauco Oriente, 4.º piso · Jueves a sábado</small><a class="ptl-arroba" href="https://www.instagram.com/krbstage/" target="_blank" rel="noopener">@krbstage</a></article>
           <div class="ptl-grilla" hidden></div>
           <a class="ptl-ig" href="https://www.instagram.com/krbstage/" target="_blank" rel="noopener">Ver registros en @krbstage</a>
         </div>
         <div class="ptl-col" data-local="tobalaba" style="--c:var(--tobalaba)">
-          <article class="ptl-prueba"><span class="ptl-num">Espacio Gastronómico Tobalaba</span><b>Actividades sorprendentes</b><small class="ptl-dato">Mall Plaza Tobalaba · Viernes</small></article>
+          <article class="ptl-prueba"><span class="ptl-num">Espacio Gastronómico Tobalaba</span><b>Actividades sorprendentes</b><small class="ptl-dato">Mall Plaza Tobalaba · Viernes</small><a class="ptl-arroba" href="https://www.instagram.com/krbstage3/" target="_blank" rel="noopener">@krbstage3</a></article>
           <div class="ptl-grilla" hidden></div>
           <a class="ptl-ig" href="https://www.instagram.com/krbstage3/" target="_blank" rel="noopener">Ver registros en @krbstage3</a>
         </div>
         <div class="ptl-col" data-local="frida" style="--c:var(--frida)">
-          <article class="ptl-prueba"><span class="ptl-num">Frida Kahlo</span><b>Un espacio que la gente hizo suyo desde la primera noche</b><small class="ptl-dato">Costanera Center · Viernes a domingo</small></article>
+          <article class="ptl-prueba"><span class="ptl-num">Frida Kahlo</span><b>Un espacio que la gente hizo suyo desde la primera noche</b><small class="ptl-dato">Costanera Center · Viernes a domingo</small><a class="ptl-arroba" href="https://www.instagram.com/krbstage4/" target="_blank" rel="noopener">@krbstage4</a></article>
           <div class="ptl-grilla" hidden></div>
           <a class="ptl-ig" href="https://www.instagram.com/krbstage4/" target="_blank" rel="noopener">Ver registros en @krbstage4</a>
         </div>
@@ -575,19 +562,29 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
       <h3 class="ptl-tit">También hemos producido en</h3>
       <div class="ptl-pruebas">
         <div class="ptl-col" data-local="panoramico" style="--c:var(--foco)">
-          <article class="ptl-prueba"><span class="ptl-num">Registros hasta octubre de 2026</span><b>Zona Gourmet Panorámico</b></article>
+          <article class="ptl-prueba"><span class="ptl-num">Registros hasta octubre de 2026</span><b>Zona Gourmet Panorámico</b><a class="ptl-arroba" href="https://www.instagram.com/krbstage1/" target="_blank" rel="noopener">@krbstage1</a></article>
           <div class="ptl-grilla" hidden></div>
           <a class="ptl-ig" href="https://www.instagram.com/krbstage1/" target="_blank" rel="noopener">Ver registros en @krbstage1</a>
         </div>
         <div class="ptl-col" data-local="kairos" style="--c:var(--foco)">
-          <article class="ptl-prueba"><span class="ptl-num">Registros de marzo a diciembre de 2024</span><b>Kairos</b></article>
+          <article class="ptl-prueba"><span class="ptl-num">Registros de marzo a diciembre de 2024</span><b>Kairos</b><a class="ptl-arroba" href="https://www.instagram.com/krbstage2/" target="_blank" rel="noopener">@krbstage2</a></article>
           <div class="ptl-grilla" hidden></div>
           <a class="ptl-ig" href="https://www.instagram.com/krbstage2/" target="_blank" rel="noopener">Ver registros en @krbstage2</a>
         </div>
         <div class="ptl-col" data-local="laflorida" style="--c:var(--foco)">
-          <article class="ptl-prueba"><span class="ptl-num">Registros de julio de 2023 a marzo de 2024</span><b>Mercado del 14</b><small class="ptl-dato">Mall Plaza Vespucio, La Florida</small></article>
+          <article class="ptl-prueba"><span class="ptl-num">Registros de julio de 2023 a marzo de 2024</span><b>Mercado del 14</b><small class="ptl-dato">Mall Plaza Vespucio, La Florida</small><a class="ptl-arroba" href="https://www.instagram.com/krbstage2/" target="_blank" rel="noopener">@krbstage2</a></article>
           <div class="ptl-grilla" hidden></div>
           <a class="ptl-ig" href="https://www.instagram.com/krbstage2/" target="_blank" rel="noopener">Ver registros en @krbstage2</a>
+        </div>
+      </div>
+      <div class="ptl-intro ptl-intro-abajo">
+        <div>
+          <div class="etiqueta">Para tu local</div>
+          <h2>Tu local vende, tu público disfruta</h2>
+        </div>
+        <div>
+          <p class="ptl-frase">Un local necesita <b>vender</b>. La gente busca <b>conectar y disfrutar</b>.</p>
+          <p>En KRB Stage ideamos una <strong>estrategia en conjunto</strong> para que cada uno de los espacios que producimos logre su identidad y flujo propio.</p>
         </div>
       </div>
     </div>
