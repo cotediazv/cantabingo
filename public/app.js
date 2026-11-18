@@ -1464,3 +1464,68 @@ async function syncVenueMark() {
 window.addEventListener('hashchange', () => setTimeout(syncVenueMark, 50));
 setInterval(syncVenueMark, 3000);
 syncVenueMark();
+
+// Fondo de neuronas en las pantallas de las actividades (pedido de Cote: el mismo efecto del fondo de la página
+// web krbstage.cl). Puntos de colores que se mueven lento, unidos por líneas finas, con impulsos que viajan
+// de un punto a otro cercano. Va encima del fondo de colores y debajo de todo lo demás; solo en el tablero.
+const neuralBg = (() => {
+  const COLORS = ['#47b8e6', '#e0338f', '#e5413a', '#f3eee6', '#f4bf5a'];
+  let c = null; let x = null; let W = 0; let H = 0; let k = 1; let pts = []; let pulses = []; let raf = 0;
+  const build = () => {
+    const dpr = Math.min(2, devicePixelRatio || 1);
+    W = innerWidth; H = innerHeight; c.width = W * dpr; c.height = H * dpr; x.setTransform(dpr, 0, 0, dpr, 0, 0);
+    k = Math.max(1, Math.min(W, H) / 900); // en pantallas grandes, todo un poco más grande
+    const n = Math.round(Math.min(120, (W * H) / (11000 * k * k)));
+    pts = Array.from({ length: n }, () => ({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - 0.5) * 0.22 * k, vy: (Math.random() - 0.5) * 0.22 * k, c: COLORS[Math.floor(Math.random() * COLORS.length)] }));
+    pulses = [];
+  };
+  const draw = () => {
+    const R = 140 * k;
+    x.clearRect(0, 0, W, H);
+    x.lineWidth = k;
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i];
+      for (let j = i + 1; j < pts.length; j++) {
+        const b = pts[j]; const d = Math.hypot(a.x - b.x, a.y - b.y);
+        if (d < R) { x.strokeStyle = `rgba(243,238,230,${(1 - d / R) * 0.24})`; x.beginPath(); x.moveTo(a.x, a.y); x.lineTo(b.x, b.y); x.stroke(); }
+      }
+    }
+    for (const p of pulses) {
+      const px = p.a.x + (p.b.x - p.a.x) * p.t; const py = p.a.y + (p.b.y - p.a.y) * p.t;
+      x.strokeStyle = `${p.a.c}66`; x.beginPath(); x.moveTo(p.a.x, p.a.y); x.lineTo(px, py); x.stroke();
+      x.fillStyle = p.a.c; x.beginPath(); x.arc(px, py, 3 * k, 0, 7); x.fill();
+    }
+    x.globalAlpha = 0.8;
+    for (const a of pts) { x.fillStyle = a.c; x.beginPath(); x.arc(a.x, a.y, 2.4 * k, 0, 7); x.fill(); }
+    x.globalAlpha = 1;
+  };
+  const newPulse = () => {
+    const a = pts[Math.floor(Math.random() * pts.length)]; let best = null; let dm = 1e9;
+    for (const b of pts) { if (b === a) continue; const d = Math.hypot(a.x - b.x, a.y - b.y); if (d < dm && d > 30 * k) { dm = d; best = b; } }
+    if (best) pulses.push({ a, b: best, t: 0 });
+  };
+  const step = () => {
+    raf = 0;
+    if (!c || document.hidden) return;
+    for (const a of pts) { a.x += a.vx; a.y += a.vy; if (a.x < 0 || a.x > W) a.vx *= -1; if (a.y < 0 || a.y > H) a.vy *= -1; }
+    if (Math.random() < 0.08 && pulses.length < 20) newPulse();
+    for (const p of pulses) p.t += 0.02;
+    pulses = pulses.filter((p) => p.t < 1);
+    draw();
+    raf = requestAnimationFrame(step);
+  };
+  const sync = () => {
+    const want = document.body.classList.contains('full');
+    if (want && !c) {
+      c = document.createElement('canvas'); c.id = 'neural-bg'; c.setAttribute('aria-hidden', 'true');
+      document.body.insertBefore(c, document.body.firstChild);
+      x = c.getContext('2d'); build();
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) { for (let i = 0; i < 10; i++) newPulse(); pulses.forEach((p, i) => { p.t = 0.3 + (i % 5) * 0.12; }); draw(); } else step();
+    } else if (!want && c) { cancelAnimationFrame(raf); raf = 0; c.remove(); c = null; }
+  };
+  addEventListener('resize', () => { if (c) { build(); draw(); } });
+  document.addEventListener('visibilitychange', () => { if (c && !document.hidden && !raf && !matchMedia('(prefers-reduced-motion: reduce)').matches) step(); });
+  new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  sync();
+  return { sync };
+})();

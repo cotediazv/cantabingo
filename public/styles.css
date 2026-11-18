@@ -1711,3 +1711,5 @@ body.has-vm .krb-mark { display: none; }
 .venue-mark.vm-obs-bingo { left: 2.4vh; bottom: 26vh; transform: none; }
 /* Con los dos logos juntos (KRB Stage | local), el logo de KRB dentro de las gráficas del karaoke no se repite */
 body.has-vm .kg-logo { display: none; }
+/* Fondo de neuronas (como en krbstage.cl) en las pantallas de las actividades: sobre el fondo de colores, bajo todo lo demás */
+#neural-bg { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; opacity: .9; }
