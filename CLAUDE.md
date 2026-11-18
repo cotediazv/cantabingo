@@ -45,7 +45,7 @@ Sitio: https://cantabingo.onrender.com · Render (plan Starter, disco de 1 GB) �
 | Karaoke (lee la lista de las planillas de cada local) | `karaoke.js` | `public/karaoke-ui.js` |
 | Síguenos en Instagram | `insta.js` | `public/insta-ui.js` |
 | Sala light por local, enlace del equipo y consola general | `light.js` (+ clave del equipo en `server.js`) | `public/light-ui.js` |
-| Pantalla de cada local (vertical en Kennedy, horizontal en Tobalaba; video de la cartelera del mes que sube Cote; cambia sola a la actividad del local: juegos de la sala completa o karaoke de la sala light con alguien cantando; botón Automático / Siempre el video / Siempre la actividad; Kennedy: jue, vie y sáb pasa sola a Automático a las 20:00 y vuelve a Siempre el video a las 00:30) | `vertical.js` (video en el disco, junto a los datos) | `public/vertical-ui.js` |
+| Pantalla de cada local (vertical en Kennedy, horizontal en Tobalaba; video de la cartelera del mes que sube Cote; cambia sola a la actividad del local: juegos de la sala completa o karaoke de la sala light con alguien cantando; botón Automático / Siempre el video / Siempre la actividad; Kennedy: jue, vie y sáb pasa sola a Automático a las 20:00 y vuelve a Siempre el video a las 00:30; Tobalaba: viernes de 18:00 a 22:30) | `vertical.js` (video en el disco, junto a los datos) | `public/vertical-ui.js` |
 | KRB Kids (zona de niños: pintar, memoria, puzzle, bloques, la víbora; sin sonido ni texto, por niveles, con barra de progreso y trofeo) | — | `public/kids-ui.js` |
 | Código de Apps Script de las planillas (Sala.gs: «Ya cantó», Subir, Bajar, Ya cantaron) | `apps-script/` (se pega a mano en cada planilla) | — |
 

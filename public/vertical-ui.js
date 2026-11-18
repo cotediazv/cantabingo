@@ -6,7 +6,7 @@
   const pick = (v) => (VENUES[v] ? v : 'kennedy');
   // Kennedy tiene pantallas de pie (la imagen se entrega girada); Tobalaba, una pantalla horizontal (pedido de Cote)
   const UPRIGHT = { kennedy: true };
-  const SCHEDULE = { kennedy: 'Jueves, viernes y sábado se pone sola en «Automático» a las 20:00 y vuelve a «Siempre el video» a las 00:30.' };
+  const SCHEDULE = { kennedy: 'Jueves, viernes y sábado se pone sola en «Automático» a las 20:00 y vuelve a «Siempre el video» a las 00:30.', tobalaba: 'El viernes se pone sola en «Automático» a las 18:00 y vuelve a «Siempre el video» a las 22:30.' };
   const base = () => `${location.origin}${location.pathname}`;
 
   // Para el decodificador: la pantalla de pie recibe la señal horizontal, así que se entrega girada 90° a la
