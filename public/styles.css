@@ -1683,5 +1683,3 @@ body.vert-in main { padding: 0; max-width: none; }
 .obs-player:not(.on) .obs-clock { font-size: 3.4vh; }
 .obs-name { font-size: 2vh; min-width: 0; max-width: 24vh; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .obs-score b { font-size: 1.9vh; padding: 0 1vh; }
-/* OBS · El Rosco: el nombre en letras de neón dentro del rosco */
-.wheel-neon { font-family: Yellowtail, "Brush Script MT", cursive; }
