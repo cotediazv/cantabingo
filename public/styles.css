@@ -1670,3 +1670,9 @@ body.vert-in main { padding: 0; max-width: none; }
   body.full.wheel-screen .wheels.n2 .wheel { width: min(60vw, 29vh); max-width: min(60vw, 29vh); }
   body.full.wheel-screen .wheels.n3 .wheel, body.full.wheel-screen .wheels.n4 .wheel { width: min(45vw, 29vh); max-width: min(45vw, 29vh); }
 }
+/* Botón de KRB Kids a la mitad de su tamaño (pedido de Cote) */
+.kids-entry2 { width: fit-content; max-width: 260px; gap: 8px; padding: 8px 16px; border-width: 3px; border-radius: 99px; box-shadow: 0 4px 0 rgba(0, 0, 0, .2); }
+.kids-entry2 .kz-logo { width: 38px; height: 38px; }
+.kids-entry2 .kz-entry-text { gap: 2px; }
+.kids-entry2 .kz-name { font-size: 1.25rem; }
+.kids-entry2 .kz-entry-text > .kz-tag, .kids-entry2 .kz-entry-text > span { font-size: .72rem; }
