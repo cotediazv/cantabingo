@@ -1709,3 +1709,5 @@ body.has-vm .krb-mark { display: none; }
 /* OBS (sobre la cámara): arriba a la derecha; en el bingo, a la izquierda sobre el recuadro de la bolita */
 .venue-mark.vm-obs { left: auto; right: 2.4vh; top: 2.4vh; transform: none; }
 .venue-mark.vm-obs-bingo { left: 2.4vh; bottom: 26vh; transform: none; }
+/* Con los dos logos juntos (KRB Stage | local), el logo de KRB dentro de las gráficas del karaoke no se repite */
+body.has-vm .kg-logo { display: none; }
