@@ -62,7 +62,13 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
           }
         } catch (_) {}
       }
-      const mia = cuentas.find((c) => String(c.username || '').toLowerCase() === handle) || (cuentas.length === 1 ? cuentas[0] : null);
+      const mia = cuentas.find((c) => String(c.username || '').toLowerCase() === handle);
+      // Cuenta sin página propia (ej. Frida, Tobalaba): se leen sus publicaciones públicas a través de otra cuenta del portafolio
+      if (!mia && cuentas.length) {
+        const r = await getJson(`${FB}/${cuentas[0].id}?fields=business_discovery.username(${encodeURIComponent(handle)}){media.limit(30){${FIELDS}}}&access_token=${t}`);
+        const media = (r.business_discovery && r.business_discovery.media) || {};
+        return { data: media.data || [] };
+      }
       if (!mia) {
         let quien = '';
         try { const me = await getJson(`${FB}/me?fields=id,name&access_token=${t}`); if (me.name || me.id) quien = ` (la clave es de «${me.name || me.id}»)`; } catch (_) {}
