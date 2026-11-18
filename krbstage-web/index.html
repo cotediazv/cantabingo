@@ -372,6 +372,7 @@ main,footer{position:relative;z-index:1}
 .flyers-fila img{width:100%;height:100%;object-fit:cover;display:block}
 /* pantalla completa limpia (videos y flyers): se desliza hacia el lado; hacia abajo para cerrar */
 .pc{position:fixed;inset:0;z-index:60;background:#000;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+.pc-mudo{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);background:rgba(12,11,18,.75);color:#fff;border-radius:999px;padding:8px 16px;font-size:14px;pointer-events:none}
 .pc-pista{position:absolute;inset:0;display:flex;will-change:transform}
 .pc-pista>*{flex:0 0 100%;width:100%;height:100%;object-fit:contain;background:#000;display:block;-webkit-user-drag:none}
 .pc-emb{position:relative;background:#000 center/contain no-repeat}
@@ -510,7 +511,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
 </header>
 
 <canvas id="red-fondo" aria-hidden="true"></canvas>
-<div class="pc" id="pc" hidden role="dialog" aria-label="Pantalla completa"><div class="pc-pista" id="pc-pista"></div></div>
+<div class="pc" id="pc" hidden role="dialog" aria-label="Pantalla completa"><div class="pc-pista" id="pc-pista"></div><div class="pc-mudo" id="pc-mudo" hidden>🔇 Toca para activar el sonido</div></div>
 <main>
   <section class="portada" id="inicio">
     <video id="video-portada" class="video-portada" muted loop playsinline preload="none" poster="portada.jpg" aria-hidden="true"></video>
@@ -870,8 +871,11 @@ function pcMostrar(i,animar){
   [...pcPista.children].forEach((el,j)=>{if(el.classList.contains('pc-emb')){j===pcI?embEncender(el):embApagar(el);return}
     if(el.tagName!=='VIDEO')return;
     if(Math.abs(j-pcI)<=1){if(!el.getAttribute('src'))el.src=el.dataset.src}else if(el.getAttribute('src')){el.pause();el.removeAttribute('src');el.load()}
-    if(j===pcI){el.muted=!pcSonido;el.play().catch(()=>{el.muted=true;pcSonido=false;el.play().catch(()=>{})})}else el.pause()});
+    if(j===pcI){el.muted=!pcSonido;el.volume=1;el.play().then(pcAviso,e=>{if(e&&e.name==='NotAllowedError'){el.muted=true;pcSonido=false;el.play().catch(()=>{})}pcAviso()})}else el.pause()});
+  pcAviso();
 }
+// si el navegador no dejó partir con sonido, un aviso chico (se va al activar el sonido)
+function pcAviso(){const el=pcPista.children[pcI];$('#pc-mudo').hidden=!(el&&el.tagName==='VIDEO'&&el.muted)}
 // YouTube y Twitch: solo el video en pantalla tiene su reproductor (sin botones; el toque activa el sonido o pausa)
 let twSdk=null;
 function cargarTwitch(){return twSdk||(twSdk=new Promise((ok,mal)=>{const s=document.createElement('script');s.src='https://player.twitch.tv/js/embed/v1.js';s.onload=ok;s.onerror=mal;document.head.appendChild(s)}))}
@@ -891,7 +895,7 @@ function embEncender(el){
 }
 function embApagar(el){if(!el._on)return;el._on=false;el._tw=null;el._toggle=null;el.innerHTML=''}
 function abrirPC(items,i,alCerrar){
-  pcItems=items;pcAlCerrar=alCerrar||null;pcPista.innerHTML='';items.forEach(x=>pcPista.appendChild(pcMedio(x)));
+  pcItems=items;pcAlCerrar=alCerrar||null;pcSonido=true;pcPista.innerHTML='';items.forEach(x=>pcPista.appendChild(pcMedio(x)));
   pc.hidden=false;document.documentElement.style.overflow='hidden';
   try{history.pushState({pc:1},'')}catch(_){}
   pcMostrar(i,false);
@@ -916,7 +920,7 @@ const pcSoltar=e=>{if(pcX==null)return;const dx=e.clientX-pcX,dy=e.clientY-pcY;p
   if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)){pcMostrar(pcI+(dx<0?1:-1),true);return}
   pcMostrar(pcI,true);
   // un toque sin arrastrar: activa el sonido si estaba en silencio, o pausa/sigue el video
-  if(!pcMovio&&Date.now()-pcT<400){const el=pcPista.children[pcI];if(el&&el._toggle){el._toggle();return}if(el&&el.tagName==='VIDEO'){if(el.muted){el.muted=false;pcSonido=true;el.play().catch(()=>{})}else el.paused?el.play().catch(()=>{}):el.pause()}}};
+  if(!pcMovio&&Date.now()-pcT<400){const el=pcPista.children[pcI];if(el&&el._toggle){el._toggle();return}if(el&&el.tagName==='VIDEO'){if(el.muted){el.muted=false;el.volume=1;pcSonido=true;el.play().catch(()=>{})}else el.paused?el.play().catch(()=>{}):el.pause();pcAviso()}}};
 pc.addEventListener('pointerup',pcSoltar);pc.addEventListener('pointercancel',pcSoltar);
 let pcRueda=0;pc.addEventListener('wheel',e=>{e.preventDefault();const d=Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY;const t=Date.now();if(t-pcRueda<450||Math.abs(d)<20)return;pcRueda=t;pcMostrar(pcI+(d>0?1:-1),true)},{passive:false});
 addEventListener('keydown',e=>{if(pc.hidden)return;if(e.key==='Escape')cerrarPC();if(e.key==='ArrowRight')pcMostrar(pcI+1,true);if(e.key==='ArrowLeft')pcMostrar(pcI-1,true)});
