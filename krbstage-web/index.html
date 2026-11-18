@@ -374,6 +374,16 @@ main,footer{position:relative;z-index:1}
 .visor img{max-width:100%;max-height:calc(100vh - 110px);border-radius:10px;box-shadow:0 30px 80px rgba(0,0,0,.6)}
 .visor-cerrar{position:absolute;top:max(16px,env(safe-area-inset-top,0px));right:max(16px,env(safe-area-inset-right,0px));border:1px solid var(--linea);background:var(--tarima);color:var(--texto);border-radius:999px;padding:8px 16px;font-weight:700;cursor:pointer}
 @media (max-width:720px){.flyers-fila{grid-template-columns:repeat(4,58%);overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}.flyers-fila::-webkit-scrollbar{display:none}.flyers-fila button{scroll-snap-align:start}}
+/* videos de Instagram en pantalla completa, uno tras otro (como reels) */
+.reels{position:fixed;inset:0;z-index:60;background:#000}
+.reels-pista{position:absolute;inset:0;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior:contain;scrollbar-width:none}
+.reels-pista::-webkit-scrollbar{display:none}
+.reel{height:100%;scroll-snap-align:start;scroll-snap-stop:always;display:grid;place-items:center}
+.reel video{width:100%;height:100%;object-fit:contain;background:#000;display:block}
+.reels-barra{position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:10px;padding:max(14px,env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) 14px max(14px,env(safe-area-inset-left,0px));background:linear-gradient(180deg,rgba(0,0,0,.7),transparent)}
+.reels-local{font-family:var(--f-dato);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--c)}
+.reels-ayuda{font-size:12px;color:var(--tenue);margin-right:auto}
+.reels-barra button{border:1px solid rgba(243,238,230,.3);background:rgba(12,11,18,.7);color:var(--texto);border-radius:999px;padding:7px 14px;font-weight:700;font-size:13px;cursor:pointer}
 /* contacto */
 .contacto{border-top:1px solid var(--linea)}
 .contacto .envoltura{display:grid;grid-template-columns:1fr 1fr;gap:64px}
@@ -449,6 +459,10 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
 </header>
 
 <canvas id="red-fondo" aria-hidden="true"></canvas>
+<div class="reels" id="reels" hidden role="dialog" aria-label="Videos en pantalla completa">
+  <div class="reels-pista" id="reels-pista"></div>
+  <div class="reels-barra"><span class="reels-local" id="reels-local"></span><span class="reels-ayuda">Desliza para ver más</span><button id="reels-sonido">Silenciar</button><button id="reels-cerrar">Cerrar</button></div>
+</div>
 <div class="visor" id="visor" hidden role="dialog" aria-label="Flyer"><img id="visor-img" alt=""><button class="visor-cerrar" id="visor-cerrar">Cerrar</button></div>
 <main>
   <section class="portada" id="inicio">
@@ -742,6 +756,32 @@ elegirLocal('kennedy');
 /* ===== Instagram: últimos videos de cada local (parten solos, sin sonido, al pasar) ===== */
 (function(){
   function silenciarOtros(yo){document.querySelectorAll('.ig-video video').forEach(v=>{if(v!==yo){v.muted=true;const b=v.parentElement.querySelector('.ig-son');if(b){b.setAttribute('aria-pressed','false');b.textContent='Activar sonido'}}})}
+  // Pantalla completa tipo reels: se desliza hacia arriba o abajo para pasar de un video a otro
+  const reels=$('#reels'),rpista=$('#reels-pista');let robs=null,rsonido=true;
+  function abrirReels(vids,i,local,color){
+    document.querySelectorAll('.ig-video video').forEach(x=>x.pause());
+    reels.style.setProperty('--c',color||'var(--foco)');$('#reels-local').textContent=local;
+    rpista.innerHTML=vids.map(x=>`<div class="reel"><video playsinline loop preload="none" ${x.poster?`poster="${esc(x.poster)}"`:''} src="${esc(x.url)}"></video></div>`).join('');
+    reels.hidden=false;document.documentElement.style.overflow='hidden';
+    const pc=reels.requestFullscreen||reels.webkitRequestFullscreen;if(pc){try{const r=pc.call(reels);if(r&&r.catch)r.catch(()=>{})}catch(_){}}
+    rpista.scrollTop=rpista.children[i].offsetTop;
+    const vs=[...rpista.querySelectorAll('video')];
+    const tocar=v=>{v.muted=!rsonido;v.preload='auto';v.play().catch(()=>{v.muted=true;rsonido=false;$('#reels-sonido').textContent='Activar sonido';v.play().catch(()=>{})})};
+    robs=new IntersectionObserver(es=>es.forEach(en=>{const v=en.target;if(en.isIntersecting&&en.intersectionRatio>=.6)tocar(v);else v.pause()}),{root:rpista,threshold:[0,.6]});
+    vs.forEach(v=>{robs.observe(v);v.onclick=()=>{v.paused?v.play().catch(()=>{}):v.pause()}});
+    tocar(vs[i]);
+  }
+  function cerrarReels(){
+    if(reels.hidden)return;
+    if(robs)robs.disconnect();rpista.querySelectorAll('video').forEach(v=>v.pause());rpista.innerHTML='';
+    reels.hidden=true;document.documentElement.style.overflow='';
+    if(document.fullscreenElement&&document.exitFullscreen)document.exitFullscreen().catch(()=>{});
+  }
+  $('#reels-cerrar').onclick=cerrarReels;
+  $('#reels-sonido').onclick=()=>{rsonido=!rsonido;$('#reels-sonido').textContent=rsonido?'Silenciar':'Activar sonido';rpista.querySelectorAll('video').forEach(v=>{v.muted=!rsonido})};
+  document.addEventListener('fullscreenchange',()=>{if(!document.fullscreenElement&&!reels.hidden)cerrarReels()});
+  addEventListener('keydown',e=>{if(reels.hidden)return;if(e.key==='Escape')cerrarReels();
+    if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();rpista.scrollBy({top:(e.key==='ArrowDown'?1:-1)*rpista.clientHeight,behavior:'smooth'})}});
   function pintar(data){
     ['kennedy','frida','tobalaba'].forEach(loc=>{
       const vids=((data[loc]||{}).videos||[]).filter(x=>x&&x.url);
@@ -770,8 +810,7 @@ elegirLocal('kennedy');
           const on=v.muted;silenciarOtros(v);v.muted=!on;b.setAttribute('aria-pressed',on);b.textContent=on?'Silenciar':'Activar sonido';if(on)v.play().catch(()=>{})};
         b.onclick=sonar;v.onclick=sonar;
         // pantalla completa con sonido (en iPhone se usa el reproductor del sistema)
-        f.querySelector('.ig-ver').onclick=()=>{silenciarOtros(v);v.muted=false;b.setAttribute('aria-pressed','true');b.textContent='Silenciar';v.preload='auto';v.play().catch(()=>{});
-          const pc=v.requestFullscreen||v.webkitRequestFullscreen;if(pc){const r=pc.call(v);if(r&&r.catch)r.catch(()=>{})}else if(v.webkitEnterFullscreen)v.webkitEnterFullscreen()}});
+        f.querySelector('.ig-ver').onclick=()=>abrirReels(vids,items.indexOf(f),bloque.querySelector('h3').textContent,bloque.style.getPropertyValue('--c'))});
       centrar();
     });
   }
