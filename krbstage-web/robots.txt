@@ -1,0 +1,3 @@
+User-agent: *
+Disallow: /demo.html
+Sitemap: https://www.krbstage.cl/sitemap.xml

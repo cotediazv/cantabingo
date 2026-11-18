@@ -9,6 +9,7 @@
 <meta property="og:description" content="Experiencias independientes. Emociones conectadas.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://www.krbstage.cl/">
+<link rel="canonical" href="https://www.krbstage.cl/">
 <meta name="theme-color" content="#0c0b12">
 <link rel="icon" href="krb-stage.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -413,6 +414,8 @@ main,footer{position:relative;z-index:1}
 .esp-ejemplo h3{font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:34px;line-height:1;margin:0 0 10px}
 .esp-ejemplo p{margin:0 0 12px;color:var(--tenue)}
 @media (max-width:900px){.ptl-intro,.esp-cols{grid-template-columns:1fr;gap:24px}.ptl-pruebas{grid-template-columns:1fr}.ptl-prueba{min-height:160px}}
+.historicos{margin-top:56px}
+.hist-tit{margin-bottom:-28px}
 /* contacto */
 .contacto{border-top:1px solid var(--linea)}
 .contacto .envoltura{display:grid;grid-template-columns:1fr 1fr;gap:64px}
@@ -666,6 +669,26 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
           <div class="local-videos"></div>
         </div>
       </div>
+      <div class="historicos" id="historicos" hidden>
+        <div class="etiqueta hist-tit">También hemos producido en</div>
+        <div class="bloques">
+          <div class="local-bloque" data-local="panoramico" style="--c:var(--foco)" hidden>
+            <article class="local">
+              <div class="local-nombre"><div class="num">Registros hasta octubre de 2026</div><h3>Zona Gourmet Panorámico</h3></div>
+              <div class="local-ig"><a class="ig" href="https://www.instagram.com/krbstage1/" target="_blank" rel="noopener">@krbstage1</a><span class="ig-cuenta"></span></div>
+            </article>
+            <div class="local-videos"></div>
+          </div>
+          <div class="local-bloque" data-local="laflorida" style="--c:var(--foco)" hidden>
+            <article class="local">
+              <div class="local-nombre"><div class="num">Registros hasta marzo de 2025</div><h3>Mercado del 14</h3></div>
+              <div class="local-datos"><p>Mall Plaza Vespucio, La Florida</p></div>
+              <div class="local-ig"><a class="ig" href="https://www.instagram.com/krbstage2/" target="_blank" rel="noopener">@krbstage2</a><span class="ig-cuenta"></span></div>
+            </article>
+            <div class="local-videos"></div>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -899,9 +922,10 @@ elegirLocal('kennedy');
     abrirPC(vids.map(x=>({video:x.url,poster:x.poster})),i,()=>window.dispatchEvent(new Event('ig-reanudar')));
   }
   function pintar(data){
-    ['kennedy','frida','tobalaba'].forEach(loc=>{
+    ['kennedy','frida','tobalaba','panoramico','laflorida'].forEach(loc=>{
       const vids=((data[loc]||{}).videos||[]).filter(x=>x&&x.url);
       if(!vids.length)return;
+      const bh=document.querySelector(`.local-bloque[data-local="${loc}"]`);if(bh&&bh.hidden){bh.hidden=false;$('#historicos').hidden=false}
       const bloque=document.querySelector(`.local-bloque[data-local="${loc}"]`);if(!bloque)return;
       bloque.querySelector('.ig-cuenta').textContent=`${vids.length} video${vids.length>1?'s':''}`;
       const car=document.createElement('div');car.className='ig-carrusel';

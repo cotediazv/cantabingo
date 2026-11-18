@@ -3,6 +3,9 @@
 // Las claves NO van en el repositorio: se ponen en Render como IG_TOKEN_KENNEDY, IG_TOKEN_FRIDA, IG_TOKEN_TOBALABA.
 // Las claves duran 60 días; el servidor las renueva solo cada ~30 días y guarda la renovada en los datos.
 const VENUES = ['kennedy', 'frida', 'tobalaba'];
+// Lugares que KRB Stage produjo antes: sus videos se muestran solo hasta la fecha indicada (usan la misma clave)
+const HISTORICOS = { panoramico: { handle: 'krbstage1', hasta: '2026-10-31' }, laflorida: { handle: 'krbstage2', hasta: '2025-03-31' } };
+const TODOS = [...VENUES, ...Object.keys(HISTORICOS)];
 const API = process.env.IG_TEST_URL || 'https://graph.instagram.com'; // IG_TEST_URL / FB_TEST_URL solo para pruebas locales
 const FB = process.env.FB_TEST_URL || 'https://graph.facebook.com/v21.0';
 const CACHE_MS = 30 * 60e3;
@@ -14,9 +17,11 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
   db.webIg ||= {}; // local -> { token, at } (clave renovada)
   const cache = {}; // local -> { videos, at }
 
+  const handleDe = (v) => (HISTORICOS[v] ? HISTORICOS[v].handle : String((insta && insta.handleOf && insta.handleOf(v)) || ''));
   const tokenOf = (v) => {
     const saved = db.webIg[v];
-    const env = process.env[`IG_TOKEN_${v.toUpperCase()}`] || '';
+    // los lugares históricos usan la misma clave del portafolio (la de Kennedy) si no tienen una propia
+    const env = process.env[`IG_TOKEN_${v.toUpperCase()}`] || (HISTORICOS[v] ? process.env.IG_TOKEN_KENNEDY || '' : '');
     // Si cambian la clave en Render, se usa la nueva
     if (env && (!saved || saved.env !== env)) { db.webIg[v] = { token: env, env, at: Date.now() }; save(); }
     return (db.webIg[v] || {}).token || '';
@@ -57,7 +62,7 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
   async function mediaFacebook(v, token) {
     const t = encodeURIComponent(token);
     if (!igIds[v]) {
-      const handle = String((insta && insta.handleOf && insta.handleOf(v)) || '').toLowerCase();
+      const handle = handleDe(v).toLowerCase();
       const cuentas = [];
       const sumar = (lista) => lista.filter((c) => c && c.id).forEach((c) => cuentas.push(c));
       // a) páginas de Facebook asignadas a la clave, con su cuenta de Instagram
@@ -91,6 +96,21 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
     return todas(await getJson(`${FB}/${igIds[v]}/media?fields=${FIELDS}&limit=100&access_token=${t}`));
   }
 
+  // Videos de un lugar histórico: desde su fecha límite hacia atrás (hasta 60 videos)
+  async function historico(v, tk) {
+    await mediaFacebook(v, tk); // ubica la cuenta (y confirma que la clave la ve)
+    if (!igIds[v]) throw new Error(`@${handleDe(v)} todavía no está conectada a una página de Facebook del portafolio`);
+    const lim = new Date(`${HISTORICOS[v].hasta}T23:59:59Z`).getTime();
+    let url = `${FB}/${igIds[v]}/media?fields=${FIELDS}&limit=100&access_token=${encodeURIComponent(tk)}`;
+    const data = [];
+    for (let n = 0; url && n < 15 && data.filter((m) => m.media_type === 'VIDEO').length < PER_VENUE; n++) {
+      const r = await getJson(url);
+      (r.data || []).forEach((m) => { if (new Date(m.timestamp).getTime() <= lim) data.push(m); });
+      url = r.paging && r.paging.next;
+    }
+    return { data };
+  }
+
   async function videosOf(v) {
     const c = cache[v];
     if (c && Date.now() - c.at < CACHE_MS) return c;
@@ -100,7 +120,8 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
     const tk = db.webIg[v].token;
     const errores = [];
     let j = null;
-    for (const intento of [() => mediaInstagram(tk), () => mediaFacebook(v, tk)]) {
+    const intentos = HISTORICOS[v] ? [() => historico(v, tk)] : [() => mediaInstagram(tk), () => mediaFacebook(v, tk)];
+    for (const intento of intentos) {
       try { j = await intento(); break; } catch (e) { errores.push(e.message); }
     }
     if (j && Array.isArray(j.data)) {
@@ -123,7 +144,7 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
     res.set('Access-Control-Allow-Origin', '*');
     const v = String(req.query.local || '');
     const desde = String(req.query.desde || ''), hasta = String(req.query.hasta || '');
-    if (!VENUES.includes(v) || !/^\d{4}-\d{2}-\d{2}$/.test(desde) || !/^\d{4}-\d{2}-\d{2}$/.test(hasta)) return res.status(400).json({ error: 'Usa ?local=kennedy&desde=AAAA-MM-DD&hasta=AAAA-MM-DD' });
+    if (!TODOS.includes(v) || !/^\d{4}-\d{2}-\d{2}$/.test(desde) || !/^\d{4}-\d{2}-\d{2}$/.test(hasta)) return res.status(400).json({ error: 'Usa ?local=kennedy&desde=AAAA-MM-DD&hasta=AAAA-MM-DD' });
     const clave = `${v}|${desde}|${hasta}`;
     const c = busquedas[clave];
     if (c && Date.now() - c.at < CACHE_MS) return res.json(c.data);
@@ -160,10 +181,10 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
   app.get('/api/web/instagram', async (_req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
     const out = {};
-    await Promise.all(VENUES.map(async (v) => {
+    await Promise.all(TODOS.map(async (v) => {
       const r = await videosOf(v);
       // «error» ayuda a revisar la conexión; nunca incluye la clave
-      out[v] = { handle: (insta && insta.handleOf && insta.handleOf(v)) || '', videos: r.videos, flyers: r.flyers || [], error: r.error || '' };
+      out[v] = { handle: handleDe(v), videos: r.videos, flyers: r.flyers || [], error: r.error || '' };
     }));
     res.json(out);
   });
