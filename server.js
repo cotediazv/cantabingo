@@ -649,6 +649,7 @@ const insta = require('./insta.js')({ app, db, save, requireAdmin, fail, venue: 
 lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta });
 require('./vertical.js')({ app, db, save, requireAdmin, fail, karaoke, dir: path.dirname(DATA_FILE) }); // pantalla vertical: video del mes y actividades
 require('./youtube.js')({ app }); // últimos videos del canal, para la página web
+require('./twitch.js')({ app }); // videos y transmisiones en vivo de Twitch, para la página web
 require('./instagram-web.js')({ app, db, save, insta }); // últimos videos de Instagram de cada local, para la página web
 
 // Consola general: en qué está cada local (sala principal o sala light), su bloque del horario y su karaoke
