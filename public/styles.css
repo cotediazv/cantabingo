@@ -1627,3 +1627,7 @@ body.vert-in .krb-mark { display: none; }
 .vt-prog span { position: relative; display: block; text-align: center; line-height: 26px; font-size: .85rem; font-weight: 700; }
 .vt-link { width: min(100%, 420px); }
 button.link { background: none; border: 0; padding: 0; color: inherit; text-decoration: underline; cursor: pointer; }
+/* Pantalla vertical: el video y la actividad van solos, encima de todo, sin el fondo animado (en el iPhone se veía solo el fondo) */
+html:has(body.vert-in), body.vert-in { background: #000; }
+body.vert-in main { padding: 0; max-width: none; }
+.vt { z-index: 5; }

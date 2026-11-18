@@ -18,7 +18,7 @@
   // La pantalla en sí, en formato alto (sin girar)
   views['vertical-in'] = async (local) => {
     const v = pick(local);
-    document.body.classList.add('full', 'vert-in');
+    document.body.classList.add('vert-in'); // sin el fondo animado de las pantallas (en el iPhone quedaba encima del video)
     app.innerHTML = `<div class="vt"><video class="vt-video" muted loop playsinline autoplay></video><iframe class="vt-act" title="Actividad" hidden></iframe>
       <div class="vt-empty" hidden><img src="krb-stage.svg" alt="KRB Stage"></div></div>`;
     const video = $('.vt-video');
@@ -47,7 +47,7 @@
     };
     await apply();
     const timer = setInterval(apply, 3000);
-    return () => { alive = false; clearInterval(timer); document.body.classList.remove('full', 'vert-in'); };
+    return () => { alive = false; clearInterval(timer); document.body.classList.remove('vert-in'); };
   };
 
   // Karaoke de la sala light de un local a pantalla completa (lo usa la pantalla vertical)
