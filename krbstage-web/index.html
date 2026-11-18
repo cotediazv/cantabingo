@@ -615,6 +615,10 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
           <div class="etiqueta esp-mont-tit">Actualmente tenemos montado</div>
           <div class="esp-montados">
             <a class="esp-mont" data-code="DdJldeaRoKo" href="https://www.instagram.com/reel/DdJldeaRoKo/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Pet Shop Boys</b></a>
+            <a class="esp-mont" data-code="DbggHTrBw98" href="https://www.instagram.com/reel/DbggHTrBw98/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Depeche Mode vs Pet Shop Boys</b></a>
+            <a class="esp-mont" data-code="DbjoqmEsPWX" href="https://www.instagram.com/reel/DbjoqmEsPWX/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Depeche Mode</b></a>
+            <a class="esp-mont" data-code="DZ2buyOzr6k" href="https://www.instagram.com/reel/DZ2buyOzr6k/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Dua Lipa</b></a>
+            <a class="esp-mont" data-code="DXgxo5XkR4L" href="https://www.instagram.com/reel/DXgxo5XkR4L/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Lady Gaga</b></a>
             <a class="esp-mont" data-code="DXPdxdZk7zt" href="https://www.instagram.com/reel/DXPdxdZk7zt/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Nicole</b></a>
             <a class="esp-mont" data-code="DHi-9gmRhqF" href="https://www.instagram.com/reel/DHi-9gmRhqF/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Tom Jones</b><small>por Matias Fajardo</small></a>
             <a class="esp-mont" data-code="C98XDWgRxVh" href="https://www.instagram.com/reel/C98XDWgRxVh/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Christina Aguilera</b></a>
@@ -1005,7 +1009,7 @@ elegirLocal('kennedy');
 
 /* ===== Espectáculos montados: los videos que están en nuestras cuentas se ven aquí mismo ===== */
 (function(){
-  const PROPIOS={'DXPdxdZk7zt':['kennedy','2026-04-17'],'DHi-9gmRhqF':['kennedy','2025-03-23'],'C98XDWgRxVh':['kennedy','2024-07-27'],'C3Zi9R4uET9':['kennedy','2024-02-16']};
+  const PROPIOS={'DbggHTrBw98':['panoramico','2026-08-01'],'DbjoqmEsPWX':['panoramico','2026-08-02'],'DZ2buyOzr6k':['kennedy','2026-06-21'],'DXgxo5XkR4L':['kennedy','2026-04-24'],'DXPdxdZk7zt':['kennedy','2026-04-17'],'DHi-9gmRhqF':['kennedy','2025-03-23'],'C98XDWgRxVh':['kennedy','2024-07-27'],'C3Zi9R4uET9':['kennedy','2024-02-16']};
   const cards=[...document.querySelectorAll('.esp-mont')];const vids={};
   const vistos=new IntersectionObserver(es=>es.forEach(en=>{const v=en.target;if(en.isIntersecting&&!quieto)v.play().catch(()=>{});else v.pause()}),{threshold:.5});
   Object.entries(PROPIOS).forEach(([code,[loc,dia]])=>{
