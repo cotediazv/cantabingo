@@ -614,7 +614,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
           </ul>
           <div class="etiqueta esp-mont-tit">Actualmente tenemos montado</div>
           <div class="esp-montados">
-            <a class="esp-mont" data-code="DdJldeaRoKo" href="https://www.instagram.com/reel/DdJldeaRoKo/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Pet Shop Boys</b></a>
+            <a class="esp-mont" data-code="DbfKhfKM2E4" href="https://www.instagram.com/reel/DbfKhfKM2E4/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Pet Shop Boys</b></a>
             <a class="esp-mont" data-code="DbggHTrBw98" href="https://www.instagram.com/reel/DbggHTrBw98/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Depeche Mode vs Pet Shop Boys</b></a>
             <a class="esp-mont" data-code="DbjoqmEsPWX" href="https://www.instagram.com/reel/DbjoqmEsPWX/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Depeche Mode</b></a>
             <a class="esp-mont" data-code="DZ2buyOzr6k" href="https://www.instagram.com/reel/DZ2buyOzr6k/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Dua Lipa</b></a>
@@ -623,7 +623,8 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
             <a class="esp-mont" data-code="DHi-9gmRhqF" href="https://www.instagram.com/reel/DHi-9gmRhqF/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Tom Jones</b><small>por Matias Fajardo</small></a>
             <a class="esp-mont" data-code="C98XDWgRxVh" href="https://www.instagram.com/reel/C98XDWgRxVh/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Christina Aguilera</b></a>
             <a class="esp-mont" data-code="C3Zi9R4uET9" href="https://www.instagram.com/reel/C3Zi9R4uET9/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Fito Páez</b></a>
-            <a class="esp-mont" data-code="DJgLeLktn_a" href="https://www.instagram.com/reel/DJgLeLktn_a/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Mecano</b><small>por Danna Sanchez</small></a>
+            <a class="esp-mont" data-code="C6UHh75RSbH" href="https://www.instagram.com/reel/C6UHh75RSbH/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Charly García</b></a>
+            <a class="esp-mont" data-code="DL-mzsnRP_I" href="https://www.instagram.com/reel/DL-mzsnRP_I/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Mecano</b><small>por Danna Sanchez</small></a>
           </div>
         </div>
         <div class="esp-ejemplo">
@@ -1009,18 +1010,24 @@ elegirLocal('kennedy');
 
 /* ===== Espectáculos montados: los videos que están en nuestras cuentas se ven aquí mismo ===== */
 (function(){
-  const PROPIOS={'DbggHTrBw98':['panoramico','2026-08-01'],'DbjoqmEsPWX':['panoramico','2026-08-02'],'DZ2buyOzr6k':['kennedy','2026-06-21'],'DXgxo5XkR4L':['kennedy','2026-04-24'],'DXPdxdZk7zt':['kennedy','2026-04-17'],'DHi-9gmRhqF':['kennedy','2025-03-23'],'C98XDWgRxVh':['kennedy','2024-07-27'],'C3Zi9R4uET9':['kennedy','2024-02-16']};
+  const PROPIOS={'DbfKhfKM2E4':['panoramico','2026-08-01'],'C6UHh75RSbH':['kennedy','2024-04-28'],'DL-mzsnRP_I':['kennedy','2025-07-11'],'DbggHTrBw98':['panoramico','2026-08-01'],'DbjoqmEsPWX':['panoramico','2026-08-02'],'DZ2buyOzr6k':['kennedy','2026-06-21'],'DXgxo5XkR4L':['kennedy','2026-04-24'],'DXPdxdZk7zt':['kennedy','2026-04-17'],'DHi-9gmRhqF':['kennedy','2025-03-23'],'C98XDWgRxVh':['kennedy','2024-07-27'],'C3Zi9R4uET9':['kennedy','2024-02-16']};
   const cards=[...document.querySelectorAll('.esp-mont')];const vids={};
   const vistos=new IntersectionObserver(es=>es.forEach(en=>{const v=en.target;if(en.isIntersecting&&!quieto)v.play().catch(()=>{});else v.pause()}),{threshold:.5});
-  Object.entries(PROPIOS).forEach(([code,[loc,dia]])=>{
-    fetch(`https://cantabingo.onrender.com/api/web/instagram/buscar?local=${loc}&desde=${dia}&hasta=${dia}`,{signal:AbortSignal.timeout(20000)}).then(r=>r.json()).then(j=>{
-      const x=(j.videos||[]).find(v=>v.link&&v.link.includes(code));if(!x)return;vids[code]=x;
-      const card=cards.find(c=>c.dataset.code===code);if(!card)return;
-      const m=card.querySelector('.esp-media');const v=document.createElement('video');v.muted=true;v.loop=true;v.playsInline=true;v.preload='metadata';if(x.poster)v.poster=x.poster;v.src=x.url;m.prepend(v);vistos.observe(v);
-      card.querySelector('.esp-ver').textContent='▶ Pantalla completa';
-      card.onclick=e=>{e.preventDefault();const lista=cards.filter(c=>vids[c.dataset.code]);abrirPC(lista.map(c=>({video:vids[c.dataset.code].url,poster:vids[c.dataset.code].poster})),lista.indexOf(card))};
-    }).catch(()=>{});
-  });
+  // de a uno (y con un reintento) para no saturar la conexión con Instagram
+  function poner(code,x){
+    vids[code]=x;const card=cards.find(c=>c.dataset.code===code);if(!card)return;
+    const m=card.querySelector('.esp-media');const v=document.createElement('video');v.muted=true;v.loop=true;v.playsInline=true;v.preload='metadata';if(x.poster)v.poster=x.poster;v.src=x.url;m.prepend(v);vistos.observe(v);
+    card.querySelector('.esp-ver').textContent='▶ Pantalla completa';
+    card.onclick=e=>{e.preventDefault();const lista=cards.filter(c=>vids[c.dataset.code]);abrirPC(lista.map(c=>({video:vids[c.dataset.code].url,poster:vids[c.dataset.code].poster})),lista.indexOf(card))};
+  }
+  const buscar=(loc,dia)=>fetch(`https://cantabingo.onrender.com/api/web/instagram/buscar?local=${loc}&desde=${dia}&hasta=${dia}`,{signal:AbortSignal.timeout(30000)}).then(r=>{if(!r.ok)throw 0;return r.json()});
+  (async()=>{
+    for(const [code,[loc,dia]] of Object.entries(PROPIOS)){
+      for(let intento=0;intento<2;intento++){
+        try{const j=await buscar(loc,dia);const x=(j.videos||[]).find(v=>v.link&&v.link.includes(code));if(x)poner(code,x);break}catch(_){}
+      }
+    }
+  })();
 })();
 
 /* ===== Videos: YouTube y Twitch mezclados, del más nuevo al más antiguo (se actualiza solo) ===== */
