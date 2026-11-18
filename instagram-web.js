@@ -3,8 +3,13 @@
 // Las claves NO van en el repositorio: se ponen en Render como IG_TOKEN_KENNEDY, IG_TOKEN_FRIDA, IG_TOKEN_TOBALABA.
 // Las claves duran 60 días; el servidor las renueva solo cada ~30 días y guarda la renovada en los datos.
 const VENUES = ['kennedy', 'frida', 'tobalaba'];
-// Lugares que KRB Stage produjo antes: sus videos se muestran solo hasta la fecha indicada (usan la misma clave)
-const HISTORICOS = { panoramico: { handle: 'krbstage1', hasta: '2026-10-31' }, laflorida: { handle: 'krbstage2', hasta: '2025-03-31' } };
+// Lugares que KRB Stage produjo antes: sus videos se muestran solo entre las fechas indicadas (usan la misma clave).
+// @krbstage2 tiene dos lugares: Mercado del 14 (julio 2023 a marzo 2024) y Kairos (desde abril hasta diciembre de 2024).
+const HISTORICOS = {
+  panoramico: { handle: 'krbstage1', hasta: '2026-10-31' },
+  kairos: { handle: 'krbstage2', desde: '2024-04-01', hasta: '2024-12-31' },
+  laflorida: { handle: 'krbstage2', desde: '2023-07-01', hasta: '2024-03-31' },
+};
 const TODOS = [...VENUES, ...Object.keys(HISTORICOS)];
 const API = process.env.IG_TEST_URL || 'https://graph.instagram.com'; // IG_TEST_URL / FB_TEST_URL solo para pruebas locales
 const FB = process.env.FB_TEST_URL || 'https://graph.facebook.com/v21.0';
@@ -96,16 +101,19 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
     return todas(await getJson(`${FB}/${igIds[v]}/media?fields=${FIELDS}&limit=100&access_token=${t}`));
   }
 
-  // Videos de un lugar histórico: desde su fecha límite hacia atrás (hasta 60 videos)
+  // Videos de un lugar histórico: entre sus fechas, de la más nueva hacia atrás (hasta 60 videos)
   async function historico(v, tk) {
     await mediaFacebook(v, tk); // ubica la cuenta (y confirma que la clave la ve)
     if (!igIds[v]) throw new Error(`@${handleDe(v)} todavía no está conectada a una página de Facebook del portafolio`);
     const lim = new Date(`${HISTORICOS[v].hasta}T23:59:59Z`).getTime();
+    const ini = HISTORICOS[v].desde ? new Date(`${HISTORICOS[v].desde}T00:00:00Z`).getTime() : 0;
     let url = `${FB}/${igIds[v]}/media?fields=${FIELDS}&limit=100&access_token=${encodeURIComponent(tk)}`;
     const data = [];
     for (let n = 0; url && n < 15 && data.filter((m) => m.media_type === 'VIDEO').length < PER_VENUE; n++) {
       const r = await getJson(url);
-      (r.data || []).forEach((m) => { if (new Date(m.timestamp).getTime() <= lim) data.push(m); });
+      const lote = r.data || [];
+      lote.forEach((m) => { const f = new Date(m.timestamp).getTime(); if (f <= lim && f >= ini) data.push(m); });
+      if (!lote.length || new Date(lote[lote.length - 1].timestamp).getTime() < ini) break; // ya pasó la fecha de inicio
       url = r.paging && r.paging.next;
     }
     return { data };
