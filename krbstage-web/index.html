@@ -639,14 +639,14 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
             <a class="esp-mont" data-code="DXgxo5XkR4L" href="https://www.instagram.com/reel/DXgxo5XkR4L/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Lady Gaga</b></a>
             <a class="esp-mont" data-code="DXPdxdZk7zt" href="https://www.instagram.com/reel/DXPdxdZk7zt/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Nicole</b></a>
             <a class="esp-mont" data-code="DHi-9gmRhqF" href="https://www.instagram.com/reel/DHi-9gmRhqF/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Tom Jones</b><small>por Matias Fajardo</small></a>
-            <a class="esp-mont" data-code="C98XDWgRxVh" href="https://www.instagram.com/reel/C98XDWgRxVh/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Christina Aguilera</b></a>
-            <a class="esp-mont" data-code="C3Zi9R4uET9" href="https://www.instagram.com/reel/C3Zi9R4uET9/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Fito Páez</b></a>
-            <a class="esp-mont" data-code="C6UHh75RSbH" href="https://www.instagram.com/reel/C6UHh75RSbH/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Charly García</b></a>
+            <a class="esp-mont" data-code="C98XDWgRxVh" href="https://www.instagram.com/reel/C98XDWgRxVh/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Christina Aguilera</b><small>por Danna Sanchez</small></a>
+            <a class="esp-mont" data-code="C3Zi9R4uET9" href="https://www.instagram.com/reel/C3Zi9R4uET9/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Fito Páez</b><small>por Felipe Morales</small></a>
+            <a class="esp-mont" data-code="C6UHh75RSbH" href="https://www.instagram.com/reel/C6UHh75RSbH/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Charly García</b><small>por Felipe Morales</small></a>
             <a class="esp-mont" data-code="DL-mzsnRP_I" href="https://www.instagram.com/reel/DL-mzsnRP_I/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Mecano</b><small>por Danna Sanchez</small></a>
             <a class="esp-mont" data-code="DF4JT1kg5JJ" href="https://www.instagram.com/reel/DF4JT1kg5JJ/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Michael Jackson</b><small>por Ben Ramirez</small></a>
-            <a class="esp-mont" data-code="DHOdA7Fx6F1" href="https://www.instagram.com/reel/DHOdA7Fx6F1/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Rock a la carta</b></a>
-            <a class="esp-mont" data-code="Da-bsOQzxl3" href="https://www.instagram.com/reel/Da-bsOQzxl3/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Alanis Morissette</b></a>
-            <a class="esp-mont" data-code="Dd1h9J9O8th" href="https://www.instagram.com/reel/Dd1h9J9O8th/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Bingo con banda</b></a>
+            <a class="esp-mont" data-code="DHOdA7Fx6F1" href="https://www.instagram.com/reel/DHOdA7Fx6F1/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Rock a la carta</b><small>por Nano Cabrera</small></a>
+            <a class="esp-mont" data-code="Da-bsOQzxl3" href="https://www.instagram.com/reel/Da-bsOQzxl3/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Alanis Morissette</b><small>por Loretto Canales</small></a>
+            <a class="esp-mont" data-code="Dd1h9J9O8th" href="https://www.instagram.com/reel/Dd1h9J9O8th/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Bingo con banda</b><small>por Gonzalo de Santa María</small></a>
           </div>
         </div>
         <div class="esp-ejemplo">
@@ -828,10 +828,11 @@ function pintarFlyers(){
   caja.hidden=false;
 }
 window.recibirIg=d=>{igDatos=d;pintarFlyers();pintarColumnas()};
-// «Para tu local»: debajo de cada local, 6 de sus videos de Instagram a la vez, en pequeño (tocar uno = pantalla completa)
+// «Para tu local»: debajo de cada local, sus 6 videos más populares de Instagram a la vez, en pequeño (tocar uno = pantalla completa)
 function pintarColumnas(){
   document.querySelectorAll('.ptl-col').forEach(col=>{
-    const vids=(((igDatos||{})[col.dataset.local]||{}).videos||[]).filter(x=>x&&x.url).slice(0,6);if(!vids.length)return;
+    const dl=(igDatos||{})[col.dataset.local]||{};const pop=(dl.populares||[]).filter(x=>x&&x.url);
+    const vids=(pop.length?pop:(dl.videos||[]).filter(x=>x&&x.url)).slice(0,6);if(!vids.length)return; // los 6 más populares (si aún no están, los 6 últimos)
     const caja=col.querySelector('.ptl-grilla');caja.hidden=false;
     caja.innerHTML=vids.map((x,i)=>`<button data-i="${i}" aria-label="Ver video ${i+1} en pantalla completa"><video muted playsinline loop preload="none" ${x.poster?`poster="${esc(x.poster)}"`:''} data-src="${esc(x.url)}"></video></button>`).join('');
     const vs=[...caja.querySelectorAll('video')];

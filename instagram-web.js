@@ -146,6 +146,43 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
     return cache[v];
   }
 
+  // Los 6 videos más populares de cada lugar (más «me gusta» y comentarios), revisando todas sus publicaciones.
+  // Se calculan aparte, en segundo plano y cada 6 horas, para no demorar la página.
+  const POP_MS = 6 * 3600e3, POP_PAGES = 20;
+  const pop = {}; // local -> { videos, at, cargando, error }
+  async function calcularPopulares(v) {
+    const token = tokenOf(v);
+    if (!token) throw new Error('Falta la clave');
+    const tk = (db.webIg[v] || {}).token || token;
+    if (!igIds[v]) await mediaFacebook(v, tk);
+    if (!igIds[v]) throw new Error('No se encontró la cuenta del lugar');
+    const h = HISTORICOS[v];
+    const ini = h && h.desde ? new Date(`${h.desde}T00:00:00Z`).getTime() : 0;
+    const fin = h && h.hasta ? new Date(`${h.hasta}T23:59:59Z`).getTime() : Infinity;
+    let url = `${FB}/${igIds[v]}/media?fields=${FIELDS},like_count,comments_count&limit=100&access_token=${encodeURIComponent(tk)}`;
+    const vids = [];
+    for (let n = 0; url && n < POP_PAGES; n++) {
+      const r = await getJson(url);
+      const lote = r.data || [];
+      lote.forEach((m) => { const f = new Date(m.timestamp).getTime(); if (m.media_type === 'VIDEO' && m.media_url && f >= ini && f <= fin) vids.push(m); });
+      if (!lote.length || new Date(lote[lote.length - 1].timestamp).getTime() < ini) break;
+      url = r.paging && r.paging.next;
+    }
+    const puntaje = (m) => (m.like_count || 0) + 2 * (m.comments_count || 0);
+    return vids.sort((a, b) => puntaje(b) - puntaje(a)).slice(0, 6)
+      .map((m) => ({ url: m.media_url, poster: m.thumbnail_url || '', link: m.permalink || '', date: m.timestamp || '', likes: m.like_count || 0, comentarios: m.comments_count || 0 }));
+  }
+  function populares(v) {
+    const p = (pop[v] ||= { videos: [], at: 0 });
+    if (!p.cargando && Date.now() - p.at > POP_MS) {
+      p.cargando = true;
+      calcularPopulares(v)
+        .then((videos) => { pop[v] = { videos, at: Date.now(), error: '' }; })
+        .catch((e) => { pop[v] = { videos: p.videos, at: Date.now() - POP_MS + 10 * 60e3, error: String(e.message || e).slice(0, 200) }; }); // reintenta en 10 minutos
+    }
+    return pop[v];
+  }
+
   // Búsqueda por fechas en las publicaciones antiguas de un local (ej. la fiesta de los 80, noviembre de 2025)
   const busquedas = {}; // clave -> { data, at }
   app.get('/api/web/instagram/buscar', async (req, res) => {
@@ -192,7 +229,8 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
     await Promise.all(TODOS.map(async (v) => {
       const r = await videosOf(v);
       // «error» ayuda a revisar la conexión; nunca incluye la clave
-      out[v] = { handle: handleDe(v), videos: r.videos, flyers: r.flyers || [], error: r.error || '' };
+      const p = populares(v);
+      out[v] = { handle: handleDe(v), videos: r.videos, populares: p.videos || [], flyers: r.flyers || [], error: r.error || '', errorPopulares: p.error || '' };
     }));
     res.json(out);
   });
