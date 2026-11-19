@@ -324,6 +324,9 @@
         out.push(`<h2>⏱️ Esta noche</h2>${cart.current ? `<div class="lv-now"><small>Ahora</small><b>${esc(cap(cart.current.label))}</b><span>desde las ${esc(cart.current.time)}</span></div>` : ''}
           ${cart.next ? `<div class="lv-now lv-next"><small>A continuación</small><b>${esc(cap(cart.next.label))}</b><span>a las ${esc(cart.next.time)}</span></div>` : ''}`);
       }
+      // Si hoy no hay actividades, los horarios del próximo día que tenga (ej. el viernes en Tobalaba)
+      const nextDay = cart && !(cart.blocks || []).length && (cart.week || []).find((d) => !d.today && d.hours && d.hours.length);
+      if (nextDay) out.push(`<h2>🕗 ${esc(day(nextDay.day))} ${nextDay.date}</h2>${nextDay.show ? `<div class="lv-now lv-next"><small>Show</small><b>${esc(cap(nextDay.show))}</b></div>` : ''}<ul class="lv-hours">${nextDay.hours.map((b) => `<li><em>${esc(b.time)}</em><b>${esc(cap(b.label))}</b></li>`).join('')}</ul>`);
       if (cart && cart.blocks && cart.blocks.length) out.push(`<h2>🕗 Horarios de hoy</h2><ul class="lv-hours">${cart.blocks.map((b) => `<li class="${cart.current && cart.current.time === b.time ? 'on' : ''}"><em>${esc(b.time)}</em><b>${esc(cap(b.label))}</b></li>`).join('')}</ul>`);
       if (cart && cart.week && cart.week.length) out.push(`<h2>📅 Esta semana</h2><ul class="lv-week">${cart.week.slice(0, 5).map((d) => `<li class="${d.today ? 'on' : ''}"><em>${esc(day(d.day))} ${d.date}</em><b>${esc(cap(d.show || (d.hours[0] || {}).label || ''))}</b></li>`).join('')}</ul>`);
       if (cart && cart.month && cart.month.length) out.push(`<h2>🗓️ Cartelera del mes</h2><ul class="lv-week">${cart.month.slice(0, 6).map((d) => `<li><em>${esc(cap(d.day))}</em><b>${esc(cap(d.show))}</b></li>`).join('')}</ul>`);
