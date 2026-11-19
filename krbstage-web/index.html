@@ -625,6 +625,8 @@ h2{margin-top:8px}
 .vivo-fila.pc-falso.pc-v{grid-template-columns:min(calc((100vw - 14px) * .7596),calc(100dvh * 16 / 9)) min(calc((100vw - 14px) * .2404),calc(100dvh * 9 / 16));gap:14px}
 .vivo-fila.pc-falso.pc-h{grid-template-columns:min(72vw,calc(100dvh * 16 / 9)) min(28vw,calc(100dvh * 16 / 9 * .389));gap:14px}
 .pc-cerrar{z-index:90}
+/* las pantallas del local no se pueden tocar: una capa encima recibe el dedo (en el iPhone, tocarlas abría la pantalla sola) */
+.pant::after{content:"";position:absolute;inset:0;z-index:1}
 html.con-visor-tactil{overscroll-behavior-x:none}
 .visor-aviso{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:3;background:rgba(0,0,0,.75);border:1px solid var(--c);color:#fff;border-radius:999px;padding:6px 14px;font-size:13px;white-space:nowrap;pointer-events:none;transition:opacity .5s}
 .visor-aviso.fuera{opacity:0}
@@ -1407,7 +1409,7 @@ elegirLocal('kennedy');
     }).catch(()=>{});
   }
 
-  const pant=(clase,ruta,w,h,t,L)=>`<div class="pant ${clase}"><iframe src="${SALA}${L&&L.liviano?`&liviano=${encodeURIComponent(L.liviano)}&lver=${L.lver}`:''}${ruta}" width="${w}" height="${h}" title="${t}" loading="lazy" tabindex="-1"></iframe></div>`;
+  const pant=(clase,ruta,w,h,t,L)=>`<div class="pant ${clase}"><iframe sandbox="allow-scripts allow-same-origin" src="${SALA}${L&&L.liviano?`&liviano=${encodeURIComponent(L.liviano)}&lver=${L.lver}`:''}${ruta}" width="${w}" height="${h}" title="${t}" loading="lazy" tabindex="-1"></iframe></div>`;
   const padres=['www.krbstage.cl','krbstage.cl',location.hostname].filter((x,i,a)=>x&&a.indexOf(x)===i).map(x=>'&parent='+x).join('');
   const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   const fecha=t=>{const d=new Date(t);return isNaN(d)?'':`${d.getDate()} ${MESES[d.getMonth()]}`};
