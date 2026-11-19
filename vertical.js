@@ -34,8 +34,11 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
   // Uno a la vez; si se sube otro video a la misma pantalla mientras se procesa, se descarta el proceso anterior.
   const queue = [];
   let working = null; // { v, proc, upload }
+  // APAGADO (19 nov): con el video de 227 MB de Frida el servidor se quedó sin memoria y se reiniciaba una y otra vez
+  // (la optimización se retomaba al arrancar). Queda desactivado hasta revisarlo con calma.
+  const OPTIMIZE_ON = false;
   const optimize = (v) => {
-    if (!FFMPEG) return;
+    if (!FFMPEG || !OPTIMIZE_ON) return;
     const c = conf(v);
     c.opt = { state: 'esperando', from: c.size, upload: c.video };
     save();
@@ -88,8 +91,9 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
     proc.on('close', (code) => done(code === 0));
   };
   // Si el servicio se reinició a mitad de una optimización, se retoma
-  for (const v of Object.keys(SCREENS)) { const c = db.vertical[v]; if (c && c.opt && (c.opt.state === 'procesando' || c.opt.state === 'esperando')) queue.push(v); }
-  setTimeout(next, 30e3);
+  // Al arrancar NO se retoma una optimización a medias (si el servicio se cayó durante una, se volvería a caer):
+  // queda el video tal como se subió
+  for (const v of Object.keys(SCREENS)) { const c = db.vertical[v]; if (c && c.opt && (c.opt.state === 'procesando' || c.opt.state === 'esperando')) { c.opt = { ...c.opt, state: 'error' }; save(); } try { fs.rmSync(`${file(v)}.optimizando.mp4`, { force: true }); } catch { /* nada */ } }
 
   // Qué actividad hay ahora en el local: la sala de juegos completa de ese local abierta y con algo en juego
   // (pedido de Cote: si la sala está abierta pero sin bingo, El Rosco ni otro juego en curso, se ve la información
