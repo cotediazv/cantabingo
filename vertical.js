@@ -57,7 +57,7 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
     const hasVideo = !!c.video && fs.existsSync(file(v));
     // Los juegos de la sala completa siempre pasan adelante (salvo «Siempre el video»)
     let show = c.mode === 'video' ? 'video' : c.mode === 'actividad' ? (act || rest || 'sala') : (act || rest || 'video');
-    if (show === 'video' && !hasVideo) show = act || rest || 'sala'; // sin video subido
+    if (show === 'video' && !hasVideo) show = act || 'light'; // sin video subido y sin juegos: la información del local (shows que vienen, horarios, QR)
     return { screen: v, venue: SCREENS[v], name: VENUES[SCREENS[v]], mode: c.mode, activity: act, show, video: hasVideo ? c.video : 0, size: hasVideo ? c.size : 0 };
   };
 

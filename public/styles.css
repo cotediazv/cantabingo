@@ -1768,3 +1768,35 @@ body.full.has-vm #lv { padding-bottom: 7vh; }
 .lv-slide h2 { white-space: normal; text-align: center; }
 /* Fondo vertical de Tobalaba: sus colores (rojo) */
 #lv.th-tobalaba { --lv-main: #c81e1e; --lv-tag: #3d0a0a; --lv-gold: #ffc400; --lv-shade: rgba(70, 0, 0, .55); }
+/* Información del local en una pantalla horizontal (Tobalaba): arriba el local, abajo el recuadro que cambia y el QR al lado */
+@media (orientation: landscape) {
+  #lv { grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto minmax(0, 1fr); gap: 3vh 2.4vw; padding: 3vh 3vw; }
+  body.full.has-vm #lv { padding-bottom: 8vh; }
+  .lv-top { grid-column: 1 / -1; grid-template-columns: auto auto auto; align-items: center; justify-content: center; gap: 2vw; padding: 1.6vh 3vw; }
+  .lv-top b { font-size: 7vh; }
+  .lv-top small { font-size: 2.8vh; }
+  .lv-card { padding: 3vh 3vw 2vh; }
+  .lv-slide h2 { font-size: 3.6vh; }
+  .lv-now b { font-size: 6vh; }
+  .lv-list b, .lv-hours b, .lv-week b { font-size: 3.2vh; }
+  .lv-hours em, .lv-week em { font-size: 3vh; }
+  .lv-hours, .lv-week { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lv-qr { grid-template-columns: 1fr; justify-items: center; align-self: stretch; align-content: center; text-align: center; width: 30vw; padding: 3vh 2vw; }
+  .lv-qrbox .qr { width: 32vh; height: 32vh; }
+  .lv-qrtext b { font-size: 4.6vh; }
+  .lv-qrtext span { font-size: 2.8vh; }
+}
+/* Pantalla horizontal: textos más grandes, que llenen el recuadro (si no caben, se achican solos) */
+@media (orientation: landscape) {
+  .lv-slide { gap: 2.4vh; }
+  .lv-slide h2 { font-size: 4.6vh; }
+  .lv-now small { font-size: 3.2vh; }
+  .lv-now b { font-size: 8vh; }
+  .lv-now span { font-size: 4vh; }
+  .lv-next b { font-size: 6vh; }
+  .lv-list b, .lv-hours b, .lv-week b { font-size: 4.2vh; }
+  .lv-list span { font-size: 3.2vh; }
+  .lv-hours em, .lv-week em { font-size: 4vh; }
+  .lv-list li, .lv-hours li, .lv-week li { padding: 1.4vh 2.4vh; gap: 2.4vh; }
+  .lv-week { grid-template-columns: minmax(0, 1fr); }
+}
