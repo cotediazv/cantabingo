@@ -1870,3 +1870,8 @@ body.full #app { z-index: auto; }
 .vt-linkrow:first-of-type { border-top: 0; }
 .vt-linkrow > div { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .vt-linkrow .vt-link { flex: 1 1 260px; min-width: 0; }
+
+/* GC de la sala light, «Información que va cambiando» (pedido de Cote: por defecto) */
+.lg-info .lg-main .lg-line { font-size: 3.4vh; font-weight: 800; line-height: 1.35; }
+.lg-info .lg-main .lg-line em { margin-left: .2em; }
+.lg-info .lg-tag { width: 34vh; white-space: normal; }

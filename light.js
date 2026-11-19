@@ -11,7 +11,7 @@ const GLOSA = {
   frida: 'https://script.google.com/macros/s/AKfycby3oCPs4gFVUd3P7csLrQV3XEsefGMpLStZphoa76AnTRVlyExxbEpp2HAEnTbH5zwA/exec',
   tobalaba: 'https://script.google.com/macros/s/AKfycbz1zFsj6YR2i03dlYuLTD0Hj3HRjZ8VlyQU0S9uCp_B6qurdegC0lRlDyfM9AUk7rZ7pQ/exec',
 };
-const STAGES = ['karaoke', 'show', 'cartelera', 'qr', 'none'];
+const STAGES = ['info', 'karaoke', 'show', 'cartelera', 'qr', 'none']; // info: la información que va cambiando (por defecto, pedido de Cote)
 const TZ = 'America/Santiago';
 const NIGHT_STARTS = 6; // la noche cambia a las 6 AM, igual que el karaoke
 const DAYS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
@@ -23,7 +23,13 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
   if (db.light) { db.lights[db.light.venue] = db.light; db.light = null; } // salas guardadas antes de este cambio
   // Siempre activas (decisión de Cote): cada local tiene su sala light, con su QR fijo; no se crea ni se cierra
   for (const v of Object.keys(VENUES)) {
-    if (!db.lights[v]) db.lights[v] = { id: `L${crypto.randomBytes(4).toString('hex')}`, venue: v, stage: 'karaoke', players: {}, created: Date.now() };
+    if (!db.lights[v]) db.lights[v] = { id: `L${crypto.randomBytes(4).toString('hex')}`, venue: v, stage: 'info', players: {}, created: Date.now() };
+  }
+  // Una sola vez (19 nov, pedido de Cote): el GC que estaba en «Nada» pasa a la información que va cambiando, que es lo
+  // que se ve por defecto; después «Nada» deja el GC vacío como siempre
+  if (!db.lightInfoDefault) {
+    for (const l of Object.values(db.lights)) if (l && l.stage === 'none') l.stage = 'info';
+    db.lightInfoDefault = true;
   }
   save();
   const clean = (v, max = 80) => String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, max);
@@ -118,7 +124,7 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
     const venue = String((req.body || {}).venue || (req.body || {}).local || '');
     if (!VENUES[venue]) return fail(res, 400, 'Elige el local');
     if (db.lights[venue]) return res.json(pub(venue)); // ya estaba abierta: se entra a la misma
-    db.lights[venue] = { id: `L${crypto.randomBytes(4).toString('hex')}`, venue, stage: 'karaoke', players: {}, created: Date.now() };
+    db.lights[venue] = { id: `L${crypto.randomBytes(4).toString('hex')}`, venue, stage: 'info', players: {}, created: Date.now() };
     save();
     karaoke.refreshVenue(venue);
     res.json(pub(venue));

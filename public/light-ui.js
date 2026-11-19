@@ -8,7 +8,7 @@
   const teamUrl = (v) => `${location.origin}${location.pathname}#/equipo/${v}`;
   // ¿Quién maneja este panel? El moderador, o el equipo del local (clave del equipo)
   const staffVenue = async () => (store.get('staffToken') ? (await api('GET', '/api/staff/me').catch(() => ({}))).venue || '' : '');
-  const STAGES = [['karaoke', '🎤', 'Karaoke'], ['show', '⭐', 'Show y lo que viene'], ['cartelera', '📅', 'Cartelera de la semana'], ['qr', '📱', 'QR grande y lista'], ['none', '⛔', 'Nada']];
+  const STAGES = [['info', '🔄', 'Información que va cambiando'], ['karaoke', '🎤', 'Karaoke'], ['show', '⭐', 'Show y lo que viene'], ['cartelera', '📅', 'Cartelera de la semana'], ['qr', '📱', 'QR grande y lista'], ['none', '⛔', 'Nada']];
   const dayName = (d) => ({ MIERCOLES: 'Miércoles', SABADO: 'Sábado' }[d] || d.charAt(0) + d.slice(1).toLowerCase());
 
   // ---------- Panel del moderador: salas light de cada local ----------
@@ -144,11 +144,11 @@
       if (!alive || !st) return;
       const stage = st.open ? st.stage : 'none';
       let c = null;
-      if (stage === 'show' || stage === 'cartelera') c = await api('GET', `/api/light/cartelera?local=${st.venue}`).catch(() => null);
+      if (stage === 'show' || stage === 'cartelera' || stage === 'info') c = await api('GET', `/api/light/cartelera?local=${st.venue}`).catch(() => null);
       let k = null;
       if (stage === 'qr') k = await api('GET', `/api/karaoke?local=${st.venue}`).catch(() => null);
       if (!alive) return;
-      const sig = JSON.stringify([stage, st.id, st.venue, c && [c.show, c.current, c.next, c.week], k && k.list.map((p) => [p.name, p.song])]);
+      const sig = JSON.stringify([stage, st.id, st.venue, c && [c.show, c.current, c.next, c.week, c.blocks, c.month], k && k.list.map((p) => [p.name, p.song]), stage === 'info' ? Math.floor(Date.now() / 9000) : 0]);
       if (sig === shown) return;
       const wasKaraoke = shown.startsWith('["karaoke"');
       shown = sig;
@@ -166,6 +166,23 @@
           <div class="lg-tag"><small>${esc(c ? c.name : '')}</small><b>${c && c.show ? '⭐ Show de hoy' : 'Esta noche'}</b></div>
           <div class="lg-main">${c && c.show ? `<b style="--n:${c.show.length}">${esc(c.show)}</b>` : `<b style="--n:12">KRB Stage</b>`}
           ${c && c.next ? `<span>A continuación · <em>${esc(c.next.time)}</em> ${esc(c.next.label)}</span>` : ''}</div></div>`;
+      } else if (stage === 'info') {
+        // La información que va cambiando (pedido de Cote: lo que se ve por defecto en el GC), en una franja abajo para no
+        // tapar la transmisión; cambia cada 9 segundos
+        const cap = (t) => String(t || '').toLocaleLowerCase('es').replace(/(^|[\s:(«"-])(\p{L})/gu, (m, a, b) => a + b.toLocaleUpperCase('es'));
+        const slides = [];
+        if (c && c.current) slides.push(['⏱️ Esta noche', `<b style="--n:${String(c.current.label).length}">${esc(cap(c.current.label))}</b><span>Ahora · desde las <em>${esc(c.current.time)}</em></span>${c.next ? `<span>A continuación · <em>${esc(c.next.time)}</em> ${esc(cap(c.next.label))}</span>` : ''}`]);
+        else if (c && c.next) slides.push(['⏱️ Esta noche', `<b style="--n:${String(c.next.label).length}">${esc(cap(c.next.label))}</b><span>Desde las <em>${esc(c.next.time)}</em></span>`]);
+        if (c && c.show) slides.push(['⭐ Show de hoy', `<b style="--n:${String(c.show).length}">${esc(c.show)}</b>`]);
+        if (c && c.blocks && c.blocks.length) slides.push(['🕗 Horarios de hoy', `<span class="lg-line">${c.blocks.map((b) => `<em>${esc(b.time)}</em> ${esc(cap(b.label))}`).join(' · ')}</span>`]);
+        const week = c && c.week ? c.week.filter((d) => d.show || (d.hours && d.hours.length)).slice(0, 4) : [];
+        if (week.length) slides.push(['📅 Esta semana', `<span class="lg-line">${week.map((d) => `<em>${esc(dayName(d.day))} ${d.date}</em> ${esc(cap(d.show || (d.hours[0] || {}).label || ''))}`).join(' · ')}</span>`]);
+        if (c && c.month && c.month.length) slides.push(['🗓️ Cartelera del mes', `<span class="lg-line">${c.month.slice(0, 4).map((d) => `<em>${esc(cap(d.day))}</em> ${esc(cap(d.show))}`).join(' · ')}</span>`]);
+        if (!slides.length) slides.push(['🎶 Bienvenidos', '<b style="--n:10">KRB Stage</b><span>Música, shows y karaoke</span>']);
+        const [title, main] = slides[Math.floor(Date.now() / 9000) % slides.length];
+        box.innerHTML = `<div class="lg-card lg-bottom lg-info">
+          <div class="lg-tag"><small>${esc(c ? c.name : VENUES[st.venue] || '')}</small><b>${title}</b></div>
+          <div class="lg-main">${main}</div></div>`;
       } else if (stage === 'cartelera') {
         box.innerHTML = `<div class="lg-card lg-week"><div class="lg-head"><small>${esc(c ? c.name : '')}</small><b>📅 Cartelera de la semana</b></div>
           ${c && c.week.length ? weekHTML(c) : '<p class="lg-empty">Pronto la cartelera de la semana</p>'}</div>`;
