@@ -172,7 +172,8 @@ main,footer{position:relative;z-index:1}
   body .portada .envoltura>*{order:1;position:relative;margin:18px max(20px,env(safe-area-inset-left,0px)) 0}
   body .portada .envoltura>.etiqueta{margin-top:16px}
   .video-portada{order:2;position:relative;inset:auto;z-index:1;margin:22px 20px 0;width:calc(100% - 40px);border-radius:12px}
-  body .portada .envoltura>.fila-datos{order:3;margin:18px 20px 24px}
+  body .portada .envoltura>.fila-datos{order:3;margin:18px 20px 0}
+  body .portada .envoltura>.fila-otros{margin:10px 20px 24px;font-family:var(--f-texto);gap:0 min(12px,2vw)}
   .velo{bottom:0}
 }
 .portada .envoltura{position:relative;padding-block:120px 96px;display:grid;gap:28px}
@@ -185,6 +186,9 @@ main,footer{position:relative;z-index:1}
 .fila-datos{display:flex;flex-wrap:wrap;gap:10px 28px;font-family:var(--f-dato);font-size:13px;color:var(--tenue)}
 .fila-datos span{display:flex;align-items:center;gap:8px}
 .fila-datos span::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--c)}
+.fila-otros{flex-wrap:nowrap;gap:6px 16px;font-size:11px;margin-top:-14px;white-space:nowrap}
+.fila-otros span{gap:5px}
+.fila-otros span::before{width:5px;height:5px}
 
 /* secciones */
 .banda{padding-block:110px}
@@ -649,11 +653,14 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
         <span style="--c:var(--kennedy)">Mercado Kennedy</span>
         <span style="--c:var(--frida)">Frida Kahlo</span>
         <span style="--c:var(--tobalaba)">Tobalaba</span>
-        <span style="--c:var(--foco)">Panorámico</span>
-        <span style="--c:var(--foco)">Kairos</span>
-        <span style="--c:var(--foco)">Mercado del 14</span>
-        <span style="--c:var(--foco)">La Abuelita Rosa</span>
-        <span style="--c:var(--foco)">Helsinki Club</span>
+      </div>
+      <!-- otros lugares donde hemos producido: en una sola línea, más chicos -->
+      <div class="fila-datos fila-otros">
+        <span style="--c:#f4bf5a">Panorámico</span>
+        <span style="--c:#4fd08b">Mercado del 14</span>
+        <span style="--c:#9b7bff">La Abuelita Rosa</span>
+        <span style="--c:#ff8a3d">Helsinki Club</span>
+        <span style="--c:#2ec4b6">Kairos</span>
       </div>
     </div>
   </section>
@@ -1283,6 +1290,13 @@ elegirLocal('kennedy');
   if(!tactil){titulo.addEventListener('mouseenter',()=>portada.classList.add('foco'));
   portada.addEventListener('mouseleave',()=>portada.classList.remove('foco'))}
 
+})();
+
+/* ===== la fila de los otros lugares siempre en una sola línea: achica la letra hasta que quepa ===== */
+(function(){
+  const f=document.querySelector('.fila-otros');if(!f)return;
+  const ajustar=()=>{f.style.fontSize='';let t=parseFloat(getComputedStyle(f).fontSize);while(f.scrollWidth>f.clientWidth+1&&t>7){t-=.25;f.style.fontSize=t+'px'}};
+  ajustar();addEventListener('resize',ajustar);document.fonts&&document.fonts.ready.then(ajustar);
 })();
 
 /* ===== red de conexiones en toda la página ===== */
