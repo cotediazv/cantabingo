@@ -1839,3 +1839,7 @@ body.kids main { padding-top: 10px; padding-bottom: 20px; }
 body.full { background: transparent; }
 body.full::before, #neural-bg { z-index: -1; }
 #lv { will-change: transform; z-index: 1; }
+
+/* Pantalla incrustada en otra página y vista en un celular (clase emb-cel, en app.js): el degradado de fondo queda
+   quieto (en el iPhone, al girar, se dibujaba encima de la información del local) */
+html.emb-cel body.full::before { animation: none; transform: none; }
