@@ -1040,7 +1040,7 @@ function pintarColumnas(){
     let nav=col.querySelector('.ptl-pag');if(nav)nav.remove();nav=null;
     if(paginas.length>1){nav=document.createElement('div');nav.className='ptl-pag';nav.innerHTML='<button class="ptl-pag-ant" aria-label="Página anterior">‹</button><span></span><button class="ptl-pag-sig" aria-label="Página siguiente">›</button>';caja.after(nav)}
     let pag=0,vs=[],encima=false,turno=0;
-    const libre=()=>caja._vista&&!encima&&pc.hidden&&!quieto&&!window.vivoEnPantalla;
+    const libre=()=>caja._vista&&!encima&&pc.hidden&&!quieto&&!window.vivoActivo;
     // se ven las 6 portadas y se mueve un solo video a la vez (los demás quedan quietos en su imagen)
     const jugar=()=>{if(!libre())return;vs.forEach((v,i)=>{if(i===turno){if(!v.getAttribute('src'))v.src=v.dataset.src;v.play().catch(()=>{})}else v.pause()})};
     const parar=()=>vs.forEach(v=>v.pause());
@@ -1060,7 +1060,7 @@ function pintarColumnas(){
     // con la pantalla completa abierta o mirando una transmisión en vivo)
     function reloj(){clearInterval(caja._reloj);caja._reloj=setInterval(()=>{if(!libre())return;turno++;if(turno>=vs.length){if(paginas.length>1)ir(1);else{turno=0;jugar()}}else jugar()},TURNO_MS)}
     caja.onmouseenter=()=>{encima=true};caja.onmouseleave=()=>{encima=false;jugar()};
-    addEventListener('vivo-cambio',()=>window.vivoEnPantalla?parar():jugar());
+    addEventListener('vivo-cambio',()=>window.vivoActivo?parar():jugar());
     pintar();reloj();if(paginas.length>1)portadas(1);
     if(!caja._obs){caja._obs=new IntersectionObserver(es=>es.forEach(en=>{caja._vista=en.isIntersecting&&en.intersectionRatio>=.4;caja._vista?jugar():parar()}),{threshold:[0,.4]});caja._obs.observe(caja)}
   });
@@ -1200,7 +1200,8 @@ elegirLocal('kennedy');
 (function(){
   const SALA='https://cantabingo.onrender.com/?mudo=1';
   const LOC={
-    krbstagekennedy:{n:'Mercado Kennedy',c:'var(--kennedy)',vertical:'#/vertical-in/kennedy'},
+    // copia liviana del video de la pantalla vertical (1 Mbps en vez de 11): si Cote sube un video nuevo, la Sala usa el original
+    krbstagekennedy:{n:'Mercado Kennedy',c:'var(--kennedy)',vertical:'#/vertical-in/kennedy',liviano:'https://www.krbstage.cl/vertical-kennedy.mp4',lver:'1794966023522'},
     krbstage3:{n:'Espacio Gastronómico Tobalaba',c:'var(--tobalaba)',horizontal:'#/pantalla/tobalaba'},
     krbstage:{n:'Frida Kahlo',c:'var(--frida)',horizontal:'#/tablero'}
   };
@@ -1208,18 +1209,19 @@ elegirLocal('kennedy');
   // las pantallas del local se dibujan a su tamaño real (1920x1080 o 1080x1920) y se achican para caber
   const escalar=()=>grilla.querySelectorAll('.pant').forEach(d=>{const f=d.firstElementChild;f.style.transform=`scale(${d.clientWidth/f.width})`});
   const obsPant=new ResizeObserver(escalar);obsPant.observe(grilla);
-  const pant=(clase,ruta,w,h,t)=>`<div class="pant ${clase}"><iframe src="${SALA}${ruta}" width="${w}" height="${h}" title="${t}" loading="lazy" tabindex="-1"></iframe></div>`;
+  const pant=(clase,ruta,w,h,t,L)=>`<div class="pant ${clase}"><iframe src="${SALA}${L&&L.liviano?`&liviano=${encodeURIComponent(L.liviano)}&lver=${L.lver}`:''}${ruta}" width="${w}" height="${h}" title="${t}" loading="lazy" tabindex="-1"></iframe></div>`;
   function revisar(){
     fetch('https://cantabingo.onrender.com/api/web/twitch',{signal:AbortSignal.timeout(10000)}).then(r=>r.json()).then(j=>{
       const vivos=(j.canales||[]).filter(c=>c.vivo&&LOC[c.canal]);
       const clave=vivos.map(c=>c.canal).join(',');
       if(clave===actuales)return;actuales=clave; // solo se rehace si cambió quién transmite
+      window.vivoActivo=vivos.length>0;dispatchEvent(new Event('vivo-cambio'));
       if(!vivos.length){grilla.innerHTML='';sec.hidden=true;return}
       const padres=['www.krbstage.cl','krbstage.cl',location.hostname].filter((x,i,a)=>x&&a.indexOf(x)===i).map(x=>'&parent='+x).join('');
       // nada encima del reproductor de Twitch (si algo lo tapa, Twitch lo pausa): las pantallas del local van al lado
       grilla.innerHTML=vivos.map(c=>{const L=LOC[c.canal];return `<div class="vivo-item${L.vertical?' con-vertical':' con-horizontal'}" style="--c:${L.c}">
         <div class="vivo-fila"><div class="vivo-marco"><iframe src="https://player.twitch.tv/?channel=${c.canal}${padres}&muted=true&autoplay=true" allowfullscreen allow="autoplay; fullscreen" title="En vivo desde ${esc(L.n)}"></iframe></div>
-        ${L.vertical?pant('pant-v',L.vertical,1080,1920,'Pantalla vertical del local'):pant('pant-h',L.horizontal,1920,1080,'Pantalla horizontal del local')}</div>
+        ${L.vertical?pant('pant-v',L.vertical,1080,1920,'Pantalla vertical del local',L):pant('pant-h',L.horizontal,1920,1080,'Pantalla horizontal del local')}</div>
         <div class="vivo-pie"><div><b>${esc(L.n)}</b>${c.vivo.title?`<small>${esc(c.vivo.title)}</small>`:''}</div><button type="button" class="vivo-pc">⛶ Pantalla completa</button></div></div>`}).join('');
       grilla.querySelectorAll('.pant').forEach(d=>obsPant.observe(d));
       grilla.querySelectorAll('.vivo-pc').forEach(b=>b.onclick=()=>pantallaCompleta(b.closest('.vivo-item').querySelector('.vivo-fila')));
@@ -1252,7 +1254,7 @@ elegirLocal('kennedy');
   const aLaVista=new Set();let tm=0;
   const vistos=new IntersectionObserver(es=>es.forEach(en=>{const v=en.target;if(en.isIntersecting)aLaVista.add(v);else{aLaVista.delete(v);v.pause()}}),{threshold:.5});
   const encimaM=()=>document.querySelector('.esp-mont:hover');
-  setInterval(()=>{if(quieto||!pc.hidden||encimaM())return;const lista=cards.map(c=>c.querySelector('video')).filter(v=>v&&aLaVista.has(v));if(!lista.length)return;tm=(tm+1)%lista.length;lista.forEach((v,i)=>{if(i===tm){if(!v.getAttribute('src'))v.src=v.dataset.src;v.play().catch(()=>{})}else v.pause()})},4000);
+  setInterval(()=>{if(quieto||!pc.hidden||encimaM()||window.vivoActivo)return;const lista=cards.map(c=>c.querySelector('video')).filter(v=>v&&aLaVista.has(v));if(!lista.length)return;tm=(tm+1)%lista.length;lista.forEach((v,i)=>{if(i===tm){if(!v.getAttribute('src'))v.src=v.dataset.src;v.play().catch(()=>{})}else v.pause()})},4000);
   // de a uno (y con un reintento) para no saturar la conexión con Instagram
   function poner(code,x){
     vids[code]=x;const card=cards.find(c=>c.dataset.code===code);if(!card)return;
@@ -1309,7 +1311,11 @@ elegirLocal('kennedy');
   v.src=innerWidth<800?'portada-720.mp4':'portada-1080.mp4';
   if(!quieto){v.autoplay=true;v.load();v.play().catch(()=>{})}
   // se pausa cuando no se ve o cuando hay una transmisión en vivo en pantalla (para no quitarle conexión)
-  let portadaVisible=true;const decidir=()=>{if(quieto)return;if(portadaVisible&&!window.vivoEnPantalla)v.play().catch(()=>{});else v.pause()};
+  const fuente=v.getAttribute('src');let portadaVisible=true;
+  const decidir=()=>{if(quieto)return;
+    if(window.vivoActivo){if(v.getAttribute('src')){v.pause();v.removeAttribute('src');v.load()}return} // con transmisión en vivo, la portada queda en su imagen y no baja video
+    if(!v.getAttribute('src')){v.src=fuente}
+    if(portadaVisible)v.play().catch(()=>{});else v.pause()};
   new IntersectionObserver(es=>{portadaVisible=es[0].isIntersecting;decidir()}).observe(v);addEventListener('vivo-cambio',decidir);
   const portada=$('.portada'),titulo=$('.portada h1');
   const tactil=matchMedia('(hover: none)').matches;
