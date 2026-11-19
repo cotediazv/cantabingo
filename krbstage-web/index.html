@@ -1093,6 +1093,9 @@ function activarSonido(){if(sonidoActivo)return;sonidoActivo=true;
   document.querySelectorAll('.vivo-marco>iframe').forEach(f=>{if(f.src.includes('muted=true'))f.src=f.src.replace('muted=true','muted=false')});
   ['pointerdown','keydown','touchend'].forEach(t=>removeEventListener(t,activarSonido,true))}
 ['pointerdown','keydown','touchend'].forEach(t=>addEventListener(t,activarSonido,true));
+// (pedido de Cote) cuando un video de Instagram termina, queda en su portada (no se repite ni queda en negro)
+document.addEventListener('ended',e=>{const v=e.target;if(v.tagName!=='VIDEO'||!v.closest('.ptl-grilla,.esp-media,#pc-pista'))return;
+  if(!v.dataset.src&&v.getAttribute('src'))v.dataset.src=v.getAttribute('src');v.removeAttribute('src');v.load()},true);
 window.recibirIg=d=>{igDatos=d;pintarFlyers();pintarColumnas()};
 // «Ver cartelera semanal» de cada local: baja a la cartelera con ese local elegido
 document.querySelectorAll('.ptl-cartelera').forEach(a=>a.addEventListener('click',()=>elegirLocal(a.dataset.local)));
@@ -1130,7 +1133,7 @@ function pintarColumnas(){
     function pintar(){
       vs.forEach(v=>{v.pause();v.removeAttribute('src');v.load()});
       const vids=paginas[pag].vids;
-      caja.innerHTML=vids.map((x,i)=>`<button data-i="${i}" aria-label="Ver video"><video muted playsinline loop preload="none" ${x.poster?(caja._cerca?`poster="${esc(x.poster)}"`:`data-poster="${esc(x.poster)}"`):''} data-src="${esc(x.url)}"></video></button>`).join('')+'<span class="ptl-vacio"></span>'.repeat(6-vids.length); // la página guarda el mismo alto
+      caja.innerHTML=vids.map((x,i)=>`<button data-i="${i}" aria-label="Ver video"><video muted playsinline preload="none" ${x.poster?(caja._cerca?`poster="${esc(x.poster)}"`:`data-poster="${esc(x.poster)}"`):''} data-src="${esc(x.url)}"></video></button>`).join('')+'<span class="ptl-vacio"></span>'.repeat(6-vids.length); // la página guarda el mismo alto
       vs=[...caja.querySelectorAll('video')];
       caja.querySelectorAll('button').forEach(b=>{sonarAlPasar(b,b.querySelector('video'));b.onclick=e=>{
         if(!activo){activarBloque(caja);return} // primer toque (celular): se activa el bloque
@@ -1156,7 +1159,7 @@ function pintarColumnas(){
 const pc=$('#pc'),pcPista=$('#pc-pista');let pcItems=[],pcI=0,pcSonido=true,pcAlCerrar=null;
 function pcMedio(x){if(x.img){const im=document.createElement('img');im.src=x.img;im.alt='';im.draggable=false;return im}
   if(x.yt||x.tw){const d=document.createElement('div');d.className='pc-emb';if(x.thumb)d.style.backgroundImage=`url("${x.thumb}")`;d._x=x;return d}
-  const v=document.createElement('video');v.playsInline=true;v.loop=true;v.preload='auto';if(x.poster)v.poster=x.poster;v.dataset.src=x.video;return v}
+  const v=document.createElement('video');v.playsInline=true;v.preload='auto';if(x.poster)v.poster=x.poster;v.dataset.src=x.video;return v}
 function pcMostrar(i,animar){
   pcI=Math.max(0,Math.min(pcItems.length-1,i));
   pcPista.style.transition=animar?'transform .3s ease':'none';
@@ -1368,7 +1371,7 @@ document.querySelectorAll('.esp-montados').forEach(g=>{const PRIMEROS=['DF4JT1kg
   // de a uno (y con un reintento) para no saturar la conexión con Instagram
   function poner(code,x){
     vids[code]=x;const card=cards.find(c=>c.dataset.code===code);if(!card)return;
-    const m=card.querySelector('.esp-media');const v=document.createElement('video');v.muted=true;v.loop=true;v.playsInline=true;v.preload='metadata';if(x.poster)v.poster=x.poster;v.dataset.src=x.url;m.prepend(v);vistos.observe(v);sonarAlPasar(card,v);
+    const m=card.querySelector('.esp-media');const v=document.createElement('video');v.muted=true;v.playsInline=true;v.preload='metadata';if(x.poster)v.poster=x.poster;v.dataset.src=x.url;m.prepend(v);vistos.observe(v);sonarAlPasar(card,v);
     card.querySelector('.esp-ver').textContent='▶ Pantalla completa';
     card.onclick=e=>{e.preventDefault();const lista=cards.filter(c=>vids[c.dataset.code]);abrirPC(lista.map(c=>({video:vids[c.dataset.code].url,poster:vids[c.dataset.code].poster})),lista.indexOf(card))};
   }
