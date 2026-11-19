@@ -1376,8 +1376,10 @@ elegirLocal('kennedy');
     // el conjunto del en vivo. Livianas, sin video (pedido de Cote; reemplaza las repeticiones)
     if(!(c&&c.vivo)){const d=document.createElement('div');d.className='ptl-vivo vivo-item con-vertical pantallas';
       d.innerHTML=`<div class="vivo-etq"><span class="rep-icono">▣</span><span style="white-space:nowrap">Pantallas del local</span></div>
-        <div class="vivo-fila">${pant('pant-h',rutaH(L),1920,1080,'Tablero del local')}${pant('pant-v',rutaV(L),1080,1920,'Pantalla vertical del local',L)}</div>`;
-      d.querySelectorAll('.pant').forEach(x=>obsPant.observe(x));return d}
+        <div class="vivo-fila">${pant('pant-h',rutaH(L),1920,1080,'Tablero del local')}${pant('pant-v',rutaV(L),1080,1920,'Pantalla vertical del local',L)}</div>
+        <div class="vivo-botones"><button type="button" class="vivo-pc vivo-full">⛶ Pantalla completa</button></div>`;
+      d.querySelectorAll('.pant').forEach(x=>obsPant.observe(x));
+      d.querySelector('.vivo-full').onclick=()=>pantallaCompleta(d.querySelector('.vivo-fila'));return d}
     const vivo=!!(c&&c.vivo),todos=(c&&c.videos||[]),limpios=todos.filter(v=>!v.muted),vods=limpios.length?limpios:todos;let i=0;
     if(!vivo&&!vods.length){const d=document.createElement('div');d.className='ptl-tw';d.innerHTML='<p class="tw-nada">Todavía no hay transmisiones guardadas de este local.</p>';return d}
     // sonido: un local a la vez (botón «Escuchar»); en la repetición se sigue desde el mismo punto al cambiar el sonido
