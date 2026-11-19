@@ -2,17 +2,20 @@
 // Pantalla vertical de un local: siempre el video de la cartelera del mes y, cuando empieza una actividad
 // en ese local (juegos de la sala completa o karaoke de la sala light), esa actividad. Ver vertical.js.
 (() => {
-  // Pantallas: verticales (de pie, la imagen se entrega girada) en los tres locales y una horizontal en Tobalaba
+  // Pantallas: verticales (de pie, la imagen se entrega girada) y horizontales, en los tres locales
   const SCREENS = {
     kennedy: { venue: 'kennedy', name: 'Kennedy', up: true },
+    // horizontales de Kennedy y Frida, con su propio video (pedido de Cote)
+    'kennedy-h': { venue: 'kennedy', name: 'Kennedy', up: false },
     frida: { venue: 'frida', name: 'Frida Kahlo', up: true },
+    'frida-h': { venue: 'frida', name: 'Frida Kahlo', up: false },
     'tobalaba-v': { venue: 'tobalaba', name: 'Tobalaba', up: true },
     tobalaba: { venue: 'tobalaba', name: 'Tobalaba', up: false },
   };
   const pick = (v) => (SCREENS[v] ? v : 'kennedy');
   const TOBA = 'El viernes se pone sola en «Automático» a las 18:00 y vuelve a «Siempre el video» a las 22:30.';
   const NIGHT = 'Jueves, viernes y sábado se pone sola en «Automático» a las 18:30 y vuelve a «Siempre el video» a las 00:30.';
-  const SCHEDULE = { kennedy: NIGHT, frida: NIGHT, tobalaba: TOBA, 'tobalaba-v': TOBA };
+  const SCHEDULE = { kennedy: NIGHT, frida: NIGHT, tobalaba: TOBA, 'tobalaba-v': TOBA, 'kennedy-h': NIGHT, 'frida-h': NIGHT };
   // Locales con sala light: en «Automático», si no hay juegos, se ve el fondo vertical de la sala light (#/light-v/<local>)
   const LIGHT = { kennedy: true, frida: true, 'tobalaba-v': true }; // pantallas que muestran el fondo vertical con la información
   const base = () => `${location.origin}${location.pathname}`;
@@ -82,62 +85,54 @@
   };
 
   // Panel: video del mes, modo y enlace para el decodificador
-  views.verticalctl = async (local) => {
-    if (!(await isAdmin())) return viewLogin();
-    const v = pick(local);
+  // Panel por local (pedido de Cote): una pestaña por local y, dentro, dos espacios, la pantalla vertical y la horizontal,
+  // cada una con su video, su modo y su enlace para el decodificador. #/verticalctl/<local> (también acepta una pantalla).
+  const VENUE_SCREENS = { kennedy: ['kennedy', 'kennedy-h'], frida: ['frida', 'frida-h'], tobalaba: ['tobalaba-v', 'tobalaba'] };
+  const VENUE_NAMES = { kennedy: 'Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' };
+  const NAMES = { video: '🎬 Video de la cartelera', sala: '🎲 Juegos (sala completa)', light: '💡 Información del local (QR, cartelera, horarios)', karaoke: '🎤 Karaoke (sala light)' };
+  // Un espacio (vertical u horizontal) dentro del panel del local
+  const screenBox = (root, v, onState) => {
     const up = SCREENS[v].up;
     const screenHash = up ? `#/vertical/${v}` : `#/pantalla/${v}`;
     const link = `${base()}${screenHash}`;
-    app.innerHTML = `<p class="back"><a href="#/control">← Centro de control</a></p>
-      <h1>📺 Pantalla ${up ? 'vertical' : 'horizontal'} · ${esc(SCREENS[v].name)}</h1>
-      <p class="vt-locales">${Object.entries(SCREENS).map(([k, x]) => `<a class="btn${k === v ? ' primary' : ''}" href="#/verticalctl/${k}">${esc(x.name)}${k === 'tobalaba' || k === 'tobalaba-v' ? ` · ${x.up ? 'vertical' : 'horizontal'}` : ''}</a>`).join('')}</p>
-      <div class="panel vt-now"><small>En pantalla ahora</small><b id="vt-show">…</b><span id="vt-why" class="muted small"></span></div>
-      <div class="panel"><h2>Qué mostrar</h2>
-        <div class="vt-modes">
-          <button data-mode="auto"><span>🔄</span>Automático<small>${LIGHT[v] ? 'Los juegos cuando hay; si no, el fondo con la información del local' : 'Video, y los juegos cuando empiezan'}</small></button>
-          <button data-mode="video"><span>🎬</span>Siempre el video</button>
-          <button data-mode="actividad"><span>🎤</span>Siempre la actividad</button>
-        </div>${SCHEDULE[v] ? `<p class="muted small">🕗 ${esc(SCHEDULE[v])}</p>` : ''}</div>
-      <div class="panel"><h2>Video de la cartelera</h2>
-        <div id="vt-cur"></div>
-        <form id="vt-up" class="vt-up"><input type="file" name="f" accept="video/mp4,video/*" required><button class="primary">Subir video</button></form>
+    root.innerHTML = `<h2 class="vt-col-title">${up ? '📱 Pantalla vertical' : '🖥️ Pantalla horizontal'}</h2>
+      <div class="panel"><h3>Video ${up ? 'vertical' : 'horizontal'}</h3>
+        <div class="vt-cur"></div>
+        <form class="vt-up"><input type="file" name="f" accept="video/mp4,video/*" required><button class="primary">Subir video ${up ? 'vertical' : 'horizontal'}</button></form>
         <div class="vt-prog" hidden><i></i><span></span></div>
-        <p class="muted small">Video ${up ? 'vertical' : 'horizontal'} en MP4, hasta 300 MB. El nuevo reemplaza al anterior y la pantalla lo toma sola.</p></div>
-      <div class="panel"><h2>Enlace para el decodificador</h2>
+        <p class="muted small">MP4 ${up ? 'vertical' : 'horizontal'}, hasta 300 MB (mejor menos de 150 MB). El nuevo reemplaza al anterior y la pantalla lo toma sola.</p></div>
+      <div class="panel vt-now"><small>En pantalla ahora</small><b class="vt-show">…</b><span class="vt-why muted small"></span></div>
+      <div class="panel"><h3>Enlace para el decodificador</h3>
         <p class="muted small">Se abre en el navegador del decodificador, en pantalla completa.${up ? ' Va girado, para la pantalla de pie.' : ''}</p>
-        <p><input class="vt-link" readonly value="${esc(link)}"> <button id="vt-copy">Copiar</button> <a class="btn" href="${screenHash}" target="_blank">Ver</a></p>
+        <p><input class="vt-link" readonly value="${esc(link)}"> <button class="vt-copy">Copiar</button> <a class="btn" href="${screenHash}" target="_blank">Ver</a></p>
         ${up ? `<p class="muted small">Sin girar (si el decodificador ya gira la imagen): <a href="#/vertical-in/${v}" target="_blank">${esc(`${base()}#/vertical-in/${v}`)}</a></p>` : ''}</div>`;
-    const NAMES = { video: '🎬 Video de la cartelera', sala: '🎲 Juegos (sala completa)', light: '💡 Fondo con la información del local (QR, cartelera, horarios)', karaoke: '🎤 Karaoke (sala light)' };
-    let alive = true;
-    const paint = (st) => {
-      $('#vt-show').textContent = st.show === 'sala' && !st.activity ? '🎲 Portada de la sala (no hay video subido)' : NAMES[st.show] || st.show;
-      $('#vt-why').textContent = st.mode === 'auto' ? (st.activity ? 'Hay una actividad en este local.' : 'No hay actividad en este local.') : 'Puesto a mano.';
-      document.querySelectorAll('[data-mode]').forEach((b) => b.classList.toggle('on', b.dataset.mode === st.mode));
-      $('#vt-cur').innerHTML = st.video
-        ? `<video class="vt-prev" src="/vertical/${v}.mp4?v=${st.video}" muted controls playsinline preload="metadata"></video>
-           <p class="muted small">Subido el ${esc(new Date(st.video).toLocaleString('es-CL', { dateStyle: 'medium', timeStyle: 'short' }))} · ${(st.size / 1048576).toFixed(0)} MB · <button id="vt-del" class="link">Quitar video</button></p>`
-        : '<p class="muted">Todavía no hay video subido.</p>';
-      const del = $('#vt-del');
-      if (del) del.onclick = async () => { if (!confirm('¿Quitar el video de la pantalla vertical?')) return; try { paint(await api('DELETE', `/api/vertical/${v}/video`)); } catch (err) { fail(err); } };
-    };
+    const q = (sel) => root.querySelector(sel);
     let lastSig = '';
+    const paint = (st) => {
+      q('.vt-show').textContent = st.show === 'sala' && !st.activity ? '🎲 Portada de la sala (no hay video subido)' : NAMES[st.show] || st.show;
+      q('.vt-why').textContent = st.mode === 'auto' ? (st.activity ? 'Hay una actividad en este local.' : 'No hay actividad en este local.') : 'Puesto a mano.';
+      onState(v, st);
+      q('.vt-cur').innerHTML = st.video
+        ? `<video class="vt-prev" src="/vertical/${v}.mp4?v=${st.video}" muted controls playsinline preload="metadata"></video>
+           <p class="muted small">Subido el ${esc(new Date(st.video).toLocaleString('es-CL', { dateStyle: 'medium', timeStyle: 'short' }))} · ${(st.size / 1048576).toFixed(0)} MB · <button class="link vt-del">Quitar video</button></p>`
+        : '<p class="muted">Todavía no hay video subido.</p>';
+      const del = q('.vt-del');
+      if (del) del.onclick = async () => { if (!confirm(`¿Quitar el video de la pantalla ${up ? 'vertical' : 'horizontal'}?`)) return; try { lastSig = ''; paint(await api('DELETE', `/api/vertical/${v}/video`)); } catch (err) { fail(err); } };
+    };
     const tick = async () => {
       const st = await api('GET', `/api/vertical/${v}`).catch(() => null);
-      if (!alive || !st) return;
+      if (!st || !root.isConnected) return;
       const sig = JSON.stringify(st);
       if (sig !== lastSig) { lastSig = sig; paint(st); }
     };
-    await tick();
-    const timer = setInterval(tick, 3000);
-    document.querySelectorAll('[data-mode]').forEach((b) => { b.onclick = async () => { try { paint(await api('POST', `/api/vertical/${v}/mode`, { mode: b.dataset.mode })); lastSig = ''; } catch (err) { fail(err); } }; });
-    $('#vt-copy').onclick = () => { const i = $('.vt-link'); i.select(); navigator.clipboard.writeText(i.value).then(() => toast('Enlace copiado'), () => {}); };
-    $('#vt-up').onsubmit = (e) => {
+    q('.vt-copy').onclick = () => { const i = q('.vt-link'); i.select(); navigator.clipboard.writeText(i.value).then(() => toast('Enlace copiado'), () => {}); };
+    q('.vt-up').onsubmit = (e) => {
       e.preventDefault();
       const f = e.target.f.files[0];
       if (!f) return;
       if (f.size > 300 * 1048576) { toast('El video pesa más de 300 MB'); return; }
       const btn = e.target.querySelector('button');
-      const prog = $('.vt-prog');
+      const prog = q('.vt-prog');
       btn.disabled = true;
       prog.hidden = false;
       const x = new XMLHttpRequest();
@@ -155,6 +150,41 @@
       x.onerror = () => { btn.disabled = false; prog.hidden = true; toast('Se cortó la subida'); };
       x.send(f);
     };
-    return () => { alive = false; clearInterval(timer); };
+    return { tick, reset: () => { lastSig = ''; } };
+  };
+  views.verticalctl = async (arg) => {
+    if (!(await isAdmin())) return viewLogin();
+    const venue = VENUE_SCREENS[arg] ? arg : SCREENS[pick(arg)].venue;
+    const pair = VENUE_SCREENS[venue];
+    // «Qué mostrar» es uno solo por local y se aplica a las dos pantallas, vertical y horizontal (pedido de Cote)
+    app.innerHTML = `<p class="back"><a href="#/control">← Centro de control</a></p>
+      <h1>📺 Pantallas · ${esc(VENUE_NAMES[venue])}</h1>
+      <p class="vt-locales">${Object.keys(VENUE_SCREENS).map((k) => `<a class="btn${k === venue ? ' primary' : ''}" href="#/verticalctl/${k}">${esc(VENUE_NAMES[k])}</a>`).join('')}</p>
+      <div class="panel vt-both"><h2>Qué mostrar <small class="muted">· las dos pantallas, vertical y horizontal</small></h2>
+        <div class="vt-modes">
+          <button data-mode="auto"><span>🔄</span>Automático<small>Los juegos cuando hay; si no, la vertical muestra la información del local y la horizontal, su video</small></button>
+          <button data-mode="video"><span>🎬</span>Siempre el video</button>
+          <button data-mode="actividad"><span>🎤</span>Siempre la actividad</button>
+        </div>${SCHEDULE[pair[0]] ? `<p class="muted small">🕗 ${esc(SCHEDULE[pair[0]])}</p>` : ''}</div>
+      <div class="vt-cols">${pair.map((v) => `<section class="vt-col" data-screen="${v}"></section>`).join('')}</div>`;
+    const modes = {};
+    const markModes = () => {
+      const [a, b] = pair.map((v) => modes[v]);
+      app.querySelectorAll('.vt-both [data-mode]').forEach((btn) => btn.classList.toggle('on', !!a && a === b && btn.dataset.mode === a));
+    };
+    const boxes = pair.map((v) => screenBox(app.querySelector(`.vt-col[data-screen="${v}"]`), v, (sv, st) => { modes[sv] = st.mode; markModes(); }));
+    const all = () => Promise.all(boxes.map((x) => x.tick()));
+    app.querySelectorAll('.vt-both [data-mode]').forEach((btn) => {
+      btn.onclick = async () => {
+        try {
+          await Promise.all(pair.map((v) => api('POST', `/api/vertical/${v}/mode`, { mode: btn.dataset.mode })));
+          boxes.forEach((x) => x.reset());
+          await all();
+        } catch (err) { fail(err); }
+      };
+    });
+    await all();
+    const timer = setInterval(all, 3000);
+    return () => clearInterval(timer);
   };
 })();

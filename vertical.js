@@ -9,7 +9,8 @@ const path = require('path');
 const VENUES = { frida: 'Frida Kahlo', kennedy: 'Kennedy', tobalaba: 'Tobalaba' };
 // Pantallas: cada una con su video y su modo; la actividad es la de su local. Pantallas verticales en los tres
 // locales (pedido de Cote) y, además, una horizontal en Tobalaba. La clave es también el nombre del archivo del video.
-const SCREENS = { kennedy: 'kennedy', frida: 'frida', 'tobalaba-v': 'tobalaba', tobalaba: 'tobalaba' }; // pantalla -> local
+// Kennedy y Frida tienen además su pantalla horizontal con su propio video (pedido de Cote, 19 nov: kennedy-h y frida-h).
+const SCREENS = { kennedy: 'kennedy', frida: 'frida', 'tobalaba-v': 'tobalaba', tobalaba: 'tobalaba', 'kennedy-h': 'kennedy', 'frida-h': 'frida' }; // pantalla -> local
 const MODES = ['auto', 'video', 'actividad'];
 const MAX_BYTES = 300 * 1024 * 1024; // 300 MB por video
 
@@ -43,6 +44,8 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
   // Si el servicio estaba reiniciándose justo a esa hora, se hace apenas vuelve (hasta 15 minutos después).
   const SCHEDULE = { kennedy: { days: ['Thu', 'Fri', 'Sat'], on: 18 * 60 + 30, off: 30 }, frida: { days: ['Thu', 'Fri', 'Sat'], on: 18 * 60 + 30, off: 30 }, tobalaba: { days: ['Fri'], on: 18 * 60, off: 22 * 60 + 30 } };
   SCHEDULE['tobalaba-v'] = SCHEDULE.tobalaba;
+  SCHEDULE['kennedy-h'] = SCHEDULE.kennedy; // la horizontal sigue el mismo horario que la vertical de su local
+  SCHEDULE['frida-h'] = SCHEDULE.frida;
   const NEXT = { Thu: 'Fri', Fri: 'Sat', Sat: 'Sun' };
   setInterval(() => {
     const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
