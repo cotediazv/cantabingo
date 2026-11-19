@@ -1676,7 +1676,7 @@ document.querySelectorAll('.esp-montados').forEach(g=>{const PRIMEROS=['DF4JT1kg
   const v=$('#video-portada');
   // video de 20 segundos que se repite (2,9 MB; el de 1080 para pantallas grandes). Primero se ve la foto y el
   // video parte recién cuando la página terminó de cargar, para que lo demás aparezca antes
-  const fuente=innerWidth*Math.min(devicePixelRatio||1,1.5)<1700?'portada-720.mp4':'portada-1080.mp4';
+  const fuente=(innerWidth*Math.min(devicePixelRatio||1,1.5)<1200?'portada-720.mp4':'portada-1080.mp4')+'?v=2'; // v=2: mejor calidad (pedido de Cote)
   let portadaVisible=true,listo=false;
   const partir=()=>{listo=true;decidir()};
   if(document.readyState==='complete')setTimeout(partir,300);else addEventListener('load',()=>setTimeout(partir,300));
