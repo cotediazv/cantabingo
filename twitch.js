@@ -4,7 +4,7 @@
 const CANALES = ['krbstage3', 'krbstage', 'krbstagekennedy'];
 const API = process.env.TWITCH_TEST_URL || 'https://api.twitch.tv/helix'; // TWITCH_TEST_URL solo para pruebas locales
 const AUTH = process.env.TWITCH_AUTH_TEST_URL || 'https://id.twitch.tv/oauth2/token';
-const CACHE_MS = 5 * 60e3; // se revisa cada 5 minutos (para saber si están en vivo)
+const CACHE_MS = 60e3; // se revisa cada minuto (para que la página pase pronto a la señal en vivo)
 
 module.exports = function twitch({ app }) {
   let token = null; // { value, until }
