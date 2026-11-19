@@ -530,6 +530,28 @@ h2{margin-top:8px}
   .desliza{display:block;margin-top:10px;font-family:var(--f-dato);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--tenue);text-align:center}
 }
 .desliza{display:none}
+/* ===== A la medida: los montados en una sola fila que se desliza hacia el lado (cabe en una pantalla) ===== */
+#medida .esp-cols{margin-top:clamp(16px,3vh,40px);gap:clamp(24px,3vw,48px)}
+#medida .esp-cols>*{min-width:0} /* la fila de montados se desliza dentro de su columna */
+#medida{padding-top:clamp(20px,4vh,48px)}
+@media (min-width:901px){#medida .esp-cols{grid-template-columns:1.4fr .6fr}}
+#medida h2{font-size:clamp(36px,min(7vw,9vh),88px)}
+#medida .esp-lista{gap:6px}
+#medida .esp-mont-tit{margin:clamp(12px,2.5vh,28px) 0 10px}
+.esp-fila{position:relative}
+#medida .esp-montados{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;padding-bottom:4px}
+#medida .esp-montados::-webkit-scrollbar{display:none}
+#medida .esp-montados>.esp-mont{flex:0 0 calc(min(32vh,300px) * .8);scroll-snap-align:start}
+.esp-flecha{position:absolute;top:calc(min(32vh,300px) / 2);transform:translateY(-50%);z-index:2;width:38px;height:38px;border-radius:50%;border:1px solid var(--foco);background:rgba(12,11,18,.8);color:var(--foco);font-size:20px;cursor:pointer}
+.esp-flecha.izq{left:-14px}.esp-flecha.der{right:-14px}
+#medida .esp-ejemplo{padding:clamp(16px,2.5vh,24px)}
+#medida .esp-ejemplo p{margin:0 0 10px}
+/* ===== Videos (YouTube y Twitch): el video del centro se ajusta al alto de la pantalla ===== */
+@media (min-width:721px){
+  .vid-card{flex-basis:min(600px,calc((100vh - 330px) * 16 / 9))}
+  .vid-pista{padding-inline:calc(50% - min(600px,calc((100vh - 330px) * 16 / 9)) / 2)}
+}
+@media (max-width:720px){#medida .esp-montados>.esp-mont{flex-basis:42vw}.esp-flecha{display:none}}
 .ptl-pag{display:flex;align-items:center;justify-content:center;gap:14px;color:var(--tenue);font-family:var(--f-dato);font-size:13px}
 .ptl-pag button{width:36px;height:36px;border-radius:50%;border:1px solid var(--c);background:transparent;color:var(--c);font-size:18px;cursor:pointer}
 .ptl-pag button:disabled{opacity:.3;cursor:default}
@@ -831,6 +853,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
             <li><span><strong>Exclusivo:</strong> la banda y la producción son de KRB Stage.</span></li>
           </ul>
           <div class="etiqueta esp-mont-tit">Actualmente tenemos montado</div>
+          <div class="esp-fila"><button class="esp-flecha izq" type="button" aria-label="Anteriores">‹</button><button class="esp-flecha der" type="button" aria-label="Siguientes">›</button>
           <div class="esp-montados">
             <a class="esp-mont" data-code="DbfKhfKM2E4" href="https://www.instagram.com/reel/DbfKhfKM2E4/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Pet Shop Boys</b></a>
             <a class="esp-mont" data-code="DbggHTrBw98" href="https://www.instagram.com/reel/DbggHTrBw98/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Depeche Mode vs Pet Shop Boys</b></a>
@@ -847,6 +870,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
             <a class="esp-mont" data-code="DHOdA7Fx6F1" href="https://www.instagram.com/reel/DHOdA7Fx6F1/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Rock a la carta</b><small>por Nano Cabrera</small></a>
             <a class="esp-mont" data-code="Da-bsOQzxl3" href="https://www.instagram.com/reel/Da-bsOQzxl3/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Alanis Morissette</b><small>por Loretto Canales</small></a>
             <a class="esp-mont" data-code="Dd1h9J9O8th" href="https://www.instagram.com/reel/Dd1h9J9O8th/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Bingo con banda</b><small>por Gonzalo de Santa María</small></a>
+          </div>
           </div>
         </div>
         <div class="esp-ejemplo">
@@ -1293,6 +1317,8 @@ elegirLocal('kennedy');
   revisar();setInterval(revisar,60000); // revisa cada minuto
 })();
 
+/* flechas de la fila de montados */
+document.querySelectorAll('.esp-fila').forEach(f=>{const pista=f.querySelector('.esp-montados');f.querySelector('.esp-flecha.izq').onclick=()=>pista.scrollBy({left:-pista.clientWidth*.8});f.querySelector('.esp-flecha.der').onclick=()=>pista.scrollBy({left:pista.clientWidth*.8})});
 /* ===== Espectáculos montados: los videos que están en nuestras cuentas se ven aquí mismo ===== */
 (function(){
   const PROPIOS={'Da-bsOQzxl3':['kennedy','2026-07-19'],'Dd1h9J9O8th':['kennedy','2026-09-28'],'DHOdA7Fx6F1':['kennedy','2025-03-15'],'DF4JT1kg5JJ':['kennedy','2025-02-10'],'DbfKhfKM2E4':['panoramico','2026-08-01'],'C6UHh75RSbH':['kennedy','2024-04-28'],'DL-mzsnRP_I':['kennedy','2025-07-11'],'DbggHTrBw98':['panoramico','2026-08-01'],'DbjoqmEsPWX':['panoramico','2026-08-02'],'DZ2buyOzr6k':['kennedy','2026-06-21'],'DXgxo5XkR4L':['kennedy','2026-04-24'],'DXPdxdZk7zt':['kennedy','2026-04-17'],'DHi-9gmRhqF':['kennedy','2025-03-23'],'C98XDWgRxVh':['kennedy','2024-07-27'],'C3Zi9R4uET9':['kennedy','2024-02-16']};
