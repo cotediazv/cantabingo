@@ -802,7 +802,6 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
       <li><a href="#funciona">Cartelera</a></li>
       <li><a href="#gancho">Para tu local</a></li>
       <li><a href="#contacto">Contacto</a></li>
-      <li><a href="#videos">Videos</a></li>
     </ul>
   </div>
 </header>
@@ -1042,22 +1041,6 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
         <button class="enviar" type="submit">Enviar</button>
         <p class="aviso" id="aviso" aria-live="polite"></p>
       </form>
-    </div>
-  </section>
-  <section class="banda videos" id="videos">
-    <div class="envoltura">
-      <div class="cabeza-videos">
-        <div>
-          <div class="etiqueta">Videos</div>
-          <h2>Nuestros shows en video</h2>
-        </div>
-        <a class="canal" href="https://www.youtube.com/@krbstage" target="_blank" rel="noopener"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="7" width="26" height="18" rx="6"/><path d="M13.5 11.5v9l8-4.5z"/></svg>Ver el canal en YouTube</a>
-      </div>
-      <div class="vid-carrusel">
-        <button class="ig-flecha izq" id="vid-izq" aria-label="Video anterior">‹</button>
-        <div class="vid-pista" id="vid-pista"></div>
-        <button class="ig-flecha der" id="vid-der" aria-label="Video siguiente">›</button>
-      </div>
     </div>
   </section>
 </main>
@@ -1718,7 +1701,8 @@ document.querySelectorAll('.esp-montados').forEach(g=>{const PRIMEROS=['DF4JT1kg
   const RESPALDO_YT=[{"id":"lWdVEoW83eE","title":"BACKSTAGE TRIBUTO A BACKSTREET BOYS JUE 30-04-26","published":"2026-05-01T19:08:27+00:00"},{"id":"dRagJkvD_f0","title":"JUEGO DE SEDUCCION - TRIO STEREO EN VIVO","published":"2026-02-28T04:23:58+00:00"},{"id":"rxT68zBbxdY","title":"UN MILLON DE AÑOS LUZ - TRIO STEREO EN VIVO","published":"2026-02-28T03:39:08+00:00"},{"id":"yG2reoYvH38","title":"I WANT TO BREAK FREE - RAPSODIA TRIBUTO A QUEEN - ESPACIO GASTRONOMICO - MALL PLAZA TOBALABA","published":"2025-03-24T16:39:21+00:00"},{"id":"d8TQOCHR72s","title":"BED OF ROSES - ROCK JOVI en vivo Espacio Gastronómico Tobalaba - 1 Febrero 2025","published":"2025-02-02T05:36:34+00:00"}];
   const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   const fecha=t=>{const d=new Date(t);return isNaN(d)?'':`${d.getDate()} ${MESES[d.getMonth()]} ${d.getFullYear()}`};
-  const pista=$('#vid-pista');let yt=RESPALDO_YT,tw=[],vivos=[];
+  const pista=$('#vid-pista');if(!pista)return; // la sección de videos se quitó (pedido de Cote)
+  let yt=RESPALDO_YT,tw=[],vivos=[];
   function lista(){
     const todos=[...yt.map(v=>({titulo:v.title,fecha:v.published,thumb:`https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`,marca:'YouTube',yt:v.id})),
       ...tw.filter(v=>!v.muted).map(v=>({titulo:v.title,fecha:v.published,thumb:v.thumbnail,marca:'Twitch',tw:{video:v.id}}))].sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
