@@ -52,10 +52,13 @@
         if (ver) { video.src = liviano || `/vertical/${v}.mp4?v=${ver}`; video.play().catch(() => {}); } else video.removeAttribute('src');
       }
       const venue = SCREENS[v].venue; // la actividad es la del local de esta pantalla
+      // Con la información del local en pantalla, se sigue lo que el equipo elige en el panel de la sala light del local
+      // (Karaoke, Show y lo que viene, Cartelera, QR grande y lista); «Nada» deja la información con los shows que vienen
+      if (st.show === 'light') st.show = { karaoke: 'karaoke', qr: 'light-qr', show: 'light-show' }[st.lightStage] || 'light';
       if (st.show === 'karaoke' && !lightId) lightId = ((await api('GET', `/api/light?local=${venue}`).catch(() => ({}))) || {}).id || '';
       // Fondo de la sala light cuando toca; sin video subido y sin actividad en este local: el logo (no el tablero de la
       // sala abierta, que puede ser de otro local)
-      const want = st.show === 'video' ? 'video' : st.show === 'light' ? `#/light-v/${venue}` : !st.activity ? 'video' : st.show === 'karaoke' ? `#/karaoke-v/${venue}/${lightId}` : '#/tablero';
+      const want = st.show === 'video' ? 'video' : st.show === 'light' ? `#/light-v/${venue}` : st.show === 'light-qr' ? `#/light-v/${venue}/qr` : st.show === 'light-show' ? `#/light-v/${venue}/show` : st.show === 'karaoke' ? `#/karaoke-v/${venue}/${lightId}` : !st.activity ? 'video' : '#/tablero';
       if (want === shown) return;
       shown = want;
       const isVideo = want === 'video';

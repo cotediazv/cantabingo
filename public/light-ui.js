@@ -296,25 +296,34 @@
   const SLIDE_MS = 9000;
   views['light-v'] = async (local) => {
     const v = NAMES[local] ? local : 'kennedy';
+    // #/light-v/<local>/qr: QR grande con los próximos en cantar · #/light-v/<local>/show: el show y lo de esta noche
+    const focus = (location.hash.split('/')[3] || '').replace(/[^a-z]/g, '');
     document.body.classList.add('full');
-    app.innerHTML = `<div id="lv" class="th-${v}"><header class="lv-top"><small>Esta noche en</small><b>${esc(NAMES[v])}</b><span class="lv-show" hidden></span></header>
+    app.innerHTML = `<div id="lv" class="th-${v}${focus === 'qr' ? ' lv-qrmode' : ''}"><header class="lv-top"><small>Esta noche en</small><b>${esc(NAMES[v])}</b><span class="lv-show" hidden></span></header>
       <section class="lv-card"><div class="lv-slide"></div><div class="lv-dots"></div></section>
       <footer class="lv-qr"><div class="lv-qrbox"></div><div class="lv-qrtext"><b>Únete desde tu celular</b><span>Pide tu canción de karaoke y mira la cartelera</span></div></footer></div>`;
     let alive = true;
     let cart = null;
     let kar = null;
     let idx = 0;
+    let joinUrl = '';
     // Tobalaba no usa sala light: su QR es para entrar a la sala de juegos
     if (v === 'tobalaba') {
-      $('.lv-qrbox').innerHTML = qr(`${location.origin}${location.pathname}#/jugar`);
+      joinUrl = `${location.origin}${location.pathname}#/jugar`;
+      $('.lv-qrbox').innerHTML = qr(joinUrl);
       $('.lv-qrtext span').textContent = 'Juega con nosotros y mira la cartelera';
     } else {
       const light = await api('GET', `/api/light?local=${v}`).catch(() => null);
-      if (light && light.id) $('.lv-qrbox').innerHTML = qr(`${location.origin}${location.pathname}#/l/${light.id}`);
+      if (light && light.id) { joinUrl = `${location.origin}${location.pathname}#/l/${light.id}`; $('.lv-qrbox').innerHTML = qr(joinUrl); }
     }
     // Qué recuadros hay para mostrar (solo los que tienen algo)
     const slides = () => {
       const out = [];
+      if (focus === 'qr') {
+        const list = (kar && kar.list) || [];
+        return [`<h2>📱 Únete desde tu celular</h2><div class="lv-bigqr">${joinUrl ? qr(joinUrl) : ''}</div><p class="lv-bigqr-text">${v === 'tobalaba' ? 'Juega con nosotros y mira la cartelera' : 'Pide tu canción de karaoke y mira la cartelera'}</p>
+          ${list.length ? `<h2>🎤 Próximos en cantar</h2><ol class="lv-list">${list.slice(0, 4).map((p) => `<li><b>${esc(p.name)}</b><span>${esc(p.song)}</span></li>`).join('')}</ol>` : ''}`];
+      }
       if (kar && kar.list && kar.list.length) {
         const [a, ...rest] = kar.list;
         out.push(`<h2>🎤 Karaoke</h2><div class="lv-now"><small>Ahora canta</small><b>${esc(a.name)}</b><span>${esc(a.song)}${a.artist ? ` · ${esc(a.artist)}` : ''}</span></div>
@@ -330,6 +339,11 @@
       if (cart && cart.blocks && cart.blocks.length) out.push(`<h2>🕗 Horarios de hoy</h2><ul class="lv-hours">${cart.blocks.map((b) => `<li class="${cart.current && cart.current.time === b.time ? 'on' : ''}"><em>${esc(b.time)}</em><b>${esc(cap(b.label))}</b></li>`).join('')}</ul>`);
       if (cart && cart.week && cart.week.length) out.push(`<h2>📅 Esta semana</h2><ul class="lv-week">${cart.week.slice(0, 5).map((d) => `<li class="${d.today ? 'on' : ''}"><em>${esc(day(d.day))} ${d.date}</em><b>${esc(cap(d.show || (d.hours[0] || {}).label || ''))}</b></li>`).join('')}</ul>`);
       if (cart && cart.month && cart.month.length) out.push(`<h2>🗓️ Cartelera del mes</h2><ul class="lv-week">${cart.month.slice(0, 6).map((d) => `<li><em>${esc(cap(d.day))}</em><b>${esc(cap(d.show))}</b></li>`).join('')}</ul>`);
+      if (focus === 'show') {
+        const keep = out.filter((x) => x.startsWith('<h2>⏱️') || x.startsWith('<h2>🕗'));
+        if (cart && cart.show) keep.unshift(`<h2>⭐ El show de esta noche</h2><div class="lv-now"><b>${esc(cap(cart.show))}</b></div>`);
+        if (keep.length) return keep;
+      }
       if (!out.length) out.push('<h2>🎶 Bienvenidos</h2><div class="lv-now"><b>KRB Stage</b><span>Música, shows y karaoke</span></div>');
       return out;
     };
