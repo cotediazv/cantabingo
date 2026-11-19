@@ -504,7 +504,17 @@ main,footer{position:relative;z-index:1}
 .pant-v{aspect-ratio:9/16}
 .pant-h{aspect-ratio:16/9}
 .con-horizontal .vivo-fila{grid-template-columns:1fr 28%}
-@media (max-width:720px){.con-vertical .vivo-fila,.con-horizontal .vivo-fila{grid-template-columns:1fr}.pant-v{width:45%;justify-self:center}.pant-h{width:60%;justify-self:center}}
+@media (max-width:720px){.vivo-fila{gap:8px}.con-vertical .vivo-fila{grid-template-columns:1fr calc((100% - 8px) * .2404)}}
+/* transmisión + pantalla del local: siempre juntas, también en pantalla completa */
+.vivo-pie{display:flex;align-items:start;justify-content:space-between;gap:12px}
+.vivo-pie>div{display:grid;gap:4px}
+.vivo-pc{flex:none;border:1px solid var(--c);background:transparent;color:var(--c);border-radius:999px;padding:7px 14px;font:700 13px var(--f-texto);cursor:pointer}
+.vivo-pc:hover{background:var(--c);color:var(--noche)}
+.vivo-fila:fullscreen,.vivo-fila.pc-falso{background:#000;display:grid;align-content:center;justify-content:center;padding:0}
+.vivo-fila.pc-falso{position:fixed;inset:0;z-index:80}
+.con-vertical .vivo-fila:fullscreen,.con-vertical .vivo-fila.pc-falso{grid-template-columns:min(calc((100vw - 14px) * .7596),calc(100vh * 16 / 9)) min(calc((100vw - 14px) * .2404),calc(100vh * 9 / 16 * 9 / 16 * 16 / 9))}
+.con-horizontal .vivo-fila:fullscreen,.con-horizontal .vivo-fila.pc-falso{grid-template-columns:min(72vw,calc(100vh * 16 / 9)) min(28vw,calc(100vh * 16 / 9 * .389))}
+.pc-cerrar{position:fixed;top:12px;right:12px;z-index:81;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;border-radius:999px;padding:8px 14px;font:700 14px var(--f-texto)}
 .vivo-item{display:grid;gap:8px}
 .vivo-marco{position:relative;aspect-ratio:16/9;border-radius:12px;overflow:hidden;border:1px solid var(--c);background:#000}
 .vivo-marco>iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
@@ -1197,7 +1207,7 @@ elegirLocal('kennedy');
   const sec=$('#envivo'),grilla=$('#vivo-grilla');let actuales='';
   // las pantallas del local se dibujan a su tamaño real (1920x1080 o 1080x1920) y se achican para caber
   const escalar=()=>grilla.querySelectorAll('.pant').forEach(d=>{const f=d.firstElementChild;f.style.transform=`scale(${d.clientWidth/f.width})`});
-  new ResizeObserver(escalar).observe(grilla);
+  const obsPant=new ResizeObserver(escalar);obsPant.observe(grilla);
   const pant=(clase,ruta,w,h,t)=>`<div class="pant ${clase}"><iframe src="${SALA}${ruta}" width="${w}" height="${h}" title="${t}" loading="lazy" tabindex="-1"></iframe></div>`;
   function revisar(){
     fetch('https://cantabingo.onrender.com/api/web/twitch',{signal:AbortSignal.timeout(10000)}).then(r=>r.json()).then(j=>{
@@ -1210,11 +1220,27 @@ elegirLocal('kennedy');
       grilla.innerHTML=vivos.map(c=>{const L=LOC[c.canal];return `<div class="vivo-item${L.vertical?' con-vertical':' con-horizontal'}" style="--c:${L.c}">
         <div class="vivo-fila"><div class="vivo-marco"><iframe src="https://player.twitch.tv/?channel=${c.canal}${padres}&muted=true&autoplay=true" allowfullscreen allow="autoplay; fullscreen" title="En vivo desde ${esc(L.n)}"></iframe></div>
         ${L.vertical?pant('pant-v',L.vertical,1080,1920,'Pantalla vertical del local'):pant('pant-h',L.horizontal,1920,1080,'Pantalla horizontal del local')}</div>
-        <b>${esc(L.n)}</b>${c.vivo.title?`<small>${esc(c.vivo.title)}</small>`:''}</div>`}).join('');
+        <div class="vivo-pie"><div><b>${esc(L.n)}</b>${c.vivo.title?`<small>${esc(c.vivo.title)}</small>`:''}</div><button type="button" class="vivo-pc">⛶ Pantalla completa</button></div></div>`}).join('');
+      grilla.querySelectorAll('.pant').forEach(d=>obsPant.observe(d));
+      grilla.querySelectorAll('.vivo-pc').forEach(b=>b.onclick=()=>pantallaCompleta(b.closest('.vivo-item').querySelector('.vivo-fila')));
       sec.hidden=false;requestAnimationFrame(escalar);
     }).catch(()=>{});
   }
   new IntersectionObserver(es=>{window.vivoEnPantalla=es[0].intersectionRatio>=.35&&!sec.hidden;dispatchEvent(new Event('vivo-cambio'))},{threshold:[0,.35,.7]}).observe(sec);
+  // pantalla completa del conjunto (transmisión + pantalla del local). En el iPhone, que no deja poner
+  // en pantalla completa algo que no sea un video, el conjunto llena la pantalla igual (con botón para salir)
+  function pantallaCompleta(fila){
+    if(fila.requestFullscreen&&document.fullscreenEnabled){fila.requestFullscreen().then(()=>{try{screen.orientation.lock('landscape').catch(()=>{})}catch(_){}}).catch(()=>falso(fila));return}
+    if(fila.webkitRequestFullscreen){fila.webkitRequestFullscreen();return}
+    falso(fila);
+  }
+  function falso(fila){
+    fila.classList.add('pc-falso');document.documentElement.style.overflow='hidden';
+    const x=document.createElement('button');x.className='pc-cerrar';x.textContent='✕ Salir';document.body.appendChild(x);
+    x.onclick=()=>{fila.classList.remove('pc-falso');document.documentElement.style.overflow='';x.remove();requestAnimationFrame(escalar)};
+    requestAnimationFrame(escalar);
+  }
+  document.addEventListener('fullscreenchange',()=>requestAnimationFrame(escalar));
   revisar();setInterval(revisar,60000); // revisa cada minuto
 })();
 
