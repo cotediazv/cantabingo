@@ -42,7 +42,11 @@
       if (!alive || !st) return;
       if (st.video !== ver) {
         ver = st.video;
-        if (ver) { video.src = `/vertical/${v}.mp4?v=${ver}`; video.play().catch(() => {}); } else video.removeAttribute('src');
+        // La página web (krbstage.cl) puede pasar una copia liviana del mismo video (?liviano=<dirección>&lver=<versión>),
+        // para no quitarle conexión a la transmisión en vivo; solo se usa si es de esta misma versión
+        const q = new URLSearchParams(location.search);
+        const liviano = q.get('liviano') && q.get('lver') === String(ver) ? q.get('liviano') : '';
+        if (ver) { video.src = liviano || `/vertical/${v}.mp4?v=${ver}`; video.play().catch(() => {}); } else video.removeAttribute('src');
       }
       const venue = SCREENS[v].venue; // la actividad es la del local de esta pantalla
       if (st.show === 'karaoke' && !lightId) lightId = ((await api('GET', `/api/light?local=${venue}`).catch(() => ({}))) || {}).id || '';
