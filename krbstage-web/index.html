@@ -1343,7 +1343,7 @@ elegirLocal('kennedy');
   // (con la pantalla del local al lado) o, si no está transmitiendo, sus últimas transmisiones guardadas.
   // Se prende solo cuando algún local está en vivo (salvo que la persona lo haya movido a mano).
   const sw=$('#sw-twitch'),punto=document.querySelector('.ptl-switch .punto-vivo');
-  let datosTw=[],aMano=false,clave='',canalSonando=null;
+  let datosTw=[],aMano=false,clave='',canalSonando=null;const ultimoVivo={};
   sw.addEventListener('change',()=>{aMano=true;pintar()});
   // las pantallas del local se dibujan a su tamaño real (1920x1080 o 1080x1920) y se achican para caber
   const escalar=()=>document.querySelectorAll('.ptl-vivo .pant').forEach(d=>{const f=d.firstElementChild;f.style.transform=`scale(${d.clientWidth/f.width})`});
@@ -1411,12 +1411,19 @@ elegirLocal('kennedy');
       const g=col.querySelector('.ptl-grilla');if(g&&g._apagar)g._apagar();
       col.querySelector('.ptl-prueba').after(packVivo(canal,L,c,fondo));
     }
+    // Twitch pide que su reproductor mida al menos 400x300 y esté a la vista (si no, lo pausa): en computador, la columna
+    // del local que transmite se ensancha y las otras se achican
+    const cont=document.querySelector('#tulocal .ptl-pruebas'),cols=[...cont.querySelectorAll(':scope>.ptl-col')];
+    const iv=modo?cols.findIndex(col=>col.dataset.modo==='vivo'):-1;
+    cont.style.gridTemplateColumns=iv<0?'':cols.map((_,j)=>j===iv?'minmax(0,3.4fr)':'minmax(0,1fr)').join(' ');
     requestAnimationFrame(escalar);
   }
   function revisar(){
     revisarLuz();
     fetch('https://cantabingo.onrender.com/api/web/twitch',{signal:AbortSignal.timeout(10000)}).then(r=>r.json()).then(j=>{
       datosTw=(j.canales||[]).filter(c=>LOC[c.canal]);
+      // si Twitch deja de informar un en vivo por un momento, no se corta la transmisión en la página: se espera 3 minutos
+      datosTw.forEach(c=>{const u=ultimoVivo[c.canal];if(c.vivo)ultimoVivo[c.canal]={v:c.vivo,at:Date.now()};else if(u&&Date.now()-u.at<180e3)c.vivo=u.v});
       const vivos=datosTw.filter(c=>c.vivo).map(c=>c.canal).sort().join(',');
       window.vivoActivo=!!vivos;dispatchEvent(new Event('vivo-cambio'));punto.hidden=!vivos;
       if(vivos&&!aMano)sw.checked=true; // se prende solo si alguien está en vivo
