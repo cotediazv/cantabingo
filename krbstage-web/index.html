@@ -616,6 +616,10 @@ h2{margin-top:8px}
 .vivo-pc:hover{background:var(--c);color:var(--noche)}
 .vivo-fila:fullscreen,.vivo-fila.pc-falso{background:#000;display:grid;align-content:center;justify-content:center;padding:0}
 .vivo-fila.pc-falso{position:fixed;inset:0;z-index:80}
+/* pantalla completa en el teléfono: alto real visible (sin las barras del navegador) */
+.vivo-fila.pc-falso.pc-v{grid-template-columns:min(calc((100vw - 14px) * .7596),calc(100dvh * 16 / 9)) min(calc((100vw - 14px) * .2404),calc(100dvh * 9 / 16));gap:14px}
+.vivo-fila.pc-falso.pc-h{grid-template-columns:min(72vw,calc(100dvh * 16 / 9)) min(28vw,calc(100dvh * 16 / 9 * .389));gap:14px}
+.pc-cerrar{z-index:90}
 .con-vertical .vivo-fila:fullscreen,.con-vertical .vivo-fila.pc-falso{grid-template-columns:min(calc((100vw - 14px) * .7596),calc(100vh * 16 / 9)) min(calc((100vw - 14px) * .2404),calc(100vh * 9 / 16 * 9 / 16 * 16 / 9))}
 .con-horizontal .vivo-fila:fullscreen,.con-horizontal .vivo-fila.pc-falso{grid-template-columns:min(72vw,calc(100vh * 16 / 9)) min(28vw,calc(100vh * 16 / 9 * .389))}
 .pc-cerrar{position:fixed;top:12px;right:12px;z-index:81;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;border-radius:999px;padding:8px 14px;font:700 14px var(--f-texto)}
@@ -1347,7 +1351,7 @@ elegirLocal('kennedy');
   let datosTw=[],aMano=false,clave='',canalSonando=null;const ultimoVivo={};
   sw.addEventListener('change',()=>{aMano=true;pintar()});
   // las pantallas del local se dibujan a su tamaño real (1920x1080 o 1080x1920) y se achican para caber
-  const escalar=()=>document.querySelectorAll('.ptl-vivo .pant').forEach(d=>{const f=d.firstElementChild;f.style.transform=`scale(${d.clientWidth/f.width})`});
+  const escalar=()=>document.querySelectorAll('.vivo-fila .pant').forEach(d=>{const f=d.firstElementChild;f.style.transform=`scale(${d.clientWidth/f.width})`});
   const obsPant=new ResizeObserver(escalar);
   // Kennedy y Frida: la pantalla vertical de la web es siempre la misma del local, tal cual (pedido de Cote, 19 nov:
   // si el local está en «Siempre el video», aquí también el video). El tablero horizontal sigue con la información.
@@ -1456,12 +1460,15 @@ elegirLocal('kennedy');
     if(fila.webkitRequestFullscreen){fila.webkitRequestFullscreen();return}
     falso(fila);
   }
+  // (en el iPhone) el conjunto se lleva al final de la página mientras dura, para que quede encima de todo (menú incluido)
   function falso(fila){
-    fila.classList.add('pc-falso');document.documentElement.style.overflow='hidden';
+    const padre=fila.parentNode,sig=fila.nextSibling,tipo=fila.closest('.con-vertical')?'pc-v':'pc-h';document.body.appendChild(fila);
+    fila.classList.add('pc-falso',tipo);document.documentElement.style.overflow='hidden';
     const x=document.createElement('button');x.className='pc-cerrar';x.textContent='✕ Salir';document.body.appendChild(x);
-    x.onclick=()=>{fila.classList.remove('pc-falso');document.documentElement.style.overflow='';x.remove();requestAnimationFrame(escalar)};
-    requestAnimationFrame(escalar);
+    x.onclick=()=>{fila.classList.remove('pc-falso',tipo);padre.insertBefore(fila,sig);document.documentElement.style.overflow='';x.remove();requestAnimationFrame(escalar)};
+    requestAnimationFrame(escalar);setTimeout(escalar,400);
   }
+  addEventListener('resize',()=>requestAnimationFrame(escalar)); // al girar el teléfono
   document.addEventListener('fullscreenchange',()=>requestAnimationFrame(escalar));
   revisar();setInterval(revisar,60000); // revisa cada minuto
 })();
