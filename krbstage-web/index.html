@@ -519,7 +519,7 @@ h2{margin-top:8px}
   #tulocal .ptl-pruebas,#producidos .ptl-pruebas{grid-template-rows:repeat(4,auto);row-gap:8px}
   #tulocal .ptl-col,#producidos .ptl-col{grid-row:span 4;grid-template-rows:subgrid;gap:0}
 }
-.ptl-col .ptl-grilla{width:min(100%,max(260px,calc((100vh - 430px) / 1.2)));justify-self:center}
+.ptl-col .ptl-grilla{width:min(100%,max(276px,calc((100vh - 430px) / 1.2 + 16px)));justify-self:center;gap:12px 14px} /* más separados entre sí */
 @media (max-width:900px){
   .banda{padding-block:clamp(32px,6vh,56px)}
   /* en el celular: un lugar por pantalla, y se pasa al siguiente deslizando hacia el lado */
