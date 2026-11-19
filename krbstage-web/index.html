@@ -1526,6 +1526,10 @@ elegirLocal('kennedy');
     fetch(API+v,{signal:AbortSignal.timeout(10000)}).then(r=>r.json()).then(j=>{if(Array.isArray(j.week)&&j.week.length){cartV[v]=j.week;if(visor)cabecera()}}).catch(()=>{});
   }
   let idxV=0;
+  // revisión: con ?diag=1 en la dirección, la cabecera muestra el atraso que mide el reproductor de Twitch
+  const DIAG=/[?&]diag=1/.test(location.search);
+  if(DIAG)setInterval(()=>{if(!visor)return;const L=ORDEN[idxV],p=L&&packs[L.local],d=visor.querySelector('.vt-diag');
+    if(d&&p)d.textContent=` · atraso ${p._atraso?p._atraso.toFixed(1)+' s':'sin dato'}`},2000);
   // En la pantalla completa solo funcionan las pantallas del local que se está mirando; las de los otros se apagan
   // (en el iPhone, tener las seis pantallas a la vez lo dejaba sin memoria y Safari recargaba la página)
   const despertar=f=>{if(f.dataset.dormida){f.src=f.dataset.dormida;delete f.dataset.dormida}};
@@ -1542,7 +1546,7 @@ elegirLocal('kennedy');
     if(dHoy&&dHoy.hours&&dHoy.hours.length)prog=`<b>Hoy desde las ${esc(dHoy.hours[0].time)}</b>${dHoy.show?`<span class="vt-show">⭐ ${esc(capi(dHoy.show))}</span>`:''}${lista(dHoy)}`;
     else{const d=w.find(d=>!d.today&&d.hours&&d.hours.length);if(d)prog=`<b>Próximo: ${esc(capi(d.day))} ${d.date} desde las ${esc(d.hours[0].time)}</b>${d.show?`<span class="vt-show">⭐ ${esc(capi(d.show))}</span>`:''}${lista(d)}`;else prog='<b>Pronto la cartelera de este local</b>'}
     visor.style.setProperty('--c',L.c);
-    visor.querySelector('.vt-l1').innerHTML=`<b class="vt-local">${esc(L.n)}</b>${vivo?'<span class="vt-estado vivo"><i class="vt-dot"></i>En vivo</span>':'<span class="vt-estado">▣ Pantalla del local</span>'}<span class="vt-fecha">${DIAS[hoy.getDay()]} ${hoy.getDate()} de ${MESL[hoy.getMonth()]}</span><span class="visor-puntos">${ORDEN.map((_,k)=>`<i class="visor-punto${k===idxV?' on':''}"></i>`).join('')}</span>`;
+    visor.querySelector('.vt-l1').innerHTML=`<b class="vt-local">${esc(L.n)}</b>${vivo?`<span class="vt-estado vivo"><i class="vt-dot"></i>En vivo${DIAG?'<b class="vt-diag"> · atraso …</b>':''}</span>`:'<span class="vt-estado">▣ Pantalla del local</span>'}<span class="vt-fecha">${DIAS[hoy.getDay()]} ${hoy.getDate()} de ${MESL[hoy.getMonth()]}</span><span class="visor-puntos">${ORDEN.map((_,k)=>`<i class="visor-punto${k===idxV?' on':''}"></i>`).join('')}</span>`;
     visor.querySelector('.vt-l2').innerHTML=prog;
   }
   function ajustarVisor(){
