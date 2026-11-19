@@ -90,7 +90,10 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
       const show = showOf(data, n);
       if (hours.length || show) week.push({ day: DAYS[n.dow], date: n.d, month: n.m, today: i === 0, show, hours });
     }
-    return { venue, name: VENUES[venue], show: showOf(data, today), blocks, current, next, week, at: g.at, error: g.error };
+    // Cartelera del mes (lo que queda desde hoy), para la pantalla vertical de la sala light
+    const month = data && today.m === monthOf(data) ? (data.cartelera || []).map((r) => ({ day: clean(r.dia, 20), date: Number((String(r.dia).match(/(\d+)\s*$/) || [])[1]) || 0, show: clean(r.show, 120) }))
+      .filter((r) => r.date >= today.d && r.show).sort((a, b) => a.date - b.date) : [];
+    return { venue, name: VENUES[venue], show: showOf(data, today), blocks, current, next, week, month, at: g.at, error: g.error };
   }
 
   // ---------- Estado ----------

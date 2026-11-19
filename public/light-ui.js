@@ -281,3 +281,63 @@
     return () => clearInterval(timer);
   };
 })();
+
+// Fondo vertical de la sala light (pedido de Cote), para las pantallas de pie de Kennedy y Frida cuando no hay juegos:
+// arriba lo de esta noche; al medio, un recuadro que va cambiando solo (ahora y a continuación, horarios de hoy, la semana,
+// la cartelera del mes y el karaoke cuando hay lista); abajo, grande, el QR para entrar a la sala light desde el celular.
+(() => {
+  const NAMES = { kennedy: 'Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' };
+  const DAYS = { LUNES: 'Lunes', MARTES: 'Martes', MIERCOLES: 'Miércoles', JUEVES: 'Jueves', VIERNES: 'Viernes', SABADO: 'Sábado', DOMINGO: 'Domingo' };
+  const day = (d) => DAYS[String(d || '').toUpperCase()] || String(d || '');
+  const cap = (t) => String(t || '').toLocaleLowerCase('es').replace(/(^|[\s:(«"-])(\p{L})/gu, (m, a, b) => a + b.toLocaleUpperCase('es'));
+  const SLIDE_MS = 9000;
+  views['light-v'] = async (local) => {
+    const v = NAMES[local] ? local : 'kennedy';
+    document.body.classList.add('full');
+    app.innerHTML = `<div id="lv" class="th-${v}"><header class="lv-top"><small>Esta noche en</small><b>${esc(NAMES[v])}</b><span class="lv-show" hidden></span></header>
+      <section class="lv-card"><div class="lv-slide"></div><div class="lv-dots"></div></section>
+      <footer class="lv-qr"><div class="lv-qrbox"></div><div class="lv-qrtext"><b>Únete desde tu celular</b><span>Pide tu canción de karaoke y mira la cartelera</span></div></footer></div>`;
+    let alive = true;
+    let cart = null;
+    let kar = null;
+    let idx = 0;
+    const light = await api('GET', `/api/light?local=${v}`).catch(() => null);
+    if (light && light.id) $('.lv-qrbox').innerHTML = qr(`${location.origin}${location.pathname}#/l/${light.id}`);
+    // Qué recuadros hay para mostrar (solo los que tienen algo)
+    const slides = () => {
+      const out = [];
+      if (kar && kar.list && kar.list.length) {
+        const [a, ...rest] = kar.list;
+        out.push(`<h2>🎤 Karaoke</h2><div class="lv-now"><small>Ahora canta</small><b>${esc(a.name)}</b><span>${esc(a.song)}${a.artist ? ` · ${esc(a.artist)}` : ''}</span></div>
+          ${rest.length ? `<ol class="lv-list" start="2">${rest.slice(0, 2).map((p) => `<li><b>${esc(p.name)}</b><span>${esc(p.song)}</span></li>`).join('')}</ol>` : ''}`);
+      }
+      if (cart && (cart.current || cart.next)) {
+        out.push(`<h2>⏱️ Esta noche</h2>${cart.current ? `<div class="lv-now"><small>Ahora</small><b>${esc(cap(cart.current.label))}</b><span>desde las ${esc(cart.current.time)}</span></div>` : ''}
+          ${cart.next ? `<div class="lv-now lv-next"><small>A continuación</small><b>${esc(cap(cart.next.label))}</b><span>a las ${esc(cart.next.time)}</span></div>` : ''}`);
+      }
+      if (cart && cart.blocks && cart.blocks.length) out.push(`<h2>🕗 Horarios de hoy</h2><ul class="lv-hours">${cart.blocks.map((b) => `<li class="${cart.current && cart.current.time === b.time ? 'on' : ''}"><em>${esc(b.time)}</em><b>${esc(cap(b.label))}</b></li>`).join('')}</ul>`);
+      if (cart && cart.week && cart.week.length) out.push(`<h2>📅 Esta semana</h2><ul class="lv-week">${cart.week.slice(0, 5).map((d) => `<li class="${d.today ? 'on' : ''}"><em>${esc(day(d.day))} ${d.date}</em><b>${esc(cap(d.show || (d.hours[0] || {}).label || ''))}</b></li>`).join('')}</ul>`);
+      if (cart && cart.month && cart.month.length) out.push(`<h2>🗓️ Cartelera del mes</h2><ul class="lv-week">${cart.month.slice(0, 6).map((d) => `<li><em>${esc(cap(d.day))}</em><b>${esc(cap(d.show))}</b></li>`).join('')}</ul>`);
+      if (!out.length) out.push('<h2>🎶 Bienvenidos</h2><div class="lv-now"><b>KRB Stage</b><span>Música, shows y karaoke</span></div>');
+      return out;
+    };
+    const paint = () => {
+      if (!alive || !$('#lv')) return;
+      const all = slides();
+      idx %= all.length;
+      $('.lv-slide').innerHTML = all[idx];
+      $('.lv-dots').innerHTML = all.length > 1 ? all.map((_, i) => `<i class="${i === idx ? 'on' : ''}"></i>`).join('') : '';
+      const show = $('.lv-show');
+      show.hidden = !(cart && cart.show);
+      if (cart && cart.show) show.textContent = `⭐ ${cap(cart.show)}`;
+    };
+    const loadCart = async () => { const c = await api('GET', `/api/light/cartelera?local=${v}`).catch(() => null); if (c) cart = c; };
+    const loadKar = async () => { const k = await api('GET', `/api/karaoke?local=${v}`).catch(() => null); if (k) kar = k; };
+    await Promise.all([loadCart(), loadKar()]);
+    paint();
+    const tSlide = setInterval(() => { idx++; paint(); }, SLIDE_MS);
+    const tCart = setInterval(loadCart, 60000);
+    const tKar = setInterval(loadKar, 5000);
+    return () => { alive = false; clearInterval(tSlide); clearInterval(tCart); clearInterval(tKar); document.body.classList.remove('full'); };
+  };
+})();

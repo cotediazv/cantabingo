@@ -1713,3 +1713,53 @@ body.has-vm .krb-mark { display: none; }
 body.has-vm .kg-logo { display: none; }
 /* Fondo de neuronas (como en krbstage.cl) en las pantallas de las actividades: sobre el fondo de colores, bajo todo lo demás */
 #neural-bg { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; opacity: .9; }
+/* Fondo vertical de la sala light (pantallas de pie de Kennedy y Frida): esta noche, recuadro que cambia y QR grande */
+#lv { --lv-main: #c4175e; --lv-tag: #05686e; --lv-gold: #ffc400; --lv-shade: rgba(60, 0, 30, .55);
+  --lv-dots: radial-gradient(circle, rgba(255,255,255,.13) 0 .4vh, transparent .44vh) 0 0 / 4vh 4vh, radial-gradient(circle, rgba(255,255,255,.13) 0 .4vh, transparent .44vh) 2vh 2vh / 4vh 4vh;
+  position: fixed; inset: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 2.4vh; padding: 3vh 5vw 2vh; color: #fff; font-family: "Source Sans 3", "Source Sans Pro", "Segoe UI", system-ui, sans-serif; }
+#lv.th-kennedy { --lv-main: #1a3fb8; --lv-tag: #0a1238; --lv-gold: #e6b445; --lv-shade: rgba(3, 12, 60, .65); }
+body.full.has-vm #lv { padding-bottom: 7vh; }
+.lv-top { display: grid; justify-items: center; gap: .6vh; padding: 2.2vh 4vw; border-radius: 3vh; text-align: center; background: var(--lv-dots), var(--lv-tag); border: .5vh solid var(--lv-gold); box-shadow: 0 1.5vh 4vh rgba(0, 0, 0, .4); }
+.lv-top small { font-size: 2.4vh; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; opacity: .85; }
+.lv-top b { font-size: 6.4vh; font-weight: 900; line-height: 1; text-transform: uppercase; color: var(--lv-gold); text-shadow: .4vh .4vh 0 var(--lv-shade); }
+.lv-show { font-size: 3vh; font-weight: 800; padding: .5vh 2.6vh; border-radius: 99px; background: var(--lv-shade); max-width: 100%; }
+.lv-card { min-height: 0; display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 1.4vh; padding: 3vh 5vw 2vh; border-radius: 4vh; background: var(--lv-dots), var(--lv-main); border: .7vh solid var(--lv-gold); box-shadow: 0 2vh 6vh rgba(0, 0, 0, .45); overflow: hidden; }
+.lv-slide { min-height: 0; display: grid; align-content: center; gap: 2.2vh; animation: lv-in .6s ease; }
+@keyframes lv-in { from { opacity: 0; } to { opacity: 1; } }
+.lv-slide h2 { margin: 0; justify-self: center; font-size: 3.6vh; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; padding: .6vh 3.4vh; border-radius: 99px; background: var(--lv-shade); }
+.lv-now { display: grid; justify-items: center; gap: .6vh; text-align: center; }
+.lv-now small { font-size: 2.6vh; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; opacity: .85; }
+.lv-now b { font-size: 6vh; font-weight: 900; line-height: 1.05; color: var(--lv-gold); text-shadow: .4vh .4vh 0 var(--lv-shade); overflow-wrap: anywhere; }
+.lv-now span { font-size: 3.2vh; font-weight: 700; }
+.lv-next b { font-size: 4.6vh; color: #fff; }
+.lv-list, .lv-hours, .lv-week { margin: 0; padding: 0; list-style: none; display: grid; gap: 1.1vh; }
+.lv-list { counter-reset: n 1; }
+.lv-list li, .lv-hours li, .lv-week li { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 2vh; padding: 1vh 2vh; border-radius: 1.6vh; background: var(--lv-shade); }
+.lv-list li { grid-template-columns: minmax(0, 1fr); gap: .2vh; }
+.lv-list b, .lv-hours b, .lv-week b { font-size: 2.9vh; font-weight: 800; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lv-list span { font-size: 2.3vh; opacity: .9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lv-hours em, .lv-week em { font-style: normal; font-size: 2.5vh; font-weight: 900; color: var(--lv-gold); white-space: nowrap; }
+.lv-hours li.on, .lv-week li.on { outline: .4vh solid var(--lv-gold); }
+.lv-dots { display: flex; justify-content: center; gap: 1.2vh; }
+.lv-dots i { width: 1.3vh; height: 1.3vh; border-radius: 50%; background: rgba(255, 255, 255, .35); }
+.lv-dots i.on { background: var(--lv-gold); }
+.lv-qr { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 3vh; padding: 2vh 3vh; border-radius: 3vh; background: #fff; color: #1b1240; border: .6vh solid var(--lv-gold); box-shadow: 0 1.5vh 4vh rgba(0, 0, 0, .4); }
+.lv-qrbox .qr { display: block; width: 19vh; height: 19vh; border: 0; padding: 0; border-radius: 0; }
+.lv-qrtext { display: grid; gap: 1vh; }
+.lv-qrtext b { font-size: 4.2vh; font-weight: 900; line-height: 1.05; text-transform: uppercase; color: var(--lv-main); }
+.lv-qrtext span { font-size: 2.6vh; font-weight: 700; line-height: 1.2; }
+/* Fondo vertical de la sala light: más espacio para el recuadro del medio y textos que caben */
+#lv { gap: 1.8vh; padding-top: 2.4vh; }
+.lv-top { padding: 1.6vh 4vw; }
+.lv-top b { font-size: 5.6vh; }
+.lv-card { padding: 2.4vh 4vw 1.6vh; }
+.lv-slide { gap: 1.6vh; overflow: hidden; }
+.lv-slide h2 { font-size: 3vh; white-space: nowrap; }
+.lv-now b { font-size: 5vh; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.lv-next b { font-size: 4vh; }
+.lv-list b, .lv-hours b, .lv-week b { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font-size: 2.6vh; }
+.lv-list li, .lv-hours li, .lv-week li { padding: .9vh 1.8vh; }
+.lv-qr { gap: 2.4vh; padding: 1.6vh 2.4vh; }
+.lv-qrbox .qr { width: 15vh; height: 15vh; }
+.lv-qrtext b { font-size: 3.4vh; }
+.lv-qrtext span { font-size: 2.2vh; }

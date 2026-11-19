@@ -1437,14 +1437,14 @@ window.addEventListener('DOMContentLoaded', route);
 // actividades de Kennedy). Solo en pantallas (tablero, OBS, GC de la sala light, karaoke de la pantalla vertical),
 // nunca en celulares ni paneles. El local sale de la dirección (#/light-gc/kennedy) o de la sala completa abierta.
 const VENUE_LOGOS = { kennedy: 'logo-kennedy.png' };
-const SCREEN_ROUTES = ['tablero', 'escena', 'gc', 'obs', 'light-gc', 'karaoke-v'];
+const SCREEN_ROUTES = ['tablero', 'escena', 'gc', 'obs', 'light-gc', 'karaoke-v', 'light-v'];
 let venueOfSala = '';
 let venueAt = 0;
 async function syncVenueMark() {
   const [name, arg] = location.hash.replace(/^#\/?/, '').split('/');
   let v = '';
   if (SCREEN_ROUTES.includes(name)) {
-    if ((name === 'light-gc' || name === 'karaoke-v') && arg) v = arg;
+    if ((name === 'light-gc' || name === 'karaoke-v' || name === 'light-v') && arg) v = arg;
     else {
       if (Date.now() - venueAt > 10000) { venueAt = Date.now(); venueOfSala = (((await api('GET', '/api/current').catch(() => ({}))).sessions || [])[0] || {}).theme || ''; }
       v = venueOfSala;
@@ -1461,9 +1461,10 @@ async function syncVenueMark() {
   el.className = `venue-mark vm-${spot}`;
   document.body.classList.add('has-vm');
 }
-window.addEventListener('hashchange', () => setTimeout(syncVenueMark, 50));
+window.addEventListener('hashchange', () => { setTimeout(syncVenueMark, 50); setTimeout(syncVenueMark, 700); }); // la segunda, cuando la pantalla ya se armó
 setInterval(syncVenueMark, 3000);
 syncVenueMark();
+setTimeout(syncVenueMark, 700);
 
 // Fondo de neuronas en las pantallas de las actividades (pedido de Cote: el mismo efecto del fondo de la página
 // web krbstage.cl). Puntos de colores que se mueven lento, unidos por líneas finas, con impulsos que viajan

@@ -11,7 +11,10 @@
   };
   const pick = (v) => (SCREENS[v] ? v : 'kennedy');
   const TOBA = 'El viernes se pone sola en «Automático» a las 18:00 y vuelve a «Siempre el video» a las 22:30.';
-  const SCHEDULE = { kennedy: 'Jueves, viernes y sábado se pone sola en «Automático» a las 20:00 y vuelve a «Siempre el video» a las 00:30.', tobalaba: TOBA, 'tobalaba-v': TOBA };
+  const NIGHT = 'Jueves, viernes y sábado se pone sola en «Automático» a las 18:30 y vuelve a «Siempre el video» a las 00:30.';
+  const SCHEDULE = { kennedy: NIGHT, frida: NIGHT, tobalaba: TOBA, 'tobalaba-v': TOBA };
+  // Locales con sala light: en «Automático», si no hay juegos, se ve el fondo vertical de la sala light (#/light-v/<local>)
+  const LIGHT = { kennedy: true, frida: true };
   const base = () => `${location.origin}${location.pathname}`;
 
   // Para el decodificador: la pantalla de pie recibe la señal horizontal, así que se entrega girada 90° a la
@@ -50,7 +53,7 @@
       }
       const venue = SCREENS[v].venue; // la actividad es la del local de esta pantalla
       if (st.show === 'karaoke' && !lightId) lightId = ((await api('GET', `/api/light?local=${venue}`).catch(() => ({}))) || {}).id || '';
-      const want = st.show === 'video' ? 'video' : st.show === 'karaoke' ? `#/karaoke-v/${venue}/${lightId}` : '#/tablero';
+      const want = st.show === 'video' ? 'video' : st.show === 'light' ? `#/light-v/${venue}` : st.show === 'karaoke' ? `#/karaoke-v/${venue}/${lightId}` : '#/tablero';
       if (want === shown) return;
       shown = want;
       const isVideo = want === 'video';
@@ -85,7 +88,7 @@
       <div class="panel vt-now"><small>En pantalla ahora</small><b id="vt-show">…</b><span id="vt-why" class="muted small"></span></div>
       <div class="panel"><h2>Qué mostrar</h2>
         <div class="vt-modes">
-          <button data-mode="auto"><span>🔄</span>Automático<small>Video, y la actividad cuando empieza</small></button>
+          <button data-mode="auto"><span>🔄</span>Automático<small>${LIGHT[SCREENS[v].venue] ? 'Los juegos cuando hay; si no, el fondo de la sala light' : 'Video, y los juegos cuando empiezan'}</small></button>
           <button data-mode="video"><span>🎬</span>Siempre el video</button>
           <button data-mode="actividad"><span>🎤</span>Siempre la actividad</button>
         </div>${SCHEDULE[v] ? `<p class="muted small">🕗 ${esc(SCHEDULE[v])}</p>` : ''}</div>
@@ -98,7 +101,7 @@
         <p class="muted small">Se abre en el navegador del decodificador, en pantalla completa.${up ? ' Va girado, para la pantalla de pie.' : ''}</p>
         <p><input class="vt-link" readonly value="${esc(link)}"> <button id="vt-copy">Copiar</button> <a class="btn" href="${screenHash}" target="_blank">Ver</a></p>
         ${up ? `<p class="muted small">Sin girar (si el decodificador ya gira la imagen): <a href="#/vertical-in/${v}" target="_blank">${esc(`${base()}#/vertical-in/${v}`)}</a></p>` : ''}</div>`;
-    const NAMES = { video: '🎬 Video de la cartelera', sala: '🎲 Juegos (sala completa)', karaoke: '🎤 Karaoke (sala light)' };
+    const NAMES = { video: '🎬 Video de la cartelera', sala: '🎲 Juegos (sala completa)', light: '💡 Fondo de la sala light (QR, cartelera y karaoke)', karaoke: '🎤 Karaoke (sala light)' };
     let alive = true;
     const paint = (st) => {
       $('#vt-show').textContent = st.show === 'sala' && !st.activity ? '🎲 Portada de la sala (no hay video subido)' : NAMES[st.show] || st.show;

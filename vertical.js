@@ -1,7 +1,7 @@
 // Pantalla vertical de un local (pedido de Cote, para Kennedy): pasa siempre el video de la cartelera del mes
 // (lo sube Cote desde el Centro de control) y, cuando empieza una actividad en ese local, cambia sola a ella:
 //  - la sala de juegos completa de ese local abierta y con algo en el escenario → el tablero vertical;
-//  - el karaoke de la sala light de ese local con alguien cantando → el karaoke a pantalla completa.
+//  - si no hay juegos y el local tiene sala light (Kennedy y Frida), el fondo vertical de la sala light (#/light-v/<local>).
 // Un botón permite forzar «Video» o «Actividad» a mano.
 const fs = require('fs');
 const path = require('path');
@@ -18,19 +18,20 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
   const file = (v) => path.join(dir, `vertical-${v}.mp4`);
   const conf = (v) => (db.vertical[v] ||= { video: 0, size: 0, mode: 'auto' });
 
-  // Qué actividad hay ahora en el local (null si ninguna)
+  // Qué actividad hay ahora en el local: la sala de juegos completa de ese local abierta y con algo en el escenario
   const activityOf = (v) => {
     const s = Object.values(db.sessions)[0];
-    if (s && (s.theme || 'frida') === v && db.stage && db.stage !== 'none') return 'sala';
-    const l = (db.lights || {})[v];
-    if (l && l.stage !== 'none' && karaoke.nowOf(v).now) return 'karaoke';
-    return null;
+    return s && (s.theme || 'frida') === v && db.stage && db.stage !== 'none' ? 'sala' : null;
   };
-  // Horario de la pantalla (pedidos de Cote): en Kennedy, jueves, viernes y sábado pasa sola a «Automático» a las 20:00
-  // y vuelve a «Siempre el video» a las 00:30 de esa noche; en Tobalaba (sus dos pantallas), el viernes de 18:00 a 22:30.
+  // Locales con sala light (pedido de Cote): en «Automático», si no hay juegos, la pantalla muestra el fondo vertical de
+  // la sala light (QR para entrar, lo que viene esta noche y en la semana, la cartelera del mes, horarios y karaoke).
+  // Tobalaba no tiene sala light: en «Automático» muestra los juegos cuando hay y, si no, el video.
+  const LIGHT_VENUES = { kennedy: true, frida: true };
+  // Horario de la pantalla (pedidos de Cote): en Kennedy y en Frida, jueves, viernes y sábado pasa sola a «Automático» a
+  // las 18:30 y vuelve a «Siempre el video» a las 00:30 de esa noche; en Tobalaba (sus dos pantallas), el viernes de 18:00 a 22:30.
   // Una vez por noche; entremedio se puede cambiar a mano.
   // Si el servicio estaba reiniciándose justo a esa hora, se hace apenas vuelve (hasta 15 minutos después).
-  const SCHEDULE = { kennedy: { days: ['Thu', 'Fri', 'Sat'], on: 20 * 60, off: 30 }, tobalaba: { days: ['Fri'], on: 18 * 60, off: 22 * 60 + 30 } };
+  const SCHEDULE = { kennedy: { days: ['Thu', 'Fri', 'Sat'], on: 18 * 60 + 30, off: 30 }, frida: { days: ['Thu', 'Fri', 'Sat'], on: 18 * 60 + 30, off: 30 }, tobalaba: { days: ['Fri'], on: 18 * 60, off: 22 * 60 + 30 } };
   SCHEDULE['tobalaba-v'] = SCHEDULE.tobalaba;
   const NEXT = { Thu: 'Fri', Fri: 'Sat', Sat: 'Sun' };
   setInterval(() => {
@@ -49,10 +50,13 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
 
   const stateOf = (v) => {
     const c = conf(v);
-    const act = activityOf(SCREENS[v]);
+    const venue = SCREENS[v];
+    const act = activityOf(venue);
+    const rest = LIGHT_VENUES[venue] ? 'light' : null; // sin juegos: el fondo de la sala light (si el local tiene)
     const hasVideo = !!c.video && fs.existsSync(file(v));
-    let show = c.mode === 'video' ? 'video' : c.mode === 'actividad' ? (act || 'sala') : (act || 'video');
-    if (show === 'video' && !hasVideo) show = act || 'sala'; // sin video subido, queda la actividad o la portada
+    // Los juegos de la sala completa siempre pasan adelante (salvo «Siempre el video»)
+    let show = c.mode === 'video' ? 'video' : c.mode === 'actividad' ? (act || rest || 'sala') : (act || rest || 'video');
+    if (show === 'video' && !hasVideo) show = act || rest || 'sala'; // sin video subido
     return { screen: v, venue: SCREENS[v], name: VENUES[SCREENS[v]], mode: c.mode, activity: act, show, video: hasVideo ? c.video : 0, size: hasVideo ? c.size : 0 };
   };
 
