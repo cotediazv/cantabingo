@@ -64,4 +64,19 @@ module.exports = function twitch({ app }) {
     const c = await leer();
     res.json({ canales: c.data || [], error: c.error || '' });
   });
+
+  // Pública (solo lectura): qué muestran ahora las pantallas de Kennedy y Frida, para la página web (krbstage.cl).
+  // /api/vertical/<pantalla> es de la Sala y no deja leerse desde otro sitio; aquí se consulta en el mismo servidor
+  app.get('/api/web/pantallas', async (_req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    const out = {};
+    await Promise.all(['kennedy', 'frida', 'tobalaba-v'].map(async (p) => {
+      try {
+        const r = await fetch(`http://127.0.0.1:${process.env.PORT || 3000}/api/vertical/${p}`, { signal: AbortSignal.timeout(5000) });
+        const j = await r.json();
+        out[p] = { show: j.show || '', activity: j.activity || null };
+      } catch (_) { out[p] = null; }
+    }));
+    res.json(out);
+  });
 };

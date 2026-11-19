@@ -589,7 +589,7 @@ h2{margin-top:8px}
 .ptl-vivo .vivo-botones{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
 .ptl-vivo .vivo-son.activo{background:var(--c);color:#0c0b12}
 .ptl-vivo.repeticion .vivo-etq{color:#a970ff}
-.ptl-vivo.fondo .vivo-etq{color:var(--c)}
+.ptl-vivo.pantallas .vivo-etq{color:var(--c)}
 .rep-icono{font-size:15px;line-height:1}
 .rep-flecha{flex:none;width:26px;height:26px;border-radius:50%;border:1px solid #a970ff;background:transparent;color:#a970ff;font-size:15px;line-height:1;cursor:pointer;padding:0}
 .rep-flecha:first-of-type{margin-left:auto}
@@ -1351,24 +1351,32 @@ elegirLocal('kennedy');
   // Kennedy y Frida: en la web la sala light siempre se ve (pedido de Cote). Cuando su pantalla del local está en
   // «Siempre el video» (fuera de horario), aquí se muestra igual el fondo vertical de la sala light (#/light-v/<local>)
   const rutaV=L=>L._ruta||L.vertical;
+  // el tablero horizontal: Tobalaba tiene su pantalla horizontal; Kennedy y Frida, el tablero de la sala de juegos cuando
+  // es la de ese local y hay juego, y si no, su información en formato horizontal
+  const rutaH=L=>L.local==='tobalaba'?'#/pantalla/tobalaba':(L._rutaH||`#/light-v/${L.local}`);
   const srcPant=(ruta,L)=>`${SALA}${L&&L.liviano?`&liviano=${encodeURIComponent(L.liviano)}&lver=${L.lver}`:''}${ruta}`;
   function revisarLuz(){
-    for(const L of Object.values(LOC)){if(!L.luz)continue;
-      fetch(`https://cantabingo.onrender.com/api/vertical/${L.vertical.split('/').pop()}`,{signal:AbortSignal.timeout(10000)}).then(r=>r.json()).then(st=>{
-        const ruta=st.show==='video'?`#/light-v/${L.local}`:L.vertical;if(ruta===rutaV(L))return;L._ruta=ruta;
+    fetch('https://cantabingo.onrender.com/api/web/pantallas',{signal:AbortSignal.timeout(10000)}).then(r=>r.json()).then(todo=>{
+      for(const L of Object.values(LOC)){if(!L.luz)continue;const st=todo[L.vertical.split('/').pop()];if(!st)continue;
+        const rh=st.show==='sala'?'#/tablero':`#/light-v/${L.local}`;
+        if(rh!==rutaH(L)){L._rutaH=rh;document.querySelectorAll(`.ptl-col[data-local="${L.local}"] .pant-h iframe`).forEach(f=>f.src=srcPant(rh))}
+        const ruta=st.show==='video'?`#/light-v/${L.local}`:L.vertical;if(ruta===rutaV(L))continue;L._ruta=ruta;
         document.querySelectorAll(`.ptl-col[data-local="${L.local}"] .pant-v iframe`).forEach(f=>f.src=srcPant(ruta,L));
-      }).catch(()=>{})}
+      }
+    }).catch(()=>{});
   }
+
   const pant=(clase,ruta,w,h,t,L)=>`<div class="pant ${clase}"><iframe src="${SALA}${L&&L.liviano?`&liviano=${encodeURIComponent(L.liviano)}&lver=${L.lver}`:''}${ruta}" width="${w}" height="${h}" title="${t}" loading="lazy" tabindex="-1"></iframe></div>`;
   const padres=['www.krbstage.cl','krbstage.cl',location.hostname].filter((x,i,a)=>x&&a.indexOf(x)===i).map(x=>'&parent='+x).join('');
   const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   const fecha=t=>{const d=new Date(t);return isNaN(d)?'':`${d.getDate()} ${MESES[d.getMonth()]}`};
   // el conjunto: la transmisión (en vivo o, si no hay, la repetición de la última, una a la vez) y, al lado, la pantalla del local
-  function packVivo(canal,L,c,fondo){
-    // Cuando otro local está en vivo: en vez de la repetición, la pantalla horizontal del local (su información, sin video),
-    // un fondo liviano que no le quita conexión a la transmisión (pedido de Cote)
-    if(fondo){const d=document.createElement('div');d.className='ptl-vivo vivo-item fondo';
-      d.innerHTML=`<div class="vivo-etq"><span class="rep-icono">▣</span><span style="white-space:nowrap">Pantalla del local</span></div>${pant('pant-h',`#/light-v/${L.local}`,1920,1080,'Pantalla del local')}`;
+  function packVivo(canal,L,c){
+    // Sin transmisión en vivo: las pantallas del local (el tablero horizontal y, al lado, la vertical), del mismo porte que
+    // el conjunto del en vivo. Livianas, sin video (pedido de Cote; reemplaza las repeticiones)
+    if(!(c&&c.vivo)){const d=document.createElement('div');d.className='ptl-vivo vivo-item con-vertical pantallas';
+      d.innerHTML=`<div class="vivo-etq"><span class="rep-icono">▣</span><span style="white-space:nowrap">Pantallas del local</span></div>
+        <div class="vivo-fila">${pant('pant-h',rutaH(L),1920,1080,'Tablero del local')}${pant('pant-v',rutaV(L),1080,1920,'Pantalla vertical del local',L)}</div>`;
       d.querySelectorAll('.pant').forEach(x=>obsPant.observe(x));return d}
     const vivo=!!(c&&c.vivo),todos=(c&&c.videos||[]),limpios=todos.filter(v=>!v.muted),vods=limpios.length?limpios:todos;let i=0;
     if(!vivo&&!vods.length){const d=document.createElement('div');d.className='ptl-tw';d.innerHTML='<p class="tw-nada">Todavía no hay transmisiones guardadas de este local.</p>';return d}
@@ -1404,18 +1412,12 @@ elegirLocal('kennedy');
     for(const [canal,L] of Object.entries(LOC)){
       const col=document.querySelector(`.ptl-col[data-local="${L.local}"]`);if(!col)continue;
       const c=datosTw.find(v=>v.canal===canal);const vivo=!!(c&&c.vivo);
-      const fondo=!vivo&&datosTw.some(x=>x.vivo);
-      const k=modo?(vivo?'vivo':fondo?'fondo':'tw'):'ig';if(col.dataset.modo===k)continue;col.dataset.modo=k;
+      const k=modo?(vivo?'vivo':'pant'):'ig';if(col.dataset.modo===k)continue;col.dataset.modo=k;
       col.querySelectorAll('.ptl-vivo,.ptl-tw').forEach(x=>x.remove());col.classList.toggle('modo-tw',modo);
       if(!modo)continue;
       const g=col.querySelector('.ptl-grilla');if(g&&g._apagar)g._apagar();
-      col.querySelector('.ptl-prueba').after(packVivo(canal,L,c,fondo));
+      col.querySelector('.ptl-prueba').after(packVivo(canal,L,c));
     }
-    // Twitch pide que su reproductor mida al menos 400x300 y esté a la vista (si no, lo pausa): en computador, la columna
-    // del local que transmite se ensancha y las otras se achican
-    const cont=document.querySelector('#tulocal .ptl-pruebas'),cols=[...cont.querySelectorAll(':scope>.ptl-col')];
-    const iv=modo?cols.findIndex(col=>col.dataset.modo==='vivo'):-1;
-    cont.style.gridTemplateColumns=iv<0?'':cols.map((_,j)=>j===iv?'minmax(0,3.4fr)':'minmax(0,1fr)').join(' ');
     requestAnimationFrame(escalar);
   }
   function revisar(){
