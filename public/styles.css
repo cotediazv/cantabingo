@@ -1847,3 +1847,17 @@ html.emb-cel body.full::before { animation: none; transform: none; }
 /* iPhone (Safari): #app con z-index formaba una capa sin alto (la información va fija encima) y Safari no dibujaba la
    información del local. El fondo ya va detrás (z-index negativo), así que #app no necesita capa propia. */
 body.full #app { z-index: auto; }
+
+/* Pantallas de los locales: cada local con sus dos espacios, vertical y horizontal, lado a lado (pedido de Cote) */
+.vt-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 18px; align-items: start; }
+.vt-col { display: grid; gap: 12px; min-width: 0; }
+.vt-col .panel { margin: 0; }
+.vt-col-title { margin: 0; }
+.vt-col h3 { margin: 0 0 10px; }
+.vt-col .vt-modes { grid-template-columns: 1fr; }
+.vt-col .vt-link { width: 100%; max-width: 100%; }
+.vt-col .vt-modes { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.vt-col .vt-modes button { padding: 10px 6px; font-size: .92rem; border-radius: 16px; }
+.vt-col .vt-modes button span { font-size: 1.4rem; }
+.vt-col .vt-modes button small { font-size: .72rem; font-weight: 500; }
+.vt-col .vt-now b { font-size: 1.25rem; }
