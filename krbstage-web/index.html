@@ -518,6 +518,9 @@ h2{margin-top:8px}
   #tulocal .ptl-pruebas,#producidos .ptl-pruebas{grid-template-rows:repeat(4,auto);row-gap:8px}
   #tulocal .ptl-col,#producidos .ptl-col{grid-row:span 4;grid-template-rows:subgrid;gap:0}
   #tulocal .ptl-enlaces{grid-row:4}
+  /* las tres tarjetas iguales: el título ocupa siempre dos líneas (pegado abajo), así fecha, dirección y @ quedan a la misma altura */
+  #tulocal .ptl-prueba b{min-height:2em;display:flex;align-items:flex-end}
+  #tulocal .ptl-prueba .ptl-num{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 }
 .ptl-col .ptl-grilla{width:min(100%,max(292px,calc((100vh - 445px) / 1.2 + 40px)));justify-self:center;gap:18px 22px} /* más separados entre sí */
 @media (max-width:900px){
