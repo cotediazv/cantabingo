@@ -1560,17 +1560,22 @@ elegirLocal('kennedy');
       if(n!==idxV){idxV=n;cabecera()}},90)});
     const ir=d=>{const W=pista.clientWidth,k=idxV+1+d;pista.scrollTo({left:k*W,behavior:'smooth'})};
     visor.querySelector('.visor-flecha.izq').onclick=()=>ir(-1);visor.querySelector('.visor-flecha.der').onclick=()=>ir(1);
-    visor.querySelector('.visor-x').onclick=cerrarVisor;
+    visor.querySelector('.visor-x').onclick=()=>cerrarVisor();
+    // Se agrega un paso al historial: borra las páginas «siguientes» de la pestaña (en el iPhone, deslizar desde el borde
+    // abría una de ellas, la pantalla del local en la Sala) y el gesto de «atrás» solo cierra la pantalla completa
+    try{history.pushState({visor:1},'')}catch(_){}
     cabecera();ajustarVisor();setTimeout(ajustarVisor,300);
     if(visor.requestFullscreen&&document.fullscreenEnabled)visor.requestFullscreen().then(()=>{try{screen.orientation.lock('landscape').catch(()=>{})}catch(_){}}).catch(()=>{});
   }
-  function cerrarVisor(){
+  function cerrarVisor(desdeHistorial){
     if(!visor)return;const v=visor;visor=null;
+    if(desdeHistorial!==true&&history.state&&history.state.visor)try{history.back()}catch(_){}
     if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
     ORDEN.forEach(L=>{const p=packs[L.local];const col=document.querySelector(`.ptl-col[data-local="${L.local}"]`);
       if(p&&col){const f=p.querySelector('.vivo-fila');if(f){f.style.gridTemplateColumns='';f.style.gap=''}col.querySelector('.ptl-prueba').after(p)}});
     v.remove();document.documentElement.classList.remove('con-visor','con-visor-tactil');requestAnimationFrame(escalar);
   }
+  addEventListener('popstate',()=>{if(visor)cerrarVisor(true)});
   document.addEventListener('fullscreenchange',()=>{if(visor&&!document.fullscreenElement&&visor._fs)cerrarVisor();if(visor)visor._fs=!!document.fullscreenElement;setTimeout(ajustarVisor,100)});
   addEventListener('keydown',e=>{if(!visor)return;if(e.key==='Escape')cerrarVisor();if(e.key==='ArrowRight')visor.querySelector('.visor-flecha.der').click();if(e.key==='ArrowLeft')visor.querySelector('.visor-flecha.izq').click()});
   // al girar el teléfono: se vuelve a acomodar (varias veces, porque el iPhone termina de girar después)
