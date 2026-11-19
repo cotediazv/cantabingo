@@ -1029,9 +1029,11 @@ const datos={};let loc='kennedy',diaSel=0,ctx=null;
 const fuente=$('#fuente');
 async function cargar(v){
   if(datos[v])return datos[v];
-  try{const r=await fetch(API+v,{signal:AbortSignal.timeout(8000)});const j=await r.json();
-    if(!Array.isArray(j.week)||!j.week.length)throw 0;datos[v]={week:j.week,vivo:true}}
-  catch(_){datos[v]={week:RESPALDO[v]||[],vivo:false}}
+  // la última cartelera recibida queda guardada: si la Sala tarda, se muestra esa mientras tanto
+  let g=null;try{g=JSON.parse(localStorage.getItem('krb-cart-'+v)||'null')}catch(_){}
+  try{const r=await fetch(API+v,{signal:AbortSignal.timeout(g&&Date.now()-g.t<12*3600e3?4000:8000)});const j=await r.json();
+    if(!Array.isArray(j.week)||!j.week.length)throw 0;datos[v]={week:j.week,vivo:true};try{localStorage.setItem('krb-cart-'+v,JSON.stringify({t:Date.now(),week:j.week}))}catch(_){}}
+  catch(_){datos[v]=g&&Date.now()-g.t<3*86400e3?{week:g.week,vivo:true}:{week:RESPALDO[v]||[],vivo:false}}
   return datos[v];
 }
 
@@ -1099,14 +1101,21 @@ function pintarColumnas(){
     // 6 elegidos al azar entre los 20 más populares (cambian cada vez que se abre la página)
     const populares=(dl.populares||[]).filter(x=>x&&x.url).map(x=>[Math.random(),x]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]).slice(0,6);
     const enPop=new Set(populares.map(x=>x.link||x.url));
-    const resto=(dl.videos||[]).filter(x=>x&&x.url&&!enPop.has(x.link||x.url)).slice(0,60);
-    if(!populares.length&&!resto.length)return;
-    const paginas=[];if(populares.length)paginas.push({vids:populares});
-    for(let i=0;i<resto.length;i+=6)paginas.push({vids:resto.slice(i,i+6)});
-    paginas.forEach((p,i)=>p.nombre=i===0&&populares.length?'Más populares':`${i+1} de ${paginas.length}`);
+    let paginas=[];
+    const armarPaginas=()=>{const resto=(dl.videos||[]).filter(x=>x&&x.url&&!enPop.has(x.link||x.url)).slice(0,60);
+      paginas=[];if(populares.length)paginas.push({vids:populares});
+      for(let i=0;i<resto.length;i+=6)paginas.push({vids:resto.slice(i,i+6)});
+      // mientras no llega la lista completa, el total se estima con lo que informa la Sala
+      const total=dl._completo?paginas.length:Math.max(paginas.length,(populares.length?1:0)+Math.ceil(Math.max(0,Math.min(60,(dl.total||0)-populares.length))/6));
+      paginas.forEach((p,i)=>p.nombre=i===0&&populares.length?'Más populares':`${i+1} de ${total}`);
+      paginas.total=total};
+    armarPaginas();
+    if(!paginas.length)return;
+    // la lista completa de videos del lugar se pide recién cuando alguien pasa de página o abre la pantalla completa
+    const completar=async()=>{if(dl._completo)return;try{const j=await fetch('https://cantabingo.onrender.com/api/web/instagram/lugar?local='+col.dataset.local,{signal:AbortSignal.timeout(15000)}).then(r=>r.json());if(Array.isArray(j.videos)&&j.videos.length){dl.videos=j.videos;dl._completo=true;armarPaginas()}}catch(_){}};
     const caja=col.querySelector('.ptl-grilla');caja.hidden=false;
     let nav=col.querySelector('.ptl-pag');if(nav)nav.remove();nav=null;
-    if(paginas.length>1){nav=document.createElement('div');nav.className='ptl-pag';nav.innerHTML='<button class="ptl-pag-ant" aria-label="Página anterior">‹</button><span></span><button class="ptl-pag-sig" aria-label="Página siguiente">›</button>';caja.after(nav)}
+    if(paginas.total>1){nav=document.createElement('div');nav.className='ptl-pag';nav.innerHTML='<button class="ptl-pag-ant" aria-label="Página anterior">‹</button><span></span><button class="ptl-pag-sig" aria-label="Página siguiente">›</button>';caja.after(nav)}
     let pag=0,vs=[],activo=false;
     // prendido: los 6 se mueven (sin sonido; con el mouse encima, suena ese). Apagado: quedan quietos en su imagen
     caja._prender=()=>{activo=true;caja.classList.add('activo');if(quieto)return;vs.forEach(v=>{if(!v.getAttribute('src'))v.src=v.dataset.src;v.play().catch(()=>{})})};
@@ -1119,13 +1128,14 @@ function pintarColumnas(){
       caja.querySelectorAll('button').forEach(b=>{sonarAlPasar(b,b.querySelector('video'));b.onclick=e=>{
         if(!activo){activarBloque(caja);return} // primer toque (celular): se activa el bloque
         // en pantalla completa se puede seguir con todos los videos del lugar (del 6 pasa al 7, a la página siguiente)
-        const todos=paginas.flatMap(p=>p.vids),antes=paginas.slice(0,pag).reduce((n,p)=>n+p.vids.length,0);
-        caja._apagar();abrirPC(todos.map(x=>({video:x.url,poster:x.poster})),antes+ +b.dataset.i,()=>activarBloque(caja))}});
+        caja._apagar();const i=+b.dataset.i;
+        completar().then(()=>{const todos=paginas.flatMap(p=>p.vids),antes=paginas.slice(0,pag).reduce((n,p)=>n+p.vids.length,0);
+          abrirPC(todos.map(x=>({video:x.url,poster:x.poster})),antes+i,()=>activarBloque(caja))})}});
       if(nav)nav.querySelector('span').textContent=paginas[pag].nombre;
       if(activo)caja._prender();
     }
     const portadas=i=>Promise.all(paginas[i].vids.map(x=>x.poster?new Promise(ok=>{const im=new Image();im.onload=im.onerror=ok;im.src=x.poster;setTimeout(ok,4000)}):0));
-    const ir=d=>{const n=(pag+d+paginas.length)%paginas.length;portadas(n).then(()=>{pag=n;pintar();portadas((n+1)%paginas.length)})};
+    const ir=async d=>{await completar();const n=(pag+d+paginas.length)%paginas.length;portadas(n).then(()=>{pag=n;pintar();portadas((n+1)%paginas.length)})};
     if(nav){nav.querySelector('.ptl-pag-ant').onclick=()=>ir(-1);nav.querySelector('.ptl-pag-sig').onclick=()=>ir(1)}
     if(conMouse){col.onmouseenter=()=>activarBloque(caja);col.onmouseleave=()=>{if(bloqueActivo===caja){caja._apagar();bloqueActivo=null}}}
     pintar();
@@ -1262,7 +1272,15 @@ elegirLocal('kennedy');
       centrar();
     });
   }
-  fetch('https://cantabingo.onrender.com/api/web/instagram',{signal:AbortSignal.timeout(10000)}).then(r=>r.json()).then(d=>{if(window.recibirIg)window.recibirIg(d);pintar(d)}).catch(()=>{});
+  // se muestra al tiro lo guardado de la visita anterior (si tiene menos de 6 horas) y se pide lo nuevo;
+  // si lo guardado es de hace menos de 30 minutos, lo nuevo queda para la próxima visita (así no se rearma la página)
+  const usar=d=>{if(window.recibirIg)window.recibirIg(d);pintar(d)};
+  let guardado=null;try{guardado=JSON.parse(localStorage.getItem('krb-ig')||'null')}catch(_){}
+  const edad=guardado?Date.now()-guardado.t:1e12;
+  if(guardado&&edad<6*3600e3)usar(guardado.d);
+  fetch('https://cantabingo.onrender.com/api/web/instagram?ligero=1',{signal:AbortSignal.timeout(10000)}).then(r=>r.json()).then(d=>{
+    try{localStorage.setItem('krb-ig',JSON.stringify({t:Date.now(),d}))}catch(_){}
+    if(!(guardado&&edad<30*60e3))usar(d)}).catch(()=>{});
 })();
 
 /* ===== En vivo: si algún Twitch de los locales transmite, aparece debajo de la portada con las pantallas
@@ -1387,13 +1405,16 @@ document.querySelectorAll('.esp-montados').forEach(g=>{const PRIMEROS=['DF4JT1kg
 /* ===== portada: video de fondo (sin sonido, en repetición) ===== */
 (function(){
   const v=$('#video-portada');
-  v.src=innerWidth*Math.min(devicePixelRatio||1,1.5)<1700?'portada-720.mp4':'portada-1080.mp4'; // la versión 720 (1,3 Mbps) basta hasta pantallas de 1700 px; carga mucho más rápido
-  if(!quieto){v.autoplay=true;v.load();v.play().catch(()=>{})}
+  // video de 20 segundos que se repite (2,9 MB; el de 1080 para pantallas grandes). Primero se ve la foto y el
+  // video parte recién cuando la página terminó de cargar, para que lo demás aparezca antes
+  const fuente=innerWidth*Math.min(devicePixelRatio||1,1.5)<1700?'portada-720.mp4':'portada-1080.mp4';
+  let portadaVisible=true,listo=false;
+  const partir=()=>{listo=true;decidir()};
+  if(document.readyState==='complete')setTimeout(partir,300);else addEventListener('load',()=>setTimeout(partir,300));
   // se pausa cuando no se ve o cuando hay una transmisión en vivo en pantalla (para no quitarle conexión)
-  const fuente=v.getAttribute('src');let portadaVisible=true;
-  const decidir=()=>{if(quieto)return;
+  const decidir=()=>{if(quieto||!listo)return;
     if(window.vivoActivo){if(v.getAttribute('src')){v.pause();v.removeAttribute('src');v.load()}return} // con transmisión en vivo, la portada queda en su imagen y no baja video
-    if(!v.getAttribute('src')){v.src=fuente}
+    if(!v.getAttribute('src')){v.src=fuente;v.load()}
     if(portadaVisible)v.play().catch(()=>{});else v.pause()};
   new IntersectionObserver(es=>{portadaVisible=es[0].isIntersecting;decidir()}).observe(v);addEventListener('vivo-cambio',decidir);
   const portada=$('.portada'),titulo=$('.portada h1');

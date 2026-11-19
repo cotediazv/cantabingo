@@ -224,15 +224,25 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
   });
 
   // Pública (solo lectura): la usa la página web
-  app.get('/api/web/instagram', async (_req, res) => {
+  // ?ligero=1: solo lo que la página muestra primero (los 20 más populares y los 6 últimos videos de cada lugar);
+  // el resto se pide con /api/web/instagram/lugar?local=… cuando alguien pasa de página o abre la pantalla completa
+  app.get('/api/web/instagram', async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
+    const ligero = !!req.query.ligero;
     const out = {};
     await Promise.all(TODOS.map(async (v) => {
       const r = await videosOf(v);
       // «error» ayuda a revisar la conexión; nunca incluye la clave
       const p = populares(v);
-      out[v] = { handle: handleDe(v), videos: r.videos, populares: p.videos || [], flyers: r.flyers || [], error: r.error || '', errorPopulares: p.error || '' };
+      out[v] = { handle: handleDe(v), videos: ligero ? r.videos.slice(0, 6) : r.videos, total: r.videos.length, populares: p.videos || [], flyers: r.flyers || [], error: r.error || '', errorPopulares: p.error || '' };
     }));
     res.json(out);
+  });
+  app.get('/api/web/instagram/lugar', async (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    const v = String(req.query.local || '');
+    if (!TODOS.includes(v)) return res.status(400).json({ error: 'Lugar no válido' });
+    const r = await videosOf(v);
+    res.json({ videos: r.videos, populares: populares(v).videos || [] });
   });
 };
