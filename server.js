@@ -159,6 +159,7 @@ function publicState(s, full = false) {
     stage: db.stage || 'bingo', roscoId: db.stage === 'rueda' ? (Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).id || null : null,
     celebrateAt: s.celebrateAt || 0,
     voteRev: (db.vote || {}).rev || 0, // los celulares vuelven a leer la votación cuando cambia
+    desafioRev: (db.desafio || {}).rev || 0, // ídem para El Gran Desafío (pregunta al público)
     winConfirmed: roundOver(s), winConfirmedAt: s.confirmedAt || 0, now: Date.now(),
     patterns: s.patterns, drawn: s.drawn, results, finalists: s.finalists || null,
     auto: s.auto, cardsPerPlayer: s.cardsPerPlayer, totalCards: p.cards.length,
@@ -611,7 +612,7 @@ app.get('/api/sessions/:sid/events', (req, res) => {
 // Segundo juego de la plataforma
 // Pantalla única de OBS: qué gráfica se muestra ahora. Cambia sola al activar un bingo,
 // crear un rosco o lanzar un sorteo; el moderador también puede cambiarla a mano.
-const STAGES = ['bingo', 'rueda', 'sorteo', 'qr', 'karaoke', 'show', 'voto', 'insta', 'none'];
+const STAGES = ['bingo', 'rueda', 'sorteo', 'qr', 'karaoke', 'show', 'voto', 'insta', 'desafio', 'none'];
 const setStage = (show) => {
   const changed = db.stage !== show;
   db.stage = show;
@@ -643,6 +644,11 @@ const vote = require('./vote.js')({ app, db, save, requireAdmin, fail, setStage,
   findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null,
   venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
   notify: () => Object.values(db.sessions).forEach((s) => broadcast(s)) });
+// «El Gran Desafío»: trivia de 10 escalones con un concursante en el escenario
+require('./desafio.js')({ app, db, save, requireAdmin, fail, setStage,
+  findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null,
+  venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
+  notify: () => Object.values(db.sessions).forEach((s) => broadcast(s)) });
 // «Síguenos en Instagram»: la cuenta del local de la sala abierta
 const insta = require('./insta.js')({ app, db, save, requireAdmin, fail, venue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
 // Sala light: karaoke, show y cartelera en otro local, al mismo tiempo que la sala principal
@@ -653,7 +659,7 @@ require('./twitch.js')({ app }); // videos y transmisiones en vivo de Twitch, pa
 require('./instagram-web.js')({ app, db, save, insta }); // últimos videos de Instagram de cada local, para la página web
 
 // Consola general: en qué está cada local (sala principal o sala light), su bloque del horario y su karaoke
-const STAGE_NAMES = { bingo: 'Bingo', rueda: 'El Rosco', sorteo: 'Sorteo', qr: 'QR grande', karaoke: 'Karaoke', show: 'Show', voto: 'Votación', insta: 'Instagram', none: 'Nada', cartelera: 'Cartelera de la semana' };
+const STAGE_NAMES = { bingo: 'Bingo', rueda: 'El Rosco', sorteo: 'Sorteo', qr: 'QR grande', karaoke: 'Karaoke', show: 'Show', voto: 'Votación', insta: 'Instagram', desafio: 'El Gran Desafío', none: 'Nada', cartelera: 'Cartelera de la semana' };
 app.get('/api/consola', requireAdmin, async (_req, res) => {
   const main = Object.values(db.sessions)[0] || null;
   const out = await Promise.all(['kennedy', 'frida', 'tobalaba'].map(async (v) => {

@@ -237,6 +237,7 @@ views.home = async () => {
         <a class="s6" href="#/showctl"><i>5</i><span>⭐</span><b>Show</b></a>
         <a class="s4" href="#/karaokectl"><i>6</i><span>🎤</span><b>Karaoke</b></a>
         <a class="s7" href="#/instactl"><i>7</i><span>📸</span><b>Síguenos en Instagram</b></a>
+        <a class="s8" href="#/desafioctl"><i>8</i><span>🏆</span><b>El Gran Desafío</b></a>
       </div>
       <a class="home-control" href="#/control">🎛️ Centro de control</a>
       <p style="margin-top:28px"><button id="logout">Cerrar sesión de moderador</button></p>
@@ -260,6 +261,7 @@ views.control = async () => {
         <button data-show="rueda"><span>🎡</span>El Rosco</button><button data-show="qr"><span>📱</span>QR en pantalla completa</button>
         <button data-show="karaoke"><span>🎤</span>Karaoke</button><button data-show="show"><span>⭐</span>Show</button>
         <button data-show="voto"><span>🗳️</span>Votación</button><button data-show="insta"><span>📸</span>Instagram</button>
+        <button data-show="desafio" class="wide"><span>🏆</span>El Gran Desafío</button>
         <button data-show="none" class="wide"><span>⬛</span>Nada</button>
       </div>
       <div class="ctl-links">
@@ -693,6 +695,7 @@ views.jugar = async (sid) => {
     <div class="pkar" id="pkar" hidden></div>
     <div class="pvote" id="pvote" hidden></div>
     <div class="pvote pinsta" id="pinsta" hidden></div>
+    <div class="pvote pdesafio" id="pdesafio" hidden></div>
     <div id="bingo-bottom"><button class="primary big" id="sync" style="margin-top:16px">↻ Actualizar y marcar lo que falta</button>
     <p class="muted small" style="margin-top:8px">Marca por ti los valores ya anunciados que se te pasaron.</p>
     <div class="panel" style="margin-top:20px"><h2 id="title" style="margin:0"></h2><span class="muted small" id="meta"></span><div id="pats" style="margin-top:8px"></div></div></div>
@@ -829,8 +832,19 @@ views.jugar = async (sid) => {
     if (!on && instaOn) { clearInterval(instaOn); instaOn = false; }
     return on;
   };
+  // El Gran Desafío: se guarda el cartón; los botones A, B, C y D aparecen con la pregunta al público (desafio-ui.js)
+  let desafioTimer = null;
+  let desafioRev = null;
+  const syncDesafio = () => {
+    const on = st.stage === 'desafio';
+    $('#pdesafio').hidden = !on;
+    if (on && !desafioTimer) { window.phoneDesafio.reset(); desafioRev = null; desafioTimer = setInterval(() => window.phoneDesafio.draw(sid, me.token), 8000); }
+    if (on && desafioRev !== st.desafioRev) { desafioRev = st.desafioRev; window.phoneDesafio.draw(sid, me.token); }
+    if (!on && desafioTimer) { clearInterval(desafioTimer); desafioTimer = null; }
+    return on;
+  };
   const syncStage = () => {
-    const kar = syncKar() | syncVote() | syncInsta();
+    const kar = syncKar() | syncVote() | syncInsta() | syncDesafio();
     const on = (st.stage === 'rueda' && !!st.roscoId) || kar;
     $('#bingo-top').hidden = on;
     $('#bingo-bottom').hidden = on;
@@ -968,7 +982,7 @@ views.jugar = async (sid) => {
   const onFs = () => { if (!document.fullscreenElement && $('#live') && $('#live').classList.contains('full') && $('#live').requestFullscreen) setFull(false); };
   document.addEventListener('fullscreenchange', onFs);
   const off = subscribe(sid, (s) => { st = s; render(); startLive(); }, () => { store.del(key); backToStart(); }, false, me.token);
-  return () => { off(); stopRosco(); clearInterval(karTimer); clearInterval(voteTimer); clearInterval(instaOn); liveFor = null; player = null; document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('visibilitychange', onBack); document.body.classList.remove('live-open'); };
+  return () => { off(); stopRosco(); clearInterval(karTimer); clearInterval(voteTimer); clearInterval(desafioTimer); clearInterval(instaOn); liveFor = null; player = null; document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('visibilitychange', onBack); document.body.classList.remove('live-open'); };
 };
 // Canal de Twitch de cada local (uno por local: KRB Stage en Frida, KRB Stage Kennedy en Kennedy, KRB Stage 3 en Tobalaba)
 const LIVE_CHANNELS = { frida: 'krbstage', kennedy: 'krbstagekennedy', tobalaba: 'krbstage3' };
@@ -1116,6 +1130,7 @@ views.tablero = async () => {
         else if (show === 'voto') stop = await views.votoFull();
         else if (show === 'insta') stop = await views.instaFull();
         else if (show === 'show') stop = await views.showFull();
+        else if (show === 'desafio') stop = await views.desafioFull();
         else stop = await views.bingoFull(); // bingo, o la portada si no hay nada en juego
         joinQr({ sorteo: 'tr', rueda: 'tr', show: 'br' }[show]);
       }
@@ -1346,6 +1361,7 @@ function activitiesNav(current) {
     ['show', '<a class="btn" href="#/showctl"><span>⭐</span>Show</a>'],
     ['karaoke', '<a class="btn" href="#/karaokectl"><span>🎤</span>Karaoke</a>'],
     ['insta', '<a class="btn" href="#/instactl"><span>📸</span>Instagram</a>'],
+    ['desafio', '<a class="btn" href="#/desafioctl"><span>🏆</span>El Gran Desafío</a>'],
     ['qr', '<button type="button" data-stage-qr><span>📱</span>QR en pantalla completa</button>'],
   ];
   return `<div class="act-nav"><small>Ir a otra actividad</small><div>${all.filter(([k]) => k !== current).map(([, h]) => h).join('')}</div></div>`;
@@ -1392,6 +1408,7 @@ views.escena = async () => {
         else if (show === 'voto') stop = await views.votoGC();
         else if (show === 'insta') stop = await views.instaGC();
         else if (show === 'show') stop = await views.showGC();
+        else if (show === 'desafio') stop = await views.desafioGC();
         joinQr({ sorteo: 'br', rueda: 'bl', show: 'above' }[show]);
         document.body.classList.add('obs');
       }

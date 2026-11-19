@@ -31,7 +31,7 @@ Sitio: https://cantabingo.onrender.com · Render (plan Starter, disco de 1 GB) �
 - Node.js + Express. Datos en un JSON (`DATA_FILE`, en Render `/var/data/data.json`). Estado en vivo por SSE.
 - Interfaz en JavaScript simple, una sola página con rutas por `#` (`views[...]` en `public/app.js`).
 - `public/styles.css`: los cambios se agregan al final, sin reescribir lo anterior.
-- **Sala principal** (bingo y juegos): una sola abierta a la vez, en `db.sessions`; su escenario (`db.stage`) puede ser `bingo`, `rueda`, `sorteo`, `qr`, `karaoke`, `show`, `voto`, `insta`, `none`.
+- **Sala principal** (bingo y juegos): una sola abierta a la vez, en `db.sessions`; su escenario (`db.stage`) puede ser `bingo`, `rueda`, `sorteo`, `qr`, `karaoke`, `show`, `voto`, `insta`, `desafio`, `none`.
 - **Salas light** (karaoke, show, cartelera y redes): una por local, **siempre activas** (no se crean ni se cierran; QR fijo), al mismo tiempo que la principal y sin tocarla, en `db.lights[<local>]`; su GC puede mostrar `karaoke`, `show`, `cartelera`, `qr`, `none`.
 - Muchas partes usan «la primera sala abierta» (`Object.values(db.sessions)[0]`) como la sala del día: por eso las salas light van aparte.
 
@@ -41,6 +41,7 @@ Sitio: https://cantabingo.onrender.com · Render (plan Starter, disco de 1 GB) �
 | Sorteo de concursantes | `raffle.js` | `public/raffle-ui.js` |
 | El Rosco y Trivia del Rosco (antes «Rosco en Línea»; público, 3 alternativas, puntaje por rapidez, top 5) | `wheel.js`, `questions-bank.js`, `questions-alternatives.js` | `public/wheel-ui.js`, `app.js` |
 | Votación "El objeto más extraño" | `vote.js` | `public/vote-ui.js` |
+| El Gran Desafío (trivia de Gabriel: un concursante, 10 escalones con premios editables y escalones seguros, 4 alternativas, comodines 50:50, pregunta al público —votan desde el celular 20 s—, llamada —reloj de 30 s— y cambiar pregunta; panel `#/desafioctl`) | `desafio.js`, `questions-desafio.js` (banco por nivel: fácil, medio, difícil) | `public/desafio-ui.js` |
 | Show (cartelera) | `agenda.js` | `public/agenda-ui.js` |
 | Karaoke (lee la lista de las planillas de cada local; pedidos desde el celular por horario de cada local, hora de Chile: Kennedy jue a sáb 21:45–00:30, Frida vie y sáb 18:30–00:00, Tobalaba vie 21:00–22:10; abierto o cerrado a mano vale hasta 30 min sin actividad: `HOURS` y `phoneOn()` en `karaoke.js`) | `karaoke.js` | `public/karaoke-ui.js` |
 | Síguenos en Instagram | `insta.js` | `public/insta-ui.js` |
