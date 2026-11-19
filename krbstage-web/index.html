@@ -1349,8 +1349,8 @@ elegirLocal('kennedy');
   // las pantallas del local se dibujan a su tamaño real (1920x1080 o 1080x1920) y se achican para caber
   const escalar=()=>document.querySelectorAll('.ptl-vivo .pant').forEach(d=>{const f=d.firstElementChild;f.style.transform=`scale(${d.clientWidth/f.width})`});
   const obsPant=new ResizeObserver(escalar);
-  // Kennedy y Frida: en la web la sala light siempre se ve (pedido de Cote). Cuando su pantalla del local está en
-  // «Siempre el video» (fuera de horario), aquí se muestra igual el fondo vertical de la sala light (#/light-v/<local>)
+  // Kennedy y Frida: la pantalla vertical de la web es siempre la misma del local, tal cual (pedido de Cote, 19 nov:
+  // si el local está en «Siempre el video», aquí también el video). El tablero horizontal sigue con la información.
   const rutaV=L=>L._ruta||L.vertical;
   // el tablero horizontal: Tobalaba tiene su pantalla horizontal; Kennedy y Frida, su misma pantalla del local en formato
   // horizontal (sigue los botones: juegos, karaoke, QR, show, cartelera); si la pantalla está en «Siempre el video», su información
@@ -1361,7 +1361,8 @@ elegirLocal('kennedy');
       for(const L of Object.values(LOC)){if(!L.luz)continue;const st=todo[L.vertical.split('/').pop()];if(!st)continue;
         const rh=st.show==='video'?`#/light-v/${L.local}`:L.vertical;
         if(rh!==rutaH(L)){L._rutaH=rh;document.querySelectorAll(`.ptl-col[data-local="${L.local}"] .pant-h iframe`).forEach(f=>f.src=srcPant(rh))}
-        const ruta=st.show==='video'?`#/light-v/${L.local}`:L.vertical;if(ruta===rutaV(L))continue;L._ruta=ruta;
+        // la pantalla vertical es siempre la misma pantalla del local, tal cual (pedido de Cote: si está en video, el video)
+        const ruta=L.vertical;if(ruta===rutaV(L))continue;L._ruta=ruta;
         document.querySelectorAll(`.ptl-col[data-local="${L.local}"] .pant-v iframe`).forEach(f=>f.src=srcPant(ruta,L));
       }
     }).catch(()=>{});
