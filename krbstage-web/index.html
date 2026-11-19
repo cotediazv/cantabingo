@@ -620,6 +620,31 @@ h2{margin-top:8px}
 .vivo-fila.pc-falso.pc-v{grid-template-columns:min(calc((100vw - 14px) * .7596),calc(100dvh * 16 / 9)) min(calc((100vw - 14px) * .2404),calc(100dvh * 9 / 16));gap:14px}
 .vivo-fila.pc-falso.pc-h{grid-template-columns:min(72vw,calc(100dvh * 16 / 9)) min(28vw,calc(100dvh * 16 / 9 * .389));gap:14px}
 .pc-cerrar{z-index:90}
+/* ===== visor de pantalla completa ===== */
+html.con-visor,html.con-visor body{overflow:hidden}
+.visor{position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:85;background:#000;display:grid;grid-template-rows:auto 1fr;color:#fff}
+.visor-top{display:flex;align-items:center;gap:12px;padding:8px 12px 6px;padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right));border-bottom:2px solid var(--c);background:linear-gradient(180deg,rgba(255,255,255,.06),transparent)}
+.vt-txt{flex:1;min-width:0;display:grid;gap:3px}
+.vt-l1{display:flex;align-items:baseline;gap:10px;min-width:0;white-space:nowrap;overflow:hidden}
+.vt-local{font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:clamp(18px,3.2vh,28px);line-height:1;color:var(--c)}
+.vt-estado{font-family:var(--f-dato);font-size:clamp(12px,1.5vh,16px);letter-spacing:.12em;text-transform:uppercase;color:var(--c);display:inline-flex;align-items:center;gap:6px}
+.vt-estado.vivo{color:#ff4d4d}.vt-dot{width:9px;height:9px;border-radius:50%;background:#ff4d4d;box-shadow:0 0 8px #ff4d4d;display:inline-block}
+.vt-fecha{font-size:clamp(13px,1.7vh,18px);color:var(--tenue);overflow:hidden;text-overflow:ellipsis}
+.vt-l2{display:flex;gap:6px 14px;align-items:baseline;font-size:clamp(12.5px,1.7vh,18px);white-space:nowrap;overflow-x:auto;scrollbar-width:none;color:#e9e4f0}
+.vt-l2::-webkit-scrollbar{display:none}
+.vt-l2 b{color:var(--c);font-weight:700}.vt-l2 em{font-style:normal;color:#f4bf5a;font-weight:700}.vt-show{color:#fff;font-weight:700}
+.visor-x{flex:none;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;border-radius:999px;padding:7px 13px;font:700 13px var(--f-texto);cursor:pointer}
+.visor-pista{display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;min-height:0}
+.visor-pista::-webkit-scrollbar{display:none}
+.visor-slide{flex:0 0 100%;scroll-snap-align:center;display:grid;place-items:center;min-width:0;min-height:0;padding:6px 0}
+.visor-slide>.ptl-vivo{display:grid;justify-items:center;gap:10px}
+.visor-slide .vivo-etq,.visor-slide .vivo-full{display:none!important}
+.visor-slide .vivo-fila{display:grid;align-items:center}
+.visor-flecha{position:absolute;top:55%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.55);color:#fff;font-size:24px;line-height:1;cursor:pointer;z-index:2}
+.visor-flecha.izq{left:6px}.visor-flecha.der{right:6px}
+@media (hover:none){.visor-flecha{display:none}}
+.visor-puntos{display:inline-flex;gap:6px;align-self:center;flex:none}
+.visor-punto{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.35)}.visor-punto.on{background:var(--c)}
 .con-vertical .vivo-fila:fullscreen,.con-vertical .vivo-fila.pc-falso{grid-template-columns:min(calc((100vw - 14px) * .7596),calc(100vh * 16 / 9)) min(calc((100vw - 14px) * .2404),calc(100vh * 9 / 16 * 9 / 16 * 16 / 9))}
 .con-horizontal .vivo-fila:fullscreen,.con-horizontal .vivo-fila.pc-falso{grid-template-columns:min(72vw,calc(100vh * 16 / 9)) min(28vw,calc(100vh * 16 / 9 * .389))}
 .pc-cerrar{position:fixed;top:12px;right:12px;z-index:81;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;border-radius:999px;padding:8px 14px;font:700 14px var(--f-texto)}
@@ -1348,7 +1373,7 @@ elegirLocal('kennedy');
   // (con la pantalla del local al lado) o, si no está transmitiendo, sus últimas transmisiones guardadas.
   // Se prende solo cuando algún local está en vivo (salvo que la persona lo haya movido a mano).
   const sw=$('#sw-twitch'),punto=document.querySelector('.ptl-switch .punto-vivo');
-  let datosTw=[],aMano=false,clave='',canalSonando=null;const ultimoVivo={};
+  let datosTw=[],aMano=false,clave='',canalSonando=null,visor=null;const ultimoVivo={},packs={};
   sw.addEventListener('change',()=>{aMano=true;pintar()});
   // las pantallas del local se dibujan a su tamaño real (1920x1080 o 1080x1920) y se achican para caber
   const escalar=()=>document.querySelectorAll('.vivo-fila .pant').forEach(d=>{const f=d.firstElementChild;f.style.transform=`scale(${d.clientWidth/f.width})`});
@@ -1385,7 +1410,7 @@ elegirLocal('kennedy');
         <div class="vivo-fila">${pant('pant-h',rutaH(L),1920,1080,'Tablero del local')}${pant('pant-v',rutaV(L),1080,1920,'Pantalla vertical del local',L)}</div>
         <div class="vivo-botones"><button type="button" class="vivo-pc vivo-full">⛶ Pantalla completa</button></div>`;
       d.querySelectorAll('.pant').forEach(x=>obsPant.observe(x));
-      d.querySelector('.vivo-full').onclick=()=>pantallaCompleta(d.querySelector('.vivo-fila'));return d}
+      d.querySelector('.vivo-full').onclick=()=>abrirVisor(L.local);return d}
     const vivo=!!(c&&c.vivo),todos=(c&&c.videos||[]),limpios=todos.filter(v=>!v.muted),vods=limpios.length?limpios:todos;let i=0;
     if(!vivo&&!vods.length){const d=document.createElement('div');d.className='ptl-tw';d.innerHTML='<p class="tw-nada">Todavía no hay transmisiones guardadas de este local.</p>';return d}
     // sonido: un local a la vez (botón «Escuchar»); en la repetición se sigue desde el mismo punto al cambiar el sonido
@@ -1406,7 +1431,7 @@ elegirLocal('kennedy');
     const conectar=()=>etq.querySelectorAll('.rep-flecha').forEach(b=>b.onclick=()=>{i=(i+ +b.dataset.d+vods.length)%vods.length;base=0;t0=Date.now();caja.querySelector('.vivo-marco>iframe').src=fuente();etq.innerHTML=etiqueta();conectar()});
     conectar();
     caja.querySelectorAll('.pant').forEach(d=>obsPant.observe(d));
-    caja.querySelector('.vivo-full').onclick=()=>pantallaCompleta(caja.querySelector('.vivo-fila'));
+    caja.querySelector('.vivo-full').onclick=()=>abrirVisor(L.local);
     const bSon=caja.querySelector('.vivo-son'),marco=caja.querySelector('.vivo-marco>iframe');
     let suena=canalSonando===canal;
     caja._sonido=()=>{const ahora=canalSonando===canal;bSon.textContent=ahora?'🔊 Sonando':'🔇 Escuchar';bSon.classList.toggle('activo',ahora);
@@ -1433,11 +1458,16 @@ elegirLocal('kennedy');
       const col=document.querySelector(`.ptl-col[data-local="${L.local}"]`);if(!col)continue;
       const c=datosTw.find(v=>v.canal===canal);const vivo=!!(c&&c.vivo);
       const k=modo?(vivo?'vivo':'pant'):'ig';if(col.dataset.modo===k)continue;col.dataset.modo=k;
-      col.querySelectorAll('.ptl-vivo,.ptl-tw').forEach(x=>x.remove());col.classList.toggle('modo-tw',modo);
-      if(!modo)continue;
+      const viejo=packs[L.local];
+      if(!(visor&&modo&&viejo&&visor.contains(viejo)))col.querySelectorAll('.ptl-vivo,.ptl-tw').forEach(x=>x.remove());
+      col.classList.toggle('modo-tw',modo);
+      if(!modo){delete packs[L.local];continue}
       const g=col.querySelector('.ptl-grilla');if(g&&g._apagar)g._apagar();
-      col.querySelector('.ptl-prueba').after(packVivo(canal,L,c));
+      const nuevo=packVivo(canal,L,c);packs[L.local]=nuevo;
+      if(visor&&viejo&&visor.contains(viejo))viejo.replaceWith(nuevo); // abierto en pantalla completa: no se desarma
+      else col.querySelector('.ptl-prueba').after(nuevo);
     }
+    if(visor)ajustarVisor();
     requestAnimationFrame(escalar);
   }
   function revisar(){
@@ -1453,23 +1483,76 @@ elegirLocal('kennedy');
       pintar();
     }).catch(()=>{});
   }
-  // pantalla completa del conjunto (transmisión + pantalla del local). En el iPhone, que no deja poner
-  // en pantalla completa algo que no sea un video, el conjunto llena la pantalla igual (con botón para salir)
-  function pantallaCompleta(fila){
-    if(fila.requestFullscreen&&document.fullscreenEnabled){fila.requestFullscreen().then(()=>{try{screen.orientation.lock('landscape').catch(()=>{})}catch(_){}}).catch(()=>falso(fila));return}
-    if(fila.webkitRequestFullscreen){fila.webkitRequestFullscreen();return}
-    falso(fila);
+  // ===== Pantalla completa: el visor =====
+  // Arriba, el local, si está en vivo o es la pantalla del local, la fecha y lo de hoy (o lo próximo); abajo, el conjunto
+  // de dos pantallas, que nunca se separa. Deslizando hacia el lado (o con las flechas) se pasa al siguiente local.
+  // En el computador y Android usa la pantalla completa real; en el iPhone (que no la permite) llena la pantalla igual.
+  // Se acomoda solo al girar el teléfono (pedidos de Cote).
+  const ORDEN=Object.values(LOC);
+  const DIAS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'],MESL=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const capi=t=>String(t||'').toLowerCase().replace(/(^|[\s(:\-])([^\s(:\-])/g,(m,a,b)=>a+b.toUpperCase());
+  const cartV={};
+  function cartelera(v){
+    if(!cartV[v]){try{const g=JSON.parse(localStorage.getItem('krb-cart-'+v)||'null');if(g&&g.week)cartV[v]=g.week}catch(_){}}
+    fetch(API+v,{signal:AbortSignal.timeout(10000)}).then(r=>r.json()).then(j=>{if(Array.isArray(j.week)&&j.week.length){cartV[v]=j.week;if(visor)cabecera()}}).catch(()=>{});
   }
-  // (en el iPhone) el conjunto se lleva al final de la página mientras dura, para que quede encima de todo (menú incluido)
-  function falso(fila){
-    const padre=fila.parentNode,sig=fila.nextSibling,tipo=fila.closest('.con-vertical')?'pc-v':'pc-h';document.body.appendChild(fila);
-    fila.classList.add('pc-falso',tipo);document.documentElement.style.overflow='hidden';
-    const x=document.createElement('button');x.className='pc-cerrar';x.textContent='✕ Salir';document.body.appendChild(x);
-    x.onclick=()=>{fila.classList.remove('pc-falso',tipo);padre.insertBefore(fila,sig);document.documentElement.style.overflow='';x.remove();requestAnimationFrame(escalar)};
-    requestAnimationFrame(escalar);setTimeout(escalar,400);
+  let idxV=0;
+  function cabecera(){
+    if(!visor)return;const L=ORDEN[idxV];if(!L)return;
+    const c=datosTw.find(x=>LOC[x.canal]===L),vivo=!!(c&&c.vivo);
+    const hoy=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Santiago'}));
+    const w=cartV[L.local]||[];const dHoy=w.find(d=>d.today);
+    let prog='';
+    const lista=d=>d.hours.map(h=>`<span><em>${esc(h.time)}</em> ${esc(capi(h.label))}</span>`).join('');
+    if(dHoy&&dHoy.hours&&dHoy.hours.length)prog=`<b>Hoy desde las ${esc(dHoy.hours[0].time)}</b>${dHoy.show?`<span class="vt-show">⭐ ${esc(capi(dHoy.show))}</span>`:''}${lista(dHoy)}`;
+    else{const d=w.find(d=>!d.today&&d.hours&&d.hours.length);if(d)prog=`<b>Próximo: ${esc(capi(d.day))} ${d.date} desde las ${esc(d.hours[0].time)}</b>${d.show?`<span class="vt-show">⭐ ${esc(capi(d.show))}</span>`:''}${lista(d)}`;else prog='<b>Pronto la cartelera de este local</b>'}
+    visor.style.setProperty('--c',L.c);
+    visor.querySelector('.vt-l1').innerHTML=`<b class="vt-local">${esc(L.n)}</b>${vivo?'<span class="vt-estado vivo"><i class="vt-dot"></i>En vivo</span>':'<span class="vt-estado">▣ Pantalla del local</span>'}<span class="vt-fecha">${DIAS[hoy.getDay()]} ${hoy.getDate()} de ${MESL[hoy.getMonth()]}</span><span class="visor-puntos">${ORDEN.map((_,k)=>`<i class="visor-punto${k===idxV?' on':''}"></i>`).join('')}</span>`;
+    visor.querySelector('.vt-l2').innerHTML=prog;
   }
-  addEventListener('resize',()=>requestAnimationFrame(escalar)); // al girar el teléfono
-  document.addEventListener('fullscreenchange',()=>requestAnimationFrame(escalar));
+  function ajustarVisor(){
+    if(!visor)return;
+    visor.style.height=innerHeight+'px';
+    const pista=visor.querySelector('.visor-pista'),W=pista.clientWidth,flechas=matchMedia('(hover:hover)').matches?96:16;
+    pista.querySelectorAll('.visor-slide').forEach(sl=>{
+      const f=sl.querySelector('.vivo-fila');if(!f)return;const bt=sl.querySelector('.vivo-botones');
+      const H=pista.clientHeight-(bt&&getComputedStyle(bt).display!=='none'?bt.offsetHeight+10:0)-12;
+      const gap=10,h=Math.max(60,Math.min(H,(W-flechas-gap)/(16/9+9/16)));
+      f.style.gridTemplateColumns=`${Math.floor(h*16/9)}px ${Math.floor(h*9/16)}px`;f.style.gap=gap+'px';
+    });
+    pista.scrollLeft=idxV*W;
+    requestAnimationFrame(escalar);
+  }
+  function abrirVisor(local){
+    if(visor)return;
+    idxV=Math.max(0,ORDEN.findIndex(L=>L.local===local));
+    visor=document.createElement('div');visor.className='visor';
+    visor.innerHTML=`<header class="visor-top"><div class="vt-txt"><div class="vt-l1"></div><div class="vt-l2"></div></div><button type="button" class="visor-x">✕ Salir</button></header>
+      <div class="visor-pista">${ORDEN.map(L=>`<section class="visor-slide" data-local="${L.local}" style="--c:${L.c}"></section>`).join('')}</div>
+      <button type="button" class="visor-flecha izq" aria-label="Local anterior">‹</button><button type="button" class="visor-flecha der" aria-label="Local siguiente">›</button>`;
+    document.body.appendChild(visor);document.documentElement.classList.add('con-visor');
+    ORDEN.forEach(L=>{const p=packs[L.local];if(p)visor.querySelector(`.visor-slide[data-local="${L.local}"]`).appendChild(p);cartelera(L.local)});
+    const pista=visor.querySelector('.visor-pista');
+    let t=null;pista.addEventListener('scroll',()=>{clearTimeout(t);t=setTimeout(()=>{const k=Math.round(pista.scrollLeft/Math.max(1,pista.clientWidth));if(k!==idxV){idxV=k;cabecera()}},80)});
+    const ir=d=>{idxV=(idxV+d+ORDEN.length)%ORDEN.length;pista.scrollTo({left:idxV*pista.clientWidth,behavior:'smooth'});cabecera()};
+    visor.querySelector('.visor-flecha.izq').onclick=()=>ir(-1);visor.querySelector('.visor-flecha.der').onclick=()=>ir(1);
+    visor.querySelector('.visor-x').onclick=cerrarVisor;
+    cabecera();ajustarVisor();setTimeout(ajustarVisor,300);
+    if(visor.requestFullscreen&&document.fullscreenEnabled)visor.requestFullscreen().then(()=>{try{screen.orientation.lock('landscape').catch(()=>{})}catch(_){}}).catch(()=>{});
+  }
+  function cerrarVisor(){
+    if(!visor)return;const v=visor;visor=null;
+    if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
+    ORDEN.forEach(L=>{const p=packs[L.local];const col=document.querySelector(`.ptl-col[data-local="${L.local}"]`);
+      if(p&&col){const f=p.querySelector('.vivo-fila');if(f){f.style.gridTemplateColumns='';f.style.gap=''}col.querySelector('.ptl-prueba').after(p)}});
+    v.remove();document.documentElement.classList.remove('con-visor');requestAnimationFrame(escalar);
+  }
+  document.addEventListener('fullscreenchange',()=>{if(visor&&!document.fullscreenElement&&visor._fs)cerrarVisor();if(visor)visor._fs=!!document.fullscreenElement;setTimeout(ajustarVisor,100)});
+  addEventListener('keydown',e=>{if(!visor)return;if(e.key==='Escape')cerrarVisor();if(e.key==='ArrowRight')visor.querySelector('.visor-flecha.der').click();if(e.key==='ArrowLeft')visor.querySelector('.visor-flecha.izq').click()});
+  // al girar el teléfono: se vuelve a acomodar (varias veces, porque el iPhone termina de girar después)
+  const reacomodar=()=>{if(!visor){requestAnimationFrame(escalar);return}ajustarVisor();setTimeout(ajustarVisor,250);setTimeout(ajustarVisor,700)};
+  addEventListener('resize',reacomodar);addEventListener('orientationchange',reacomodar);
+  if(window.visualViewport)visualViewport.addEventListener('resize',reacomodar);
   revisar();setInterval(revisar,60000); // revisa cada minuto
 })();
 
