@@ -499,6 +499,10 @@ main,footer{position:relative;z-index:1}
   .lema span{font-size:clamp(17px,min(2.4vw,3.6vh),30px)}
   .bajada{margin-top:calc(-.6 * clamp(8px,2.2vh,28px))}
 }
+/* «Dónde producimos» y «También hemos producido en»: columnas más abiertas, usando más el ancho de la pantalla */
+#tulocal .envoltura,#producidos .envoltura{max-width:1440px}
+@media (min-width:900px){#tulocal .envoltura,#producidos .envoltura{padding-left:40px;padding-right:40px}}
+#tulocal .ptl-pruebas,#producidos .ptl-pruebas{gap:28px}
 .ptl-pag{display:flex;align-items:center;justify-content:center;gap:14px;color:var(--tenue);font-family:var(--f-dato);font-size:13px}
 .ptl-pag button{width:36px;height:36px;border-radius:50%;border:1px solid var(--c);background:transparent;color:var(--c);font-size:18px;cursor:pointer}
 .ptl-pag button:disabled{opacity:.3;cursor:default}
