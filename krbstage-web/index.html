@@ -1117,7 +1117,7 @@ function pintarColumnas(){
     function pintar(){
       vs.forEach(v=>{v.pause();v.removeAttribute('src');v.load()});
       const vids=paginas[pag].vids;
-      caja.innerHTML=vids.map((x,i)=>`<button data-i="${i}" aria-label="Ver video"><video muted playsinline loop preload="none" ${x.poster?`poster="${esc(x.poster)}"`:''} data-src="${esc(x.url)}"></video></button>`).join('')+'<span class="ptl-vacio"></span>'.repeat(6-vids.length); // la página guarda el mismo alto
+      caja.innerHTML=vids.map((x,i)=>`<button data-i="${i}" aria-label="Ver video"><video muted playsinline loop preload="none" ${x.poster?(caja._cerca?`poster="${esc(x.poster)}"`:`data-poster="${esc(x.poster)}"`):''} data-src="${esc(x.url)}"></video></button>`).join('')+'<span class="ptl-vacio"></span>'.repeat(6-vids.length); // la página guarda el mismo alto
       vs=[...caja.querySelectorAll('video')];
       caja.querySelectorAll('button').forEach(b=>{sonarAlPasar(b,b.querySelector('video'));b.onclick=e=>{
         if(!activo){activarBloque(caja);return} // primer toque (celular): se activa el bloque
@@ -1131,7 +1131,9 @@ function pintarColumnas(){
     const ir=d=>{const n=(pag+d+paginas.length)%paginas.length;portadas(n).then(()=>{pag=n;pintar();portadas((n+1)%paginas.length)})};
     if(nav){nav.querySelector('.ptl-pag-ant').onclick=()=>ir(-1);nav.querySelector('.ptl-pag-sig').onclick=()=>ir(1)}
     if(conMouse){col.onmouseenter=()=>activarBloque(caja);col.onmouseleave=()=>{if(bloqueActivo===caja){caja._apagar();bloqueActivo=null}}}
-    pintar();if(paginas.length>1)portadas(1);
+    pintar();
+    // las fotos de los videos se bajan recién cuando el bloque se acerca a la pantalla (la página abre más rápido)
+    if(!caja._obsCerca){caja._obsCerca=new IntersectionObserver(es=>es.forEach(en=>{if(!en.isIntersecting)return;caja._cerca=true;caja.querySelectorAll('video[data-poster]').forEach(v=>{v.poster=v.dataset.poster;v.removeAttribute('data-poster')});if(paginas.length>1)portadas(1);caja._obsCerca.disconnect()}),{rootMargin:'600px 0px'});caja._obsCerca.observe(caja)}
     // si el bloque activo sale de la pantalla, se apaga
     if(!caja._obs){caja._obs=new IntersectionObserver(es=>es.forEach(en=>{if(!en.isIntersecting&&bloqueActivo===caja){caja._apagar();bloqueActivo=null}}));caja._obs.observe(caja)}
   });
@@ -1341,13 +1343,15 @@ document.querySelectorAll('.esp-montados').forEach(g=>{const PRIMEROS=['DF4JT1kg
     card.onclick=e=>{e.preventDefault();const lista=cards.filter(c=>vids[c.dataset.code]);abrirPC(lista.map(c=>({video:vids[c.dataset.code].url,poster:vids[c.dataset.code].poster})),lista.indexOf(card))};
   }
   const buscar=(loc,dia)=>fetch(`https://cantabingo.onrender.com/api/web/instagram/buscar?local=${loc}&desde=${dia}&hasta=${dia}`,{signal:AbortSignal.timeout(30000)}).then(r=>{if(!r.ok)throw 0;return r.json()});
-  (async()=>{
+  // se buscan recién cuando la sección se acerca a la pantalla (así no compiten con la carga inicial)
+  const cargarMontados=async()=>{
     for(const [code,[loc,dia]] of Object.entries(PROPIOS)){
       for(let intento=0;intento<3;intento++){
         try{const j=await buscar(loc,dia);const x=(j.videos||[]).find(v=>v.link&&v.link.includes(code));if(x)poner(code,x);break}catch(_){await new Promise(r=>setTimeout(r,3000))}
       }
     }
-  })();
+  };
+  const obsM=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting)){obsM.disconnect();cargarMontados()}},{rootMargin:'1200px 0px'});obsM.observe(document.querySelector('.esp-montados'));
 })();
 
 /* ===== Videos: YouTube y Twitch mezclados, del más nuevo al más antiguo (se actualiza solo) ===== */
@@ -1386,7 +1390,7 @@ document.querySelectorAll('.esp-montados').forEach(g=>{const PRIMEROS=['DF4JT1kg
 /* ===== portada: video de fondo (sin sonido, en repetición) ===== */
 (function(){
   const v=$('#video-portada');
-  v.src=innerWidth<800?'portada-720.mp4':'portada-1080.mp4';
+  v.src=innerWidth*Math.min(devicePixelRatio||1,1.5)<1700?'portada-720.mp4':'portada-1080.mp4'; // la versión 720 (1,3 Mbps) basta hasta pantallas de 1700 px; carga mucho más rápido
   if(!quieto){v.autoplay=true;v.load();v.play().catch(()=>{})}
   // se pausa cuando no se ve o cuando hay una transmisión en vivo en pantalla (para no quitarle conexión)
   const fuente=v.getAttribute('src');let portadaVisible=true;
