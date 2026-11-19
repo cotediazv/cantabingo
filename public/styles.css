@@ -1838,8 +1838,12 @@ body.kids main { padding-top: 10px; padding-bottom: 20px; }
    información de la pantalla en su propia capa. */
 body.full { background: transparent; }
 body.full::before, #neural-bg { z-index: -1; }
-#lv { will-change: transform; z-index: 1; }
+#lv { z-index: 1; }
 
 /* Pantalla incrustada en otra página y vista en un celular (clase emb-cel, en app.js): el degradado de fondo queda
    quieto (en el iPhone, al girar, se dibujaba encima de la información del local) */
 html.emb-cel body.full::before { animation: none; transform: none; }
+
+/* iPhone (Safari): #app con z-index formaba una capa sin alto (la información va fija encima) y Safari no dibujaba la
+   información del local. El fondo ya va detrás (z-index negativo), así que #app no necesita capa propia. */
+body.full #app { z-index: auto; }
