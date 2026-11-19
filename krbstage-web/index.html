@@ -583,6 +583,8 @@ h2{margin-top:8px}
 .ptl-vivo.con-vertical .vivo-fila{grid-template-columns:1fr calc((100% - 8px) * .2404)}
 .ptl-vivo.con-horizontal .vivo-fila{grid-template-columns:1fr 32%}
 .ptl-vivo .vivo-pc{justify-self:center;padding:6px 12px;font-size:12px}
+.ptl-vivo .vivo-botones{display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+.ptl-vivo .vivo-son.activo{background:var(--c);color:#0c0b12}
 .ptl-vivo.repeticion .vivo-etq{color:#a970ff}
 .rep-icono{font-size:15px;line-height:1}
 .rep-flecha{flex:none;width:26px;height:26px;border-radius:50%;border:1px solid #a970ff;background:transparent;color:#a970ff;font-size:15px;line-height:1;cursor:pointer;padding:0}
@@ -1119,8 +1121,7 @@ function sonarAlPasar(caja,v){
 let sonidoActivo=false;
 function activarSonido(){if(sonidoActivo)return;sonidoActivo=true;
   if(videoEncima)sonar(videoEncima);
-  // transmisiones en vivo: se vuelven a abrir con sonido
-  document.querySelectorAll('.vivo-marco>iframe').forEach(f=>{if(f.src.includes('muted=true'))f.src=f.src.replace('muted=true','muted=false')});
+  // las transmisiones de Twitch no: suenan de a una, con su botón «Escuchar»
   ['pointerdown','keydown','touchend'].forEach(t=>removeEventListener(t,activarSonido,true))}
 ['pointerdown','keydown','touchend'].forEach(t=>addEventListener(t,activarSonido,true));
 // (pedido de Cote) cuando un video de Instagram termina, queda en su portada (no se repite ni queda en negro)
@@ -1338,7 +1339,7 @@ elegirLocal('kennedy');
   // (con la pantalla del local al lado) o, si no está transmitiendo, sus últimas transmisiones guardadas.
   // Se prende solo cuando algún local está en vivo (salvo que la persona lo haya movido a mano).
   const sw=$('#sw-twitch'),punto=document.querySelector('.ptl-switch .punto-vivo');
-  let datosTw=[],aMano=false,clave='';
+  let datosTw=[],aMano=false,clave='',canalSonando=null;
   sw.addEventListener('change',()=>{aMano=true;pintar()});
   // las pantallas del local se dibujan a su tamaño real (1920x1080 o 1080x1920) y se achican para caber
   const escalar=()=>document.querySelectorAll('.ptl-vivo .pant').forEach(d=>{const f=d.firstElementChild;f.style.transform=`scale(${d.clientWidth/f.width})`});
@@ -1351,9 +1352,12 @@ elegirLocal('kennedy');
   function packVivo(canal,L,c){
     const vivo=!!(c&&c.vivo),todos=(c&&c.videos||[]),limpios=todos.filter(v=>!v.muted),vods=limpios.length?limpios:todos;let i=0;
     if(!vivo&&!vods.length){const d=document.createElement('div');d.className='ptl-tw';d.innerHTML='<p class="tw-nada">Todavía no hay transmisiones guardadas de este local.</p>';return d}
-    const sonido=()=>typeof sonidoActivo!=='undefined'&&sonidoActivo?'false':'true';
-    const fuente=()=>vivo?`https://player.twitch.tv/?channel=${canal}${padres}&muted=${sonido()}&autoplay=true&controls=false`
-      :`https://player.twitch.tv/?video=v${vods[i].id}${padres}&muted=${sonido()}&autoplay=true&controls=false`;
+    // sonido: un local a la vez (botón «Escuchar»); en la repetición se sigue desde el mismo punto al cambiar el sonido
+    let t0=Date.now(),base=0;
+    const desde=()=>{const s=Math.floor(base);return s>5?`&time=${Math.floor(s/3600)}h${Math.floor(s%3600/60)}m${s%60}s`:''};
+    const fuente=()=>{const m=canalSonando===canal?'false':'true';
+      return vivo?`https://player.twitch.tv/?channel=${canal}${padres}&muted=${m}&autoplay=true&controls=false`
+        :`https://player.twitch.tv/?video=v${vods[i].id}${padres}${desde()}&muted=${m}&autoplay=true&controls=false`};
     // nada encima del reproductor de Twitch (si algo lo tapa, Twitch lo pausa): la pantalla del local va al lado
     const caja=document.createElement('div');caja.className='ptl-vivo vivo-item'+(L.vertical?' con-vertical':' con-horizontal')+(vivo?'':' repeticion');
     const etiqueta=()=>vivo?`<span class="punto-vivo"></span><span style="white-space:nowrap">En vivo</span>${c.vivo.title?`<span class="vivo-tit">· ${esc(c.vivo.title)}</span>`:''}`
@@ -1361,12 +1365,18 @@ elegirLocal('kennedy');
     caja.innerHTML=`<div class="vivo-etq">${etiqueta()}</div>
       <div class="vivo-fila"><div class="vivo-marco"><iframe src="${fuente()}" allow="autoplay; fullscreen" tabindex="-1" title="${vivo?'En vivo':'Repetición'} desde ${esc(L.n)}"></iframe></div>
       ${L.vertical?pant('pant-v',L.vertical,1080,1920,'Pantalla vertical del local',L):pant('pant-h',L.horizontal,1920,1080,'Pantalla horizontal del local')}</div>
-      <button type="button" class="vivo-pc">⛶ Pantalla completa</button>`;
+      <div class="vivo-botones"><button type="button" class="vivo-pc vivo-son">🔇 Escuchar</button><button type="button" class="vivo-pc vivo-full">⛶ Pantalla completa</button></div>`;
     const etq=caja.querySelector('.vivo-etq');
-    const conectar=()=>etq.querySelectorAll('.rep-flecha').forEach(b=>b.onclick=()=>{i=(i+ +b.dataset.d+vods.length)%vods.length;caja.querySelector('.vivo-marco>iframe').src=fuente();etq.innerHTML=etiqueta();conectar()});
+    const conectar=()=>etq.querySelectorAll('.rep-flecha').forEach(b=>b.onclick=()=>{i=(i+ +b.dataset.d+vods.length)%vods.length;base=0;t0=Date.now();caja.querySelector('.vivo-marco>iframe').src=fuente();etq.innerHTML=etiqueta();conectar()});
     conectar();
     caja.querySelectorAll('.pant').forEach(d=>obsPant.observe(d));
-    caja.querySelector('.vivo-pc').onclick=()=>pantallaCompleta(caja.querySelector('.vivo-fila'));
+    caja.querySelector('.vivo-full').onclick=()=>pantallaCompleta(caja.querySelector('.vivo-fila'));
+    const bSon=caja.querySelector('.vivo-son'),marco=caja.querySelector('.vivo-marco>iframe');
+    let suena=canalSonando===canal;
+    caja._sonido=()=>{const ahora=canalSonando===canal;bSon.textContent=ahora?'🔊 Sonando':'🔇 Escuchar';bSon.classList.toggle('activo',ahora);
+      if(ahora===suena)return;suena=ahora;base+=(Date.now()-t0)/1000;t0=Date.now();marco.src=fuente()};
+    bSon.onclick=()=>{canalSonando=canalSonando===canal?null:canal;document.querySelectorAll('.ptl-vivo').forEach(x=>x._sonido&&x._sonido())};
+    caja._sonido();
     return caja;
   }
   function pintar(){
