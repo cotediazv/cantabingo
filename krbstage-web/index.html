@@ -583,6 +583,10 @@ h2{margin-top:8px}
 .ptl-vivo.con-vertical .vivo-fila{grid-template-columns:1fr calc((100% - 8px) * .2404)}
 .ptl-vivo.con-horizontal .vivo-fila{grid-template-columns:1fr 32%}
 .ptl-vivo .vivo-pc{justify-self:center;padding:6px 12px;font-size:12px}
+.ptl-vivo.repeticion .vivo-etq{color:#a970ff}
+.rep-icono{font-size:15px;line-height:1}
+.rep-flecha{flex:none;width:26px;height:26px;border-radius:50%;border:1px solid #a970ff;background:transparent;color:#a970ff;font-size:15px;line-height:1;cursor:pointer;padding:0}
+.rep-flecha:first-of-type{margin-left:auto}
 .ptl-pag{display:flex;align-items:center;justify-content:center;gap:14px;color:var(--tenue);font-family:var(--f-dato);font-size:13px}
 .ptl-pag button{width:36px;height:36px;border-radius:50%;border:1px solid var(--c);background:transparent;color:var(--c);font-size:18px;cursor:pointer}
 .ptl-pag button:disabled{opacity:.3;cursor:default}
@@ -1341,23 +1345,26 @@ elegirLocal('kennedy');
   const padres=['www.krbstage.cl','krbstage.cl',location.hostname].filter((x,i,a)=>x&&a.indexOf(x)===i).map(x=>'&parent='+x).join('');
   const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   const fecha=t=>{const d=new Date(t);return isNaN(d)?'':`${d.getDate()} ${MESES[d.getMonth()]}`};
+  // el conjunto: la transmisión (en vivo o, si no hay, la repetición de la última, una a la vez) y, al lado, la pantalla del local
   function packVivo(canal,L,c){
+    const vivo=!!(c&&c.vivo),vods=(c&&c.videos||[]);let i=0;
+    if(!vivo&&!vods.length){const d=document.createElement('div');d.className='ptl-tw';d.innerHTML='<p class="tw-nada">Todavía no hay transmisiones guardadas de este local.</p>';return d}
+    const sonido=()=>typeof sonidoActivo!=='undefined'&&sonidoActivo?'false':'true';
+    const fuente=()=>vivo?`https://player.twitch.tv/?channel=${canal}${padres}&muted=${sonido()}&autoplay=true&controls=false`
+      :`https://player.twitch.tv/?video=v${vods[i].id}${padres}&muted=${sonido()}&autoplay=true&controls=false`;
     // nada encima del reproductor de Twitch (si algo lo tapa, Twitch lo pausa): la pantalla del local va al lado
-    const caja=document.createElement('div');caja.className='ptl-vivo vivo-item'+(L.vertical?' con-vertical':' con-horizontal');
-    caja.innerHTML=`<div class="vivo-etq"><span class="punto-vivo"></span><span style="white-space:nowrap">En vivo ahora</span>${c.vivo.title?`<span class="vivo-tit">· ${esc(c.vivo.title)}</span>`:''}</div>
-      <div class="vivo-fila"><div class="vivo-marco"><iframe src="https://player.twitch.tv/?channel=${canal}${padres}&muted=${typeof sonidoActivo!=='undefined'&&sonidoActivo?'false':'true'}&autoplay=true&controls=false" allow="autoplay; fullscreen" tabindex="-1" title="En vivo desde ${esc(L.n)}"></iframe></div>
+    const caja=document.createElement('div');caja.className='ptl-vivo vivo-item'+(L.vertical?' con-vertical':' con-horizontal')+(vivo?'':' repeticion');
+    const etiqueta=()=>vivo?`<span class="punto-vivo"></span><span style="white-space:nowrap">En vivo</span>${c.vivo.title?`<span class="vivo-tit">· ${esc(c.vivo.title)}</span>`:''}`
+      :`<span class="rep-icono">⟲</span><span style="white-space:nowrap">Repetición</span><span class="vivo-tit">· ${esc(fecha(vods[i].published))}${vods[i].title?' · '+esc(vods[i].title):''}</span>${vods.length>1?`<button type="button" class="rep-flecha" data-d="-1" aria-label="Transmisión anterior">‹</button><button type="button" class="rep-flecha" data-d="1" aria-label="Transmisión siguiente">›</button>`:''}`;
+    caja.innerHTML=`<div class="vivo-etq">${etiqueta()}</div>
+      <div class="vivo-fila"><div class="vivo-marco"><iframe src="${fuente()}" allow="autoplay; fullscreen" tabindex="-1" title="${vivo?'En vivo':'Repetición'} desde ${esc(L.n)}"></iframe></div>
       ${L.vertical?pant('pant-v',L.vertical,1080,1920,'Pantalla vertical del local',L):pant('pant-h',L.horizontal,1920,1080,'Pantalla horizontal del local')}</div>
       <button type="button" class="vivo-pc">⛶ Pantalla completa</button>`;
+    const etq=caja.querySelector('.vivo-etq');
+    const conectar=()=>etq.querySelectorAll('.rep-flecha').forEach(b=>b.onclick=()=>{i=(i+ +b.dataset.d+vods.length)%vods.length;caja.querySelector('.vivo-marco>iframe').src=fuente();etq.innerHTML=etiqueta();conectar()});
+    conectar();
     caja.querySelectorAll('.pant').forEach(d=>obsPant.observe(d));
     caja.querySelector('.vivo-pc').onclick=()=>pantallaCompleta(caja.querySelector('.vivo-fila'));
-    return caja;
-  }
-  function grillaTw(L,c){
-    // últimas transmisiones guardadas del canal (6), en fotos; al tocar una se abre en pantalla completa
-    const vids=(c&&c.videos||[]).slice(0,6);const caja=document.createElement('div');caja.className='ptl-tw';
-    if(!vids.length){caja.innerHTML='<p class="tw-nada">Todavía no hay transmisiones guardadas de este local.</p>';return caja}
-    caja.innerHTML=`<div class="tw-etq">Últimas transmisiones</div><div class="tw-grilla">${vids.map((v,i)=>`<button data-i="${i}" aria-label="Ver transmisión"><span class="tw-foto" style="background-image:url('${esc(v.thumbnail)}')"></span><span class="tw-dato">${esc(fecha(v.published))}${v.duration?` · ${esc(v.duration)}`:''}</span></button>`).join('')}</div>`;
-    caja.querySelectorAll('button').forEach(b=>b.onclick=()=>abrirPC(vids.map(v=>({tw:{video:v.id},thumb:v.thumbnail})),+b.dataset.i));
     return caja;
   }
   function pintar(){
@@ -1369,7 +1376,7 @@ elegirLocal('kennedy');
       col.querySelectorAll('.ptl-vivo,.ptl-tw').forEach(x=>x.remove());col.classList.toggle('modo-tw',modo);
       if(!modo)continue;
       const g=col.querySelector('.ptl-grilla');if(g&&g._apagar)g._apagar();
-      col.querySelector('.ptl-prueba').after(vivo?packVivo(canal,L,c):grillaTw(L,c));
+      col.querySelector('.ptl-prueba').after(packVivo(canal,L,c));
     }
     requestAnimationFrame(escalar);
   }
