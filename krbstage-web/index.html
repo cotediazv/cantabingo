@@ -525,7 +525,7 @@ h2{margin-top:8px}
   /* en el celular: un lugar por pantalla, y se pasa al siguiente deslizando hacia el lado */
   #tulocal .ptl-pruebas,#producidos .ptl-pruebas{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;margin-inline:-20px;padding-inline:20px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
   #tulocal .ptl-pruebas::-webkit-scrollbar,#producidos .ptl-pruebas::-webkit-scrollbar{display:none}
-  #tulocal .ptl-col,#producidos .ptl-col{flex:0 0 86%;scroll-snap-align:center;grid-template-rows:auto}
+  #tulocal .ptl-col,#producidos .ptl-col{flex:0 0 86%;scroll-snap-align:center;grid-template-rows:auto;align-content:start}
   .ptl-col .ptl-grilla{width:min(100%,max(250px,calc((100svh - 450px) / 1.2 + 24px)));gap:12px 14px}
   .desliza{display:block;margin-top:10px;font-family:var(--f-dato);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--tenue);text-align:center}
 }
@@ -553,8 +553,30 @@ h2{margin-top:8px}
 }
 
 /* en vivo dentro de la columna del local: reemplaza a los videos de Instagram mientras dura la transmisión */
-.ptl-col.en-vivo>.ptl-grilla,.ptl-col.en-vivo>.ptl-pag{display:none!important}
-.ptl-vivo{grid-row:2;display:grid;gap:8px;align-content:start}
+/* switch «Instagram / Twitch» junto al título de «Dónde producimos» */
+.ptl-cabeza .ptl-tit{margin-top:0}
+.ptl-cabeza{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 24px}
+.ptl-switch{display:inline-flex;align-items:center;gap:10px;cursor:pointer;font-family:var(--f-dato);font-size:13px;letter-spacing:.06em;color:var(--tenue);user-select:none}
+.ptl-switch input{position:absolute;opacity:0;width:1px;height:1px}
+.sw-pista{position:relative;width:46px;height:26px;border-radius:999px;background:var(--linea);transition:background .2s}
+.sw-bola{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--texto);transition:transform .2s}
+.ptl-switch input:checked+.sw-pista{background:#9146ff}
+.ptl-switch input:checked+.sw-pista .sw-bola{transform:translateX(20px)}
+.ptl-switch input:focus-visible+.sw-pista{outline:2px solid var(--foco);outline-offset:2px}
+.ptl-switch input:not(:checked)~.op-ig,.ptl-switch input:checked~.op-tw{color:var(--texto)}
+.op-tw{display:inline-flex;align-items:center;gap:6px}
+.ptl-col.modo-tw>.ptl-grilla,.ptl-col.modo-tw>.ptl-pag{display:none!important}
+.ptl-tw{display:grid;gap:8px;align-content:start}
+.tw-etq{font-family:var(--f-dato);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#a970ff}
+.tw-grilla{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tw-grilla button{all:unset;cursor:pointer;display:grid;gap:4px}
+.tw-foto{display:block;aspect-ratio:16/9;border-radius:8px;border:1px solid var(--c);background:var(--noche) center/cover no-repeat}
+.tw-grilla button:hover .tw-foto{border-color:#a970ff}
+.tw-dato{font-size:12px;color:var(--tenue)}
+.tw-nada{color:var(--tenue);font-size:14px;margin:8px 0}
+.ptl-pag{display:none!important}
+.ptl-vivo{display:grid;gap:8px;align-content:start}
+@media (min-width:901px){#tulocal .ptl-vivo,#tulocal .ptl-tw{grid-row:2}}
 .ptl-vivo .vivo-etq{display:flex;align-items:center;gap:8px;font-family:var(--f-dato);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#ff4d4d;min-width:0}
 .ptl-vivo .vivo-tit{flex:1;min-width:0;color:var(--tenue);letter-spacing:.04em;text-transform:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ptl-vivo .vivo-fila{gap:8px}
@@ -792,7 +814,9 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
 
   <section class="banda tulocal" id="tulocal">
     <div class="envoltura">
-      <h3 class="ptl-tit">Dónde producimos</h3>
+      <div class="ptl-cabeza"><h3 class="ptl-tit">Dónde producimos</h3>
+        <label class="ptl-switch"><span class="op-ig">Instagram</span><input type="checkbox" id="sw-twitch" role="switch" aria-label="Ver Twitch: en vivo o últimas transmisiones"><span class="sw-pista"><span class="sw-bola"></span></span><span class="op-tw"><span class="punto-vivo" hidden></span>Twitch · en vivo</span></label>
+      </div>
       <div class="ptl-pruebas">
         <div class="ptl-col" data-local="kennedy" style="--c:var(--kennedy)">
           <article class="ptl-prueba"><span class="ptl-num">Mercado Kennedy</span><b>Más de tres años de éxito sostenido</b><small class="ptl-dato ptl-desde">Desde mayo de 2023 a la fecha</small><small class="ptl-dato">Parque Arauco Oriente, 4.º piso · Jueves a sábado</small><a class="ptl-arroba" href="https://www.instagram.com/krbstage/" target="_blank" rel="noopener">@krbstage</a></article>
@@ -1304,35 +1328,59 @@ elegirLocal('kennedy');
     krbstage3:{local:'tobalaba',n:'Espacio Gastronómico Tobalaba',c:'var(--tobalaba)',horizontal:'#/pantalla/tobalaba'},
     krbstage:{local:'frida',n:'Frida Kahlo',c:'var(--frida)',horizontal:'#/tablero'}
   };
-  let actuales='';
+  // Switch «Instagram / Twitch» arriba de «Dónde producimos»: con Twitch, cada local muestra su transmisión en vivo
+  // (con la pantalla del local al lado) o, si no está transmitiendo, sus últimas transmisiones guardadas.
+  // Se prende solo cuando algún local está en vivo (salvo que la persona lo haya movido a mano).
+  const sw=$('#sw-twitch'),punto=document.querySelector('.ptl-switch .punto-vivo');
+  let datosTw=[],aMano=false,clave='';
+  sw.addEventListener('change',()=>{aMano=true;pintar()});
   // las pantallas del local se dibujan a su tamaño real (1920x1080 o 1080x1920) y se achican para caber
   const escalar=()=>document.querySelectorAll('.ptl-vivo .pant').forEach(d=>{const f=d.firstElementChild;f.style.transform=`scale(${d.clientWidth/f.width})`});
   const obsPant=new ResizeObserver(escalar);
   const pant=(clase,ruta,w,h,t,L)=>`<div class="pant ${clase}"><iframe src="${SALA}${L&&L.liviano?`&liviano=${encodeURIComponent(L.liviano)}&lver=${L.lver}`:''}${ruta}" width="${w}" height="${h}" title="${t}" loading="lazy" tabindex="-1"></iframe></div>`;
+  const padres=['www.krbstage.cl','krbstage.cl',location.hostname].filter((x,i,a)=>x&&a.indexOf(x)===i).map(x=>'&parent='+x).join('');
+  const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const fecha=t=>{const d=new Date(t);return isNaN(d)?'':`${d.getDate()} ${MESES[d.getMonth()]}`};
+  function packVivo(canal,L,c){
+    // nada encima del reproductor de Twitch (si algo lo tapa, Twitch lo pausa): la pantalla del local va al lado
+    const caja=document.createElement('div');caja.className='ptl-vivo vivo-item'+(L.vertical?' con-vertical':' con-horizontal');
+    caja.innerHTML=`<div class="vivo-etq"><span class="punto-vivo"></span><span style="white-space:nowrap">En vivo ahora</span>${c.vivo.title?`<span class="vivo-tit">· ${esc(c.vivo.title)}</span>`:''}</div>
+      <div class="vivo-fila"><div class="vivo-marco"><iframe src="https://player.twitch.tv/?channel=${canal}${padres}&muted=${typeof sonidoActivo!=='undefined'&&sonidoActivo?'false':'true'}&autoplay=true&controls=false" allow="autoplay; fullscreen" tabindex="-1" title="En vivo desde ${esc(L.n)}"></iframe></div>
+      ${L.vertical?pant('pant-v',L.vertical,1080,1920,'Pantalla vertical del local',L):pant('pant-h',L.horizontal,1920,1080,'Pantalla horizontal del local')}</div>
+      <button type="button" class="vivo-pc">⛶ Pantalla completa</button>`;
+    caja.querySelectorAll('.pant').forEach(d=>obsPant.observe(d));
+    caja.querySelector('.vivo-pc').onclick=()=>pantallaCompleta(caja.querySelector('.vivo-fila'));
+    return caja;
+  }
+  function grillaTw(L,c){
+    // últimas transmisiones guardadas del canal (6), en fotos; al tocar una se abre en pantalla completa
+    const vids=(c&&c.videos||[]).slice(0,6);const caja=document.createElement('div');caja.className='ptl-tw';
+    if(!vids.length){caja.innerHTML='<p class="tw-nada">Todavía no hay transmisiones guardadas de este local.</p>';return caja}
+    caja.innerHTML=`<div class="tw-etq">Últimas transmisiones</div><div class="tw-grilla">${vids.map((v,i)=>`<button data-i="${i}" aria-label="Ver transmisión"><span class="tw-foto" style="background-image:url('${esc(v.thumbnail)}')"></span><span class="tw-dato">${esc(fecha(v.published))}${v.duration?` · ${esc(v.duration)}`:''}</span></button>`).join('')}</div>`;
+    caja.querySelectorAll('button').forEach(b=>b.onclick=()=>abrirPC(vids.map(v=>({tw:{video:v.id},thumb:v.thumbnail})),+b.dataset.i));
+    return caja;
+  }
+  function pintar(){
+    const modo=sw.checked;
+    for(const [canal,L] of Object.entries(LOC)){
+      const col=document.querySelector(`.ptl-col[data-local="${L.local}"]`);if(!col)continue;
+      const c=datosTw.find(v=>v.canal===canal);const vivo=!!(c&&c.vivo);
+      const k=modo?(vivo?'vivo':'tw'):'ig';if(col.dataset.modo===k)continue;col.dataset.modo=k;
+      col.querySelectorAll('.ptl-vivo,.ptl-tw').forEach(x=>x.remove());col.classList.toggle('modo-tw',modo);
+      if(!modo)continue;
+      const g=col.querySelector('.ptl-grilla');if(g&&g._apagar)g._apagar();
+      col.querySelector('.ptl-prueba').after(vivo?packVivo(canal,L,c):grillaTw(L,c));
+    }
+    requestAnimationFrame(escalar);
+  }
   function revisar(){
     fetch('https://cantabingo.onrender.com/api/web/twitch',{signal:AbortSignal.timeout(10000)}).then(r=>r.json()).then(j=>{
-      const vivos=(j.canales||[]).filter(c=>c.vivo&&LOC[c.canal]);
-      const clave=vivos.map(c=>c.canal).sort().join(',');
-      if(clave===actuales)return;actuales=clave; // solo se rehace si cambió quién transmite
-      window.vivoActivo=vivos.length>0;dispatchEvent(new Event('vivo-cambio'));
-      const padres=['www.krbstage.cl','krbstage.cl',location.hostname].filter((x,i,a)=>x&&a.indexOf(x)===i).map(x=>'&parent='+x).join('');
-      for(const [canal,L] of Object.entries(LOC)){
-        const col=document.querySelector(`.ptl-col[data-local="${L.local}"]`);if(!col)continue;
-        const c=vivos.find(v=>v.canal===canal);let caja=col.querySelector('.ptl-vivo');
-        if(!c){if(caja){caja.remove();col.classList.remove('en-vivo')}continue}
-        if(caja)continue;
-        const g=col.querySelector('.ptl-grilla');if(g&&g._apagar)g._apagar();
-        caja=document.createElement('div');caja.className='ptl-vivo vivo-item'+(L.vertical?' con-vertical':' con-horizontal');
-        // nada encima del reproductor de Twitch (si algo lo tapa, Twitch lo pausa): la pantalla del local va al lado
-        caja.innerHTML=`<div class="vivo-etq"><span class="punto-vivo"></span><span style="white-space:nowrap">En vivo ahora</span>${c.vivo.title?`<span class="vivo-tit">· ${esc(c.vivo.title)}</span>`:''}</div>
-          <div class="vivo-fila"><div class="vivo-marco"><iframe src="https://player.twitch.tv/?channel=${canal}${padres}&muted=${typeof sonidoActivo!=='undefined'&&sonidoActivo?'false':'true'}&autoplay=true&controls=false" allow="autoplay; fullscreen" tabindex="-1" title="En vivo desde ${esc(L.n)}"></iframe></div>
-          ${L.vertical?pant('pant-v',L.vertical,1080,1920,'Pantalla vertical del local',L):pant('pant-h',L.horizontal,1920,1080,'Pantalla horizontal del local')}</div>
-          <button type="button" class="vivo-pc">⛶ Pantalla completa</button>`;
-        col.querySelector('.ptl-prueba').after(caja);col.classList.add('en-vivo');
-        caja.querySelectorAll('.pant').forEach(d=>obsPant.observe(d));
-        caja.querySelector('.vivo-pc').onclick=()=>pantallaCompleta(caja.querySelector('.vivo-fila'));
-      }
-      requestAnimationFrame(escalar);
+      datosTw=(j.canales||[]).filter(c=>LOC[c.canal]);
+      const vivos=datosTw.filter(c=>c.vivo).map(c=>c.canal).sort().join(',');
+      window.vivoActivo=!!vivos;dispatchEvent(new Event('vivo-cambio'));punto.hidden=!vivos;
+      if(vivos&&!aMano)sw.checked=true; // se prende solo si alguien está en vivo
+      if(vivos!==clave){clave=vivos;document.querySelectorAll('.ptl-col[data-modo]').forEach(c=>delete c.dataset.modo)} // cambió quién transmite: se rehace
+      pintar();
     }).catch(()=>{});
   }
   // pantalla completa del conjunto (transmisión + pantalla del local). En el iPhone, que no deja poner
