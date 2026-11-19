@@ -642,6 +642,8 @@ html.con-visor,html.con-visor body{overflow:hidden}
 .visor-slide .vivo-fila{display:grid;align-items:center}
 .visor-flecha{position:absolute;top:55%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.55);color:#fff;font-size:24px;line-height:1;cursor:pointer;z-index:2}
 .visor-flecha.izq{left:6px}.visor-flecha.der{right:6px}
+/* teléfono girado (poca altura): cabecera más angosta para que las pantallas queden lo más grandes posible */
+@media (max-height:520px){.visor-top{padding-top:4px;padding-bottom:3px;gap:8px}.vt-txt{gap:1px}.vt-local{font-size:17px}.vt-estado{font-size:10px}.vt-fecha,.vt-l2{font-size:11.5px}.visor-x{padding:4px 10px;font-size:12px}.visor-slide{padding:3px 0}.visor-slide>.ptl-vivo{gap:4px}.visor-slide .vivo-pc{padding:3px 10px;font-size:11px}}
 @media (hover:none){.visor-flecha{display:none}}
 .visor-puntos{display:inline-flex;gap:6px;align-self:center;flex:none}
 .visor-punto{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.35)}.visor-punto.on{background:var(--c)}
@@ -1513,10 +1515,10 @@ elegirLocal('kennedy');
   function ajustarVisor(){
     if(!visor)return;
     visor.style.height=innerHeight+'px';
-    const pista=visor.querySelector('.visor-pista'),W=pista.clientWidth,flechas=matchMedia('(hover:hover)').matches?96:16;
+    const pista=visor.querySelector('.visor-pista'),W=pista.clientWidth,flechas=matchMedia('(hover:hover)').matches?96:8;
     pista.querySelectorAll('.visor-slide').forEach(sl=>{
       const f=sl.querySelector('.vivo-fila');if(!f)return;const bt=sl.querySelector('.vivo-botones');
-      const H=pista.clientHeight-(bt&&getComputedStyle(bt).display!=='none'?bt.offsetHeight+10:0)-12;
+      const H=pista.clientHeight-(bt&&getComputedStyle(bt).display!=='none'?bt.offsetHeight+6:0)-8;
       const gap=10,h=Math.max(60,Math.min(H,(W-flechas-gap)/(16/9+9/16)));
       f.style.gridTemplateColumns=`${Math.floor(h*16/9)}px ${Math.floor(h*9/16)}px`;f.style.gap=gap+'px';
     });
