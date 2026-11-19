@@ -524,12 +524,12 @@ h2{margin-top:8px}
   #tulocal .ptl-col,#producidos .ptl-col{grid-row:span 4;grid-template-rows:subgrid;gap:0}
   #tulocal .ptl-enlaces{grid-row:4}
   /* las tres tarjetas iguales: el título ocupa siempre dos líneas (pegado abajo), así fecha, dirección y @ quedan a la misma altura */
-  #tulocal .ptl-prueba b{min-height:2em;display:flex;align-items:flex-end}
-  #tulocal .ptl-prueba .ptl-num{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* cada línea de la tarjeta en una sola línea; si el texto es largo, se achica hasta caber (pedido de Cote) */
+  #tulocal .ptl-prueba b,#tulocal .ptl-prueba .ptl-dato,#tulocal .ptl-prueba .ptl-num{white-space:nowrap;overflow:hidden;text-overflow:clip;display:block;padding-top:.14em;padding-bottom:.08em}
+
   /* el @ de Instagram arriba a la derecha, al frente del nombre del local y con el mismo margen (pedido de Cote) */
   #tulocal .ptl-prueba .ptl-arroba{position:absolute;top:16px;right:18px;margin:0;line-height:1;font-size:13px}
   #tulocal .ptl-prueba .ptl-num{padding-right:110px;line-height:1}
-  @media (max-width:1400px){#tulocal .ptl-prueba .ptl-num{letter-spacing:.07em;padding-right:100px}}
   /* videos de Instagram más grandes: ocupan todo el ancho de la tarjeta de arriba (pedido de Cote) */
   #tulocal .ptl-col .ptl-grilla,#producidos .ptl-col .ptl-grilla{width:100%;margin-top:10px;box-sizing:border-box;padding:16px;border:1px solid var(--linea);border-radius:10px;background:var(--tarima);gap:14px;justify-content:stretch} /* recuadro como el de la tarjeta, con los videos simétricos dentro */
 }
@@ -1669,6 +1669,15 @@ elegirLocal('kennedy');
   revisar();setInterval(revisar,20000); // revisa cada 20 segundos
 })();
 
+/* «Dónde producimos»: cada línea de las tarjetas en una sola línea, achicando la letra si no cabe (solo computador) */
+(()=>{const lineas=()=>document.querySelectorAll('#tulocal .ptl-prueba b,#tulocal .ptl-prueba .ptl-dato,#tulocal .ptl-prueba .ptl-num');
+  const ajustar=()=>{const pc=innerWidth>900;lineas().forEach(e=>{e.style.fontSize='';e.style.lineHeight='';if(!pc)return;
+    const cs=getComputedStyle(e),base=parseFloat(cs.fontSize);let t=base;
+    e.style.lineHeight=cs.lineHeight==='normal'?(base*1.2)+'px':cs.lineHeight; // misma altura de línea: las tres tarjetas siguen parejas
+    while(e.scrollWidth>e.clientWidth+1&&t>base*.55){t-=.5;e.style.fontSize=t+'px'}})};
+  addEventListener('resize',()=>requestAnimationFrame(ajustar));
+  (document.fonts&&document.fonts.ready||Promise.resolve()).then(ajustar);ajustar();
+})();
 /* flechas de la fila de montados */
 document.querySelectorAll('.esp-fila').forEach(f=>{const pista=f.querySelector('.esp-montados');f.querySelector('.esp-flecha.izq').onclick=()=>pista.scrollBy({left:-pista.clientWidth*.8});f.querySelector('.esp-flecha.der').onclick=()=>pista.scrollBy({left:pista.clientWidth*.8})});
 /* los espectáculos montados: primero los 11 en el orden de Cote; el resto en orden al azar (cambia cada vez que se abre la página) */
