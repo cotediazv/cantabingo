@@ -18,10 +18,19 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
   const file = (v) => path.join(dir, `vertical-${v}.mp4`);
   const conf = (v) => (db.vertical[v] ||= { video: 0, size: 0, mode: 'auto' });
 
-  // Qué actividad hay ahora en el local: la sala de juegos completa de ese local abierta y con algo en el escenario
+  // Qué actividad hay ahora en el local: la sala de juegos completa de ese local abierta y con algo en juego
+  // (pedido de Cote: si la sala está abierta pero sin bingo, El Rosco ni otro juego en curso, se ve la información
+  // del local con los shows que vienen). En el bingo cuenta como «en juego» si ya salieron números, si está el QR
+  // grande para entrar o si hay ganador en pantalla.
   const activityOf = (v) => {
     const s = Object.values(db.sessions)[0];
-    return s && (s.theme || 'frida') === v && db.stage && db.stage !== 'none' ? 'sala' : null;
+    if (!s || (s.theme || 'frida') !== v || !db.stage || db.stage === 'none') return null;
+    if (db.stage === 'bingo') {
+      const celebrate = !s.hideWin && (s.results || []).some((r) => r.validated && !r.dismissed);
+      return (s.drawn || []).length || s.bigQr || celebrate ? 'sala' : null;
+    }
+    if (db.stage === 'rueda') return Object.keys(db.wheels || {}).length ? 'sala' : null;
+    return 'sala'; // sorteo, votación, karaoke, show, Instagram o QR: el animador lo puso en pantalla
   };
   // Locales con sala light (pedido de Cote): en «Automático», si no hay juegos, la pantalla muestra el fondo vertical de
   // la sala light (QR para entrar, lo que viene esta noche y en la semana, la cartelera del mes, horarios y karaoke).
@@ -57,8 +66,9 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
     const hasVideo = !!c.video && fs.existsSync(file(v));
     // Los juegos de la sala completa siempre pasan adelante (salvo «Siempre el video»)
     let show = c.mode === 'video' ? 'video' : c.mode === 'actividad' ? (act || rest || 'sala') : (act || rest || 'video');
-    if (show === 'video' && !hasVideo) show = act || rest || 'sala'; // sin video subido
-    return { screen: v, venue: SCREENS[v], name: VENUES[SCREENS[v]], mode: c.mode, activity: act, show, video: hasVideo ? c.video : 0, size: hasVideo ? c.size : 0 };
+    if (show === 'video' && !hasVideo) show = act || 'light'; // sin video subido y sin juegos: la información del local (shows que vienen, horarios, QR)
+    // lightStage: lo que el equipo eligió en el panel de la sala light del local; la pantalla lo sigue cuando muestra la información
+    return { screen: v, venue: SCREENS[v], name: VENUES[SCREENS[v]], lightStage: ((db.lights || {})[venue] || {}).stage || 'cartelera', karaokeNow: !!karaoke.nowOf(venue).now, mode: c.mode, activity: act, show, video: hasVideo ? c.video : 0, size: hasVideo ? c.size : 0 };
   };
 
   app.get('/api/vertical/:local', (req, res) => {

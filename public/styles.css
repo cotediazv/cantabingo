@@ -1768,3 +1768,67 @@ body.full.has-vm #lv { padding-bottom: 7vh; }
 .lv-slide h2 { white-space: normal; text-align: center; }
 /* Fondo vertical de Tobalaba: sus colores (rojo) */
 #lv.th-tobalaba { --lv-main: #c81e1e; --lv-tag: #3d0a0a; --lv-gold: #ffc400; --lv-shade: rgba(70, 0, 0, .55); }
+/* Información del local en una pantalla horizontal (Tobalaba): arriba el local, abajo el recuadro que cambia y el QR al lado */
+@media (orientation: landscape) {
+  #lv { grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto minmax(0, 1fr); gap: 3vh 2.4vw; padding: 3vh 3vw; }
+  body.full.has-vm #lv { padding-bottom: 8vh; }
+  .lv-top { grid-column: 1 / -1; grid-template-columns: auto auto auto; align-items: center; justify-content: center; gap: 2vw; padding: 1.6vh 3vw; }
+  .lv-top b { font-size: 7vh; }
+  .lv-top small { font-size: 2.8vh; }
+  .lv-card { padding: 3vh 3vw 2vh; }
+  .lv-slide h2 { font-size: 3.6vh; }
+  .lv-now b { font-size: 6vh; }
+  .lv-list b, .lv-hours b, .lv-week b { font-size: 3.2vh; }
+  .lv-hours em, .lv-week em { font-size: 3vh; }
+  .lv-hours, .lv-week { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .lv-qr { grid-template-columns: 1fr; justify-items: center; align-self: stretch; align-content: center; text-align: center; width: 30vw; padding: 3vh 2vw; }
+  .lv-qrbox .qr { width: 32vh; height: 32vh; }
+  .lv-qrtext b { font-size: 4.6vh; }
+  .lv-qrtext span { font-size: 2.8vh; }
+}
+/* Pantalla horizontal: textos más grandes, que llenen el recuadro (si no caben, se achican solos) */
+@media (orientation: landscape) {
+  .lv-slide { gap: 2.4vh; }
+  .lv-slide h2 { font-size: 4.6vh; }
+  .lv-now small { font-size: 3.2vh; }
+  .lv-now b { font-size: 8vh; }
+  .lv-now span { font-size: 4vh; }
+  .lv-next b { font-size: 6vh; }
+  .lv-list b, .lv-hours b, .lv-week b { font-size: 4.2vh; }
+  .lv-list span { font-size: 3.2vh; }
+  .lv-hours em, .lv-week em { font-size: 4vh; }
+  .lv-list li, .lv-hours li, .lv-week li { padding: 1.4vh 2.4vh; gap: 2.4vh; }
+  .lv-week { grid-template-columns: minmax(0, 1fr); }
+}
+/* Fondo de la sala light en modo «QR grande y lista»: el QR va al centro, grande, con los próximos en cantar */
+#lv.lv-qrmode .lv-qr { display: none; }
+#lv.lv-qrmode { grid-template-rows: auto minmax(0, 1fr); }
+.lv-bigqr { justify-self: center; padding: 2vh; border-radius: 3vh; background: #fff; border: .6vh solid var(--lv-gold); }
+.lv-bigqr .qr { display: block; width: min(34vh, 70vw); height: min(34vh, 70vw); border: 0; padding: 0; border-radius: 0; }
+.lv-bigqr-text { margin: 0; text-align: center; font-size: 3vh; font-weight: 800; }
+@media (orientation: landscape) { #lv.lv-qrmode { grid-template-columns: minmax(0, 1fr); } .lv-bigqr .qr { width: 40vh; height: 40vh; } }
+/* Shows con artista: el título y, abajo, «por» y el artista en grande y en color */
+.lv-sh, .lv-by { display: block; }
+.lv-by { margin-top: .3em; font-size: 1.25em; font-weight: 900; line-height: 1.05; color: var(--lv-gold); text-shadow: .3vh .3vh 0 var(--lv-shade); }
+.lv-by small { font-size: .6em; font-weight: 700; color: #fff; opacity: .85; text-shadow: none; }
+.lv-now .lv-by { font-size: 1.1em; }
+.lv-next .lv-sh { color: #fff; }
+.lv-show .lv-sh, .lv-show .lv-by { display: inline; }
+.lv-show .lv-by { font-size: 1em; margin-left: .4em; }
+.lv-by small { text-transform: none; letter-spacing: 0; }
+/* KRB Kids, inicio: título más arriba e íconos más chicos, todo dentro de la pantalla y simétrico (3 arriba, 2 abajo centrados) */
+body.kids main { padding-top: 10px; padding-bottom: 20px; }
+.kz:has(.kz-home-body) { min-height: calc(100dvh - 30px); align-content: start; gap: 10px; }
+.kz:has(.kz-home-body) .kz-top { justify-content: center; }
+.kz-title { margin: 0; gap: 0; font-size: clamp(2.8rem, 14vw, 4.4rem); }
+.kz-title .kz-logo { width: clamp(70px, 20vw, 110px); margin-bottom: -6px; }
+.kz-menu { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin: 6px auto 0; max-width: 560px; }
+.kz-menu .kz-game, .kz-menu .kz-game:last-child:nth-child(odd) { flex: 0 0 auto; width: min(28vw, 160px); aspect-ratio: 1; grid-column: auto; justify-self: auto; border-radius: 26px; padding: 0; }
+.kz-game svg { width: 70%; height: 70%; }
+/* KRB Kids, inicio: el conjunto (globos, título e íconos) centrado en el alto de la pantalla; «Volver» arriba */
+.kz:has(.kz-home-body) { grid-template-rows: auto 1fr; align-content: stretch; }
+.kz:has(.kz-home-body) > .kz-title, .kz:has(.kz-home-body) > .kz-menu { grid-row: auto; }
+.kz-home-body { display: grid; align-content: center; justify-items: center; gap: 14px; padding-bottom: 6vh; }
+.kz-title { font-size: clamp(3rem, 15vw, 4.8rem); }
+.kz-title .kz-logo { width: clamp(80px, 22vw, 120px); }
+.kz-menu .kz-game, .kz-menu .kz-game:last-child:nth-child(odd) { width: min(29vw, 170px); }
