@@ -1542,3 +1542,27 @@ const neuralBg = (() => {
   sync();
   return { sync };
 })();
+
+// Modo de revisión (solo con ?diag=1 en la dirección): un recuadro encima de todo con lo que el navegador ve por dentro
+// (si la pantalla armó su contenido, su tamaño, estilos y errores). Sirve para revisar fallas en el iPhone desde una captura.
+if (new URLSearchParams(location.search).has('diag')) {
+  const errs = [];
+  addEventListener('error', (e) => errs.push(String(e.message || e.type).slice(0, 120)));
+  addEventListener('unhandledrejection', (e) => errs.push(`promesa: ${String((e.reason && e.reason.message) || e.reason).slice(0, 120)}`));
+  const box = document.createElement('pre');
+  box.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:2147483647;margin:0;padding:8px;font:11px/1.35 monospace;background:rgba(255,255,255,.93);color:#000;white-space:pre-wrap;word-break:break-all;max-height:70vh;overflow:auto';
+  const info = (sel) => {
+    const el = document.querySelector(sel);
+    if (!el) return `${sel}: no existe`;
+    const r = el.getBoundingClientRect(); const cs = getComputedStyle(el);
+    return `${sel}: ${Math.round(r.left)},${Math.round(r.top)} ${Math.round(r.width)}x${Math.round(r.height)} pos=${cs.position} z=${cs.zIndex} disp=${cs.display} op=${cs.opacity} vis=${cs.visibility} tr=${cs.transform} hijos=${el.children.length}`;
+  };
+  setInterval(() => {
+    if (!box.isConnected) document.documentElement.appendChild(box);
+    const c = document.elementFromPoint(innerWidth / 2, innerHeight / 2);
+    box.textContent = [navigator.userAgent, `ventana ${innerWidth}x${innerHeight} · ${location.hash}`, `body: ${document.body.className}`,
+      info('main'), info('#app'), info('#lv'), info('.lv-top'), info('.lv-card'), info('#neural-bg'),
+      `al centro: ${c ? (c.id || c.className || c.tagName) : '-'}`, `texto: ${(document.getElementById('app') || {}).innerText ? document.getElementById('app').innerText.slice(0, 160).replace(/\s+/g, ' ') : '(vacío)'}`,
+      `errores: ${errs.length ? errs.join(' | ') : 'ninguno'}`].join('\n');
+  }, 1500);
+}
