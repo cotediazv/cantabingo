@@ -31,10 +31,10 @@ module.exports = function karaoke({ app, db, save, requireAdmin, requireLocal = 
   // Local en uso: el de la sala de juegos abierta (se eligió al crearla); si no hay sala, el elegido en el Centro de control
   const venueNow = () => { const v = salaVenue(); return VENUES[v] ? v : db.karaoke.venue; };
   // ---------- Horario de pedidos de karaoke por local (pedido de Cote, hora de Chile) ----------
-  // Kennedy: jueves, viernes y sábado de 21:45 a 00:30 · Tobalaba: viernes desde las 21:00 (hasta las 00:30) ·
+  // Kennedy: jueves, viernes y sábado de 21:45 a 00:30 · Tobalaba: viernes de 21:00 a 22:10 ·
   // Frida: viernes y sábado de 18:30 a 00:00. Fuera de horario quedan cerrados, salvo que alguien los abra a mano en el
   // panel; lo puesto a mano vale hasta que pasan 30 minutos sin actividad (sin pedidos ni cambios), y vuelve al horario.
-  const HOURS = { kennedy: { days: ['Thu', 'Fri', 'Sat'], from: 21 * 60 + 45, to: 24 * 60 + 30 }, tobalaba: { days: ['Fri'], from: 21 * 60, to: 24 * 60 + 30 }, frida: { days: ['Fri', 'Sat'], from: 18 * 60 + 30, to: 24 * 60 } };
+  const HOURS = { kennedy: { days: ['Thu', 'Fri', 'Sat'], from: 21 * 60 + 45, to: 24 * 60 + 30 }, tobalaba: { days: ['Fri'], from: 21 * 60, to: 22 * 60 + 10 }, frida: { days: ['Fri', 'Sat'], from: 18 * 60 + 30, to: 24 * 60 } };
   const PREV = { Sun: 'Sat', Mon: 'Sun', Tue: 'Mon', Wed: 'Tue', Thu: 'Wed', Fri: 'Thu', Sat: 'Fri' };
   const MANUAL_MS = 30 * 60e3;
   db.karaoke.manual ||= {}; // local -> { on, last }
