@@ -274,6 +274,7 @@ views.control = async () => {
       <p class="muted small" id="kar-note" style="margin:8px 0 0"></p>
       <p class="small" id="kar-status" style="margin:10px 0 0"></p>
       <label class="check" style="margin-top:12px"><input type="checkbox" id="kar-phone"> Permitir pedir canciones desde el celular (quien ya está inscrito en la sala)</label>
+      <p class="muted small" style="margin:4px 0 0">Se abre y se cierra solo según el horario del local. Si lo cambias a mano, vale hasta que pasan 30 minutos sin pedidos.</p>
       <details style="margin-top:12px"><summary class="small">Direcciones de cada local</summary>
         <form id="kar-form" class="fields" style="grid-template-columns:1fr;margin-top:10px"></form></details>
     </div>
@@ -1226,6 +1227,7 @@ views.karaokectl = async (local) => {
       <div id="kc-list" style="margin-top:14px"></div>
       <div id="kc-sung-box" hidden><button type="button" id="kc-sung-btn" class="kc-sung-btn">✓ Ya cantaron</button><div id="kc-sung"></div></div>
       <label class="check" style="margin-top:14px"><input type="checkbox" id="kc-phone"> Permitir pedir canciones desde el celular</label>
+      <p class="muted small" style="margin:4px 0 0">Se abre y se cierra solo según el horario del local (Kennedy: jue a sáb 21:45–00:30 · Frida: vie y sáb 18:30–00:00 · Tobalaba: vie 21:00–22:10). Si lo cambias a mano, vale hasta que pasan 30 minutos sin pedidos.</p>
       <p class="muted small" id="kc-note" style="margin-top:10px"></p>
     </div>
     ${light ? `<div class="panel" id="kc-lb"></div>${staff ? '' : '<p class="back"><a href="#/light">← Salas light</a></p>'}` : activitiesNav('karaoke')}`;
@@ -1328,7 +1330,7 @@ views.karaokectl = async (local) => {
     paint();
     paintSung();
   };
-  $('#kc-phone').onchange = async (e) => { try { await api('POST', '/api/karaoke/config', { phone: e.target.checked }); last = ''; paint(); } catch (err) { fail(err); } };
+  $('#kc-phone').onchange = async (e) => { try { await api('POST', '/api/karaoke/config', { phone: e.target.checked, local: light || undefined }); last = ''; paint(); } catch (err) { fail(err); } };
   await paint();
   if (k && k.edit) paintSung();
   const timer = setInterval(paint, 3000);
