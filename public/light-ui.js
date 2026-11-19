@@ -31,7 +31,10 @@
           <p class="muted small">Cada local tiene su enlace y su clave: con ellos, el equipo maneja solo su sala light. No puede tocar la sala principal ni otros locales.</p>
           ${Object.keys(VENUES).map((v) => `<form class="lp-key" data-v="${v}"><b>${esc(VENUES[v])}</b> <span class="muted small">${key[v] ? '· clave puesta' : '· todavía sin clave'}</span><br>
             <a class="small" href="${esc(teamUrl(v))}" target="_blank">${esc(teamUrl(v))}</a>
-            <div class="lp-key-row"><input type="text" name="clave" minlength="4" required autocomplete="off" placeholder="${key[v] ? 'Cambiar la clave' : 'Clave de este local'}"><button class="primary">Guardar</button></div></form>`).join('')}</div>`;
+            <div class="lp-key-row"><input type="text" name="clave" minlength="4" required autocomplete="off" placeholder="${key[v] ? 'Cambiar la clave' : 'Clave de este local'}"><button class="primary">Guardar</button></div></form>`).join('')}</div>
+        <div class="panel"><h2 style="margin-top:0">Pantallas verticales</h2>
+          <p class="muted small">Enlace para el decodificador de cada pantalla de pie (sale girado). El video y el modo se manejan en <a href="#/verticalctl/kennedy">Pantallas de los locales</a>.</p>
+          ${[['kennedy', 'Kennedy'], ['frida', 'Frida Kahlo'], ['tobalaba-v', 'Tobalaba']].map(([k, n]) => `<p class="small"><b>${esc(n)}</b><br><a href="${esc(`${location.origin}${location.pathname}#/vertical/${k}`)}" target="_blank">${esc(`${location.origin}${location.pathname}#/vertical/${k}`)}</a></p>`).join('')}</div>`;
       document.querySelectorAll('.lp-key').forEach((f) => { f.onsubmit = async (e) => { e.preventDefault(); try { await api('POST', '/api/staff/clave', { local: f.dataset.v, clave: new FormData(f).get('clave') }); toast(`Clave de ${VENUES[f.dataset.v]} guardada`); last = ''; paint(); } catch (err) { fail(err); } }; });
     };
     await paint();
