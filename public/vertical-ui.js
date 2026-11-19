@@ -2,11 +2,16 @@
 // Pantalla vertical de un local: siempre el video de la cartelera del mes y, cuando empieza una actividad
 // en ese local (juegos de la sala completa o karaoke de la sala light), esa actividad. Ver vertical.js.
 (() => {
-  const VENUES = { kennedy: 'Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' };
-  const pick = (v) => (VENUES[v] ? v : 'kennedy');
-  // Kennedy tiene pantallas de pie (la imagen se entrega girada); Tobalaba, una pantalla horizontal (pedido de Cote)
-  const UPRIGHT = { kennedy: true };
-  const SCHEDULE = { kennedy: 'Jueves, viernes y sábado se pone sola en «Automático» a las 20:00 y vuelve a «Siempre el video» a las 00:30.', tobalaba: 'El viernes se pone sola en «Automático» a las 18:00 y vuelve a «Siempre el video» a las 22:30.' };
+  // Pantallas: verticales (de pie, la imagen se entrega girada) en los tres locales y una horizontal en Tobalaba
+  const SCREENS = {
+    kennedy: { venue: 'kennedy', name: 'Kennedy', up: true },
+    frida: { venue: 'frida', name: 'Frida Kahlo', up: true },
+    'tobalaba-v': { venue: 'tobalaba', name: 'Tobalaba', up: true },
+    tobalaba: { venue: 'tobalaba', name: 'Tobalaba', up: false },
+  };
+  const pick = (v) => (SCREENS[v] ? v : 'kennedy');
+  const TOBA = 'El viernes se pone sola en «Automático» a las 18:00 y vuelve a «Siempre el video» a las 22:30.';
+  const SCHEDULE = { kennedy: 'Jueves, viernes y sábado se pone sola en «Automático» a las 20:00 y vuelve a «Siempre el video» a las 00:30.', tobalaba: TOBA, 'tobalaba-v': TOBA };
   const base = () => `${location.origin}${location.pathname}`;
 
   // Para el decodificador: la pantalla de pie recibe la señal horizontal, así que se entrega girada 90° a la
@@ -39,8 +44,9 @@
         ver = st.video;
         if (ver) { video.src = `/vertical/${v}.mp4?v=${ver}`; video.play().catch(() => {}); } else video.removeAttribute('src');
       }
-      if (st.show === 'karaoke' && !lightId) lightId = ((await api('GET', `/api/light?local=${v}`).catch(() => ({}))) || {}).id || '';
-      const want = st.show === 'video' ? 'video' : st.show === 'karaoke' ? `#/karaoke-v/${v}/${lightId}` : '#/tablero';
+      const venue = SCREENS[v].venue; // la actividad es la del local de esta pantalla
+      if (st.show === 'karaoke' && !lightId) lightId = ((await api('GET', `/api/light?local=${venue}`).catch(() => ({}))) || {}).id || '';
+      const want = st.show === 'video' ? 'video' : st.show === 'karaoke' ? `#/karaoke-v/${venue}/${lightId}` : '#/tablero';
       if (want === shown) return;
       shown = want;
       const isVideo = want === 'video';
@@ -66,12 +72,12 @@
   views.verticalctl = async (local) => {
     if (!(await isAdmin())) return viewLogin();
     const v = pick(local);
-    const up = !!UPRIGHT[v];
+    const up = SCREENS[v].up;
     const screenHash = up ? `#/vertical/${v}` : `#/pantalla/${v}`;
     const link = `${base()}${screenHash}`;
     app.innerHTML = `<p class="back"><a href="#/control">← Centro de control</a></p>
-      <h1>📺 Pantalla ${up ? 'vertical' : 'horizontal'} · ${esc(VENUES[v])}</h1>
-      <p class="vt-locales">${Object.keys(VENUES).map((k) => `<a class="btn${k === v ? ' primary' : ''}" href="#/verticalctl/${k}">${esc(VENUES[k])}</a>`).join('')}</p>
+      <h1>📺 Pantalla ${up ? 'vertical' : 'horizontal'} · ${esc(SCREENS[v].name)}</h1>
+      <p class="vt-locales">${Object.entries(SCREENS).map(([k, x]) => `<a class="btn${k === v ? ' primary' : ''}" href="#/verticalctl/${k}">${esc(x.name)}${k === 'tobalaba' || k === 'tobalaba-v' ? ` · ${x.up ? 'vertical' : 'horizontal'}` : ''}</a>`).join('')}</p>
       <div class="panel vt-now"><small>En pantalla ahora</small><b id="vt-show">…</b><span id="vt-why" class="muted small"></span></div>
       <div class="panel"><h2>Qué mostrar</h2>
         <div class="vt-modes">

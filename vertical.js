@@ -7,6 +7,9 @@ const fs = require('fs');
 const path = require('path');
 
 const VENUES = { frida: 'Frida Kahlo', kennedy: 'Kennedy', tobalaba: 'Tobalaba' };
+// Pantallas: cada una con su video y su modo; la actividad es la de su local. Pantallas verticales en los tres
+// locales (pedido de Cote) y, además, una horizontal en Tobalaba. La clave es también el nombre del archivo del video.
+const SCREENS = { kennedy: 'kennedy', frida: 'frida', 'tobalaba-v': 'tobalaba', tobalaba: 'tobalaba' }; // pantalla -> local
 const MODES = ['auto', 'video', 'actividad'];
 const MAX_BYTES = 300 * 1024 * 1024; // 300 MB por video
 
@@ -24,10 +27,11 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
     return null;
   };
   // Horario de la pantalla (pedidos de Cote): en Kennedy, jueves, viernes y sábado pasa sola a «Automático» a las 20:00
-  // y vuelve a «Siempre el video» a las 00:30 de esa noche; en Tobalaba, el viernes de 18:00 a 22:30.
+  // y vuelve a «Siempre el video» a las 00:30 de esa noche; en Tobalaba (sus dos pantallas), el viernes de 18:00 a 22:30.
   // Una vez por noche; entremedio se puede cambiar a mano.
   // Si el servicio estaba reiniciándose justo a esa hora, se hace apenas vuelve (hasta 15 minutos después).
   const SCHEDULE = { kennedy: { days: ['Thu', 'Fri', 'Sat'], on: 20 * 60, off: 30 }, tobalaba: { days: ['Fri'], on: 18 * 60, off: 22 * 60 + 30 } };
+  SCHEDULE['tobalaba-v'] = SCHEDULE.tobalaba;
   const NEXT = { Thu: 'Fri', Fri: 'Sat', Sat: 'Sun' };
   setInterval(() => {
     const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
@@ -45,22 +49,22 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
 
   const stateOf = (v) => {
     const c = conf(v);
-    const act = activityOf(v);
+    const act = activityOf(SCREENS[v]);
     const hasVideo = !!c.video && fs.existsSync(file(v));
     let show = c.mode === 'video' ? 'video' : c.mode === 'actividad' ? (act || 'sala') : (act || 'video');
     if (show === 'video' && !hasVideo) show = act || 'sala'; // sin video subido, queda la actividad o la portada
-    return { venue: v, name: VENUES[v], mode: c.mode, activity: act, show, video: hasVideo ? c.video : 0, size: hasVideo ? c.size : 0 };
+    return { screen: v, venue: SCREENS[v], name: VENUES[SCREENS[v]], mode: c.mode, activity: act, show, video: hasVideo ? c.video : 0, size: hasVideo ? c.size : 0 };
   };
 
   app.get('/api/vertical/:local', (req, res) => {
     const v = req.params.local;
-    if (!VENUES[v]) return fail(res, 404, 'Local no válido');
+    if (!SCREENS[v]) return fail(res, 404, 'Pantalla no válida');
     res.json(stateOf(v));
   });
   app.post('/api/vertical/:local/mode', requireAdmin, (req, res) => {
     const v = req.params.local;
     const mode = String((req.body || {}).mode || '');
-    if (!VENUES[v]) return fail(res, 404, 'Local no válido');
+    if (!SCREENS[v]) return fail(res, 404, 'Pantalla no válida');
     if (!MODES.includes(mode)) return fail(res, 400, 'Opción no válida');
     conf(v).mode = mode;
     save();
@@ -69,7 +73,7 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
   // Subir el video del mes: el archivo va tal cual en el cuerpo de la petición (se guarda en el disco, por partes)
   app.post('/api/vertical/:local/video', requireAdmin, (req, res) => {
     const v = req.params.local;
-    if (!VENUES[v]) return fail(res, 404, 'Local no válido');
+    if (!SCREENS[v]) return fail(res, 404, 'Pantalla no válida');
     const len = Number(req.get('content-length') || 0);
     if (!len) return fail(res, 400, 'Elige un video');
     if (len > MAX_BYTES) return fail(res, 413, 'El video pesa más de 300 MB');
@@ -97,7 +101,7 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
   });
   app.delete('/api/vertical/:local/video', requireAdmin, (req, res) => {
     const v = req.params.local;
-    if (!VENUES[v]) return fail(res, 404, 'Local no válido');
+    if (!SCREENS[v]) return fail(res, 404, 'Pantalla no válida');
     fs.rm(file(v), { force: true }, () => {});
     Object.assign(conf(v), { video: 0, size: 0 });
     save();
@@ -106,7 +110,7 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
   // El video en sí (con avance por partes, para que el navegador lo reproduzca sin bajarlo entero)
   app.get('/vertical/:local.mp4', (req, res) => {
     const v = req.params.local;
-    if (!VENUES[v] || !fs.existsSync(file(v))) return res.status(404).end();
+    if (!SCREENS[v] || !fs.existsSync(file(v))) return res.status(404).end();
     res.set('Cache-Control', 'public, max-age=31536000, immutable'); // cada video nuevo lleva otra versión en la dirección
     res.sendFile(file(v));
   });
