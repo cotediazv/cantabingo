@@ -98,6 +98,11 @@
 <link rel="icon" href="/icono-48.png" type="image/png" sizes="48x48">
 <link rel="icon" href="/icono-192.png" type="image/png" sizes="192x192">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KRB Stage">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;800;900&family=Manrope:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -620,6 +625,9 @@ h2{margin-top:8px}
 .vivo-fila.pc-falso.pc-v{grid-template-columns:min(calc((100vw - 14px) * .7596),calc(100dvh * 16 / 9)) min(calc((100vw - 14px) * .2404),calc(100dvh * 9 / 16));gap:14px}
 .vivo-fila.pc-falso.pc-h{grid-template-columns:min(72vw,calc(100dvh * 16 / 9)) min(28vw,calc(100dvh * 16 / 9 * .389));gap:14px}
 .pc-cerrar{z-index:90}
+html.con-visor-tactil{overscroll-behavior-x:none}
+.visor-aviso{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:3;background:rgba(0,0,0,.75);border:1px solid var(--c);color:#fff;border-radius:999px;padding:6px 14px;font-size:13px;white-space:nowrap;pointer-events:none;transition:opacity .5s}
+.visor-aviso.fuera{opacity:0}
 /* ===== visor de pantalla completa ===== */
 html.con-visor,html.con-visor body{overflow:hidden}
 .visor{position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:85;background:#000;display:grid;grid-template-rows:auto 1fr;color:#fff}
@@ -1532,7 +1540,15 @@ elegirLocal('kennedy');
     visor.innerHTML=`<header class="visor-top"><div class="vt-txt"><div class="vt-l1"></div><div class="vt-l2"></div></div><button type="button" class="visor-x">✕ Salir</button></header>
       <div class="visor-pista">${ORDEN.map(L=>`<section class="visor-slide" data-local="${L.local}" style="--c:${L.c}"></section>`).join('')}</div>
       <button type="button" class="visor-flecha izq" aria-label="Local anterior">‹</button><button type="button" class="visor-flecha der" aria-label="Local siguiente">›</button>`;
-    document.body.appendChild(visor);document.documentElement.classList.add('con-visor');
+    const real=!!(visor.requestFullscreen&&document.fullscreenEnabled);
+    document.body.appendChild(visor);document.documentElement.classList.add(real?'con-visor':'con-visor-tactil');
+    // iPhone (sin pantalla completa real): deslizando hacia arriba, Safari esconde la barra de dirección y las pestañas
+    if(!real&&!matchMedia('(display-mode: standalone)').matches&&!navigator.standalone){
+      if(scrollY<60)scrollTo(0,60);
+      const h=document.createElement('div');h.className='visor-aviso';h.textContent='↑ Desliza hacia arriba para ocultar la barra del navegador';visor.appendChild(h);
+      const alto0=innerHeight;const fuera=()=>{h.classList.add('fuera');setTimeout(()=>h.remove(),600)};
+      setTimeout(fuera,6000);addEventListener('resize',function r(){if(innerHeight>alto0+30){fuera();removeEventListener('resize',r)}});
+    }
     ORDEN.forEach(L=>{const p=packs[L.local];if(p)visor.querySelector(`.visor-slide[data-local="${L.local}"]`).appendChild(p);cartelera(L.local)});
     const pista=visor.querySelector('.visor-pista');
     let t=null;pista.addEventListener('scroll',()=>{clearTimeout(t);t=setTimeout(()=>{const k=Math.round(pista.scrollLeft/Math.max(1,pista.clientWidth));if(k!==idxV){idxV=k;cabecera()}},80)});
@@ -1547,7 +1563,7 @@ elegirLocal('kennedy');
     if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
     ORDEN.forEach(L=>{const p=packs[L.local];const col=document.querySelector(`.ptl-col[data-local="${L.local}"]`);
       if(p&&col){const f=p.querySelector('.vivo-fila');if(f){f.style.gridTemplateColumns='';f.style.gap=''}col.querySelector('.ptl-prueba').after(p)}});
-    v.remove();document.documentElement.classList.remove('con-visor');requestAnimationFrame(escalar);
+    v.remove();document.documentElement.classList.remove('con-visor','con-visor-tactil');requestAnimationFrame(escalar);
   }
   document.addEventListener('fullscreenchange',()=>{if(visor&&!document.fullscreenElement&&visor._fs)cerrarVisor();if(visor)visor._fs=!!document.fullscreenElement;setTimeout(ajustarVisor,100)});
   addEventListener('keydown',e=>{if(!visor)return;if(e.key==='Escape')cerrarVisor();if(e.key==='ArrowRight')visor.querySelector('.visor-flecha.der').click();if(e.key==='ArrowLeft')visor.querySelector('.visor-flecha.izq').click()});
