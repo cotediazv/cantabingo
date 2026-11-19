@@ -1419,8 +1419,7 @@ document.querySelectorAll('.esp-montados').forEach(g=>{const PRIMEROS=['DF4JT1kg
   new IntersectionObserver(es=>{portadaVisible=es[0].isIntersecting;decidir()}).observe(v);addEventListener('vivo-cambio',decidir);
   const portada=$('.portada'),titulo=$('.portada h1');
   const tactil=matchMedia('(hover: none)').matches;
-  if(!tactil){titulo.addEventListener('mouseenter',()=>portada.classList.add('foco'));
-  portada.addEventListener('mouseleave',()=>portada.classList.remove('foco'))}
+  // (pedido de Cote) el fondo queda siempre oscurecido: ya no se aclara al pasar el mouse por el título
 
 })();
 
