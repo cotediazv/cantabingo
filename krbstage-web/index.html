@@ -526,6 +526,10 @@ h2{margin-top:8px}
   /* las tres tarjetas iguales: el título ocupa siempre dos líneas (pegado abajo), así fecha, dirección y @ quedan a la misma altura */
   #tulocal .ptl-prueba b{min-height:2em;display:flex;align-items:flex-end}
   #tulocal .ptl-prueba .ptl-num{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* el @ de Instagram arriba a la derecha, al frente del nombre del local y con el mismo margen (pedido de Cote) */
+  #tulocal .ptl-prueba .ptl-arroba{position:absolute;top:16px;right:18px;margin:0;line-height:1;font-size:13px}
+  #tulocal .ptl-prueba .ptl-num{padding-right:110px;line-height:1}
+  @media (max-width:1400px){#tulocal .ptl-prueba .ptl-num{letter-spacing:.07em;padding-right:100px}}
   /* videos de Instagram más grandes: ocupan todo el ancho de la tarjeta de arriba (pedido de Cote) */
   #tulocal .ptl-col .ptl-grilla,#producidos .ptl-col .ptl-grilla{width:100%;margin-top:10px;box-sizing:border-box;padding:16px;border:1px solid var(--linea);border-radius:10px;background:var(--tarima);gap:14px;justify-content:stretch} /* recuadro como el de la tarjeta, con los videos simétricos dentro */
 }
