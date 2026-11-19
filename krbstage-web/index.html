@@ -164,7 +164,10 @@ main,footer{position:relative;z-index:1}
   .video-portada{top:auto;height:auto;aspect-ratio:2/1;filter:none}
   .velo{bottom:50vw;background:linear-gradient(180deg,var(--noche) 0%,rgba(12,11,18,.85) 80%,rgba(12,11,18,0) 100%)}
   /* la portada llena justo la primera pantalla del celular (sin asomar la sección siguiente) */
-  body .portada .envoltura{min-height:calc(100vh - 65px);min-height:calc(100svh - 65px);align-content:center;gap:18px;padding-bottom:calc(50vw + 20px)}
+  body .portada .envoltura{min-height:calc(100vh - 65px);min-height:calc(100svh - 65px);align-content:start;gap:18px;padding-bottom:calc((100vw - 40px) / 2 + 36px)}
+  /* el video de la portada usa el mismo margen que las letras (20 px por lado): todo cabe en la primera pantalla */
+  .video-portada{inset:auto 20px 20px 20px;width:calc(100% - 40px);border-radius:12px}
+  .velo{bottom:calc((100vw - 40px) / 2 + 20px)}
 }
 .portada .envoltura{position:relative;padding-block:120px 96px;display:grid;gap:28px}
 .portada h1{font-family:var(--f-display);font-weight:900;text-transform:uppercase;font-size:clamp(84px,19vw,248px);line-height:.8;margin:0}
