@@ -628,7 +628,7 @@ h2{margin-top:8px}
 /* las pantallas del local no se pueden tocar: una capa encima recibe el dedo (en el iPhone, tocarlas abría la pantalla sola) */
 .pant::after{content:"";position:absolute;inset:0;z-index:1}
 html.con-visor-tactil{overscroll-behavior-x:none}
-.visor-aviso{position:absolute;left:50%;top:64px;transform:translateX(-50%);z-index:3;background:rgba(0,0,0,.75);border:1px solid var(--c);color:#fff;border-radius:999px;padding:6px 14px;font-size:13px;white-space:nowrap;pointer-events:none;transition:opacity .5s}
+.visor-aviso{color:#f4bf5a;font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity .5s}
 .visor-aviso.fuera{opacity:0}
 /* ===== visor de pantalla completa ===== */
 html.con-visor,html.con-visor body{overflow:hidden}
@@ -654,6 +654,7 @@ html.con-visor,html.con-visor body{overflow:hidden}
 .visor-slide .vivo-fila{display:grid;align-items:center}
 .visor-flecha{position:absolute;top:55%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.55);color:#fff;font-size:24px;line-height:1;cursor:pointer;z-index:2}
 .visor-flecha.izq{left:6px}.visor-flecha.der{right:6px}
+@media (orientation:portrait){.visor-flecha{top:auto;bottom:28%;transform:none}} /* teléfono vertical: al lado de la pantalla vertical, sin tapar el en vivo */
 /* teléfono girado (poca altura): cabecera más angosta para que las pantallas queden lo más grandes posible */
 @media (max-height:520px){.visor-top{padding-top:4px;padding-bottom:3px;gap:8px}.vt-txt{gap:1px}.vt-local{font-size:17px}.vt-estado{font-size:10px}.vt-fecha,.vt-l2{font-size:11.5px}.visor-x{padding:4px 10px;font-size:12px}.visor-slide{padding:3px 0}.visor-slide>.ptl-vivo{gap:4px}.visor-slide .vivo-pc{padding:3px 10px;font-size:11px}}
 @media (hover:none){.visor-flecha{width:34px;height:34px;font-size:20px;opacity:.8}}
@@ -1566,8 +1567,19 @@ elegirLocal('kennedy');
     pista.querySelectorAll('.visor-slide').forEach(sl=>{
       const f=sl.querySelector('.vivo-fila');if(!f)return;const bt=sl.querySelector('.vivo-botones');
       const H=pista.clientHeight-(bt&&getComputedStyle(bt).display!=='none'?bt.offsetHeight+6:0)-8;
-      const gap=10,h=Math.max(60,Math.min(H,(W-flechas-gap)/(16/9+9/16)));
-      f.style.gridTemplateColumns=`${Math.floor(h*16/9)}px ${Math.floor(h*9/16)}px`;f.style.gap=gap+'px';
+      const gap=10,marco=f.querySelector('.vivo-marco'),pv=f.querySelector('.pant-v');
+      // Teléfono vertical con transmisión en vivo: Twitch no reproduce si su cuadro mide menos de 400x300, así que el
+      // en vivo va arriba a todo el ancho (con al menos 300 de alto) y la pantalla vertical justo debajo (siguen juntas)
+      if(marco&&pv&&W<pista.clientHeight){
+        const mw=W,mh=Math.max(300,Math.round(mw*9/16)),vh=Math.max(80,H-mh-gap);
+        f.style.gridTemplateColumns=`${mw}px`;f.style.gap=gap+'px';f.style.justifyItems='center';
+        marco.style.width=mw+'px';marco.style.height=mh+'px';marco.style.aspectRatio='auto';
+        pv.style.width=Math.floor(vh*9/16)+'px';
+      }else{
+        if(marco){marco.style.width='';marco.style.height='';marco.style.aspectRatio=''}if(pv)pv.style.width='';f.style.justifyItems='';
+        const h=Math.max(60,Math.min(H,(W-flechas-gap)/(16/9+9/16)));
+        f.style.gridTemplateColumns=`${Math.floor(h*16/9)}px ${Math.floor(h*9/16)}px`;f.style.gap=gap+'px';
+      }
     });
     pista.scrollLeft=(idxV+1)*W;
     requestAnimationFrame(escalar);
@@ -1584,8 +1596,8 @@ elegirLocal('kennedy');
     // iPhone (sin pantalla completa real): deslizando hacia arriba, Safari esconde la barra de dirección y las pestañas
     if(!real&&!matchMedia('(display-mode: standalone)').matches&&!navigator.standalone){
       if(scrollY<60)scrollTo(0,60);
-      const h=document.createElement('div');h.className='visor-aviso';h.textContent='↑ Desliza hacia arriba para ocultar la barra del navegador';visor.appendChild(h);
-      const alto0=innerHeight;const fuera=()=>{h.classList.add('fuera');setTimeout(()=>h.remove(),600)};
+      const h=document.createElement('div');h.className='visor-aviso';h.textContent='↑ Desliza hacia arriba para ocultar la barra del navegador';visor.querySelector('.vt-txt').appendChild(h); // en la cabecera: nada encima del reproductor de Twitch
+      const alto0=innerHeight;const fuera=()=>{h.classList.add('fuera');setTimeout(()=>{h.remove();ajustarVisor()},600)};
       setTimeout(fuera,6000);addEventListener('resize',function r(){if(innerHeight>alto0+30){fuera();removeEventListener('resize',r)}});
     }
     ORDEN.forEach(L=>{const p=packs[L.local];if(p)visor.querySelector(`.visor-slide[data-local="${L.local}"]`).appendChild(p);cartelera(L.local)});
@@ -1609,7 +1621,8 @@ elegirLocal('kennedy');
     if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
     ORDEN.forEach(L=>{const p=packs[L.local];const col=document.querySelector(`.ptl-col[data-local="${L.local}"]`);
       if(p)p.querySelectorAll('.pant iframe').forEach(despertar);
-      if(p&&col){const f=p.querySelector('.vivo-fila');if(f){f.style.gridTemplateColumns='';f.style.gap=''}col.querySelector('.ptl-prueba').after(p)}});
+      if(p){const m=p.querySelector('.vivo-marco'),pv=p.querySelector('.pant-v');if(m){m.style.width='';m.style.height='';m.style.aspectRatio=''}if(pv)pv.style.width=''}
+      if(p&&col){const f=p.querySelector('.vivo-fila');if(f){f.style.gridTemplateColumns='';f.style.gap='';f.style.justifyItems=''}col.querySelector('.ptl-prueba').after(p)}});
     v.remove();document.documentElement.classList.remove('con-visor','con-visor-tactil');requestAnimationFrame(escalar);
   }
   addEventListener('popstate',()=>{if(visor)cerrarVisor(true)});
