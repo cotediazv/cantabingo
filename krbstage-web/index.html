@@ -644,9 +644,10 @@ html.con-visor,html.con-visor body{overflow:hidden}
 .vt-l2::-webkit-scrollbar{display:none}
 .vt-l2 b{color:var(--c);font-weight:700}.vt-l2 em{font-style:normal;color:#f4bf5a;font-weight:700}.vt-show{color:#fff;font-weight:700}
 .visor-x{flex:none;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;border-radius:999px;padding:7px 13px;font:700 13px var(--f-texto);cursor:pointer}
-.visor-pista{display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;min-height:0}
+.visor-pista{display:flex;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;min-height:0}
 .visor-pista::-webkit-scrollbar{display:none}
 .visor-slide{flex:0 0 100%;scroll-snap-align:center;display:grid;place-items:center;min-width:0;min-height:0;padding:6px 0}
+.visor-slide.fantasma b{font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:clamp(28px,7vh,64px);color:var(--c);opacity:.6}
 .visor-slide>.ptl-vivo{display:grid;justify-items:center;gap:10px}
 .visor-slide .vivo-etq,.visor-slide .vivo-full{display:none!important}
 .visor-slide .vivo-fila{display:grid;align-items:center}
@@ -1509,6 +1510,7 @@ elegirLocal('kennedy');
     fetch(API+v,{signal:AbortSignal.timeout(10000)}).then(r=>r.json()).then(j=>{if(Array.isArray(j.week)&&j.week.length){cartV[v]=j.week;if(visor)cabecera()}}).catch(()=>{});
   }
   let idxV=0;
+  const fantasma=L=>`<section class="visor-slide fantasma" style="--c:${L.c}"><b>${esc(L.n)}</b></section>`;
   function cabecera(){
     if(!visor)return;const L=ORDEN[idxV];if(!L)return;
     const c=datosTw.find(x=>LOC[x.canal]===L),vivo=!!(c&&c.vivo);
@@ -1532,7 +1534,7 @@ elegirLocal('kennedy');
       const gap=10,h=Math.max(60,Math.min(H,(W-flechas-gap)/(16/9+9/16)));
       f.style.gridTemplateColumns=`${Math.floor(h*16/9)}px ${Math.floor(h*9/16)}px`;f.style.gap=gap+'px';
     });
-    pista.scrollLeft=idxV*W;
+    pista.scrollLeft=(idxV+1)*W;
     requestAnimationFrame(escalar);
   }
   function abrirVisor(local){
@@ -1540,7 +1542,7 @@ elegirLocal('kennedy');
     idxV=Math.max(0,ORDEN.findIndex(L=>L.local===local));
     visor=document.createElement('div');visor.className='visor';
     visor.innerHTML=`<header class="visor-top"><div class="vt-txt"><div class="vt-l1"></div><div class="vt-l2"></div></div><button type="button" class="visor-x">✕ Salir</button></header>
-      <div class="visor-pista">${ORDEN.map(L=>`<section class="visor-slide" data-local="${L.local}" style="--c:${L.c}"></section>`).join('')}</div>
+      <div class="visor-pista">${fantasma(ORDEN[ORDEN.length-1])}${ORDEN.map(L=>`<section class="visor-slide" data-local="${L.local}" style="--c:${L.c}"></section>`).join('')}${fantasma(ORDEN[0])}</div>
       <button type="button" class="visor-flecha izq" aria-label="Local anterior">‹</button><button type="button" class="visor-flecha der" aria-label="Local siguiente">›</button>`;
     const real=!!(visor.requestFullscreen&&document.fullscreenEnabled);
     document.body.appendChild(visor);document.documentElement.classList.add(real?'con-visor':'con-visor-tactil');
@@ -1553,8 +1555,10 @@ elegirLocal('kennedy');
     }
     ORDEN.forEach(L=>{const p=packs[L.local];if(p)visor.querySelector(`.visor-slide[data-local="${L.local}"]`).appendChild(p);cartelera(L.local)});
     const pista=visor.querySelector('.visor-pista');
-    let t=null;pista.addEventListener('scroll',()=>{clearTimeout(t);t=setTimeout(()=>{const k=Math.round(pista.scrollLeft/Math.max(1,pista.clientWidth));if(k!==idxV){idxV=k;cabecera()}},80)});
-    const ir=d=>{idxV=(idxV+d+ORDEN.length)%ORDEN.length;pista.scrollTo({left:idxV*pista.clientWidth,behavior:'smooth'});cabecera()};
+    let t=null;pista.addEventListener('scroll',()=>{clearTimeout(t);t=setTimeout(()=>{const W=Math.max(1,pista.clientWidth),k=Math.round(pista.scrollLeft/W);
+      let n=k-1;if(k<=0){n=ORDEN.length-1;pista.scrollLeft=(n+1)*W}else if(k>ORDEN.length){n=0;pista.scrollLeft=W}
+      if(n!==idxV){idxV=n;cabecera()}},90)});
+    const ir=d=>{const W=pista.clientWidth,k=idxV+1+d;pista.scrollTo({left:k*W,behavior:'smooth'})};
     visor.querySelector('.visor-flecha.izq').onclick=()=>ir(-1);visor.querySelector('.visor-flecha.der').onclick=()=>ir(1);
     visor.querySelector('.visor-x').onclick=cerrarVisor;
     cabecera();ajustarVisor();setTimeout(ajustarVisor,300);
