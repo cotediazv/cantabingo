@@ -2,17 +2,20 @@
 // Pantalla vertical de un local: siempre el video de la cartelera del mes y, cuando empieza una actividad
 // en ese local (juegos de la sala completa o karaoke de la sala light), esa actividad. Ver vertical.js.
 (() => {
-  // Pantallas: verticales (de pie, la imagen se entrega girada) en los tres locales y una horizontal en Tobalaba
+  // Pantallas: verticales (de pie, la imagen se entrega girada) y horizontales, en los tres locales
   const SCREENS = {
     kennedy: { venue: 'kennedy', name: 'Kennedy', up: true },
+    // horizontales de Kennedy y Frida, con su propio video (pedido de Cote)
+    'kennedy-h': { venue: 'kennedy', name: 'Kennedy', up: false },
     frida: { venue: 'frida', name: 'Frida Kahlo', up: true },
+    'frida-h': { venue: 'frida', name: 'Frida Kahlo', up: false },
     'tobalaba-v': { venue: 'tobalaba', name: 'Tobalaba', up: true },
     tobalaba: { venue: 'tobalaba', name: 'Tobalaba', up: false },
   };
   const pick = (v) => (SCREENS[v] ? v : 'kennedy');
   const TOBA = 'El viernes se pone sola en «Automático» a las 18:00 y vuelve a «Siempre el video» a las 22:30.';
   const NIGHT = 'Jueves, viernes y sábado se pone sola en «Automático» a las 18:30 y vuelve a «Siempre el video» a las 00:30.';
-  const SCHEDULE = { kennedy: NIGHT, frida: NIGHT, tobalaba: TOBA, 'tobalaba-v': TOBA };
+  const SCHEDULE = { kennedy: NIGHT, frida: NIGHT, tobalaba: TOBA, 'tobalaba-v': TOBA, 'kennedy-h': NIGHT, 'frida-h': NIGHT };
   // Locales con sala light: en «Automático», si no hay juegos, se ve el fondo vertical de la sala light (#/light-v/<local>)
   const LIGHT = { kennedy: true, frida: true, 'tobalaba-v': true }; // pantallas que muestran el fondo vertical con la información
   const base = () => `${location.origin}${location.pathname}`;
@@ -90,7 +93,7 @@
     const link = `${base()}${screenHash}`;
     app.innerHTML = `<p class="back"><a href="#/control">← Centro de control</a></p>
       <h1>📺 Pantalla ${up ? 'vertical' : 'horizontal'} · ${esc(SCREENS[v].name)}</h1>
-      <p class="vt-locales">${Object.entries(SCREENS).map(([k, x]) => `<a class="btn${k === v ? ' primary' : ''}" href="#/verticalctl/${k}">${esc(x.name)}${k === 'tobalaba' || k === 'tobalaba-v' ? ` · ${x.up ? 'vertical' : 'horizontal'}` : ''}</a>`).join('')}</p>
+      <p class="vt-locales">${Object.entries(SCREENS).map(([k, x]) => `<a class="btn${k === v ? ' primary' : ''}" href="#/verticalctl/${k}">${esc(x.name)} · ${x.up ? 'vertical' : 'horizontal'}</a>`).join('')}</p>
       <div class="panel vt-now"><small>En pantalla ahora</small><b id="vt-show">…</b><span id="vt-why" class="muted small"></span></div>
       <div class="panel"><h2>Qué mostrar</h2>
         <div class="vt-modes">
@@ -118,7 +121,7 @@
            <p class="muted small">Subido el ${esc(new Date(st.video).toLocaleString('es-CL', { dateStyle: 'medium', timeStyle: 'short' }))} · ${(st.size / 1048576).toFixed(0)} MB · <button id="vt-del" class="link">Quitar video</button></p>`
         : '<p class="muted">Todavía no hay video subido.</p>';
       const del = $('#vt-del');
-      if (del) del.onclick = async () => { if (!confirm('¿Quitar el video de la pantalla vertical?')) return; try { paint(await api('DELETE', `/api/vertical/${v}/video`)); } catch (err) { fail(err); } };
+      if (del) del.onclick = async () => { if (!confirm(`¿Quitar el video de la pantalla ${up ? 'vertical' : 'horizontal'}?`)) return; try { paint(await api('DELETE', `/api/vertical/${v}/video`)); } catch (err) { fail(err); } };
     };
     let lastSig = '';
     const tick = async () => {
