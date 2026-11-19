@@ -628,7 +628,7 @@ h2{margin-top:8px}
 /* las pantallas del local no se pueden tocar: una capa encima recibe el dedo (en el iPhone, tocarlas abría la pantalla sola) */
 .pant::after{content:"";position:absolute;inset:0;z-index:1}
 html.con-visor-tactil{overscroll-behavior-x:none}
-.visor-aviso{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:3;background:rgba(0,0,0,.75);border:1px solid var(--c);color:#fff;border-radius:999px;padding:6px 14px;font-size:13px;white-space:nowrap;pointer-events:none;transition:opacity .5s}
+.visor-aviso{position:absolute;left:50%;top:64px;transform:translateX(-50%);z-index:3;background:rgba(0,0,0,.75);border:1px solid var(--c);color:#fff;border-radius:999px;padding:6px 14px;font-size:13px;white-space:nowrap;pointer-events:none;transition:opacity .5s}
 .visor-aviso.fuera{opacity:0}
 /* ===== visor de pantalla completa ===== */
 html.con-visor,html.con-visor body{overflow:hidden}
@@ -638,7 +638,7 @@ html.con-visor,html.con-visor body{overflow:hidden}
 .vt-l1{display:flex;align-items:baseline;gap:10px;min-width:0;white-space:nowrap;overflow:hidden}
 .vt-local{font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:clamp(18px,3.2vh,28px);line-height:1;color:var(--c)}
 .vt-estado{font-family:var(--f-dato);font-size:clamp(12px,1.5vh,16px);letter-spacing:.12em;text-transform:uppercase;color:var(--c);display:inline-flex;align-items:center;gap:6px}
-.vt-estado.vivo{color:#ff4d4d}.vt-dot{width:9px;height:9px;border-radius:50%;background:#ff4d4d;box-shadow:0 0 8px #ff4d4d;display:inline-block}
+.vt-estado.en-vivo{color:#ff4d4d}.vt-dot{width:9px;height:9px;border-radius:50%;background:#ff4d4d;box-shadow:0 0 8px #ff4d4d;display:inline-block}
 .vt-fecha{font-size:clamp(13px,1.7vh,18px);color:var(--tenue);overflow:hidden;text-overflow:ellipsis}
 .vt-l2{display:flex;gap:6px 14px;align-items:baseline;font-size:clamp(12.5px,1.7vh,18px);white-space:nowrap;overflow-x:auto;scrollbar-width:none;color:#e9e4f0}
 .vt-l2::-webkit-scrollbar{display:none}
@@ -1442,7 +1442,7 @@ elegirLocal('kennedy');
     caja.innerHTML=`<div class="vivo-etq">${etiqueta()}</div>
       <div class="vivo-fila"><div class="vivo-marco"><iframe src="${fuente()}" allow="autoplay; fullscreen" tabindex="-1" title="${vivo?'En vivo':'Repetición'} desde ${esc(L.n)}"></iframe></div>
       ${L.vertical?pant('pant-v',rutaV(L),1080,1920,'Pantalla vertical del local',L):pant('pant-h',L.horizontal,1920,1080,'Pantalla horizontal del local')}</div>
-      <div class="vivo-botones"><button type="button" class="vivo-pc vivo-son">🔇 Escuchar</button><button type="button" class="vivo-pc vivo-full">⛶ Pantalla completa</button></div>`;
+      <div class="vivo-botones"><button type="button" class="vivo-pc vivo-son">🔇 Escuchar</button>${vivo?'<button type="button" class="vivo-pc vivo-ref">⟳ Refrescar</button>':''}<button type="button" class="vivo-pc vivo-full">⛶ Pantalla completa</button></div>`;
     const etq=caja.querySelector('.vivo-etq');
     const conectar=()=>etq.querySelectorAll('.rep-flecha').forEach(b=>b.onclick=()=>{i=(i+ +b.dataset.d+vods.length)%vods.length;base=0;t0=Date.now();caja.querySelector('.vivo-marco>iframe').src=fuente();etq.innerHTML=etiqueta();conectar()});
     conectar();
@@ -1456,6 +1456,11 @@ elegirLocal('kennedy');
       base+=(Date.now()-t0)/1000;t0=Date.now();marco.src=fuente()};
     bSon.onclick=()=>{canalSonando=canalSonando===canal?null:canal;document.querySelectorAll('.ptl-vivo').forEach(x=>x._sonido&&x._sonido())};
     caja._sonido();
+    // ⟳ Refrescar: vuelve a cargar el en vivo en el punto actual, para quitar el desfase (pedido de Cote)
+    const bRef=caja.querySelector('.vivo-ref');
+    if(bRef)bRef.onclick=()=>{if(caja._tp){try{caja._tp.setChannel(canal);caja._tp.setMuted(canalSonando!==canal)}catch(_){}}
+      else{const f=caja.querySelector('.vivo-marco iframe');if(f)f.src=fuente()}
+      bRef.disabled=true;setTimeout(()=>bRef.disabled=false,3000)};
     // En vivo: el reproductor de Twitch por su API, para medir el atraso. Si se va quedando atrás de la señal (más de
     // 30 segundos), se vuelve a cargar en el punto en vivo, así no se desfasa de la pantalla del local (pedido de Cote)
     if(vivo)cargarTwitch().then(()=>{if(!window.Twitch)return;
@@ -1546,7 +1551,7 @@ elegirLocal('kennedy');
     if(dHoy&&dHoy.hours&&dHoy.hours.length)prog=`<b>Hoy desde las ${esc(dHoy.hours[0].time)}</b>${dHoy.show?`<span class="vt-show">⭐ ${esc(capi(dHoy.show))}</span>`:''}${lista(dHoy)}`;
     else{const d=w.find(d=>!d.today&&d.hours&&d.hours.length);if(d)prog=`<b>Próximo: ${esc(capi(d.day))} ${d.date} desde las ${esc(d.hours[0].time)}</b>${d.show?`<span class="vt-show">⭐ ${esc(capi(d.show))}</span>`:''}${lista(d)}`;else prog='<b>Pronto la cartelera de este local</b>'}
     visor.style.setProperty('--c',L.c);
-    visor.querySelector('.vt-l1').innerHTML=`<b class="vt-local">${esc(L.n)}</b>${vivo?`<span class="vt-estado vivo"><i class="vt-dot"></i>En vivo${DIAG?'<b class="vt-diag"> · atraso …</b>':''}</span>`:'<span class="vt-estado">▣ Pantalla del local</span>'}<span class="vt-fecha">${DIAS[hoy.getDay()]} ${hoy.getDate()} de ${MESL[hoy.getMonth()]}</span><span class="visor-puntos">${ORDEN.map((_,k)=>`<i class="visor-punto${k===idxV?' on':''}"></i>`).join('')}</span>`;
+    visor.querySelector('.vt-l1').innerHTML=`<b class="vt-local">${esc(L.n)}</b>${vivo?`<span class="vt-estado en-vivo"><i class="vt-dot"></i>En vivo${DIAG?'<b class="vt-diag"> · atraso …</b>':''}</span>`:'<span class="vt-estado">▣ Pantalla del local</span>'}<span class="vt-fecha">${DIAS[hoy.getDay()]} ${hoy.getDate()} de ${MESL[hoy.getMonth()]}</span><span class="visor-puntos">${ORDEN.map((_,k)=>`<i class="visor-punto${k===idxV?' on':''}"></i>`).join('')}</span>`;
     visor.querySelector('.vt-l2').innerHTML=prog;
   }
   function ajustarVisor(){
