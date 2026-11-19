@@ -1319,8 +1319,8 @@ elegirLocal('kennedy');
 
 /* flechas de la fila de montados */
 document.querySelectorAll('.esp-fila').forEach(f=>{const pista=f.querySelector('.esp-montados');f.querySelector('.esp-flecha.izq').onclick=()=>pista.scrollBy({left:-pista.clientWidth*.8});f.querySelector('.esp-flecha.der').onclick=()=>pista.scrollBy({left:pista.clientWidth*.8})});
-/* los espectáculos montados: primero Michael Jackson y Dua Lipa; el resto en orden al azar (cambia cada vez que se abre la página) */
-document.querySelectorAll('.esp-montados').forEach(g=>{const PRIMEROS=['DF4JT1kg5JJ','DZ2buyOzr6k']; // Michael Jackson, Dua Lipa
+/* los espectáculos montados: primero los 11 en el orden de Cote; el resto en orden al azar (cambia cada vez que se abre la página) */
+document.querySelectorAll('.esp-montados').forEach(g=>{const PRIMEROS=['DF4JT1kg5JJ','DZ2buyOzr6k','DbjoqmEsPWX','Da-bsOQzxl3','DXgxo5XkR4L','DXPdxdZk7zt','DbggHTrBw98','C6UHh75RSbH','Dd1h9J9O8th','DL-mzsnRP_I','DHi-9gmRhqF']; // Michael Jackson, Dua Lipa, Depeche Mode, Alanis Morissette, Lady Gaga, Nicole, Depeche Mode vs Pet Shop Boys, Charly García, Bingo con banda, Mecano, Tom Jones
   const c=[...g.children].filter(x=>!PRIMEROS.includes(x.dataset.code));for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]]}
   [...PRIMEROS.map(k=>g.querySelector(`[data-code="${k}"]`)).filter(Boolean),...c].forEach(x=>g.appendChild(x))});
 /* ===== Espectáculos montados: los videos que están en nuestras cuentas se ven aquí mismo ===== */
