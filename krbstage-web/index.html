@@ -963,15 +963,19 @@ function sonarAlPasar(caja,v){
 window.recibirIg=d=>{igDatos=d;pintarFlyers();pintarColumnas()};
 // «Ver cartelera semanal» de cada local: baja a la cartelera con ese local elegido
 document.querySelectorAll('.ptl-cartelera').forEach(a=>a.addEventListener('click',()=>elegirLocal(a.dataset.local)));
-// «Para tu local»: debajo de cada lugar, 2 páginas de 6 videos de Instagram que se alternan solas:
-// primero los 6 últimos y después los 6 más populares. Flechas para cambiar; tocar uno = pantalla completa
+// «Para tu local»: debajo de cada lugar, páginas de 6 videos de Instagram que avanzan solas: primero los
+// 6 más populares y después hasta 60 videos más (del más nuevo al más antiguo). Flechas para cambiar; tocar uno = pantalla completa
 const ALTERNAR_MS=15000;
 function pintarColumnas(){
   document.querySelectorAll('.ptl-col').forEach(col=>{
     const dl=(igDatos||{})[col.dataset.local]||{};
-    const ultimos=(dl.videos||[]).filter(x=>x&&x.url).slice(0,6);if(!ultimos.length)return;
     const populares=(dl.populares||[]).filter(x=>x&&x.url).slice(0,6);
-    const paginas=[{nombre:'Últimos videos',vids:ultimos}];if(populares.length)paginas.push({nombre:'Más populares',vids:populares});
+    const enPop=new Set(populares.map(x=>x.link||x.url));
+    const resto=(dl.videos||[]).filter(x=>x&&x.url&&!enPop.has(x.link||x.url)).slice(0,60);
+    if(!populares.length&&!resto.length)return;
+    const paginas=[];if(populares.length)paginas.push({vids:populares});
+    for(let i=0;i<resto.length;i+=6)paginas.push({vids:resto.slice(i,i+6)});
+    paginas.forEach((p,i)=>p.nombre=i===0&&populares.length?'Más populares':`${i+1} de ${paginas.length}`);
     const caja=col.querySelector('.ptl-grilla');caja.hidden=false;
     let nav=col.querySelector('.ptl-pag');if(nav)nav.remove();nav=null;
     if(paginas.length>1){nav=document.createElement('div');nav.className='ptl-pag';nav.innerHTML='<button class="ptl-pag-ant" aria-label="Página anterior">‹</button><span></span><button class="ptl-pag-sig" aria-label="Página siguiente">›</button>';caja.after(nav)}

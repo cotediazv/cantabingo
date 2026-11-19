@@ -15,7 +15,7 @@ const API = process.env.IG_TEST_URL || 'https://graph.instagram.com'; // IG_TEST
 const FB = process.env.FB_TEST_URL || 'https://graph.facebook.com/v21.0';
 const CACHE_MS = 30 * 60e3;
 const REFRESH_MS = 30 * 24 * 3600e3;
-const PER_VENUE = 60; // todos los videos (hasta 60 por local, para que la página cargue liviana)
+const PER_VENUE = 66; // hasta 66 videos por local: los 6 más populares van aparte y quedan ~60 más para mostrar variedad
 const PAGES = 5; // páginas de 100 publicaciones que se revisan como máximo
 
 module.exports = function instagramWeb({ app, db, save, insta }) {
