@@ -1066,7 +1066,9 @@ function pintarColumnas(){
       vs=[...caja.querySelectorAll('video')];
       caja.querySelectorAll('button').forEach(b=>{sonarAlPasar(b,b.querySelector('video'));b.onclick=e=>{
         if(!activo){activarBloque(caja);return} // primer toque (celular): se activa el bloque
-        caja._apagar();abrirPC(vids.map(x=>({video:x.url,poster:x.poster})),+b.dataset.i,()=>activarBloque(caja))}});
+        // en pantalla completa se puede seguir con todos los videos del lugar (del 6 pasa al 7, a la página siguiente)
+        const todos=paginas.flatMap(p=>p.vids),antes=paginas.slice(0,pag).reduce((n,p)=>n+p.vids.length,0);
+        caja._apagar();abrirPC(todos.map(x=>({video:x.url,poster:x.poster})),antes+ +b.dataset.i,()=>activarBloque(caja))}});
       if(nav)nav.querySelector('span').textContent=paginas[pag].nombre;
       if(activo)caja._prender();
     }
