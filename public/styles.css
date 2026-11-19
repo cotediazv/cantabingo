@@ -1832,3 +1832,10 @@ body.kids main { padding-top: 10px; padding-bottom: 20px; }
 .kz-title { font-size: clamp(3rem, 15vw, 4.8rem); }
 .kz-title .kz-logo { width: clamp(80px, 22vw, 120px); }
 .kz-menu .kz-game, .kz-menu .kz-game:last-child:nth-child(odd) { width: min(29vw, 170px); }
+
+/* iPhone (Safari): el fondo animado (#neural-bg y el degradado) quedaba encima de la información del local en las
+   pantallas incrustadas en la página web. El fondo va detrás de todo (z-index negativo, con el color en <html>) y la
+   información de la pantalla en su propia capa. */
+body.full { background: transparent; }
+body.full::before, #neural-bg { z-index: -1; }
+#lv { will-change: transform; z-index: 1; }
