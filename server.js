@@ -706,4 +706,9 @@ app.get('/api/qr', async (req, res) => {
   } catch { fail(res, 400, 'Texto no válido'); }
 });
 
-app.listen(PORT, () => console.log(`Bingo listo en http://localhost:${PORT} · datos en ${DATA_FILE}${hasDisk ? ' (disco permanente)' : ' (se pierden al reiniciar)'}`));
+const httpServer = app.listen(PORT, () => console.log(`Bingo listo en http://localhost:${PORT} · datos en ${DATA_FILE}${hasDisk ? ' (disco permanente)' : ' (se pierden al reiniciar)'}`));
+// Conexiones que se reutilizan (keep-alive): el servidor las mantiene abiertas más tiempo que el intermediario de Render
+// y que los celulares que consultan cada 4–6 s. Con el valor por defecto (5 s) a veces el servidor cerraba una conexión
+// justo cuando llegaba una consulta, y esa consulta fallaba (se vio en la prueba de carga de 1 hora).
+httpServer.keepAliveTimeout = 75000;
+httpServer.headersTimeout = 76000;
