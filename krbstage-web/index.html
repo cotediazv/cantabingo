@@ -1415,17 +1415,15 @@ elegirLocal('kennedy');
   // Kennedy y Frida: la pantalla vertical de la web es siempre la misma del local, tal cual (pedido de Cote, 19 nov:
   // si el local está en «Siempre el video», aquí también el video). El tablero horizontal sigue con la información.
   const rutaV=L=>L._ruta||L.vertical;
-  // el tablero horizontal: Tobalaba tiene su pantalla horizontal; Kennedy y Frida, su misma pantalla del local en formato
-  // horizontal (sigue los botones: juegos, karaoke, QR, show, cartelera); si la pantalla está en «Siempre el video», su información
-  const rutaH=L=>L.local==='tobalaba'?'#/pantalla/tobalaba':(L._rutaH||`#/light-v/${L.local}`);
+  // el tablero horizontal: la pantalla horizontal de cada local, tal cual (pedido de Cote, 19 nov: Kennedy y Frida tienen
+  // ahora su propia pantalla horizontal con su video; sigue el «Qué mostrar» del local: video, juegos o la información)
+  const rutaH=L=>`#/pantalla/${L.local==='tobalaba'?'tobalaba':`${L.local}-h`}`;
   const srcPant=(ruta,L)=>`${SALA}${L&&L.liviano?`&liviano=${encodeURIComponent(L.liviano)}&lver=${L.lver}`:''}${ruta}`;
   // una pantalla «dormida» (en la pantalla completa, los locales que no se están mirando) guarda su dirección para después
   const ponerSrc=(f,u)=>{if(f.dataset.dormida)f.dataset.dormida=u;else f.src=u};
   function revisarLuz(){
     fetch('https://cantabingo.onrender.com/api/web/pantallas',{signal:AbortSignal.timeout(10000)}).then(r=>r.json()).then(todo=>{
       for(const L of Object.values(LOC)){if(!L.luz)continue;const st=todo[L.vertical.split('/').pop()];if(!st)continue;
-        const rh=st.show==='video'?`#/light-v/${L.local}`:L.vertical;
-        if(rh!==rutaH(L)){L._rutaH=rh;(packs[L.local]||document).querySelectorAll(`${packs[L.local]?'':`.ptl-col[data-local="${L.local}"] `}.pant-h iframe`).forEach(f=>ponerSrc(f,srcPant(rh)))}
         // la pantalla vertical es siempre la misma pantalla del local, tal cual (pedido de Cote: si está en video, el video)
         const ruta=L.vertical;if(ruta===rutaV(L))continue;L._ruta=ruta;
         (packs[L.local]||document).querySelectorAll(`${packs[L.local]?'':`.ptl-col[data-local="${L.local}"] `}.pant-v iframe`).forEach(f=>ponerSrc(f,srcPant(ruta,L)));
