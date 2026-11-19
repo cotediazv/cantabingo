@@ -150,7 +150,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 main,footer{position:relative;z-index:1}
 /* video completo (2:1), sin recortar los costados */
 .portada{min-height:50vw}
-.video-portada{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center top;background:var(--noche);filter:saturate(.45) brightness(.75);transition:filter .7s ease}
+.video-portada{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:var(--noche);filter:saturate(.45) brightness(.75);transition:filter .7s ease}
 .velo{position:absolute;inset:0;background:linear-gradient(90deg,rgba(12,11,18,.9) 0%,rgba(12,11,18,.65) 45%,rgba(12,11,18,.35) 100%),linear-gradient(0deg,var(--noche) 0%,transparent 25%);transition:opacity .7s ease}
 #red,.portada .envoltura{transition:opacity .7s ease}
 .portada h1{cursor:default}
@@ -176,7 +176,7 @@ main,footer{position:relative;z-index:1}
   body .portada .envoltura>.fila-otros{margin:10px 20px 24px;font-family:var(--f-texto);gap:0 min(12px,2vw)}
   .velo{bottom:0}
 }
-.portada .envoltura{position:relative;padding-block:120px 96px;display:grid;gap:28px}
+.portada .envoltura{position:relative;padding-block:56px 64px;display:grid;gap:28px}
 .portada h1{font-family:var(--f-display);font-weight:900;text-transform:uppercase;font-size:clamp(84px,19vw,248px);line-height:.8;margin:0}
 .portada h1 span{display:block;color:transparent;-webkit-text-stroke:2px var(--texto)}
 .lema{font-size:clamp(20px,2.6vw,30px);font-weight:500;margin:0;line-height:1.2;display:grid;gap:4px}
@@ -1012,9 +1012,8 @@ function mostrarAvisoSon(si){
 function sonarAlPasar(caja,v){
   if(!conMouse)return;
   caja.addEventListener('mouseenter',()=>{
-    if(!puedeSonar()){mostrarAvisoSon(true);return}
+    if(!puedeSonar()){mostrarAvisoSon(true);if(!v.getAttribute('src')&&v.dataset.src)v.src=v.dataset.src;v.play().catch(()=>{});return} // sin sonido todavía, pero se mueve
     document.querySelectorAll('.ptl-grilla video,.esp-media video').forEach(o=>{if(o!==v)o.muted=true});
-    document.querySelectorAll('.ptl-grilla video,.esp-media video').forEach(o=>{if(o!==v&&o.closest('.ptl-grilla')===v.closest('.ptl-grilla')&&v.closest('.ptl-grilla'))o.pause()});
     if(!v.getAttribute('src')&&v.dataset.src)v.src=v.dataset.src;
     v.muted=false;v.volume=1;v.play().catch(()=>{v.muted=true;v.play().catch(()=>{})});
   });
@@ -1023,9 +1022,12 @@ function sonarAlPasar(caja,v){
 window.recibirIg=d=>{igDatos=d;pintarFlyers();pintarColumnas()};
 // «Ver cartelera semanal» de cada local: baja a la cartelera con ese local elegido
 document.querySelectorAll('.ptl-cartelera').forEach(a=>a.addEventListener('click',()=>elegirLocal(a.dataset.local)));
-// «Para tu local»: debajo de cada lugar, páginas de 6 videos de Instagram que avanzan solas: primero los
-// 6 más populares y después hasta 60 videos más (del más nuevo al más antiguo). Flechas para cambiar; tocar uno = pantalla completa
-const TURNO_MS=4000; // cada video pequeño se mueve 4 s; después le toca al siguiente (uno a la vez por lugar, para no saturar la conexión)
+// «Dónde producimos» / «También hemos producido en»: debajo de cada lugar, páginas de 6 videos de Instagram
+// (primero los 6 más populares y después hasta 60 más). Todos quedan como foto; el bloque de un lugar se activa
+// (sus 6 videos se mueven) al pasar el mouse o al tocarlo con el dedo. Solo un bloque activo a la vez.
+// Ya activo, tocar un video lo abre en pantalla completa. Las páginas se cambian con las flechas.
+let bloqueActivo=null;
+function activarBloque(caja){if(bloqueActivo&&bloqueActivo!==caja)bloqueActivo._apagar();bloqueActivo=caja;caja._prender()}
 function pintarColumnas(){
   document.querySelectorAll('.ptl-col').forEach(col=>{
     const dl=(igDatos||{})[col.dataset.local]||{};
@@ -1039,30 +1041,28 @@ function pintarColumnas(){
     const caja=col.querySelector('.ptl-grilla');caja.hidden=false;
     let nav=col.querySelector('.ptl-pag');if(nav)nav.remove();nav=null;
     if(paginas.length>1){nav=document.createElement('div');nav.className='ptl-pag';nav.innerHTML='<button class="ptl-pag-ant" aria-label="Página anterior">‹</button><span></span><button class="ptl-pag-sig" aria-label="Página siguiente">›</button>';caja.after(nav)}
-    let pag=0,vs=[],encima=false,turno=0;
-    const libre=()=>caja._vista&&!encima&&pc.hidden&&!quieto&&!window.vivoActivo;
-    // se ven las 6 portadas y se mueve un solo video a la vez (los demás quedan quietos en su imagen)
-    const jugar=()=>{if(!libre())return;vs.forEach((v,i)=>{if(i===turno){if(!v.getAttribute('src'))v.src=v.dataset.src;v.play().catch(()=>{})}else v.pause()})};
-    const parar=()=>vs.forEach(v=>v.pause());
+    let pag=0,vs=[],activo=false;
+    // prendido: los 6 se mueven (sin sonido; con el mouse encima, suena ese). Apagado: quedan quietos en su imagen
+    caja._prender=()=>{activo=true;caja.classList.add('activo');if(quieto)return;vs.forEach(v=>{if(!v.getAttribute('src'))v.src=v.dataset.src;v.play().catch(()=>{})})};
+    caja._apagar=()=>{activo=false;caja.classList.remove('activo');vs.forEach(v=>{v.pause();v.muted=true})};
     function pintar(){
       vs.forEach(v=>{v.pause();v.removeAttribute('src');v.load()});
       const vids=paginas[pag].vids;
-      caja.innerHTML=vids.map((x,i)=>`<button data-i="${i}" aria-label="Ver video en pantalla completa"><video muted playsinline loop preload="none" ${x.poster?`poster="${esc(x.poster)}"`:''} data-src="${esc(x.url)}"></video></button>`).join('')+'<span class="ptl-vacio"></span>'.repeat(6-vids.length); // la página guarda el mismo alto
+      caja.innerHTML=vids.map((x,i)=>`<button data-i="${i}" aria-label="Ver video"><video muted playsinline loop preload="none" ${x.poster?`poster="${esc(x.poster)}"`:''} data-src="${esc(x.url)}"></video></button>`).join('')+'<span class="ptl-vacio"></span>'.repeat(6-vids.length); // la página guarda el mismo alto
       vs=[...caja.querySelectorAll('video')];
-      caja.querySelectorAll('button').forEach(b=>{sonarAlPasar(b,b.querySelector('video'));b.onclick=()=>{parar();abrirPC(vids.map(x=>({video:x.url,poster:x.poster})),+b.dataset.i,()=>{if(caja._vista)jugar()})}});
+      caja.querySelectorAll('button').forEach(b=>{sonarAlPasar(b,b.querySelector('video'));b.onclick=e=>{
+        if(!activo){activarBloque(caja);return} // primer toque (celular): se activa el bloque
+        caja._apagar();abrirPC(vids.map(x=>({video:x.url,poster:x.poster})),+b.dataset.i,()=>activarBloque(caja))}});
       if(nav)nav.querySelector('span').textContent=paginas[pag].nombre;
-      turno=0;jugar();
+      if(activo)caja._prender();
     }
     const portadas=i=>Promise.all(paginas[i].vids.map(x=>x.poster?new Promise(ok=>{const im=new Image();im.onload=im.onerror=ok;im.src=x.poster;setTimeout(ok,4000)}):0));
     const ir=d=>{const n=(pag+d+paginas.length)%paginas.length;portadas(n).then(()=>{pag=n;pintar();portadas((n+1)%paginas.length)})};
-    if(nav){nav.querySelector('.ptl-pag-ant').onclick=()=>{ir(-1);reloj()};nav.querySelector('.ptl-pag-sig').onclick=()=>{ir(1);reloj()}}
-    // turnos: cuando ya se movieron los 6, pasa sola a la página siguiente (no mientras el mouse está encima,
-    // con la pantalla completa abierta o mirando una transmisión en vivo)
-    function reloj(){clearInterval(caja._reloj);caja._reloj=setInterval(()=>{if(!libre())return;turno++;if(turno>=vs.length){if(paginas.length>1)ir(1);else{turno=0;jugar()}}else jugar()},TURNO_MS)}
-    caja.onmouseenter=()=>{encima=true};caja.onmouseleave=()=>{encima=false;jugar()};
-    addEventListener('vivo-cambio',()=>window.vivoActivo?parar():jugar());
-    pintar();reloj();if(paginas.length>1)portadas(1);
-    if(!caja._obs){caja._obs=new IntersectionObserver(es=>es.forEach(en=>{caja._vista=en.isIntersecting&&en.intersectionRatio>=.4;caja._vista?jugar():parar()}),{threshold:[0,.4]});caja._obs.observe(caja)}
+    if(nav){nav.querySelector('.ptl-pag-ant').onclick=()=>ir(-1);nav.querySelector('.ptl-pag-sig').onclick=()=>ir(1)}
+    if(conMouse){col.onmouseenter=()=>activarBloque(caja);col.onmouseleave=()=>{if(bloqueActivo===caja){caja._apagar();bloqueActivo=null}}}
+    pintar();if(paginas.length>1)portadas(1);
+    // si el bloque activo sale de la pantalla, se apaga
+    if(!caja._obs){caja._obs=new IntersectionObserver(es=>es.forEach(en=>{if(!en.isIntersecting&&bloqueActivo===caja){caja._apagar();bloqueActivo=null}}));caja._obs.observe(caja)}
   });
 }
 // ===== Pantalla completa limpia: deslizar a los lados para pasar, hacia abajo para cerrar (o Esc / atrás) =====
@@ -1254,7 +1254,8 @@ elegirLocal('kennedy');
   const aLaVista=new Set();let tm=0;
   const vistos=new IntersectionObserver(es=>es.forEach(en=>{const v=en.target;if(en.isIntersecting)aLaVista.add(v);else{aLaVista.delete(v);v.pause()}}),{threshold:.5});
   const encimaM=()=>document.querySelector('.esp-mont:hover');
-  setInterval(()=>{if(quieto||!pc.hidden||encimaM()||window.vivoActivo)return;const lista=cards.map(c=>c.querySelector('video')).filter(v=>v&&aLaVista.has(v));if(!lista.length)return;tm=(tm+1)%lista.length;lista.forEach((v,i)=>{if(i===tm){if(!v.getAttribute('src'))v.src=v.dataset.src;v.play().catch(()=>{})}else v.pause()})},4000);
+  // quedan como foto; el que tiene el mouse encima se mueve (y suena). Al salir queda quieto en su imagen
+  cards.forEach(c=>{c.addEventListener('mouseleave',()=>{const v=c.querySelector('video');if(v){v.pause();v.muted=true}})});
   // de a uno (y con un reintento) para no saturar la conexión con Instagram
   function poner(code,x){
     vids[code]=x;const card=cards.find(c=>c.dataset.code===code);if(!card)return;
