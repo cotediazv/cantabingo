@@ -5,6 +5,14 @@
 // Un botón permite forzar «Video» o «Actividad» a mano.
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
+const { spawn } = require('child_process');
+
+// Programa para recomprimir los videos (pedido de Cote: que pesen lo menos posible sin perder calidad). Viene con el
+// proyecto (paquete ffmpeg-static); si no está, se usa el ffmpeg del sistema; si tampoco, el video queda tal cual.
+let FFMPEG = null;
+try { FFMPEG = require('ffmpeg-static'); } catch { /* sin paquete */ }
+if (!FFMPEG || !fs.existsSync(FFMPEG)) FFMPEG = ['/usr/bin/ffmpeg', '/usr/local/bin/ffmpeg'].find((x) => fs.existsSync(x)) || null;
 
 const VENUES = { frida: 'Frida Kahlo', kennedy: 'Kennedy', tobalaba: 'Tobalaba' };
 // Pantallas: cada una con su video y su modo; la actividad es la de su local. Pantallas verticales en los tres
@@ -18,6 +26,70 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
   db.vertical ||= {}; // local -> { video: número de versión (fecha de subida), size, mode }
   const file = (v) => path.join(dir, `vertical-${v}.mp4`);
   const conf = (v) => (db.vertical[v] ||= { video: 0, size: 0, mode: 'auto' });
+
+  // Optimización del video recién subido (pedido de Cote): se recomprime en segundo plano con la prioridad más baja,
+  // para no quitarle fuerza a la sala; mientras tanto la pantalla usa el video tal como se subió. H.264 (lo leen todos
+  // los decodificadores), calidad CRF 24 «slow» (probado con el video de Kennedy: 68 MB → 28 MB, sin diferencia a la
+  // vista), como máximo 1080x1920 / 1920x1080 y 30 cuadros por segundo, sin sonido (las pantallas van mudas).
+  // Uno a la vez; si se sube otro video a la misma pantalla mientras se procesa, se descarta el proceso anterior.
+  const queue = [];
+  let working = null; // { v, proc, upload }
+  const optimize = (v) => {
+    if (!FFMPEG) return;
+    const c = conf(v);
+    c.opt = { state: 'esperando', from: c.size, upload: c.video };
+    save();
+    for (let i = queue.length - 1; i >= 0; i--) if (queue[i] === v) queue.splice(i, 1);
+    if (working && working.v === v) { working.cancel = true; working.proc.kill('SIGKILL'); }
+    queue.push(v);
+    next();
+  };
+  const next = () => {
+    if (working || !queue.length) return;
+    const v = queue.shift();
+    const c = conf(v);
+    if (!c.video || !fs.existsSync(file(v))) { c.opt = null; save(); return next(); }
+    const upload = c.video;
+    const out = `${file(v)}.optimizando.mp4`;
+    c.opt = { state: 'procesando', from: c.size, upload, at: Date.now() };
+    save();
+    const args = ['-hide_banner', '-loglevel', 'error', '-y', '-i', file(v), '-an',
+      '-vf', "scale='if(gt(iw,ih),min(1920,iw),min(1080,iw))':-2", '-fpsmax', '30',
+      '-c:v', 'libx264', '-preset', 'slow', '-crf', '24', '-profile:v', 'high', '-pix_fmt', 'yuv420p',
+      '-threads', '1', '-movflags', '+faststart', out];
+    const proc = spawn(FFMPEG, args, { stdio: ['ignore', 'ignore', 'pipe'] });
+    try { os.setPriority(proc.pid, 19); } catch { /* sin permiso: sigue igual */ }
+    let err = '';
+    proc.stderr.on('data', (d) => { err = (err + d).slice(-400); });
+    working = { v, proc, upload };
+    let finished = false;
+    const done = (ok) => {
+      if (finished) return;
+      finished = true;
+      const w = working;
+      working = null;
+      const cur = conf(v);
+      if (w.cancel || cur.video !== upload) { fs.rm(out, { force: true }, () => {}); return next(); } // llegó otro video
+      let size = 0;
+      try { size = fs.statSync(out).size; } catch { /* nada */ }
+      if (ok && size > 0 && size < cur.size * 0.95) {
+        fs.renameSync(out, file(v));
+        cur.opt = { state: 'listo', from: cur.size, to: size, upload };
+        cur.video = Date.now(); // versión nueva: las pantallas cambian solas al video optimizado
+        cur.size = size;
+      } else {
+        fs.rm(out, { force: true }, () => {});
+        cur.opt = ok ? { state: 'igual', from: cur.size, upload } : { state: 'error', from: cur.size, upload, detail: err.trim().slice(-200) };
+      }
+      save();
+      next();
+    };
+    proc.on('error', () => done(false));
+    proc.on('close', (code) => done(code === 0));
+  };
+  // Si el servicio se reinició a mitad de una optimización, se retoma
+  for (const v of Object.keys(SCREENS)) { const c = db.vertical[v]; if (c && c.opt && (c.opt.state === 'procesando' || c.opt.state === 'esperando')) queue.push(v); }
+  setTimeout(next, 30e3);
 
   // Qué actividad hay ahora en el local: la sala de juegos completa de ese local abierta y con algo en juego
   // (pedido de Cote: si la sala está abierta pero sin bingo, El Rosco ni otro juego en curso, se ve la información
@@ -71,7 +143,7 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
     let show = c.mode === 'video' ? 'video' : c.mode === 'actividad' ? (act || rest || 'sala') : (act || rest || 'video');
     if (show === 'video' && !hasVideo) show = act || 'light'; // sin video subido y sin juegos: la información del local (shows que vienen, horarios, QR)
     // lightStage: lo que el equipo eligió en el panel de la sala light del local; la pantalla lo sigue cuando muestra la información
-    return { screen: v, venue: SCREENS[v], name: VENUES[SCREENS[v]], lightStage: ((db.lights || {})[venue] || {}).stage || 'cartelera', karaokeNow: !!karaoke.nowOf(venue).now, mode: c.mode, activity: act, show, video: hasVideo ? c.video : 0, size: hasVideo ? c.size : 0 };
+    return { screen: v, venue: SCREENS[v], name: VENUES[SCREENS[v]], opt: c.opt || null, optimiza: !!FFMPEG, lightStage: ((db.lights || {})[venue] || {}).stage || 'cartelera', karaokeNow: !!karaoke.nowOf(venue).now, mode: c.mode, activity: act, show, video: hasVideo ? c.video : 0, size: hasVideo ? c.size : 0 };
   };
 
   app.get('/api/vertical/:local', (req, res) => {
@@ -112,6 +184,7 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
         c.video = Date.now();
         c.size = got;
         save();
+        optimize(v);
         res.json(stateOf(v));
       });
     });
@@ -120,8 +193,9 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
   app.delete('/api/vertical/:local/video', requireAdmin, (req, res) => {
     const v = req.params.local;
     if (!SCREENS[v]) return fail(res, 404, 'Pantalla no válida');
+    if (working && working.v === v) { working.cancel = true; working.proc.kill('SIGKILL'); }
     fs.rm(file(v), { force: true }, () => {});
-    Object.assign(conf(v), { video: 0, size: 0 });
+    Object.assign(conf(v), { video: 0, size: 0, opt: null });
     save();
     res.json(stateOf(v));
   });

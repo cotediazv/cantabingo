@@ -100,7 +100,7 @@
         <div class="vt-cur"></div>
         <form class="vt-up"><input type="file" name="f" accept="video/mp4,video/*" required><button class="primary">Subir video ${up ? 'vertical' : 'horizontal'}</button></form>
         <div class="vt-prog" hidden><i></i><span></span></div>
-        <p class="muted small">MP4 ${up ? 'vertical' : 'horizontal'}, hasta 300 MB (mejor menos de 150 MB). El nuevo reemplaza al anterior y la pantalla lo toma sola.</p></div>
+        <p class="muted small">MP4 ${up ? 'vertical' : 'horizontal'}, hasta 300 MB. Al subirlo se optimiza solo para que pese lo menos posible, sin perder calidad. El nuevo reemplaza al anterior y la pantalla lo toma sola.</p></div>
       <div class="panel vt-now"><small>En pantalla ahora</small><b class="vt-show">…</b><span class="vt-why muted small"></span></div>
       <div class="panel"><h3>Enlace para el decodificador</h3>
         <p class="muted small">Se abre en el navegador del decodificador, en pantalla completa.${up ? ' Va girado, para la pantalla de pie.' : ''}</p>
@@ -114,8 +114,18 @@
       onState(v, st);
       q('.vt-cur').innerHTML = st.video
         ? `<video class="vt-prev" src="/vertical/${v}.mp4?v=${st.video}" muted controls playsinline preload="metadata"></video>
-           <p class="muted small">Subido el ${esc(new Date(st.video).toLocaleString('es-CL', { dateStyle: 'medium', timeStyle: 'short' }))} · ${(st.size / 1048576).toFixed(0)} MB · <button class="link vt-del">Quitar video</button></p>`
+           <p class="muted small">Subido el ${esc(new Date((st.opt && st.opt.upload) || st.video).toLocaleString('es-CL', { dateStyle: 'medium', timeStyle: 'short' }))} · ${(st.size / 1048576).toFixed(0)} MB · <button class="link vt-del">Quitar video</button></p>`
         : '<p class="muted">Todavía no hay video subido.</p>';
+      // Optimización automática del video subido (pedido de Cote: lo más liviano posible, sin perder calidad)
+      const o = st.video && st.opt;
+      const mb = (b) => `${Math.max(1, Math.round(b / 1048576))} MB`;
+      if (o) {
+        const msg = o.state === 'listo' ? `✅ Video optimizado: ${mb(o.from)} → ${mb(o.to)} (${Math.round((1 - o.to / o.from) * 100)} % menos), con la misma calidad.`
+          : o.state === 'procesando' || o.state === 'esperando' ? `⏳ Optimizando el video para que pese menos (puede tardar unos minutos). Mientras tanto la pantalla usa el video tal como se subió.`
+            : o.state === 'igual' ? '✅ El video ya venía liviano: queda tal como se subió.'
+              : '⚠️ No se pudo optimizar el video: queda tal como se subió.';
+        q('.vt-cur').insertAdjacentHTML('beforeend', `<p class="vt-opt small">${esc(msg)}</p>`);
+      }
       const del = q('.vt-del');
       if (del) del.onclick = async () => { if (!confirm(`¿Quitar el video de la pantalla ${up ? 'vertical' : 'horizontal'}?`)) return; try { lastSig = ''; paint(await api('DELETE', `/api/vertical/${v}/video`)); } catch (err) { fail(err); } };
     };
