@@ -167,7 +167,7 @@ main,footer{position:relative;z-index:1}
   /* portada del celular: la información arriba y el video justo debajo, con el mismo margen que las letras
      (20 px por lado), como parte del diseño; todo en la primera pantalla */
   .portada{display:flex;flex-direction:column;min-height:calc(100vh - 65px);min-height:calc(100svh - 65px)}
-  /* orden en el celular: Somos, KRB Stage, lema, «Vibramos juntos», el video y, al pie, los locales */
+  /* orden en el celular: Somos, KRB Stage, lema, «Vibramos con la excelencia», el video y, al pie, los locales */
   body .portada .envoltura{display:contents}
   body .portada .envoltura>*{order:1;position:relative;margin:18px max(20px,env(safe-area-inset-left,0px)) 0}
   body .portada .envoltura>.etiqueta{margin-top:16px}
@@ -178,7 +178,7 @@ main,footer{position:relative;z-index:1}
 }
 .portada .envoltura{position:relative;padding-block:56px 64px;display:grid;gap:28px}
 .portada h1{font-family:var(--f-display);font-weight:900;text-transform:uppercase;font-size:clamp(84px,19vw,248px);line-height:.8;margin:0}
-.portada h1 span{display:block;color:transparent;-webkit-text-stroke:2px var(--texto)}
+.portada h1 span{display:block;color:transparent;-webkit-text-stroke:2px var(--texto);margin-top:.1em} /* un poco de espacio entre KRB y Stage */
 .lema{font-size:clamp(20px,2.6vw,30px);font-weight:500;margin:0;line-height:1.2;display:grid;gap:4px}
 .lema span{display:block}
 .bajada{margin:-16px 0 0;font-size:clamp(18px,2vw,24px);font-weight:500;color:var(--tenue);letter-spacing:.04em}
@@ -723,7 +723,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
       <div class="etiqueta">Somos</div>
       <h1>KRB<span>Stage</span></h1>
       <p class="lema"><span>Experiencias independientes</span><b>Emociones conectadas</b></p>
-      <p class="bajada">Vibramos juntos</p>
+      <p class="bajada">Vibramos con la excelencia</p>
       <div class="fila-datos">
         <span style="--c:var(--kennedy)">Mercado Kennedy</span>
         <span style="--c:var(--frida)">Frida Kahlo</span>
