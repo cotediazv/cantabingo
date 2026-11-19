@@ -643,6 +643,7 @@ html.con-visor,html.con-visor body{overflow:hidden}
 .vt-l2{display:flex;gap:6px 14px;align-items:baseline;font-size:clamp(12.5px,1.7vh,18px);white-space:nowrap;overflow-x:auto;scrollbar-width:none;color:#e9e4f0}
 .vt-l2::-webkit-scrollbar{display:none}
 .vt-l2 b{color:var(--c);font-weight:700}.vt-l2 em{font-style:normal;color:#f4bf5a;font-weight:700}.vt-show{color:#fff;font-weight:700}
+.visor-pc{flex:none;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;border-radius:999px;padding:5px 12px;font:700 16px var(--f-texto);cursor:pointer}
 .visor-x{flex:none;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;border-radius:999px;padding:7px 13px;font:700 13px var(--f-texto);cursor:pointer}
 .visor-pista{display:flex;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;min-height:0}
 .visor-pista::-webkit-scrollbar{display:none}
@@ -1495,8 +1496,16 @@ elegirLocal('kennedy');
       window.vivoActivo=!!vivos;dispatchEvent(new Event('vivo-cambio'));punto.hidden=!vivos;
       if(vivos&&!aMano)sw.checked=true; // se prende solo si alguien está en vivo
       if(vivos!==clave){clave=vivos;document.querySelectorAll('.ptl-col[data-modo]').forEach(c=>delete c.dataset.modo)} // cambió quién transmite: se rehace
-      pintar();
-    }).catch(()=>{});
+      pintar();abrirLink();
+    }).catch(abrirLink);
+  }
+  // Enlace directo a la pantalla completa de los tres locales, para compartir (pedido de Cote):
+  // www.krbstage.cl/#pantallas (empieza en Kennedy) o #pantallas-tobalaba, #pantallas-frida
+  let linkHecho=false;
+  function abrirLink(){
+    if(linkHecho||!/^#pantallas/.test(location.hash))return;linkHecho=true;
+    if(!sw.checked){sw.checked=true;pintar()}
+    const l=(location.hash.split('-')[1]||'').toLowerCase();abrirVisor(ORDEN.some(L=>L.local===l)?l:'kennedy');
   }
   // ===== Pantalla completa: el visor =====
   // Arriba, el local, si está en vivo o es la pantalla del local, la fecha y lo de hoy (o lo próximo); abajo, el conjunto
@@ -1548,7 +1557,7 @@ elegirLocal('kennedy');
     if(visor)return;
     idxV=Math.max(0,ORDEN.findIndex(L=>L.local===local));
     visor=document.createElement('div');visor.className='visor';
-    visor.innerHTML=`<header class="visor-top"><div class="vt-txt"><div class="vt-l1"></div><div class="vt-l2"></div></div><button type="button" class="visor-x">✕ Salir</button></header>
+    visor.innerHTML=`<header class="visor-top"><div class="vt-txt"><div class="vt-l1"></div><div class="vt-l2"></div></div><button type="button" class="visor-pc" hidden>⛶</button><button type="button" class="visor-x">✕ Salir</button></header>
       <div class="visor-pista">${fantasma(ORDEN[ORDEN.length-1])}${ORDEN.map(L=>`<section class="visor-slide" data-local="${L.local}" style="--c:${L.c}"></section>`).join('')}${fantasma(ORDEN[0])}</div>
       <button type="button" class="visor-flecha izq" aria-label="Local anterior">‹</button><button type="button" class="visor-flecha der" aria-label="Local siguiente">›</button>`;
     const real=!!(visor.requestFullscreen&&document.fullscreenEnabled);
@@ -1568,11 +1577,12 @@ elegirLocal('kennedy');
     const ir=d=>{const W=pista.clientWidth,k=idxV+1+d;pista.scrollTo({left:k*W,behavior:'smooth'})};
     visor.querySelector('.visor-flecha.izq').onclick=()=>ir(-1);visor.querySelector('.visor-flecha.der').onclick=()=>ir(1);
     visor.querySelector('.visor-x').onclick=()=>cerrarVisor();
+    const bPc=visor.querySelector('.visor-pc');bPc.onclick=()=>visor.requestFullscreen().catch(()=>{});
     // Se agrega un paso al historial: borra las páginas «siguientes» de la pestaña (en el iPhone, deslizar desde el borde
     // abría una de ellas, la pantalla del local en la Sala) y el gesto de «atrás» solo cierra la pantalla completa
     try{history.pushState({visor:1},'')}catch(_){}
     cabecera();ajustarVisor();setTimeout(ajustarVisor,300);dormir();
-    if(visor.requestFullscreen&&document.fullscreenEnabled)visor.requestFullscreen().then(()=>{try{screen.orientation.lock('landscape').catch(()=>{})}catch(_){}}).catch(()=>{});
+    if(visor.requestFullscreen&&document.fullscreenEnabled)visor.requestFullscreen().then(()=>{try{screen.orientation.lock('landscape').catch(()=>{})}catch(_){}}).catch(()=>{bPc.hidden=false});
   }
   function cerrarVisor(desdeHistorial){
     if(!visor)return;const v=visor;visor=null;
@@ -1584,7 +1594,7 @@ elegirLocal('kennedy');
     v.remove();document.documentElement.classList.remove('con-visor','con-visor-tactil');requestAnimationFrame(escalar);
   }
   addEventListener('popstate',()=>{if(visor)cerrarVisor(true)});
-  document.addEventListener('fullscreenchange',()=>{if(visor&&!document.fullscreenElement&&visor._fs)cerrarVisor();if(visor)visor._fs=!!document.fullscreenElement;setTimeout(ajustarVisor,100)});
+  document.addEventListener('fullscreenchange',()=>{if(visor){const b=visor.querySelector('.visor-pc');if(b&&document.fullscreenElement)b.hidden=true}if(visor&&!document.fullscreenElement&&visor._fs)cerrarVisor();if(visor)visor._fs=!!document.fullscreenElement;setTimeout(ajustarVisor,100)});
   addEventListener('keydown',e=>{if(!visor)return;if(e.key==='Escape')cerrarVisor();if(e.key==='ArrowRight')visor.querySelector('.visor-flecha.der').click();if(e.key==='ArrowLeft')visor.querySelector('.visor-flecha.izq').click()});
   // al girar el teléfono: se vuelve a acomodar (varias veces, porque el iPhone termina de girar después)
   const reacomodar=()=>{if(!visor){requestAnimationFrame(escalar);return}ajustarVisor();setTimeout(ajustarVisor,250);setTimeout(ajustarVisor,700)};
