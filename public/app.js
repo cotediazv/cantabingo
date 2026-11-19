@@ -1471,16 +1471,6 @@ setTimeout(syncVenueMark, 700);
 // Fondo de neuronas en las pantallas de las actividades (pedido de Cote: el mismo efecto del fondo de la página
 // web krbstage.cl). Puntos de colores que se mueven lento, unidos por líneas finas, con impulsos que viajan
 // de un punto a otro cercano. Va encima del fondo de colores y debajo de todo lo demás; solo en el tablero.
-// Pantalla dentro de otra página (ej. krbstage.cl) vista en un celular: sin el fondo animado. En el iPhone (Safari)
-// las líneas animadas y el degradado que gira quedaban encima de la información, que no se veía (pedido de Cote).
-// Las pantallas de los locales (misma dirección o abiertas directo) y el computador siguen con el fondo animado.
-const EMB_CEL = (() => {
-  if (window.self === window.top) return false;
-  let ajena = false;
-  try { void window.top.location.href; } catch { ajena = true; }
-  return ajena && matchMedia('(pointer: coarse)').matches;
-})();
-if (EMB_CEL) document.documentElement.classList.add('emb-cel');
 const neuralBg = (() => {
   const COLORS = ['#47b8e6', '#e0338f', '#e5413a', '#f3eee6', '#f4bf5a'];
   let c = null; let x = null; let W = 0; let H = 0; let k = 1; let pts = []; let pulses = []; let raf = 0;
@@ -1528,7 +1518,7 @@ const neuralBg = (() => {
     raf = requestAnimationFrame(step);
   };
   const sync = () => {
-    const want = document.body.classList.contains('full') && !EMB_CEL;
+    const want = document.body.classList.contains('full');
     if (want && !c) {
       c = document.createElement('canvas'); c.id = 'neural-bg'; c.setAttribute('aria-hidden', 'true');
       document.body.insertBefore(c, document.body.firstChild);
