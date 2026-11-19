@@ -519,14 +519,14 @@ h2{margin-top:8px}
   #tulocal .ptl-pruebas,#producidos .ptl-pruebas{grid-template-rows:repeat(4,auto);row-gap:8px}
   #tulocal .ptl-col,#producidos .ptl-col{grid-row:span 4;grid-template-rows:subgrid;gap:0}
 }
-.ptl-col .ptl-grilla{width:min(100%,max(276px,calc((100vh - 430px) / 1.2 + 16px)));justify-self:center;gap:12px 14px} /* más separados entre sí */
+.ptl-col .ptl-grilla{width:min(100%,max(292px,calc((100vh - 445px) / 1.2 + 40px)));justify-self:center;gap:18px 22px} /* más separados entre sí */
 @media (max-width:900px){
   .banda{padding-block:clamp(32px,6vh,56px)}
   /* en el celular: un lugar por pantalla, y se pasa al siguiente deslizando hacia el lado */
   #tulocal .ptl-pruebas,#producidos .ptl-pruebas{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;margin-inline:-20px;padding-inline:20px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
   #tulocal .ptl-pruebas::-webkit-scrollbar,#producidos .ptl-pruebas::-webkit-scrollbar{display:none}
   #tulocal .ptl-col,#producidos .ptl-col{flex:0 0 86%;scroll-snap-align:center;grid-template-rows:auto}
-  .ptl-col .ptl-grilla{width:min(100%,max(220px,calc((100svh - 450px) / 1.2)))}
+  .ptl-col .ptl-grilla{width:min(100%,max(250px,calc((100svh - 450px) / 1.2 + 24px)));gap:12px 14px}
   .desliza{display:block;margin-top:10px;font-family:var(--f-dato);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--tenue);text-align:center}
 }
 .desliza{display:none}
