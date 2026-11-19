@@ -668,6 +668,7 @@ html.con-visor,html.con-visor body{overflow:hidden}
 .vivo-marco>iframe{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none} /* solo el video, sin barras ni botones de Twitch (como la pantalla vertical) */
 /* repeticiones de Twitch: se puede tocar el video para cerrar con la X el aviso de audio silenciado por derechos de autor */
 .repeticion .vivo-marco>iframe,.pc-emb .pc-tw iframe{pointer-events:auto}
+.vivo-marco .vivo-wrtc{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;pointer-events:none}
 .vivo-marco .vivo-tp,.vivo-marco .vivo-tp iframe{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none}
 .vivo-item b{font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:24px;line-height:1;color:var(--c)}
 .vivo-item small{color:var(--tenue);font-size:14px}
@@ -1380,8 +1381,8 @@ elegirLocal('kennedy');
   const SALA='https://cantabingo.onrender.com/?mudo=1';
   const LOC={
     // copia liviana del video de la pantalla vertical (1 Mbps en vez de 11): si Cote sube un video nuevo, la Sala usa el original
-    krbstagekennedy:{local:'kennedy',n:'Mercado Kennedy',c:'var(--kennedy)',vertical:'#/vertical-in/kennedy',luz:true,liviano:'https://www.krbstage.cl/vertical-kennedy.mp4',lver:'1794966023522'},
-    krbstage3:{local:'tobalaba',n:'Espacio Gastronómico Tobalaba',c:'var(--tobalaba)',vertical:'#/vertical-in/tobalaba-v'},
+    krbstagekennedy:{local:'kennedy',n:'Mercado Kennedy',c:'var(--kennedy)',vertical:'#/vertical-in/kennedy',luz:true,whep:'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/c24ccde66ad7d935841dd934d9b3e1cf/webRTC/play',liviano:'https://www.krbstage.cl/vertical-kennedy.mp4',lver:'1794966023522'},
+    krbstage3:{local:'tobalaba',n:'Espacio Gastronómico Tobalaba',c:'var(--tobalaba)',vertical:'#/vertical-in/tobalaba-v',whep:'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/9c4d261a1b6c2fb79842b6d3821b9018/webRTC/play'},
     krbstage:{local:'frida',n:'Frida Kahlo',c:'var(--frida)',vertical:'#/vertical-in/frida',luz:true}
   };
   // Switch «Instagram / Twitch» arriba de «Dónde producimos»: con Twitch, cada local muestra su transmisión en vivo
@@ -1453,18 +1454,19 @@ elegirLocal('kennedy');
     let suena=canalSonando===canal;
     caja._sonido=()=>{const ahora=canalSonando===canal;bSon.textContent=ahora?'🔊 Sonando':'🔇 Escuchar';bSon.classList.toggle('activo',ahora);
       if(ahora===suena)return;suena=ahora;
+      if(caja._video){caja._video.muted=!ahora;if(ahora)caja._video.play().catch(()=>{});return} // señal de Cloudflare
       if(caja._tp){try{caja._tp.setMuted(!ahora);if(ahora)caja._tp.setVolume(1)}catch(_){}return} // en vivo: sin recargar
       base+=(Date.now()-t0)/1000;t0=Date.now();marco.src=fuente()};
     bSon.onclick=()=>{canalSonando=canalSonando===canal?null:canal;document.querySelectorAll('.ptl-vivo').forEach(x=>x._sonido&&x._sonido())};
     caja._sonido();
     // ⟳ Refrescar: vuelve a cargar el en vivo en el punto actual, para quitar el desfase (pedido de Cote)
     const bRef=caja.querySelector('.vivo-ref');
-    if(bRef)bRef.onclick=()=>{if(caja._tp){try{caja._tp.setChannel(canal);caja._tp.setMuted(canalSonando!==canal)}catch(_){}}
+    if(bRef)bRef.onclick=()=>{if(caja._video){ponerWhep().catch(ponerTwitch)}else if(caja._tp){try{caja._tp.setChannel(canal);caja._tp.setMuted(canalSonando!==canal)}catch(_){}}
       else{const f=caja.querySelector('.vivo-marco iframe');if(f)f.src=fuente()}
       bRef.disabled=true;setTimeout(()=>bRef.disabled=false,3000)};
     // En vivo: el reproductor de Twitch por su API, para medir el atraso. Si se va quedando atrás de la señal (más de
     // 30 segundos), se vuelve a cargar en el punto en vivo, así no se desfasa de la pantalla del local (pedido de Cote)
-    if(vivo)cargarTwitch().then(()=>{if(!window.Twitch)return;
+    const ponerTwitch=()=>{caja._video=null;return cargarTwitch().then(()=>{if(!window.Twitch)return;
       const m=caja.querySelector('.vivo-marco');m.innerHTML='<div class="vivo-tp"></div>';
       const tp=new Twitch.Player(m.firstChild,{channel:canal,parent:['www.krbstage.cl','krbstage.cl',location.hostname].filter((x,k,a)=>x&&a.indexOf(x)===k),width:'100%',height:'100%',autoplay:true,muted:canalSonando!==canal,controls:false});
       // Lo más a tiempo posible (pedido de Cote: en twitch.tv va a menos de 2 s y aquí iba a 19): cada 5 s se mide el
@@ -1481,7 +1483,33 @@ elegirLocal('kennedy');
           if(atraso<=5||intentos>=3)return;
           if(intentos&&antes&&atraso>antes-3&&Date.now()-ultimo>15e3){intentos=3;return} // recargar no sirvió: no se insiste
           if(Date.now()-ultimo>20e3){ultimo=Date.now();antes=atraso;intentos++;tp.setChannel(canal);tp.setMuted(canalSonando!==canal)}}catch(_){}},5000);
-    }).catch(()=>{});
+    }).catch(()=>{})};
+    // Señal de baja latencia (Cloudflare, WebRTC, 1 a 2 s) para la página; si no llega en 10 s, se usa Twitch (pedido de Cote)
+    const ponerWhep=()=>{
+      if(caja._pc){try{caja._pc.close()}catch(_){}caja._pc=null}
+      const m=caja.querySelector('.vivo-marco');m.innerHTML='<video class="vivo-wrtc" autoplay playsinline muted></video>';
+      const v=m.firstChild;v.muted=canalSonando!==canal;caja._video=v;caja._tp=null;
+      return new Promise((ok,mal)=>{
+        const pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.cloudflare.com:3478'}],bundlePolicy:'max-bundle'});caja._pc=pc;
+        const ms=new MediaStream();let listo=false;
+        const plazo=setTimeout(()=>{if(!listo){try{pc.close()}catch(_){}caja._pc=null;mal(new Error('sin señal'))}},10000);
+        pc.addTransceiver('video',{direction:'recvonly'});pc.addTransceiver('audio',{direction:'recvonly'});
+        pc.ontrack=e=>{ms.addTrack(e.track);v.srcObject=ms;v.play().catch(()=>{})};
+        v.addEventListener('playing',()=>{if(!listo){listo=true;clearTimeout(plazo);ok()}},{once:true});
+        pc.onconnectionstatechange=()=>{if(['failed','closed'].includes(pc.connectionState)&&!listo){clearTimeout(plazo);mal(new Error(pc.connectionState))}
+          // se cortó después de andar: se vuelve a conectar sola
+          if(listo&&pc.connectionState==='failed'&&document.body.contains(caja))setTimeout(()=>ponerWhep().catch(ponerTwitch),2000)};
+        pc.createOffer().then(o=>pc.setLocalDescription(o)).then(()=>new Promise(r=>{if(pc.iceGatheringState==='complete')return r();
+          const t=setTimeout(r,1500);pc.addEventListener('icegatheringstatechange',()=>{if(pc.iceGatheringState==='complete'){clearTimeout(t);r()}})}))
+          .then(()=>fetch(L.whep,{method:'POST',headers:{'content-type':'application/sdp'},body:pc.localDescription.sdp}))
+          .then(r=>{if(!r.ok)throw new Error('WHEP '+r.status);return r.text()})
+          .then(sdp=>pc.setRemoteDescription({type:'answer',sdp}))
+          .catch(e=>{clearTimeout(plazo);try{pc.close()}catch(_){}caja._pc=null;mal(e)});
+      });
+    };
+    // al sacar el conjunto de la página, se cierra la conexión
+    const cerrar=setInterval(()=>{if(!document.body.contains(caja)){clearInterval(cerrar);if(caja._pc){try{caja._pc.close()}catch(_){}}}},5000);
+    if(vivo){if(L.whep&&window.RTCPeerConnection)ponerWhep().catch(ponerTwitch);else ponerTwitch()}
     return caja;
   }
   function pintar(){
