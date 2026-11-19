@@ -530,28 +530,28 @@ h2{margin-top:8px}
   .desliza{display:block;margin-top:10px;font-family:var(--f-dato);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--tenue);text-align:center}
 }
 .desliza{display:none}
-/* ===== A la medida: los montados en una sola fila que se desliza hacia el lado (cabe en una pantalla) ===== */
-#medida .esp-cols{margin-top:clamp(16px,3vh,40px);gap:clamp(24px,3vw,48px)}
-#medida .esp-cols>*{min-width:0} /* la fila de montados se desliza dentro de su columna */
+/* ===== A la medida: lista y la Fiesta de los 80 (compacta) arriba; los montados abajo, en filas de 5 ===== */
 #medida{padding-top:clamp(20px,4vh,48px)}
-@media (min-width:901px){#medida .esp-cols{grid-template-columns:1.4fr .6fr}}
 #medida h2{font-size:clamp(36px,min(7vw,9vh),88px)}
+#medida .esp-cols{margin-top:clamp(16px,3vh,32px);gap:clamp(20px,3vw,40px);align-items:start}
+#medida .esp-cols>*{min-width:0}
+@media (min-width:901px){#medida .esp-cols{grid-template-columns:1.2fr .8fr}}
 #medida .esp-lista{gap:6px}
-#medida .esp-mont-tit{margin:clamp(12px,2.5vh,28px) 0 10px}
-.esp-fila{position:relative}
-#medida .esp-montados{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;scrollbar-width:none;padding-bottom:4px}
-#medida .esp-montados::-webkit-scrollbar{display:none}
-#medida .esp-montados>.esp-mont{flex:0 0 calc(min(32vh,300px) * .8);scroll-snap-align:start}
-.esp-flecha{position:absolute;top:calc(min(32vh,300px) / 2);transform:translateY(-50%);z-index:2;width:38px;height:38px;border-radius:50%;border:1px solid var(--foco);background:rgba(12,11,18,.8);color:var(--foco);font-size:20px;cursor:pointer}
-.esp-flecha.izq{left:-14px}.esp-flecha.der{right:-14px}
-#medida .esp-ejemplo{padding:clamp(16px,2.5vh,24px)}
-#medida .esp-ejemplo p{margin:0 0 10px}
+#medida .esp-ejemplo{padding:14px 16px}
+#medida .esp-ejemplo .etiqueta{font-size:10px}
+#medida .esp-ejemplo h3{font-size:22px;margin:2px 0 6px}
+#medida .esp-ejemplo p{font-size:13px;line-height:1.45;margin:0 0 8px}
+#medida .esp-ejemplo .esp-boton{font-size:13px;padding:7px 12px}
+#medida .esp-mont-tit{margin:clamp(16px,3vh,32px) 0 10px}
+#medida .esp-montados{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+@media (max-width:900px){#medida .esp-montados{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:560px){#medida .esp-montados{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* ===== Videos (YouTube y Twitch): el video del centro se ajusta al alto de la pantalla ===== */
 @media (min-width:721px){
   .vid-card{flex-basis:min(600px,calc((100vh - 330px) * 16 / 9))}
   .vid-pista{padding-inline:calc(50% - min(600px,calc((100vh - 330px) * 16 / 9)) / 2)}
 }
-@media (max-width:720px){#medida .esp-montados>.esp-mont{flex-basis:42vw}.esp-flecha{display:none}}
+
 .ptl-pag{display:flex;align-items:center;justify-content:center;gap:14px;color:var(--tenue);font-family:var(--f-dato);font-size:13px}
 .ptl-pag button{width:36px;height:36px;border-radius:50%;border:1px solid var(--c);background:transparent;color:var(--c);font-size:18px;cursor:pointer}
 .ptl-pag button:disabled{opacity:.3;cursor:default}
@@ -842,18 +842,27 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
 
   <section class="banda medida" id="medida">
     <div class="envoltura">
-      <div class="etiqueta">Laboratorio KRB Stage</div>
+      <div class="etiqueta">Producción integral de eventos</div>
       <h2>Espectáculos a la medida</h2>
       <div class="esp-cols">
         <div>
           <ul class="esp-lista">
-            <li><span><strong>Kararock Band®</strong> (<a href="https://www.instagram.com/kararockband/" target="_blank" rel="noopener">@kararockband</a>): nuestra banda propia de músicos profesionales.</span></li>
+            <li><span><strong><a href="https://www.instagram.com/kararockband/" target="_blank" rel="noopener">Kararock Band®</a></strong> (Laboratorio KRB Stage): nuestra banda propia de músicos profesionales.</span></li>
             <li><span><strong>Pistas de ultra calidad</strong> producidas por KRB Stage, con videoclip sincronizado.</span></li>
             <li><span><strong>Dobles, bailarines, iluminación, humo y pantalla</strong>, en un solo espectáculo.</span></li>
+            <li><span><strong>Amplificación, iluminación, escenario, puesta en escena</strong>, intervenciones y más.</span></li>
             <li><span><strong>Exclusivo:</strong> la banda y la producción son de KRB Stage.</span></li>
           </ul>
-          <div class="etiqueta esp-mont-tit">Actualmente tenemos montado</div>
-          <div class="esp-fila"><button class="esp-flecha izq" type="button" aria-label="Anteriores">‹</button><button class="esp-flecha der" type="button" aria-label="Siguientes">›</button>
+        </div>
+        <div class="esp-ejemplo">
+          <div class="etiqueta">Un ejemplo</div>
+          <h3>Fiesta de los 80</h3>
+          <p>Para los 40 años de egreso de un curso armamos un mix de 50 minutos contado como una historia de los 80: Depeche Mode, Madonna, Tom Jones, Enanitos Verdes y Michael Jackson con Thriller y Smooth Criminal.</p>
+          <p>Después siguió la noche con karaoke con banda en vivo y DJ.</p>
+          <a class="esp-boton" href="https://www.instagram.com/reel/DRm5CfskUtc/" target="_blank" rel="noopener">▶ Ver el video en Instagram</a>
+        </div>
+      </div>
+      <div class="etiqueta esp-mont-tit">Actualmente tenemos montado</div>
           <div class="esp-montados">
             <a class="esp-mont" data-code="DbfKhfKM2E4" href="https://www.instagram.com/reel/DbfKhfKM2E4/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Pet Shop Boys</b></a>
             <a class="esp-mont" data-code="DbggHTrBw98" href="https://www.instagram.com/reel/DbggHTrBw98/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Depeche Mode vs Pet Shop Boys</b></a>
@@ -871,16 +880,6 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
             <a class="esp-mont" data-code="Da-bsOQzxl3" href="https://www.instagram.com/reel/Da-bsOQzxl3/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Alanis Morissette</b><small>por Loretto Canales</small></a>
             <a class="esp-mont" data-code="Dd1h9J9O8th" href="https://www.instagram.com/reel/Dd1h9J9O8th/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Bingo con banda</b><small>por Gonzalo de Santa María</small></a>
           </div>
-          </div>
-        </div>
-        <div class="esp-ejemplo">
-          <div class="etiqueta">Un ejemplo</div>
-          <h3>Fiesta de los 80</h3>
-          <p>Para los 40 años de egreso de un curso armamos un mix de 50 minutos contado como una historia de los 80: Depeche Mode, Madonna, Tom Jones, Enanitos Verdes y Michael Jackson con Thriller y Smooth Criminal.</p>
-          <p>Después siguió la noche con karaoke con banda en vivo y DJ.</p>
-          <a class="esp-boton" href="https://www.instagram.com/reel/DRm5CfskUtc/" target="_blank" rel="noopener">▶ Ver el video en Instagram</a>
-        </div>
-      </div>
     </div>
   </section>
 
