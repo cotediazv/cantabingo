@@ -167,8 +167,12 @@ main,footer{position:relative;z-index:1}
   /* portada del celular: la información arriba y el video justo debajo, con el mismo margen que las letras
      (20 px por lado), como parte del diseño; todo en la primera pantalla */
   .portada{display:flex;flex-direction:column;min-height:calc(100vh - 65px);min-height:calc(100svh - 65px)}
-  body .portada .envoltura{order:1;width:100%;align-content:start;gap:18px;padding-bottom:24px}
-  .video-portada{order:2;position:relative;inset:auto;z-index:1;margin:0 20px;width:calc(100% - 40px);border-radius:12px}
+  /* orden en el celular: Somos, KRB Stage, lema, «Vibramos juntos», el video y, al pie, los locales */
+  body .portada .envoltura{display:contents}
+  body .portada .envoltura>*{order:1;position:relative;margin:18px max(20px,env(safe-area-inset-left,0px)) 0}
+  body .portada .envoltura>.etiqueta{margin-top:16px}
+  .video-portada{order:2;position:relative;inset:auto;z-index:1;margin:22px 20px 0;width:calc(100% - 40px);border-radius:12px}
+  body .portada .envoltura>.fila-datos{order:3;margin:18px 20px 24px}
   .velo{bottom:0}
 }
 .portada .envoltura{position:relative;padding-block:120px 96px;display:grid;gap:28px}
@@ -637,7 +641,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
     <div class="velo" aria-hidden="true"></div>
     <canvas id="red" aria-hidden="true"></canvas>
     <div class="envoltura">
-      <div class="etiqueta">Productora</div>
+      <div class="etiqueta">Somos</div>
       <h1>KRB<span>Stage</span></h1>
       <p class="lema"><span>Experiencias independientes</span><b>Emociones conectadas</b></p>
       <p class="bajada">Vibramos juntos</p>
@@ -645,6 +649,11 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
         <span style="--c:var(--kennedy)">Mercado Kennedy</span>
         <span style="--c:var(--frida)">Frida Kahlo</span>
         <span style="--c:var(--tobalaba)">Tobalaba</span>
+        <span style="--c:var(--foco)">Panorámico</span>
+        <span style="--c:var(--foco)">Kairos</span>
+        <span style="--c:var(--foco)">Mercado del 14</span>
+        <span style="--c:var(--foco)">La Abuelita Rosa</span>
+        <span style="--c:var(--foco)">Helsinki Club</span>
       </div>
     </div>
   </section>
