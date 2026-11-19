@@ -133,7 +133,7 @@ h2{font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-si
 
 /* barra */
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--noche)}
-.barra{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--noche) 84%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--linea)}
+.barra{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:rgba(12,11,18,.94);border-bottom:1px solid var(--linea)}
 .barra .envoltura{display:flex;align-items:center;justify-content:space-between;height:64px;gap:16px}
 .marca{font-family:var(--f-display);font-weight:900;font-size:24px;letter-spacing:.06em;text-decoration:none;display:flex;align-items:center;gap:10px}
 .marca img{display:block;height:40px;width:auto}
@@ -150,12 +150,11 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 main,footer{position:relative;z-index:1}
 /* video completo (2:1), sin recortar los costados */
 .portada{min-height:50vw}
-.video-portada{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:var(--noche);filter:saturate(.45) brightness(.75);transition:filter .7s ease}
-.velo{position:absolute;inset:0;background:linear-gradient(90deg,rgba(12,11,18,.9) 0%,rgba(12,11,18,.65) 45%,rgba(12,11,18,.35) 100%),linear-gradient(0deg,var(--noche) 0%,transparent 25%);transition:opacity .7s ease}
+.video-portada{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:var(--noche)}
+.velo{position:absolute;inset:0;background:linear-gradient(90deg,rgba(12,11,18,.93) 0%,rgba(12,11,18,.75) 45%,rgba(12,11,18,.5) 100%),linear-gradient(0deg,var(--noche) 0%,transparent 25%);transition:opacity .7s ease}
 #red,.portada .envoltura{transition:opacity .7s ease}
 .portada h1{cursor:default}
 /* al pasar el mouse sobre KRB STAGE: el video pasa al frente, con todo su color */
-.portada.foco .video-portada{filter:none}
 .portada.foco .velo,.portada.foco #red{opacity:0}
 .portada.foco .envoltura{opacity:.12}
 @media (max-width:720px){
@@ -757,7 +756,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
       <div>
         <p>Creemos que una noche cualquiera puede convertirse en un recuerdo para siempre. Que una canción puede unir a dos desconocidos, a un abuelo con su nieto, a una mesa con todo el salón.</p>
         <p>Por eso creamos momentos: la piel de gallina cuando suena la banda tributo, la sorpresa de ver en escena al artista que admiras, las risas compartidas con el humor y la emoción de jugar todos juntos.</p>
-        <p class="esmero">Tenemos un equipo especialista, multidisciplinario, capaz de conformar varios grupos simultáneos para las más distintas actividades y necesidades.</p>
+        <p class="esmero">KRB Stage se conforma de un equipo especialista, multidisciplinario, capaz de conformar varios grupos simultáneos para las más distintas actividades y necesidades.</p>
         <div class="ficha ficha-logo"><img src="krb-stage.svg" alt="KRB Stage" width="160" height="100"></div>
       </div>
     </div>
@@ -1413,23 +1412,29 @@ document.querySelectorAll('.esp-montados').forEach(g=>{const PRIMEROS=['DF4JT1kg
   ajustar();addEventListener('resize',ajustar);document.fonts&&document.fonts.ready.then(ajustar);
 })();
 
+/* ===== animaciones livianas: 30 cuadros por segundo, líneas agrupadas y, en equipos modestos o con
+   «ahorro de datos», la red de puntos queda quieta (así la página no se pega en ningún computador o teléfono) ===== */
+const liviano=(navigator.hardwareConcurrency&&navigator.hardwareConcurrency<=4)||(navigator.deviceMemory&&navigator.deviceMemory<=4)||(navigator.connection&&navigator.connection.saveData);
+function cuadro(f){let t0=performance.now();const g=t=>{if(t-t0<32){requestAnimationFrame(g);return}f()};requestAnimationFrame(g)}
+function lineas(x,pts,dist,alfa){ // agrupa las líneas en 4 tonos: pocas órdenes de dibujo en vez de una por línea
+  const grupos=[[],[],[],[]];for(let i=0;i<pts.length;i++){const a=pts[i];for(let j=i+1;j<pts.length;j++){const b=pts[j],dx=a.x-b.x,dy=a.y-b.y,d2=dx*dx+dy*dy;if(d2<dist*dist){const k=Math.min(3,Math.floor(Math.sqrt(d2)/dist*4));grupos[k].push(a,b)}}}
+  x.lineWidth=1;grupos.forEach((g,k)=>{if(!g.length)return;x.strokeStyle='rgba(243,238,230,'+((1-(k+.5)/4)*alfa)+')';x.beginPath();for(let i=0;i<g.length;i+=2){x.moveTo(g[i].x,g[i].y);x.lineTo(g[i+1].x,g[i+1].y)}x.stroke()});
+}
 /* ===== red de conexiones en toda la página ===== */
 (function(){
   const c=$('#red-fondo'),x=c.getContext('2d');
   const colores=['#47b8e6','#e0338f','#e5413a','#f3eee6','#f4bf5a'];
   let W,H,pts=[],pulsos=[],corre=true;
   function armar(){
-    const dpr=Math.min(2,devicePixelRatio||1);
+    const dpr=Math.min(1.5,devicePixelRatio||1);
     W=innerWidth;H=innerHeight;c.width=W*dpr;c.height=H*dpr;x.setTransform(dpr,0,0,dpr,0,0);
-    const n=Math.round(Math.min(120,W*H/11000));
+    const n=Math.round(Math.min(70,W*H/17000));
     pts=Array.from({length:n},()=>({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.22,vy:(Math.random()-.5)*.22,c:colores[Math.random()*colores.length|0]}));
     pulsos=[];
   }
   function dibujar(){
     x.clearRect(0,0,W,H);
-    for(let i=0;i<pts.length;i++){const a=pts[i];
-      for(let j=i+1;j<pts.length;j++){const b=pts[j],d=Math.hypot(a.x-b.x,a.y-b.y);
-        if(d<120){x.strokeStyle='rgba(243,238,230,'+(1-d/120)*.13+')';x.lineWidth=1;x.beginPath();x.moveTo(a.x,a.y);x.lineTo(b.x,b.y);x.stroke()}}}
+    lineas(x,pts,120,.13);
     // impulsos que viajan de un punto a otro cercano, como neuronas
     for(const p of pulsos){const px=p.a.x+(p.b.x-p.a.x)*p.t,py=p.a.y+(p.b.y-p.a.y)*p.t;
       x.strokeStyle=p.a.c+'66';x.beginPath();x.moveTo(p.a.x,p.a.y);x.lineTo(px,py);x.stroke();
@@ -1442,13 +1447,13 @@ document.querySelectorAll('.esp-montados').forEach(g=>{const PRIMEROS=['DF4JT1kg
     for(const a of pts){a.x+=a.vx;a.y+=a.vy;if(a.x<0||a.x>W)a.vx*=-1;if(a.y<0||a.y>H)a.vy*=-1}
     if(Math.random()<.08&&pulsos.length<16)nuevoPulso();
     for(const p of pulsos)p.t+=.02;pulsos=pulsos.filter(p=>p.t<1);
-    dibujar();requestAnimationFrame(paso);
+    dibujar();cuadro(paso);
   }
   armar();
-  if(quieto){for(let k=0;k<10;k++)nuevoPulso();pulsos.forEach((p,i)=>p.t=.3+(i%5)*.12);dibujar()}else paso();
+  if(quieto||liviano){for(let k=0;k<10;k++)nuevoPulso();pulsos.forEach((p,i)=>p.t=.3+(i%5)*.12);dibujar()}else paso();
   addEventListener('resize',()=>{armar();if(quieto)dibujar()});
   // ahorra batería cuando la pestaña no se ve
-  document.addEventListener('visibilitychange',()=>{const v=!document.hidden;if(v&&!corre&&!quieto){corre=true;paso()}else if(!v)corre=false});
+  document.addEventListener('visibilitychange',()=>{const v=!document.hidden;if(v&&!corre&&!quieto&&!liviano){corre=true;paso()}else if(!v)corre=false});
 })();
 
 /* ===== portada: celulares del público que se conectan con la luz del escenario ===== */
@@ -1457,10 +1462,10 @@ document.querySelectorAll('.esp-montados').forEach(g=>{const PRIMEROS=['DF4JT1kg
   const colores=['#47b8e6','#e0338f','#e5413a','#f3eee6'];
   let W,H,pts=[],pulsos=[],foco;
   function armar(){
-    const dpr=Math.min(2,devicePixelRatio||1);
+    const dpr=Math.min(1.5,devicePixelRatio||1);
     W=c.clientWidth;H=c.clientHeight;c.width=W*dpr;c.height=H*dpr;x.setTransform(dpr,0,0,dpr,0,0);
     foco={x:W*(W<720?.78:.8),y:H*.32};
-    const n=Math.round(Math.min(110,W*H/9000));
+    const n=Math.round(Math.min(60,W*H/14000));
     pts=Array.from({length:n},()=>({x:Math.random()*W,y:H*.35+Math.random()*H*.65,vx:(Math.random()-.5)*.25,vy:(Math.random()-.5)*.25,c:colores[Math.random()*colores.length|0]}));
     pulsos=[];
   }
@@ -1469,9 +1474,7 @@ document.querySelectorAll('.esp-montados').forEach(g=>{const PRIMEROS=['DF4JT1kg
     const g=x.createRadialGradient(foco.x,foco.y,0,foco.x,foco.y,Math.max(W,H)*.6);
     g.addColorStop(0,'rgba(244,191,90,.22)');g.addColorStop(.4,'rgba(244,191,90,.05)');g.addColorStop(1,'rgba(244,191,90,0)');
     x.fillStyle=g;x.fillRect(0,0,W,H);
-    for(let i=0;i<pts.length;i++){const a=pts[i];
-      for(let j=i+1;j<pts.length;j++){const b=pts[j],d=Math.hypot(a.x-b.x,a.y-b.y);
-        if(d<110){x.strokeStyle='rgba(243,238,230,'+(1-d/110)*.14+')';x.lineWidth=1;x.beginPath();x.moveTo(a.x,a.y);x.lineTo(b.x,b.y);x.stroke()}}}
+    lineas(x,pts,110,.14);
     for(const p of pulsos){const t=p.t,px=p.a.x+(foco.x-p.a.x)*t,py=p.a.y+(foco.y-p.a.y)*t;
       x.strokeStyle=p.a.c+'55';x.beginPath();x.moveTo(p.a.x,p.a.y);x.lineTo(px,py);x.stroke();
       x.fillStyle=p.a.c;x.beginPath();x.arc(px,py,2.2,0,7);x.fill()}
@@ -1482,10 +1485,13 @@ document.querySelectorAll('.esp-montados').forEach(g=>{const PRIMEROS=['DF4JT1kg
     for(const a of pts){a.x+=a.vx;a.y+=a.vy;if(a.x<0||a.x>W)a.vx*=-1;if(a.y<H*.3||a.y>H)a.vy*=-1}
     if(Math.random()<.06&&pulsos.length<14)pulsos.push({a:pts[Math.random()*pts.length|0],t:0});
     for(const p of pulsos)p.t+=.012;pulsos=pulsos.filter(p=>p.t<1);
-    dibujar();requestAnimationFrame(paso);
+    dibujar();if(visible&&!document.hidden)cuadro(paso);else andando=false;
   }
+  let visible=true,andando=false;const partir=()=>{if(!andando&&visible&&!document.hidden&&!quieto&&!liviano){andando=true;paso()}};
   armar();
-  if(quieto){for(let k=0;k<8;k++)pulsos.push({a:pts[k*7%pts.length],t:.3+k*.08});dibujar()}else paso();
+  if(quieto||liviano){for(let k=0;k<8;k++)pulsos.push({a:pts[k*7%pts.length],t:.3+k*.08});dibujar()}else partir();
+  // solo se anima mientras la portada está a la vista
+  new IntersectionObserver(es=>{visible=es[0].isIntersecting;partir()}).observe(c);document.addEventListener('visibilitychange',partir);
   addEventListener('resize',()=>{armar();if(quieto)dibujar()});
 })();
 </script>
