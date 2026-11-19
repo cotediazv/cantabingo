@@ -44,7 +44,8 @@ module.exports = function twitch({ app }) {
         let videos = [];
         if (ids[c]) {
           const v = await helix(`/videos?user_id=${ids[c]}&first=30`);
-          videos = (v.data || []).map((x) => ({ id: x.id, title: String(x.title || '').slice(0, 160), published: x.published_at || x.created_at || '', thumbnail: foto(x.thumbnail_url, 640, 360), duration: x.duration || '' }))
+          // muted: Twitch le quitó el audio a partes del video por derechos de autor (y muestra un aviso encima)
+          videos = (v.data || []).map((x) => ({ id: x.id, title: String(x.title || '').slice(0, 160), published: x.published_at || x.created_at || '', thumbnail: foto(x.thumbnail_url, 640, 360), duration: x.duration || '', muted: Array.isArray(x.muted_segments) && x.muted_segments.length > 0 }))
             .filter((x) => x.thumbnail && !/_404\//.test(x.thumbnail)); // los que aún se están procesando no tienen imagen
         }
         return { canal: c, vivo: s ? { title: String(s.title || '').slice(0, 160), thumbnail: foto(s.thumbnail_url, 640, 360), viewers: s.viewer_count || 0 } : null, videos };

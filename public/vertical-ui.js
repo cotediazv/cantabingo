@@ -53,7 +53,9 @@
       }
       const venue = SCREENS[v].venue; // la actividad es la del local de esta pantalla
       if (st.show === 'karaoke' && !lightId) lightId = ((await api('GET', `/api/light?local=${venue}`).catch(() => ({}))) || {}).id || '';
-      const want = st.show === 'video' ? 'video' : st.show === 'light' ? `#/light-v/${venue}` : st.show === 'karaoke' ? `#/karaoke-v/${venue}/${lightId}` : '#/tablero';
+      // Fondo de la sala light cuando toca; sin video subido y sin actividad en este local: el logo (no el tablero de la
+      // sala abierta, que puede ser de otro local)
+      const want = st.show === 'video' ? 'video' : st.show === 'light' ? `#/light-v/${venue}` : !st.activity ? 'video' : st.show === 'karaoke' ? `#/karaoke-v/${venue}/${lightId}` : '#/tablero';
       if (want === shown) return;
       shown = want;
       const isVideo = want === 'video';
