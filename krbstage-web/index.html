@@ -1461,10 +1461,15 @@ elegirLocal('kennedy');
     if(vivo)cargarTwitch().then(()=>{if(!window.Twitch)return;
       const m=caja.querySelector('.vivo-marco');m.innerHTML='<div class="vivo-tp"></div>';
       const tp=new Twitch.Player(m.firstChild,{channel:canal,parent:['www.krbstage.cl','krbstage.cl',location.hostname].filter((x,k,a)=>x&&a.indexOf(x)===k),width:'100%',height:'100%',autoplay:true,muted:canalSonando!==canal,controls:false});
-      caja._tp=tp;let ultimo=Date.now();
+      // Lo más a tiempo posible (pedido de Cote: en twitch.tv va a menos de 2 s y aquí iba a 19): cada 5 s se mide el
+      // atraso; si pasa de 5 s se vuelve a cargar en el punto en vivo (hasta 3 intentos seguidos, cada 20 s). Si aun así
+      // no baja, se deja tranquilo y solo se recarga si pasa de 30 s (una vez por minuto), para no cortarlo a cada rato
+      caja._tp=tp;let ultimo=Date.now(),intentos=0;
       const vigilar=setInterval(()=>{if(!document.body.contains(caja)){clearInterval(vigilar);return}
-        try{const st=tp.getPlaybackStats(),atraso=st?+st.hlsLatencyBroadcaster:0;
-          if(atraso>30&&Date.now()-ultimo>60e3){ultimo=Date.now();tp.setChannel(canal);tp.setMuted(canalSonando!==canal)}}catch(_){}},10000);
+        try{const st=tp.getPlaybackStats(),atraso=st?+st.hlsLatencyBroadcaster:0;caja._atraso=atraso;if(!atraso)return;
+          if(atraso<=5){intentos=0;return}
+          const limite=intentos<3?5:30,espera=intentos<3?20e3:60e3;
+          if(atraso>limite&&Date.now()-ultimo>espera){ultimo=Date.now();intentos++;tp.setChannel(canal);tp.setMuted(canalSonando!==canal)}}catch(_){}},5000);
     }).catch(()=>{});
     return caja;
   }
