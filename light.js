@@ -31,6 +31,11 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
     for (const l of Object.values(db.lights)) if (l && l.stage === 'none') l.stage = 'info';
     db.lightInfoDefault = true;
   }
+  // Una sola vez (19 nov, pedido de Cote): los tres locales parten con la información que va cambiando en el GC
+  if (!db.lightInfoAll) {
+    for (const l of Object.values(db.lights)) if (l) l.stage = 'info';
+    db.lightInfoAll = true;
+  }
   save();
   const clean = (v, max = 80) => String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, max);
   const plain = (t) => clean(t, 40).normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
