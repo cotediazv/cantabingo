@@ -1398,14 +1398,16 @@ elegirLocal('kennedy');
   // horizontal (sigue los botones: juegos, karaoke, QR, show, cartelera); si la pantalla está en «Siempre el video», su información
   const rutaH=L=>L.local==='tobalaba'?'#/pantalla/tobalaba':(L._rutaH||`#/light-v/${L.local}`);
   const srcPant=(ruta,L)=>`${SALA}${L&&L.liviano?`&liviano=${encodeURIComponent(L.liviano)}&lver=${L.lver}`:''}${ruta}`;
+  // una pantalla «dormida» (en la pantalla completa, los locales que no se están mirando) guarda su dirección para después
+  const ponerSrc=(f,u)=>{if(f.dataset.dormida)f.dataset.dormida=u;else f.src=u};
   function revisarLuz(){
     fetch('https://cantabingo.onrender.com/api/web/pantallas',{signal:AbortSignal.timeout(10000)}).then(r=>r.json()).then(todo=>{
       for(const L of Object.values(LOC)){if(!L.luz)continue;const st=todo[L.vertical.split('/').pop()];if(!st)continue;
         const rh=st.show==='video'?`#/light-v/${L.local}`:L.vertical;
-        if(rh!==rutaH(L)){L._rutaH=rh;document.querySelectorAll(`.ptl-col[data-local="${L.local}"] .pant-h iframe`).forEach(f=>f.src=srcPant(rh))}
+        if(rh!==rutaH(L)){L._rutaH=rh;(packs[L.local]||document).querySelectorAll(`${packs[L.local]?'':`.ptl-col[data-local="${L.local}"] `}.pant-h iframe`).forEach(f=>ponerSrc(f,srcPant(rh)))}
         // la pantalla vertical es siempre la misma pantalla del local, tal cual (pedido de Cote: si está en video, el video)
         const ruta=L.vertical;if(ruta===rutaV(L))continue;L._ruta=ruta;
-        document.querySelectorAll(`.ptl-col[data-local="${L.local}"] .pant-v iframe`).forEach(f=>f.src=srcPant(ruta,L));
+        (packs[L.local]||document).querySelectorAll(`${packs[L.local]?'':`.ptl-col[data-local="${L.local}"] `}.pant-v iframe`).forEach(f=>ponerSrc(f,srcPant(ruta,L)));
       }
     }).catch(()=>{});
   }
@@ -1480,7 +1482,7 @@ elegirLocal('kennedy');
       if(visor&&viejo&&visor.contains(viejo))viejo.replaceWith(nuevo); // abierto en pantalla completa: no se desarma
       else col.querySelector('.ptl-prueba').after(nuevo);
     }
-    if(visor)ajustarVisor();
+    if(visor){ajustarVisor();dormir()}
     requestAnimationFrame(escalar);
   }
   function revisar(){
@@ -1510,6 +1512,11 @@ elegirLocal('kennedy');
     fetch(API+v,{signal:AbortSignal.timeout(10000)}).then(r=>r.json()).then(j=>{if(Array.isArray(j.week)&&j.week.length){cartV[v]=j.week;if(visor)cabecera()}}).catch(()=>{});
   }
   let idxV=0;
+  // En la pantalla completa solo funcionan las pantallas del local que se está mirando; las de los otros se apagan
+  // (en el iPhone, tener las seis pantallas a la vez lo dejaba sin memoria y Safari recargaba la página)
+  const despertar=f=>{if(f.dataset.dormida){f.src=f.dataset.dormida;delete f.dataset.dormida}};
+  function dormir(){if(!visor)return;ORDEN.forEach((L,k)=>{const p=packs[L.local];if(!p)return;
+    p.querySelectorAll('.pant iframe').forEach(f=>{if(k===idxV)despertar(f);else if(!f.dataset.dormida){f.dataset.dormida=f.src;f.src='about:blank'}})})}
   const fantasma=L=>`<section class="visor-slide fantasma" style="--c:${L.c}"><b>${esc(L.n)}</b></section>`;
   function cabecera(){
     if(!visor)return;const L=ORDEN[idxV];if(!L)return;
@@ -1557,14 +1564,14 @@ elegirLocal('kennedy');
     const pista=visor.querySelector('.visor-pista');
     let t=null;pista.addEventListener('scroll',()=>{clearTimeout(t);t=setTimeout(()=>{const W=Math.max(1,pista.clientWidth),k=Math.round(pista.scrollLeft/W);
       let n=k-1;if(k<=0){n=ORDEN.length-1;pista.scrollLeft=(n+1)*W}else if(k>ORDEN.length){n=0;pista.scrollLeft=W}
-      if(n!==idxV){idxV=n;cabecera()}},90)});
+      if(n!==idxV){idxV=n;cabecera();dormir()}},90)});
     const ir=d=>{const W=pista.clientWidth,k=idxV+1+d;pista.scrollTo({left:k*W,behavior:'smooth'})};
     visor.querySelector('.visor-flecha.izq').onclick=()=>ir(-1);visor.querySelector('.visor-flecha.der').onclick=()=>ir(1);
     visor.querySelector('.visor-x').onclick=()=>cerrarVisor();
     // Se agrega un paso al historial: borra las páginas «siguientes» de la pestaña (en el iPhone, deslizar desde el borde
     // abría una de ellas, la pantalla del local en la Sala) y el gesto de «atrás» solo cierra la pantalla completa
     try{history.pushState({visor:1},'')}catch(_){}
-    cabecera();ajustarVisor();setTimeout(ajustarVisor,300);
+    cabecera();ajustarVisor();setTimeout(ajustarVisor,300);dormir();
     if(visor.requestFullscreen&&document.fullscreenEnabled)visor.requestFullscreen().then(()=>{try{screen.orientation.lock('landscape').catch(()=>{})}catch(_){}}).catch(()=>{});
   }
   function cerrarVisor(desdeHistorial){
@@ -1572,6 +1579,7 @@ elegirLocal('kennedy');
     if(desdeHistorial!==true&&history.state&&history.state.visor)try{history.back()}catch(_){}
     if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
     ORDEN.forEach(L=>{const p=packs[L.local];const col=document.querySelector(`.ptl-col[data-local="${L.local}"]`);
+      if(p)p.querySelectorAll('.pant iframe').forEach(despertar);
       if(p&&col){const f=p.querySelector('.vivo-fila');if(f){f.style.gridTemplateColumns='';f.style.gap=''}col.querySelector('.ptl-prueba').after(p)}});
     v.remove();document.documentElement.classList.remove('con-visor','con-visor-tactil');requestAnimationFrame(escalar);
   }
