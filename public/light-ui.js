@@ -304,8 +304,14 @@
     let cart = null;
     let kar = null;
     let idx = 0;
-    const light = await api('GET', `/api/light?local=${v}`).catch(() => null);
-    if (light && light.id) $('.lv-qrbox').innerHTML = qr(`${location.origin}${location.pathname}#/l/${light.id}`);
+    // Tobalaba no usa sala light: su QR es para entrar a la sala de juegos
+    if (v === 'tobalaba') {
+      $('.lv-qrbox').innerHTML = qr(`${location.origin}${location.pathname}#/jugar`);
+      $('.lv-qrtext span').textContent = 'Juega con nosotros y mira la cartelera';
+    } else {
+      const light = await api('GET', `/api/light?local=${v}`).catch(() => null);
+      if (light && light.id) $('.lv-qrbox').innerHTML = qr(`${location.origin}${location.pathname}#/l/${light.id}`);
+    }
     // Qué recuadros hay para mostrar (solo los que tienen algo)
     const slides = () => {
       const out = [];
@@ -318,12 +324,23 @@
         out.push(`<h2>⏱️ Esta noche</h2>${cart.current ? `<div class="lv-now"><small>Ahora</small><b>${esc(cap(cart.current.label))}</b><span>desde las ${esc(cart.current.time)}</span></div>` : ''}
           ${cart.next ? `<div class="lv-now lv-next"><small>A continuación</small><b>${esc(cap(cart.next.label))}</b><span>a las ${esc(cart.next.time)}</span></div>` : ''}`);
       }
+      // Si hoy no hay actividades, los horarios del próximo día que tenga (ej. el viernes en Tobalaba)
+      const nextDay = cart && !(cart.blocks || []).length && (cart.week || []).find((d) => !d.today && d.hours && d.hours.length);
+      if (nextDay) out.push(`<h2>🕗 ${esc(day(nextDay.day))} ${nextDay.date}</h2>${nextDay.show ? `<div class="lv-now lv-next"><small>Show</small><b>${esc(cap(nextDay.show))}</b></div>` : ''}<ul class="lv-hours">${nextDay.hours.map((b) => `<li><em>${esc(b.time)}</em><b>${esc(cap(b.label))}</b></li>`).join('')}</ul>`);
       if (cart && cart.blocks && cart.blocks.length) out.push(`<h2>🕗 Horarios de hoy</h2><ul class="lv-hours">${cart.blocks.map((b) => `<li class="${cart.current && cart.current.time === b.time ? 'on' : ''}"><em>${esc(b.time)}</em><b>${esc(cap(b.label))}</b></li>`).join('')}</ul>`);
       if (cart && cart.week && cart.week.length) out.push(`<h2>📅 Esta semana</h2><ul class="lv-week">${cart.week.slice(0, 5).map((d) => `<li class="${d.today ? 'on' : ''}"><em>${esc(day(d.day))} ${d.date}</em><b>${esc(cap(d.show || (d.hours[0] || {}).label || ''))}</b></li>`).join('')}</ul>`);
       if (cart && cart.month && cart.month.length) out.push(`<h2>🗓️ Cartelera del mes</h2><ul class="lv-week">${cart.month.slice(0, 6).map((d) => `<li><em>${esc(cap(d.day))}</em><b>${esc(cap(d.show))}</b></li>`).join('')}</ul>`);
       if (!out.length) out.push('<h2>🎶 Bienvenidos</h2><div class="lv-now"><b>KRB Stage</b><span>Música, shows y karaoke</span></div>');
       return out;
     };
+    // Si el texto completo no cabe en el recuadro, se achica todo el recuadro (nunca se corta)
+    const fit = () => {
+      const slide = $('.lv-slide');
+      if (!slide) return;
+      slide.style.zoom = 1;
+      for (let z = 0.95; z > 0.5 && slide.scrollHeight > slide.clientHeight + 1; z -= 0.05) slide.style.zoom = z.toFixed(2);
+    };
+    if (document.fonts) document.fonts.ready.then(fit);
     const paint = () => {
       if (!alive || !$('#lv')) return;
       const all = slides();
@@ -331,8 +348,8 @@
       const slide = $('.lv-slide');
       slide.style.zoom = 1;
       slide.innerHTML = all[idx];
-      // Si el texto completo no cabe en el recuadro, se achica todo el recuadro (nunca se corta)
-      for (let z = 1; z > 0.5 && slide.scrollHeight > slide.clientHeight + 1; z -= 0.05) slide.style.zoom = z.toFixed(2);
+      fit();
+      setTimeout(fit, 400); // otra vez cuando ya cargaron las letras
       $('.lv-dots').innerHTML = all.length > 1 ? all.map((_, i) => `<i class="${i === idx ? 'on' : ''}"></i>`).join('') : '';
       const show = $('.lv-show');
       show.hidden = !(cart && cart.show);
