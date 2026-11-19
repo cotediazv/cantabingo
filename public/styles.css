@@ -1816,3 +1816,19 @@ body.full.has-vm #lv { padding-bottom: 7vh; }
 .lv-show .lv-sh, .lv-show .lv-by { display: inline; }
 .lv-show .lv-by { font-size: 1em; margin-left: .4em; }
 .lv-by small { text-transform: none; letter-spacing: 0; }
+/* KRB Kids, inicio: título más arriba e íconos más chicos, todo dentro de la pantalla y simétrico (3 arriba, 2 abajo centrados) */
+body.kids main { padding-top: 10px; padding-bottom: 20px; }
+.kz:has(.kz-home-body) { min-height: calc(100dvh - 30px); align-content: start; gap: 10px; }
+.kz:has(.kz-home-body) .kz-top { justify-content: center; }
+.kz-title { margin: 0; gap: 0; font-size: clamp(2.8rem, 14vw, 4.4rem); }
+.kz-title .kz-logo { width: clamp(70px, 20vw, 110px); margin-bottom: -6px; }
+.kz-menu { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin: 6px auto 0; max-width: 560px; }
+.kz-menu .kz-game, .kz-menu .kz-game:last-child:nth-child(odd) { flex: 0 0 auto; width: min(28vw, 160px); aspect-ratio: 1; grid-column: auto; justify-self: auto; border-radius: 26px; padding: 0; }
+.kz-game svg { width: 70%; height: 70%; }
+/* KRB Kids, inicio: el conjunto (globos, título e íconos) centrado en el alto de la pantalla; «Volver» arriba */
+.kz:has(.kz-home-body) { grid-template-rows: auto 1fr; align-content: stretch; }
+.kz:has(.kz-home-body) > .kz-title, .kz:has(.kz-home-body) > .kz-menu { grid-row: auto; }
+.kz-home-body { display: grid; align-content: center; justify-items: center; gap: 14px; padding-bottom: 6vh; }
+.kz-title { font-size: clamp(3rem, 15vw, 4.8rem); }
+.kz-title .kz-logo { width: clamp(80px, 22vw, 120px); }
+.kz-menu .kz-game, .kz-menu .kz-game:last-child:nth-child(odd) { width: min(29vw, 170px); }

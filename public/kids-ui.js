@@ -424,8 +424,8 @@
     let stop = null;
     if (!games[which]) {
       app.innerHTML = `${stamps()}<div class="kz"><div class="kz-top"><button type="button" class="kz-back" data-exit>← Volver a la sala</button></div>
-        <h1 class="kz-title">${kidsBalloons()}<span class="kz-name">${kidsName()}</span></h1>
-        <div class="kz-menu">${MENU.map(([k]) => `<a class="kz-game" href="#/kids/${k}" aria-label="${k}">${ICONS[k]}</a>`).join('')}</div></div>`;
+        <div class="kz-home-body"><h1 class="kz-title">${kidsBalloons()}<span class="kz-name">${kidsName()}</span></h1>
+        <div class="kz-menu">${MENU.map(([k]) => `<a class="kz-game" href="#/kids/${k}" aria-label="${k}">${ICONS[k]}</a>`).join('')}</div></div></div>`;
       $('[data-exit]').onclick = () => { location.hash = backTo(); };
     } else {
       app.innerHTML = `<div class="kz"><div class="kz-top"><button type="button" class="kz-back" data-back>←</button><span class="kz-icon">${ICONS[which]}</span></div><div id="kz-stage" class="kz-stage"></div></div>`;
