@@ -20,6 +20,79 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://www.krbstage.cl/compartir.jpg?v=5">
 <link rel="canonical" href="https://www.krbstage.cl/">
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "EntertainmentBusiness",
+ "name": "KRB Stage",
+ "legalName": "KRB Producciones SpA",
+ "description": "Productora de entretenimiento en vivo: shows, tributos, karaoke con banda, juegos interactivos y espectáculos a la medida para locales y eventos.",
+ "slogan": "Experiencias independientes. Emociones conectadas.",
+ "url": "https://www.krbstage.cl/",
+ "logo": "https://www.krbstage.cl/krb-stage.svg",
+ "image": "https://www.krbstage.cl/compartir.jpg",
+ "email": "krbstage@gmail.com",
+ "areaServed": {
+  "@type": "City",
+  "name": "Santiago",
+  "address": {
+   "@type": "PostalAddress",
+   "addressCountry": "CL"
+  }
+ },
+ "address": {
+  "@type": "PostalAddress",
+  "addressLocality": "Santiago",
+  "addressCountry": "CL"
+ },
+ "sameAs": [
+  "https://www.instagram.com/krbstage/",
+  "https://www.instagram.com/krbstage3/",
+  "https://www.instagram.com/krbstage4/",
+  "https://www.instagram.com/krbstage1/",
+  "https://www.instagram.com/krbstage2/",
+  "https://www.youtube.com/@krbstage",
+  "https://www.twitch.tv/krbstage",
+  "https://www.twitch.tv/krbstage3",
+  "https://www.twitch.tv/krbstagekennedy"
+ ],
+ "location": [
+  {
+   "@type": "Place",
+   "name": "Mercado Kennedy",
+   "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "Parque Arauco Oriente, 4.º piso",
+    "addressLocality": "Las Condes",
+    "addressRegion": "Región Metropolitana",
+    "addressCountry": "CL"
+   }
+  },
+  {
+   "@type": "Place",
+   "name": "Espacio Gastronómico Tobalaba",
+   "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "Mall Plaza Tobalaba",
+    "addressLocality": "Puente Alto",
+    "addressRegion": "Región Metropolitana",
+    "addressCountry": "CL"
+   }
+  },
+  {
+   "@type": "Place",
+   "name": "Frida Kahlo",
+   "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "Costanera Center",
+    "addressLocality": "Providencia",
+    "addressRegion": "Región Metropolitana",
+    "addressCountry": "CL"
+   }
+  }
+ ]
+}
+</script>
 <meta name="theme-color" content="#0c0b12">
 <link rel="icon" href="krb-stage.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -443,6 +516,9 @@ main,footer{position:relative;z-index:1}
 .esp-mont:hover .esp-media{border-color:var(--foco)}
 .esp-mont b{font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:22px;line-height:1}
 .esp-mont small{color:var(--tenue);font-size:13px}
+.esp-item{display:grid;gap:8px;align-content:start}
+.esp-cotizar{justify-self:start;border:1px solid var(--foco);background:transparent;color:var(--foco);border-radius:999px;padding:6px 12px;font:700 13px var(--f-texto);cursor:pointer}
+.esp-cotizar:hover{background:var(--foco);color:var(--noche)}
 .esp-boton{display:inline-block;margin-top:4px;color:var(--noche);background:var(--foco);font-weight:700;font-size:14px;border-radius:999px;padding:9px 16px;text-decoration:none}
 @media (max-width:560px){.esp-montados{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .esp-ejemplo{border:1px solid var(--foco);border-radius:12px;padding:24px;background:linear-gradient(160deg,rgba(244,191,90,.10),rgba(12,11,18,.6))}
@@ -1046,6 +1122,22 @@ elegirLocal('kennedy');
     });
   }
   fetch('https://cantabingo.onrender.com/api/web/instagram',{signal:AbortSignal.timeout(10000)}).then(r=>r.json()).then(d=>{if(window.recibirIg)window.recibirIg(d);pintar(d)}).catch(()=>{});
+})();
+
+/* ===== «Cotizar este show»: baja al formulario con el mensaje ya escrito ===== */
+(function(){
+  let auto='';
+  document.querySelectorAll('.esp-mont').forEach(card=>{
+    const nombre=card.querySelector('b').textContent.trim();
+    const item=document.createElement('div');item.className='esp-item';card.before(item);item.appendChild(card);
+    const b=document.createElement('button');b.type='button';b.className='esp-cotizar';b.textContent='Cotizar este show';item.appendChild(b);
+    b.onclick=()=>{
+      const msg=$('#f-msg'),txt=`Hola, me interesa cotizar el show de ${nombre}.`;
+      if(!msg.value.trim()||msg.value===auto){msg.value=txt;auto=txt}
+      $('#contacto').scrollIntoView({behavior:'smooth'});
+      setTimeout(()=>$('#f-nombre').focus({preventScroll:true}),700);
+    };
+  });
 })();
 
 /* ===== Espectáculos montados: los videos que están en nuestras cuentas se ven aquí mismo ===== */
