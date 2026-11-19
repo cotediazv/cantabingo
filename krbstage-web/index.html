@@ -522,7 +522,10 @@ h2{margin-top:8px}
 @media (min-width:901px){
   #tulocal .ptl-pruebas,#producidos .ptl-pruebas{grid-template-rows:repeat(4,auto);row-gap:8px}
   #tulocal .ptl-col,#producidos .ptl-col{grid-row:span 4;grid-template-rows:subgrid;gap:0}
+  #tulocal .ptl-pruebas{grid-template-rows:repeat(5,auto)}
+  #tulocal .ptl-col{grid-row:span 5}
   #tulocal .ptl-enlaces{grid-row:4}
+  #tulocal .ptl-cart{grid-row:5}
   /* las tres tarjetas iguales: el título ocupa siempre dos líneas (pegado abajo), así fecha, dirección y @ quedan a la misma altura */
   /* cada línea de la tarjeta en una sola línea; si el texto es largo, se achica hasta caber (pedido de Cote) */
   #tulocal .ptl-prueba b,#tulocal .ptl-prueba .ptl-dato,#tulocal .ptl-prueba .ptl-num,#producidos .ptl-prueba b,#producidos .ptl-prueba .ptl-dato,#producidos .ptl-prueba .ptl-num{white-space:nowrap;overflow:hidden;text-overflow:clip;display:block;padding-top:.14em;padding-bottom:.08em}
@@ -631,6 +634,21 @@ h2{margin-top:8px}
 .vivo-fila.pc-falso.pc-v{grid-template-columns:min(calc((100vw - 14px) * .7596),calc(100dvh * 16 / 9)) min(calc((100vw - 14px) * .2404),calc(100dvh * 9 / 16));gap:14px}
 .vivo-fila.pc-falso.pc-h{grid-template-columns:min(72vw,calc(100dvh * 16 / 9)) min(28vw,calc(100dvh * 16 / 9 * .389));gap:14px}
 .pc-cerrar{z-index:90}
+#funciona[hidden]{display:none}
+/* cartelera semanal de cada local, debajo de sus videos (pedido de Cote) */
+.ptl-cart{margin-top:10px;border:1px solid var(--linea);border-radius:10px;background:var(--tarima);padding:14px 16px;display:grid;gap:10px;align-content:start;scroll-margin-top:90px}
+.pcr-tit{display:flex;justify-content:space-between;align-items:baseline;gap:4px 10px;flex-wrap:wrap}
+.pcr-tit b{font-family:var(--f-dato);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--c)}
+.pcr-tit span{font-size:12px;color:var(--tenue)}
+.pcr-dia{border-radius:8px;padding:8px 10px;background:rgba(255,255,255,.03);display:grid;gap:4px}
+.pcr-dia.hoy{outline:1px solid var(--c);background:color-mix(in srgb,var(--c) 10%,transparent)}
+.pcr-cab{display:flex;justify-content:space-between;align-items:baseline;gap:4px 10px;flex-wrap:wrap}
+.pcr-cab b{font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:17px;line-height:1.1}
+.pcr-dia.hoy .pcr-cab b{color:var(--c)}
+.pcr-show{font-size:13px;font-weight:700;color:#fff}
+.pcr-dia ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:2px 12px;font-size:13px;color:#e9e4f0}
+.pcr-dia time{color:#f4bf5a;font-weight:700;margin-right:4px}
+.pcr-nada{margin:0;font-size:13px;color:var(--tenue)}
 /* las pantallas del local no se pueden tocar: una capa encima recibe el dedo (en el iPhone, tocarlas abría la pantalla sola) */
 .pant::after{content:"";position:absolute;inset:0;z-index:1}
 html.con-visor-tactil{overscroll-behavior-x:none}
@@ -799,7 +817,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
       <li><a href="#hacemos">Qué hacemos</a></li>
       <li><a href="#tulocal">Dónde producimos</a></li>
       <li><a href="#medida">A la medida</a></li>
-      <li><a href="#funciona">Cartelera</a></li>
+      <li><a href="#carteleras">Cartelera</a></li>
       <li><a href="#gancho">Para tu local</a></li>
       <li><a href="#contacto">Contacto</a></li>
     </ul>
@@ -884,20 +902,20 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
         <div class="ptl-col" data-local="kennedy" style="--c:var(--kennedy)">
           <article class="ptl-prueba"><span class="ptl-num">Mercado Kennedy</span><b>Más de tres años de éxito sostenido</b><small class="ptl-dato ptl-desde">Desde mayo de 2023 a la fecha</small><small class="ptl-dato">Parque Arauco Oriente, 4.º piso · Jueves a sábado</small><a class="ptl-arroba" href="https://www.instagram.com/krbstage/" target="_blank" rel="noopener">@krbstage</a></article>
           <div class="ptl-grilla" hidden></div>
-          <div class="ptl-enlaces"><a class="ptl-ig" href="https://www.instagram.com/krbstage/" target="_blank" rel="noopener">Ver registros en @krbstage</a>
-          <a class="ptl-cartelera" href="#funciona" data-local="kennedy">Ver cartelera semanal</a></div>
+          <div class="ptl-enlaces"><a class="ptl-ig" href="https://www.instagram.com/krbstage/" target="_blank" rel="noopener">Ver registros en @krbstage</a></div>
+          <div class="ptl-cart" data-local="kennedy" id="carteleras"></div>
         </div>
         <div class="ptl-col" data-local="tobalaba" style="--c:var(--tobalaba)">
           <article class="ptl-prueba"><span class="ptl-num">Espacio Gastronómico Tobalaba</span><b>Actividades sorprendentes semana a semana</b><small class="ptl-dato ptl-desde">Desde enero de 2025 a la fecha</small><small class="ptl-dato">Mall Plaza Tobalaba · Viernes</small><a class="ptl-arroba" href="https://www.instagram.com/krbstage3/" target="_blank" rel="noopener">@krbstage3</a></article>
           <div class="ptl-grilla" hidden></div>
-          <div class="ptl-enlaces"><a class="ptl-ig" href="https://www.instagram.com/krbstage3/" target="_blank" rel="noopener">Ver registros en @krbstage3</a>
-          <a class="ptl-cartelera" href="#funciona" data-local="tobalaba">Ver cartelera semanal</a></div>
+          <div class="ptl-enlaces"><a class="ptl-ig" href="https://www.instagram.com/krbstage3/" target="_blank" rel="noopener">Ver registros en @krbstage3</a></div>
+          <div class="ptl-cart" data-local="tobalaba"></div>
         </div>
         <div class="ptl-col" data-local="frida" style="--c:var(--frida)">
           <article class="ptl-prueba"><span class="ptl-num">Frida Kahlo</span><b>Un espacio que la gente hizo suyo desde la primera noche</b><small class="ptl-dato ptl-desde">Desde julio de 2025 a la fecha</small><small class="ptl-dato">Costanera Center · Viernes a domingo</small><a class="ptl-arroba" href="https://www.instagram.com/krbstage4/" target="_blank" rel="noopener">@krbstage4</a></article>
           <div class="ptl-grilla" hidden></div>
-          <div class="ptl-enlaces"><a class="ptl-ig" href="https://www.instagram.com/krbstage4/" target="_blank" rel="noopener">Ver registros en @krbstage4</a>
-          <a class="ptl-cartelera" href="#funciona" data-local="frida">Ver cartelera semanal</a></div>
+          <div class="ptl-enlaces"><a class="ptl-ig" href="https://www.instagram.com/krbstage4/" target="_blank" rel="noopener">Ver registros en @krbstage4</a></div>
+          <div class="ptl-cart" data-local="frida"></div>
         </div>
       </div>
       <div class="desliza">Desliza para ver los otros locales →</div>
@@ -972,7 +990,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
     </div>
   </section>
 
-  <section class="banda funciona" id="funciona">
+  <section class="banda funciona" id="funciona" hidden>
     <div class="envoltura">
       <div class="cabeza">
         <div>
@@ -1167,8 +1185,19 @@ function activarSonido(){if(sonidoActivo)return;sonidoActivo=true;
 document.addEventListener('ended',e=>{const v=e.target;if(v.tagName!=='VIDEO'||!v.closest('.ptl-grilla,.esp-media,#pc-pista'))return;
   if(!v.dataset.src&&v.getAttribute('src'))v.dataset.src=v.getAttribute('src');v.removeAttribute('src');v.load()},true);
 window.recibirIg=d=>{igDatos=d;pintarFlyers();pintarColumnas()};
-// «Ver cartelera semanal» de cada local: baja a la cartelera con ese local elegido
-document.querySelectorAll('.ptl-cartelera').forEach(a=>a.addEventListener('click',()=>elegirLocal(a.dataset.local)));
+// Cartelera semanal de cada local, debajo de sus videos en «Dónde producimos» (pedido de Cote): los días de esta semana
+// con su show y horarios; el de hoy destacado. Sale en vivo de la cartelera de cada local y se actualiza sola
+async function pintarCarteleras(){
+  await Promise.all([...document.querySelectorAll('.ptl-cart')].map(async el=>{
+    const v=el.dataset.local,d=await cargar(v);
+    const dias=(d.week||[]).filter(enSemana).filter(w=>(w.hours&&w.hours.length)||w.show);
+    el.innerHTML=`<div class="pcr-tit"><b>Cartelera semanal</b><span>${esc(semanaTxt())}</span></div>`+(dias.length?dias.map(w=>{
+      const hoy=fechaDe(w).getTime()===hoyChile().getTime();
+      return `<div class="pcr-dia${hoy?' hoy':''}"><div class="pcr-cab"><b>${hoy?'Hoy · ':''}${esc(DIAS[plano(w.day)]||w.day)} ${w.date}</b>${w.show?`<span class="pcr-show">⭐ ${esc(nomShow(w.show))}</span>`:''}</div>
+        <ul>${(w.hours||[]).map(h=>`<li><time>${esc(h.time)}</time>${esc(nomShow(h.label))}</li>`).join('')}</ul></div>`}).join(''):'<p class="pcr-nada">Sin funciones programadas esta semana.</p>');
+  }));
+}
+pintarCarteleras();setInterval(()=>{['kennedy','tobalaba','frida'].forEach(v=>delete datos[v]);pintarCarteleras()},10*60e3);
 // «Dónde producimos» / «También hemos producido en»: debajo de cada lugar, páginas de 6 videos de Instagram
 // (primero los 6 más populares y después hasta 60 más). Todos quedan como foto; el bloque de un lugar se activa
 // (sus 6 videos se mueven) al pasar el mouse o al tocarlo con el dedo. Solo un bloque activo a la vez.
