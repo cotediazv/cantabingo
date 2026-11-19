@@ -294,6 +294,12 @@
   const day = (d) => DAYS[String(d || '').toUpperCase()] || String(d || '');
   const cap = (t) => String(t || '').toLocaleLowerCase('es').replace(/(^|[\s:(«"-])(\p{L})/gu, (m, a, b) => a + b.toLocaleUpperCase('es'));
   const SLIDE_MS = 9000;
+  // Shows con el artista entre paréntesis (ej. «ESPECIAL MÉXICO (VERÓNICA YAÑEZ)»): el título arriba y, abajo, «por» y el
+  // nombre del artista en grande y en color (pedido de Cote)
+  const showHtml = (t) => {
+    const m = String(t || '').match(/^(.*?)\s*\(([^()]+)\)\s*$/);
+    return m ? `<span class="lv-sh">${esc(cap(m[1]))}</span><span class="lv-by"><small>por</small> ${esc(cap(m[2]))}</span>` : `<span class="lv-sh">${esc(cap(t))}</span>`;
+  };
   views['light-v'] = async (local) => {
     const v = NAMES[local] ? local : 'kennedy';
     // #/light-v/<local>/qr: QR grande con los próximos en cantar · #/light-v/<local>/show: el show y lo de esta noche
@@ -330,13 +336,13 @@
       }
       // Si hoy no hay actividades, los horarios del próximo día que tenga (ej. el viernes en Tobalaba)
       const nextDay = cart && !(cart.blocks || []).length && (cart.week || []).find((d) => !d.today && d.hours && d.hours.length);
-      if (nextDay) out.push(`<h2>🕗 ${esc(day(nextDay.day))} ${nextDay.date}</h2>${nextDay.show ? `<div class="lv-now lv-next"><small>Show</small><b>${esc(cap(nextDay.show))}</b></div>` : ''}<ul class="lv-hours">${nextDay.hours.map((b) => `<li><em>${esc(b.time)}</em><b>${esc(cap(b.label))}</b></li>`).join('')}</ul>`);
+      if (nextDay) out.push(`<h2>🕗 ${esc(day(nextDay.day))} ${nextDay.date}</h2>${nextDay.show ? `<div class="lv-now lv-next"><small>Show</small><b>${showHtml(nextDay.show)}</b></div>` : ''}<ul class="lv-hours">${nextDay.hours.map((b) => `<li><em>${esc(b.time)}</em><b>${esc(cap(b.label))}</b></li>`).join('')}</ul>`);
       if (cart && cart.blocks && cart.blocks.length) out.push(`<h2>🕗 Horarios de hoy</h2><ul class="lv-hours">${cart.blocks.map((b) => `<li class="${cart.current && cart.current.time === b.time ? 'on' : ''}"><em>${esc(b.time)}</em><b>${esc(cap(b.label))}</b></li>`).join('')}</ul>`);
-      if (cart && cart.week && cart.week.length) out.push(`<h2>📅 Esta semana</h2><ul class="lv-week">${cart.week.slice(0, 5).map((d) => `<li class="${d.today ? 'on' : ''}"><em>${esc(day(d.day))} ${d.date}</em><b>${esc(cap(d.show || (d.hours[0] || {}).label || ''))}</b></li>`).join('')}</ul>`);
-      if (cart && cart.month && cart.month.length) out.push(`<h2>🗓️ Cartelera del mes</h2><ul class="lv-week">${cart.month.slice(0, 6).map((d) => `<li><em>${esc(cap(d.day))}</em><b>${esc(cap(d.show))}</b></li>`).join('')}</ul>`);
+      if (cart && cart.week && cart.week.length) out.push(`<h2>📅 Esta semana</h2><ul class="lv-week">${cart.week.slice(0, 5).map((d) => `<li class="${d.today ? 'on' : ''}"><em>${esc(day(d.day))} ${d.date}</em><b>${d.show ? showHtml(d.show) : esc(cap((d.hours[0] || {}).label || ''))}</b></li>`).join('')}</ul>`);
+      if (cart && cart.month && cart.month.length) out.push(`<h2>🗓️ Cartelera del mes</h2><ul class="lv-week">${cart.month.slice(0, 6).map((d) => `<li><em>${esc(cap(d.day))}</em><b>${showHtml(d.show)}</b></li>`).join('')}</ul>`);
       if (focus === 'show') {
         const keep = out.filter((x) => x.startsWith('<h2>⏱️') || x.startsWith('<h2>🕗'));
-        if (cart && cart.show) keep.unshift(`<h2>⭐ El show de esta noche</h2><div class="lv-now"><b>${esc(cap(cart.show))}</b></div>`);
+        if (cart && cart.show) keep.unshift(`<h2>⭐ El show de esta noche</h2><div class="lv-now"><b>${showHtml(cart.show)}</b></div>`);
         if (keep.length) return keep;
       }
       if (!out.length) out.push('<h2>🎶 Bienvenidos</h2><div class="lv-now"><b>KRB Stage</b><span>Música, shows y karaoke</span></div>');
@@ -362,7 +368,7 @@
       $('.lv-dots').innerHTML = all.length > 1 ? all.map((_, i) => `<i class="${i === idx ? 'on' : ''}"></i>`).join('') : '';
       const show = $('.lv-show');
       show.hidden = !(cart && cart.show);
-      if (cart && cart.show) show.textContent = `⭐ ${cap(cart.show)}`;
+      if (cart && cart.show) show.innerHTML = `⭐ ${showHtml(cart.show)}`;
     };
     const loadCart = async () => { const c = await api('GET', `/api/light/cartelera?local=${v}`).catch(() => null); if (c) cart = c; };
     const loadKar = async () => { const k = await api('GET', `/api/karaoke?local=${v}`).catch(() => null); if (k) kar = k; };
