@@ -98,6 +98,11 @@
 <link rel="icon" href="/icono-48.png" type="image/png" sizes="48x48">
 <link rel="icon" href="/icono-192.png" type="image/png" sizes="192x192">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KRB Stage">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;800;900&family=Manrope:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500&display=swap">
@@ -151,7 +156,7 @@ main,footer{position:relative;z-index:1}
 /* video completo (2:1), sin recortar los costados */
 .portada{min-height:50vw}
 .video-portada{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:var(--noche)}
-.velo{position:absolute;inset:0;background:linear-gradient(90deg,rgba(12,11,18,.93) 0%,rgba(12,11,18,.75) 45%,rgba(12,11,18,.5) 100%),linear-gradient(0deg,var(--noche) 0%,transparent 25%);transition:opacity .7s ease}
+.velo{position:absolute;inset:0;background:linear-gradient(90deg,rgba(12,11,18,.8) 0%,rgba(12,11,18,.58) 45%,rgba(12,11,18,.32) 100%),linear-gradient(0deg,var(--noche) 0%,transparent 25%);transition:opacity .7s ease}
 #red,.portada .envoltura{transition:opacity .7s ease}
 .portada h1{cursor:default}
 /* al pasar el mouse sobre KRB STAGE: el video pasa al frente, con todo su color */
@@ -620,6 +625,41 @@ h2{margin-top:8px}
 .vivo-fila.pc-falso.pc-v{grid-template-columns:min(calc((100vw - 14px) * .7596),calc(100dvh * 16 / 9)) min(calc((100vw - 14px) * .2404),calc(100dvh * 9 / 16));gap:14px}
 .vivo-fila.pc-falso.pc-h{grid-template-columns:min(72vw,calc(100dvh * 16 / 9)) min(28vw,calc(100dvh * 16 / 9 * .389));gap:14px}
 .pc-cerrar{z-index:90}
+/* las pantallas del local no se pueden tocar: una capa encima recibe el dedo (en el iPhone, tocarlas abría la pantalla sola) */
+.pant::after{content:"";position:absolute;inset:0;z-index:1}
+html.con-visor-tactil{overscroll-behavior-x:none}
+.visor-aviso{color:#f4bf5a;font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity .5s}
+.visor-aviso.fuera{opacity:0}
+/* ===== visor de pantalla completa ===== */
+html.con-visor,html.con-visor body{overflow:hidden}
+.visor{position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:85;background:#000;display:grid;grid-template-rows:auto 1fr;color:#fff}
+.visor-top{display:flex;align-items:center;gap:12px;padding:8px 12px 6px;padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right));border-bottom:2px solid var(--c);background:linear-gradient(180deg,rgba(255,255,255,.06),transparent)}
+.vt-txt{flex:1;min-width:0;display:grid;gap:3px}
+.vt-l1{display:flex;align-items:baseline;gap:10px;min-width:0;white-space:nowrap;overflow:hidden}
+.vt-local{font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:clamp(18px,3.2vh,28px);line-height:1;color:var(--c)}
+.vt-estado{font-family:var(--f-dato);font-size:clamp(12px,1.5vh,16px);letter-spacing:.12em;text-transform:uppercase;color:var(--c);display:inline-flex;align-items:center;gap:6px}
+.vt-estado.en-vivo{color:#ff4d4d}.vt-dot{width:9px;height:9px;border-radius:50%;background:#ff4d4d;box-shadow:0 0 8px #ff4d4d;display:inline-block}
+.vt-fecha{font-size:clamp(13px,1.7vh,18px);color:var(--tenue);overflow:hidden;text-overflow:ellipsis}
+.vt-l2{display:flex;gap:6px 14px;align-items:baseline;font-size:clamp(12.5px,1.7vh,18px);white-space:nowrap;overflow-x:auto;scrollbar-width:none;color:#e9e4f0}
+.vt-l2::-webkit-scrollbar{display:none}
+.vt-l2 b{color:var(--c);font-weight:700}.vt-l2 em{font-style:normal;color:#f4bf5a;font-weight:700}.vt-show{color:#fff;font-weight:700}
+.visor-pc{flex:none;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;border-radius:999px;padding:5px 12px;font:700 16px var(--f-texto);cursor:pointer}
+.visor-x{flex:none;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;border-radius:999px;padding:7px 13px;font:700 13px var(--f-texto);cursor:pointer}
+.visor-pista{display:flex;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;min-height:0}
+.visor-pista::-webkit-scrollbar{display:none}
+.visor-slide{flex:0 0 100%;scroll-snap-align:center;display:grid;place-items:center;min-width:0;min-height:0;padding:6px 0}
+.visor-slide.fantasma b{font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:clamp(28px,7vh,64px);color:var(--c);opacity:.6}
+.visor-slide>.ptl-vivo{display:grid;justify-items:center;gap:10px}
+.visor-slide .vivo-etq,.visor-slide .vivo-full{display:none!important}
+.visor-slide .vivo-fila{display:grid;align-items:center}
+.visor-flecha{position:absolute;top:55%;transform:translateY(-50%);width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.55);color:#fff;font-size:24px;line-height:1;cursor:pointer;z-index:2}
+.visor-flecha.izq{left:6px}.visor-flecha.der{right:6px}
+@media (orientation:portrait){.visor-flecha{top:auto;bottom:28%;transform:none}} /* teléfono vertical: al lado de la pantalla vertical, sin tapar el en vivo */
+/* teléfono girado (poca altura): cabecera más angosta para que las pantallas queden lo más grandes posible */
+@media (max-height:520px){.visor-top{padding-top:4px;padding-bottom:3px;gap:8px}.vt-txt{gap:1px}.vt-local{font-size:17px}.vt-estado{font-size:10px}.vt-fecha,.vt-l2{font-size:11.5px}.visor-x{padding:4px 10px;font-size:12px}.visor-slide{padding:3px 0}.visor-slide>.ptl-vivo{gap:4px}.visor-slide .vivo-pc{padding:3px 10px;font-size:11px}}
+@media (hover:none){.visor-flecha{width:34px;height:34px;font-size:20px;opacity:.8}}
+.visor-puntos{display:inline-flex;gap:6px;align-self:center;flex:none}
+.visor-punto{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.35)}.visor-punto.on{background:var(--c)}
 .con-vertical .vivo-fila:fullscreen,.con-vertical .vivo-fila.pc-falso{grid-template-columns:min(calc((100vw - 14px) * .7596),calc(100vh * 16 / 9)) min(calc((100vw - 14px) * .2404),calc(100vh * 9 / 16 * 9 / 16 * 16 / 9))}
 .con-horizontal .vivo-fila:fullscreen,.con-horizontal .vivo-fila.pc-falso{grid-template-columns:min(72vw,calc(100vh * 16 / 9)) min(28vw,calc(100vh * 16 / 9 * .389))}
 .pc-cerrar{position:fixed;top:12px;right:12px;z-index:81;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;border-radius:999px;padding:8px 14px;font:700 14px var(--f-texto)}
@@ -628,6 +668,7 @@ h2{margin-top:8px}
 .vivo-marco>iframe{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none} /* solo el video, sin barras ni botones de Twitch (como la pantalla vertical) */
 /* repeticiones de Twitch: se puede tocar el video para cerrar con la X el aviso de audio silenciado por derechos de autor */
 .repeticion .vivo-marco>iframe,.pc-emb .pc-tw iframe{pointer-events:auto}
+.vivo-marco .vivo-wrtc{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;pointer-events:none}
 .vivo-marco .vivo-tp,.vivo-marco .vivo-tp iframe{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none}
 .vivo-item b{font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:24px;line-height:1;color:var(--c)}
 .vivo-item small{color:var(--tenue);font-size:14px}
@@ -1340,15 +1381,15 @@ elegirLocal('kennedy');
   const SALA='https://cantabingo.onrender.com/?mudo=1';
   const LOC={
     // copia liviana del video de la pantalla vertical (1 Mbps en vez de 11): si Cote sube un video nuevo, la Sala usa el original
-    krbstagekennedy:{local:'kennedy',n:'Mercado Kennedy',c:'var(--kennedy)',vertical:'#/vertical-in/kennedy',luz:true,liviano:'https://www.krbstage.cl/vertical-kennedy.mp4',lver:'1794966023522'},
-    krbstage3:{local:'tobalaba',n:'Espacio Gastronómico Tobalaba',c:'var(--tobalaba)',vertical:'#/vertical-in/tobalaba-v'},
-    krbstage:{local:'frida',n:'Frida Kahlo',c:'var(--frida)',vertical:'#/vertical-in/frida',luz:true}
+    krbstagekennedy:{local:'kennedy',n:'Mercado Kennedy',c:'var(--kennedy)',vertical:'#/vertical-in/kennedy',luz:true,whep:'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/c24ccde66ad7d935841dd934d9b3e1cf/webRTC/play',liviano:'https://www.krbstage.cl/vertical-kennedy.mp4',lver:'1794966023522'},
+    krbstage3:{local:'tobalaba',n:'Espacio Gastronómico Tobalaba',c:'var(--tobalaba)',vertical:'#/vertical-in/tobalaba-v',whep:'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/9c4d261a1b6c2fb79842b6d3821b9018/webRTC/play'},
+    krbstage:{local:'frida',n:'Frida Kahlo',c:'var(--frida)',vertical:'#/vertical-in/frida',luz:true,whep:'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/2c9c627707b0fbc53e20c611f84235a0/webRTC/play'}
   };
   // Switch «Instagram / Twitch» arriba de «Dónde producimos»: con Twitch, cada local muestra su transmisión en vivo
   // (con la pantalla del local al lado) o, si no está transmitiendo, sus últimas transmisiones guardadas.
   // Se prende solo cuando algún local está en vivo (salvo que la persona lo haya movido a mano).
   const sw=$('#sw-twitch'),punto=document.querySelector('.ptl-switch .punto-vivo');
-  let datosTw=[],aMano=false,clave='',canalSonando=null;const ultimoVivo={};
+  let datosTw=[],aMano=false,clave='',canalSonando=null,visor=null;const ultimoVivo={},packs={};
   sw.addEventListener('change',()=>{aMano=true;pintar()});
   // las pantallas del local se dibujan a su tamaño real (1920x1080 o 1080x1920) y se achican para caber
   const escalar=()=>document.querySelectorAll('.vivo-fila .pant').forEach(d=>{const f=d.firstElementChild;f.style.transform=`scale(${d.clientWidth/f.width})`});
@@ -1360,19 +1401,21 @@ elegirLocal('kennedy');
   // horizontal (sigue los botones: juegos, karaoke, QR, show, cartelera); si la pantalla está en «Siempre el video», su información
   const rutaH=L=>L.local==='tobalaba'?'#/pantalla/tobalaba':(L._rutaH||`#/light-v/${L.local}`);
   const srcPant=(ruta,L)=>`${SALA}${L&&L.liviano?`&liviano=${encodeURIComponent(L.liviano)}&lver=${L.lver}`:''}${ruta}`;
+  // una pantalla «dormida» (en la pantalla completa, los locales que no se están mirando) guarda su dirección para después
+  const ponerSrc=(f,u)=>{if(f.dataset.dormida)f.dataset.dormida=u;else f.src=u};
   function revisarLuz(){
     fetch('https://cantabingo.onrender.com/api/web/pantallas',{signal:AbortSignal.timeout(10000)}).then(r=>r.json()).then(todo=>{
       for(const L of Object.values(LOC)){if(!L.luz)continue;const st=todo[L.vertical.split('/').pop()];if(!st)continue;
         const rh=st.show==='video'?`#/light-v/${L.local}`:L.vertical;
-        if(rh!==rutaH(L)){L._rutaH=rh;document.querySelectorAll(`.ptl-col[data-local="${L.local}"] .pant-h iframe`).forEach(f=>f.src=srcPant(rh))}
+        if(rh!==rutaH(L)){L._rutaH=rh;(packs[L.local]||document).querySelectorAll(`${packs[L.local]?'':`.ptl-col[data-local="${L.local}"] `}.pant-h iframe`).forEach(f=>ponerSrc(f,srcPant(rh)))}
         // la pantalla vertical es siempre la misma pantalla del local, tal cual (pedido de Cote: si está en video, el video)
         const ruta=L.vertical;if(ruta===rutaV(L))continue;L._ruta=ruta;
-        document.querySelectorAll(`.ptl-col[data-local="${L.local}"] .pant-v iframe`).forEach(f=>f.src=srcPant(ruta,L));
+        (packs[L.local]||document).querySelectorAll(`${packs[L.local]?'':`.ptl-col[data-local="${L.local}"] `}.pant-v iframe`).forEach(f=>ponerSrc(f,srcPant(ruta,L)));
       }
     }).catch(()=>{});
   }
 
-  const pant=(clase,ruta,w,h,t,L)=>`<div class="pant ${clase}"><iframe src="${SALA}${L&&L.liviano?`&liviano=${encodeURIComponent(L.liviano)}&lver=${L.lver}`:''}${ruta}" width="${w}" height="${h}" title="${t}" loading="lazy" tabindex="-1"></iframe></div>`;
+  const pant=(clase,ruta,w,h,t,L)=>`<div class="pant ${clase}"><iframe sandbox="allow-scripts allow-same-origin" src="${SALA}${L&&L.liviano?`&liviano=${encodeURIComponent(L.liviano)}&lver=${L.lver}`:''}${ruta}" width="${w}" height="${h}" title="${t}" loading="lazy" tabindex="-1"></iframe></div>`;
   const padres=['www.krbstage.cl','krbstage.cl',location.hostname].filter((x,i,a)=>x&&a.indexOf(x)===i).map(x=>'&parent='+x).join('');
   const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   const fecha=t=>{const d=new Date(t);return isNaN(d)?'':`${d.getDate()} ${MESES[d.getMonth()]}`};
@@ -1385,7 +1428,7 @@ elegirLocal('kennedy');
         <div class="vivo-fila">${pant('pant-h',rutaH(L),1920,1080,'Tablero del local')}${pant('pant-v',rutaV(L),1080,1920,'Pantalla vertical del local',L)}</div>
         <div class="vivo-botones"><button type="button" class="vivo-pc vivo-full">⛶ Pantalla completa</button></div>`;
       d.querySelectorAll('.pant').forEach(x=>obsPant.observe(x));
-      d.querySelector('.vivo-full').onclick=()=>pantallaCompleta(d.querySelector('.vivo-fila'));return d}
+      d.querySelector('.vivo-full').onclick=()=>abrirVisor(L.local);return d}
     const vivo=!!(c&&c.vivo),todos=(c&&c.videos||[]),limpios=todos.filter(v=>!v.muted),vods=limpios.length?limpios:todos;let i=0;
     if(!vivo&&!vods.length){const d=document.createElement('div');d.className='ptl-tw';d.innerHTML='<p class="tw-nada">Todavía no hay transmisiones guardadas de este local.</p>';return d}
     // sonido: un local a la vez (botón «Escuchar»); en la repetición se sigue desde el mismo punto al cambiar el sonido
@@ -1401,30 +1444,72 @@ elegirLocal('kennedy');
     caja.innerHTML=`<div class="vivo-etq">${etiqueta()}</div>
       <div class="vivo-fila"><div class="vivo-marco"><iframe src="${fuente()}" allow="autoplay; fullscreen" tabindex="-1" title="${vivo?'En vivo':'Repetición'} desde ${esc(L.n)}"></iframe></div>
       ${L.vertical?pant('pant-v',rutaV(L),1080,1920,'Pantalla vertical del local',L):pant('pant-h',L.horizontal,1920,1080,'Pantalla horizontal del local')}</div>
-      <div class="vivo-botones"><button type="button" class="vivo-pc vivo-son">🔇 Escuchar</button><button type="button" class="vivo-pc vivo-full">⛶ Pantalla completa</button></div>`;
+      <div class="vivo-botones"><button type="button" class="vivo-pc vivo-son">🔇 Escuchar</button>${vivo?'<button type="button" class="vivo-pc vivo-ref">⟳ Refrescar</button>':''}<button type="button" class="vivo-pc vivo-full">⛶ Pantalla completa</button></div>`;
     const etq=caja.querySelector('.vivo-etq');
     const conectar=()=>etq.querySelectorAll('.rep-flecha').forEach(b=>b.onclick=()=>{i=(i+ +b.dataset.d+vods.length)%vods.length;base=0;t0=Date.now();caja.querySelector('.vivo-marco>iframe').src=fuente();etq.innerHTML=etiqueta();conectar()});
     conectar();
     caja.querySelectorAll('.pant').forEach(d=>obsPant.observe(d));
-    caja.querySelector('.vivo-full').onclick=()=>pantallaCompleta(caja.querySelector('.vivo-fila'));
+    caja.querySelector('.vivo-full').onclick=()=>abrirVisor(L.local);
     const bSon=caja.querySelector('.vivo-son'),marco=caja.querySelector('.vivo-marco>iframe');
     let suena=canalSonando===canal;
     caja._sonido=()=>{const ahora=canalSonando===canal;bSon.textContent=ahora?'🔊 Sonando':'🔇 Escuchar';bSon.classList.toggle('activo',ahora);
       if(ahora===suena)return;suena=ahora;
+      if(caja._video){caja._video.muted=!ahora;if(ahora)caja._video.play().catch(()=>{});return} // señal de Cloudflare
       if(caja._tp){try{caja._tp.setMuted(!ahora);if(ahora)caja._tp.setVolume(1)}catch(_){}return} // en vivo: sin recargar
       base+=(Date.now()-t0)/1000;t0=Date.now();marco.src=fuente()};
     bSon.onclick=()=>{canalSonando=canalSonando===canal?null:canal;document.querySelectorAll('.ptl-vivo').forEach(x=>x._sonido&&x._sonido())};
     caja._sonido();
+    // ⟳ Refrescar: vuelve a cargar el en vivo en el punto actual, para quitar el desfase (pedido de Cote)
+    const bRef=caja.querySelector('.vivo-ref');
+    if(bRef)bRef.onclick=()=>{if(caja._video){ponerWhep().catch(ponerTwitch)}else if(caja._tp){try{caja._tp.setChannel(canal);caja._tp.setMuted(canalSonando!==canal)}catch(_){}}
+      else{const f=caja.querySelector('.vivo-marco iframe');if(f)f.src=fuente()}
+      bRef.disabled=true;setTimeout(()=>bRef.disabled=false,3000)};
     // En vivo: el reproductor de Twitch por su API, para medir el atraso. Si se va quedando atrás de la señal (más de
-    // 15 segundos), se vuelve a cargar en el punto en vivo, así no se desfasa de la pantalla del local (pedido de Cote)
-    if(vivo)cargarTwitch().then(()=>{if(!window.Twitch)return;
+    // 30 segundos), se vuelve a cargar en el punto en vivo, así no se desfasa de la pantalla del local (pedido de Cote)
+    const ponerTwitch=()=>{caja._video=null;return cargarTwitch().then(()=>{if(!window.Twitch)return;
       const m=caja.querySelector('.vivo-marco');m.innerHTML='<div class="vivo-tp"></div>';
       const tp=new Twitch.Player(m.firstChild,{channel:canal,parent:['www.krbstage.cl','krbstage.cl',location.hostname].filter((x,k,a)=>x&&a.indexOf(x)===k),width:'100%',height:'100%',autoplay:true,muted:canalSonando!==canal,controls:false});
-      caja._tp=tp;let ultimo=Date.now();
+      // Lo más a tiempo posible (pedido de Cote: en twitch.tv va a menos de 2 s y aquí iba a 19): cada 5 s se mide el
+      // atraso; si pasa de 5 s se vuelve a cargar en el punto en vivo (hasta 3 intentos seguidos, cada 20 s). Si aun así
+      // no baja, se deja tranquilo y solo se recarga si pasa de 30 s (una vez por minuto), para no cortarlo a cada rato
+      // Calidad «Fuente» (la original, sin pasar por las copias que arma Twitch, que agregan atraso)
+      try{tp.addEventListener(Twitch.Player.PLAYING,()=>{try{tp.setQuality('chunked')}catch(_){}})}catch(_){}
+      // Se mide el atraso; si pasa de 5 s se vuelve al punto en vivo, como máximo 3 veces. Si después de recargar el
+      // atraso no baja (la medida de Twitch depende también del reloj del computador que transmite), se deja de recargar
+      // solo: queda el botón «⟳ Refrescar»
+      caja._tp=tp;let ultimo=Date.now(),intentos=0,antes=0;
       const vigilar=setInterval(()=>{if(!document.body.contains(caja)){clearInterval(vigilar);return}
-        try{const st=tp.getPlaybackStats(),atraso=st?+st.hlsLatencyBroadcaster:0;
-          if(atraso>15&&Date.now()-ultimo>60e3){ultimo=Date.now();tp.setChannel(canal);tp.setMuted(canalSonando!==canal)}}catch(_){}},10000);
-    }).catch(()=>{});
+        try{const st=tp.getPlaybackStats(),atraso=st?+st.hlsLatencyBroadcaster:0;caja._atraso=atraso;if(!atraso)return;
+          if(atraso<=5||intentos>=3)return;
+          if(intentos&&antes&&atraso>antes-3&&Date.now()-ultimo>15e3){intentos=3;return} // recargar no sirvió: no se insiste
+          if(Date.now()-ultimo>20e3){ultimo=Date.now();antes=atraso;intentos++;tp.setChannel(canal);tp.setMuted(canalSonando!==canal)}}catch(_){}},5000);
+    }).catch(()=>{})};
+    // Señal de baja latencia (Cloudflare, WebRTC, 1 a 2 s) para la página; si no llega en 10 s, se usa Twitch (pedido de Cote)
+    const ponerWhep=()=>{
+      if(caja._pc){try{caja._pc.close()}catch(_){}caja._pc=null}
+      const m=caja.querySelector('.vivo-marco');m.innerHTML='<video class="vivo-wrtc" autoplay playsinline muted></video>';
+      const v=m.firstChild;v.muted=canalSonando!==canal;caja._video=v;caja._tp=null;
+      return new Promise((ok,mal)=>{
+        const pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.cloudflare.com:3478'}],bundlePolicy:'max-bundle'});caja._pc=pc;
+        const ms=new MediaStream();let listo=false;
+        const plazo=setTimeout(()=>{if(!listo){try{pc.close()}catch(_){}caja._pc=null;mal(new Error('sin señal'))}},10000);
+        pc.addTransceiver('video',{direction:'recvonly'});pc.addTransceiver('audio',{direction:'recvonly'});
+        pc.ontrack=e=>{ms.addTrack(e.track);v.srcObject=ms;v.play().catch(()=>{})};
+        v.addEventListener('playing',()=>{if(!listo){listo=true;clearTimeout(plazo);ok()}},{once:true});
+        pc.onconnectionstatechange=()=>{if(['failed','closed'].includes(pc.connectionState)&&!listo){clearTimeout(plazo);mal(new Error(pc.connectionState))}
+          // se cortó después de andar: se vuelve a conectar sola
+          if(listo&&pc.connectionState==='failed'&&document.body.contains(caja))setTimeout(()=>ponerWhep().catch(ponerTwitch),2000)};
+        pc.createOffer().then(o=>pc.setLocalDescription(o)).then(()=>new Promise(r=>{if(pc.iceGatheringState==='complete')return r();
+          const t=setTimeout(r,1500);pc.addEventListener('icegatheringstatechange',()=>{if(pc.iceGatheringState==='complete'){clearTimeout(t);r()}})}))
+          .then(()=>fetch(L.whep,{method:'POST',headers:{'content-type':'application/sdp'},body:pc.localDescription.sdp}))
+          .then(r=>{if(!r.ok)throw new Error('WHEP '+r.status);return r.text()})
+          .then(sdp=>pc.setRemoteDescription({type:'answer',sdp}))
+          .catch(e=>{clearTimeout(plazo);try{pc.close()}catch(_){}caja._pc=null;mal(e)});
+      });
+    };
+    // al sacar el conjunto de la página, se cierra la conexión
+    const cerrar=setInterval(()=>{if(!document.body.contains(caja)){clearInterval(cerrar);if(caja._pc){try{caja._pc.close()}catch(_){}}}},5000);
+    if(vivo){if(L.whep&&window.RTCPeerConnection)ponerWhep().catch(ponerTwitch);else ponerTwitch()}
     return caja;
   }
   function pintar(){
@@ -1433,11 +1518,16 @@ elegirLocal('kennedy');
       const col=document.querySelector(`.ptl-col[data-local="${L.local}"]`);if(!col)continue;
       const c=datosTw.find(v=>v.canal===canal);const vivo=!!(c&&c.vivo);
       const k=modo?(vivo?'vivo':'pant'):'ig';if(col.dataset.modo===k)continue;col.dataset.modo=k;
-      col.querySelectorAll('.ptl-vivo,.ptl-tw').forEach(x=>x.remove());col.classList.toggle('modo-tw',modo);
-      if(!modo)continue;
+      const viejo=packs[L.local];
+      if(!(visor&&modo&&viejo&&visor.contains(viejo)))col.querySelectorAll('.ptl-vivo,.ptl-tw').forEach(x=>x.remove());
+      col.classList.toggle('modo-tw',modo);
+      if(!modo){delete packs[L.local];continue}
       const g=col.querySelector('.ptl-grilla');if(g&&g._apagar)g._apagar();
-      col.querySelector('.ptl-prueba').after(packVivo(canal,L,c));
+      const nuevo=packVivo(canal,L,c);packs[L.local]=nuevo;
+      if(visor&&viejo&&visor.contains(viejo))viejo.replaceWith(nuevo); // abierto en pantalla completa: no se desarma
+      else col.querySelector('.ptl-prueba').after(nuevo);
     }
+    if(visor){ajustarVisor();dormir()}
     requestAnimationFrame(escalar);
   }
   function revisar(){
@@ -1450,27 +1540,127 @@ elegirLocal('kennedy');
       window.vivoActivo=!!vivos;dispatchEvent(new Event('vivo-cambio'));punto.hidden=!vivos;
       if(vivos&&!aMano)sw.checked=true; // se prende solo si alguien está en vivo
       if(vivos!==clave){clave=vivos;document.querySelectorAll('.ptl-col[data-modo]').forEach(c=>delete c.dataset.modo)} // cambió quién transmite: se rehace
-      pintar();
-    }).catch(()=>{});
+      pintar();abrirLink();
+    }).catch(abrirLink);
   }
-  // pantalla completa del conjunto (transmisión + pantalla del local). En el iPhone, que no deja poner
-  // en pantalla completa algo que no sea un video, el conjunto llena la pantalla igual (con botón para salir)
-  function pantallaCompleta(fila){
-    if(fila.requestFullscreen&&document.fullscreenEnabled){fila.requestFullscreen().then(()=>{try{screen.orientation.lock('landscape').catch(()=>{})}catch(_){}}).catch(()=>falso(fila));return}
-    if(fila.webkitRequestFullscreen){fila.webkitRequestFullscreen();return}
-    falso(fila);
+  // Enlace directo a la pantalla completa de los tres locales, para compartir (pedido de Cote):
+  // www.krbstage.cl/#pantallas (empieza en Kennedy) o #pantallas-tobalaba, #pantallas-frida
+  let linkHecho=false;
+  function abrirLink(){
+    if(linkHecho||!/^#pantallas/.test(location.hash))return;linkHecho=true;
+    if(!sw.checked){sw.checked=true;pintar()}
+    const l=(location.hash.split('-')[1]||'').toLowerCase();abrirVisor(ORDEN.some(L=>L.local===l)?l:'kennedy');
   }
-  // (en el iPhone) el conjunto se lleva al final de la página mientras dura, para que quede encima de todo (menú incluido)
-  function falso(fila){
-    const padre=fila.parentNode,sig=fila.nextSibling,tipo=fila.closest('.con-vertical')?'pc-v':'pc-h';document.body.appendChild(fila);
-    fila.classList.add('pc-falso',tipo);document.documentElement.style.overflow='hidden';
-    const x=document.createElement('button');x.className='pc-cerrar';x.textContent='✕ Salir';document.body.appendChild(x);
-    x.onclick=()=>{fila.classList.remove('pc-falso',tipo);padre.insertBefore(fila,sig);document.documentElement.style.overflow='';x.remove();requestAnimationFrame(escalar)};
-    requestAnimationFrame(escalar);setTimeout(escalar,400);
+  // ===== Pantalla completa: el visor =====
+  // Arriba, el local, si está en vivo o es la pantalla del local, la fecha y lo de hoy (o lo próximo); abajo, el conjunto
+  // de dos pantallas, que nunca se separa. Deslizando hacia el lado (o con las flechas) se pasa al siguiente local.
+  // En el computador y Android usa la pantalla completa real; en el iPhone (que no la permite) llena la pantalla igual.
+  // Se acomoda solo al girar el teléfono (pedidos de Cote).
+  const ORDEN=Object.values(LOC);
+  const DIAS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'],MESL=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const capi=t=>String(t||'').toLowerCase().replace(/(^|[\s(:\-])([^\s(:\-])/g,(m,a,b)=>a+b.toUpperCase());
+  const cartV={};
+  function cartelera(v){
+    if(!cartV[v]){try{const g=JSON.parse(localStorage.getItem('krb-cart-'+v)||'null');if(g&&g.week)cartV[v]=g.week}catch(_){}}
+    fetch(API+v,{signal:AbortSignal.timeout(10000)}).then(r=>r.json()).then(j=>{if(Array.isArray(j.week)&&j.week.length){cartV[v]=j.week;if(visor)cabecera()}}).catch(()=>{});
   }
-  addEventListener('resize',()=>requestAnimationFrame(escalar)); // al girar el teléfono
-  document.addEventListener('fullscreenchange',()=>requestAnimationFrame(escalar));
-  revisar();setInterval(revisar,60000); // revisa cada minuto
+  let idxV=0;
+  // revisión: con ?diag=1 en la dirección, la cabecera muestra el atraso que mide el reproductor de Twitch
+  const DIAG=/[?&]diag=1/.test(location.search);
+  if(DIAG)setInterval(()=>{if(!visor)return;const L=ORDEN[idxV],p=L&&packs[L.local],d=visor.querySelector('.vt-diag');
+    if(d&&p)d.textContent=` · atraso ${p._atraso?p._atraso.toFixed(1)+' s':'sin dato'}`},2000);
+  // En la pantalla completa solo funcionan las pantallas del local que se está mirando; las de los otros se apagan
+  // (en el iPhone, tener las seis pantallas a la vez lo dejaba sin memoria y Safari recargaba la página)
+  const despertar=f=>{if(f.dataset.dormida){f.src=f.dataset.dormida;delete f.dataset.dormida}};
+  function dormir(){if(!visor)return;ORDEN.forEach((L,k)=>{const p=packs[L.local];if(!p)return;
+    p.querySelectorAll('.pant iframe').forEach(f=>{if(k===idxV)despertar(f);else if(!f.dataset.dormida){f.dataset.dormida=f.src;f.src='about:blank'}})})}
+  const fantasma=L=>`<section class="visor-slide fantasma" style="--c:${L.c}"><b>${esc(L.n)}</b></section>`;
+  function cabecera(){
+    if(!visor)return;const L=ORDEN[idxV];if(!L)return;
+    const c=datosTw.find(x=>LOC[x.canal]===L),vivo=!!(c&&c.vivo);
+    const hoy=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Santiago'}));
+    const w=cartV[L.local]||[];const dHoy=w.find(d=>d.today);
+    let prog='';
+    const lista=d=>d.hours.map(h=>`<span><em>${esc(h.time)}</em> ${esc(capi(h.label))}</span>`).join('');
+    if(dHoy&&dHoy.hours&&dHoy.hours.length)prog=`<b>Hoy desde las ${esc(dHoy.hours[0].time)}</b>${dHoy.show?`<span class="vt-show">⭐ ${esc(capi(dHoy.show))}</span>`:''}${lista(dHoy)}`;
+    else{const d=w.find(d=>!d.today&&d.hours&&d.hours.length);if(d)prog=`<b>Próximo: ${esc(capi(d.day))} ${d.date} desde las ${esc(d.hours[0].time)}</b>${d.show?`<span class="vt-show">⭐ ${esc(capi(d.show))}</span>`:''}${lista(d)}`;else prog='<b>Pronto la cartelera de este local</b>'}
+    visor.style.setProperty('--c',L.c);
+    visor.querySelector('.vt-l1').innerHTML=`<b class="vt-local">${esc(L.n)}</b>${vivo?`<span class="vt-estado en-vivo"><i class="vt-dot"></i>En vivo${DIAG?'<b class="vt-diag"> · atraso …</b>':''}</span>`:'<span class="vt-estado">▣ Pantalla del local</span>'}<span class="vt-fecha">${DIAS[hoy.getDay()]} ${hoy.getDate()} de ${MESL[hoy.getMonth()]}</span><span class="visor-puntos">${ORDEN.map((_,k)=>`<i class="visor-punto${k===idxV?' on':''}"></i>`).join('')}</span>`;
+    visor.querySelector('.vt-l2').innerHTML=prog;
+  }
+  function ajustarVisor(){
+    if(!visor)return;
+    visor.style.height=innerHeight+'px';
+    const pista=visor.querySelector('.visor-pista'),W=pista.clientWidth,flechas=matchMedia('(hover:hover)').matches?96:84;
+    pista.querySelectorAll('.visor-slide').forEach(sl=>{
+      const f=sl.querySelector('.vivo-fila');if(!f)return;const bt=sl.querySelector('.vivo-botones');
+      const H=pista.clientHeight-(bt&&getComputedStyle(bt).display!=='none'?bt.offsetHeight+6:0)-8;
+      const gap=10,marco=f.querySelector('.vivo-marco'),pv=f.querySelector('.pant-v');
+      // Teléfono vertical con transmisión en vivo: Twitch no reproduce si su cuadro mide menos de 400x300, así que el
+      // en vivo va arriba a todo el ancho (con al menos 300 de alto) y la pantalla vertical justo debajo (siguen juntas)
+      if(marco&&pv&&W<pista.clientHeight){
+        const mw=W,mh=Math.max(300,Math.round(mw*9/16)),vh=Math.max(80,H-mh-gap);
+        f.style.gridTemplateColumns=`${mw}px`;f.style.gap=gap+'px';f.style.justifyItems='center';
+        marco.style.width=mw+'px';marco.style.height=mh+'px';marco.style.aspectRatio='auto';
+        pv.style.width=Math.floor(vh*9/16)+'px';
+      }else{
+        if(marco){marco.style.width='';marco.style.height='';marco.style.aspectRatio=''}if(pv)pv.style.width='';f.style.justifyItems='';
+        const h=Math.max(60,Math.min(H,(W-flechas-gap)/(16/9+9/16)));
+        f.style.gridTemplateColumns=`${Math.floor(h*16/9)}px ${Math.floor(h*9/16)}px`;f.style.gap=gap+'px';
+      }
+    });
+    pista.scrollLeft=(idxV+1)*W;
+    requestAnimationFrame(escalar);
+  }
+  function abrirVisor(local){
+    if(visor)return;
+    idxV=Math.max(0,ORDEN.findIndex(L=>L.local===local));
+    visor=document.createElement('div');visor.className='visor';
+    visor.innerHTML=`<header class="visor-top"><div class="vt-txt"><div class="vt-l1"></div><div class="vt-l2"></div></div><button type="button" class="visor-pc" hidden>⛶</button><button type="button" class="visor-x">✕ Salir</button></header>
+      <div class="visor-pista">${fantasma(ORDEN[ORDEN.length-1])}${ORDEN.map(L=>`<section class="visor-slide" data-local="${L.local}" style="--c:${L.c}"></section>`).join('')}${fantasma(ORDEN[0])}</div>
+      <button type="button" class="visor-flecha izq" aria-label="Local anterior">‹</button><button type="button" class="visor-flecha der" aria-label="Local siguiente">›</button>`;
+    const real=!!(visor.requestFullscreen&&document.fullscreenEnabled);
+    document.body.appendChild(visor);document.documentElement.classList.add(real?'con-visor':'con-visor-tactil');
+    // iPhone (sin pantalla completa real): deslizando hacia arriba, Safari esconde la barra de dirección y las pestañas
+    if(!real&&!matchMedia('(display-mode: standalone)').matches&&!navigator.standalone){
+      if(scrollY<60)scrollTo(0,60);
+      const h=document.createElement('div');h.className='visor-aviso';h.textContent='↑ Desliza hacia arriba para ocultar la barra del navegador';visor.querySelector('.vt-txt').appendChild(h); // en la cabecera: nada encima del reproductor de Twitch
+      const alto0=innerHeight;const fuera=()=>{h.classList.add('fuera');setTimeout(()=>{h.remove();ajustarVisor()},600)};
+      setTimeout(fuera,6000);addEventListener('resize',function r(){if(innerHeight>alto0+30){fuera();removeEventListener('resize',r)}});
+    }
+    ORDEN.forEach(L=>{const p=packs[L.local];if(p)visor.querySelector(`.visor-slide[data-local="${L.local}"]`).appendChild(p);cartelera(L.local)});
+    const pista=visor.querySelector('.visor-pista');
+    let t=null;pista.addEventListener('scroll',()=>{clearTimeout(t);t=setTimeout(()=>{const W=Math.max(1,pista.clientWidth),k=Math.round(pista.scrollLeft/W);
+      let n=k-1;if(k<=0){n=ORDEN.length-1;pista.scrollLeft=(n+1)*W}else if(k>ORDEN.length){n=0;pista.scrollLeft=W}
+      if(n!==idxV){idxV=n;cabecera();dormir()}},90)});
+    const ir=d=>{const W=pista.clientWidth,k=idxV+1+d;pista.scrollTo({left:k*W,behavior:'smooth'})};
+    visor.querySelector('.visor-flecha.izq').onclick=()=>ir(-1);visor.querySelector('.visor-flecha.der').onclick=()=>ir(1);
+    visor.querySelector('.visor-x').onclick=()=>cerrarVisor();
+    const bPc=visor.querySelector('.visor-pc');bPc.onclick=()=>visor.requestFullscreen().catch(()=>{});
+    // Se agrega un paso al historial: borra las páginas «siguientes» de la pestaña (en el iPhone, deslizar desde el borde
+    // abría una de ellas, la pantalla del local en la Sala) y el gesto de «atrás» solo cierra la pantalla completa
+    try{history.pushState({visor:1},'')}catch(_){}
+    cabecera();ajustarVisor();setTimeout(ajustarVisor,300);dormir();
+    if(visor.requestFullscreen&&document.fullscreenEnabled)visor.requestFullscreen().then(()=>{try{screen.orientation.lock('landscape').catch(()=>{})}catch(_){}}).catch(()=>{bPc.hidden=false});
+  }
+  function cerrarVisor(desdeHistorial){
+    if(!visor)return;const v=visor;visor=null;
+    if(desdeHistorial!==true&&history.state&&history.state.visor)try{history.back()}catch(_){}
+    if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});
+    ORDEN.forEach(L=>{const p=packs[L.local];const col=document.querySelector(`.ptl-col[data-local="${L.local}"]`);
+      if(p)p.querySelectorAll('.pant iframe').forEach(despertar);
+      if(p){const m=p.querySelector('.vivo-marco'),pv=p.querySelector('.pant-v');if(m){m.style.width='';m.style.height='';m.style.aspectRatio=''}if(pv)pv.style.width=''}
+      if(p&&col){const f=p.querySelector('.vivo-fila');if(f){f.style.gridTemplateColumns='';f.style.gap='';f.style.justifyItems=''}col.querySelector('.ptl-prueba').after(p)}});
+    v.remove();document.documentElement.classList.remove('con-visor','con-visor-tactil');requestAnimationFrame(escalar);
+  }
+  addEventListener('popstate',()=>{if(visor)cerrarVisor(true)});
+  document.addEventListener('fullscreenchange',()=>{if(visor){const b=visor.querySelector('.visor-pc');if(b&&document.fullscreenElement)b.hidden=true}if(visor&&!document.fullscreenElement&&visor._fs)cerrarVisor();if(visor)visor._fs=!!document.fullscreenElement;setTimeout(ajustarVisor,100)});
+  addEventListener('keydown',e=>{if(!visor)return;if(e.key==='Escape')cerrarVisor();if(e.key==='ArrowRight')visor.querySelector('.visor-flecha.der').click();if(e.key==='ArrowLeft')visor.querySelector('.visor-flecha.izq').click()});
+  // al girar el teléfono: se vuelve a acomodar (varias veces, porque el iPhone termina de girar después)
+  const reacomodar=()=>{if(!visor){requestAnimationFrame(escalar);return}ajustarVisor();setTimeout(ajustarVisor,250);setTimeout(ajustarVisor,700)};
+  addEventListener('resize',reacomodar);addEventListener('orientationchange',reacomodar);
+  if(window.visualViewport)visualViewport.addEventListener('resize',reacomodar);
+  revisar();setInterval(revisar,20000); // revisa cada 20 segundos
 })();
 
 /* flechas de la fila de montados */
@@ -1546,7 +1736,7 @@ document.querySelectorAll('.esp-montados').forEach(g=>{const PRIMEROS=['DF4JT1kg
   const v=$('#video-portada');
   // video de 20 segundos que se repite (2,9 MB; el de 1080 para pantallas grandes). Primero se ve la foto y el
   // video parte recién cuando la página terminó de cargar, para que lo demás aparezca antes
-  const fuente=innerWidth*Math.min(devicePixelRatio||1,1.5)<1700?'portada-720.mp4':'portada-1080.mp4';
+  const fuente=(innerWidth*Math.min(devicePixelRatio||1,1.5)<1200?'portada-720.mp4':'portada-1080.mp4')+'?v=2'; // v=2: mejor calidad (pedido de Cote)
   let portadaVisible=true,listo=false;
   const partir=()=>{listo=true;decidir()};
   if(document.readyState==='complete')setTimeout(partir,300);else addEventListener('load',()=>setTimeout(partir,300));
