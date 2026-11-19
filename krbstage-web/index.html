@@ -1319,6 +1319,8 @@ elegirLocal('kennedy');
 
 /* flechas de la fila de montados */
 document.querySelectorAll('.esp-fila').forEach(f=>{const pista=f.querySelector('.esp-montados');f.querySelector('.esp-flecha.izq').onclick=()=>pista.scrollBy({left:-pista.clientWidth*.8});f.querySelector('.esp-flecha.der').onclick=()=>pista.scrollBy({left:pista.clientWidth*.8})});
+/* los espectáculos montados aparecen en orden al azar (cambia cada vez que se abre la página) */
+document.querySelectorAll('.esp-montados').forEach(g=>{const c=[...g.children];for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]]}c.forEach(x=>g.appendChild(x))});
 /* ===== Espectáculos montados: los videos que están en nuestras cuentas se ven aquí mismo ===== */
 (function(){
   const PROPIOS={'Da-bsOQzxl3':['kennedy','2026-07-19'],'Dd1h9J9O8th':['kennedy','2026-09-28'],'DHOdA7Fx6F1':['kennedy','2025-03-15'],'DF4JT1kg5JJ':['kennedy','2025-02-10'],'DbfKhfKM2E4':['panoramico','2026-08-01'],'C6UHh75RSbH':['kennedy','2024-04-28'],'DL-mzsnRP_I':['kennedy','2025-07-11'],'DbggHTrBw98':['panoramico','2026-08-01'],'DbjoqmEsPWX':['panoramico','2026-08-02'],'DZ2buyOzr6k':['kennedy','2026-06-21'],'DXgxo5XkR4L':['kennedy','2026-04-24'],'DXPdxdZk7zt':['kennedy','2026-04-17'],'DHi-9gmRhqF':['kennedy','2025-03-23'],'C98XDWgRxVh':['kennedy','2024-07-27'],'C3Zi9R4uET9':['kennedy','2024-02-16']};
