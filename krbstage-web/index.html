@@ -489,6 +489,16 @@ main,footer{position:relative;z-index:1}
 .ptl-col .ptl-prueba{min-height:170px}
 .ptl-grilla{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .ptl-vacio{aspect-ratio:9/16;border-radius:8px;border:1px dashed var(--linea)}
+/* portada en computador: toda la información cabe en la primera pantalla (las letras se ajustan al alto de la pantalla) */
+@media (min-width:721px){
+  .portada{min-height:calc(100vh - 65px)}
+  .video-portada{object-fit:cover} /* el video llena todo el fondo de la primera pantalla */
+  .portada .envoltura{padding-block:clamp(16px,5vh,56px) clamp(20px,6vh,64px);gap:clamp(8px,2.2vh,28px)}
+  .portada h1{font-size:max(64px,min(19vw,248px,24vh))}
+  .lema b{font-size:clamp(26px,min(5vw,6.5vh),60px)}
+  .lema span{font-size:clamp(17px,min(2.4vw,3.6vh),30px)}
+  .bajada{margin-top:calc(-.6 * clamp(8px,2.2vh,28px))}
+}
 .ptl-pag{display:flex;align-items:center;justify-content:center;gap:14px;color:var(--tenue);font-family:var(--f-dato);font-size:13px}
 .ptl-pag button{width:36px;height:36px;border-radius:50%;border:1px solid var(--c);background:transparent;color:var(--c);font-size:18px;cursor:pointer}
 .ptl-pag button:disabled{opacity:.3;cursor:default}
