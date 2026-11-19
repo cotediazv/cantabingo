@@ -24,20 +24,7 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
     if (s && (s.theme || 'frida') === v && db.stage && db.stage !== 'none') return 'sala';
     const l = (db.lights || {})[v];
     if (l && l.stage !== 'none' && karaoke.nowOf(v).now) return 'karaoke';
-    if (lightOn(v)) return 'light';
     return null;
-  };
-  // Sala light de Kennedy y de Frida siempre en pantalla (pedido de Cote), salvo el día de la sala de juegos completa
-  // de ese local (jueves en Kennedy, domingo en Frida; la noche sigue hasta las 6:00 del día siguiente)
-  const FULL_DAY = { kennedy: 'Thu', frida: 'Sun' };
-  const PREV = { Mon: 'Sun', Tue: 'Mon', Wed: 'Tue', Thu: 'Wed', Fri: 'Thu', Sat: 'Fri', Sun: 'Sat' };
-  const lightOn = (v) => {
-    if (!FULL_DAY[v]) return false;
-    const l = (db.lights || {})[v];
-    if (!l || l.stage === 'none') return false;
-    const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Santiago', weekday: 'short', hour: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map((x) => [x.type, x.value]));
-    const day = +p.hour < 6 ? PREV[p.weekday] : p.weekday;
-    return day !== FULL_DAY[v];
   };
   // Horario de la pantalla (pedidos de Cote): en Kennedy, jueves, viernes y sábado pasa sola a «Automático» a las 20:00
   // y vuelve a «Siempre el video» a las 00:30 de esa noche; en Tobalaba (sus dos pantallas), el viernes de 18:00 a 22:30.
@@ -66,7 +53,7 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
     const hasVideo = !!c.video && fs.existsSync(file(v));
     let show = c.mode === 'video' ? 'video' : c.mode === 'actividad' ? (act || 'sala') : (act || 'video');
     if (show === 'video' && !hasVideo) show = act || 'sala'; // sin video subido, queda la actividad o la portada
-    return { screen: v, venue: SCREENS[v], name: VENUES[SCREENS[v]], mode: c.mode, activity: act, light: lightOn(SCREENS[v]), show, video: hasVideo ? c.video : 0, size: hasVideo ? c.size : 0 };
+    return { screen: v, venue: SCREENS[v], name: VENUES[SCREENS[v]], mode: c.mode, activity: act, show, video: hasVideo ? c.video : 0, size: hasVideo ? c.size : 0 };
   };
 
   app.get('/api/vertical/:local', (req, res) => {
