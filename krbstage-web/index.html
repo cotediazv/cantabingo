@@ -489,8 +489,9 @@ main,footer{position:relative;z-index:1}
 .pant{position:relative;overflow:hidden;border-radius:10px;border:1px solid var(--c);background:#000}
 .pant iframe{position:absolute;left:0;top:0;border:0;transform-origin:0 0;pointer-events:none}
 .pant-v{aspect-ratio:9/16}
-.pant-h{position:absolute;right:12px;top:12px;width:26%;aspect-ratio:16/9;box-shadow:0 6px 24px rgba(0,0,0,.6);z-index:2}
-@media (max-width:720px){.con-vertical .vivo-fila{grid-template-columns:1fr}.pant-v{width:45%;justify-self:center}}
+.pant-h{aspect-ratio:16/9}
+.con-horizontal .vivo-fila{grid-template-columns:1fr 28%}
+@media (max-width:720px){.con-vertical .vivo-fila,.con-horizontal .vivo-fila{grid-template-columns:1fr}.pant-v{width:45%;justify-self:center}.pant-h{width:60%;justify-self:center}}
 .vivo-item{display:grid;gap:8px}
 .vivo-marco{position:relative;aspect-ratio:16/9;border-radius:12px;overflow:hidden;border:1px solid var(--c);background:#000}
 .vivo-marco>iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
@@ -1017,12 +1018,13 @@ function pintarColumnas(){
       if(nav)nav.querySelector('span').textContent=paginas[pag].nombre;
       if(caja._vista)jugar();
     }
-    const ir=d=>{pag=(pag+d+paginas.length)%paginas.length;pintar()};
+    const portadas=i=>Promise.all(paginas[i].vids.map(x=>x.poster?new Promise(ok=>{const im=new Image();im.onload=im.onerror=ok;im.src=x.poster;setTimeout(ok,4000)}):0));
+    const ir=d=>{const n=(pag+d+paginas.length)%paginas.length;portadas(n).then(()=>{pag=n;pintar();portadas((n+1)%paginas.length)})};
     if(nav){nav.querySelector('.ptl-pag-ant').onclick=()=>{ir(-1);reloj()};nav.querySelector('.ptl-pag-sig').onclick=()=>{ir(1);reloj()}}
     // se alternan solas mientras están a la vista (no mientras el mouse está encima ni con la pantalla completa abierta)
     function reloj(){clearInterval(caja._reloj);if(paginas.length>1)caja._reloj=setInterval(()=>{if(caja._vista&&!encima&&pc.hidden&&!quieto)ir(1)},ALTERNAR_MS)}
     caja.onmouseenter=()=>{encima=true};caja.onmouseleave=()=>{encima=false};
-    pintar();reloj();
+    pintar();reloj();if(paginas.length>1)portadas(1);
     if(!caja._obs){caja._obs=new IntersectionObserver(es=>es.forEach(en=>{caja._vista=en.isIntersecting&&en.intersectionRatio>=.4;caja._vista?jugar():parar()}),{threshold:[0,.4]});caja._obs.observe(caja)}
   });
 }
@@ -1161,7 +1163,7 @@ elegirLocal('kennedy');
 (function(){
   const SALA='https://cantabingo.onrender.com/?mudo=1';
   const LOC={
-    krbstagekennedy:{n:'Mercado Kennedy',c:'var(--kennedy)',vertical:'#/vertical-in/kennedy',horizontal:'#/tablero'},
+    krbstagekennedy:{n:'Mercado Kennedy',c:'var(--kennedy)',vertical:'#/vertical-in/kennedy'},
     krbstage3:{n:'Espacio Gastronómico Tobalaba',c:'var(--tobalaba)',horizontal:'#/pantalla/tobalaba'},
     krbstage:{n:'Frida Kahlo',c:'var(--frida)',horizontal:'#/tablero'}
   };
@@ -1177,14 +1179,15 @@ elegirLocal('kennedy');
       if(clave===actuales)return;actuales=clave; // solo se rehace si cambió quién transmite
       if(!vivos.length){grilla.innerHTML='';sec.hidden=true;return}
       const padres=['www.krbstage.cl','krbstage.cl',location.hostname].filter((x,i,a)=>x&&a.indexOf(x)===i).map(x=>'&parent='+x).join('');
-      grilla.innerHTML=vivos.map(c=>{const L=LOC[c.canal];return `<div class="vivo-item${L.vertical?' con-vertical':''}" style="--c:${L.c}">
-        <div class="vivo-fila"><div class="vivo-marco"><iframe src="https://player.twitch.tv/?channel=${c.canal}${padres}&muted=true&autoplay=true" allowfullscreen allow="autoplay; fullscreen" title="En vivo desde ${esc(L.n)}"></iframe>
-        ${L.horizontal?pant('pant-h',L.horizontal,1920,1080,'Pantalla horizontal del local'):''}</div>
-        ${L.vertical?pant('pant-v',L.vertical,1080,1920,'Pantalla vertical del local'):''}</div>
+      // nada encima del reproductor de Twitch (si algo lo tapa, Twitch lo pausa): las pantallas del local van al lado
+      grilla.innerHTML=vivos.map(c=>{const L=LOC[c.canal];return `<div class="vivo-item${L.vertical?' con-vertical':' con-horizontal'}" style="--c:${L.c}">
+        <div class="vivo-fila"><div class="vivo-marco"><iframe src="https://player.twitch.tv/?channel=${c.canal}${padres}&muted=true&autoplay=true" allowfullscreen allow="autoplay; fullscreen" title="En vivo desde ${esc(L.n)}"></iframe></div>
+        ${L.vertical?pant('pant-v',L.vertical,1080,1920,'Pantalla vertical del local'):pant('pant-h',L.horizontal,1920,1080,'Pantalla horizontal del local')}</div>
         <b>${esc(L.n)}</b>${c.vivo.title?`<small>${esc(c.vivo.title)}</small>`:''}</div>`}).join('');
       sec.hidden=false;requestAnimationFrame(escalar);
     }).catch(()=>{});
   }
+  new IntersectionObserver(es=>{window.vivoEnPantalla=es[0].intersectionRatio>=.35&&!sec.hidden;dispatchEvent(new Event('vivo-cambio'))},{threshold:[0,.35,.7]}).observe(sec);
   revisar();setInterval(revisar,60000); // revisa cada minuto
 })();
 
@@ -1193,10 +1196,11 @@ elegirLocal('kennedy');
   const PROPIOS={'Da-bsOQzxl3':['kennedy','2026-07-19'],'Dd1h9J9O8th':['kennedy','2026-09-28'],'DHOdA7Fx6F1':['kennedy','2025-03-15'],'DF4JT1kg5JJ':['kennedy','2025-02-10'],'DbfKhfKM2E4':['panoramico','2026-08-01'],'C6UHh75RSbH':['kennedy','2024-04-28'],'DL-mzsnRP_I':['kennedy','2025-07-11'],'DbggHTrBw98':['panoramico','2026-08-01'],'DbjoqmEsPWX':['panoramico','2026-08-02'],'DZ2buyOzr6k':['kennedy','2026-06-21'],'DXgxo5XkR4L':['kennedy','2026-04-24'],'DXPdxdZk7zt':['kennedy','2026-04-17'],'DHi-9gmRhqF':['kennedy','2025-03-23'],'C98XDWgRxVh':['kennedy','2024-07-27'],'C3Zi9R4uET9':['kennedy','2024-02-16']};
   const cards=[...document.querySelectorAll('.esp-mont')];const vids={};
   const vistos=new IntersectionObserver(es=>es.forEach(en=>{const v=en.target;if(en.isIntersecting&&!quieto)v.play().catch(()=>{});else v.pause()}),{threshold:.5});
+  const cerca=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){const v=en.target;if(!v.getAttribute('src'))v.src=v.dataset.src;cerca.unobserve(v)}}),{rootMargin:'400px 0px'});
   // de a uno (y con un reintento) para no saturar la conexión con Instagram
   function poner(code,x){
     vids[code]=x;const card=cards.find(c=>c.dataset.code===code);if(!card)return;
-    const m=card.querySelector('.esp-media');const v=document.createElement('video');v.muted=true;v.loop=true;v.playsInline=true;v.preload='metadata';if(x.poster)v.poster=x.poster;v.src=x.url;m.prepend(v);vistos.observe(v);sonarAlPasar(card,v);
+    const m=card.querySelector('.esp-media');const v=document.createElement('video');v.muted=true;v.loop=true;v.playsInline=true;v.preload='metadata';if(x.poster)v.poster=x.poster;v.dataset.src=x.url;m.prepend(v);cerca.observe(v);vistos.observe(v);sonarAlPasar(card,v);
     card.querySelector('.esp-ver').textContent='▶ Pantalla completa';
     card.onclick=e=>{e.preventDefault();const lista=cards.filter(c=>vids[c.dataset.code]);abrirPC(lista.map(c=>({video:vids[c.dataset.code].url,poster:vids[c.dataset.code].poster})),lista.indexOf(card))};
   }
@@ -1248,6 +1252,9 @@ elegirLocal('kennedy');
   const v=$('#video-portada');
   v.src=innerWidth<800?'portada-720.mp4':'portada-1080.mp4';
   if(!quieto){v.autoplay=true;v.load();v.play().catch(()=>{})}
+  // se pausa cuando no se ve o cuando hay una transmisión en vivo en pantalla (para no quitarle conexión)
+  let portadaVisible=true;const decidir=()=>{if(quieto)return;if(portadaVisible&&!window.vivoEnPantalla)v.play().catch(()=>{});else v.pause()};
+  new IntersectionObserver(es=>{portadaVisible=es[0].isIntersecting;decidir()}).observe(v);addEventListener('vivo-cambio',decidir);
   const portada=$('.portada'),titulo=$('.portada h1');
   const tactil=matchMedia('(hover: none)').matches;
   if(!tactil){titulo.addEventListener('mouseenter',()=>portada.classList.add('foco'));
