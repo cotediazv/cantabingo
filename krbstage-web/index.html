@@ -524,8 +524,14 @@ h2{margin-top:8px}
   #tulocal .ptl-col,#producidos .ptl-col{grid-row:span 4;grid-template-rows:subgrid;gap:0}
   #tulocal .ptl-enlaces{grid-row:4}
   /* las tres tarjetas iguales: el título ocupa siempre dos líneas (pegado abajo), así fecha, dirección y @ quedan a la misma altura */
-  #tulocal .ptl-prueba b{min-height:2em;display:flex;align-items:flex-end}
-  #tulocal .ptl-prueba .ptl-num{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* cada línea de la tarjeta en una sola línea; si el texto es largo, se achica hasta caber (pedido de Cote) */
+  #tulocal .ptl-prueba b,#tulocal .ptl-prueba .ptl-dato,#tulocal .ptl-prueba .ptl-num,#producidos .ptl-prueba b,#producidos .ptl-prueba .ptl-dato,#producidos .ptl-prueba .ptl-num{white-space:nowrap;overflow:hidden;text-overflow:clip;display:block;padding-top:.14em;padding-bottom:.08em}
+
+  /* el @ de Instagram arriba a la derecha, al frente del nombre del local y con el mismo margen (pedido de Cote) */
+  #tulocal .ptl-prueba .ptl-arroba,#producidos .ptl-prueba .ptl-arroba{position:absolute;top:16px;right:18px;margin:0;line-height:1;font-size:13px}
+  #tulocal .ptl-prueba .ptl-num,#producidos .ptl-prueba .ptl-num{padding-right:110px;line-height:1}
+  /* videos de Instagram más grandes: ocupan todo el ancho de la tarjeta de arriba (pedido de Cote) */
+  #tulocal .ptl-col .ptl-grilla,#producidos .ptl-col .ptl-grilla{width:100%;margin-top:10px;box-sizing:border-box;padding:16px;border:1px solid var(--linea);border-radius:10px;background:var(--tarima);gap:14px;justify-content:stretch} /* recuadro como el de la tarjeta, con los videos simétricos dentro */
 }
 .ptl-col .ptl-grilla{width:min(100%,max(292px,calc((100vh - 445px) / 1.2 + 40px)));justify-self:center;gap:18px 22px} /* más separados entre sí */
 @media (max-width:900px){
@@ -796,7 +802,6 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
       <li><a href="#funciona">Cartelera</a></li>
       <li><a href="#gancho">Para tu local</a></li>
       <li><a href="#contacto">Contacto</a></li>
-      <li><a href="#videos">Videos</a></li>
     </ul>
   </div>
 </header>
@@ -824,7 +829,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
         <span style="--c:#4fd08b">Mercado del 14</span>
         <span style="--c:#9b7bff">La Abuelita Rosa</span>
         <span style="--c:#ff8a3d">Helsinki Club</span>
-        <span style="--c:#2ec4b6">Kairos</span>
+        <span style="--c:#2ec4b6">Kairos Garden</span>
       </div>
     </div>
   </section>
@@ -902,19 +907,19 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
 
   <section class="banda tulocal" id="producidos">
     <div class="envoltura">
-      <h3 class="ptl-tit">También hemos producido en</h3>
+      <h3 class="ptl-tit">Producciones y colaboraciones pasadas</h3>
       <div class="ptl-pruebas">
-        <div class="ptl-col" data-local="panoramico" style="--c:var(--foco)">
-          <article class="ptl-prueba"><span class="ptl-num">Registros hasta octubre de 2026</span><b>Zona Gourmet Panorámico</b><a class="ptl-arroba" href="https://www.instagram.com/krbstage1/" target="_blank" rel="noopener">@krbstage1</a></article>
+        <div class="ptl-col" data-local="panoramico" style="--c:#f4bf5a">
+          <article class="ptl-prueba"><span class="ptl-num">Registros de julio de 2024 a octubre de 2026</span><b>Zona Gourmet Panorámico</b><small class="ptl-dato">Mall Vivo Panorámico</small><a class="ptl-arroba" href="https://www.instagram.com/krbstage1/" target="_blank" rel="noopener">@krbstage1</a></article>
           <div class="ptl-grilla" hidden></div>
           <div class="ptl-enlaces"><a class="ptl-ig" href="https://www.instagram.com/krbstage1/" target="_blank" rel="noopener">Ver registros en @krbstage1</a></div>
         </div>
-        <div class="ptl-col" data-local="kairos" style="--c:var(--foco)">
-          <article class="ptl-prueba"><span class="ptl-num">Registros de marzo a diciembre de 2024</span><b>Kairos</b><small class="ptl-dato">Mall Plaza Vespucio, La Florida</small><a class="ptl-arroba" href="https://www.instagram.com/krbstage2/" target="_blank" rel="noopener">@krbstage2</a></article>
+        <div class="ptl-col" data-local="kairos" style="--c:#2ec4b6">
+          <article class="ptl-prueba"><span class="ptl-num">Registros de marzo a diciembre de 2024</span><b>Kairos Garden</b><small class="ptl-dato">Mall Plaza Vespucio, La Florida</small><a class="ptl-arroba" href="https://www.instagram.com/krbstage2/" target="_blank" rel="noopener">@krbstage2</a></article>
           <div class="ptl-grilla" hidden></div>
           <div class="ptl-enlaces"><a class="ptl-ig" href="https://www.instagram.com/krbstage2/" target="_blank" rel="noopener">Ver registros en @krbstage2</a></div>
         </div>
-        <div class="ptl-col" data-local="laflorida" style="--c:var(--foco)">
+        <div class="ptl-col" data-local="laflorida" style="--c:#4fd08b">
           <article class="ptl-prueba"><span class="ptl-num">Registros de julio de 2023 a marzo de 2024</span><b>Mercado del 14</b><small class="ptl-dato">Mall Plaza Vespucio, La Florida</small><a class="ptl-arroba" href="https://www.instagram.com/krbstage2/" target="_blank" rel="noopener">@krbstage2</a></article>
           <div class="ptl-grilla" hidden></div>
           <div class="ptl-enlaces"><a class="ptl-ig" href="https://www.instagram.com/krbstage2/" target="_blank" rel="noopener">Ver registros en @krbstage2</a></div>
@@ -1036,22 +1041,6 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
         <button class="enviar" type="submit">Enviar</button>
         <p class="aviso" id="aviso" aria-live="polite"></p>
       </form>
-    </div>
-  </section>
-  <section class="banda videos" id="videos">
-    <div class="envoltura">
-      <div class="cabeza-videos">
-        <div>
-          <div class="etiqueta">Videos</div>
-          <h2>Nuestros shows en video</h2>
-        </div>
-        <a class="canal" href="https://www.youtube.com/@krbstage" target="_blank" rel="noopener"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="3" y="7" width="26" height="18" rx="6"/><path d="M13.5 11.5v9l8-4.5z"/></svg>Ver el canal en YouTube</a>
-      </div>
-      <div class="vid-carrusel">
-        <button class="ig-flecha izq" id="vid-izq" aria-label="Video anterior">‹</button>
-        <div class="vid-pista" id="vid-pista"></div>
-        <button class="ig-flecha der" id="vid-der" aria-label="Video siguiente">›</button>
-      </div>
     </div>
   </section>
 </main>
@@ -1663,6 +1652,15 @@ elegirLocal('kennedy');
   revisar();setInterval(revisar,20000); // revisa cada 20 segundos
 })();
 
+/* «Dónde producimos»: cada línea de las tarjetas en una sola línea, achicando la letra si no cabe (solo computador) */
+(()=>{const lineas=()=>document.querySelectorAll('#tulocal .ptl-prueba b,#tulocal .ptl-prueba .ptl-dato,#tulocal .ptl-prueba .ptl-num,#producidos .ptl-prueba b,#producidos .ptl-prueba .ptl-dato,#producidos .ptl-prueba .ptl-num');
+  const ajustar=()=>{const pc=innerWidth>900;lineas().forEach(e=>{e.style.fontSize='';e.style.lineHeight='';if(!pc)return;
+    const cs=getComputedStyle(e),base=parseFloat(cs.fontSize);let t=base;
+    e.style.lineHeight=cs.lineHeight==='normal'?(base*1.2)+'px':cs.lineHeight; // misma altura de línea: las tres tarjetas siguen parejas
+    while(e.scrollWidth>e.clientWidth+1&&t>base*.55){t-=.5;e.style.fontSize=t+'px'}})};
+  addEventListener('resize',()=>requestAnimationFrame(ajustar));
+  (document.fonts&&document.fonts.ready||Promise.resolve()).then(ajustar);ajustar();
+})();
 /* flechas de la fila de montados */
 document.querySelectorAll('.esp-fila').forEach(f=>{const pista=f.querySelector('.esp-montados');f.querySelector('.esp-flecha.izq').onclick=()=>pista.scrollBy({left:-pista.clientWidth*.8});f.querySelector('.esp-flecha.der').onclick=()=>pista.scrollBy({left:pista.clientWidth*.8})});
 /* los espectáculos montados: primero los 11 en el orden de Cote; el resto en orden al azar (cambia cada vez que se abre la página) */
@@ -1703,7 +1701,8 @@ document.querySelectorAll('.esp-montados').forEach(g=>{const PRIMEROS=['DF4JT1kg
   const RESPALDO_YT=[{"id":"lWdVEoW83eE","title":"BACKSTAGE TRIBUTO A BACKSTREET BOYS JUE 30-04-26","published":"2026-05-01T19:08:27+00:00"},{"id":"dRagJkvD_f0","title":"JUEGO DE SEDUCCION - TRIO STEREO EN VIVO","published":"2026-02-28T04:23:58+00:00"},{"id":"rxT68zBbxdY","title":"UN MILLON DE AÑOS LUZ - TRIO STEREO EN VIVO","published":"2026-02-28T03:39:08+00:00"},{"id":"yG2reoYvH38","title":"I WANT TO BREAK FREE - RAPSODIA TRIBUTO A QUEEN - ESPACIO GASTRONOMICO - MALL PLAZA TOBALABA","published":"2025-03-24T16:39:21+00:00"},{"id":"d8TQOCHR72s","title":"BED OF ROSES - ROCK JOVI en vivo Espacio Gastronómico Tobalaba - 1 Febrero 2025","published":"2025-02-02T05:36:34+00:00"}];
   const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   const fecha=t=>{const d=new Date(t);return isNaN(d)?'':`${d.getDate()} ${MESES[d.getMonth()]} ${d.getFullYear()}`};
-  const pista=$('#vid-pista');let yt=RESPALDO_YT,tw=[],vivos=[];
+  const pista=$('#vid-pista');if(!pista)return; // la sección de videos se quitó (pedido de Cote)
+  let yt=RESPALDO_YT,tw=[],vivos=[];
   function lista(){
     const todos=[...yt.map(v=>({titulo:v.title,fecha:v.published,thumb:`https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`,marca:'YouTube',yt:v.id})),
       ...tw.filter(v=>!v.muted).map(v=>({titulo:v.title,fecha:v.published,thumb:v.thumbnail,marca:'Twitch',tw:{video:v.id}}))].sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
