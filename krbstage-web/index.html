@@ -1457,14 +1457,14 @@ elegirLocal('kennedy');
     bSon.onclick=()=>{canalSonando=canalSonando===canal?null:canal;document.querySelectorAll('.ptl-vivo').forEach(x=>x._sonido&&x._sonido())};
     caja._sonido();
     // En vivo: el reproductor de Twitch por su API, para medir el atraso. Si se va quedando atrás de la señal (más de
-    // 15 segundos), se vuelve a cargar en el punto en vivo, así no se desfasa de la pantalla del local (pedido de Cote)
+    // 30 segundos), se vuelve a cargar en el punto en vivo, así no se desfasa de la pantalla del local (pedido de Cote)
     if(vivo)cargarTwitch().then(()=>{if(!window.Twitch)return;
       const m=caja.querySelector('.vivo-marco');m.innerHTML='<div class="vivo-tp"></div>';
       const tp=new Twitch.Player(m.firstChild,{channel:canal,parent:['www.krbstage.cl','krbstage.cl',location.hostname].filter((x,k,a)=>x&&a.indexOf(x)===k),width:'100%',height:'100%',autoplay:true,muted:canalSonando!==canal,controls:false});
       caja._tp=tp;let ultimo=Date.now();
       const vigilar=setInterval(()=>{if(!document.body.contains(caja)){clearInterval(vigilar);return}
         try{const st=tp.getPlaybackStats(),atraso=st?+st.hlsLatencyBroadcaster:0;
-          if(atraso>15&&Date.now()-ultimo>60e3){ultimo=Date.now();tp.setChannel(canal);tp.setMuted(canalSonando!==canal)}}catch(_){}},10000);
+          if(atraso>30&&Date.now()-ultimo>60e3){ultimo=Date.now();tp.setChannel(canal);tp.setMuted(canalSonando!==canal)}}catch(_){}},10000);
     }).catch(()=>{});
     return caja;
   }
@@ -1600,7 +1600,7 @@ elegirLocal('kennedy');
   const reacomodar=()=>{if(!visor){requestAnimationFrame(escalar);return}ajustarVisor();setTimeout(ajustarVisor,250);setTimeout(ajustarVisor,700)};
   addEventListener('resize',reacomodar);addEventListener('orientationchange',reacomodar);
   if(window.visualViewport)visualViewport.addEventListener('resize',reacomodar);
-  revisar();setInterval(revisar,60000); // revisa cada minuto
+  revisar();setInterval(revisar,20000); // revisa cada 20 segundos
 })();
 
 /* flechas de la fila de montados */
