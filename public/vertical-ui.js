@@ -28,11 +28,14 @@
   views['vertical-in'] = async (local) => {
     const v = pick(local);
     document.body.classList.add('vert-in'); // sin el fondo animado de las pantallas (en el iPhone quedaba encima del video)
-    app.innerHTML = `<div class="vt"><video class="vt-video" muted loop playsinline autoplay></video><iframe class="vt-act" title="Actividad" hidden></iframe>
+    app.innerHTML = `<div class="vt"><video class="vt-video" muted loop playsinline autoplay></video><iframe class="vt-act" title="Actividad" hidden></iframe><iframe class="vt-gc" title="Sala light" hidden></iframe>
       <div class="vt-empty" hidden><img src="krb-stage.svg" alt="KRB Stage"></div></div>`;
     const video = $('.vt-video');
     const frame = $('.vt-act');
     const empty = $('.vt-empty');
+    const gc = $('.vt-gc');
+    // la página web (krbstage.cl) pide ?siempre=1: la sala light del local se ve aunque la pantalla esté en «Siempre el video»
+    const always = new URLSearchParams(location.search).get('siempre') === '1';
     let shown = '';
     let ver = 0;
     let alive = true;
@@ -51,13 +54,17 @@
       const venue = SCREENS[v].venue; // la actividad es la del local de esta pantalla
       if (st.show === 'karaoke' && !lightId) lightId = ((await api('GET', `/api/light?local=${venue}`).catch(() => ({}))) || {}).id || '';
       // Sin video subido y sin actividad en este local: el logo (no el tablero de la sala abierta, que puede ser de otro local)
-      const want = st.show === 'video' || !st.activity ? 'video' : st.show === 'karaoke' ? `#/karaoke-v/${venue}/${lightId}` : '#/tablero';
+      // Sala light (Kennedy y Frida): su GC encima del video del mes
+      const want = st.show === 'light' || (always && st.light && st.show === 'video') ? 'light' : st.show === 'video' || !st.activity ? 'video' : st.show === 'karaoke' ? `#/karaoke-v/${venue}/${lightId}` : '#/tablero';
       if (want === shown) return;
       shown = want;
-      const isVideo = want === 'video';
+      const isLight = want === 'light';
+      const isVideo = want === 'video' || isLight;
       video.hidden = !isVideo || !ver;
-      empty.hidden = !isVideo || !!ver;
+      empty.hidden = !isVideo || !!ver || isLight;
       frame.hidden = isVideo;
+      gc.hidden = !isLight;
+      gc.src = isLight ? `${location.pathname}?mudo=1#/light-gc/${venue}` : 'about:blank';
       if (isVideo) { frame.src = 'about:blank'; if (ver) video.play().catch(() => {}); } else { video.pause(); frame.src = `${location.pathname}?mudo=1${want}`; }
     };
     await apply();
