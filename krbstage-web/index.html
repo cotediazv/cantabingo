@@ -712,7 +712,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
 </header>
 
 <canvas id="red-fondo" aria-hidden="true"></canvas>
-<div class="pc" id="pc" hidden role="dialog" aria-label="Pantalla completa"><div class="pc-pista" id="pc-pista"></div><div class="pc-mudo" id="pc-mudo" hidden>🔇 Toca para activar el sonido</div></div>
+<div class="pc" id="pc" hidden role="dialog" aria-label="Pantalla completa"><div class="pc-pista" id="pc-pista"></div></div>
 <main>
   <section class="portada" id="inicio">
     <video id="video-portada" class="video-portada" muted loop playsinline preload="none" poster="portada.jpg" aria-hidden="true"></video>
@@ -1067,25 +1067,29 @@ function pintarFlyers(){
   fila.querySelectorAll('button').forEach(b=>b.onclick=()=>abrirPC(fl.map(x=>({img:x.url})),+b.dataset.i));
   caja.hidden=false;
 }
-// En computador: al pasar el mouse sobre un video, suena (solo ese). Los navegadores dejan sonar recién
-// después del primer clic de la persona en la página: antes de ese clic, un aviso lo explica.
+// Sonido (pedido de Cote: la página siempre con sonido y sin botones confusos). Los navegadores dejan sonar recién
+// después del primer clic, toque o tecla de la persona en la página; desde ese momento suena todo sin hacer nada más:
+// el video que tiene el mouse encima, la pantalla completa y la transmisión en vivo.
 const conMouse=matchMedia('(hover: hover) and (pointer: fine)').matches;
 const puedeSonar=()=>!navigator.userActivation||navigator.userActivation.hasBeenActive;
-let avisoSon=null;
-function mostrarAvisoSon(si){
-  if(!avisoSon){avisoSon=document.createElement('div');avisoSon.className='aviso-son';avisoSon.textContent='🔇 Haz un clic en cualquier parte de la página y los videos sonarán al pasar el mouse';document.body.appendChild(avisoSon)}
-  avisoSon.classList.toggle('ver',si);
-}
+let videoEncima=null;
+const sonar=v=>{document.querySelectorAll('.ptl-grilla video,.esp-media video').forEach(o=>{if(o!==v)o.muted=true});
+  if(!v.getAttribute('src')&&v.dataset.src)v.src=v.dataset.src;v.muted=false;v.volume=1;v.play().catch(()=>{v.muted=true;v.play().catch(()=>{})})};
 function sonarAlPasar(caja,v){
   if(!conMouse)return;
-  caja.addEventListener('mouseenter',()=>{
-    if(!puedeSonar()){mostrarAvisoSon(true);if(!v.getAttribute('src')&&v.dataset.src)v.src=v.dataset.src;v.play().catch(()=>{});return} // sin sonido todavía, pero se mueve
-    document.querySelectorAll('.ptl-grilla video,.esp-media video').forEach(o=>{if(o!==v)o.muted=true});
-    if(!v.getAttribute('src')&&v.dataset.src)v.src=v.dataset.src;
-    v.muted=false;v.volume=1;v.play().catch(()=>{v.muted=true;v.play().catch(()=>{})});
-  });
-  caja.addEventListener('mouseleave',()=>{v.muted=true;mostrarAvisoSon(false)});
+  caja.addEventListener('mouseenter',()=>{videoEncima=v;
+    if(!puedeSonar()){if(!v.getAttribute('src')&&v.dataset.src)v.src=v.dataset.src;v.play().catch(()=>{});return} // se mueve; suena desde el primer clic
+    sonar(v)});
+  caja.addEventListener('mouseleave',()=>{v.muted=true;if(videoEncima===v)videoEncima=null});
 }
+// el primer clic, toque o tecla en cualquier parte deja la página con sonido
+let sonidoActivo=false;
+function activarSonido(){if(sonidoActivo)return;sonidoActivo=true;
+  if(videoEncima)sonar(videoEncima);
+  // transmisiones en vivo: se vuelven a abrir con sonido
+  document.querySelectorAll('.vivo-marco>iframe').forEach(f=>{if(f.src.includes('muted=true'))f.src=f.src.replace('muted=true','muted=false')});
+  ['pointerdown','keydown','touchend'].forEach(t=>removeEventListener(t,activarSonido,true))}
+['pointerdown','keydown','touchend'].forEach(t=>addEventListener(t,activarSonido,true));
 window.recibirIg=d=>{igDatos=d;pintarFlyers();pintarColumnas()};
 // «Ver cartelera semanal» de cada local: baja a la cartelera con ese local elegido
 document.querySelectorAll('.ptl-cartelera').forEach(a=>a.addEventListener('click',()=>elegirLocal(a.dataset.local)));
@@ -1161,7 +1165,7 @@ function pcMostrar(i,animar){
   pcAviso();
 }
 // si el navegador no dejó partir con sonido, un aviso chico (se va al activar el sonido)
-function pcAviso(){const el=pcPista.children[pcI];$('#pc-mudo').hidden=!(el&&el.tagName==='VIDEO'&&el.muted)}
+function pcAviso(){} // (sin aviso: el primer toque activa el sonido)
 // YouTube y Twitch: solo el video en pantalla tiene su reproductor (sin botones; el toque activa el sonido o pausa)
 let twSdk=null;
 function cargarTwitch(){return twSdk||(twSdk=new Promise((ok,mal)=>{const s=document.createElement('script');s.src='https://player.twitch.tv/js/embed/v1.js';s.onload=ok;s.onerror=mal;document.head.appendChild(s)}))}
@@ -1308,7 +1312,7 @@ elegirLocal('kennedy');
       const padres=['www.krbstage.cl','krbstage.cl',location.hostname].filter((x,i,a)=>x&&a.indexOf(x)===i).map(x=>'&parent='+x).join('');
       // nada encima del reproductor de Twitch (si algo lo tapa, Twitch lo pausa): las pantallas del local van al lado
       grilla.innerHTML=vivos.map(c=>{const L=LOC[c.canal];return `<div class="vivo-item${L.vertical?' con-vertical':' con-horizontal'}" style="--c:${L.c}">
-        <div class="vivo-fila"><div class="vivo-marco"><iframe src="https://player.twitch.tv/?channel=${c.canal}${padres}&muted=true&autoplay=true&controls=false" allow="autoplay; fullscreen" tabindex="-1" title="En vivo desde ${esc(L.n)}"></iframe></div>
+        <div class="vivo-fila"><div class="vivo-marco"><iframe src="https://player.twitch.tv/?channel=${c.canal}${padres}&muted=${typeof sonidoActivo!=='undefined'&&sonidoActivo?'false':'true'}&autoplay=true&controls=false" allow="autoplay; fullscreen" tabindex="-1" title="En vivo desde ${esc(L.n)}"></iframe></div>
         ${L.vertical?pant('pant-v',L.vertical,1080,1920,'Pantalla vertical del local',L):pant('pant-h',L.horizontal,1920,1080,'Pantalla horizontal del local')}</div>
         <div class="vivo-pie"><div><b>${esc(L.n)}</b>${c.vivo.title?`<small>${esc(c.vivo.title)}</small>`:''}</div><button type="button" class="vivo-pc">⛶ Pantalla completa</button></div></div>`}).join('');
       grilla.querySelectorAll('.pant').forEach(d=>obsPant.observe(d));
