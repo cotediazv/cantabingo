@@ -306,22 +306,17 @@
     let cart = null;
     let kar = null;
     let idx = 0;
+    // El QR lleva a la sala light de este mismo local (en Tobalaba también: antes llevaba a la sala de juegos abierta,
+    // que podía ser de otro local)
     let joinUrl = '';
-    // Tobalaba no usa sala light: su QR es para entrar a la sala de juegos
-    if (v === 'tobalaba') {
-      joinUrl = `${location.origin}${location.pathname}#/jugar`;
-      $('.lv-qrbox').innerHTML = qr(joinUrl);
-      $('.lv-qrtext span').textContent = 'Juega con nosotros y mira la cartelera';
-    } else {
-      const light = await api('GET', `/api/light?local=${v}`).catch(() => null);
-      if (light && light.id) { joinUrl = `${location.origin}${location.pathname}#/l/${light.id}`; $('.lv-qrbox').innerHTML = qr(joinUrl); }
-    }
+    const light = await api('GET', `/api/light?local=${v}`).catch(() => null);
+    if (light && light.id) { joinUrl = `${location.origin}${location.pathname}#/l/${light.id}`; $('.lv-qrbox').innerHTML = qr(joinUrl); }
     // Qué recuadros hay para mostrar (solo los que tienen algo)
     const slides = () => {
       const out = [];
       if (focus === 'qr') {
         const list = (kar && kar.list) || [];
-        return [`<h2>📱 Únete desde tu celular</h2><div class="lv-bigqr">${joinUrl ? qr(joinUrl) : ''}</div><p class="lv-bigqr-text">${v === 'tobalaba' ? 'Juega con nosotros y mira la cartelera' : 'Pide tu canción de karaoke y mira la cartelera'}</p>
+        return [`<h2>📱 Únete desde tu celular</h2><div class="lv-bigqr">${joinUrl ? qr(joinUrl) : ''}</div><p class="lv-bigqr-text">Pide tu canción de karaoke y mira la cartelera</p>
           ${list.length ? `<h2>🎤 Próximos en cantar</h2><ol class="lv-list">${list.slice(0, 4).map((p) => `<li><b>${esc(p.name)}</b><span>${esc(p.song)}</span></li>`).join('')}</ol>` : ''}`];
       }
       if (kar && kar.list && kar.list.length) {
