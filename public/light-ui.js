@@ -304,8 +304,14 @@
     let cart = null;
     let kar = null;
     let idx = 0;
-    const light = await api('GET', `/api/light?local=${v}`).catch(() => null);
-    if (light && light.id) $('.lv-qrbox').innerHTML = qr(`${location.origin}${location.pathname}#/l/${light.id}`);
+    // Tobalaba no usa sala light: su QR es para entrar a la sala de juegos
+    if (v === 'tobalaba') {
+      $('.lv-qrbox').innerHTML = qr(`${location.origin}${location.pathname}#/jugar`);
+      $('.lv-qrtext span').textContent = 'Juega con nosotros y mira la cartelera';
+    } else {
+      const light = await api('GET', `/api/light?local=${v}`).catch(() => null);
+      if (light && light.id) $('.lv-qrbox').innerHTML = qr(`${location.origin}${location.pathname}#/l/${light.id}`);
+    }
     // Qué recuadros hay para mostrar (solo los que tienen algo)
     const slides = () => {
       const out = [];
@@ -324,6 +330,14 @@
       if (!out.length) out.push('<h2>🎶 Bienvenidos</h2><div class="lv-now"><b>KRB Stage</b><span>Música, shows y karaoke</span></div>');
       return out;
     };
+    // Si el texto completo no cabe en el recuadro, se achica todo el recuadro (nunca se corta)
+    const fit = () => {
+      const slide = $('.lv-slide');
+      if (!slide) return;
+      slide.style.zoom = 1;
+      for (let z = 0.95; z > 0.5 && slide.scrollHeight > slide.clientHeight + 1; z -= 0.05) slide.style.zoom = z.toFixed(2);
+    };
+    if (document.fonts) document.fonts.ready.then(fit);
     const paint = () => {
       if (!alive || !$('#lv')) return;
       const all = slides();
@@ -331,8 +345,8 @@
       const slide = $('.lv-slide');
       slide.style.zoom = 1;
       slide.innerHTML = all[idx];
-      // Si el texto completo no cabe en el recuadro, se achica todo el recuadro (nunca se corta)
-      for (let z = 1; z > 0.5 && slide.scrollHeight > slide.clientHeight + 1; z -= 0.05) slide.style.zoom = z.toFixed(2);
+      fit();
+      setTimeout(fit, 400); // otra vez cuando ya cargaron las letras
       $('.lv-dots').innerHTML = all.length > 1 ? all.map((_, i) => `<i class="${i === idx ? 'on' : ''}"></i>`).join('') : '';
       const show = $('.lv-show');
       show.hidden = !(cart && cart.show);

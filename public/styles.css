@@ -1766,3 +1766,5 @@ body.full.has-vm #lv { padding-bottom: 7vh; }
 /* Fondo vertical de la sala light: los textos se acomodan al ancho completos (sin cortes ni «…»); si no caben, se achica el recuadro entero */
 .lv-now b, .lv-list b, .lv-hours b, .lv-week b, .lv-list span, .lv-show { display: block; -webkit-line-clamp: unset; white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; }
 .lv-slide h2 { white-space: normal; text-align: center; }
+/* Fondo vertical de Tobalaba: sus colores (rojo) */
+#lv.th-tobalaba { --lv-main: #c81e1e; --lv-tag: #3d0a0a; --lv-gold: #ffc400; --lv-shade: rgba(70, 0, 0, .55); }

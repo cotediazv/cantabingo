@@ -14,7 +14,7 @@
   const NIGHT = 'Jueves, viernes y sábado se pone sola en «Automático» a las 18:30 y vuelve a «Siempre el video» a las 00:30.';
   const SCHEDULE = { kennedy: NIGHT, frida: NIGHT, tobalaba: TOBA, 'tobalaba-v': TOBA };
   // Locales con sala light: en «Automático», si no hay juegos, se ve el fondo vertical de la sala light (#/light-v/<local>)
-  const LIGHT = { kennedy: true, frida: true };
+  const LIGHT = { kennedy: true, frida: true, 'tobalaba-v': true }; // pantallas que muestran el fondo vertical con la información
   const base = () => `${location.origin}${location.pathname}`;
 
   // Para el decodificador: la pantalla de pie recibe la señal horizontal, así que se entrega girada 90° a la
@@ -90,7 +90,7 @@
       <div class="panel vt-now"><small>En pantalla ahora</small><b id="vt-show">…</b><span id="vt-why" class="muted small"></span></div>
       <div class="panel"><h2>Qué mostrar</h2>
         <div class="vt-modes">
-          <button data-mode="auto"><span>🔄</span>Automático<small>${LIGHT[SCREENS[v].venue] ? 'Los juegos cuando hay; si no, el fondo de la sala light' : 'Video, y los juegos cuando empiezan'}</small></button>
+          <button data-mode="auto"><span>🔄</span>Automático<small>${LIGHT[v] ? 'Los juegos cuando hay; si no, el fondo con la información del local' : 'Video, y los juegos cuando empiezan'}</small></button>
           <button data-mode="video"><span>🎬</span>Siempre el video</button>
           <button data-mode="actividad"><span>🎤</span>Siempre la actividad</button>
         </div>${SCHEDULE[v] ? `<p class="muted small">🕗 ${esc(SCHEDULE[v])}</p>` : ''}</div>
@@ -103,7 +103,7 @@
         <p class="muted small">Se abre en el navegador del decodificador, en pantalla completa.${up ? ' Va girado, para la pantalla de pie.' : ''}</p>
         <p><input class="vt-link" readonly value="${esc(link)}"> <button id="vt-copy">Copiar</button> <a class="btn" href="${screenHash}" target="_blank">Ver</a></p>
         ${up ? `<p class="muted small">Sin girar (si el decodificador ya gira la imagen): <a href="#/vertical-in/${v}" target="_blank">${esc(`${base()}#/vertical-in/${v}`)}</a></p>` : ''}</div>`;
-    const NAMES = { video: '🎬 Video de la cartelera', sala: '🎲 Juegos (sala completa)', light: '💡 Fondo de la sala light (QR, cartelera y karaoke)', karaoke: '🎤 Karaoke (sala light)' };
+    const NAMES = { video: '🎬 Video de la cartelera', sala: '🎲 Juegos (sala completa)', light: '💡 Fondo con la información del local (QR, cartelera, horarios)', karaoke: '🎤 Karaoke (sala light)' };
     let alive = true;
     const paint = (st) => {
       $('#vt-show').textContent = st.show === 'sala' && !st.activity ? '🎲 Portada de la sala (no hay video subido)' : NAMES[st.show] || st.show;

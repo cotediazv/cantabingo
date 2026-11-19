@@ -25,8 +25,9 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
   };
   // Locales con sala light (pedido de Cote): en «Automático», si no hay juegos, la pantalla muestra el fondo vertical de
   // la sala light (QR para entrar, lo que viene esta noche y en la semana, la cartelera del mes, horarios y karaoke).
-  // Tobalaba no tiene sala light: en «Automático» muestra los juegos cuando hay y, si no, el video.
-  const LIGHT_VENUES = { kennedy: true, frida: true };
+  // Tobalaba no tiene sala light, pero muestra el mismo fondo con su información (pedido de Cote), con el QR de la sala de juegos.
+  // (solo en las pantallas verticales; la horizontal de Tobalaba sigue con su video o el logo)
+  const LIGHT_SCREENS = { kennedy: true, frida: true, 'tobalaba-v': true };
   // Horario de la pantalla (pedidos de Cote): en Kennedy y en Frida, jueves, viernes y sábado pasa sola a «Automático» a
   // las 18:30 y vuelve a «Siempre el video» a las 00:30 de esa noche; en Tobalaba (sus dos pantallas), el viernes de 18:00 a 22:30.
   // Una vez por noche; entremedio se puede cambiar a mano.
@@ -52,7 +53,7 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
     const c = conf(v);
     const venue = SCREENS[v];
     const act = activityOf(venue);
-    const rest = LIGHT_VENUES[venue] ? 'light' : null; // sin juegos: el fondo de la sala light (si el local tiene)
+    const rest = LIGHT_SCREENS[v] ? 'light' : null; // sin juegos: el fondo vertical con la información del local
     const hasVideo = !!c.video && fs.existsSync(file(v));
     // Los juegos de la sala completa siempre pasan adelante (salvo «Siempre el video»)
     let show = c.mode === 'video' ? 'video' : c.mode === 'actividad' ? (act || rest || 'sala') : (act || rest || 'video');
