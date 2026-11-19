@@ -1099,7 +1099,8 @@ function activarBloque(caja){if(bloqueActivo&&bloqueActivo!==caja)bloqueActivo._
 function pintarColumnas(){
   document.querySelectorAll('.ptl-col').forEach(col=>{
     const dl=(igDatos||{})[col.dataset.local]||{};
-    const populares=(dl.populares||[]).filter(x=>x&&x.url).slice(0,6);
+    // 6 elegidos al azar entre los 20 más populares (cambian cada vez que se abre la página)
+    const populares=(dl.populares||[]).filter(x=>x&&x.url).map(x=>[Math.random(),x]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]).slice(0,6);
     const enPop=new Set(populares.map(x=>x.link||x.url));
     const resto=(dl.videos||[]).filter(x=>x&&x.url&&!enPop.has(x.link||x.url)).slice(0,60);
     if(!populares.length&&!resto.length)return;

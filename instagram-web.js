@@ -146,7 +146,7 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
     return cache[v];
   }
 
-  // Los 6 videos más populares de cada lugar (más «me gusta» y comentarios), revisando todas sus publicaciones.
+  // Los 20 videos más populares de cada lugar (más «me gusta» y comentarios), revisando todas sus publicaciones.
   // Se calculan aparte, en segundo plano y cada 6 horas, para no demorar la página.
   const POP_MS = 6 * 3600e3, POP_PAGES = 20;
   const pop = {}; // local -> { videos, at, cargando, error }
@@ -169,7 +169,8 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
       url = r.paging && r.paging.next;
     }
     const puntaje = (m) => (m.like_count || 0) + 2 * (m.comments_count || 0);
-    return vids.sort((a, b) => puntaje(b) - puntaje(a)).slice(0, 6)
+    // los 20 más populares: la página elige 6 al azar entre ellos, para que se vea variado (pedido de Cote)
+    return vids.sort((a, b) => puntaje(b) - puntaje(a)).slice(0, 20)
       .map((m) => ({ url: m.media_url, poster: m.thumbnail_url || '', link: m.permalink || '', date: m.timestamp || '', likes: m.like_count || 0, comentarios: m.comments_count || 0 }));
   }
   function populares(v) {
