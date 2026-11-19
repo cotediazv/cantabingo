@@ -30,6 +30,27 @@ module.exports = function karaoke({ app, db, save, requireAdmin, requireLocal = 
   if (!db.karaoke.phoneDefault) { db.karaoke.phone = true; db.karaoke.phoneDefault = true; }
   // Local en uso: el de la sala de juegos abierta (se eligió al crearla); si no hay sala, el elegido en el Centro de control
   const venueNow = () => { const v = salaVenue(); return VENUES[v] ? v : db.karaoke.venue; };
+  // ---------- Horario de pedidos de karaoke por local (pedido de Cote, hora de Chile) ----------
+  // Kennedy: jueves, viernes y sábado de 21:45 a 00:30 · Tobalaba: viernes desde las 21:00 (hasta las 00:30) ·
+  // Frida: viernes y sábado de 18:30 a 00:00. Fuera de horario quedan cerrados, salvo que alguien los abra a mano en el
+  // panel; lo puesto a mano vale hasta que pasan 30 minutos sin actividad (sin pedidos ni cambios), y vuelve al horario.
+  const HOURS = { kennedy: { days: ['Thu', 'Fri', 'Sat'], from: 21 * 60 + 45, to: 24 * 60 + 30 }, tobalaba: { days: ['Fri'], from: 21 * 60, to: 24 * 60 + 30 }, frida: { days: ['Fri', 'Sat'], from: 18 * 60 + 30, to: 24 * 60 } };
+  const PREV = { Sun: 'Sat', Mon: 'Sun', Tue: 'Mon', Wed: 'Tue', Thu: 'Wed', Fri: 'Thu', Sat: 'Fri' };
+  const MANUAL_MS = 30 * 60e3;
+  db.karaoke.manual ||= {}; // local -> { on, last }
+  const inHours = (v) => {
+    const h = HOURS[v]; if (!h) return false;
+    const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map((x) => [x.type, x.value]));
+    const min = +p.hour * 60 + +p.minute;
+    if (h.days.includes(p.weekday) && min >= h.from && min < Math.min(h.to, 24 * 60)) return true;
+    return h.to > 24 * 60 && h.days.includes(PREV[p.weekday]) && min < h.to - 24 * 60; // pasada la medianoche
+  };
+  const phoneOn = (v) => {
+    const m = db.karaoke.manual[v];
+    if (m && Date.now() - m.last < MANUAL_MS) return !!m.on;
+    return inHours(v);
+  };
+  const touch = (v) => { const m = db.karaoke.manual[v]; if (m && Date.now() - m.last < MANUAL_MS) { m.last = Date.now(); save(); } };
   db.karaoke.urls ||= {};
   for (const v of Object.keys(VENUES)) db.karaoke.urls[v] = { ...DEFAULTS[v], ...(db.karaoke.urls[v] || {}) };
   // Tobalaba: la web app correcta es la implementación que tiene Sala.gs (16 nov, decisión de Cote).
@@ -126,7 +147,7 @@ module.exports = function karaoke({ app, db, save, requireAdmin, requireLocal = 
     const venue = pickVenue(req);
     const c = cache[venue] || { list: [], at: 0, error: '' };
     const pl = req.query.token ? findPlayer(String(req.query.sid || ''), String(req.query.token)) : null;
-    res.json({ me: pl ? standing(venue, pl.name) : null, venue, name: VENUES[venue], phone: !!db.karaoke.phone, ask: askFor(venue), form: (db.karaoke.urls[venue] || {}).form || '', list: c.list.slice(0, 8).map(pub), total: c.list.length, at: c.at, stale: !!c.error });
+    res.json({ me: pl ? standing(venue, pl.name) : null, venue, name: VENUES[venue], phone: phoneOn(venue), ask: askFor(venue), form: (db.karaoke.urls[venue] || {}).form || '', list: c.list.slice(0, 8).map(pub), total: c.list.length, at: c.at, stale: !!c.error });
   });
 
   // Configuración y diagnóstico para el Centro de control
@@ -134,11 +155,12 @@ module.exports = function karaoke({ app, db, save, requireAdmin, requireLocal = 
     const venue = venueNow();
     // El Centro de control muestra siempre una lectura del momento, no una guardada
     if (!cache[venue] || Date.now() - (cache[venue].checked || 0) > 5000) { await refresh(venue); cache[venue].checked = Date.now(); }
-    res.json({ venue, fromSala: !!VENUES[salaVenue()], venues: VENUES, phone: !!db.karaoke.phone, urls: db.karaoke.urls, status: cache[venue] ? { at: cache[venue].at, error: cache[venue].error, total: cache[venue].list.length } : null });
+    res.json({ venue, fromSala: !!VENUES[salaVenue()], venues: VENUES, phone: phoneOn(venue), urls: db.karaoke.urls, status: cache[venue] ? { at: cache[venue].at, error: cache[venue].error, total: cache[venue].list.length } : null });
   });
   app.post('/api/karaoke/config', requireAdmin, async (req, res) => {
     const b = req.body || {};
-    if (b.phone != null) db.karaoke.phone = !!b.phone; // pedidos desde el celular: activados o no
+    // pedidos desde el celular, puesto a mano (vale hasta 30 minutos sin actividad); el local es el del panel o el de la sala
+    if (b.phone != null) { const v = VENUES[b.local] ? b.local : venueNow(); db.karaoke.manual[v] = { on: !!b.phone, last: Date.now() }; }
     if (b.venue != null) {
       if (!VENUES[b.venue]) return fail(res, 400, 'Local no válido');
       db.karaoke.venue = b.venue;
@@ -155,7 +177,7 @@ module.exports = function karaoke({ app, db, save, requireAdmin, requireLocal = 
     save();
     await refresh(venueNow()); // se prueba de inmediato, para avisar si algo quedó mal
     const c = cache[venueNow()];
-    res.json({ venue: venueNow(), fromSala: !!VENUES[salaVenue()], phone: !!db.karaoke.phone, urls: db.karaoke.urls, status: { at: c.at, error: c.error, total: c.list.length } });
+    res.json({ venue: venueNow(), fromSala: !!VENUES[salaVenue()], phone: phoneOn(VENUES[b.local] ? b.local : venueNow()), urls: db.karaoke.urls, status: { at: c.at, error: c.error, total: c.list.length } });
   });
 
   // ---------- «Ya cantó», Subir y Bajar desde el panel del animador ----------
@@ -178,7 +200,7 @@ module.exports = function karaoke({ app, db, save, requireAdmin, requireLocal = 
   app.get('/api/karaoke/cola', requireLocal, (req, res) => {
     const venue = pickVenue(req);
     const c = cache[venue] || { list: [], at: 0, error: '' };
-    res.json({ venue, name: VENUES[venue], phone: !!db.karaoke.phone, edit: editable(venue), list: c.list.map(({ raw, ...p }) => p), total: c.list.length, at: c.at, stale: !!c.error });
+    res.json({ venue, name: VENUES[venue], phone: phoneOn(venue), edit: editable(venue), list: c.list.map(({ raw, ...p }) => p), total: c.list.length, at: c.at, stale: !!c.error });
   });
   // Llama a Sala.gs del local con la clave. /exec responde con una redirección; fetch la sigue con GET y ahí viene la respuesta.
   async function callScript(venue, body) {
@@ -346,7 +368,8 @@ module.exports = function karaoke({ app, db, save, requireAdmin, requireLocal = 
     const light = lightVenue(String(b.sid || ''));
     const venue = light || venueNow();
     if (!light && db.stage !== 'karaoke') return fail(res, 400, 'El karaoke no está abierto en este momento');
-    if (!db.karaoke.phone) return fail(res, 400, 'Por ahora no se están recibiendo pedidos desde el celular');
+    if (!phoneOn(venue)) return fail(res, 400, 'Por ahora no se están recibiendo pedidos desde el celular');
+    touch(venue); // un pedido cuenta como actividad: lo abierto a mano sigue abierto
     const song = bare(b.song);
     const artist = clean(b.artist, 60);
     const altSong = bare(b.altSong);
