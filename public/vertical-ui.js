@@ -100,12 +100,8 @@
         <div class="vt-cur"></div>
         <form class="vt-up"><input type="file" name="f" accept="video/mp4,video/*" required><button class="primary">Subir video ${up ? 'vertical' : 'horizontal'}</button></form>
         <div class="vt-prog" hidden><i></i><span></span></div>
-        <p class="muted small">MP4 ${up ? 'vertical' : 'horizontal'}, hasta 300 MB. Al subirlo se optimiza solo para que pese lo menos posible, sin perder calidad. El nuevo reemplaza al anterior y la pantalla lo toma sola.</p></div>
-      <div class="panel vt-now"><small>En pantalla ahora</small><b class="vt-show">…</b><span class="vt-why muted small"></span></div>
-      <div class="panel"><h3>Enlace para el decodificador</h3>
-        <p class="muted small">Se abre en el navegador del decodificador, en pantalla completa.${up ? ' Va girado, para la pantalla de pie.' : ''}</p>
-        <p><input class="vt-link" readonly value="${esc(link)}"> <button class="vt-copy">Copiar</button> <a class="btn" href="${screenHash}" target="_blank">Ver</a></p>
-        ${up ? `<p class="muted small">Sin girar (si el decodificador ya gira la imagen): <a href="#/vertical-in/${v}" target="_blank">${esc(`${base()}#/vertical-in/${v}`)}</a></p>` : ''}</div>`;
+        <p class="muted small">MP4 ${up ? 'vertical' : 'horizontal'}, hasta 300 MB. Si pesa mucho, achícalo antes (HandBrake en el computador o una app del celular). El nuevo reemplaza al anterior y la pantalla lo toma sola.</p></div>
+      <div class="panel vt-now"><small>En pantalla ahora</small><b class="vt-show">…</b><span class="vt-why muted small"></span></div>`;
     const q = (sel) => root.querySelector(sel);
     let lastSig = '';
     const paint = (st) => {
@@ -135,7 +131,6 @@
       const sig = JSON.stringify(st);
       if (sig !== lastSig) { lastSig = sig; paint(st); }
     };
-    q('.vt-copy').onclick = () => { const i = q('.vt-link'); i.select(); navigator.clipboard.writeText(i.value).then(() => toast('Enlace copiado'), () => {}); };
     q('.vt-up').onsubmit = (e) => {
       e.preventDefault();
       const f = e.target.f.files[0];
@@ -170,6 +165,12 @@
     app.innerHTML = `<p class="back"><a href="#/control">← Centro de control</a></p>
       <h1>📺 Pantallas · ${esc(VENUE_NAMES[venue])}</h1>
       <p class="vt-locales">${Object.keys(VENUE_SCREENS).map((k) => `<a class="btn${k === venue ? ' primary' : ''}" href="#/verticalctl/${k}">${esc(VENUE_NAMES[k])}</a>`).join('')}</p>
+      <div class="panel vt-links"><h2>🔗 Enlaces de ${esc(VENUE_NAMES[venue])}</h2>
+        ${[['🎥 GC para OBS (sala light)', `#/light-gc/${venue}`],
+    ['🖥️ Tablero (pantalla horizontal)', `#/pantalla/${pair[1]}`],
+    ['📱 Pantalla vertical girada (pantalla de pie)', `#/vertical/${pair[0]}`],
+    ['📱 Pantalla vertical sin girar', `#/vertical-in/${pair[0]}`]].map(([t, h]) => `<div class="vt-linkrow"><b>${t}</b>
+          <div><input class="vt-link" readonly value="${esc(base() + h)}"> <button class="vt-copy">Copiar</button> <a class="btn" href="${h}" target="_blank">Ver</a></div></div>`).join('')}</div>
       <div class="panel vt-both"><h2>Qué mostrar <small class="muted">· las dos pantallas, vertical y horizontal</small></h2>
         <div class="vt-modes">
           <button data-mode="auto"><span>🔄</span>Automático<small>Los juegos cuando hay; si no, la vertical muestra la información del local y la horizontal, su video</small></button>
@@ -193,6 +194,7 @@
         } catch (err) { fail(err); }
       };
     });
+    app.querySelectorAll('.vt-copy').forEach((btn) => { btn.onclick = () => { const i = btn.parentElement.querySelector('.vt-link'); i.select(); navigator.clipboard.writeText(i.value).then(() => toast('Enlace copiado'), () => {}); }; });
     await all();
     const timer = setInterval(all, 3000);
     return () => clearInterval(timer);

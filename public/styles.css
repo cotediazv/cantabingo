@@ -1865,3 +1865,8 @@ body.full #app { z-index: auto; }
 .vt-both h2 small { font-size: .8rem; font-weight: 500; }
 .vt-both .vt-modes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .vt-opt { margin: 8px 0 0; padding: 8px 12px; border-radius: 10px; background: rgba(255, 255, 255, .06); }
+.vt-links { margin-bottom: 18px; }
+.vt-linkrow { display: grid; gap: 6px; padding: 10px 0; border-top: 1px solid rgba(255, 255, 255, .08); }
+.vt-linkrow:first-of-type { border-top: 0; }
+.vt-linkrow > div { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.vt-linkrow .vt-link { flex: 1 1 260px; min-width: 0; }
