@@ -1331,9 +1331,9 @@ elegirLocal('kennedy');
   const SALA='https://cantabingo.onrender.com/?mudo=1';
   const LOC={
     // copia liviana del video de la pantalla vertical (1 Mbps en vez de 11): si Cote sube un video nuevo, la Sala usa el original
-    krbstagekennedy:{local:'kennedy',n:'Mercado Kennedy',c:'var(--kennedy)',vertical:'#/vertical-in/kennedy',liviano:'https://www.krbstage.cl/vertical-kennedy.mp4',lver:'1794966023522'},
+    krbstagekennedy:{local:'kennedy',n:'Mercado Kennedy',c:'var(--kennedy)',vertical:'#/vertical-in/kennedy',luz:true,liviano:'https://www.krbstage.cl/vertical-kennedy.mp4',lver:'1794966023522'},
     krbstage3:{local:'tobalaba',n:'Espacio Gastronómico Tobalaba',c:'var(--tobalaba)',vertical:'#/vertical-in/tobalaba-v'},
-    krbstage:{local:'frida',n:'Frida Kahlo',c:'var(--frida)',vertical:'#/vertical-in/frida'}
+    krbstage:{local:'frida',n:'Frida Kahlo',c:'var(--frida)',vertical:'#/vertical-in/frida',luz:true}
   };
   // Switch «Instagram / Twitch» arriba de «Dónde producimos»: con Twitch, cada local muestra su transmisión en vivo
   // (con la pantalla del local al lado) o, si no está transmitiendo, sus últimas transmisiones guardadas.
@@ -1344,6 +1344,17 @@ elegirLocal('kennedy');
   // las pantallas del local se dibujan a su tamaño real (1920x1080 o 1080x1920) y se achican para caber
   const escalar=()=>document.querySelectorAll('.ptl-vivo .pant').forEach(d=>{const f=d.firstElementChild;f.style.transform=`scale(${d.clientWidth/f.width})`});
   const obsPant=new ResizeObserver(escalar);
+  // Kennedy y Frida: en la web la sala light siempre se ve (pedido de Cote). Cuando su pantalla del local está en
+  // «Siempre el video» (fuera de horario), aquí se muestra igual el fondo vertical de la sala light (#/light-v/<local>)
+  const rutaV=L=>L._ruta||L.vertical;
+  const srcPant=(ruta,L)=>`${SALA}${L&&L.liviano?`&liviano=${encodeURIComponent(L.liviano)}&lver=${L.lver}`:''}${ruta}`;
+  function revisarLuz(){
+    for(const L of Object.values(LOC)){if(!L.luz)continue;
+      fetch(`https://cantabingo.onrender.com/api/vertical/${L.vertical.split('/').pop()}`,{signal:AbortSignal.timeout(10000)}).then(r=>r.json()).then(st=>{
+        const ruta=st.show==='video'?`#/light-v/${L.local}`:L.vertical;if(ruta===rutaV(L))return;L._ruta=ruta;
+        document.querySelectorAll(`.ptl-col[data-local="${L.local}"] .pant-v iframe`).forEach(f=>f.src=srcPant(ruta,L));
+      }).catch(()=>{})}
+  }
   const pant=(clase,ruta,w,h,t,L)=>`<div class="pant ${clase}"><iframe src="${SALA}${L&&L.liviano?`&liviano=${encodeURIComponent(L.liviano)}&lver=${L.lver}`:''}${ruta}" width="${w}" height="${h}" title="${t}" loading="lazy" tabindex="-1"></iframe></div>`;
   const padres=['www.krbstage.cl','krbstage.cl',location.hostname].filter((x,i,a)=>x&&a.indexOf(x)===i).map(x=>'&parent='+x).join('');
   const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
@@ -1364,7 +1375,7 @@ elegirLocal('kennedy');
       :`<span class="rep-icono">⟲</span><span style="white-space:nowrap">Repetición</span><span class="vivo-tit">· ${esc(fecha(vods[i].published))}${vods[i].title?' · '+esc(vods[i].title):''}</span>${vods.length>1?`<button type="button" class="rep-flecha" data-d="-1" aria-label="Transmisión anterior">‹</button><button type="button" class="rep-flecha" data-d="1" aria-label="Transmisión siguiente">›</button>`:''}`;
     caja.innerHTML=`<div class="vivo-etq">${etiqueta()}</div>
       <div class="vivo-fila"><div class="vivo-marco"><iframe src="${fuente()}" allow="autoplay; fullscreen" tabindex="-1" title="${vivo?'En vivo':'Repetición'} desde ${esc(L.n)}"></iframe></div>
-      ${L.vertical?pant('pant-v',L.vertical,1080,1920,'Pantalla vertical del local',L):pant('pant-h',L.horizontal,1920,1080,'Pantalla horizontal del local')}</div>
+      ${L.vertical?pant('pant-v',rutaV(L),1080,1920,'Pantalla vertical del local',L):pant('pant-h',L.horizontal,1920,1080,'Pantalla horizontal del local')}</div>
       <div class="vivo-botones"><button type="button" class="vivo-pc vivo-son">🔇 Escuchar</button><button type="button" class="vivo-pc vivo-full">⛶ Pantalla completa</button></div>`;
     const etq=caja.querySelector('.vivo-etq');
     const conectar=()=>etq.querySelectorAll('.rep-flecha').forEach(b=>b.onclick=()=>{i=(i+ +b.dataset.d+vods.length)%vods.length;base=0;t0=Date.now();caja.querySelector('.vivo-marco>iframe').src=fuente();etq.innerHTML=etiqueta();conectar()});
@@ -1393,6 +1404,7 @@ elegirLocal('kennedy');
     requestAnimationFrame(escalar);
   }
   function revisar(){
+    revisarLuz();
     fetch('https://cantabingo.onrender.com/api/web/twitch',{signal:AbortSignal.timeout(10000)}).then(r=>r.json()).then(j=>{
       datosTw=(j.canales||[]).filter(c=>LOC[c.canal]);
       const vivos=datosTw.filter(c=>c.vivo).map(c=>c.canal).sort().join(',');
