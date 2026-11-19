@@ -527,7 +527,7 @@ h2{margin-top:8px}
   #tulocal .ptl-prueba b{min-height:2em;display:flex;align-items:flex-end}
   #tulocal .ptl-prueba .ptl-num{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   /* videos de Instagram más grandes: ocupan todo el ancho de la tarjeta de arriba (pedido de Cote) */
-  #tulocal .ptl-col .ptl-grilla,#producidos .ptl-col .ptl-grilla{width:100%;margin-top:10px}
+  #tulocal .ptl-col .ptl-grilla,#producidos .ptl-col .ptl-grilla{width:100%;margin-top:10px;box-sizing:border-box;padding:16px;border:1px solid var(--linea);border-radius:10px;background:var(--tarima);gap:14px;justify-content:stretch} /* recuadro como el de la tarjeta, con los videos simétricos dentro */
 }
 .ptl-col .ptl-grilla{width:min(100%,max(292px,calc((100vh - 445px) / 1.2 + 40px)));justify-self:center;gap:18px 22px} /* más separados entre sí */
 @media (max-width:900px){
