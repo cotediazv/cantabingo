@@ -325,7 +325,11 @@
       if (!alive || !$('#lv')) return;
       const all = slides();
       idx %= all.length;
-      $('.lv-slide').innerHTML = all[idx];
+      const slide = $('.lv-slide');
+      slide.style.zoom = 1;
+      slide.innerHTML = all[idx];
+      // Si el texto completo no cabe en el recuadro, se achica todo el recuadro (nunca se corta)
+      for (let z = 1; z > 0.5 && slide.scrollHeight > slide.clientHeight + 1; z -= 0.05) slide.style.zoom = z.toFixed(2);
       $('.lv-dots').innerHTML = all.length > 1 ? all.map((_, i) => `<i class="${i === idx ? 'on' : ''}"></i>`).join('') : '';
       const show = $('.lv-show');
       show.hidden = !(cart && cart.show);

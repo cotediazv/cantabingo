@@ -1763,3 +1763,6 @@ body.full.has-vm #lv { padding-bottom: 7vh; }
 .lv-qrbox .qr { width: 15vh; height: 15vh; }
 .lv-qrtext b { font-size: 3.4vh; }
 .lv-qrtext span { font-size: 2.2vh; }
+/* Fondo vertical de la sala light: los textos se acomodan al ancho completos (sin cortes ni «…»); si no caben, se achica el recuadro entero */
+.lv-now b, .lv-list b, .lv-hours b, .lv-week b, .lv-list span, .lv-show { display: block; -webkit-line-clamp: unset; white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; }
+.lv-slide h2 { white-space: normal; text-align: center; }
