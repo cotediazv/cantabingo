@@ -1861,3 +1861,6 @@ body.full #app { z-index: auto; }
 .vt-col .vt-modes button span { font-size: 1.4rem; }
 .vt-col .vt-modes button small { font-size: .72rem; font-weight: 500; }
 .vt-col .vt-now b { font-size: 1.25rem; }
+.vt-both { margin-bottom: 18px; }
+.vt-both h2 small { font-size: .8rem; font-weight: 500; }
+.vt-both .vt-modes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
