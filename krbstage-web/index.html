@@ -1469,12 +1469,17 @@ elegirLocal('kennedy');
       // Lo más a tiempo posible (pedido de Cote: en twitch.tv va a menos de 2 s y aquí iba a 19): cada 5 s se mide el
       // atraso; si pasa de 5 s se vuelve a cargar en el punto en vivo (hasta 3 intentos seguidos, cada 20 s). Si aun así
       // no baja, se deja tranquilo y solo se recarga si pasa de 30 s (una vez por minuto), para no cortarlo a cada rato
-      caja._tp=tp;let ultimo=Date.now(),intentos=0;
+      // Calidad «Fuente» (la original, sin pasar por las copias que arma Twitch, que agregan atraso)
+      try{tp.addEventListener(Twitch.Player.PLAYING,()=>{try{tp.setQuality('chunked')}catch(_){}})}catch(_){}
+      // Se mide el atraso; si pasa de 5 s se vuelve al punto en vivo, como máximo 3 veces. Si después de recargar el
+      // atraso no baja (la medida de Twitch depende también del reloj del computador que transmite), se deja de recargar
+      // solo: queda el botón «⟳ Refrescar»
+      caja._tp=tp;let ultimo=Date.now(),intentos=0,antes=0;
       const vigilar=setInterval(()=>{if(!document.body.contains(caja)){clearInterval(vigilar);return}
         try{const st=tp.getPlaybackStats(),atraso=st?+st.hlsLatencyBroadcaster:0;caja._atraso=atraso;if(!atraso)return;
-          if(atraso<=5){intentos=0;return}
-          const limite=intentos<3?5:30,espera=intentos<3?20e3:60e3;
-          if(atraso>limite&&Date.now()-ultimo>espera){ultimo=Date.now();intentos++;tp.setChannel(canal);tp.setMuted(canalSonando!==canal)}}catch(_){}},5000);
+          if(atraso<=5||intentos>=3)return;
+          if(intentos&&antes&&atraso>antes-3&&Date.now()-ultimo>15e3){intentos=3;return} // recargar no sirvió: no se insiste
+          if(Date.now()-ultimo>20e3){ultimo=Date.now();antes=atraso;intentos++;tp.setChannel(canal);tp.setMuted(canalSonando!==canal)}}catch(_){}},5000);
     }).catch(()=>{});
     return caja;
   }
