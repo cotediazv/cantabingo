@@ -1950,6 +1950,12 @@ if (new URLSearchParams(location.search).has('diag')) {
   const sync = () => {
     let b = document.getElementById('ctl-reload-fixed');
     const on = PANELS.test(location.hash || '#/') && !document.body.classList.contains('full') && !document.body.classList.contains('obs') && !!store.get('adminToken');
+    // Pedido de Cote (20 nov): abajo de cada panel, siempre, el enlace al Centro de control (no en el inicio ni en el
+    // mismo Centro de control, que ya lo tienen)
+    let home = document.getElementById('ctl-home-link');
+    const homeOn = on && !/^#\/?($|control)/.test(location.hash || '#/');
+    if (!homeOn && home) home.remove();
+    if (homeOn && !home) { home = document.createElement('p'); home.id = 'ctl-home-link'; home.innerHTML = '<a class="home-control home-control-sm" href="#/control">🎛️ Centro de control</a>'; const appEl = document.getElementById('app'); appEl.parentNode.insertBefore(home, appEl.nextSibling); }
     if (!on) { if (b) b.remove(); return; }
     if (!b) { b = document.createElement('button'); b.id = 'ctl-reload-fixed'; b.type = 'button'; b.className = 'ctl-reload'; b.textContent = '↻ Refrescar'; b.onclick = () => location.reload(); document.body.appendChild(b); }
   };

@@ -2342,3 +2342,7 @@ body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "So
 .patterns .pat-letters .patterns { margin-top: 8px; }
 /* Resultados: el lugar en el círculo (3.º) en vez del número del participante */
 .v-no { white-space: nowrap; }
+
+/* Enlace al Centro de control abajo de cada panel */
+#ctl-home-link { text-align: center; margin: 24px auto 40px; }
+#ctl-reload-fixed { position: absolute; }
