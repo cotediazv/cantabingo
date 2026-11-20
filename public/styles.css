@@ -1973,3 +1973,8 @@ body.full[data-venue="kennedy"]::before {
    el texto ni la cámara: fuera de los recuadros el lienzo queda transparente) */
 #neural-bg.neural-gc { z-index: 30; mix-blend-mode: screen; opacity: .55; }
 #neural-bg.neural-gc { opacity: .8; }
+/* QR de la esquina: el ancho es el del QR; «Escanea el código QR» / «con tu celular» en dos líneas centradas (pedido de Cote) */
+.join-qr { width: min-content; }
+.join-qr b { display: grid; justify-items: center; line-height: 1.15; white-space: nowrap; text-align: center; }
+.join-qr b span { display: block; }
+.join-qr b { justify-self: stretch; }

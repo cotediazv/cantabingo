@@ -1363,9 +1363,25 @@ document.addEventListener('click', async (e) => {
 function joinQr(spot) {
   let el = document.getElementById('join-qr');
   if (!spot) { if (el) el.remove(); return; }
-  if (!el) { el = document.createElement('div'); el.id = 'join-qr'; el.innerHTML = `${qr(joinUrl())}<b>Escanea el código QR con tu celular</b>`; document.body.appendChild(el); }
+  // Pedido de Cote: el recuadro blanco no se ensancha por la frase; el ancho es el del QR y la frase va en dos líneas
+  // centradas («Escanea el código QR» / «con tu celular»), con la letra justa para caber
+  if (!el) { el = document.createElement('div'); el.id = 'join-qr'; el.innerHTML = `${qr(joinUrl())}<b><span>Escanea el código QR</span><span>con tu celular</span></b>`; document.body.appendChild(el); }
   el.className = `join-qr ${spot}`;
+  fitJoinQr();
 }
+function fitJoinQr() {
+  const el = document.getElementById('join-qr');
+  const code = el && el.querySelector('.qr');
+  const b = el && el.querySelector('b');
+  if (!code || !b) return;
+  b.style.fontSize = '';
+  const max = code.getBoundingClientRect().width;
+  let f = parseFloat(getComputedStyle(b).fontSize) || 16;
+  const wide = () => Math.max(...Array.from(b.children).map((x) => x.getBoundingClientRect().width));
+  for (let i = 0; i < 40 && wide() > max + 1 && f > 6; i++) { f *= 0.96; b.style.fontSize = `${f.toFixed(1)}px`; }
+}
+addEventListener('resize', fitJoinQr);
+if (document.fonts) document.fonts.ready.then(fitJoinQr);
 
 // Pantalla única para OBS: muestra la gráfica que el moderador elija en «Juegos».
 // No requiere iniciar sesión y queda transparente cuando no hay nada que mostrar.
