@@ -726,6 +726,7 @@ app.post('/api/gamedraw', requireAdmin, (_req, res) => {
   g.played = [game]; // bloqueado solo para el sorteo siguiente
   g.list.push(game); // queda en su número (1.º, 2.º…) en la pantalla
   g.last = { game, pool, at: Date.now() };
+  if (game === 'festival' || game === 'objeto') vote.start(game === 'festival' ? 'karaoke' : 'objeto'); // la votación queda lista con su título
   save();
   if (setStage('juego') === false) return fail(res, 409, 'El Rosco está en juego: el sorteo se verá cuando termine la partida');
   res.json(db.gameDraw);

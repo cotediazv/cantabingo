@@ -22,8 +22,10 @@ const GRACE_MS = 1000; // margen para los votos que venían en camino al llegar 
 const SIGNUP_MS = Number(process.env.VOTE_SIGNUP_MS) || 120000; // el llamado a participar dura 2:00
 
 module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, findPlayer, venue, notify }) {
-  const blank = (mode = 'objeto') => ({ mode, title: TITLES[mode] || TITLE, max: MAX_PLAYERS, players: [], open: null, last: null, sample: null, phase: 'voting', rank: [], revealed: 0, final: null, winner: null, winAt: 0, rev: ((db.vote || {}).rev || 0) + 1 });
+  const blank = (mode = 'objeto') => ({ mode, title: mode === 'karaoke' ? '' : TITLES[mode] || TITLE, max: MAX_PLAYERS, players: [], open: null, last: null, sample: null, phase: 'voting', rank: [], revealed: 0, final: null, winner: null, winAt: 0, rev: ((db.vote || {}).rev || 0) + 1 });
   db.vote ||= blank();
+  // Arreglo (20 nov): un Festival empezado de nuevo quedaba con el título «El objeto más extraño»
+  if (db.vote.mode === 'karaoke' && db.vote.title === TITLE) db.vote.title = '';
   const v = () => db.vote;
   const clean = (t, max) => String(t == null ? '' : t).replace(/\s+/g, ' ').trim().slice(0, max);
   const changed = () => { v().rev++; save(); notify(); };
@@ -162,7 +164,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       s.signupUntil = s.signup ? Date.now() + signupMs() : 0; // reloj en cuenta regresiva
       return null;
     },
-    title: (s, b) => { const t = clean(b.title, 50); s.title = t && t !== festival() ? t : ''; },
+    title: (s, b) => { const t = clean(b.title, 50); s.title = t && t !== festival() && !(s.mode === 'karaoke' && t === TITLE) ? t : ''; },
     // Tipo de concurso: solo al empezar, sin participantes
     mode: (s, b) => {
       if (s.phase !== 'voting' || s.players.length) return 'El tipo de concurso se elige antes de anotar participantes';
@@ -294,5 +296,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
     return res.json(hostState());
   });
 
-  return { rev: () => v().rev, clear: () => { db.vote = blank(); } };
+  // Sorteo de juegos: cuando sale El Festival o El objeto más extraño, la votación parte de cero con ese juego
+  const start = (mode) => { db.vote = blank(mode === 'karaoke' ? 'karaoke' : 'objeto'); changed(); };
+  return { rev: () => v().rev, clear: () => { db.vote = blank(); }, start };
 };

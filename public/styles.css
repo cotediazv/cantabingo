@@ -2216,3 +2216,12 @@ body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "So
 @keyframes jd-blink { to { background: rgba(255, 196, 0, .25); } }
 .games-nav .g-plan { display: grid; grid-template-columns: 1fr; justify-items: start; }
 .games-nav .g-slots { justify-content: flex-start; }
+
+/* Aviso de KRB Kids en el lugar libre de la pantalla: tamaño (--ka-s), en columna para los costados y, si queda arriba,
+   entra desde arriba */
+#kids-ad { transform-origin: 0 0; transform: translateY(160%) scale(var(--ka-s, 1)); }
+#kids-ad.ka-top { transform: translateY(-160%) scale(var(--ka-s, 1)); }
+#kids-ad.on, #kids-ad.ka-top.on { transform: scale(var(--ka-s, 1)); }
+#kids-ad.ka-tall { grid-template-columns: auto; grid-template-rows: auto auto auto; justify-items: center; text-align: center; row-gap: .6vh; border-radius: 3vh; padding: 1.6vh 2vh; }
+#kids-ad.ka-tall .ka-balloons { grid-row: auto; }
+#kids-ad.ka-tall small { max-width: 11em; }

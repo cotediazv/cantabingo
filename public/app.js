@@ -1622,8 +1622,59 @@ setTimeout(syncVenueMark, 700);
     if (!document.body.classList.contains('full') || /^#\/kids/.test(location.hash)) return;
     let el = document.getElementById('kids-ad');
     if (!el) { el = document.createElement('div'); el.id = 'kids-ad'; el.setAttribute('aria-hidden', 'true'); el.innerHTML = `<span class="ka-balloons">🎈🎈</span><b>${word}</b><small>Juegos para niños dentro de la plataforma</small>`; document.body.appendChild(el); }
+    place(el);
     el.classList.add('on');
     setTimeout(() => el.classList.remove('on'), SHOW_MS);
+  };
+  // Pedido de Cote: el aviso va en un lugar libre de la pantalla, sin tapar nada. Se buscan en toda la pantalla los
+  // espacios sin textos, imágenes, QR, videos ni recuadros; si no hay espacio para el aviso ancho, se prueba en columna
+  // (para los costados) y más chico. Si en ninguna parte cabe sin tapar, va donde tape menos.
+  const content = (ad) => {
+    const out = []; const W = window.innerWidth; const H = window.innerHeight;
+    const ok = (el) => { if (!el || ad.contains(el) || el.id === 'neural-bg') return false; if (el.checkVisibility) return el.checkVisibility({ opacityProperty: true, visibilityProperty: true }); const cs = getComputedStyle(el); return cs.visibility !== 'hidden' && cs.opacity !== '0' && el.getClientRects().length > 0; };
+    // peso: tapar textos, imágenes, QR y videos es mucho peor que tapar el fondo vacío de un recuadro
+    const add = (r, k) => { if (r.width > 0 && r.height > 0 && r.right > 0 && r.bottom > 0 && r.left < W && r.top < H) out.push({ l: r.left - 8, t: r.top - 8, r: r.right + 8, b: r.bottom + 8, k }); };
+    const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const rg = document.createRange();
+    for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+      if (!n.nodeValue.trim() || !ok(n.parentElement)) continue;
+      rg.selectNodeContents(n); add(rg.getBoundingClientRect(), 30);
+    }
+    document.querySelectorAll('body *').forEach((el) => {
+      if (el.parentElement && el.parentElement.closest('svg')) return;
+      const media = /^(IMG|SVG|CANVAS|VIDEO|IFRAME|INPUT|BUTTON)$/i.test(el.tagName);
+      const r = el.getBoundingClientRect();
+      if (!r.width || !r.height || (!media && r.width * r.height > W * H * 0.85)) return; // los fondos de toda la pantalla no cuentan
+      if (!media) { const cs = getComputedStyle(el); const bg = cs.backgroundImage !== 'none' || !/rgba\(.*,\s*0\)|transparent/.test(cs.backgroundColor); const bd = parseFloat(cs.borderTopWidth) > 0 && !/rgba\(.*,\s*0\)|transparent/.test(cs.borderTopColor); if (!bg && !bd) return; }
+      if (ok(el)) add(r, media ? 30 : 1);
+    });
+    return out;
+  };
+  const place = (el) => {
+    const W = window.innerWidth; const H = window.innerHeight; const mx = W * 0.015; const my = H * 0.02;
+    const rects = content(el);
+    const hitAt = (x, y, w, h) => { let hit = 0; for (const r of rects) { const ix = Math.min(x + w, r.r) - Math.max(x, r.l); const iy = Math.min(y + h, r.b) - Math.max(y, r.t); if (ix > 0 && iy > 0) hit += ix * iy * r.k; } return hit; };
+    let best = null;
+    for (const v of [['', 1], ['ka-tall', 1], ['', 0.8], ['ka-tall', 0.8], ['', 0.62], ['ka-tall', 0.62]]) {
+      el.classList.toggle('ka-tall', v[0] === 'ka-tall'); el.style.setProperty('--ka-s', v[1]);
+      const w = el.offsetWidth * v[1]; const h = el.offsetHeight * v[1];
+      if (w > W - 2 * mx || h > H - 2 * my) continue;
+      const step = Math.max(6, Math.min(W, H) / 60);
+      for (let y = my; y <= H - h - my + 0.5; y += step) {
+        for (let x = mx; x <= W - w - mx + 0.5; x += step) {
+          // primero lo que menos tapa; a igualdad, pegado a un borde (mejor abajo) y del tamaño más grande
+          const hit = hitAt(x, y, w, h);
+          const edge = Math.min(x - mx, W - w - mx - x, (y - my) * 1.5, H - h - my - y);
+          const sc = hit * 10 + edge;
+          if (!best || sc < best.sc) best = { sc, hit, x, y, v };
+        }
+      }
+      if (best && best.hit === 0) break; // cabe sin tapar nada: listo
+    }
+    if (!best) return;
+    el.classList.toggle('ka-tall', best.v[0] === 'ka-tall'); el.style.setProperty('--ka-s', best.v[1]);
+    el.style.left = `${Math.round(best.x)}px`; el.style.top = `${Math.round(best.y)}px`; el.style.bottom = 'auto';
+    el.classList.toggle('ka-top', best.y < H / 3);
   };
   setTimeout(() => { show(); setInterval(show, EVERY_MS); }, 60000); // el primero al minuto de abrir la pantalla
 })();
