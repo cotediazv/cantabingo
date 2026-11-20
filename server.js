@@ -243,10 +243,10 @@ app.set('trust proxy', 1); // detrás del proxy del hosting, para ver la IP real
 app.use(express.json({ limit: '1mb' }));
 // Sin caché: así cada celular recibe siempre la última versión publicada
 app.use(express.static(path.join(__dirname, 'public'), { setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache') }));
-// Enlaces cortos de las pantallas de los locales (pedido de Cote: fáciles de escribir con el control del decodificador).
-// /vk /vf /vt: verticales giradas de Kennedy, Frida y Tobalaba; /hk /hf /ht: horizontales. Lo que vaya después de «?»
+// Enlace corto de la pantalla vertical de Kennedy (pedido de Cote: fácil de escribir con el control del decodificador;
+// solo esta, los demás enlaces siguen como están porque los OBS ya están configurados). Lo que vaya después de «?»
 // (por ejemplo ?diag=1) se mantiene.
-const SHORT_LINKS = { vk: '#/vertical/kennedy', vf: '#/vertical/frida', vt: '#/vertical/tobalaba-v', hk: '#/pantalla/kennedy-h', hf: '#/pantalla/frida-h', ht: '#/pantalla/tobalaba' };
+const SHORT_LINKS = { vk: '#/vertical/kennedy' };
 app.get('/:short', (req, res, next) => {
   const to = SHORT_LINKS[String(req.params.short).toLowerCase()];
   if (!to) return next();
