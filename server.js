@@ -228,6 +228,7 @@ function closeSession(s) {
 // Se hace al cerrarse la sala (a mano o a las 8 horas) y al crear una nueva.
 function resetEvent() {
   db.people = {};
+  db.gameDraw = { played: [], last: null }; // sorteo del siguiente juego: parte de cero en cada sala
   db.raffle = { picked: [], roll: null };
   wheel.clear();
   vote.clear();
@@ -629,7 +630,7 @@ app.get('/api/sessions/:sid/events', (req, res) => {
 // Segundo juego de la plataforma
 // Pantalla única de OBS: qué gráfica se muestra ahora. Cambia sola al activar un bingo,
 // crear un rosco o lanzar un sorteo; el moderador también puede cambiarla a mano.
-const STAGES = ['bingo', 'rueda', 'sorteo', 'qr', 'karaoke', 'show', 'voto', 'insta', 'none'];
+const STAGES = ['bingo', 'rueda', 'sorteo', 'qr', 'karaoke', 'show', 'voto', 'insta', 'juego', 'none'];
 // Pedido de Cote: el juego que está en actividad tiene prioridad. Mientras haya un rosco en juego, la pantalla queda en
 // El Rosco aunque se apriete otra cosa (un botón del bingo, el escenario a mano o el karaoke automático); al terminar
 // el rosco (ganador, empate o se acabó), todo vuelve a funcionar como siempre. Devuelve false si no se cambió.
@@ -697,6 +698,24 @@ app.get('/api/consola', requireAdmin, async (_req, res) => {
 });
 // Programación del local del día: el de la sala abierta o, si no hay, el elegido en la sección Karaoke
 require('./agenda.js')({ app, db, save, requireAdmin, fail, currentVenue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
+
+// Sorteo del siguiente juego (pedido de Cote): los juegos siempre parten con un bingo, que queda siempre disponible y no
+// entra al sorteo. Se sortea entre El Rosco, El Festival y El objeto más extraño; el que sale queda fuera del sorteo hasta
+// que salgan los demás. El sorteo se ve en el tablero y en el GC (escenario «juego»).
+const DRAW_GAMES = ['rosco', 'festival', 'objeto'];
+db.gameDraw ||= { played: [], last: null };
+app.get('/api/gamedraw', (_req, res) => res.json({ ...db.gameDraw, games: DRAW_GAMES, venue: (Object.values(db.sessions)[0] || {}).theme || 'frida', now: Date.now() }));
+app.post('/api/gamedraw', requireAdmin, (_req, res) => {
+  const g = db.gameDraw;
+  let pool = DRAW_GAMES.filter((x) => !g.played.includes(x));
+  if (!pool.length) { g.played = []; pool = [...DRAW_GAMES]; } // ya salieron todos: vuelven a estar disponibles
+  const game = pool[crypto.randomInt(pool.length)];
+  g.played.push(game);
+  g.last = { game, pool, at: Date.now() };
+  save();
+  if (setStage('juego') === false) return fail(res, 409, 'El Rosco está en juego: el sorteo se verá cuando termine la partida');
+  res.json(db.gameDraw);
+});
 
 // Leer la pantalla actual es público, para que la fuente de OBS no necesite iniciar sesión; cambiarla es del moderador.
 app.get('/api/stage', (_req, res) => res.json({ show: roscoLock(db.stage) ? 'rueda' : STAGES.includes(db.stage) ? db.stage : 'bingo' }));

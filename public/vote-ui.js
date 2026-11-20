@@ -38,13 +38,15 @@
   const notesHTML = (st, cls) => (st.sample && st.sample.length ? `<div class="${cls}">${st.sample.map((x) => `<span><i>${x.note}</i><small>${esc(x.name || '')}</small></span>`).join('')}</div>` : '');
 
   // ---------- Panel del animador ----------
-  views.votoctl = async () => {
+  views.votoctl = async (which) => {
     if (!(await isAdmin())) return viewLogin();
-    app.innerHTML = `<div id="vc-howto"></div><div class="panel"><h1 style="margin:0">🗳️ Votación · 🎤 El Festival</h1>
+    // El Festival y El objeto más extraño son juegos separados (pedido de Cote): #/votoctl/festival o #/votoctl/objeto
+    const want = which === 'festival' ? 'karaoke' : which === 'objeto' ? 'objeto' : '';
+    app.innerHTML = `<div id="vc-howto"></div><div class="panel"><h1 style="margin:0" id="vc-h1">${want === 'karaoke' ? '🎤 El Festival' : '🗳️ El objeto más extraño'}</h1>
         <label class="f" style="margin-top:12px">Nombre del concurso<input type="text" id="vc-title" maxlength="50" placeholder="Ej.: El objeto más extraño"></label>
         <div id="vc-body" style="margin-top:14px"></div>
       </div>
-      ${activitiesNav('voto')}
+      ${activitiesNav(want === 'karaoke' ? 'festival' : 'objeto')}
       <p style="margin-top:14px"><button class="big" id="vc-reset">🗑 Nuevo concurso (borra este)</button></p>`;
     await api('POST', '/api/stage', { show: 'voto' }).catch(fail);
     let st = null;
@@ -65,7 +67,7 @@
       if (st.phase === 'voting') {
         const pending = st.players.filter((p) => !p.done).length;
         // Tipo de concurso (solo antes de anotar participantes) y cupos
-        html = `${st.players.length ? '' : `<div class="vc-modes"><button data-act="mode" data-mode="objeto" class="${isK(st) ? '' : 'primary'}">🗳️ El objeto más extraño</button><button data-act="mode" data-mode="karaoke" class="${isK(st) ? 'primary' : ''}">🎤 ${esc(fest(st))}</button></div>`}
+        html = `${want && st.mode !== want ? `<div class="vc-read"><small>Hay un concurso de «${esc(st.title)}» en curso</small><button class="primary big" data-act="reset">Empezar ${want === 'karaoke' ? esc(fest(st)) : 'El objeto más extraño'} (borra el anterior)</button></div>` : ''}
           <label class="f vc-max">Cupos (máximo de participantes)<input type="number" id="vc-max" min="2" max="30" value="${st.max}"></label>
           ${st.sample ? `<div class="vc-read"><small>Notas al azar en pantalla (sin el promedio)</small>${notesHTML(st, 'vc-notes')}</div>` : ''}
           <div class="vc-signup ${st.signup ? 'on' : ''}"><p><b>${st.signup ? `📲 Inscripciones abiertas · <span class="v-clock">${clockText()}</span>` : 'Inscripciones desde el celular'}</b>
@@ -116,12 +118,21 @@
       if ($('#vc-name')) { $('#vc-name').value = keep; $('#vc-thing').value = keepThing; if (focus) $(focus).focus(); }
       if ($('#vc-add')) $('#vc-add').onsubmit = async (e) => { e.preventDefault(); const name = $('#vc-name').value; const what = $('#vc-thing').value; if (await act('add', { name, thing: what })) { $('#vc-name').value = ''; $('#vc-thing').value = ''; $('#vc-name').focus(); } };
     };
-    $('#vc-body').onclick = (e) => { const b = e.target.closest('[data-act]'); if (b && !b.disabled) act(b.dataset.act, { id: b.dataset.id, on: !!b.dataset.on, mode: b.dataset.mode }); };
+    $('#vc-body').onclick = async (e) => {
+      const b = e.target.closest('[data-act]');
+      if (!b || b.disabled) return;
+      if (b.dataset.act === 'reset') { if (await act('reset')) await ensureMode(); return; }
+      act(b.dataset.act, { id: b.dataset.id, on: !!b.dataset.on, mode: b.dataset.mode });
+    };
     $('#vc-body').onchange = (e) => { if (e.target.id === 'vc-max') act('max', { max: e.target.value }); };
     $('#vc-title').onchange = (e) => act('title', { title: e.target.value });
     $('#vc-reset').onclick = () => { if (window.confirm('¿Borrar este concurso y empezar uno nuevo?')) act('reset'); };
+    // Al entrar por el menú, el concurso queda del tipo elegido (si no tiene participantes; si tiene, se ofrece empezar uno nuevo)
+    const ensureMode = async () => { if (want && st && st.mode !== want && !st.players.length) { await act('mode', { mode: want }); } };
     const tick = async () => { const r = await api('GET', '/api/vote/host').catch(() => null); if (r) { st = r; paint(); } };
     await tick();
+    await ensureMode();
+    if (want) $('#vc-h1').textContent = want === 'karaoke' ? `🎤 ${fest(st)}` : '🗳️ El objeto más extraño';
     const timer = setInterval(tick, 1500);
     return () => clearInterval(timer);
   };

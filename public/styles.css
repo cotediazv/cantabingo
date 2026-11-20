@@ -2170,3 +2170,27 @@ body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "So
 .howto ul { margin: 10px 0 0; padding-left: 20px; display: grid; gap: 8px; }
 .howto li { font-size: 1.12rem; line-height: 1.35; }
 .howto b { color: #ffc400; }
+
+/* Menú de abajo: «Sortear juego», los juegos y las demás actividades (pedido de Cote) */
+.games-nav .g-draw { width: 100%; margin-bottom: 14px; font-size: 1.3rem; }
+.games-nav small { display: block; margin: 10px 0 8px; }
+.games-nav .g-played { opacity: .55; }
+.games-nav .g-played::after { content: '✔ ya salió'; display: block; font-size: .72rem; font-weight: 700; color: #3fe08f; }
+/* Sorteo del siguiente juego en pantalla */
+#jd { position: fixed; inset: 0; top: 0; right: 0; bottom: 0; left: 0; display: grid; place-items: center; z-index: 3; }
+.jd-card { display: grid; justify-items: center; gap: 2.4vh; padding: 4vh 6vw; border-radius: 4vh; text-align: center; color: #fff; background: rgba(14, 12, 30, .9); border: .7vh solid #ffc400; box-shadow: 0 2vh 6vh rgba(0, 0, 0, .55); }
+.jd-card small { font-size: 3.4vh; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; color: #ffc400; }
+.jd-roll, .jd-win { font-family: Fredoka, "Baloo 2", system-ui, sans-serif; font-size: 9vh; font-weight: 700; line-height: 1.05; white-space: nowrap; }
+.jd-win { animation: jd-pop .6s cubic-bezier(.2, 1.6, .4, 1); color: #ffe14d; text-shadow: 0 .6vh 0 rgba(0, 0, 0, .3); }
+@keyframes jd-pop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.jd-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.2vh 1.4vw; max-width: 80vw; }
+.jd-list span { padding: 1vh 2vw; border-radius: 99px; font-size: 2.8vh; font-weight: 800; background: rgba(255, 255, 255, .1); border: .3vh solid rgba(255, 255, 255, .2); }
+.jd-list span.on { background: #ffc400; color: #1a1a1a; border-color: #ffc400; }
+.jd-list span.done { opacity: .45; text-decoration: line-through; }
+.jd-list span.bingo { border-style: dashed; }
+/* en el GC: abajo, sin tapar la cámara */
+#jd.jd-gc { place-items: end center; padding-bottom: 5vh; }
+.jd-gc .jd-card { padding: 2.4vh 4vw; gap: 1vh; }
+.jd-gc .jd-roll, .jd-gc .jd-win { font-size: 7vh; }
+@media (prefers-reduced-motion: reduce) { .jd-win { animation: none; } }
+.jd-gc .jd-list span { font-size: 2.2vh; padding: .6vh 1.4vw; }

@@ -233,7 +233,7 @@ views.home = async () => {
         <a class="s1" href="${bingoHref}"><i>1</i><span>🎱</span><b>Bingo</b></a>
         <a class="s2" href="#/sorteoctl"><i>2</i><span>🎲</span><b>Sorteo</b></a>
         <a class="s3" href="#/ruedas"><i>3</i><span>🎡</span><b>El Rosco</b></a>
-        <a class="s5" href="#/votoctl"><i>4</i><span>🗳️</span><b>Votación · El Festival</b></a>
+        <a class="s5" href="#/votoctl/festival"><i>4</i><span>🎤</span><b>El Festival</b></a>
         <a class="s6" href="#/showctl"><i>5</i><span>⭐</span><b>Show</b></a>
         <a class="s4" href="#/karaokectl"><i>6</i><span>🎤</span><b>Karaoke</b></a>
         <a class="s7" href="#/instactl"><i>7</i><span>📸</span><b>Síguenos en Instagram</b></a>
@@ -1130,6 +1130,7 @@ views.tablero = async () => {
         else if (show === 'qr') stop = await views.qrFull();
         else if (show === 'karaoke') stop = await views.karaokeFull();
         else if (show === 'voto') stop = await views.votoFull();
+        else if (show === 'juego') stop = await views.juegoDraw('full');
         else if (show === 'insta') stop = await views.instaFull();
         else if (show === 'show') stop = await views.showFull();
         else stop = await views.bingoFull(); // bingo, o la portada si no hay nada en juego
@@ -1353,20 +1354,93 @@ views.karaokectl = async (local) => {
   return () => { clearInterval(timer); if (stopBar) stopBar(); };
 };
 
-// Al terminar cualquier actividad se puede pasar directo a cualquiera de las otras
+// Menú de abajo en el panel de todos los juegos (pedido de Cote): «Sortear juego» y después los juegos con su ícono;
+// más abajo, las demás actividades
+const GAME_INFO = (venue) => ({
+  rosco: { icon: '🎡', name: 'El Rosco', href: '#/sorteoctl' },
+  festival: { icon: '🎤', name: `El Festival de ${{ frida: 'Frida', kennedy: 'Kennedy', tobalaba: 'Tobalaba' }[venue] || 'Frida'}`, href: '#/votoctl/festival' },
+  objeto: { icon: '🗳️', name: 'El objeto más extraño', href: '#/votoctl/objeto' },
+});
 function activitiesNav(current) {
-  const all = [
+  const games = [
     ['bingo', '<button type="button" data-back-bingo><span>🎱</span>Bingo</button>'],
-    ['rosco', '<a class="btn" href="#/sorteoctl"><span>🎡</span>El Rosco</a>'],
-    ['voto', '<a class="btn" href="#/votoctl"><span>🗳️</span>Votación · El Festival</a>'],
+    ['rosco', '<a class="btn" data-game="rosco" href="#/sorteoctl"><span>🎡</span>El Rosco</a>'],
+    ['festival', '<a class="btn" data-game="festival" href="#/votoctl/festival"><span>🎤</span><b class="g-fest">El Festival</b></a>'],
+    ['objeto', '<a class="btn" data-game="objeto" href="#/votoctl/objeto"><span>🗳️</span>El objeto más extraño</a>'],
+  ];
+  const more = [
     ['show', '<a class="btn" href="#/showctl"><span>⭐</span>Show</a>'],
     ['karaoke', '<a class="btn" href="#/karaokectl"><span>🎤</span>Karaoke</a>'],
     ['insta', '<a class="btn" href="#/instactl"><span>📸</span>Instagram</a>'],
     ['qr', '<button type="button" data-stage-qr><span>📱</span>QR en pantalla completa</button>'],
   ];
-  return `<div class="act-nav"><small>Ir a otra actividad</small><div>${all.filter(([k]) => k !== current).map(([, h]) => h).join('')}</div></div>`;
+  setTimeout(paintGameNav, 0);
+  return `<div class="act-nav games-nav"><button type="button" class="primary big g-draw" data-game-draw>🎲 Sortear juego</button>
+    <small>Juegos</small><div>${games.filter(([k]) => k !== current).map(([, h]) => h).join('')}</div>
+    <small>Otras actividades</small><div>${more.filter(([k]) => k !== current).map(([, h]) => h).join('')}</div></div>`;
 }
+// Marca en el menú los juegos que ya salieron en el sorteo (quedan fuera del sorteo hasta que salgan los demás)
+async function paintGameNav() {
+  const g = await api('GET', '/api/gamedraw').catch(() => null);
+  if (!g) return;
+  const info = GAME_INFO(g.venue);
+  document.querySelectorAll('.g-fest').forEach((b) => { b.textContent = info.festival.name; });
+  document.querySelectorAll('[data-game]').forEach((el) => { const done = g.played.includes(el.dataset.game); el.classList.toggle('g-played', done); el.title = done ? 'Ya salió en el sorteo' : ''; });
+}
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-game-draw]');
+  if (!b || b.disabled) return;
+  b.disabled = true;
+  try {
+    const g = await api('POST', '/api/gamedraw');
+    const info = GAME_INFO((await api('GET', '/api/gamedraw')).venue)[g.last.game];
+    toast(`🎲 Se está sorteando en pantalla… Salió: ${info.icon} ${info.name}`);
+    setTimeout(() => { location.hash = info.href; }, 6000); // cuando termina la tómbola en pantalla, el panel pasa a ese juego
+  } catch (err) { fail(err); b.disabled = false; }
+});
 const BACK_BINGO = activitiesNav('rosco');
+// Sorteo del siguiente juego en pantalla: tómbola con los juegos disponibles y, al final, el que salió en grande;
+// abajo, todos los juegos (los que ya salieron, marcados). kind: 'full' (tablero) o 'gc' (OBS)
+views.juegoDraw = async (kind) => {
+  const ROLL_MS = 4500;
+  app.innerHTML = `<div id="jd" class="jd-${kind}"></div>`;
+  let shownAt = 0; let timer = null; let alive = true;
+  const paint = (g) => {
+    const box = $('#jd');
+    if (!box || !g.last) { if (box) box.innerHTML = ''; return; }
+    const info = GAME_INFO(g.venue);
+    const win = info[g.last.game];
+    const pool = g.last.pool.map((k) => info[k]);
+    // mientras gira la tómbola no se marca cuál salió
+    const listOf = (rolling) => `<div class="jd-list">${g.games.map((k) => `<span class="${k === g.last.game ? (rolling ? '' : 'on') : g.played.includes(k) ? 'done' : ''}">${info[k].icon} ${esc(info[k].name)}</span>`).join('')}<span class="bingo">🎱 Bingo · siempre disponible</span></div>`;
+    const left = ROLL_MS - (Date.now() + (g.offset || 0) - g.last.at);
+    if (left > 0) {
+      // tómbola: pasan los juegos disponibles cada vez más lento
+      box.innerHTML = `<div class="jd-card"><small>🎲 Sorteo del siguiente juego</small><b class="jd-roll"></b>${listOf(true)}</div>`;
+      let i = 0; let wait = 70;
+      const spin = () => { if (!alive || !$('.jd-roll')) return; const x = pool[i++ % pool.length]; $('.jd-roll').textContent = `${x.icon} ${x.name}`; wait *= 1.13; if (Date.now() + (g.offset || 0) - g.last.at < ROLL_MS - 200) timer = setTimeout(spin, wait); else paintWin(); };
+      const paintWin = () => { if (alive) paint({ ...g, last: { ...g.last, at: g.last.at - ROLL_MS } }); };
+      spin();
+      return;
+    }
+    box.innerHTML = `<div class="jd-card won"><small>🎲 El siguiente juego es</small><b class="jd-win">${win.icon} ${esc(win.name)}</b>${listOf(false)}</div>`;
+    if (Date.now() - shownAt > 1000) { shownAt = Date.now(); sfx.play('win'); }
+  };
+  let last = '';
+  const tick = async () => {
+    const g = await api('GET', '/api/gamedraw').catch(() => null);
+    if (!alive || !g) return;
+    g.offset = g.now - Date.now(); // diferencia de reloj con el servidor
+    const key = JSON.stringify([g.last && g.last.at, g.played]);
+    if (key === last) return;
+    last = key;
+    clearTimeout(timer);
+    paint(g);
+  };
+  await tick();
+  const poll = setInterval(tick, 2000);
+  return () => { alive = false; clearTimeout(timer); clearInterval(poll); };
+};
 document.addEventListener('click', (e) => { if (e.target.closest('[data-back-bingo]')) backToBingo(); });
 // «QR en pantalla completa» desde cualquier panel: lo pone en OBS y en el tablero sin salir de donde estás
 document.addEventListener('click', async (e) => {
@@ -1422,6 +1496,7 @@ views.escena = async () => {
         else if (show === 'qr') stop = await views.qrBig();
         else if (show === 'karaoke') stop = await views.karaokeGC();
         else if (show === 'voto') stop = await views.votoGC();
+        else if (show === 'juego') stop = await views.juegoDraw('gc');
         else if (show === 'insta') stop = await views.instaGC();
         else if (show === 'show') stop = await views.showGC();
         joinQr({ sorteo: 'br', rueda: 'bl', show: 'above' }[show]);
