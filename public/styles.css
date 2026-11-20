@@ -1940,3 +1940,5 @@ body.full #app { z-index: auto; }
    escritas a la antigua, para que el video, la actividad y la información de las pantallas ocupen toda la pantalla */
 .vt, .vt-video, .vt-act, .vt-empty, #lv, #neural-bg, .pw-rankwrap { top: 0; right: 0; bottom: 0; left: 0; }
 body.full::before { top: -20%; right: -20%; bottom: -20%; left: -20%; }
+/* Enlace corto de cada pantalla (pedido de Cote) */
+.vt-short { font-weight: 800; color: #ffc400; }
