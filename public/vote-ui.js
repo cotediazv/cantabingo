@@ -109,7 +109,7 @@
       } else if (st.phase === 'final' && isK(st)) {
         html = `<h2>🥁 Redoble de tambores</h2>
           <div class="vc-read"><small>Los dos finalistas están en pantalla</small>${st.final.players.map((p) => `<b>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}`).join('<em class="vs">y</em>')}</div>
-          <button class="primary big" data-act="winner" style="margin-top:12px">🏆 Revelar 2.º lugar y ganador</button>`;
+          <button class="primary big" data-act="winner" style="margin-top:12px">🏆 Revelar al gran ganador</button>`;
       } else if (st.phase === 'final') {
         const total = Object.values(st.tally).reduce((a, b) => a + b, 0);
         html = `<h2>Gran final</h2>
@@ -253,13 +253,15 @@
   const winHTML = (st) => `<div class="bwin th-${st.venue}"><div class="confetti">${confetti()}</div>
     <div class="bwin-card"><span class="bwin-sub">${esc(title(st))}</span><span class="vwin-cup">🏆</span>
       <div class="bwin-names"><span><b ${n(`${st.winner.name}...`)}>${nm(st.winner)}</b>${st.winner.thing ? `<small>${esc(st.winner.thing)}</small>` : ''}</span></div>
-      ${isK(st) && st.winner.score != null ? `<span class="vk-score">Puntaje <b>${note(st.winner.score, st.winner.dec)}</b></span>${st.second ? `<span class="vk-second">2.º lugar · ${esc(st.second.name)} · <b>${note(st.second.score, st.second.dec)}</b></span>` : ''}` : ''}
+      ${isK(st) && st.winner.score != null ? `<span class="vk-score">Puntaje <b>${note(st.winner.score, st.winner.dec)}</b></span>` : ''}
       <span class="bwin-sub">¡Felicitaciones!</span></div></div>`;
 
   // Qué decir en cada momento: etiqueta, línea principal, línea secundaria y bloque de la derecha
-  const scene = (st) => {
+  // Pedido de Cote (20 nov): en la final, después del redoble, primero se revela solo al gran ganador; el 2.º lugar
+  // aparece después, cuando termina la celebración
+  const scene = (st, celebrating = false) => {
     const lastPlace = st.places[st.places.length - 1];
-    if (st.phase === 'winner' && isK(st)) return { tag: 'Ganó', no: st.winner.no, main: st.winner.name, sub: st.second ? `2.º lugar: ${st.second.name} · ${note(st.second.score, st.second.dec)}` : (st.winner.thing || title(st)), score: st.winner.score, dec: st.winner.dec };
+    if (st.phase === 'winner' && isK(st)) return { tag: 'Ganó', no: st.winner.no, main: st.winner.name, sub: st.second && !celebrating ? `2.º lugar: ${st.second.name} · ${note(st.second.score, st.second.dec)}` : (st.winner.thing || title(st)), score: st.winner.score, dec: st.winner.dec };
     if (st.phase === 'winner') return { tag: 'Ganó', no: st.winner.no, main: st.winner.name, sub: st.winner.thing || '', side: ['🏆', '¡Felicitaciones!'] };
     if (st.phase === 'final' && st.final.drum) return { tag: 'Los finalistas', duel: true, drum: true, sub: '🥁 ¡Redoble de tambores!', side: ['🥁', '¿Quién ganará?'] };
     if (st.phase === 'final') {
@@ -296,7 +298,7 @@
       const box = $('#vg');
       if (!box) return;
       $('#vg-win').innerHTML = celebrating ? winHTML(st) : '';
-      const s = scene(st);
+      const s = scene(st, celebrating);
       // Lista de inscritos: se ve durante el llamado y hasta que empieza la primera votación
       const roster = st.phase === 'voting' && !st.open && !st.onstage && !st.last && !st.drawn && st.players.length
         ? `<div class="vg-list"><small>Inscritos <b>${st.players.length}/${st.max}</b></small>${st.players.map((p) => `<div><p><b>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}</p></div>`).join('')}</div>` : '';
@@ -346,7 +348,7 @@
       if (!st.clockUntil && ticking && clockLeft() > 700) { ticking = 0; clearTimeout(tickTimer); } // el animador las cerró antes de tiempo: sin bocinas
       const box = $('#vf');
       if (!box) return;
-      const s = scene(st);
+      const s = scene(st, celebrating);
       // Sonidos: redoble al revelar un lugar y fanfarria al conocerse quién ganó
       const cue = st.phase === 'winner' ? 'win' : st.phase === 'final' && st.final && st.final.drum ? 'drum' : st.phase === 'results' && st.places.length ? `place${st.places.length}` : '';
       if (!first && cue && cue !== heard) sfx.play(cue === 'win' ? 'win' : cue === 'drum' ? 'drum' : 'hit');
