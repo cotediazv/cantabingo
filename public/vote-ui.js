@@ -46,12 +46,12 @@
     if (!(await isAdmin())) return viewLogin();
     // El Festival y El objeto más extraño son juegos separados (pedido de Cote): #/votoctl/festival o #/votoctl/objeto
     const want = which === 'festival' ? 'karaoke' : which === 'objeto' ? 'objeto' : '';
-    app.innerHTML = `<div id="vc-howto"></div><div class="panel"><h1 style="margin:0" id="vc-h1">${want === 'karaoke' ? '🎤 El Festival' : '🗳️ El objeto más extraño'}</h1>
+    app.innerHTML = `<div id="vc-howto"></div><div class="panel" id="vc-panel"><h1 style="margin:0" id="vc-h1">${want === 'karaoke' ? '🎤 El Festival' : '🗳️ El objeto más extraño'}</h1>
         <label class="f" id="vc-title-wrap" style="margin-top:12px" hidden>Nombre del concurso<input type="text" id="vc-title" maxlength="50" placeholder="Ej.: El objeto más extraño"></label>
         <div id="vc-body" style="margin-top:14px"></div>
       </div>
       ${activitiesNav(want === 'karaoke' ? 'festival' : 'objeto')}
-      <p style="margin-top:14px"><button class="big" id="vc-reset">🗑 Nuevo concurso (borra este)</button></p>`;
+      <details class="vc-more" id="vc-more"><summary>Más opciones</summary><button class="big" id="vc-reset">🗑 Nuevo concurso (borra este)</button></details>`;
     await api('POST', '/api/stage', { show: 'voto' }).catch(fail);
     let st = null;
     let last = '';
@@ -131,6 +131,9 @@
       const htKey = `${st.mode}|${st.max}|${st.venue}`;
       if (ht && ht.dataset.k !== htKey) { const wasOpen = !ht.firstElementChild || ht.firstElementChild.open; ht.dataset.k = htKey; ht.innerHTML = howto(st); ht.firstElementChild.open = wasOpen; }
       if (ht) ht.hidden = st.phase !== 'voting' || st.signup || st.players.length > 0; // las instrucciones, solo al principio
+      // Pedido de Cote (20 nov): con el ganador anunciado desaparece el juego y queda solo lo que viene (el menú)
+      $('#vc-panel').hidden = st.phase === 'winner';
+      window.setNavFold((st.signup || st.players.length > 0) && st.phase !== 'winner');
       if ($('#vc-name')) { $('#vc-name').value = keep; $('#vc-thing').value = keepThing; if (focus) $(focus).focus(); }
       if ($('#vc-add')) $('#vc-add').onsubmit = async (e) => { e.preventDefault(); const name = $('#vc-name').value; const what = $('#vc-thing').value; if (await act('add', { name, thing: what })) { $('#vc-name').value = ''; $('#vc-thing').value = ''; $('#vc-name').focus(); } };
     };

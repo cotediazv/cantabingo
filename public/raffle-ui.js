@@ -7,22 +7,22 @@
     app.innerHTML = `<h1>Sorteo de concursantes</h1>
       <div class="cols">
         <div class="panel">
-          <p class="muted">Elige al azar, entre quienes se unieron al bingo, a las personas que jugarán El Rosco. Cada sorteo se ve en la pantalla de OBS.</p>
-          <p style="margin:14px 0"><button class="primary big" id="rf-draw">🎲 Sortear un concursante</button></p>
+          <p style="margin:14px 0"><button class="primary big rf-main" id="rf-draw">🎲 Sortear un concursante</button></p>
           <h2>Concursantes elegidos</h2>
           <div id="rf-picked" style="margin:10px 0"></div>
           <div class="row">
-            <button class="primary" id="rf-create">✔ Aceptar y cargar El Rosco</button>
+            <button class="primary" id="rf-create" hidden>✔ Aceptar y cargar El Rosco</button>
             <button id="rf-reset">Empezar de nuevo</button>
           </div>
         </div>
-        <div class="panel">
-          <div class="row between"><h2 id="rf-count"></h2><button class="danger" id="rf-clear">Vaciar la lista</button></div>
+        <details class="panel rf-more"><summary id="rf-count"></summary>
           <p class="muted small">Solo entran al sorteo quienes tienen su cartón abierto en este momento (🟢). Los demás (⚪) vuelven a entrar si abren de nuevo la página.</p>
           <div id="rf-people" style="margin-top:10px;max-height:420px;overflow:auto"></div>
-        </div>
+          <p style="margin-top:10px"><button class="danger" id="rf-clear">Vaciar la lista</button></p>
+        </details>
       </div>${BACK_BINGO}`;
     let picked = [];
+    if (typeof paintGameNav === 'function') paintGameNav(); // el menú de juegos (BACK_BINGO) se completa al entrar
     api('POST', '/api/raffle/open').catch(() => {});
     const load = async () => {
       const [r, p] = await Promise.all([api('GET', '/api/raffle'), api('GET', '/api/people')]);
@@ -33,10 +33,17 @@
         || '<p class="muted">Aún no hay nadie. Aparecerán al unirse al bingo.</p>';
       $('#rf-picked').innerHTML = picked.length ? picked.map((n, i) => `<div class="row between" style="padding:8px 0;border-bottom:1px solid var(--line)"><b>${i + 1}. ${esc(n)}</b><span class="row" style="gap:6px"><button data-edit="${esc(n)}">✏️ Editar</button><button data-remove="${esc(n)}">Quitar</button></span></div>`).join('')
         : '<p class="muted">Todavía no has sorteado a nadie.</p>';
-      $('#rf-draw').disabled = picked.length >= 4 || p.connected.filter((n) => !picked.includes(n)).length === 0;
+      // Pedido de Cote (20 nov): un solo botón que avanza: sortear a los 3 concursantes y, con los 3, cargar El Rosco
+      const full = picked.length >= 3;
+      $('#rf-draw').textContent = full ? '✔ Cargar El Rosco con los 3' : `🎲 Sortear concursante (${picked.length + 1}.º de 3)`;
+      $('#rf-draw').dataset.load = full ? '1' : '';
+      $('#rf-draw').disabled = !full && p.connected.filter((n) => !picked.includes(n)).length === 0;
+      $('#rf-create').hidden = full || !picked.length;
+      $('#rf-create').textContent = `✔ Cargar El Rosco con ${picked.length}`;
       $('#rf-create').disabled = !picked.length;
     };
     $('#rf-draw').onclick = async () => {
+      if ($('#rf-draw').dataset.load) { $('#rf-create').click(); return; }
       try { await api('POST', '/api/raffle/draw'); toast('Sorteando en pantalla…'); await load(); } catch (err) { fail(err); }
     };
     // Corregir un nombre mal escrito o inapropiado; el cambio llega también al bingo y al rosco

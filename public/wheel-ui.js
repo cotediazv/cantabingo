@@ -152,7 +152,7 @@
     const act = (action, extra) => api('POST', `/api/wheels/${id}/act`, { action, ...extra }).catch(fail);
     // Para leer al partir (pedido de Cote)
     const HOWTO = window.ROSCO_HOWTO; // en app.js: lo usan también los celulares
-    app.innerHTML = `${window.readAloud ? window.readAloud('El Rosco', HOWTO) : ''}<div class="cols">
+    app.innerHTML = `<div id="rosco-ctl">${window.readAloud ? window.readAloud('El Rosco', HOWTO) : ''}<div class="cols">
         <div class="panel">
           <div class="row between"><div><h1 id="w-name" style="margin:0"></h1><span class="muted" id="w-turn"></span></div><div class="w-letter" id="w-letter"></div></div>
           <div class="w-question" id="w-question"></div>
@@ -185,7 +185,8 @@
       <div class="panel"><h2>Pantalla del público</h2>
         <div class="row between"><div class="small"><b>Enlace para celulares o TV:</b> <a class="link" href="${publicUrl()}" target="_blank">${esc(publicUrl())}</a><br>
           <b>Fuente de navegador para OBS</b> (fondo transparente): <a class="link" href="${obsUrl()}" target="_blank">${esc(obsUrl())}</a><br>
-          <span class="muted">El público ve el rosco, el reloj y el marcador. La pregunta aparece solo mientras el reloj corre; la respuesta, nunca.</span></div>${qr(publicUrl())}</div></div>${BACK_BINGO}<p class="small" style="margin-top:12px"><a href="#/ruedas">Ver todos los roscos</a></p>`;
+          <span class="muted">El público ve el rosco, el reloj y el marcador. La pregunta aparece solo mientras el reloj corre; la respuesta, nunca.</span></div>${qr(publicUrl())}</div></div>${BACK_BINGO}<p class="small" style="margin-top:12px"><a href="#/ruedas">Ver todos los roscos</a></p></div>`;
+    if (typeof paintGameNav === 'function') paintGameNav(); // el menú de juegos (BACK_BINGO) se completa al entrar
     const render = () => {
       const c = st.players[st.turn];
       $('#w-name').textContent = st.name;
@@ -221,6 +222,12 @@
       $('#w-undo').disabled = !st.canUndo;
       $('#w-swap').hidden = st.players.length < 2;
       $('#w-wheels').innerHTML = st.players.map((_, i) => `<div class="wheel-box ${i === st.turn ? 'on' : 'off'}">${wheelSVG(st, i, true)}</div>`).join('');
+      // Pedido de Cote (20 nov): las instrucciones desaparecen al empezar; con el ganador aceptado desaparece el juego y
+      // queda solo lo que viene (ganador de la Trivia, ranking y el menú); mientras se juega, el menú queda plegado
+      const started = !!st.runningSince || st.players.some((p) => p.status.some((x) => x !== 'pending'));
+      $('#rosco-ctl').classList.toggle('rosco-started', started);
+      $('#rosco-ctl').classList.toggle('rosco-done', !!st.winAccepted);
+      window.setNavFold(started && !st.winAccepted);
     };
     const toggleClock = () => { if (stepOf(st) === 2) act('start'); };
     app.onclick = (e) => {
