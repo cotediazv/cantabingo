@@ -279,7 +279,10 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     const w = find(req, res);
     if (!w) return;
     const table = standings(w);
-    res.json({ players: table.length, final: !!((w.crowd || {}).winner || winnerOf(w) >= 0), list: table.slice(0, 400).map((t) => ({ name: t.name, score: t.score })) });
+    // Antes de empezar (pedido de Cote): todos los que están en la sala, para mostrar la cantidad de gente con sus nombres
+    const sala = Object.values(db.sessions || {})[0];
+    const people = sala ? Object.values(sala.players || {}).map((x) => x.name).filter(Boolean).slice(0, 600) : [];
+    res.json({ players: table.length, final: !!((w.crowd || {}).winner || winnerOf(w) >= 0), list: table.slice(0, 400).map((t) => ({ name: t.name, score: t.score })), people });
   });
 
   // Rosco en línea: puntaje y puesto de una persona del público, y lo que ya respondió

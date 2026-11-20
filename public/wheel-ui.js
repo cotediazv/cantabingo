@@ -383,14 +383,26 @@
         }
         return out;
       };
+      // Antes de empezar: «¡Pronto! Ya comenzamos» y la lista de todos los que están en la sala, en muchas columnas, de a
+      // 80 por página (pedido de Cote: que se vea la cantidad de gente que participa)
+      const PEOPLE_PAGE = 80;
+      const peopleHTML = () => {
+        const all = data.people || [];
+        const pages = Math.max(1, Math.ceil(all.length / PEOPLE_PAGE));
+        const pg = page % pages;
+        const part = all.slice(pg * PEOPLE_PAGE, pg * PEOPLE_PAGE + PEOPLE_PAGE);
+        return `<div class="rv-soon small"><b>¡Pronto!</b><span>Ya comenzamos</span></div>
+          <div class="rv-people"><small>${all.length} ${all.length === 1 ? 'persona participando' : 'personas participando'}${pages > 1 ? ` · ${pg + 1} de ${pages}` : ''}</small>
+            <ul style="--rows:${Math.max(1, Math.ceil(part.length / 3))}">${part.map((n) => `<li>${esc(n)}</li>`).join('')}</ul></div>`;
+      };
       const html = (from, chunk, pages) => {
         const top = data.list.slice(0, 5);
         // Sin QR en la pantalla vertical (pedido de Cote). Si todavía nadie juega: «¡Pronto! Ya comenzamos»
-        return `<div class="rv-rank"><header class="rv-head"><div class="rv-title"><b>Resultados</b><span>La Trivia del Rosco</span><small>${data.players} ${data.players === 1 ? 'persona jugando' : 'personas jugando'}</small></div></header>
+        return `<div class="rv-rank"><header class="rv-head"><div class="rv-title"><b>Resultados</b><span>La Trivia del Rosco</span>${top.length ? `<small>${data.players} ${data.players === 1 ? 'persona jugando' : 'personas jugando'}</small>` : ''}</div></header>
           ${top.length ? `<ol class="rv-top">${top.map((t, i) => `<li><em>${i + 1}</em><b>${esc(t.name)}</b><i>${t.score} pts</i></li>`).join('')}</ol>
           <div class="rv-rest" style="--cols:${cols()}">${colsOf(chunk, from)}</div>
           <footer class="rv-pages">${pages > 1 ? `Puestos ${from + 6} al ${from + 5 + chunk.length} · página ${page + 1} de ${pages}` : ''}</footer>`
-    : '<div class="rv-soon"><b>¡Pronto!</b><span>Ya comenzamos</span></div>'}</div>`;
+    : peopleHTML()}</div>`;
       };
       const fitNames = () => {
         $$('.rv-top b, .rv-col b').forEach((b) => {
