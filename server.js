@@ -612,13 +612,20 @@ app.get('/api/sessions/:sid/events', (req, res) => {
 // Pantalla única de OBS: qué gráfica se muestra ahora. Cambia sola al activar un bingo,
 // crear un rosco o lanzar un sorteo; el moderador también puede cambiarla a mano.
 const STAGES = ['bingo', 'rueda', 'sorteo', 'qr', 'karaoke', 'show', 'voto', 'insta', 'none'];
+// Pedido de Cote: el juego que está en actividad tiene prioridad. Mientras haya un rosco en juego, la pantalla queda en
+// El Rosco aunque se apriete otra cosa (un botón del bingo, el escenario a mano o el karaoke automático); al terminar
+// el rosco (ganador, empate o se acabó), todo vuelve a funcionar como siempre. Devuelve false si no se cambió.
+let roscoRef = null; // El Rosco (wheel.js), una vez cargado
+const roscoLock = (show) => show !== 'rueda' && !!roscoRef && roscoRef.inPlay();
 const setStage = (show) => {
+  if (roscoLock(show)) { if (db.stage !== 'rueda') { db.stage = 'rueda'; save(); for (const s of Object.values(db.sessions)) broadcast(s); } return false; }
   const changed = db.stage !== show;
   db.stage = show;
   save();
   if (changed) for (const s of Object.values(db.sessions)) broadcast(s); // los celulares se enteran del cambio de juego
 };
 const wheel = require('./wheel.js')({ app, db, save, requireAdmin, fail, setStage, findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null });
+roscoRef = wheel;
 // Tras corregir un nombre, se vuelve a enviar el estado a todas las pantallas abiertas
 const refreshAll = () => { Object.values(db.sessions).forEach((s) => broadcast(s)); wheel.refresh(); };
 // Nombres de quienes tienen su cartón abierto en este momento (conexión en vivo activa)
@@ -674,11 +681,11 @@ app.get('/api/consola', requireAdmin, async (_req, res) => {
 require('./agenda.js')({ app, db, save, requireAdmin, fail, currentVenue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
 
 // Leer la pantalla actual es público, para que la fuente de OBS no necesite iniciar sesión; cambiarla es del moderador.
-app.get('/api/stage', (_req, res) => res.json({ show: STAGES.includes(db.stage) ? db.stage : 'bingo' }));
+app.get('/api/stage', (_req, res) => res.json({ show: roscoLock(db.stage) ? 'rueda' : STAGES.includes(db.stage) ? db.stage : 'bingo' }));
 app.post('/api/stage', requireAdmin, (req, res) => {
   const show = String((req.body || {}).show);
   if (!STAGES.includes(show)) return fail(res, 400, 'Opción no válida');
-  setStage(show);
+  if (setStage(show) === false) return fail(res, 409, 'El Rosco está en juego: la pantalla sigue en El Rosco hasta que termine la partida');
   if (show === 'karaoke') karaoke.refresh(); // primera lectura inmediata, sin esperar al siguiente ciclo
   res.json({ show });
 });
@@ -695,6 +702,7 @@ setInterval(() => {
   if (p.weekday !== AUTO_KARAOKE.dow || min < AUTO_KARAOKE.from || min >= AUTO_KARAOKE.until || db.autoKaraoke === day) return;
   const s = Object.values(db.sessions)[0];
   if (!s || s.theme !== AUTO_KARAOKE.venue) return;
+  if (roscoLock('karaoke')) return; // con El Rosco en juego se espera a que termine (hasta las 22:00)
   db.autoKaraoke = day;
   if (db.stage !== 'karaoke') { setStage('karaoke'); karaoke.refresh(); console.log('Escenario a Karaoke automático (jueves 21:45, Kennedy)'); }
   save();

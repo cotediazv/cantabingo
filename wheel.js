@@ -401,6 +401,10 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
   });
 
   api.refresh = () => Object.values(db.wheels).forEach(broadcast);
+  // ¿Hay un rosco en juego? (empezó, alguien sigue jugando y todavía no hay ganador). Mientras lo hay, la pantalla
+  // queda en El Rosco aunque se apriete otra cosa (pedido de Cote, tras sacarlo de pantalla sin querer con un botón del bingo)
+  api.inPlay = () => Object.values(db.wheels).some((w) => w.players && w.players.some(active) && winnerOf(w) < 0
+    && (w.runningSince || w.players.some((c) => c.status.some((x) => x !== 'pending'))));
   // Borra roscos: todos, o solo los creados antes de cierta fecha. Corta sus conexiones y relojes.
   api.clear = (before = Infinity) => {
     let removed = 0;
