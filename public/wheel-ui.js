@@ -367,7 +367,7 @@
         const gone = () => {
           wonBy = `${key}|gone`;
           $('#pw').innerHTML = full ? `<div id="fb"><div class="fb-idle"><b><i>KRB Stage</i> Sala de juegos</b><div class="fb-idle-qr">${qr(joinUrl())}</div>
-            <small>Escanea el código QR y prepárate</small></div></div>` : '';
+            <small>Escanea el código QR con tu celular y prepárate</small></div></div>` : '';
         };
         if (left <= 0) { if (wonBy !== `${key}|gone`) gone(); return; }
         winTimer = setTimeout(gone, left);
@@ -393,7 +393,7 @@
         const cleared = () => {
           wonBy = st.winner.name + '|gone';
           $('#pw').innerHTML = full ? `<div id="fb"><div class="fb-idle"><b><i>KRB Stage</i> Sala de juegos</b><div class="fb-idle-qr">${qr(joinUrl())}</div>
-            <small>Escanea el código QR y prepárate</small></div></div>` : '';
+            <small>Escanea el código QR con tu celular y prepárate</small></div></div>` : '';
         };
         clearTimeout(winTimer);
         if (left <= 0) { if (wonBy !== st.winner.name + '|gone') cleared(); return; }
