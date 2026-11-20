@@ -2240,3 +2240,10 @@ body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "So
 .games-nav .g-plan .g-slots { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; }
 .games-nav .g-plan .g-slots span { display: block; text-align: left; }
 .games-nav .g-plan { display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: center; }
+
+/* Sorteo de juegos en dos pasos: juegos que pueden salir (pantalla) y aviso de elección directa (panel) */
+.jd-opts { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.6vh 2vw; margin: 2vh 0 1vh; }
+.jd-opts span { padding: 1.4vh 2.4vw; border-radius: 2vh; font-size: 4.2vh; font-weight: 900; background: rgba(255, 196, 0, .12); border: .4vh solid #ffc400; }
+.g-direct { margin: 0; text-align: center; font-weight: 800; color: #ffc400; }
+.games-nav.g-ready [data-game] { border-color: #ffc400; }
+.games-nav.g-ready .g-draw { background: #ffc400; color: #1a1a1a; }

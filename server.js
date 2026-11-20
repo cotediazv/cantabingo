@@ -228,7 +228,7 @@ function closeSession(s) {
 // Se hace al cerrarse la sala (a mano o a las 8 horas) y al crear una nueva.
 function resetEvent() {
   db.people = {};
-  db.gameDraw = { played: [], last: null, rule2: true, total: (db.gameDraw || {}).total || 3, list: [] }; // sorteo del siguiente juego: parte de cero en cada sala
+  db.gameDraw = { played: [], last: null, rule2: true, total: (db.gameDraw || {}).total || 3, list: [], ready: null }; // sorteo del siguiente juego: parte de cero en cada sala
   db.raffle = { picked: [], roll: null };
   wheel.clear();
   vote.clear();
@@ -720,6 +720,29 @@ app.post('/api/gamedraw/total', requireAdmin, (req, res) => {
   save();
   res.json(db.gameDraw);
 });
+// Sorteo en dos pasos (pedido de Cote, 20 nov): 1) «Iniciar sorteo de juegos»: las pantallas muestran los juegos que
+// pueden salir; 2) «Girar la tómbola». Entre los dos, el animador puede elegir un juego directo, sin tómbola
+// (/api/gamedraw/pick): ese juego queda como el siguiente número de la noche.
+app.post('/api/gamedraw/ready', requireAdmin, (_req, res) => {
+  const g = db.gameDraw;
+  if (g.list.length >= g.total) return fail(res, 409, `Ya se sortearon los ${g.total} juegos de la noche`);
+  g.ready = { at: Date.now(), pool: DRAW_GAMES.filter((x) => !(g.last && g.last.game === x)) };
+  save();
+  if (setStage('juego') === false) return fail(res, 409, 'El Rosco está en juego: el sorteo se verá cuando termine la partida');
+  res.json(db.gameDraw);
+});
+app.post('/api/gamedraw/pick', requireAdmin, (req, res) => {
+  const g = db.gameDraw;
+  const game = String((req.body || {}).game);
+  if (!DRAW_GAMES.includes(game)) return fail(res, 400, 'Juego no válido');
+  if (g.list.length >= g.total) return fail(res, 409, `Ya se sortearon los ${g.total} juegos de la noche`);
+  g.played = [game]; g.list.push(game); g.ready = null;
+  g.last = { game, pool: [game], at: Date.now(), direct: true };
+  if (game === 'festival' || game === 'objeto') vote.start(game === 'festival' ? 'karaoke' : 'objeto');
+  save();
+  setStage('juego');
+  res.json(db.gameDraw);
+});
 app.post('/api/gamedraw', requireAdmin, (_req, res) => {
   const g = db.gameDraw;
   if (g.list.length >= g.total) return fail(res, 409, `Ya se sortearon los ${g.total} juegos de la noche`);
@@ -727,6 +750,7 @@ app.post('/api/gamedraw', requireAdmin, (_req, res) => {
   const game = pool[crypto.randomInt(pool.length)];
   g.played = [game]; // bloqueado solo para el sorteo siguiente
   g.list.push(game); // queda en su número (1.º, 2.º…) en la pantalla
+  g.ready = null;
   g.last = { game, pool, at: Date.now() };
   if (game === 'festival' || game === 'objeto') vote.start(game === 'festival' ? 'karaoke' : 'objeto'); // la votación queda lista con su título
   save();

@@ -1366,6 +1366,7 @@ function activitiesNav(current) {
   setTimeout(paintGameNav, 0);
   return `<div class="act-nav games-nav"><div class="g-plan"><div class="g-slots"></div><label>¿Cuántos juegos vamos a sortear?<input type="number" class="g-total" min="1" max="10" value="3"></label></div>
     <button type="button" class="primary big g-draw" data-game-draw>🎲 Sortear juego</button>
+    <p class="g-direct" hidden>…o toca un juego para elegirlo directo, sin tómbola</p>
     <small>Juegos</small><div>${games.map(([k, h]) => (k === current ? h.replace(/data-game="/, 'aria-current="true" data-game="') : h)).join('')}</div>
     <small>Otras actividades</small><div>${more.filter(([k]) => k !== current).map(([, h]) => h).join('')}</div></div>`;
 }
@@ -1382,7 +1383,11 @@ async function paintGameNav() {
   for (let i = 0; i < g.total; i++) slots.push(g.list[i] ? `<span class="done">${i + 1}.º · ${info[g.list[i]].icon} ${esc(info[g.list[i]].name)}</span>` : `<span>${i + 1}.º · 🔒</span>`);
   document.querySelectorAll('.g-slots').forEach((el) => { el.innerHTML = slots.join(''); });
   const full = g.list.length >= g.total;
-  document.querySelectorAll('[data-game-draw]').forEach((b) => { b.disabled = full; b.textContent = full ? `✔ Ya se sortearon los ${g.total} juegos` : `🎲 Sortear el ${g.list.length + 1}.º juego (de ${g.total})`; });
+  const ready = !full && !!g.ready && (!g.last || g.ready.at > g.last.at);
+  window.gameDrawReady = ready;
+  document.querySelectorAll('.games-nav').forEach((n) => n.classList.toggle('g-ready', ready));
+  document.querySelectorAll('[data-game-draw]').forEach((b) => { b.disabled = full; b.textContent = full ? `✔ Ya se sortearon los ${g.total} juegos` : ready ? `🎰 Girar la tómbola · ${g.list.length + 1}.º juego` : `🎲 Iniciar sorteo del ${g.list.length + 1}.º juego (de ${g.total})`; });
+  document.querySelectorAll('.g-direct').forEach((el) => { el.hidden = !ready; });
 }
 document.addEventListener('change', async (e) => {
   if (!e.target.classList || !e.target.classList.contains('g-total')) return;
@@ -1394,12 +1399,33 @@ document.addEventListener('click', async (e) => {
   if (!b || b.disabled) return;
   b.disabled = true;
   try {
+    if (!window.gameDrawReady) { // primer clic: las pantallas muestran los juegos que pueden salir
+      await api('POST', '/api/gamedraw/ready');
+      toast('En pantalla: los juegos que pueden salir. Ahora gira la tómbola o elige un juego directo.');
+      await paintGameNav();
+      return;
+    }
     const g = await api('POST', '/api/gamedraw');
+    window.gameDrawReady = false;
     const info = GAME_INFO((await api('GET', '/api/gamedraw')).venue)[g.last.game];
     toast(`🎲 Se está sorteando en pantalla… Salió: ${info.icon} ${info.name}`);
     setTimeout(() => { if (g.last.game === 'bingo') backToBingo(); else location.hash = info.href; }, 6000); // cuando termina la tómbola en pantalla, el panel pasa a ese juego
   } catch (err) { fail(err); b.disabled = false; }
 });
+// Elegir un juego directo (pedido de Cote): después de «Iniciar sorteo de juegos», tocar un juego del menú lo deja como
+// el siguiente de la noche, sin tómbola; el panel pasa a ese juego
+document.addEventListener('click', async (e) => {
+  const el = e.target.closest('.games-nav [data-game]');
+  if (!el || !window.gameDrawReady) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  try {
+    const g = await api('POST', '/api/gamedraw/pick', { game: el.dataset.game });
+    window.gameDrawReady = false;
+    const info = GAME_INFO((await api('GET', '/api/gamedraw')).venue)[g.last.game];
+    toast(`Siguiente juego: ${info.icon} ${info.name}`);
+    if (g.last.game === 'bingo') backToBingo(); else location.hash = info.href;
+  } catch (err) { fail(err); }
+}, true);
 const BACK_BINGO = activitiesNav('rosco');
 // Sorteo del siguiente juego en pantalla: tómbola con los juegos disponibles y, al final, el que salió en grande;
 // abajo, todos los juegos (los que ya salieron, marcados). kind: 'full' (tablero) o 'gc' (OBS)
@@ -1409,15 +1435,15 @@ views.juegoDraw = async (kind) => {
   let shownAt = 0; let timer = null; let alive = true;
   const paint = (g) => {
     const box = $('#jd');
-    if (!box || !g.last) { if (box) box.innerHTML = ''; return; }
+    const ready = g.ready && (!g.last || g.ready.at > g.last.at);
+    if (!box || (!g.last && !ready)) { if (box) box.innerHTML = ''; return; }
     const info = GAME_INFO(g.venue);
-    const win = info[g.last.game];
-    const pool = g.last.pool.map((k) => info[k]);
     // Casilleros de la noche (pedido de Cote): juego inicial y 1.º, 2.º… sorteados; los que ya salieron quedan bloqueados
     // con su juego; el que se está sorteando gira; los que faltan, con candado
     const listOf = (rolling) => {
       const cells = [`<span class="done"><small>Juego inicial</small>${info.bingo.icon} Bingo</span>`];
       for (let i = 0; i < g.total; i++) {
+        if (ready && i === g.list.length) { cells.push(`<span class="now"><small>${i + 1}.º juego</small>🎲 …</span>`); continue; }
         const k = g.list[i]; const cur = i === g.list.length - 1;
         cells.push(!k ? `<span class="todo"><small>${i + 1}.º juego</small>🔒</span>`
           : cur ? `<span class="${rolling ? 'now' : 'on'}"><small>${i + 1}.º juego</small>${rolling ? '🎲 …' : `${info[k].icon} ${esc(info[k].name)}`}</span>`
@@ -1425,8 +1451,15 @@ views.juegoDraw = async (kind) => {
       }
       return `<div class="jd-list jd-slots">${cells.join('')}</div>`;
     };
+    if (ready) {
+      // paso 1: los juegos que pueden salir
+      box.innerHTML = `<div class="jd-card"><small>🎲 Sorteo del ${g.list.length + 1}.º juego</small><div class="jd-opts">${g.ready.pool.map((k) => `<span>${info[k].icon} ${esc(info[k].name)}</span>`).join('')}</div>${listOf(true)}</div>`;
+      return;
+    }
+    const win = info[g.last.game];
+    const pool = g.last.pool.map((k) => info[k]);
     const nth = `${g.list.length}.º juego`;
-    const left = ROLL_MS - (Date.now() + (g.offset || 0) - g.last.at);
+    const left = g.last.direct ? 0 : ROLL_MS - (Date.now() + (g.offset || 0) - g.last.at); // elegido directo: sin tómbola
     if (left > 0) {
       // tómbola: pasan los juegos disponibles cada vez más lento
       box.innerHTML = `<div class="jd-card"><small>🎲 Sorteo del ${nth}</small><b class="jd-roll"></b>${listOf(true)}</div>`;
@@ -1444,7 +1477,7 @@ views.juegoDraw = async (kind) => {
     const g = await api('GET', '/api/gamedraw').catch(() => null);
     if (!alive || !g) return;
     g.offset = g.now - Date.now(); // diferencia de reloj con el servidor
-    const key = JSON.stringify([g.last && g.last.at, g.played, g.total, g.list]);
+    const key = JSON.stringify([g.last && g.last.at, g.played, g.total, g.list, g.ready && g.ready.at]);
     if (key === last) return;
     last = key;
     clearTimeout(timer);

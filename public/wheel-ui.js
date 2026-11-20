@@ -97,7 +97,7 @@
     app.innerHTML = `<p class="back"><a href="#/ruedas">← Roscos</a></p><h1>Nuevo rosco</h1>
       <form class="panel fields" id="wf">
         <label class="f">Nombre<input type="text" name="name" maxlength="50" placeholder="Rosco del viernes"></label>
-        <label class="f">Segundos por concursante <span class="hint">20 a 900</span><input type="number" name="seconds" min="20" max="900" value="150"></label>
+        <label class="f">Segundos por concursante <span class="hint">20 a 900</span><input type="number" name="seconds" min="20" max="900" value="90"></label>
         <label class="f wide">Letras del rosco <span class="hint">en el orden en que giran</span><input type="text" name="letters" maxlength="40" value="${DEFAULT_LETTERS}"></label>
         <label class="f wide">Concursantes <span class="hint">uno por línea, de 1 a 4; cada uno tiene su rosco y su reloj</span><textarea name="players" style="min-height:90px">Concursante 1</textarea></label>
         <label class="f">Preguntas<select name="source"><option value="bank">Automáticas, del banco de preguntas</option><option value="own">Las escribo yo</option></select></label>
@@ -363,7 +363,7 @@
       flip = !flip;
       // El ritmo sube de forma pareja: 1 tic por segundo con el tiempo completo, hasta 5 por segundo
       // cuando quedan 5 segundos, y así se mantiene hasta el final.
-      const total = Math.max(6, st.seconds || 150) * 1000;
+      const total = Math.max(6, st.seconds || 90) * 1000;
       const rate = left <= 5000 ? 5 : 1 + 4 * Math.min(1, Math.max(0, (total - left) / (total - 5000)));
       const gap = 1000 / rate;
       tickTimer = setTimeout(tickLoop, Math.min(gap, left + 30));
