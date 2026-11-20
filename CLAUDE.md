@@ -15,6 +15,8 @@ Sitio: https://cantabingo.onrender.com · Render (plan Starter, disco de 1 GB) �
 - Paneles simples. Lo que el animador lee en voz alta va grande y destacado.
 - **Nombres siempre completos** (regla de Cote, 20 nov): nombre y apellido(s) se ven enteros en pantallas, GC y listas; si no caben en la línea, se achica la letra, nunca se cortan con «…».
 - En el celular del público, la transmisión en vivo va **siempre abajo** de los juegos y KRB Kids debajo del video.
+- **Sin información duplicada en pantalla** (pedido de Cote, 20 nov): lo que ya dice la franja de arriba o la etiqueta no se repite abajo.
+- **Aviso de KRB Kids** en las pantallas del local (body.full; no en GC ni celulares): cada 3 min durante 12 s, «KRB Kids · Juegos para niños dentro de la plataforma» (`#kids-ad` en `app.js`).
 - Estética: mantener el aspecto nuevo de la Sala de juegos. Colores del bingo: Frida magenta, Kennedy celeste, Tobalaba rojo.
 - La sala se llama "Los Juegos de <local>"; dentro del bingo el título es "El Bingo de <local>".
 - Las claves del moderador son variables de entorno en Render (`ADMIN_USER`, `ADMIN_PASS`). **Nunca escribirlas en este repositorio, que es público.**

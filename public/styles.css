@@ -2152,3 +2152,14 @@ body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "So
 .vk-list li { font-size: 3.4vh; font-weight: 900; line-height: 1.15; text-transform: uppercase; white-space: nowrap; color: #fff; text-shadow: .25vh .25vh 0 rgba(0, 0, 0, .35); }
 .vk-card .vk-list { margin: 0; }
 .vk-card .vk-list li { font-size: 3vh; }
+
+/* Aviso de KRB Kids en las pantallas del local (pedido de Cote) */
+#kids-ad { position: fixed; left: 2vw; bottom: 3vh; z-index: 40; display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; column-gap: 1.4vh; align-items: center;
+  padding: 1.2vh 2.4vh; border-radius: 99px; background: #fff; border: .5vh solid #ffbe0b; box-shadow: 0 1vh 3vh rgba(0, 0, 0, .45);
+  transform: translateY(160%); opacity: 0; transition: transform .6s cubic-bezier(.2, 1.4, .4, 1), opacity .4s; pointer-events: none; }
+#kids-ad.on { transform: none; opacity: 1; }
+#kids-ad .ka-balloons { grid-row: 1 / 3; font-size: 4.6vh; line-height: 1; }
+#kids-ad b { font-family: Fredoka, "Baloo 2", system-ui, sans-serif; font-size: 4vh; font-weight: 700; line-height: 1; letter-spacing: .02em; }
+#kids-ad b i { font-style: normal; text-shadow: 0 .3vh 0 rgba(0, 0, 0, .15); }
+#kids-ad small { font-size: 2vh; font-weight: 800; color: #333; line-height: 1.1; }
+@media (prefers-reduced-motion: reduce) { #kids-ad { transition: none; } }

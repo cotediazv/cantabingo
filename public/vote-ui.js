@@ -213,7 +213,7 @@
   const scene = (st) => {
     const lastPlace = st.places[st.places.length - 1];
     if (st.phase === 'winner' && isK(st)) return { tag: 'Ganó', no: st.winner.no, main: st.winner.name, sub: st.second ? `2.º lugar: ${st.second.name} · ${note(st.second.score, st.second.dec)}` : (st.winner.thing || title(st)), score: st.winner.score, dec: st.winner.dec };
-    if (st.phase === 'winner') return { tag: 'Ganó', no: st.winner.no, main: st.winner.name, sub: st.winner.thing || title(st), side: ['🏆', '¡Felicitaciones!'] };
+    if (st.phase === 'winner') return { tag: 'Ganó', no: st.winner.no, main: st.winner.name, sub: st.winner.thing || '', side: ['🏆', '¡Felicitaciones!'] };
     if (st.phase === 'final' && st.final.drum) return { tag: 'Los finalistas', duel: true, drum: true, sub: '🥁 ¡Redoble de tambores!', side: ['🥁', '¿Quién ganará?'] };
     if (st.phase === 'final') {
       return st.final.open ? { tag: 'Gran final', duel: true, sub: 'Elige en tu celular a quién quieres que gane', clock: 'Vota ahora', qr: true }
@@ -221,19 +221,19 @@
     }
     if (st.phase === 'results') {
       return lastPlace ? { tag: 'Resultados', no: lastPlace.no, main: lastPlace.name, sub: lastPlace.thing ? `${ord(lastPlace.place)} · ${lastPlace.thing}` : ord(lastPlace.place), score: lastPlace.score, dec: lastPlace.dec }
-        : { tag: 'Resultados', main: title(st), sub: 'Vamos desde el último lugar hasta la gran final', side: ['🏁', `${st.players.length} participantes`] };
+        : { tag: 'Resultados', main: 'Vamos desde el último lugar', sub: 'hasta la gran final', side: ['🏁', `${st.players.length} participantes`] };
     }
     if (st.open) return { tag: 'Votación abierta', no: st.open.no, main: st.open.name, featured: !!st.open.thing, sub: st.open.thing || 'Pon tu nota del 1 al 10 desde tu celular', clock: 'Vota del 1 al 10', qr: true };
-    if (st.drawn) return { tag: 'Sorteo de participantes', main: '🎲 ¡Ellos cantan!', sub: `${st.drawn.length} participantes`, list: st.drawn, side: ['🎤', `${st.drawn.length} participantes`] };
-    if (st.last && st.sample && st.sample.length) return { tag: 'Notas del público', no: st.last.no, main: st.last.name, sub: 'Algunas notas que puso el público', notes: true };
+    if (st.drawn) return { tag: 'Sorteo de participantes', main: '🎲 ¡Ellos cantan!', sub: 'Prepárense para subir al escenario', list: st.drawn, side: ['🎤', `${st.drawn.length} cantan`] };
+    if (st.last && st.sample && st.sample.length) return { tag: 'Notas del público', no: st.last.no, main: st.last.name, sub: st.last.thing || '', notes: true };
     if (st.last) {
       const next = st.players.find((p) => !p.done);
-      return { tag: 'Votación cerrada', no: st.last.no, main: st.last.name, sub: '✔ Votación recibida', side: next ? ['Sigue', `N.º ${next.no} · ${next.name}`] : ['🏁', 'Ya vienen los resultados'] };
+      return { tag: 'Votación cerrada', no: st.last.no, main: st.last.name, sub: st.last.thing || '¡Gracias por votar!', side: next ? ['Sigue', `N.º ${next.no} · ${next.name}`] : ['🏁', 'Ya vienen los resultados'] };
     }
-    if (st.signup) return { tag: 'Inscripciones abiertas', main: title(st), sub: isK(st) ? '¿Quieres cantar? Inscríbete desde tu celular con tu canción' : '¿Quieres participar? Inscríbete desde tu celular', clock: 'Tiempo', qr: true };
+    if (st.signup) return { tag: 'Inscripciones abiertas', main: isK(st) ? '¿Quieres cantar?' : '¿Quieres participar?', sub: isK(st) ? 'Inscríbete desde tu celular con tu canción y el artista' : 'Inscríbete desde tu celular', clock: 'Tiempo', qr: true };
     // Instrucciones del festival (pedido de Cote)
-    if (isK(st)) return { tag: 'Cómo se juega', main: title(st), sub: `Elegimos ${st.max} personas para cantar. Las canciones serán cortas en pro del tiempo.`, side: ['🎤', 'Vota del 1 al 10'], qr: true };
-    return { tag: 'Votación del público', main: title(st), sub: 'Prepárate para votar', side: ['Vota', 'Desde tu celular'], qr: true };
+    if (isK(st)) return { tag: 'Cómo se juega', main: `Elegimos ${st.max} personas para cantar`, sub: 'Las canciones serán cortas en pro del tiempo', side: ['🎤', 'Nota del 1 al 10'], qr: true };
+    return { tag: 'Votación del público', main: 'Prepárate para votar', sub: 'Pon tu nota del 1 al 10 desde tu celular', side: ['🗳️', '1 al 10'], qr: true };
   };
 
   // GC de OBS: zócalo abajo, para no tapar a quien está en cámara
@@ -254,7 +254,7 @@
       const html = celebrating ? '' : `${s.notes ? `<div class="vk-card">${notesHTML(st, 'vk-notes')}</div>` : ''}${s.list ? `<div class="vk-card"><ol class="vk-list">${s.list.map((x) => `<li>${esc(x)}</li>`).join('')}</ol></div>` : ''}${roster}${s.qr || true ? `<div class="vg-qr">${qr(joinUrl())}<b>Si no has participado, escanea el código QR con tu celular y únete a la sesión</b></div>` : ''}
         <div class="vg-bar">
           <div class="vg-tag"><small>${esc(title(st))}</small><b>${icon(st)} ${esc(s.tag)}</b></div>
-          <div class="vg-main ${s.featured ? 'featured' : ''}">${s.duel ? `<b class="vg-duel" ${n(st.final.players.map((p) => `${p.name}...`).join(' vs '))}>${versus(st)}</b>` : `<b ${n(s.no ? `${s.main}...` : s.main)}>${badge(s.no)}${esc(s.main)}</b>`}<span ${n(s.sub)}>${esc(s.sub)}</span></div>
+          <div class="vg-main ${s.featured ? 'featured' : ''}">${s.duel ? `<b class="vg-duel" ${n(st.final.players.map((p) => `${p.name}...`).join(' vs '))}>${versus(st)}</b>` : `<b ${n(s.no ? `${s.main}...` : s.main)}>${badge(s.no)}${esc(s.main)}</b>`}${s.sub ? `<span ${n(s.sub)}>${esc(s.sub)}</span>` : ''}</div>
           ${s.notes ? '<div class="vg-side"><small>Notas</small><b>8 s</b></div>' : s.clock ? `<div class="vg-side score"><small>${esc(s.clock)}</small><b class="v-clock">${clockText()}</b></div>` : s.score != null ? `<div class="vg-side score"><small>Nota</small><b>${note(s.score, s.dec)}</b></div>` : `<div class="vg-side"><small ${n(s.side[0])}>${esc(s.side[0])}</small><b ${n(s.side[1])}>${esc(s.side[1])}</b></div>`}
         </div>`;
       clearTimeout(swap);
@@ -308,7 +308,7 @@
       box.innerHTML = `${celebrating ? winHTML(st) : ''}
         <header class="vf-top"><b>${esc(title(st))}</b><span>${icon(st)} ${esc(s.tag)}</span></header>
         <section class="vf-main ${s.featured ? 'featured' : ''}">${st.signup ? `<small>¿Quieres participar?</small><b class="v-clock vf-clock">${clockText()}</b><span style="--n:28">Inscríbete desde tu celular</span>`
-    : `<small ${n(s.sub)}>${esc(s.sub)}</small>
+    : `${s.sub ? `<small ${n(s.sub)}>${esc(s.sub)}</small>` : ''}
           ${s.duel ? `<b class="vg-duel" ${n(st.final.players.map((p) => `${p.name}...`).join(' vs '))}>${versus(st)}</b>` : `<b ${n(s.no ? `${s.main}...` : s.main)}>${badge(s.no)}${esc(s.main)}</b>`}
           ${s.list ? `<ol class="vk-list">${s.list.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>` : s.notes ? notesHTML(st, 'vk-notes big') : s.clock ? `<i class="v-clock">${clockText()}</i>` : s.score != null ? `<i>${s.tag === 'Ganó' ? 'Puntaje' : 'Nota'} ${note(s.score, s.dec)}</i>` : s.side ? `<span ${n(s.side[1])}>${esc(s.side[1])}</span>` : ''}`}</section>
         <aside class="vf-side">

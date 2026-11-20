@@ -1505,6 +1505,20 @@ setTimeout(syncVenueMark, 700);
 // Fondo de neuronas en las pantallas de las actividades (pedido de Cote: el mismo efecto del fondo de la página
 // web krbstage.cl). Puntos de colores que se mueven lento, unidos por líneas finas, con impulsos que viajan
 // de un punto a otro cercano. Va encima del fondo de colores y debajo de todo lo demás; solo en el tablero.
+// Aviso de KRB Kids (pedido de Cote): en las pantallas del local (no en el GC de OBS ni en los celulares) aparece cada
+// 3 minutos durante 12 segundos «KRB Kids · Juegos para niños dentro de la plataforma»
+(() => {
+  const EVERY_MS = 180000; const SHOW_MS = 12000;
+  const word = [...'KRB Kids'].map((ch, i) => (ch === ' ' ? ' ' : `<i style="color:${['#ff5fa2', '#ffbe0b', '#2bb24c', '#3a86ff', '#ff5fa2', '#ffbe0b', '#2bb24c', '#3a86ff'][i % 8]}">${ch}</i>`)).join('');
+  const show = () => {
+    if (!document.body.classList.contains('full') || /^#\/kids/.test(location.hash)) return;
+    let el = document.getElementById('kids-ad');
+    if (!el) { el = document.createElement('div'); el.id = 'kids-ad'; el.setAttribute('aria-hidden', 'true'); el.innerHTML = `<span class="ka-balloons">🎈🎈</span><b>${word}</b><small>Juegos para niños dentro de la plataforma</small>`; document.body.appendChild(el); }
+    el.classList.add('on');
+    setTimeout(() => el.classList.remove('on'), SHOW_MS);
+  };
+  setTimeout(() => { show(); setInterval(show, EVERY_MS); }, 60000); // el primero al minuto de abrir la pantalla
+})();
 const neuralBg = (() => {
   // Pedido de Cote (20 nov): el efecto de neuronas de krbstage.cl, más visible y con los colores del local, de fondo en las
   // pantallas (body.full) y, en el GC de OBS (body.obs), solo dentro de los recuadros (nunca sobre la cámara ni sobre el QR).
