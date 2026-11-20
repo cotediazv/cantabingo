@@ -141,6 +141,8 @@
   // «Resultados finales» cuando ya se mostró al ganador (pedido de Cote); antes, «Resultados parciales»
   const rankHTML = (st, cls) => `<div class="${cls}"><div class="${cls}-head"><small>Trivia del Rosco · Top 10</small><b>🏅 ${st.crowdWinner || st.winner ? 'Resultados finales' : 'Resultados parciales'}</b><span>${st.rankPlayers} ${st.rankPlayers === 1 ? 'persona jugando' : 'personas jugando'}</span></div>
     ${st.rank.length ? `<ol>${st.rank.map((t) => `<li><b>${esc(t.name)}</b><em>${t.score} pts</em></li>`).join('')}</ol>` : '<p>Todavía nadie suma puntos</p>'}</div>`;
+  // En qué paso de la pregunta está el panel: 0 sin juego, 1 poner rosco, 2 iniciar pregunta, 3 responder
+  const stepOf = (st) => { const c = st.players[st.turn]; return !c.active || st.winner || st.tie ? 0 : st.runningSince ? 3 : st.onScreen ? 2 : 1; };
   views.ruedactl = async (id) => {
     if (!(await isAdmin())) return viewLogin();
     const first = await api('GET', `/api/wheels/${id}`);
@@ -172,7 +174,7 @@
             <button class="danger" id="w-reset">Reiniciar</button>
             ${fromBank ? '<button id="w-newq">↻ Preguntas nuevas</button>' : ''}
           </div>
-          <p class="muted small" style="margin-top:12px">Teclado: A correcta, F incorrecta, P pasa, Espacio inicia o pausa la pregunta y el reloj. En el GC, el rosco aparece al iniciar la pregunta y sale solo con «Incorrecta» o «Pasa» (queda el marcador). Toca una letra del rosco para saltar a ella o reabrirla.</p>
+          <p class="muted small" style="margin-top:12px">Paso a paso: 1) Poner rosco en pantalla, 2) Iniciar pregunta, 3) Correcta, Incorrecta o Pasa. Solo se puede apretar el botón del paso que toca. Teclado: Espacio inicia la pregunta; A correcta, F incorrecta, P pasa. Con «Incorrecta» o «Pasa» el rosco sale del GC (queda el marcador). Toca una letra del rosco para saltar a ella o reabrirla.</p>
           <button class="w-rankbtn" id="w-rank"></button>
           <div class="w-ranklist" id="w-ranklist" hidden></div>
         </div>
@@ -198,23 +200,27 @@
       $('#w-crowd').hidden = !!st.crowdWinner;
       $('#w-crowd-res').hidden = !st.crowdWinner;
       if (st.crowdWinner) $('#w-crowd-res').innerHTML = `<small>Ganó la Trivia del Rosco</small><b>${esc(st.crowdWinner.name)}</b><i>${st.crowdWinner.score} puntos · ${st.crowdWinner.hits} aciertos</i><small>Jugaron ${st.crowdWinner.players} personas</small>`;
-      $$('.w-keys button').forEach((b) => { b.disabled = !c.active; });
-      $('#w-clock').textContent = st.runningSince ? '⏸ Pausar' : '▶ Iniciar pregunta';
+      // Pregunta paso a paso (pedido de Cote): solo se puede apretar el botón del paso que toca; los demás quedan
+      // bloqueados en blanco y negro. 1) Poner rosco en pantalla → 2) Iniciar pregunta → 3) Correcta / Incorrecta / Pasa
+      // (con Correcta se sigue en el paso 3; con Incorrecta o Pasa el rosco sale y se vuelve al paso 1)
+      const step = stepOf(st);
+      $$('.w-keys button').forEach((b) => { b.disabled = step !== 3; });
+      $('#w-clock').textContent = st.runningSince ? '⏱ Pregunta en curso' : '▶ Iniciar pregunta';
       $('#w-clock').classList.toggle('on', !!st.runningSince);
-      $('#w-show').textContent = st.onScreen ? '📺 Rosco en pantalla: SÍ · quitar' : '📺 Poner rosco en pantalla';
+      $('#w-show').textContent = st.onScreen ? '📺 Rosco en pantalla ✓' : '📺 Poner rosco en pantalla';
       $('#w-show').classList.toggle('on', !!st.onScreen);
-      $('#w-show').disabled = !!st.runningSince || !!st.winner;
+      $('#w-show').disabled = step !== 1;
       // Ranking de la Trivia del Rosco (pedido de Cote): se despliega en la pantalla del local y a un costado del GC
       $('#w-rank').textContent = st.rank ? '🏅 Recoger ranking (está en pantalla)' : '🏅 Desplegar ranking de la Trivia (top 10)';
       $('#w-rank').classList.toggle('on', !!st.rank);
       $('#w-ranklist').hidden = !st.rank;
       if (st.rank) $('#w-ranklist').innerHTML = rankHTML(st, 'w-rk');
-      $('#w-clock').disabled = !c.active;
+      $('#w-clock').disabled = step !== 2;
       $('#w-undo').disabled = !st.canUndo;
       $('#w-swap').hidden = st.players.length < 2;
       $('#w-wheels').innerHTML = st.players.map((_, i) => `<div class="wheel-box ${i === st.turn ? 'on' : 'off'}">${wheelSVG(st, i, true)}</div>`).join('');
     };
-    const toggleClock = () => act(st.runningSince ? 'pause' : 'start');
+    const toggleClock = () => { if (stepOf(st) === 2) act('start'); };
     app.onclick = (e) => {
       const btn = e.target.closest('[data-do]');
       if (btn && !btn.disabled) return void act(btn.dataset.do);
@@ -222,7 +228,7 @@
       if (g) act('select', { index: Number(g.dataset.letter), player: Number(g.dataset.player) });
     };
     $('#w-clock').onclick = toggleClock;
-    $('#w-show').onclick = () => act('show', { on: !st.onScreen });
+    $('#w-show').onclick = () => { if (stepOf(st) === 1) act('show', { on: true }); };
     $('#w-rank').onclick = () => act('rank', { on: !st.rank });
     $('#w-tie').onclick = async () => { try { await api('POST', `/api/wheels/${id}/tiebreak`); } catch (err) { fail(err); } };
     $('#w-reset').onclick = () => { if (confirm('¿Reiniciar el rosco? Se borran aciertos, fallos y relojes.')) act('reset'); };
@@ -234,7 +240,7 @@
       if (!st || e.ctrlKey || e.metaKey || e.altKey || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
       const k = e.key.toLowerCase();
       const map = { a: 'hit', f: 'miss', p: 'pass' };
-      if (k === ' ') { e.preventDefault(); toggleClock(); } else if (map[k] && st.players[st.turn].active) act(map[k]);
+      if (k === ' ') { e.preventDefault(); toggleClock(); } else if (map[k] && stepOf(st) === 3) act(map[k]);
     };
     document.addEventListener('keydown', onKey);
     const stopClocks = startClocks(() => st);

@@ -1933,3 +1933,5 @@ body.full #app { z-index: auto; }
 .w-show { background: #c4b5fd; color: #2e1065; border-color: #c4b5fd; }
 .w-show.on { background: #8b5cf6; color: #fff; border-color: #8b5cf6; }
 .pw-rank { width: min(94vw, 150vh); }
+/* Pregunta paso a paso: los botones que no corresponden quedan bloqueados en blanco y negro (pedido de Cote) */
+.w-flow button:disabled, .w-keys button:disabled { filter: grayscale(1); opacity: .35; cursor: not-allowed; }
