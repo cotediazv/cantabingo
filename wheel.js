@@ -271,7 +271,16 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
   const find = (req, res) => { const w = db.wheels[req.params.id]; if (!w) fail(res, 404, 'Ese rosco no existe o fue eliminado'); return w; };
 
   // ---------- API ----------
-  app.use('/api/wheels', (req, res, next) => ((req.method === 'GET' && /^\/[^/]+\/events$/.test(req.path)) || /^\/[^/]+\/crowd$/.test(req.path) ? next() : requireAdmin(req, res, next)));
+  app.use('/api/wheels', (req, res, next) => ((req.method === 'GET' && /^\/[^/]+\/(events|ranking)$/.test(req.path)) || /^\/[^/]+\/crowd$/.test(req.path) ? next() : requireAdmin(req, res, next)));
+
+  // Ranking completo de la Trivia del Rosco (pedido de Cote: la pantalla vertical muestra a todos los que juegan, con páginas).
+  // Aparte del estado en vivo, para no cargar a los celulares con la lista entera; la pantalla lo pide cada pocos segundos.
+  app.get('/api/wheels/:id/ranking', (req, res) => {
+    const w = find(req, res);
+    if (!w) return;
+    const table = standings(w);
+    res.json({ players: table.length, final: !!((w.crowd || {}).winner || winnerOf(w) >= 0), list: table.slice(0, 400).map((t) => ({ name: t.name, score: t.score })) });
+  });
 
   // Rosco en línea: puntaje y puesto de una persona del público, y lo que ya respondió
   app.get('/api/wheels/:id/crowd', (req, res) => {
