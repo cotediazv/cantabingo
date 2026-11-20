@@ -15,14 +15,15 @@ const SHORT = { frida: 'Frida', kennedy: 'Kennedy', tobalaba: 'Tobalaba' };
 // El Festival (concurso de karaoke, pedido de Cote): votación de 8 s por canción, inscripción de 1 minuto, 5 notas en
 // pantalla durante 8 s
 const K_OPEN_MS = 8000;
-const K_SIGNUP_MS = 60000;
+const K_SIGNUP_MS = 90000; // El Festival: la inscripción dura 90 segundos (pedido de Cote, 20 nov)
+const K_MAX = 3; // El Festival parte siempre con 3 participantes (se puede cambiar)
 const SAMPLE_MS = 8000;
 const OPEN_MS = Number(process.env.VOTE_OPEN_MS) || 18000; // cada participante se evalúa durante 18 segundos
 const GRACE_MS = 1000; // margen para los votos que venían en camino al llegar a cero
-const SIGNUP_MS = Number(process.env.VOTE_SIGNUP_MS) || 120000; // el llamado a participar dura 2:00
+const SIGNUP_MS = 90000; // El objeto más extraño: la inscripción dura 90 segundos (pedido de Cote, 20 nov)
 
 module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, findPlayer, venue, notify }) {
-  const blank = (mode = 'objeto') => ({ mode, title: mode === 'karaoke' ? '' : TITLES[mode] || TITLE, max: MAX_PLAYERS, players: [], open: null, last: null, sample: null, phase: 'voting', rank: [], revealed: 0, final: null, winner: null, winAt: 0, rev: ((db.vote || {}).rev || 0) + 1 });
+  const blank = (mode = 'objeto') => ({ mode, title: mode === 'karaoke' ? '' : TITLES[mode] || TITLE, max: mode === 'karaoke' ? K_MAX : MAX_PLAYERS, players: [], open: null, last: null, sample: null, phase: 'voting', rank: [], revealed: 0, final: null, winner: null, winAt: 0, rev: ((db.vote || {}).rev || 0) + 1 });
   db.vote ||= blank();
   // Arreglo (20 nov): un Festival empezado de nuevo quedaba con el título «El objeto más extraño»
   if (db.vote.mode === 'karaoke' && db.vote.title === TITLE) db.vote.title = '';
@@ -44,7 +45,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
   const titleOf = (s) => s.title || (s.mode === 'karaoke' ? festival() : TITLE);
   const openMs = () => (karaoke() ? K_OPEN_MS : OPEN_MS);
   const signupMs = () => (karaoke() ? K_SIGNUP_MS : SIGNUP_MS);
-  const sampleOn = (s) => s.mode === 'karaoke' && s.sample && !s.sample.gone && s.last === s.sample.id && !s.open;
+  const sampleOn = (s) => s.mode === 'karaoke' && s.sample && !s.sample.gone && s.last === s.sample.id && !s.open && !s.onstage;
 
   // Lugares ya revelados, del último hacia arriba (nunca los dos primeros: esos van a la gran final)
   const places = () => {
@@ -68,6 +69,8 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       drawn: karaoke() && s.drawnAt && !s.players.some((p) => p.done) && !s.open ? s.players.map((p) => p.name) : null,
       players: s.players.map((p) => ({ id: p.id, no: no(p), name: p.name, thing: p.thing || '', done: !!p.done })),
       open: open ? { id: open.id, no: no(open), name: open.name, thing: open.thing || '' } : null,
+      // «Iniciar participante» (pedido de Cote): quien está en el escenario antes de abrir su votación
+      onstage: s.phase === 'voting' && !s.open && by(s.onstage) ? { id: s.onstage, no: no(by(s.onstage)), name: by(s.onstage).name, thing: by(s.onstage).thing || '' } : null,
       last: last ? { id: last.id, no: no(last), name: last.name, thing: last.thing || '' } : null,
       places: s.phase === 'voting' ? [] : places(),
       toReveal: s.phase === 'results' ? Math.max(0, s.rank.length - 2 - s.revealed) : 0,
@@ -169,7 +172,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
     mode: (s, b) => {
       if (s.phase !== 'voting' || s.players.length) return 'El tipo de concurso se elige antes de anotar participantes';
       const m = b.mode === 'karaoke' ? 'karaoke' : 'objeto';
-      s.mode = m; s.title = '';
+      s.mode = m; s.title = ''; s.max = m === 'karaoke' ? K_MAX : MAX_PLAYERS;
       return null;
     },
     // Cupos: cuántos participantes como máximo
@@ -207,12 +210,26 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       if (s.phase !== 'voting') return 'El concurso ya pasó a los resultados';
       if (s.open === b.id) s.open = null;
       if (s.last === b.id) s.last = null;
+      if (s.onstage === b.id) s.onstage = null;
       s.players = s.players.filter((p) => p.id !== b.id);
+      return null;
+    },
+    // «Iniciar participante» (pedido de Cote, 20 nov): en pantalla aparecen su nombre y su canción (o su objeto);
+    // después, el mismo botón del panel dice «Iniciar votación»
+    present: (s, b) => {
+      if (s.phase !== 'voting') return 'El concurso ya pasó a los resultados';
+      if (s.open) return 'Primero cierra la votación en curso';
+      if (s.mode === 'karaoke' && s.players.length > cap()) return `Se inscribieron ${s.players.length}: primero sortea a los ${cap()} que cantan`;
+      const p = by(b.id) || s.players.find((x) => !x.done);
+      if (!p) return 'Ya participaron todos';
+      s.onstage = p.id;
+      s.signup = false;
       return null;
     },
     open: (s, b) => {
       if (s.phase !== 'voting') return 'El concurso ya pasó a los resultados';
       if (!by(b.id)) return 'Ese participante ya no está';
+      s.onstage = null;
       if (s.mode === 'karaoke' && s.players.length > cap()) return `Se inscribieron ${s.players.length}: primero sortea a los ${cap()} que cantan`;
       if (s.open && s.open !== b.id) { by(s.open).done = true; s.last = s.open; }
       s.open = b.id;

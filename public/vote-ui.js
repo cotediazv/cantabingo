@@ -23,17 +23,20 @@
   const isK = (st) => st.mode === 'karaoke';
   const fest = (st) => `El Festival de ${{ frida: 'Frida', kennedy: 'Kennedy', tobalaba: 'Tobalaba' }[st.venue] || 'Frida'}`;
   // Para leer al partir cada juego (pedido de Cote)
-  const howto = (st) => (isK(st) ? window.readAloud(fest(st), [
+  const howtoLines = (st) => (isK(st) ? [
     `${st.max} participantes cantan. Si se inscriben más, sorteo.`,
     'Canciones cortas.',
     'Todos votan desde las mesas: nota del 1 al 10.',
     'Al terminar la votación, se muestran en pantalla <b>5 notas del público al azar</b>, que no determinan el promedio. El promedio se conoce al final del concurso.',
     'Gana el mejor <b>promedio</b>.',
-  ]) : window.readAloud(st.title || 'El objeto más extraño', [
+  ] : [
     'Cada participante presenta su objeto.',
     'Todos votan desde las mesas: nota del 1 al 10.',
     'Gran final entre los dos primeros.',
-  ]));
+  ]);
+  const howtoTitle = (st) => (isK(st) ? fest(st) : st.title || 'El objeto más extraño');
+  const howto = (st) => window.readAloud(howtoTitle(st), howtoLines(st));
+  window.voteHowto = (st) => ({ title: howtoTitle(st), lines: howtoLines(st) }); // para los celulares (app.js)
   const icon = (st) => (isK(st) ? '🎤' : '🗳️');
   // 5 notas al azar del público tras cada canción (concurso de karaoke)
   const notesHTML = (st, cls) => (st.sample && st.sample.length ? `<div class="${cls}">${st.sample.map((x) => `<span><i>${x.note}</i><small>${esc(x.name || '')}</small></span>`).join('')}</div>` : '');
@@ -44,7 +47,7 @@
     // El Festival y El objeto más extraño son juegos separados (pedido de Cote): #/votoctl/festival o #/votoctl/objeto
     const want = which === 'festival' ? 'karaoke' : which === 'objeto' ? 'objeto' : '';
     app.innerHTML = `<div id="vc-howto"></div><div class="panel"><h1 style="margin:0" id="vc-h1">${want === 'karaoke' ? '🎤 El Festival' : '🗳️ El objeto más extraño'}</h1>
-        <label class="f" style="margin-top:12px">Nombre del concurso<input type="text" id="vc-title" maxlength="50" placeholder="Ej.: El objeto más extraño"></label>
+        <label class="f" id="vc-title-wrap" style="margin-top:12px" hidden>Nombre del concurso<input type="text" id="vc-title" maxlength="50" placeholder="Ej.: El objeto más extraño"></label>
         <div id="vc-body" style="margin-top:14px"></div>
       </div>
       ${activitiesNav(want === 'karaoke' ? 'festival' : 'objeto')}
@@ -57,34 +60,45 @@
       const box = $('#vc-body');
       if (!box || !st) return;
       setClock(st);
-      const sig = JSON.stringify([st.mode, st.title, st.max, st.phase, st.signup, st.players, st.open, st.counts, st.places, st.next, st.final, st.tally, st.winner, st.sample, st.overflow]);
+      const sig = JSON.stringify([st.mode, st.title, st.max, st.phase, st.signup, st.players, st.open, st.onstage, st.counts, st.places, st.next, st.final, st.tally, st.winner, st.sample, st.overflow]);
       if (sig === last) return;
       last = sig;
       if (document.activeElement !== $('#vc-title')) $('#vc-title').value = st.title;
+      // El objeto más extraño y El Festival (pedido de Cote, 20 nov: «los dos igual de limpios»): el título ya está
+      // definido y la gente se inscribe sola desde su celular: sin campo para el nombre del concurso, sin explicación de
+      // las inscripciones y sin anotar a mano
+      const obj = true;
+      $('#vc-title-wrap').hidden = obj;
       const keep = $('#vc-name') ? $('#vc-name').value : '';
       const keepThing = $('#vc-thing') ? $('#vc-thing').value : '';
       const focus = document.activeElement === $('#vc-name') ? '#vc-name' : document.activeElement === $('#vc-thing') ? '#vc-thing' : '';
       let html = '';
       if (st.phase === 'voting') {
-        const pending = st.players.filter((p) => !p.done).length;
-        // Tipo de concurso (solo antes de anotar participantes) y cupos
+        // Pedido de Cote (20 nov): un solo botón que va avanzando: Abrir inscripciones → Iniciar participante →
+        // Iniciar votación → Iniciar participante (el siguiente)… → Pasar a los resultados. La información del principio
+        // (instrucciones y cupos) se ve solo antes de abrir las inscripciones.
+        const next = st.players.find((p) => !p.done);
+        const voted = st.players.some((p) => p.done) || st.onstage || st.open;
+        const who = (p, label) => `<div class="vc-now"><small>${label}</small><b>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}</div>`;
+        let step;
+        if (st.open) step = `${who(st.open, `🗳️ Votación abierta · <span class="v-clock">${clockText()}</span> · ${st.counts[st.open.id] || 0} votos`)}<button class="primary big" data-act="close">Cerrar votación</button>`;
+        else if (st.signup) step = `<div class="vc-signup on"><p><b>📲 Inscripciones abiertas · <span class="v-clock">${clockText()}</span></b></p><button data-act="signup">Cerrar</button></div>`;
+        else if (!st.players.length) step = '<button class="primary big" data-act="signup" data-on="1">📲 Abrir inscripciones</button>';
+        else if (st.overflow) step = `<button class="primary big" data-act="draw">🎲 Sortear los ${st.max} que cantan (se inscribieron ${st.players.length})</button>`;
+        else if (next && st.onstage && st.onstage.id === next.id) step = `${who(next, isK(st) ? '🎤 En el escenario' : '🗳️ Presentando su objeto')}<button class="primary big" data-act="open" data-id="${next.id}">🗳️ Iniciar votación</button>`;
+        else if (next) step = `${who(next, voted ? 'Ya viene el siguiente participante' : 'Primer participante')}<button class="primary big" data-act="present" data-id="${next.id}">🎤 Iniciar participante</button>`;
+        else if (st.players.length >= 2) step = '<button class="primary big" data-act="results">🏁 Pasar a los resultados</button>';
+        else step = '<p class="muted">Se necesitan al menos 2 participantes.</p><button class="big" data-act="signup" data-on="1">📲 Abrir inscripciones otra vez</button>';
         html = `${want && st.mode !== want ? `<div class="vc-read"><small>Hay un concurso de «${esc(st.title)}» en curso</small><button class="primary big" data-act="reset">Empezar ${want === 'karaoke' ? esc(fest(st)) : 'El objeto más extraño'} (borra el anterior)</button></div>` : ''}
-          <label class="f vc-max ${isK(st) ? 'ask' : ''}">${isK(st) ? '¿Cuántos participantes van a cantar?' : 'Cupos (máximo de participantes)'}<input type="number" id="vc-max" min="2" max="30" value="${st.max}"></label>
+          ${!st.signup && !st.players.length ? `<label class="f vc-max ${isK(st) ? 'ask' : ''}">${isK(st) ? '¿Cuántos participantes van a cantar?' : 'Cupos (máximo de participantes)'}<input type="number" id="vc-max" min="2" max="30" value="${st.max}"></label>` : ''}
           ${st.sample ? `<div class="vc-read"><small>Notas al azar en pantalla (sin el promedio)</small>${notesHTML(st, 'vc-notes')}</div>` : ''}
-          <div class="vc-signup ${st.signup ? 'on' : ''}"><p><b>${st.signup ? `📲 Inscripciones abiertas · <span class="v-clock">${clockText()}</span>` : 'Inscripciones desde el celular'}</b>
-            <small>${st.signup ? `A toda la sala le aparece la invitación. Quien se inscribe llega a esta lista con su nombre y ${isK(st) ? 'su canción' : 'lo que trae'}.` : isK(st) ? 'Ábrelas para que la gente se anote sola con la canción y el artista. Corre un reloj de 1:00. Si se inscriben más que los cupos, se sortean.' : 'Ábrelas para que la gente se anote sola, con su nombre y lo que trae. Corre un reloj de 2:00.'}</small></p>
-            <button class="${st.signup ? '' : 'primary'}" data-act="signup" data-on="${st.signup ? '' : '1'}">${st.signup ? 'Cerrar' : 'Abrir inscripciones'}</button></div>
-          ${st.overflow ? `<button class="primary big" data-act="draw" style="margin-bottom:12px" ${st.signup ? 'disabled' : ''}>🎲 Sortear los ${st.max} que cantan (se inscribieron ${st.players.length})</button>${st.signup ? '<p class="muted small" style="margin:-6px 0 12px">Cierra las inscripciones para sortear.</p>' : ''}` : ''}
-          <h2>Participantes</h2>
-          <form id="vc-add" class="row" style="gap:8px"><input type="text" id="vc-name" maxlength="30" placeholder="Nombre" autocomplete="off" style="flex:1;min-width:0"><input type="text" id="vc-thing" maxlength="40" placeholder="${isK(st) ? 'Canción · artista (opcional)' : 'Objeto (opcional)'}" autocomplete="off" style="flex:1.3;min-width:0"><button class="primary">Agregar</button></form>
-          <div class="vc-list">${st.players.map((p) => {
+          <div class="vc-step">${step}</div>
+          ${st.players.length && !voted && !st.signup ? '<button class="vc-again" data-act="signup" data-on="1">Abrir inscripciones otra vez</button>' : ''}
+          ${st.players.length ? `<div class="vc-list vc-mini">${st.players.map((p) => {
     const on = st.open && st.open.id === p.id;
-    return `<div class="vc-row ${on ? 'on' : ''}"><p><b>${nm(p)}</b>${thing(p)}<small>${on ? `Votación abierta · <span class="v-clock">${clockText()}</span> · ${st.counts[p.id]} votos` : p.done ? `✔ Votación recibida · ${st.counts[p.id]} votos` : 'Pendiente'}</small></p>
-              ${on ? '<button class="primary" data-act="close">Cerrar votación</button>' : `<button data-act="open" data-id="${p.id}">${p.done ? 'Reabrir' : 'Abrir votación'}</button>`}
-              ${on ? '' : `<button class="vc-x" data-act="remove" data-id="${p.id}" aria-label="Quitar a ${esc(p.name)}">✕</button>`}</div>`;
-  }).join('') || '<p class="muted">Abre las inscripciones o anota tú a cada participante.</p>'}</div>
-          ${st.players.length >= 2 ? `<button class="primary big" data-act="results" style="margin-top:16px" ${st.open || pending ? 'disabled' : ''}>🏁 Pasar a los resultados</button>
-          ${st.open || pending ? `<p class="muted small" style="margin-top:6px">${st.open ? 'Cierra la votación en curso para continuar.' : `Falta votar a ${pending} participante${pending > 1 ? 's' : ''}.`}</p>` : ''}` : ''}`;
+    const up = st.onstage && st.onstage.id === p.id;
+    return `<div class="vc-row ${on || up ? 'on' : ''}"><p><b>${nm(p)}</b>${thing(p)}</p><em>${on ? '🗳️' : up ? '🎤' : p.done ? `✔ ${st.counts[p.id]} votos` : ''}</em>${!p.done && !on && !up ? `<button class="vc-x" data-act="remove" data-id="${p.id}" aria-label="Quitar a ${esc(p.name)}">✕</button>` : ''}</div>`;
+  }).join('')}</div>` : ''}`;
       } else if (st.phase === 'results') {
         html = `<h2>Resultados</h2>
           ${st.next ? `<div class="vc-read"><small>Viene · solo lo ves tú, hasta que lo reveles</small><em>${ord(st.next.place)}</em><b>${nm(st.next)}</b>${st.next.thing ? `<span>${esc(st.next.thing)}</span>` : ''}<i>Nota ${note(st.next.score, st.next.dec)}</i></div>
@@ -116,6 +130,7 @@
       const ht = $('#vc-howto');
       const htKey = `${st.mode}|${st.max}|${st.venue}`;
       if (ht && ht.dataset.k !== htKey) { const wasOpen = !ht.firstElementChild || ht.firstElementChild.open; ht.dataset.k = htKey; ht.innerHTML = howto(st); ht.firstElementChild.open = wasOpen; }
+      if (ht) ht.hidden = st.phase !== 'voting' || st.signup || st.players.length > 0; // las instrucciones, solo al principio
       if ($('#vc-name')) { $('#vc-name').value = keep; $('#vc-thing').value = keepThing; if (focus) $(focus).focus(); }
       if ($('#vc-add')) $('#vc-add').onsubmit = async (e) => { e.preventDefault(); const name = $('#vc-name').value; const what = $('#vc-thing').value; if (await act('add', { name, thing: what })) { $('#vc-name').value = ''; $('#vc-thing').value = ''; $('#vc-name').focus(); } };
     };
@@ -171,8 +186,9 @@
       else if (st.me) body = `<div class="pvote-in">✔ Estás en la lista<b>${badge(st.me.no)}${esc(st.me.thing)}</b><small>Atento al llamado del animador para subir al escenario.</small></div>`;
       else if (st.signup && st.room) {
         body = `<form id="pv-join"><p class="pvote-ask">${isK(st) ? '¿Quieres cantar?<b>¡Inscríbete con tu canción!</b>' : '¿Quieres participar?<b>¡Sube a nuestro escenario!</b>'}</p>
-          ${isK(st) ? `<label class="f">Canción<input type="text" id="pv-song" maxlength="50" required minlength="2" autocomplete="off" placeholder="Nombre de la canción"></label>
-          <label class="f">Artista<input type="text" id="pv-artist" maxlength="40" required minlength="2" autocomplete="off" placeholder="Quién la canta"></label>`
+          ${isK(st) ? `<label class="f">Canción<input type="text" id="pv-song" name="song" maxlength="50" required minlength="2" autocomplete="off" placeholder="Nombre de la canción"></label>
+          <div class="sug" data-sug="song"></div>
+          <label class="f">Artista<input type="text" id="pv-artist" name="artist" maxlength="40" required minlength="2" autocomplete="off" placeholder="Quién la canta"></label>`
     : '<label class="f">¿Con qué participas?<input type="text" id="pv-thing" maxlength="40" required minlength="2" autocomplete="off" placeholder="Descripción de tu objeto"></label>'}
           <button class="primary big" style="margin-top:10px">Inscribirme</button>
           <p class="pvote-clock">Quedan <b class="v-clock">${clockText()}</b></p>
@@ -187,6 +203,7 @@
       keepIds.forEach((id) => { if ($(`#${id}`)) $(`#${id}`).value = drafts[id]; });
       if (typing && $(`#${typing}`)) $(`#${typing}`).focus();
       if ($('#pv-join')) {
+        if (isK(st) && typeof wireSongSearch === 'function') wireSongSearch($('#pv-join')); // ayuda de iTunes (pedido de Cote)
         $('#pv-join').onsubmit = async (e) => {
           e.preventDefault();
           const val = (id) => ($(`#${id}`) ? $(`#${id}`).value : '');
@@ -250,12 +267,14 @@
       return lastPlace ? { tag: 'Resultados', no: lastPlace.no, main: lastPlace.name, sub: lastPlace.thing ? `${ord(lastPlace.place)} · ${lastPlace.thing}` : ord(lastPlace.place), score: lastPlace.score, dec: lastPlace.dec }
         : { tag: 'Resultados', main: 'Vamos desde el último lugar', sub: 'hasta la gran final', side: ['🏁', `${st.players.length} participantes`] };
     }
+    if (st.onstage) return { tag: isK(st) ? 'En el escenario' : 'Presenta su objeto', no: st.onstage.no, main: st.onstage.name, featured: !!st.onstage.thing, sub: st.onstage.thing || '', side: isK(st) ? ['🎤', '¡Aplausos!'] : ['🗳️', 'Atentos'] };
     if (st.open) return { tag: 'Votación abierta', no: st.open.no, main: st.open.name, featured: !!st.open.thing, sub: st.open.thing || 'Pon tu nota del 1 al 10 desde tu celular', clock: 'Vota del 1 al 10', qr: true };
     if (st.drawn) return { tag: 'Sorteo de participantes', main: '🎲 ¡Ellos cantan!', sub: 'Prepárense para subir al escenario', list: st.drawn, side: ['🎤', `${st.drawn.length} cantan`] };
     if (st.last && st.sample && st.sample.length) return { tag: 'Notas del público', no: st.last.no, main: st.last.name, sub: st.last.thing || '', notes: true };
     if (st.last) {
       const next = st.players.find((p) => !p.done);
-      return { tag: 'Votación cerrada', no: st.last.no, main: st.last.name, sub: st.last.thing || '¡Gracias por votar!', side: next ? ['Sigue', `N.º ${next.no} · ${next.name}`] : ['🏁', 'Ya vienen los resultados'] };
+      return next ? { tag: 'Votación cerrada', main: 'Ya viene el siguiente participante', sub: '¡Gracias por votar!', side: ['🎤', 'Atentos'] }
+        : { tag: 'Votación cerrada', no: st.last.no, main: st.last.name, sub: st.last.thing || '¡Gracias por votar!', side: ['🏁', 'Ya vienen los resultados'] };
     }
     if (st.signup) return { tag: 'Inscripciones abiertas', main: isK(st) ? '¿Quieres cantar?' : '¿Quieres participar?', sub: isK(st) ? 'Inscríbete desde tu celular con tu canción y el artista' : 'Inscríbete desde tu celular', clock: 'Tiempo', qr: true };
     // Instrucciones del festival (pedido de Cote)
@@ -276,7 +295,7 @@
       $('#vg-win').innerHTML = celebrating ? winHTML(st) : '';
       const s = scene(st);
       // Lista de inscritos: se ve durante el llamado y hasta que empieza la primera votación
-      const roster = st.phase === 'voting' && !st.open && !st.last && !st.drawn && st.players.length
+      const roster = st.phase === 'voting' && !st.open && !st.onstage && !st.last && !st.drawn && st.players.length
         ? `<div class="vg-list"><small>Inscritos <b>${st.players.length}/${st.max}</b></small>${st.players.map((p) => `<div><p><b>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}</p></div>`).join('')}</div>` : '';
       const html = celebrating ? '' : `${s.notes ? `<div class="vk-card">${notesHTML(st, 'vk-notes')}</div>` : ''}${s.list ? `<div class="vk-card"><ol class="vk-list">${s.list.map((x) => `<li>${esc(x)}</li>`).join('')}</ol></div>` : ''}${roster}${s.qr || true ? `<div class="vg-qr">${qr(joinUrl())}<b>Si no has participado, escanea el código QR con tu celular y únete a la sesión</b></div>` : ''}
         <div class="vg-bar">
@@ -305,7 +324,7 @@
     let tickTimer = null;
     let flip = false;
     let ticking = 0;
-    let total = 120000;
+    let total = 90000;
     const tickLoop = () => {
       clearTimeout(tickTimer);
       tickTimer = null;
@@ -319,7 +338,7 @@
       tickTimer = setTimeout(tickLoop, Math.min(1000 / rate, left + 30));
     };
     const stop = follow((st, celebrating, first) => {
-      total = Math.max(5500, st.clockMs || 120000);
+      total = Math.max(5500, st.clockMs || 90000);
       if (st.clockUntil && st.clockUntil !== ticking) { ticking = st.clockUntil; tickLoop(); }
       if (!st.clockUntil && ticking && clockLeft() > 700) { ticking = 0; clearTimeout(tickTimer); } // el animador las cerró antes de tiempo: sin bocinas
       const box = $('#vf');
@@ -330,7 +349,7 @@
       if (!first && cue && cue !== heard) sfx.play(cue === 'win' ? 'win' : cue === 'drum' ? 'drum' : 'hit');
       heard = cue;
       box.className = `th-${st.venue}`;
-      const side = st.phase === 'voting' ? st.players.map((p) => `<div class="${st.open && st.open.id === p.id ? 'on' : ''}"><em>${p.done ? '✔' : st.open && st.open.id === p.id ? '🗳️' : '·'}</em><p><b ${n(p.name)}>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}</p></div>`).join('')
+      const side = st.phase === 'voting' ? st.players.map((p) => `<div class="${(st.open && st.open.id === p.id) || (st.onstage && st.onstage.id === p.id) ? 'on' : ''}"><em>${p.done ? '✔' : st.open && st.open.id === p.id ? '🗳️' : st.onstage && st.onstage.id === p.id ? '🎤' : '·'}</em><p><b ${n(p.name)}>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}</p></div>`).join('')
         : [...st.places].reverse().map((p) => `<div><em>${p.place}</em><p><b ${n(p.name)}>${nm(p)}</b><span>Nota ${note(p.score, p.dec)}${p.thing ? ` · ${esc(p.thing)}` : ''}</span></p></div>`).join('');
       box.innerHTML = `${celebrating ? winHTML(st) : ''}
         <header class="vf-top"><b>${esc(title(st))}</b><span>${icon(st)} ${esc(s.tag)}</span></header>
@@ -342,6 +361,7 @@
           <div class="vf-qr">${qr(joinUrl())}<b>Si no has participado, escanea el código QR con tu celular y únete a la sesión</b></div>
           ${side ? `<div class="vf-list"><small>${st.phase === 'voting' ? 'Participantes' : 'Resultados'}</small>${side}</div>` : ''}
         </aside>`;
+      box.querySelectorAll('.vf-main > small, .vf-main > b, .vf-main > span, .vf-main > i').forEach((el) => window.fitOneLine(el)); // cada línea en su línea
     });
     return () => { stop(); ticking = 0; clearTimeout(tickTimer); };
   };

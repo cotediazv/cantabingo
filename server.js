@@ -229,7 +229,7 @@ function closeSession(s) {
 // Se hace al cerrarse la sala (a mano o a las 8 horas) y al crear una nueva.
 function resetEvent() {
   db.people = {};
-  db.gameDraw = { played: [], last: null, rule2: true, total: (db.gameDraw || {}).total || 3, list: [] }; // sorteo del siguiente juego: parte de cero en cada sala
+  db.gameDraw = { played: [], last: null, rule2: true, total: (db.gameDraw || {}).total || 3, list: [], ready: null }; // sorteo del siguiente juego: parte de cero en cada sala
   db.raffle = { picked: [], roll: null };
   wheel.clear();
   vote.clear();
@@ -424,7 +424,9 @@ app.post('/api/projects/:id/session', (req, res) => {
   // Una sola sala a la vez: mientras haya una abierta no se puede activar otra
   const open = Object.values(db.sessions)[0];
   if (open) return fail(res, 409, `Ya hay una sala abierta (${open.name}). Ciérrala en el Centro de control para crear otra.`);
-  const b = req.body || {};
+  res.json({ id: startSession(p, req.body || {}).id });
+});
+function startSession(p, b) {
   const s = {
     id: shortId(), projectId: p.id, name: str(b.name, 50, p.name), password: str(b.password, 40),
     cardsPerPlayer: clamp(b.cardsPerPlayer, 1, 4, 1),
@@ -442,8 +444,8 @@ app.post('/api/projects/:id/session', (req, res) => {
   p.sessionId = s.id;
   evaluate(s);
   save();
-  res.json({ id: s.id });
-});
+  return s;
+}
 
 app.post('/api/sessions/:sid/host/:action', (req, res) => {
   const s = hostSession(req, res);
@@ -712,7 +714,7 @@ require('./agenda.js')({ app, db, save, requireAdmin, fail, currentVenue: () => 
 const DRAW_GAMES = ['bingo', 'rosco', 'festival', 'objeto'];
 db.gameDraw ||= { played: [], last: null };
 if (!db.gameDraw.rule2) { db.gameDraw.played = db.gameDraw.last ? [db.gameDraw.last.game] : []; db.gameDraw.rule2 = true; }
-app.get('/api/gamedraw', (_req, res) => res.json({ ...db.gameDraw, games: DRAW_GAMES, venue: (Object.values(db.sessions)[0] || {}).theme || 'frida', now: Date.now() }));
+app.get('/api/gamedraw', (_req, res) => res.json({ ...db.gameDraw, undo: undefined, undoable: !!(db.gameDraw.undo || []).length, games: DRAW_GAMES, venue: (Object.values(db.sessions)[0] || {}).theme || 'frida', now: Date.now() }));
 // Cuántos juegos se sortean esa noche (pedido de Cote): juego inicial (bingo) + 1.º, 2.º, 3.º… sorteados
 db.gameDraw.list ||= [];
 db.gameDraw.total ||= 3;
@@ -724,13 +726,50 @@ app.post('/api/gamedraw/total', requireAdmin, (req, res) => {
   save();
   res.json(db.gameDraw);
 });
+// Sorteo en dos pasos (pedido de Cote, 20 nov): 1) «Iniciar sorteo de juegos»: las pantallas muestran los juegos que
+// pueden salir; 2) «Girar la tómbola». Entre los dos, el animador puede elegir un juego directo, sin tómbola
+// (/api/gamedraw/pick): ese juego queda como el siguiente número de la noche.
+// Deshacer (pedido de Cote, 20 nov): antes de cada paso (iniciar, girar la tómbola, elegir directo) se guarda cómo
+// estaba el sorteo; «Deshacer» vuelve al paso anterior
+const drawSnap = (g) => { g.undo = (g.undo || []).slice(-9); g.undo.push(JSON.stringify({ played: g.played, last: g.last, list: g.list, ready: g.ready || null })); };
+app.post('/api/gamedraw/undo', requireAdmin, (_req, res) => {
+  const g = db.gameDraw;
+  if (!g.undo || !g.undo.length) return fail(res, 400, 'No hay nada que deshacer');
+  Object.assign(g, JSON.parse(g.undo.pop()));
+  save();
+  res.json(db.gameDraw);
+});
+app.post('/api/gamedraw/ready', requireAdmin, (_req, res) => {
+  const g = db.gameDraw;
+  if (g.list.length >= g.total) return fail(res, 409, `Ya se sortearon los ${g.total} juegos de la noche`);
+  drawSnap(g);
+  g.ready = { at: Date.now(), pool: DRAW_GAMES.filter((x) => !(g.last && g.last.game === x)) };
+  save();
+  if (setStage('juego') === false) return fail(res, 409, 'El Rosco está en juego: el sorteo se verá cuando termine la partida');
+  res.json(db.gameDraw);
+});
+app.post('/api/gamedraw/pick', requireAdmin, (req, res) => {
+  const g = db.gameDraw;
+  const game = String((req.body || {}).game);
+  if (!DRAW_GAMES.includes(game)) return fail(res, 400, 'Juego no válido');
+  if (g.list.length >= g.total) return fail(res, 409, `Ya se sortearon los ${g.total} juegos de la noche`);
+  drawSnap(g);
+  g.played = [game]; g.list.push(game); g.ready = null;
+  g.last = { game, pool: [game], at: Date.now(), direct: true };
+  if (game === 'festival' || game === 'objeto') vote.start(game === 'festival' ? 'karaoke' : 'objeto');
+  save();
+  setStage('juego');
+  res.json(db.gameDraw);
+});
 app.post('/api/gamedraw', requireAdmin, (_req, res) => {
   const g = db.gameDraw;
   if (g.list.length >= g.total) return fail(res, 409, `Ya se sortearon los ${g.total} juegos de la noche`);
   const pool = DRAW_GAMES.filter((x) => !(g.last && g.last.game === x)); // el que salió recién queda fuera de este sorteo
+  drawSnap(g);
   const game = pool[crypto.randomInt(pool.length)];
   g.played = [game]; // bloqueado solo para el sorteo siguiente
   g.list.push(game); // queda en su número (1.º, 2.º…) en la pantalla
+  g.ready = null;
   g.last = { game, pool, at: Date.now() };
   if (game === 'festival' || game === 'objeto') vote.start(game === 'festival' ? 'karaoke' : 'objeto'); // la votación queda lista con su título
   save();
@@ -765,6 +804,54 @@ setInterval(() => {
   if (db.stage !== 'karaoke') { setStage('karaoke'); karaoke.refresh(); console.log('Escenario a Karaoke automático (jueves 21:45, Kennedy)'); }
   save();
 }, 20e3);
+
+// Salas de juegos automáticas (pedido de Cote, 20 nov): a la hora de cada local la sala de juegos queda creada sola
+// (hora de Chile): jueves desde las 18:30 Kennedy, viernes desde las 18:00 Tobalaba y domingo desde las 13:00 Frida.
+// Una vez por día: si después se cierra a mano, no se vuelve a crear. Si ya hay una sala abierta de ese local, se deja;
+// si la abierta es de otro local, se cierra y se crea la que toca. Usa los cartones del último bingo de ese local (si no
+// hay, crea 320) y dura hasta las 4 de la mañana siguiente (para que no se cierre en medio de los juegos).
+const AUTO_SALAS = [
+  { dow: 'Thu', from: 18 * 60 + 30, venue: 'kennedy', name: 'Los Juegos de Kennedy' },
+  { dow: 'Fri', from: 18 * 60, until: 22 * 60 + 45, venue: 'tobalaba', name: 'Los Juegos de Tobalaba' },
+  { dow: 'Sun', from: 13 * 60, until: 17 * 60, venue: 'frida', name: 'Los Juegos de Frida' },
+];
+// Fin de los juegos (pedido de Cote, 20 nov): Tobalaba a las 22:45 y Frida (domingo) a las 17:00 la sala del local se
+// cierra sola, aunque se haya creado a mano. Kennedy (21:30) no se cierra: los jueves a las 21:45 pasa sola a Karaoke
+// para que el público siga pidiendo canciones. Si a esa hora hay un rosco en juego, se espera a que termine.
+function autoSala() {
+  const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    .formatToParts(new Date()).map((x) => [x.type, x.value]));
+  const min = +p.hour * 60 + +p.minute;
+  const a = AUTO_SALAS.find((x) => x.dow === p.weekday && min >= x.from);
+  if (!a) return;
+  if (a.until && min >= a.until) {
+    const endKey = `${p.year}-${p.month}-${p.day} ${a.venue}`;
+    const open = Object.values(db.sessions)[0];
+    if (db.autoEnd === endKey || !open || (open.theme || 'frida') !== a.venue || roscoLock('none')) return;
+    db.autoEnd = endKey;
+    closeSession(open);
+    console.log(`Fin de los juegos: se cerró ${open.name}`);
+    return;
+  }
+  const key = `${p.year}-${p.month}-${p.day} ${a.venue}`;
+  if (db.autoSala === key) return;
+  db.autoSala = key;
+  const open = Object.values(db.sessions)[0];
+  if (open && (open.theme || 'frida') === a.venue) { save(); return; } // ya estaba creada (a mano): se deja
+  if (open) closeSession(open);
+  let proj = Object.values(db.projects).filter((x) => x.theme === a.venue && x.format === 'numbers').sort((x, y) => y.created - x.created)[0];
+  if (!proj) {
+    proj = { id: id(), created: Date.now(), format: 'numbers', values: 75, items: null, name: a.name, theme: a.venue, headers: 'BINGO', freeCenter: false, startNumber: 1, sessionId: null };
+    proj.cards = makeCards(320, 75, false);
+    db.projects[proj.id] = proj;
+  }
+  const s = startSession(proj, { name: a.name, theme: a.venue, cardsPerPlayer: 1, isPublic: true, showName: true, patterns: ['linea'] });
+  s.expires = Date.now() + ((24 * 60 - min) + 4 * 60) * 60e3; // hasta las 4 de la mañana
+  save();
+  console.log(`Sala de juegos automática: ${a.name}`);
+}
+setInterval(autoSala, 30e3);
+setTimeout(autoSala, 5e3);
 
 app.get('/api/qr', async (req, res) => {
   try {

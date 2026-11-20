@@ -39,7 +39,7 @@
     }).join('');
     const center = bare ? '' : `
       <text x="50" y="44" font-size="17" text-anchor="middle" dominant-baseline="central" fill="currentColor" font-weight="700" data-timer="${pi}">${clock(c.remainingMs)}</text>
-      <text x="50" y="58" font-size="5" text-anchor="middle" fill="currentColor" font-weight="600">${esc(c.name.slice(0, 18))}</text>
+      <text x="50" y="58" font-size="${Math.min(5, 62 / (Math.max(1, c.name.length) * 0.62)).toFixed(2)}" text-anchor="middle" fill="currentColor" font-weight="600">${esc(c.name)}</text>
       <text x="50" y="66" font-size="4.6" text-anchor="middle" fill="currentColor"><tspan fill="#35c97a">✔ ${c.hits}</tspan>  <tspan fill="#f07a7a">✘ ${c.misses}</tspan></text>`;
     return `<svg viewBox="0 0 100 100" class="wheel ${mine ? 'turn' : ''}" role="img" aria-label="Rosco de ${esc(c.name)}">${DEFS}
       <circle cx="50" cy="50" r="${R}" fill="none" stroke="url(#wg-ring)" stroke-width="${(r * 1.5).toFixed(2)}" opacity=".9"/>
@@ -97,7 +97,7 @@
     app.innerHTML = `<p class="back"><a href="#/ruedas">← Roscos</a></p><h1>Nuevo rosco</h1>
       <form class="panel fields" id="wf">
         <label class="f">Nombre<input type="text" name="name" maxlength="50" placeholder="Rosco del viernes"></label>
-        <label class="f">Segundos por concursante <span class="hint">20 a 900</span><input type="number" name="seconds" min="20" max="900" value="150"></label>
+        <label class="f">Segundos por concursante <span class="hint">20 a 900</span><input type="number" name="seconds" min="20" max="900" value="90"></label>
         <label class="f wide">Letras del rosco <span class="hint">en el orden en que giran</span><input type="text" name="letters" maxlength="40" value="${DEFAULT_LETTERS}"></label>
         <label class="f wide">Concursantes <span class="hint">uno por línea, de 1 a 4; cada uno tiene su rosco y su reloj</span><textarea name="players" style="min-height:90px">Concursante 1</textarea></label>
         <label class="f">Preguntas<select name="source"><option value="bank">Automáticas, del banco de preguntas</option><option value="own">Las escribo yo</option></select></label>
@@ -151,12 +151,7 @@
     let st = null;
     const act = (action, extra) => api('POST', `/api/wheels/${id}/act`, { action, ...extra }).catch(fail);
     // Para leer al partir (pedido de Cote)
-    const HOWTO = [
-      '3 participantes.',
-      'Todos juegan desde las mesas.',
-      '<b>Premio mayor</b> para el que gana El Rosco.',
-      '<b>Premio especial</b> para el ganador del público que juega la Trivia del Rosco.',
-    ];
+    const HOWTO = window.ROSCO_HOWTO; // en app.js: lo usan también los celulares
     app.innerHTML = `${window.readAloud ? window.readAloud('El Rosco', HOWTO) : ''}<div class="cols">
         <div class="panel">
           <div class="row between"><div><h1 id="w-name" style="margin:0"></h1><span class="muted" id="w-turn"></span></div><div class="w-letter" id="w-letter"></div></div>
@@ -363,7 +358,7 @@
       flip = !flip;
       // El ritmo sube de forma pareja: 1 tic por segundo con el tiempo completo, hasta 5 por segundo
       // cuando quedan 5 segundos, y así se mantiene hasta el final.
-      const total = Math.max(6, st.seconds || 150) * 1000;
+      const total = Math.max(6, st.seconds || 90) * 1000;
       const rate = left <= 5000 ? 5 : 1 + 4 * Math.min(1, Math.max(0, (total - left) / (total - 5000)));
       const gap = 1000 / rate;
       tickTimer = setTimeout(tickLoop, Math.min(gap, left + 30));
@@ -401,6 +396,7 @@
             <ul>${all.map((n) => `<li>${esc(n)}</li>`).join('')}</ul></div>`;
       };
       const layoutPeople = () => {
+        window.fitOneLine($('.rv-howto')); // las instrucciones en una línea (pedido de Cote)
         const ul = $('.rv-people ul');
         if (!ul) return;
         const items = Array.from(ul.children);
@@ -572,6 +568,7 @@
         <div class="pw-text">${revealCard(st, 'pw-reveal')}${st.question ? `<div class="pw-question">${esc(st.question)}</div>` : ''}</div>
         <div class="wheels n${st.players.length}">${st.players.map((_, i) => `<div class="wheel-box ${i === st.turn && !st.finished ? 'on' : 'off'}">${wheelSVG(st, i)}</div>`).join('')}</div>
         ${st.rank ? `<div class="pw-rankwrap">${rankHTML(st, 'pw-rank')}</div>` : ''}`;
+      window.fitOneLine($('#pw .pw-howto')); // las instrucciones en una línea (pedido de Cote)
       scheduleRevealEnd(st);
     };
     const off = watch(id, onWheel, () => { leave(); if (['#/escena', '#/gc', '#/obs', '#/tablero', `#/${kind}`].includes(location.hash)) route(); else location.hash = `#/${kind}`; });

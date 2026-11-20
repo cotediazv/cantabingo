@@ -350,7 +350,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
       return { q: str(item.q, 300), a: str(item.a, 80) };
     }));
     const w = {
-      id: newId(), name: str(b.name, 50, 'El Rosco'), created: Date.now(), letters, seconds: clamp(b.seconds, 20, 900, 150),
+      id: newId(), name: str(b.name, 50, 'El Rosco'), created: Date.now(), letters, seconds: clamp(b.seconds, 20, 900, 90),
       setup: { players }, bank, questions, turn: 0, runningSince: null, history: [],
     };
     w.players = freshPlayers(w);
