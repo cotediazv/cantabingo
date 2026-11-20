@@ -1945,3 +1945,14 @@ body.full::before { top: -20%; right: -20%; bottom: -20%; left: -20%; }
 /* QR del tablero del bingo: la frase «Escanea el código QR con tu celular y juega» completa (pedido de Cote) */
 .fb-qr > span { font-size: 1.9vh; line-height: 1.15; }
 #fb .fb-qr > span { font-size: min(1.9vh, 1.7vw); line-height: 1.15; }
+
+/* Fondo de las pantallas con los colores de cada local (pedido de Cote: el GC y la pantalla vertical combinan).
+   Tobalaba: rojos; Kennedy: celestes y azules; Frida: magenta y morado (el de siempre). */
+body.full[data-venue="tobalaba"]::before {
+  background: radial-gradient(circle at 20% 25%, rgba(232, 38, 46, .55), transparent 38%), radial-gradient(circle at 80% 20%, rgba(255, 122, 26, .38), transparent 36%),
+    radial-gradient(circle at 70% 85%, rgba(200, 30, 30, .5), transparent 40%), radial-gradient(circle at 15% 85%, rgba(130, 10, 40, .6), transparent 38%); }
+body.full[data-venue="kennedy"]::before {
+  background: radial-gradient(circle at 20% 25%, rgba(20, 135, 207, .55), transparent 38%), radial-gradient(circle at 80% 20%, rgba(53, 198, 255, .45), transparent 36%),
+    radial-gradient(circle at 70% 85%, rgba(26, 63, 184, .55), transparent 40%), radial-gradient(circle at 15% 85%, rgba(10, 40, 110, .6), transparent 38%); }
+#fb.th-tobalaba .fb-board { background: rgba(45, 4, 10, .55); border-color: rgba(255, 140, 140, .18); }
+#fb.th-kennedy .fb-board { background: rgba(2, 18, 50, .55); border-color: rgba(140, 200, 255, .18); }

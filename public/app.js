@@ -1442,6 +1442,14 @@ const VENUE_LOGOS = { kennedy: 'logo-kennedy.png' };
 const SCREEN_ROUTES = ['tablero', 'escena', 'gc', 'obs', 'light-gc', 'karaoke-v', 'light-v'];
 let venueOfSala = '';
 let venueAt = 0;
+// Color de fondo de las pantallas según el local (también en navegadores antiguos, que no leen «:has»)
+const VENUE_BG = { tobalaba: '#2a0608', kennedy: '#06183a', frida: '#1b0f3a' };
+function paintVenueBg() {
+  const full = document.body.classList.contains('full');
+  const bg = full ? VENUE_BG[document.body.dataset.venue] || VENUE_BG.frida : '';
+  if (document.documentElement.style.backgroundColor !== bg) document.documentElement.style.backgroundColor = bg;
+}
+new MutationObserver(paintVenueBg).observe(document.body, { attributes: true, attributeFilter: ['class', 'data-venue'] });
 async function syncVenueMark() {
   const [name, arg] = location.hash.replace(/^#\/?/, '').split('/');
   let v = '';
@@ -1452,6 +1460,9 @@ async function syncVenueMark() {
       v = venueOfSala;
     }
   }
+  // El fondo de las pantallas toma los colores del local (pedido de Cote: que el GC y la pantalla vertical combinen)
+  if ((document.body.dataset.venue || '') !== v) document.body.dataset.venue = v;
+  paintVenueBg();
   let el = document.getElementById('venue-mark');
   const src = VENUE_LOGOS[v];
   if (!src) { if (el) el.remove(); document.body.classList.remove('has-vm'); return; }

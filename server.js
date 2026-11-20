@@ -95,6 +95,14 @@ function makeCards(count, n, freeCenter) {
   return cards;
 }
 
+// Una vez (20 nov, regla de Cote: junto al QR siempre «Escanea el código QR con tu celular»): las franjas del GC
+// guardadas con el texto anterior pasan al nuevo
+if (!db.qrPhraseFix) {
+  const fix = (g) => { if (g && g.top === 'Escanea el código QR y participa') g.top = 'Escanea el código QR con tu celular y participa'; if (g && g.bottom === 'Pon tu nombre y apellido y participa') g.bottom = 'Pon tu nombre, apellido y participa'; };
+  fix(db.gcDefaults);
+  for (const s of Object.values(db.sessions || {})) fix(s.gc);
+  db.qrPhraseFix = true;
+}
 const gcDefaults = () => db.gcDefaults || { top: 'Escanea el código QR con tu celular y participa', bottom: 'Pon tu nombre, apellido y participa' };
 
 // ---------- Lógica de sesión ----------

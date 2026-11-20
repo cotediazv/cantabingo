@@ -100,6 +100,9 @@
           <div class="gc-grid">${figure}</div>
           <b class="${PATTERNS.byId[id].name.length > 10 ? 'long' : ''}">${esc(PATTERNS.byId[id].name)}</b>
         </div>`;
+      // La frase de la franja de arriba se achica hasta caber completa (pedido de Cote: que no se corte con «…»)
+      const sub = $('.gc-sub');
+      if (sub) { sub.style.fontSize = ''; for (let f = 4; f > 2 && sub.scrollWidth > sub.clientWidth + 1; f -= 0.2) sub.style.fontSize = `${f.toFixed(1)}vh`; }
     };
 
     // Sin sesión activa: queda solo el QR arriba a la derecha, sobre fondo transparente
