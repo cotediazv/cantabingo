@@ -10,7 +10,7 @@
 <script>
 const l=new URLSearchParams(location.search).get('local');
 // sin local: el de la sala de juegos abierta (cambia solo); con ?local=… queda fijo en ese local
-location.replace('/?obs=1#pantallas'+(['kennedy','tobalaba','frida'].includes(l)?'-'+l:''));
+location.replace('/?obs=1#pantallas'); // siempre el local de la sala de juegos abierta
 </script>
 </head>
 <body></body>

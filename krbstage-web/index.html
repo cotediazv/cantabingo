@@ -1593,7 +1593,7 @@ elegirLocal('kennedy');
   function abrirLink(){
     if(linkHecho||!/^#pantallas/.test(location.hash))return;linkHecho=true;
     if(MODO_OBS)document.documentElement.classList.add('modo-obs');
-    if(MODO_OBS&&!location.hash.split('-')[1]){
+    if(MODO_OBS){ // siempre sigue a la sala de juegos abierta, aunque el enlace diga un local (pedido de Cote)
       if(!sw.checked){sw.checked=true;pintar()}
       localSala().then(l=>{abrirVisor(l);setInterval(()=>localSala().then(irA),5000)});return;
     }
