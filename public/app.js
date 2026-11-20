@@ -109,7 +109,10 @@ function patternPicker(selected = ['linea']) {
   const lines = PATTERNS.list.filter((p) => PAT_GROUPS[0][1].includes(p.id));
   const letters = PATTERNS.list.filter((p) => /^Figura [A-Z]$/.test(p.name));
   const shapes = PATTERNS.list.filter((p) => !lines.includes(p) && !letters.includes(p));
-  return `<div class="patterns"><h3 class="pat-group">Líneas</h3>${lines.map(one).join('')}<h3 class="pat-group">Figuras</h3>${shapes.map(one).join('')}<h3 class="pat-group">Letras</h3>${letters.map(one).join('')}</div>
+  // Las letras van en una pestaña plegada (pedido de Cote); se abre sola si la figura elegida es una letra
+  const letterOn = letters.some((p) => p.id === selected[0]);
+  return `<div class="patterns"><h3 class="pat-group">Líneas</h3>${lines.map(one).join('')}<h3 class="pat-group">Figuras</h3>${shapes.map(one).join('')}
+    <details class="pat-letters" ${letterOn ? 'open' : ''}><summary>Letras (A a la Z)</summary><div class="patterns">${letters.map(one).join('')}</div></details></div>
     <p class="muted small" style="margin-top:8px">Un patrón por ronda: al elegir otro, el anterior se desmarca.</p>`;
 }
 function readPatterns(root) {

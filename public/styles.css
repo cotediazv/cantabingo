@@ -2335,3 +2335,10 @@ body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "So
 .patterns .pat-group:first-child { margin-top: 0; }
 /* «Refrescar» en todos los paneles */
 #ctl-reload-fixed { position: fixed; top: 8px; right: 8px; z-index: 60; padding: 4px 10px; font-size: .8rem; opacity: .85; }
+
+/* Figuras del bingo: las letras en una pestaña plegada */
+.patterns .pat-letters { grid-column: 1 / -1; margin-top: 12px; }
+.patterns .pat-letters summary { cursor: pointer; font-weight: 800; color: #ffc400; padding: 8px 0; }
+.patterns .pat-letters .patterns { margin-top: 8px; }
+/* Resultados: el lugar en el círculo (3.º) en vez del número del participante */
+.v-no { white-space: nowrap; }
