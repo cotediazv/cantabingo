@@ -385,15 +385,37 @@
       };
       // Antes de empezar: «¡Pronto! Ya comenzamos» y la lista de todos los que están en la sala, en muchas columnas, de a
       // 80 por página (pedido de Cote: que se vea la cantidad de gente que participa)
-      const PEOPLE_PAGE = 80;
+      // Todos los participantes caben siempre en la pantalla (pedido de Cote): con pocos, grandes; con muchos, más columnas
+      // y letra más chica. Se actualiza cada 5 s a medida que entra gente (sin páginas).
       const peopleHTML = () => {
         const all = data.people || [];
-        const pages = Math.max(1, Math.ceil(all.length / PEOPLE_PAGE));
-        const pg = page % pages;
-        const part = all.slice(pg * PEOPLE_PAGE, pg * PEOPLE_PAGE + PEOPLE_PAGE);
         return `<div class="rv-soon small"><b>¡Pronto!</b><span>Ya comenzamos</span></div>
-          <div class="rv-people"><small>${all.length} ${all.length === 1 ? 'persona participando' : 'personas participando'}${pages > 1 ? ` · ${pg + 1} de ${pages}` : ''}</small>
-            <ul style="--rows:${Math.max(1, Math.ceil(part.length / 3))}">${part.map((n) => `<li>${esc(n)}</li>`).join('')}</ul></div>`;
+          <div class="rv-people"><small>${all.length} ${all.length === 1 ? 'persona participando' : 'personas participando'}</small>
+            <ul>${all.map((n) => `<li>${esc(n)}</li>`).join('')}</ul></div>`;
+      };
+      const layoutPeople = () => {
+        const ul = $('.rv-people ul');
+        if (!ul) return;
+        const items = Array.from(ul.children);
+        const n = items.length;
+        if (!n) return;
+        const W = ul.clientWidth; const H = ul.clientHeight;
+        const font = getComputedStyle(items[0]);
+        if (!layoutPeople.c) layoutPeople.c = document.createElement("canvas").getContext("2d");
+        const ctx = layoutPeople.c;
+        ctx.font = `${font.fontWeight} 100px ${font.fontFamily}`;
+        const longest = Math.max(...items.map((li) => ctx.measureText(li.textContent.toUpperCase()).width)) / 100; // ancho por cada px de letra
+        const GAP = 0.03 * W; const LH = 1.3;
+        let best = { size: 0, cols: 1 };
+        for (let cols = 1; cols <= 10; cols++) {
+          const rows = Math.ceil(n / cols);
+          const colW = (W - GAP * (cols - 1)) / cols;
+          const size = Math.min(H / (rows * LH), colW / longest, innerHeight * 0.06);
+          if (size > best.size) best = { size, cols };
+        }
+        ul.style.setProperty('--cols', best.cols);
+        ul.style.setProperty('--rows', Math.ceil(n / best.cols));
+        ul.style.fontSize = `${Math.max(5, best.size * 0.97).toFixed(1)}px`;
       };
       const html = (from, chunk, pages) => {
         const top = data.list.slice(0, 5);
@@ -405,7 +427,8 @@
     : peopleHTML()}</div>`;
       };
       const fitNames = () => {
-        $$('.rv-top b, .rv-col b, .rv-people li').forEach((b) => {
+        layoutPeople();
+        $$('.rv-top b, .rv-col b').forEach((b) => {
           b.style.fontSize = '';
           let f = parseFloat(getComputedStyle(b).fontSize);
           const min = f * 0.45;

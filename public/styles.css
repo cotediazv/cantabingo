@@ -2097,3 +2097,9 @@ body[data-venue="frida"] .rv-rank, body:not([data-venue]) .rv-rank { --rv-score:
 .kids-entry2 .kz-entry-text > .kz-tag, .kids-entry2 .kz-entry-text > span { font-size: .9rem; }
 /* Nombres completos: los largos se achican, no se cortan */
 .rv-people li { text-overflow: clip; }
+
+/* Lista de participantes antes de empezar: el tamaño y las columnas los calcula layoutPeople() para que quepan todos */
+.rv-people ul { display: grid; grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); grid-auto-flow: column; grid-template-rows: repeat(var(--rows, 1), min-content); column-gap: 3%; align-content: center; min-height: 0; overflow: hidden; }
+.rv-people li { font-size: 1em; line-height: 1.3; white-space: nowrap; overflow: visible; text-overflow: clip; }
+.rv-people ul { justify-items: center; justify-content: center; }
+.rv-people li { text-align: center; }
