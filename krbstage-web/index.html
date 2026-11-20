@@ -634,6 +634,15 @@ h2{margin-top:8px}
 .vivo-fila.pc-falso.pc-v{grid-template-columns:min(calc((100vw - 14px) * .7596),calc(100dvh * 16 / 9)) min(calc((100vw - 14px) * .2404),calc(100dvh * 9 / 16));gap:14px}
 .vivo-fila.pc-falso.pc-h{grid-template-columns:min(72vw,calc(100dvh * 16 / 9)) min(28vw,calc(100dvh * 16 / 9 * .389));gap:14px}
 .pc-cerrar{z-index:90}
+/* modo OBS: todo igual a la pantalla completa, pero el recuadro de la izquierda queda transparente y sin botones */
+html.modo-obs,html.modo-obs body{background:transparent!important}
+html.modo-obs body>*:not(.visor){display:none!important}
+html.modo-obs .visor{background:transparent}
+html.modo-obs .visor-top{position:relative;z-index:3;background:linear-gradient(180deg,rgba(255,255,255,.06),transparent),#000}
+html.modo-obs .obs-hueco{background:transparent!important;z-index:1}
+html.modo-obs .visor-slide.actual .obs-hueco{box-shadow:0 0 0 200vmax #000}
+html.modo-obs .visor-slide .pant-v{position:relative;z-index:2}
+html.modo-obs .visor-flecha,html.modo-obs .visor-x,html.modo-obs .visor-pc,html.modo-obs .visor-aviso,html.modo-obs .vivo-botones{display:none!important}
 #funciona[hidden]{display:none}
 .ptl-enlaces:empty{display:none}
 /* cartelera semanal de cada local, debajo de sus videos (pedido de Cote) */
@@ -1102,6 +1111,9 @@ const LOCALES={
   tobalaba:{nombre:'Espacio Gastronómico Tobalaba',corto:'Tobalaba',color:'var(--tobalaba)'},
 };
 const API='https://cantabingo.onrender.com/api/light/cartelera?local=';
+// Modo OBS (www.krbstage.cl/?obs=1#pantallas-<local>): la pantalla completa tal cual, con el recuadro de la izquierda
+// transparente para poner el video de la cámara debajo en OBS, y sin botones (pedido de Cote)
+const MODO_OBS=/[?&]obs=1/.test(location.search);
 // Respaldo: la cartelera real al momento de preparar la página (se usa solo si no se puede leer la de hoy)
 const RESPALDO={"kennedy":[{"day":"JUEVES","date":19,"month":11,"show":"STAND UP KENNEDY: GONZALO TRUJILLO","hours":[{"time":"19:00","label":"MÚSICA Y VIDEOS"},{"time":"20:00","label":"PREVIA"},{"time":"20:20","label":"LOS JUEGOS DE KENNEDY"},{"time":"21:00","label":"SHOW"},{"time":"22:00","label":"KARAOKE"}]},{"day":"VIERNES","date":20,"month":11,"show":"PIANO MAN","hours":[{"time":"19:00","label":"MÚSICA Y VIDEOS"},{"time":"20:30","label":"PREVIA"},{"time":"21:15","label":"SHOW"},{"time":"22:15","label":"KARAOKE"}]},{"day":"SABADO","date":21,"month":11,"show":"ESPECIAL CARIBE TROPICAL","hours":[{"time":"19:00","label":"MÚSICA Y VIDEOS"},{"time":"20:30","label":"PREVIA"},{"time":"21:00","label":"SHOW"},{"time":"22:00","label":"KARAOKE"}]}],"frida":[{"day":"VIERNES","date":20,"month":11,"show":"DOBLE DE SHAKIRA","hours":[{"time":"19:00","label":"MÚSICA Y VIDEOS"},{"time":"19:30","label":"PREVIA"},{"time":"20:00","label":"KARAOKE"},{"time":"21:00","label":"SHOW"},{"time":"22:00","label":"KARAOKE"}]},{"day":"SABADO","date":21,"month":11,"show":"TRIBUTO A CRISTIAN CASTRO","hours":[{"time":"19:00","label":"MÚSICA Y VIDEOS"},{"time":"19:30","label":"PREVIA"},{"time":"20:00","label":"KARAOKE"},{"time":"21:00","label":"SHOW"},{"time":"22:00","label":"KARAOKE"}]},{"day":"DOMINGO","date":22,"month":11,"show":"EL BINGO DE FRIDA","hours":[{"time":"13:30","label":"MÚSICA Y VIDEOS"},{"time":"14:00","label":"LOS JUEGOS DE FRIDA"}]}],"tobalaba":[{"day":"VIERNES","date":20,"month":11,"show":"ESPECIAL MÉXICO (VERÓNICA YAÑEZ)","hours":[{"time":"18:30","label":"MÚSICA Y VIDEOS"},{"time":"19:00","label":"PREVIA"},{"time":"19:30","label":"LOS JUEGOS DE TOBALABA"},{"time":"20:15","label":"SHOW"},{"time":"21:15","label":"KARAOKE"}]}]};
 const DIAS={LUNES:'Lunes',MARTES:'Martes',MIERCOLES:'Miércoles',JUEVES:'Jueves',VIERNES:'Viernes',SABADO:'Sábado',DOMINGO:'Domingo'};
@@ -1420,7 +1432,7 @@ elegirLocal('kennedy');
   let datosTw=[],aMano=false,clave='',canalSonando=null,visor=null;const ultimoVivo={},packs={};
   sw.addEventListener('change',()=>{aMano=true;pintar()});
   // las pantallas del local se dibujan a su tamaño real (1920x1080 o 1080x1920) y se achican para caber
-  const escalar=()=>document.querySelectorAll('.vivo-fila .pant').forEach(d=>{const f=d.firstElementChild;f.style.transform=`scale(${d.clientWidth/f.width})`});
+  const escalar=()=>document.querySelectorAll('.vivo-fila .pant').forEach(d=>{const f=d.firstElementChild;if(!f||!f.width)return;f.style.transform=`scale(${d.clientWidth/f.width})`});
   const obsPant=new ResizeObserver(escalar);
   // Kennedy y Frida: la pantalla vertical de la web es siempre la misma del local, tal cual (pedido de Cote, 19 nov:
   // si el local está en «Siempre el video», aquí también el video). El tablero horizontal sigue con la información.
@@ -1449,9 +1461,9 @@ elegirLocal('kennedy');
   function packVivo(canal,L,c){
     // Sin transmisión en vivo: las pantallas del local (el tablero horizontal y, al lado, la vertical), del mismo porte que
     // el conjunto del en vivo. Livianas, sin video (pedido de Cote; reemplaza las repeticiones)
-    if(!(c&&c.vivo)){const d=document.createElement('div');d.className='ptl-vivo vivo-item con-vertical pantallas';
+    if(MODO_OBS||!(c&&c.vivo)){const d=document.createElement('div');d.className='ptl-vivo vivo-item con-vertical pantallas';
       d.innerHTML=`<div class="vivo-etq"><span class="rep-icono">▣</span><span style="white-space:nowrap">Pantallas del local</span></div>
-        <div class="vivo-fila">${pant('pant-h',rutaH(L),1920,1080,'Tablero del local',L.livH?{liviano:L.livH,lver:L.lverH}:null)}${pant('pant-v',rutaV(L),1080,1920,'Pantalla vertical del local',L)}</div>
+        <div class="vivo-fila">${MODO_OBS?'<div class="pant pant-h obs-hueco"></div>':pant('pant-h',rutaH(L),1920,1080,'Tablero del local',L.livH?{liviano:L.livH,lver:L.lverH}:null)}${pant('pant-v',rutaV(L),1080,1920,'Pantalla vertical del local',L)}</div>
         <div class="vivo-botones"><button type="button" class="vivo-pc vivo-full">⛶ Pantalla completa</button></div>`;
       d.querySelectorAll('.pant').forEach(x=>obsPant.observe(x));
       d.querySelector('.vivo-full').onclick=()=>abrirVisor(L.local);return d}
@@ -1574,6 +1586,7 @@ elegirLocal('kennedy');
   let linkHecho=false;
   function abrirLink(){
     if(linkHecho||!/^#pantallas/.test(location.hash))return;linkHecho=true;
+    if(MODO_OBS)document.documentElement.classList.add('modo-obs');
     if(!sw.checked){sw.checked=true;pintar()}
     const l=(location.hash.split('-')[1]||'').toLowerCase();abrirVisor(ORDEN.some(L=>L.local===l)?l:'kennedy');
   }
@@ -1611,6 +1624,7 @@ elegirLocal('kennedy');
     if(dHoy&&dHoy.hours&&dHoy.hours.length)prog=`<b>Hoy desde las ${esc(dHoy.hours[0].time)}</b>${dHoy.show?`<span class="vt-show">⭐ ${esc(capi(dHoy.show))}</span>`:''}${lista(dHoy)}`;
     else{const d=w.find(d=>!d.today&&d.hours&&d.hours.length);if(d)prog=`<b>Próximo: ${esc(capi(d.day))} ${d.date} desde las ${esc(d.hours[0].time)}</b>${d.show?`<span class="vt-show">⭐ ${esc(capi(d.show))}</span>`:''}${lista(d)}`;else prog='<b>Pronto la cartelera de este local</b>'}
     visor.style.setProperty('--c',L.c);
+    visor.querySelectorAll('.visor-slide[data-local]').forEach(sl=>sl.classList.toggle('actual',sl.dataset.local===L.local));
     visor.querySelector('.vt-l1').innerHTML=`<b class="vt-local">${esc(L.n)}</b>${vivo?`<span class="vt-estado en-vivo"><i class="vt-dot"></i>En vivo${DIAG?'<b class="vt-diag"> · atraso …</b>':''}</span>`:'<span class="vt-estado">▣ Pantalla del local</span>'}<span class="vt-fecha">${DIAS[hoy.getDay()]} ${hoy.getDate()} de ${MESL[hoy.getMonth()]}</span><span class="visor-puntos">${ORDEN.map((_,k)=>`<i class="visor-punto${k===idxV?' on':''}"></i>`).join('')}</span>`;
     visor.querySelector('.vt-l2').innerHTML=prog;visor._prog=prog;cinta();
   }
@@ -1790,7 +1804,7 @@ document.querySelectorAll('.esp-montados').forEach(g=>{const PRIMEROS=['DF4JT1kg
   const partir=()=>{listo=true;decidir()};
   if(document.readyState==='complete')setTimeout(partir,300);else addEventListener('load',()=>setTimeout(partir,300));
   // se pausa cuando no se ve o cuando hay una transmisión en vivo en pantalla (para no quitarle conexión)
-  const decidir=()=>{if(quieto||!listo)return;
+  const decidir=()=>{if(quieto||!listo||MODO_OBS)return;
     if(window.vivoActivo){if(v.getAttribute('src')){v.pause();v.removeAttribute('src');v.load()}return} // con transmisión en vivo, la portada queda en su imagen y no baja video
     if(!v.getAttribute('src')){v.src=fuente;v.load()}
     if(portadaVisible)v.play().catch(()=>{});else v.pause()};

@@ -2,86 +2,15 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>KRB Stage · OBS</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800&family=Manrope:wght@500;700&family=JetBrains+Mono:wght@500&display=swap">
-<!--
-  Capa para OBS (pedido de Cote): la misma composición de la pantalla completa de la web, con la información del local
-  arriba, el GC a la izquierda y la pantalla vertical del local a la derecha. El fondo es transparente: en OBS se pone la
-  cámara detrás. Fuente de navegador de 1920x1080.
-    obs.html?local=kennedy   ·   obs.html?local=tobalaba   ·   obs.html?local=frida
-  El GC es el mismo de OBS de la sala de juegos (#/escena), tal cual.
--->
-<style>
-:root{color-scheme:dark;--kennedy:#47b8e6;--tobalaba:#e5413a;--frida:#e0338f;--tenue:#c9c3d4;
-  --f-display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;--f-texto:"Manrope",system-ui,sans-serif;--f-dato:"JetBrains Mono",ui-monospace,monospace}
-html,body{margin:0;height:100%;background:transparent;overflow:hidden;color:#fff;font-family:var(--f-texto)}
-.top{position:absolute;left:0;right:0;top:0;display:grid;gap:.5vh;padding:1.4vh 2vh 1.2vh;background:linear-gradient(180deg,rgba(8,7,14,.92),rgba(8,7,14,.8));border-bottom:.3vh solid var(--c)}
-.l1{display:flex;align-items:baseline;gap:1.6vh;white-space:nowrap;overflow:hidden}
-.local{font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:4.6vh;line-height:1;color:var(--c)}
-.fecha{font-size:2.4vh;color:var(--tenue)}
-.l2{white-space:nowrap;overflow:hidden;font-size:2.4vh;-webkit-mask-image:linear-gradient(90deg,transparent,#000 2%,#000 98%,transparent);mask-image:linear-gradient(90deg,transparent,#000 2%,#000 98%,transparent)}
-.l2 b{color:var(--c);font-weight:700}.l2 em{font-style:normal;color:#f4bf5a;font-weight:700}.l2 .show{font-weight:700}
-.cinta{display:inline-flex;white-space:nowrap}
-.cinta.mueve{animation:cinta linear infinite}
-.cinta>span{display:inline-flex;gap:1.6vh;align-items:baseline;padding-right:6vh}
-@keyframes cinta{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-.fila{position:absolute;display:grid;align-items:center}
-.pant{position:relative;overflow:hidden}
-.pant iframe{position:absolute;left:0;top:0;border:0;transform-origin:0 0;background:transparent}
-.pant-v{border-radius:1vh;border:.2vh solid var(--c)}
-</style>
-</head>
-<body>
-<div class="top"><div class="l1"><span class="local" id="local"></span><span class="fecha" id="fecha"></span></div><div class="l2"><div class="cinta" id="cinta"></div></div></div>
-<div class="fila" id="fila">
-  <div class="pant pant-h"><iframe id="gc" width="1920" height="1080" allowtransparency="true" title="GC"></iframe></div>
-  <div class="pant pant-v"><iframe id="ver" width="1080" height="1920" title="Pantalla vertical"></iframe></div>
-</div>
+<style>html,body{margin:0;background:transparent}</style>
+<!-- Capa para OBS: lleva a la misma pantalla completa de la web en modo OBS (recuadro de la izquierda transparente).
+     obs.html?local=kennedy · obs.html?local=tobalaba · obs.html?local=frida -->
 <script>
-const SALA='https://cantabingo.onrender.com/?mudo=1';
-const LOCALES={
-  kennedy:{n:'Mercado Kennedy',c:'var(--kennedy)',v:'kennedy',liviano:'https://www.krbstage.cl/vertical-kennedy-2.mp4',lver:'1795179633277'},
-  tobalaba:{n:'Espacio Gastronómico Tobalaba',c:'var(--tobalaba)',v:'tobalaba-v'},
-  frida:{n:'Frida Kahlo',c:'var(--frida)',v:'frida'}
-};
-const q=new URLSearchParams(location.search),k=LOCALES[q.get('local')]?q.get('local'):'kennedy',L=LOCALES[k];
-document.documentElement.style.setProperty('--c',L.c);
-document.getElementById('local').textContent=L.n;
-const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const capi=t=>String(t||'').toLowerCase().replace(/(^|[\s(:\-])([^\s(:\-])/g,(m,a,b)=>a+b.toUpperCase());
-const DIAS=['domingo','lunes','martes','miércoles','jueves','viernes','sábado'],MES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-function fecha(){const h=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Santiago'}));document.getElementById('fecha').textContent=`${DIAS[h.getDay()]} ${h.getDate()} de ${MES[h.getMonth()]}`}
-
-// La pantalla vertical del local, tal cual (con la copia liviana del video si la hay)
-document.getElementById('ver').src=`${SALA}${L.liviano?`&liviano=${encodeURIComponent(L.liviano)}&lver=${L.lver}`:''}#/vertical-in/${L.v}`;
-// El GC: el mismo de OBS de la sala de juegos (#/escena: bingo, El Rosco, sorteo, etc.), tal cual (pedido de Cote)
-document.getElementById('gc').src=SALA+'#/escena';
-
-// Programa de hoy (o el próximo día), en cinta si no cabe
-function programa(){
-  fetch(`https://cantabingo.onrender.com/api/light/cartelera?local=${k}`).then(r=>r.json()).then(j=>{
-    const w=Array.isArray(j.week)?j.week:[],hoy=w.find(d=>d.today);
-    const lista=d=>d.hours.map(h=>`<span><em>${esc(h.time)}</em> ${esc(capi(h.label))}</span>`).join('');
-    let p='';
-    if(hoy&&hoy.hours&&hoy.hours.length)p=`<b>Hoy desde las ${esc(hoy.hours[0].time)}</b>${hoy.show?`<span class="show">⭐ ${esc(capi(hoy.show))}</span>`:''}${lista(hoy)}`;
-    else{const d=w.find(d=>!d.today&&d.hours&&d.hours.length);p=d?`<b>Próximo: ${esc(capi(d.day))} ${d.date} desde las ${esc(d.hours[0].time)}</b>${d.show?`<span class="show">⭐ ${esc(capi(d.show))}</span>`:''}${lista(d)}`:'<b>Pronto la cartelera de este local</b>'}
-    const c=document.getElementById('cinta');c.classList.remove('mueve');c.innerHTML=`<span>${p}</span>`;
-    if(c.scrollWidth>c.parentNode.clientWidth+2){c.innerHTML=`<span>${p}</span><span aria-hidden="true">${p}</span>`;c.style.animationDuration=Math.max(10,c.firstChild.offsetWidth/60)+'s';c.classList.add('mueve')}
-  }).catch(()=>{});
-}
-fecha();programa();setInterval(()=>{fecha();programa()},5*60e3);
-
-// Composición: la misma de la pantalla completa de la web (horizontal 16:9 y vertical 9:16 lado a lado, misma altura)
-function acomodar(){
-  const W=innerWidth,H=innerHeight,top=document.querySelector('.top').offsetHeight,m=Math.round(H*.025),gap=Math.round(H*.015);
-  const h=Math.floor(Math.min(H-top-2*m,(W-2*m-gap)/(16/9+9/16))),wh=Math.floor(h*16/9),wv=Math.floor(h*9/16);
-  const f=document.getElementById('fila');f.style.gridTemplateColumns=`${wh}px ${wv}px`;f.style.gap=gap+'px';
-  f.style.left=Math.round((W-wh-wv-gap)/2)+'px';f.style.top=(top+m)+'px';
-  f.querySelectorAll('.pant').forEach((d,i)=>{d.style.height=h+'px';const fr=d.firstElementChild;fr.style.transform=`scale(${(i?wv:wh)/fr.width})`});
-}
-addEventListener('resize',acomodar);(document.fonts?document.fonts.ready:Promise.resolve()).then(acomodar);acomodar();
+const l=new URLSearchParams(location.search).get('local');
+location.replace('/?obs=1#pantallas-'+(['kennedy','tobalaba','frida'].includes(l)?l:'kennedy'));
 </script>
-</body>
+</head>
+<body></body>
 </html>
