@@ -229,16 +229,7 @@ views.home = async () => {
       ${open ? `<a class="home-create open" href="${bingoHref}"><span>▶</span>Continuar: ${esc(open.name)}</a>
         <p class="muted small home-note">Hay una sala abierta. Para crear otra, primero ciérrala en el Centro de control.</p>`
     : '<a class="home-create" href="#/nuevo"><span>🎮</span>Crear sala de juegos</a>'}
-      <div class="home-steps">
-        <a class="s1" href="${bingoHref}"><i>1</i><span>🎱</span><b>Bingo</b></a>
-        <a class="s2" href="#/sorteoctl"><i>2</i><span>🎲</span><b>Sorteo</b></a>
-        <a class="s3" href="#/ruedas"><i>3</i><span>🎡</span><b>El Rosco</b></a>
-        <a class="s5" href="#/votoctl/festival"><i>4</i><span>🎤</span><b>El Festival</b></a>
-        <a class="s6" href="#/showctl"><i>5</i><span>⭐</span><b>Show</b></a>
-        <a class="s4" href="#/karaokectl"><i>6</i><span>🎤</span><b>Karaoke</b></a>
-        <a class="s7" href="#/instactl"><i>7</i><span>📸</span><b>Síguenos en Instagram</b></a>
-      </div>
-      <a class="home-control" href="#/control">🎛️ Centro de control</a>
+      <a class="home-control home-control-sm" href="#/control">🎛️ Centro de control</a>
       <p style="margin-top:28px"><button id="logout">Cerrar sesión de moderador</button></p>
     </div>`;
   $('#logout').onclick = () => { store.del('adminToken'); route(); };
@@ -502,7 +493,7 @@ async function hostConsole(p) {
               <button id="confirmwin">✔ Confirmar ganador</button>
               <button id="keepplaying">▶ Seguir jugando</button>
             </div>
-            <div id="win-confirmed" hidden><p>✔ Ganador confirmado</p><a class="btn big" id="win-next">▶ Siguiente bingo</a>${activitiesNav('bingo')}</div>
+            <div id="win-confirmed" hidden><p>✔ Ganador confirmado</p>${activitiesNav('bingo')}</div>
           </div>
           <div class="row" style="justify-content:center;margin-top:16px"><button id="bigqr"></button></div>
           <div class="row" style="justify-content:center;margin-top:12px"><button class="primary big" id="gen">Generar un número</button></div>
@@ -518,7 +509,6 @@ async function hostConsole(p) {
         </div>
         <div class="panel"><h2 id="count"></h2><div id="board"></div><h2 style="margin-top:16px">Orden de salida</h2><div id="history" class="history"></div></div>
       </div>
-      <a class="btn primary big" href="#/ronda/${p.id}" style="margin-bottom:14px">▶ Siguiente bingo</a>
       ${activitiesNav('bingo')}
       <p class="small" style="text-align:center;margin-top:22px"><a href="#/admin/${p.id}">⚙️ Administración</a></p>
     </div>`;
@@ -575,7 +565,6 @@ async function hostConsole(p) {
   $('#gen').onclick = () => act('draw');
   $('#confirmwin').onclick = () => act('confirmwin');
   $('#keepplaying').onclick = () => act('keepplaying');
-  $('#win-next').href = `#/ronda/${p.id}`;
   $('#tiebreak').onclick = () => api('POST', '/api/raffle/tiebreak', { sid }).catch(fail);
   $('#auto').onclick = () => act('auto', { on: !st.auto.on, interval: Number($('#interval').value), stopOnWin: $('#stop').checked });
   $('#manual').onclick = () => { manual = !manual; render(); };
@@ -1375,9 +1364,9 @@ function activitiesNav(current) {
     ['qr', '<button type="button" data-stage-qr><span>📱</span>QR en pantalla completa</button>'],
   ];
   setTimeout(paintGameNav, 0);
-  return `<div class="act-nav games-nav"><div class="g-plan"><label>¿Cuántos juegos vamos a sortear? <input type="number" class="g-total" min="1" max="10" value="3"></label><div class="g-slots"></div></div>
+  return `<div class="act-nav games-nav"><div class="g-plan"><div class="g-slots"></div><label>¿Cuántos juegos vamos a sortear?<input type="number" class="g-total" min="1" max="10" value="3"></label></div>
     <button type="button" class="primary big g-draw" data-game-draw>🎲 Sortear juego</button>
-    <small>Juegos</small><div>${games.filter(([k]) => k !== current).map(([, h]) => h).join('')}</div>
+    <small>Juegos</small><div>${games.map(([k, h]) => (k === current ? h.replace(/data-game="/, 'aria-current="true" data-game="') : h)).join('')}</div>
     <small>Otras actividades</small><div>${more.filter(([k]) => k !== current).map(([, h]) => h).join('')}</div></div>`;
 }
 // Marca en el menú los juegos que ya salieron en el sorteo (quedan fuera del sorteo hasta que salgan los demás)
@@ -1616,7 +1605,7 @@ setTimeout(syncVenueMark, 700);
 // Aviso de KRB Kids (pedido de Cote): en las pantallas del local (no en el GC de OBS ni en los celulares) aparece cada
 // 10 minutos durante 12 segundos «KRB Kids · Juegos para niños dentro de la plataforma»
 (() => {
-  const EVERY_MS = 600000; const SHOW_MS = 12000; // cada 10 minutos (pedido de Cote)
+  const EVERY_MS = 900000; const SHOW_MS = 12000; // cada 15 minutos (pedido de Cote, 20 nov)
   const word = [...'KRB Kids'].map((ch, i) => (ch === ' ' ? ' ' : `<i style="color:${['#ff5fa2', '#ffbe0b', '#2bb24c', '#3a86ff', '#ff5fa2', '#ffbe0b', '#2bb24c', '#3a86ff'][i % 8]}">${ch}</i>`)).join('');
   const show = () => {
     if (!document.body.classList.contains('full') || /^#\/kids/.test(location.hash)) return;
@@ -1655,7 +1644,7 @@ setTimeout(syncVenueMark, 700);
     const rects = content(el);
     const hitAt = (x, y, w, h) => { let hit = 0; for (const r of rects) { const ix = Math.min(x + w, r.r) - Math.max(x, r.l); const iy = Math.min(y + h, r.b) - Math.max(y, r.t); if (ix > 0 && iy > 0) hit += ix * iy * r.k; } return hit; };
     let best = null;
-    for (const v of [['', 1], ['ka-tall', 1], ['', 0.8], ['ka-tall', 0.8], ['', 0.62], ['ka-tall', 0.62]]) {
+    for (const v of [['ka-tall', 1], ['ka-tall', 0.8], ['ka-tall', 0.62], ['ka-tall', 0.5]]) { // siempre centrado con la imagen (pedido de Cote)
       el.classList.toggle('ka-tall', v[0] === 'ka-tall'); el.style.setProperty('--ka-s', v[1]);
       const w = el.offsetWidth * v[1]; const h = el.offsetHeight * v[1];
       if (w > W - 2 * mx || h > H - 2 * my) continue;

@@ -2225,3 +2225,18 @@ body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "So
 #kids-ad.ka-tall { grid-template-columns: auto; grid-template-rows: auto auto auto; justify-items: center; text-align: center; row-gap: .6vh; border-radius: 3vh; padding: 1.6vh 2vh; }
 #kids-ad.ka-tall .ka-balloons { grid-row: auto; }
 #kids-ad.ka-tall small { max-width: 11em; }
+
+/* Juegos de la noche en dos columnas (pedido de Cote): a la izquierda los números de juego, a la derecha cuántos se sortean */
+.g-plan { grid-template-columns: 1fr auto; align-items: start; }
+.g-plan .g-slots { flex-direction: column; flex-wrap: nowrap; }
+.g-plan .g-slots span { border-radius: 10px; }
+.g-plan label { display: grid; justify-items: center; gap: 8px; text-align: center; max-width: 170px; }
+.g-plan label input { margin: 0; width: 110px; font-size: 2rem; padding: 8px; }
+.games-nav [aria-current="true"] { outline: 3px solid #ffc400; outline-offset: 2px; }
+/* Portada: el Centro de control más chico */
+.home-control.home-control-sm { display: inline-block; justify-self: center; font-size: .95rem; padding: 10px 18px; margin-top: 18px; }
+.g-plan .g-slots { align-items: stretch; }
+.g-plan .g-slots span { text-align: left; }
+.games-nav .g-plan .g-slots { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; }
+.games-nav .g-plan .g-slots span { display: block; text-align: left; }
+.games-nav .g-plan { display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: center; }

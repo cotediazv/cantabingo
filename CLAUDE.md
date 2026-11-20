@@ -17,7 +17,9 @@ Sitio: https://cantabingo.onrender.com · Render (plan Starter, disco de 1 GB) �
 - **Nombres siempre completos** (regla de Cote, 20 nov): nombre y apellido(s) se ven enteros en pantallas, GC y listas; si no caben en la línea, se achica la letra, nunca se cortan con «…».
 - En el celular del público, la transmisión en vivo va **siempre abajo** de los juegos y KRB Kids debajo del video.
 - **Sin información duplicada en pantalla** (pedido de Cote, 20 nov): lo que ya dice la franja de arriba o la etiqueta no se repite abajo.
-- **Aviso de KRB Kids** en las pantallas del local (body.full; no en GC ni celulares): cada 10 min durante 12 s, «KRB Kids · Juegos para niños dentro de la plataforma» (`#kids-ad` en `app.js`).
+- **Aviso de KRB Kids** en las pantallas del local (body.full; no en GC ni celulares): cada 15 min durante 12 s, «KRB Kids · Juegos para niños dentro de la plataforma», siempre centrado con la imagen (globos arriba, texto abajo) y en un lugar libre de la pantalla, sin tapar textos, QR ni videos; si no cabe, más chico (`#kids-ad` y `place()` en `app.js`).
+- **Salas de juegos automáticas** (pedido de Cote, 20 nov): hora de Chile, jueves desde las 18:30 Kennedy, viernes desde las 18:00 Tobalaba, domingo desde las 13:00 Frida (`AUTO_SALAS` y `autoSala()` en `server.js`). Una vez por día; si la abierta es de otro local, se cierra; usa los cartones del último bingo del local (o crea 320); dura hasta las 4 de la mañana. Se pueden crear y cerrar a mano.
+- Portada (`views.home`): solo «Crear sala de juegos» (o «Continuar») y el Centro de control, más chico. En el panel del bingo no hay botón «Siguiente bingo»: el bingo siguiente se elige en el menú de juegos o sale en el sorteo.
 - Estética: mantener el aspecto nuevo de la Sala de juegos. Colores del bingo: Frida magenta, Kennedy celeste, Tobalaba rojo.
 - La sala se llama "Los Juegos de <local>"; dentro del bingo el título es "El Bingo de <local>".
 - Las claves del moderador son variables de entorno en Render (`ADMIN_USER`, `ADMIN_PASS`). **Nunca escribirlas en este repositorio, que es público.**
