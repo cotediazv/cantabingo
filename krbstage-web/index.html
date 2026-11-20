@@ -634,6 +634,26 @@ h2{margin-top:8px}
 .vivo-fila.pc-falso.pc-v{grid-template-columns:min(calc((100vw - 14px) * .7596),calc(100dvh * 16 / 9)) min(calc((100vw - 14px) * .2404),calc(100dvh * 9 / 16));gap:14px}
 .vivo-fila.pc-falso.pc-h{grid-template-columns:min(72vw,calc(100dvh * 16 / 9)) min(28vw,calc(100dvh * 16 / 9 * .389));gap:14px}
 .pc-cerrar{z-index:90}
+/* modo OBS: todo igual a la pantalla completa, pero el recuadro de la izquierda queda transparente y sin botones */
+html.modo-obs{color-scheme:dark}
+html.modo-obs,html.modo-obs body{background:transparent!important}
+html.modo-obs body>*:not(.visor){display:none!important}
+html.modo-obs .visor{background:transparent}
+html.modo-obs .visor{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:var(--obs-esp,48px);box-sizing:border-box}
+html.modo-obs .visor-top{position:relative;z-index:3;background:color-mix(in srgb,var(--c) 22%,#000);border:3px solid var(--c);border-radius:14px;padding:14px 28px 12px;box-sizing:border-box;flex:none}
+html.modo-obs .visor-pista{flex:none;width:100%;height:var(--obs-h,700px);margin-top:var(--obs-esp,48px)}
+html.modo-obs .visor-pista{overflow:visible}html.modo-obs .visor-slide:not(.actual){display:none}html.modo-obs .visor-slide{padding:0}html.modo-obs .visor-slide>.ptl-vivo{gap:0}
+/* (pedido de Cote) franja de arriba de otro color que el fondo y letras grandes que ocupan todo el ancho */
+html.modo-obs .vt-txt{gap:8px}html.modo-obs .vt-l1{gap:24px;align-items:center}
+html.modo-obs .vt-local{font-size:64px}html.modo-obs .vt-estado{font-size:24px}html.modo-obs .vt-fecha{font-size:32px}
+html.modo-obs .vt-l2{font-size:36px;gap:6px 30px;overflow:hidden}html.modo-obs .vt-l2 span{white-space:nowrap}
+html.modo-obs .vt-estado,html.modo-obs .vt-l2 .vt-show{color:#fff}
+/* (pedido de Cote) nombre del local y «Hoy desde las …» en amarillo; sin «Pantalla del local» */
+html.modo-obs .vt-local,html.modo-obs .vt-l2 b{color:#f4bf5a}html.modo-obs .vt-l2 .vt-show b{color:#fff}html.modo-obs .vt-estado{display:none}html.modo-obs .vt-fecha{color:rgba(255,255,255,.85)}html.modo-obs .visor-punto.on{background:#fff}
+html.modo-obs .obs-hueco{background:transparent!important;z-index:1}
+html.modo-obs .visor-slide.actual .obs-hueco{box-shadow:0 0 0 200vmax color-mix(in srgb,var(--c) 50%,#000)} /* fondo del color del local (pedido de Cote) */
+html.modo-obs .visor-slide .pant-v{position:relative;z-index:2}
+html.modo-obs .visor-flecha,html.modo-obs .visor-x,html.modo-obs .visor-pc,html.modo-obs .visor-aviso,html.modo-obs .vivo-botones{display:none!important}
 #funciona[hidden]{display:none}
 .ptl-enlaces:empty{display:none}
 /* cartelera semanal de cada local, debajo de sus videos (pedido de Cote) */
@@ -652,6 +672,9 @@ h2{margin-top:8px}
 .pcr-nada{margin:0;font-size:13px;color:var(--tenue)}
 /* las pantallas del local no se pueden tocar: una capa encima recibe el dedo (en el iPhone, tocarlas abría la pantalla sola) */
 .pant::after{content:"";position:absolute;inset:0;z-index:1}
+/* capa encima de cada pantalla: tocarla abre la pantalla completa (en el iPhone, tocar la pantalla abría la de la Sala sola) */
+.pant-tapa{position:absolute;top:0;left:0;right:0;bottom:0;z-index:2;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.visor .pant-tapa{cursor:default}
 html.con-visor-tactil{overscroll-behavior-x:none}
 .visor-aviso{color:#f4bf5a;font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity .5s}
 .visor-aviso.fuera{opacity:0}
@@ -667,7 +690,12 @@ html.con-visor,html.con-visor body{overflow:hidden}
 .vt-fecha{font-size:clamp(13px,1.7vh,18px);color:var(--tenue);overflow:hidden;text-overflow:ellipsis}
 .vt-l2{display:flex;gap:6px 14px;align-items:baseline;font-size:clamp(12.5px,1.7vh,18px);white-space:nowrap;overflow-x:auto;scrollbar-width:none;color:#e9e4f0}
 .vt-l2::-webkit-scrollbar{display:none}
-.vt-l2 b{color:var(--c);font-weight:700}.vt-l2 em{font-style:normal;color:#f4bf5a;font-weight:700}.vt-show{color:#fff;font-weight:700}
+.vt-l2.mueve{overflow:hidden;display:block;-webkit-mask-image:linear-gradient(90deg,transparent,#000 3%,#000 97%,transparent);mask-image:linear-gradient(90deg,transparent,#000 3%,#000 97%,transparent)}
+.vt-cinta{display:inline-flex;white-space:nowrap;animation:vt-cinta linear infinite}
+.vt-cinta>span{display:inline-flex;gap:6px 14px;align-items:baseline;padding-right:48px}
+@keyframes vt-cinta{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.vt-cinta{animation:none}}
+.vt-l2 b{color:var(--c);font-weight:700}.vt-l2 small{font-size:.8em;opacity:.85}.vt-l2 em{font-style:normal;color:#f4bf5a;font-weight:700}.vt-show{color:#fff;font-weight:700}
 .visor-pc{flex:none;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;border-radius:999px;padding:5px 12px;font:700 16px var(--f-texto);cursor:pointer}
 .visor-x{flex:none;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;border-radius:999px;padding:7px 13px;font:700 13px var(--f-texto);cursor:pointer}
 .visor-pista{display:flex;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;min-height:0}
@@ -1094,6 +1122,9 @@ const LOCALES={
   tobalaba:{nombre:'Espacio Gastronómico Tobalaba',corto:'Tobalaba',color:'var(--tobalaba)'},
 };
 const API='https://cantabingo.onrender.com/api/light/cartelera?local=';
+// Modo OBS (www.krbstage.cl/?obs=1#pantallas-<local>): la pantalla completa tal cual, con el recuadro de la izquierda
+// transparente para poner el video de la cámara debajo en OBS, y sin botones (pedido de Cote)
+const MODO_OBS=/[?&]obs=1/.test(location.search);
 // Respaldo: la cartelera real al momento de preparar la página (se usa solo si no se puede leer la de hoy)
 const RESPALDO={"kennedy":[{"day":"JUEVES","date":19,"month":11,"show":"STAND UP KENNEDY: GONZALO TRUJILLO","hours":[{"time":"19:00","label":"MÚSICA Y VIDEOS"},{"time":"20:00","label":"PREVIA"},{"time":"20:20","label":"LOS JUEGOS DE KENNEDY"},{"time":"21:00","label":"SHOW"},{"time":"22:00","label":"KARAOKE"}]},{"day":"VIERNES","date":20,"month":11,"show":"PIANO MAN","hours":[{"time":"19:00","label":"MÚSICA Y VIDEOS"},{"time":"20:30","label":"PREVIA"},{"time":"21:15","label":"SHOW"},{"time":"22:15","label":"KARAOKE"}]},{"day":"SABADO","date":21,"month":11,"show":"ESPECIAL CARIBE TROPICAL","hours":[{"time":"19:00","label":"MÚSICA Y VIDEOS"},{"time":"20:30","label":"PREVIA"},{"time":"21:00","label":"SHOW"},{"time":"22:00","label":"KARAOKE"}]}],"frida":[{"day":"VIERNES","date":20,"month":11,"show":"DOBLE DE SHAKIRA","hours":[{"time":"19:00","label":"MÚSICA Y VIDEOS"},{"time":"19:30","label":"PREVIA"},{"time":"20:00","label":"KARAOKE"},{"time":"21:00","label":"SHOW"},{"time":"22:00","label":"KARAOKE"}]},{"day":"SABADO","date":21,"month":11,"show":"TRIBUTO A CRISTIAN CASTRO","hours":[{"time":"19:00","label":"MÚSICA Y VIDEOS"},{"time":"19:30","label":"PREVIA"},{"time":"20:00","label":"KARAOKE"},{"time":"21:00","label":"SHOW"},{"time":"22:00","label":"KARAOKE"}]},{"day":"DOMINGO","date":22,"month":11,"show":"EL BINGO DE FRIDA","hours":[{"time":"13:30","label":"MÚSICA Y VIDEOS"},{"time":"14:00","label":"LOS JUEGOS DE FRIDA"}]}],"tobalaba":[{"day":"VIERNES","date":20,"month":11,"show":"ESPECIAL MÉXICO (VERÓNICA YAÑEZ)","hours":[{"time":"18:30","label":"MÚSICA Y VIDEOS"},{"time":"19:00","label":"PREVIA"},{"time":"19:30","label":"LOS JUEGOS DE TOBALABA"},{"time":"20:15","label":"SHOW"},{"time":"21:15","label":"KARAOKE"}]}]};
 const DIAS={LUNES:'Lunes',MARTES:'Martes',MIERCOLES:'Miércoles',JUEVES:'Jueves',VIERNES:'Viernes',SABADO:'Sábado',DOMINGO:'Domingo'};
@@ -1399,10 +1430,11 @@ elegirLocal('kennedy');
 (function(){
   const SALA='https://cantabingo.onrender.com/?mudo=1';
   const LOC={
-    // copia liviana del video de la pantalla vertical (1 Mbps en vez de 11): si Cote sube un video nuevo, la Sala usa el original
-    krbstagekennedy:{local:'kennedy',n:'Mercado Kennedy',c:'var(--kennedy)',vertical:'#/vertical-in/kennedy',luz:true,whep:'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/c24ccde66ad7d935841dd934d9b3e1cf/webRTC/play',liviano:'https://www.krbstage.cl/vertical-kennedy.mp4',lver:'1794966023522'},
+    // copias livianas (0,5 Mbps) de los videos de las pantallas, para gastar menos transferencia en Render; si Cote sube
+    // un video nuevo, la Sala usa el original hasta que se haga la copia nueva (lver / lverH = versión del video)
+    krbstagekennedy:{local:'kennedy',n:'Mercado Kennedy',c:'var(--kennedy)',vertical:'#/vertical-in/kennedy',luz:true,whep:'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/c24ccde66ad7d935841dd934d9b3e1cf/webRTC/play',liviano:'https://www.krbstage.cl/vertical-kennedy-2.mp4',lver:'1795179633277',livH:'https://www.krbstage.cl/horizontal-kennedy.mp4',lverH:'1795119093974'},
     krbstage3:{local:'tobalaba',n:'Espacio Gastronómico Tobalaba',c:'var(--tobalaba)',vertical:'#/vertical-in/tobalaba-v',whep:'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/9c4d261a1b6c2fb79842b6d3821b9018/webRTC/play'},
-    krbstage:{local:'frida',n:'Frida Kahlo',c:'var(--frida)',vertical:'#/vertical-in/frida',luz:true,whep:'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/2c9c627707b0fbc53e20c611f84235a0/webRTC/play'}
+    krbstage:{local:'frida',n:'Frida Kahlo',c:'var(--frida)',vertical:'#/vertical-in/frida',luz:true,livH:'https://www.krbstage.cl/horizontal-frida.mp4',lverH:'1795179662255',whep:'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/2c9c627707b0fbc53e20c611f84235a0/webRTC/play'}
   };
   // Switch «Instagram / Twitch» arriba de «Dónde producimos»: con Twitch, cada local muestra su transmisión en vivo
   // (con la pantalla del local al lado) o, si no está transmitiendo, sus últimas transmisiones guardadas.
@@ -1411,7 +1443,7 @@ elegirLocal('kennedy');
   let datosTw=[],aMano=false,clave='',canalSonando=null,visor=null;const ultimoVivo={},packs={};
   sw.addEventListener('change',()=>{aMano=true;pintar()});
   // las pantallas del local se dibujan a su tamaño real (1920x1080 o 1080x1920) y se achican para caber
-  const escalar=()=>document.querySelectorAll('.vivo-fila .pant').forEach(d=>{const f=d.firstElementChild;f.style.transform=`scale(${d.clientWidth/f.width})`});
+  const escalar=()=>document.querySelectorAll('.vivo-fila .pant').forEach(d=>{const f=d.firstElementChild;if(!f||!f.width)return;f.style.transform=`scale(${d.clientWidth/f.width})`});
   const obsPant=new ResizeObserver(escalar);
   // Kennedy y Frida: la pantalla vertical de la web es siempre la misma del local, tal cual (pedido de Cote, 19 nov:
   // si el local está en «Siempre el video», aquí también el video). El tablero horizontal sigue con la información.
@@ -1432,7 +1464,7 @@ elegirLocal('kennedy');
     }).catch(()=>{});
   }
 
-  const pant=(clase,ruta,w,h,t,L)=>`<div class="pant ${clase}"><iframe sandbox="allow-scripts allow-same-origin" src="${SALA}${L&&L.liviano?`&liviano=${encodeURIComponent(L.liviano)}&lver=${L.lver}`:''}${ruta}" width="${w}" height="${h}" title="${t}" loading="lazy" tabindex="-1"></iframe></div>`;
+  const pant=(clase,ruta,w,h,t,L)=>`<div class="pant ${clase}"><iframe sandbox="allow-scripts allow-same-origin" src="${SALA}${L&&L.liviano?`&liviano=${encodeURIComponent(L.liviano)}&lver=${L.lver}`:''}${ruta}" width="${w}" height="${h}" title="${t}" loading="lazy" tabindex="-1"></iframe><span class="pant-tapa" aria-hidden="true"></span></div>`;
   const padres=['www.krbstage.cl','krbstage.cl',location.hostname].filter((x,i,a)=>x&&a.indexOf(x)===i).map(x=>'&parent='+x).join('');
   const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   const fecha=t=>{const d=new Date(t);return isNaN(d)?'':`${d.getDate()} ${MESES[d.getMonth()]}`};
@@ -1440,9 +1472,9 @@ elegirLocal('kennedy');
   function packVivo(canal,L,c){
     // Sin transmisión en vivo: las pantallas del local (el tablero horizontal y, al lado, la vertical), del mismo porte que
     // el conjunto del en vivo. Livianas, sin video (pedido de Cote; reemplaza las repeticiones)
-    if(!(c&&c.vivo)){const d=document.createElement('div');d.className='ptl-vivo vivo-item con-vertical pantallas';
+    if(MODO_OBS||!(c&&c.vivo)){const d=document.createElement('div');d.className='ptl-vivo vivo-item con-vertical pantallas';
       d.innerHTML=`<div class="vivo-etq"><span class="rep-icono">▣</span><span style="white-space:nowrap">Pantallas del local</span></div>
-        <div class="vivo-fila">${pant('pant-h',rutaH(L),1920,1080,'Tablero del local')}${pant('pant-v',rutaV(L),1080,1920,'Pantalla vertical del local',L)}</div>
+        <div class="vivo-fila">${MODO_OBS?`<div class="pant pant-h obs-hueco"><iframe src="${SALA}#/escena" width="1920" height="1080" title="GC de la sala de juegos" tabindex="-1"></iframe></div>`:pant('pant-h',rutaH(L),1920,1080,'Tablero del local',L.livH?{liviano:L.livH,lver:L.lverH}:null)}${pant('pant-v',rutaV(L),1080,1920,'Pantalla vertical del local',L)}</div>
         <div class="vivo-botones"><button type="button" class="vivo-pc vivo-full">⛶ Pantalla completa</button></div>`;
       d.querySelectorAll('.pant').forEach(x=>obsPant.observe(x));
       d.querySelector('.vivo-full').onclick=()=>abrirVisor(L.local);return d}
@@ -1563,8 +1595,18 @@ elegirLocal('kennedy');
   // Enlace directo a la pantalla completa de los tres locales, para compartir (pedido de Cote):
   // www.krbstage.cl/#pantallas (empieza en Kennedy) o #pantallas-tobalaba, #pantallas-frida
   let linkHecho=false;
+  // Modo OBS con un solo enlace (www.krbstage.cl/obs.html): el local es el de la sala de juegos abierta; si no hay
+  // ninguna, el del día (jueves Kennedy, viernes Tobalaba, domingo Frida). Se revisa cada 5 s y cambia solo
+  const localDelDia=()=>{const d=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Santiago'}));const h=d.getHours()<6?(d.getDay()+6)%7:d.getDay();return {4:'kennedy',5:'tobalaba',0:'frida'}[h]||'kennedy'};
+  function localSala(){return fetch('https://cantabingo.onrender.com/api/web/pantallas').then(r=>r.json()).then(t=>t.sala||localDelDia()).catch(()=>localDelDia())}
+  function irA(l){if(!visor)return;const k=ORDEN.findIndex(L=>L.local===l);if(k<0||k===idxV)return;idxV=k;ajustarVisor();cabecera();dormir()}
   function abrirLink(){
     if(linkHecho||!/^#pantallas/.test(location.hash))return;linkHecho=true;
+    if(MODO_OBS)document.documentElement.classList.add('modo-obs');
+    if(MODO_OBS){ // siempre sigue a la sala de juegos abierta, aunque el enlace diga un local (pedido de Cote)
+      if(!sw.checked){sw.checked=true;pintar()}
+      localSala().then(l=>{abrirVisor(l);setInterval(()=>localSala().then(irA),5000)});return;
+    }
     if(!sw.checked){sw.checked=true;pintar()}
     const l=(location.hash.split('-')[1]||'').toLowerCase();abrirVisor(ORDEN.some(L=>L.local===l)?l:'kennedy');
   }
@@ -1598,16 +1640,55 @@ elegirLocal('kennedy');
     const hoy=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Santiago'}));
     const w=cartV[L.local]||[];const dHoy=w.find(d=>d.today);
     let prog='';
-    const lista=d=>d.hours.map(h=>`<span><em>${esc(h.time)}</em> ${esc(capi(h.label))}</span>`).join('');
-    if(dHoy&&dHoy.hours&&dHoy.hours.length)prog=`<b>Hoy desde las ${esc(dHoy.hours[0].time)}</b>${dHoy.show?`<span class="vt-show">⭐ ${esc(capi(dHoy.show))}</span>`:''}${lista(dHoy)}`;
-    else{const d=w.find(d=>!d.today&&d.hours&&d.hours.length);if(d)prog=`<b>Próximo: ${esc(capi(d.day))} ${d.date} desde las ${esc(d.hours[0].time)}</b>${d.show?`<span class="vt-show">⭐ ${esc(capi(d.show))}</span>`:''}${lista(d)}`;else prog='<b>Pronto la cartelera de este local</b>'}
+    // (pedido de Cote) «Hoy desde las 18:30 Música Y Videos · 19:00 Previa · … · 20:15 Destacado: ⭐ Especial México por
+    // Verónica Yañez · 21:15 Karaoke»: el primer horario va junto a «Hoy desde las», y en el del show va el show destacado
+    const showTxt=t=>{const m=String(t||'').match(/^(.*?)\s*\(([^()]+)\)\s*$/);return m?`${esc(capi(m[1]))} <small>por</small> ${esc(capi(m[2]))}`:esc(capi(t))};
+    const lista=(d,pre)=>{let puesto=false;
+      const items=d.hours.map((h,k)=>{const esShow=d.show&&/\bSHOW\b/i.test(String(h.label).normalize('NFD').replace(/[\u0300-\u036f]/g,''))&&!puesto;
+        if(esShow)puesto=true;
+        const txt=esShow?`<span class="vt-show">Destacado: ⭐ ${showTxt(d.show)}</span>`:esc(capi(h.label));
+        return k===0?`<span><b>${pre} ${esc(h.time)}</b> ${txt}</span>`:`<span><em>${esc(h.time)}</em> ${txt}</span>`});
+      if(d.show&&!puesto)items.push(`<span class="vt-show">Destacado: ⭐ ${showTxt(d.show)}</span>`);
+      return items.join('')};
+    if(dHoy&&dHoy.hours&&dHoy.hours.length)prog=lista(dHoy,'Hoy desde las');
+    else{const d=w.find(d=>!d.today&&d.hours&&d.hours.length);prog=d?lista(d,`Próximo: ${esc(capi(d.day))} ${d.date} desde las`):'<b>Pronto la cartelera de este local</b>'}
     visor.style.setProperty('--c',L.c);
+    visor.querySelectorAll('.visor-slide[data-local]').forEach(sl=>sl.classList.toggle('actual',sl.dataset.local===L.local));
     visor.querySelector('.vt-l1').innerHTML=`<b class="vt-local">${esc(L.n)}</b>${vivo?`<span class="vt-estado en-vivo"><i class="vt-dot"></i>En vivo${DIAG?'<b class="vt-diag"> · atraso …</b>':''}</span>`:'<span class="vt-estado">▣ Pantalla del local</span>'}<span class="vt-fecha">${DIAS[hoy.getDay()]} ${hoy.getDate()} de ${MESL[hoy.getMonth()]}</span><span class="visor-puntos">${ORDEN.map((_,k)=>`<i class="visor-punto${k===idxV?' on':''}"></i>`).join('')}</span>`;
-    visor.querySelector('.vt-l2').innerHTML=prog;
+    visor.querySelector('.vt-l2').innerHTML=prog;visor._prog=prog;cinta();
+  }
+  // Si el programa de hoy no cabe en la línea, se va moviendo (como cinta) para mostrar todo (pedido de Cote)
+  function cinta(){
+    if(!visor)return;const l2=visor.querySelector('.vt-l2');if(!l2||!visor._prog)return;
+    l2.classList.remove('mueve');l2.innerHTML=visor._prog;
+    // modo OBS: el programa ocupa todo el ancho en una línea; si no cabe, la letra se achica (sin cinta)
+    if(MODO_OBS){let t=40;l2.style.fontSize=t+'px';while(l2.scrollWidth>l2.clientWidth+2&&t>18){t-=1;l2.style.fontSize=t+'px'}
+      const l1=visor.querySelector('.vt-l1'),n=l1&&l1.querySelector('.vt-local');if(n){let f=64;n.style.fontSize=f+'px';while(l1.scrollWidth>l1.clientWidth+2&&f>32){f-=2;n.style.fontSize=f+'px'}}
+      if(!visor._ajust){visor._ajust=1;ajustarVisor();visor._ajust=0}return}
+    if(l2.scrollWidth<=l2.clientWidth+2)return;
+    l2.innerHTML=`<div class="vt-cinta"><span>${visor._prog}</span><span aria-hidden="true">${visor._prog}</span></div>`;
+    const w=l2.querySelector('.vt-cinta>span').offsetWidth;l2.querySelector('.vt-cinta').style.animationDuration=Math.max(8,w/45)+'s';
+    l2.classList.add('mueve');
+  }
+  // Modo OBS (pedido de Cote): composición ordenada: la franja de arriba con los mismos márgenes laterales que las
+  // pantallas de abajo, y el mismo espacio arriba, entre la franja y las pantallas, y abajo
+  function obsComponer(){
+    const W=innerWidth,H=innerHeight,lado=Math.round(W*.04),gap=Math.round(W*.012),top=visor.querySelector('.visor-top');
+    const ancho=W-2*lado;top.style.width=ancho+'px';
+    const th=top.offsetHeight,aire=Math.round(H*.045);
+    const h=Math.floor(Math.min((ancho-gap)/(16/9+9/16),H-th-3*aire));
+    const wh=Math.floor(h*16/9),wv=ancho-gap-wh,esp=Math.max(aire,Math.round((H-th-h)/3));
+    visor.style.setProperty('--obs-esp',esp+'px');visor.style.setProperty('--obs-h',h+'px');
+    const pista=visor.querySelector('.visor-pista');
+    pista.querySelectorAll('.visor-slide').forEach(sl=>{const f=sl.querySelector('.vivo-fila');if(!f)return;
+      f.style.gridTemplateColumns=`${wh}px ${wv}px`;f.style.gap=gap+'px';
+      f.querySelectorAll('.pant').forEach(d=>d.style.height=h+'px')});
+    pista.scrollLeft=(idxV+1)*pista.clientWidth;requestAnimationFrame(escalar);
   }
   function ajustarVisor(){
-    if(!visor)return;
+    if(!visor)return;cinta();
     visor.style.height=innerHeight+'px';
+    if(MODO_OBS){obsComponer();return}
     const pista=visor.querySelector('.visor-pista'),W=pista.clientWidth,flechas=matchMedia('(hover:hover)').matches?96:84;
     pista.querySelectorAll('.visor-slide').forEach(sl=>{
       const f=sl.querySelector('.vivo-fila');if(!f)return;const bt=sl.querySelector('.vivo-botones');
@@ -1671,6 +1752,10 @@ elegirLocal('kennedy');
     v.remove();document.documentElement.classList.remove('con-visor','con-visor-tactil');requestAnimationFrame(escalar);
   }
   addEventListener('popstate',()=>{if(visor)cerrarVisor(true)});
+  // tocar cualquier parte de las pantallas o de la transmisión abre la pantalla completa de ese local (pedido de Cote)
+  document.addEventListener('click',e=>{if(visor)return;const t=e.target.closest('.pant-tapa,.vivo-marco');if(!t)return;
+    const col=t.closest('.ptl-col');if(!col||!ORDEN.some(L=>L.local===col.dataset.local))return;
+    e.preventDefault();e.stopPropagation();abrirVisor(col.dataset.local)},true);
   document.addEventListener('fullscreenchange',()=>{if(visor){const b=visor.querySelector('.visor-pc');if(b&&document.fullscreenElement)b.hidden=true}if(visor&&!document.fullscreenElement&&visor._fs)cerrarVisor();if(visor)visor._fs=!!document.fullscreenElement;setTimeout(ajustarVisor,100)});
   addEventListener('keydown',e=>{if(!visor)return;if(e.key==='Escape')cerrarVisor();if(e.key==='ArrowRight')visor.querySelector('.visor-flecha.der').click();if(e.key==='ArrowLeft')visor.querySelector('.visor-flecha.izq').click()});
   // al girar el teléfono: se vuelve a acomodar (varias veces, porque el iPhone termina de girar después)
@@ -1763,12 +1848,12 @@ document.querySelectorAll('.esp-montados').forEach(g=>{const PRIMEROS=['DF4JT1kg
   const v=$('#video-portada');
   // video de 20 segundos que se repite (2,9 MB; el de 1080 para pantallas grandes). Primero se ve la foto y el
   // video parte recién cuando la página terminó de cargar, para que lo demás aparezca antes
-  const fuente=(innerWidth*Math.min(devicePixelRatio||1,1.5)<1200?'portada-720.mp4':'portada-1080.mp4')+'?v=2'; // v=2: mejor calidad (pedido de Cote)
+  const fuente=(innerWidth*Math.min(devicePixelRatio||1,1.5)<1200?'portada-720.mp4':'portada-1080.mp4')+'?v=3'; // v=3: unos 4 MB, para gastar menos transferencia (pedido de Cote)
   let portadaVisible=true,listo=false;
   const partir=()=>{listo=true;decidir()};
   if(document.readyState==='complete')setTimeout(partir,300);else addEventListener('load',()=>setTimeout(partir,300));
   // se pausa cuando no se ve o cuando hay una transmisión en vivo en pantalla (para no quitarle conexión)
-  const decidir=()=>{if(quieto||!listo)return;
+  const decidir=()=>{if(quieto||!listo||MODO_OBS)return;
     if(window.vivoActivo){if(v.getAttribute('src')){v.pause();v.removeAttribute('src');v.load()}return} // con transmisión en vivo, la portada queda en su imagen y no baja video
     if(!v.getAttribute('src')){v.src=fuente;v.load()}
     if(portadaVisible)v.play().catch(()=>{});else v.pause()};

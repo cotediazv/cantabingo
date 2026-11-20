@@ -77,6 +77,12 @@ module.exports = function twitch({ app }) {
         out[p] = { show: j.show || '', activity: j.activity || null };
       } catch (_) { out[p] = null; }
     }));
+    // local de la sala de juegos abierta (para la capa de OBS de la web)
+    try {
+      const r = await fetch(`http://127.0.0.1:${process.env.PORT || 3000}/api/current`, { signal: AbortSignal.timeout(5000) });
+      const j = await r.json();
+      out.sala = (j.sessions && j.sessions[0] && j.sessions[0].theme) || null;
+    } catch (_) { out.sala = null; }
     res.json(out);
   });
 };
