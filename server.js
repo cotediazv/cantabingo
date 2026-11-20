@@ -95,7 +95,7 @@ function makeCards(count, n, freeCenter) {
   return cards;
 }
 
-const gcDefaults = () => db.gcDefaults || { top: 'Escanea el código QR con tu celular y participa', bottom: 'Pon tu nombre y apellido y participa' };
+const gcDefaults = () => db.gcDefaults || { top: 'Escanea el código QR con tu celular y participa', bottom: 'Pon tu nombre, apellido y participa' };
 
 // ---------- Lógica de sesión ----------
 const clients = {}; // sessionId -> Set<res> (SSE)

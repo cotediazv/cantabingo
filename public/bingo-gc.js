@@ -14,7 +14,7 @@
     const s = ((await api('GET', '/api/current').catch(() => ({}))).sessions || [])[0];
     app.innerHTML = `<div id="gc" class="th-${s ? s.theme : 'frida'}"><div class="gc-big-wrap"><div class="gc-big"><b class="gc-big-title">${s ? esc(s.name) : 'KRB Stage · Sala de juegos'}</b>
       <div class="gc-big-qr">${qr(joinUrl())}</div>
-      <span class="gc-big-text">Escanea el código QR con tu celular, pon tu nombre y apellido y participa</span></div></div></div>`;
+      <span class="gc-big-text">Escanea el código QR con tu celular, pon tu nombre, apellido y participa</span></div></div></div>`;
     return () => document.body.classList.remove('obs', 'gc-screen');
   };
 
@@ -79,7 +79,7 @@
           bigShown = true;
           $('#gc').innerHTML = `<div class="gc-big-wrap"><div class="gc-big"><b class="gc-big-title">${esc(st.name)}</b>
             <div class="gc-big-qr">${qr(joinUrl())}</div>
-            <span class="gc-big-text">Escanea el código QR con tu celular, pon tu nombre y apellido y participa</span>
+            <span class="gc-big-text">Escanea el código QR con tu celular, pon tu nombre, apellido y participa</span>
             <span class="gc-big-count"></span></div></div>`;
         }
         $('.gc-big-count').textContent = count;

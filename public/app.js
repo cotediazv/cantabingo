@@ -621,7 +621,7 @@ views.admin = async (pid) => {
     <div class="panel"><h2>Textos de la gráfica de OBS</h2>
       <div class="fields" style="margin-top:10px">
         <label class="f">Franja superior<input type="text" id="gc-top" maxlength="90" value="${esc(info.gc.top)}" placeholder="Escanea el código QR con tu celular y participa"></label>
-        <label class="f">Franja inferior<input type="text" id="gc-bottom" maxlength="140" value="${esc(info.gc.bottom)}" placeholder="Pon tu nombre y apellido y participa"></label>
+        <label class="f">Franja inferior<input type="text" id="gc-bottom" maxlength="140" value="${esc(info.gc.bottom)}" placeholder="Pon tu nombre, apellido y participa"></label>
       </div>
       <p class="muted small" style="margin-top:8px">En la franja inferior, lo que escribas entre asteriscos sale resaltado en amarillo: <b>*CONTRASEÑA: 1234*</b></p>
       <p style="margin-top:10px"><button id="gc-save">Guardar textos</button></p></div>

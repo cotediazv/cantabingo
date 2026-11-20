@@ -7,7 +7,7 @@
   views.qrFull = async () => {
     app.innerHTML = `<div id="fb"><div class="fb-idle"><b><i>KRB Stage</i> Sala de juegos</b>
       <div class="fb-idle-qr">${qr(joinUrl())}</div>
-      <small>Escanea el código QR con tu celular, pon tu nombre y apellido y participa</small></div></div>`;
+      <small>Escanea el código QR con tu celular, pon tu nombre, apellido y participa</small></div></div>`;
     return () => {};
   };
   views.bingoFull = async () => {
@@ -37,7 +37,7 @@
           shown = 'qr';
           $('#fb').innerHTML = `<div class="gc-big-wrap"><div class="gc-big fb-bigqr"><b class="gc-big-title">${esc(st.name)}</b>
             <div class="gc-big-qr">${qr(joinUrl())}</div>
-            <span class="gc-big-text">Escanea el código QR con tu celular, pon tu nombre y apellido y participa</span>
+            <span class="gc-big-text">Escanea el código QR con tu celular, pon tu nombre, apellido y participa</span>
             <span class="gc-big-count"></span></div></div>`;
         }
         $('.gc-big-count').textContent = count;
