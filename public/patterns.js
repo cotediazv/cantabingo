@@ -42,6 +42,11 @@
     one('cuadro', 'Cuadro central', ['.....', '.XXX.', '.X.X.', '.XXX.', '.....']),
     one('diamante', 'Diamante', ['..X..', '.X.X.', 'X...X', '.X.X.', '..X..']),
     one('piramide', 'Pirámide', ['.....', '.....', '..X..', '.XXX.', 'XXXXX']),
+    // Más figuras (pedido de Cote, 20 nov)
+    one('piramide-inv', 'Pirámide invertida', ['XXXXX', '.XXX.', '..X..', '.....', '.....']),
+    one('reloj', 'Reloj de arena', ['XXXXX', '.XXX.', '..X..', '.XXX.', 'XXXXX']),
+    one('corazon', 'Corazón', ['.X.X.', 'XXXXX', 'XXXXX', '.XXX.', '..X..']),
+    one('estrella', 'Estrella', ['..X..', 'XXXXX', '.XXX.', '.X.X.', 'X...X']),
     one('lleno', 'Cartón lleno', ['XXXXX', 'XXXXX', 'XXXXX', 'XXXXX', 'XXXXX']),
     // Abecedario en mayúsculas
     one('a', 'Figura A', ['.XXX.', 'X...X', 'XXXXX', 'X...X', 'X...X']),

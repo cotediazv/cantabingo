@@ -2103,3 +2103,246 @@ body[data-venue="frida"] .rv-rank, body:not([data-venue]) .rv-rank { --rv-score:
 .rv-people li { font-size: 1em; line-height: 1.3; white-space: nowrap; overflow: visible; text-overflow: clip; }
 .rv-people ul { justify-items: center; justify-content: center; }
 .rv-people li { text-align: center; }
+
+/* Concurso de karaoke (modo de la votación, pedido de Cote) */
+.vc-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.vc-modes button { padding: 14px 8px; font-weight: 800; border-radius: 14px; }
+.vc-max { max-width: 260px; margin-bottom: 12px; }
+.vc-notes, .vk-notes { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.vc-notes i, .vk-notes i { font-style: normal; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: #ffc400; color: #1a1a1a; font-weight: 900; font-size: 1.3rem; }
+.vk-notes i { width: 7vh; height: 7vh; font-size: 3.6vh; box-shadow: 0 .6vh 0 rgba(0, 0, 0, .3); animation: vk-pop .5s cubic-bezier(.2, 1.6, .4, 1) both; animation-delay: calc(var(--i, 0) * .35s); }
+.vk-notes.big { margin-top: 2vh; gap: 2vw; }
+.vk-notes.big i { width: 13vh; height: 13vh; font-size: 7vh; }
+.vk-side { display: grid; place-items: center; }
+@keyframes vk-pop { from { transform: scale(0) rotate(-30deg); opacity: 0; } to { transform: scale(1) rotate(0); opacity: 1; } }
+.vk-score { font-size: 5vh; font-weight: 900; color: #ffc400; }
+.vk-score b { font-size: 7vh; }
+.vk-second { font-size: 3vh; font-weight: 800; opacity: .95; }
+@media (prefers-reduced-motion: reduce) { .vk-notes i { animation: none; } }
+
+/* El Festival: las 5 notas juntas, cada una con el nombre de quien la puso (8 s en pantalla) */
+.vk-notes { display: flex; flex-wrap: nowrap; justify-content: center; align-items: flex-start; gap: 2vw; }
+.vk-notes span { display: grid; justify-items: center; gap: .8vh; min-width: 0; max-width: 16vw; }
+.vk-notes span i { animation: none; }
+.vk-notes small { font-size: 2.2vh; font-weight: 800; text-align: center; line-height: 1.1; text-transform: uppercase; color: #fff; text-shadow: .2vh .2vh 0 rgba(0, 0, 0, .4); overflow-wrap: anywhere; }
+.vk-notes.big small { font-size: 2.8vh; }
+.vk-card { position: fixed; left: 50%; bottom: 27vh; transform: translateX(-50%); z-index: 6; padding: 2.4vh 3vw; border-radius: 3vh; background: rgba(14, 12, 30, .92); border: .5vh solid #ffc400; box-shadow: 0 1.5vh 4vh rgba(0, 0, 0, .5); }
+.vk-card .vk-notes i { width: 10vh; height: 10vh; font-size: 5.6vh; }
+.vc-notes span { display: grid; justify-items: center; gap: 4px; }
+.vc-notes small { font-size: .75rem; font-weight: 700; text-align: center; max-width: 90px; }
+
+/* El Rosco: instrucciones antes de empezar */
+.pw-howto { display: none; }
+@media (orientation: landscape) {
+  body.full.wheel-screen #pw.pw-idle .pw-title { display: grid; justify-items: center; gap: 1.6vh; }
+  body.full.wheel-screen #pw.pw-idle .pw-howto { display: block; font-size: 3.6vh; font-weight: 700; line-height: 1.2; color: #fff; text-shadow: .3vh .3vh 0 rgba(0, 0, 0, .35); white-space: normal; }
+  body.full.wheel-screen #pw.pw-idle.pw-howto-on { grid-template-rows: 38vh minmax(0, 1fr); }
+}
+.rv-howto { display: block; margin-top: .6vh; font-size: min(2.2vh, 4vw); font-weight: 800; text-align: center; opacity: .95; }
+.vk-notes span { max-width: none; }
+.vk-notes small { white-space: nowrap; overflow-wrap: normal; }
+.vk-notes.big small { font-size: 2.3vh; }
+body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "Source Sans Pro", "Segoe UI", system-ui, sans-serif; letter-spacing: 0; -webkit-text-stroke: 0; font-weight: 800; }
+.vk-notes.big { flex-wrap: wrap; gap: 1.6vh 1.6vw; max-width: 100%; }
+.vk-notes.big i { width: 10vh; height: 10vh; font-size: 5.4vh; }
+.vk-notes.big small { font-size: 2vh; }
+#vf .vf-main { min-width: 0; overflow: hidden; }
+/* Listas de participantes: un nombre por línea, ordenados (pedido de Cote) */
+.vk-list { margin: 1.4vh 0 0; padding: 0; list-style: none; display: grid; gap: .6vh; justify-items: center; }
+.vk-list li { font-size: 3.4vh; font-weight: 900; line-height: 1.15; text-transform: uppercase; white-space: nowrap; color: #fff; text-shadow: .25vh .25vh 0 rgba(0, 0, 0, .35); }
+.vk-card .vk-list { margin: 0; }
+.vk-card .vk-list li { font-size: 3vh; }
+
+/* Aviso de KRB Kids en las pantallas del local (pedido de Cote) */
+#kids-ad { position: fixed; left: 2vw; bottom: 3vh; z-index: 40; display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; column-gap: 1.4vh; align-items: center;
+  padding: 1.2vh 2.4vh; border-radius: 99px; background: #fff; border: .5vh solid #ffbe0b; box-shadow: 0 1vh 3vh rgba(0, 0, 0, .45);
+  transform: translateY(160%); opacity: 0; transition: transform .6s cubic-bezier(.2, 1.4, .4, 1), opacity .4s; pointer-events: none; }
+#kids-ad.on { transform: none; opacity: 1; }
+#kids-ad .ka-balloons { grid-row: 1 / 3; font-size: 4.6vh; line-height: 1; }
+#kids-ad b { font-family: Fredoka, "Baloo 2", system-ui, sans-serif; font-size: 4vh; font-weight: 700; line-height: 1; letter-spacing: .02em; }
+#kids-ad b i { font-style: normal; text-shadow: 0 .3vh 0 rgba(0, 0, 0, .15); }
+#kids-ad small { font-size: 2vh; font-weight: 800; color: #333; line-height: 1.1; }
+@media (prefers-reduced-motion: reduce) { #kids-ad { transition: none; } }
+
+/* «Para leer»: instrucciones y criterios en el panel del animador, al partir cada juego */
+.howto { border: 2px solid #ffc400; background: linear-gradient(180deg, rgba(255, 196, 0, .12), rgba(255, 196, 0, .03)); }
+.howto summary { cursor: pointer; font-size: 1.15rem; font-weight: 900; color: #ffc400; }
+.howto ul { margin: 10px 0 0; padding-left: 20px; display: grid; gap: 8px; }
+.howto li { font-size: 1.12rem; line-height: 1.35; }
+.howto b { color: #ffc400; }
+
+/* Menú de abajo: «Sortear juego», los juegos y las demás actividades (pedido de Cote) */
+.games-nav .g-draw { width: 100%; margin-bottom: 14px; font-size: 1.3rem; }
+.games-nav small { display: block; margin: 10px 0 8px; }
+.games-nav .g-played { opacity: .55; }
+.games-nav .g-played::after { content: '✔ ya salió'; display: block; font-size: .72rem; font-weight: 700; color: #3fe08f; }
+/* Sorteo del siguiente juego en pantalla */
+#jd { position: fixed; inset: 0; top: 0; right: 0; bottom: 0; left: 0; display: grid; place-items: center; z-index: 3; }
+.jd-card { display: grid; justify-items: center; gap: 2.4vh; padding: 4vh 6vw; border-radius: 4vh; text-align: center; color: #fff; background: rgba(14, 12, 30, .9); border: .7vh solid #ffc400; box-shadow: 0 2vh 6vh rgba(0, 0, 0, .55); }
+.jd-card small { font-size: 3.4vh; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; color: #ffc400; }
+.jd-roll, .jd-win { font-family: Fredoka, "Baloo 2", system-ui, sans-serif; font-size: 9vh; font-weight: 700; line-height: 1.05; white-space: nowrap; }
+.jd-win { animation: jd-pop .6s cubic-bezier(.2, 1.6, .4, 1); color: #ffe14d; text-shadow: 0 .6vh 0 rgba(0, 0, 0, .3); }
+@keyframes jd-pop { from { transform: scale(.4); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.jd-list { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.2vh 1.4vw; max-width: 80vw; }
+.jd-list span { padding: 1vh 2vw; border-radius: 99px; font-size: 2.8vh; font-weight: 800; background: rgba(255, 255, 255, .1); border: .3vh solid rgba(255, 255, 255, .2); }
+.jd-list span.on { background: #ffc400; color: #1a1a1a; border-color: #ffc400; }
+.jd-list span.done { opacity: .45; text-decoration: line-through; }
+.jd-list span.bingo { border-style: dashed; }
+/* en el GC: abajo, sin tapar la cámara */
+#jd.jd-gc { place-items: end center; padding-bottom: 5vh; }
+.jd-gc .jd-card { padding: 2.4vh 4vw; gap: 1vh; }
+.jd-gc .jd-roll, .jd-gc .jd-win { font-size: 7vh; }
+@media (prefers-reduced-motion: reduce) { .jd-win { animation: none; } }
+.jd-gc .jd-list span { font-size: 2.2vh; padding: .6vh 1.4vw; }
+.games-nav .g-played::after { content: '⏸ fuera del próximo sorteo'; }
+/* El Festival: la pregunta de cuántos cantan, destacada al empezar */
+.vc-max.ask { max-width: none; padding: 14px 16px; border-radius: 14px; border: 2px solid #ffc400; background: rgba(255, 196, 0, .1); font-size: 1.15rem; font-weight: 900; color: #ffc400; }
+.vc-max.ask input { margin-top: 8px; max-width: 160px; font-size: 1.6rem; font-weight: 900; text-align: center; }
+
+/* Juegos de la noche: cuántos se sortean y sus casilleros (pedido de Cote) */
+.g-plan { display: grid; gap: 10px; margin-bottom: 12px; padding: 12px 14px; border-radius: 14px; border: 2px solid #ffc400; background: rgba(255, 196, 0, .08); }
+.g-plan label { font-weight: 900; color: #ffc400; }
+.g-plan input { width: 80px; margin-left: 8px; font-size: 1.2rem; font-weight: 900; text-align: center; }
+.g-slots { display: flex; flex-wrap: wrap; gap: 6px; }
+.g-slots span { padding: 6px 10px; border-radius: 99px; font-size: .9rem; font-weight: 800; background: rgba(255, 255, 255, .08); border: 1px dashed rgba(255, 255, 255, .3); }
+.g-slots span.done { background: rgba(63, 224, 143, .18); border: 1px solid #3fe08f; }
+.jd-slots span { display: grid; justify-items: center; gap: .3vh; min-width: 14vw; padding: 1vh 1.6vw; border-radius: 2vh; }
+.jd-slots span small { font-size: 1.8vh; font-weight: 900; color: #ffc400; text-transform: uppercase; letter-spacing: .04em; }
+.jd-slots span.done { opacity: 1; text-decoration: none; background: rgba(63, 224, 143, .18); border-color: #3fe08f; }
+.jd-slots span.now { border-color: #ffc400; animation: jd-blink .6s ease-in-out infinite alternate; }
+.jd-slots span.on { background: #ffc400; color: #1a1a1a; border-color: #ffc400; }
+.jd-slots span.on small { color: #1a1a1a; }
+.jd-slots span.todo { opacity: .55; }
+@keyframes jd-blink { to { background: rgba(255, 196, 0, .25); } }
+.games-nav .g-plan { display: grid; grid-template-columns: 1fr; justify-items: start; }
+.games-nav .g-slots { justify-content: flex-start; }
+
+/* Aviso de KRB Kids en el lugar libre de la pantalla: tamaño (--ka-s), en columna para los costados y, si queda arriba,
+   entra desde arriba */
+#kids-ad { transform-origin: 0 0; transform: translateY(160%) scale(var(--ka-s, 1)); }
+#kids-ad.ka-top { transform: translateY(-160%) scale(var(--ka-s, 1)); }
+#kids-ad.on, #kids-ad.ka-top.on { transform: scale(var(--ka-s, 1)); }
+#kids-ad.ka-tall { grid-template-columns: auto; grid-template-rows: auto auto auto; justify-items: center; text-align: center; row-gap: .6vh; border-radius: 3vh; padding: 1.6vh 2vh; }
+#kids-ad.ka-tall .ka-balloons { grid-row: auto; }
+#kids-ad.ka-tall small { max-width: 11em; }
+
+/* Juegos de la noche en dos columnas (pedido de Cote): a la izquierda los números de juego, a la derecha cuántos se sortean */
+.g-plan { grid-template-columns: 1fr auto; align-items: start; }
+.g-plan .g-slots { flex-direction: column; flex-wrap: nowrap; }
+.g-plan .g-slots span { border-radius: 10px; }
+.g-plan label { display: grid; justify-items: center; gap: 8px; text-align: center; max-width: 170px; }
+.g-plan label input { margin: 0; width: 110px; font-size: 2rem; padding: 8px; }
+.games-nav [aria-current="true"] { outline: 3px solid #ffc400; outline-offset: 2px; }
+/* Portada: el Centro de control más chico */
+.home-control.home-control-sm { display: inline-block; justify-self: center; font-size: .95rem; padding: 10px 18px; margin-top: 18px; }
+.g-plan .g-slots { align-items: stretch; }
+.g-plan .g-slots span { text-align: left; }
+.games-nav .g-plan .g-slots { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; }
+.games-nav .g-plan .g-slots span { display: block; text-align: left; }
+.games-nav .g-plan { display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: center; }
+
+/* Sorteo de juegos en dos pasos: juegos que pueden salir (pantalla) y aviso de elección directa (panel) */
+.jd-opts { display: flex; flex-wrap: wrap; justify-content: center; gap: 1.6vh 2vw; margin: 2vh 0 1vh; }
+.jd-opts span { padding: 1.4vh 2.4vw; border-radius: 2vh; font-size: 4.2vh; font-weight: 900; background: rgba(255, 196, 0, .12); border: .4vh solid #ffc400; }
+.g-direct { margin: 0; text-align: center; font-weight: 800; color: #ffc400; }
+.games-nav.g-ready [data-game] { border-color: #ffc400; }
+.games-nav.g-ready .g-draw { background: #ffc400; color: #1a1a1a; }
+
+/* Sorteo de juegos: los juegos que pueden salir en una sola línea, ajustados al ancho de la pantalla (pedido de Cote) */
+#jd .jd-opts { flex-wrap: nowrap; width: 100%; max-width: 100%; overflow: hidden; gap: 1.2vw; font-size: 4.2vh; }
+#jd .jd-opts span { flex: 0 1 auto; white-space: nowrap; font-size: 1em; padding: .35em .6em; }
+#jd .jd-card { max-width: 94vw; box-sizing: border-box; min-width: 0; }
+@media (orientation: portrait) { #jd .jd-card { width: 94vw; } }
+
+/* Instrucciones del juego en el celular, 5 segundos al empezar cada juego (pedido de Cote) */
+#phone-howto { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; padding: 16px; background: rgba(8, 6, 20, .72); animation: ph-in .25s ease-out; }
+#phone-howto .ph-card { position: relative; overflow: hidden; width: min(440px, 100%); padding: 20px 20px 26px; border-radius: 18px; background: var(--raised, #221d44); border: 3px solid #ffc400; color: var(--ink, #fff); box-shadow: 0 12px 40px rgba(0, 0, 0, .6); }
+#phone-howto small { display: block; color: #ffc400; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
+#phone-howto b { display: block; margin: 4px 0 10px; font-size: 1.5rem; line-height: 1.15; }
+#phone-howto ul { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: 1.1rem; line-height: 1.3; }
+#phone-howto li b { display: inline; margin: 0; font-size: inherit; color: #ffc400; }
+#phone-howto .ph-bar { position: absolute; left: 0; bottom: 0; height: 6px; width: 100%; background: #ffc400; transform-origin: left; animation: ph-bar 3s linear forwards; }
+@keyframes ph-bar { to { transform: scaleX(0); } }
+@keyframes ph-in { from { opacity: 0; } }
+
+/* Sorteo de juegos: todo centrado y dentro del cuadro, con márgenes que siempre se respetan (pedido de Cote) */
+#jd { place-items: center; padding: 3vh 3vw; box-sizing: border-box; }
+#jd .jd-card { width: auto; max-width: 92vw; max-height: 92vh; overflow: hidden; }
+@media (orientation: portrait) { #jd .jd-card { width: 92vw; } }
+#jd .jd-card > * { max-width: 100%; box-sizing: border-box; }
+#jd .jd-roll, #jd .jd-win { display: block; max-width: 100%; overflow: hidden; text-align: center; }
+#jd .jd-slots { max-width: 100%; justify-content: center; }
+#jd .jd-slots span { max-width: 100%; box-sizing: border-box; overflow: hidden; white-space: nowrap; }
+@media (orientation: portrait) { #jd .jd-slots span { min-width: 26vw; } #jd .jd-roll, #jd .jd-win { font-size: 7vh; } }
+/* Botón Deshacer, debajo de «Sortear juego» */
+.games-nav .g-undo { display: block; margin: 8px auto 4px; padding: 8px 18px; font-weight: 800; }
+.games-nav .g-undo:disabled { opacity: .4; cursor: default; }
+
+/* El objeto más extraño: el botón de inscripciones solo, grande (sin explicación) */
+.vc-signup.vc-obj:not(.on) { border: 0; padding: 0; background: none; }
+.vc-signup.vc-obj:not(.on) p { display: none; }
+.vc-signup.vc-obj:not(.on) button { width: 100%; padding: 14px; font-size: 1.15rem; font-weight: 800; }
+
+/* Panel del bingo sin tablero (solo con «Selección manual»): «Orden de salida» arriba del recuadro */
+#count[style*="none"] + #board + .ord-title { margin-top: 0; }
+.ord-title { margin-top: 16px; }
+
+/* Bingo con ganador aceptado: solo queda lo que viene (menú de juegos y sorteo) */
+#host-bingo.bingo-done > .panel, #host-bingo.bingo-done > .howto, #host-bingo.bingo-done > .cols, #host-bingo.bingo-done > p.small { display: none; }
+
+/* Centro de control: botoncito «Refrescar página» (para la aplicación instalada) */
+.ctl-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.ctl-reload { padding: 5px 12px; font-size: .85rem; }
+
+/* Votaciones: panel con un solo botón que avanza (pedido de Cote) */
+.vc-step { display: grid; gap: 10px; margin: 6px 0 14px; }
+.vc-step > button { width: 100%; padding: 16px; font-size: 1.25rem; font-weight: 900; }
+.vc-now { display: grid; gap: 2px; padding: 12px 14px; border-radius: 14px; background: rgba(255, 196, 0, .1); border: 2px solid #ffc400; }
+.vc-now small { color: #ffc400; font-weight: 900; font-size: .9rem; }
+.vc-now b { font-size: 1.5rem; line-height: 1.15; }
+.vc-now span { color: var(--muted, #aaa); font-weight: 700; }
+.vc-again { display: block; margin: -4px auto 14px; padding: 6px 14px; font-size: .9rem; }
+.vc-mini .vc-row { padding: 8px 12px; }
+.vc-mini .vc-row em { font-style: normal; font-weight: 800; color: #3fe08f; white-space: nowrap; }
+
+/* Instrucciones en pantalla: cada una en su línea, sin pasarse para abajo; si no cabe, se achica (fitOneLine) */
+#vf .vf-main > small, #vf .vf-main > b, #vf .vf-main > span, #vf .vf-main > i, .pw-howto, .rv-howto { white-space: nowrap; max-width: 100%; box-sizing: border-box; overflow: hidden; }
+#vf .vf-main > small, #vf .vf-main > span, #vf .vf-main > i { display: inline-block; }
+.pw-howto, .rv-howto { display: block; }
+.games-nav .g-plan[hidden] { display: none; }
+
+/* Menú de juegos plegado mientras hay un juego en curso (pedido de Cote) */
+.games-nav .g-unfold { display: none; }
+.games-nav.g-folded > *:not(.g-unfold) { display: none !important; }
+.games-nav.g-folded .g-unfold { display: block; width: 100%; margin: 8px 0; padding: 12px; font-weight: 800; }
+/* Bingo: las instrucciones se ocultan con el primer número */
+#host-bingo.bingo-started > .howto { display: none; }
+/* Votaciones: con el ganador anunciado queda solo el menú; «Nuevo concurso» dentro de «Más opciones» */
+#vc-panel[hidden] { display: none; }
+.vc-more { margin-top: 18px; }
+.vc-more summary { cursor: pointer; color: var(--muted, #aaa); font-size: .9rem; }
+.vc-more button { margin-top: 10px; }
+/* El Rosco: instrucciones fuera al empezar; con el ganador aceptado queda solo lo que viene */
+#rosco-ctl.rosco-started > .howto, #rosco-ctl.rosco-done > .howto { display: none; }
+#rosco-ctl.rosco-done > .cols { grid-template-columns: 1fr; }
+#rosco-ctl.rosco-done > .cols > .panel:nth-child(2), #rosco-ctl.rosco-done > .panel, #rosco-ctl.rosco-done > .games-nav, #rosco-ctl.rosco-done > p.small,
+#rosco-ctl.rosco-done #w-question, #rosco-ctl.rosco-done .w-flow, #rosco-ctl.rosco-done .w-keys, #rosco-ctl.rosco-done .cols > .panel:first-child > .row, #rosco-ctl.rosco-done .cols > .panel:first-child > p.muted { display: none !important; }
+/* Sorteo de concursantes: un botón grande; la lista de conectados plegada */
+.rf-main { width: 100%; padding: 16px; font-size: 1.2rem; }
+.rf-more summary { cursor: pointer; font-weight: 800; font-size: 1.1rem; }
+/* Figuras del bingo agrupadas */
+.patterns .pat-group { grid-column: 1 / -1; margin: 12px 0 2px; font-size: 1rem; color: #ffc400; }
+.patterns .pat-group:first-child { margin-top: 0; }
+/* «Refrescar» en todos los paneles */
+#ctl-reload-fixed { position: fixed; top: 8px; right: 8px; z-index: 60; padding: 4px 10px; font-size: .8rem; opacity: .85; }
+
+/* Figuras del bingo: las letras en una pestaña plegada */
+.patterns .pat-letters { grid-column: 1 / -1; margin-top: 12px; }
+.patterns .pat-letters summary { cursor: pointer; font-weight: 800; color: #ffc400; padding: 8px 0; }
+.patterns .pat-letters .patterns { margin-top: 8px; }
+/* Resultados: el lugar en el círculo (3.º) en vez del número del participante */
+.v-no { white-space: nowrap; }
+
+/* Enlace al Centro de control abajo de cada panel */
+#ctl-home-link { text-align: center; margin: 24px auto 40px; }
+#ctl-reload-fixed { position: absolute; }

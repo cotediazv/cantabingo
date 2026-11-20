@@ -101,9 +101,18 @@ const miniHTML = (id) => {
   return `<span class="mini">${Array.from({ length: 25 }, (_, i) => `<i class="${m & (1 << i) ? 'x' : ''}"></i>`).join('')}</span>`;
 };
 const patternsInline = (ids) => ids.map((id) => `<span class="pat-inline">${miniHTML(id)} ${esc(PATTERNS.byId[id].name)}</span>`).join('');
+// Pedido de Cote (20 nov): las figuras agrupadas en Líneas, Figuras y Letras, para elegir más rápido
+const PAT_GROUPS = [['Líneas', ['linea', 'horizontal', 'vertical', 'diagonal', 'dos-lineas']], ['Letras', null]];
 function patternPicker(selected = ['linea']) {
-  return `<div class="patterns">${PATTERNS.list.map((p) => `<label class="pat">
-    <input type="radio" name="pattern" value="${p.id}" ${selected[0] === p.id ? 'checked' : ''}>${miniHTML(p.id)}<span>${esc(p.name)}</span></label>`).join('')}</div>
+  const one = (p) => `<label class="pat">
+    <input type="radio" name="pattern" value="${p.id}" ${selected[0] === p.id ? 'checked' : ''}>${miniHTML(p.id)}<span>${esc(p.name)}</span></label>`;
+  const lines = PATTERNS.list.filter((p) => PAT_GROUPS[0][1].includes(p.id));
+  const letters = PATTERNS.list.filter((p) => /^Figura [A-Z]$/.test(p.name));
+  const shapes = PATTERNS.list.filter((p) => !lines.includes(p) && !letters.includes(p));
+  // Las letras van en una pestaña plegada (pedido de Cote); se abre sola si la figura elegida es una letra
+  const letterOn = letters.some((p) => p.id === selected[0]);
+  return `<div class="patterns"><h3 class="pat-group">Líneas</h3>${lines.map(one).join('')}<h3 class="pat-group">Figuras</h3>${shapes.map(one).join('')}
+    <details class="pat-letters" ${letterOn ? 'open' : ''}><summary>Letras (A a la Z)</summary><div class="patterns">${letters.map(one).join('')}</div></details></div>
     <p class="muted small" style="margin-top:8px">Un patrón por ronda: al elegir otro, el anterior se desmarca.</p>`;
 }
 function readPatterns(root) {
@@ -229,16 +238,7 @@ views.home = async () => {
       ${open ? `<a class="home-create open" href="${bingoHref}"><span>▶</span>Continuar: ${esc(open.name)}</a>
         <p class="muted small home-note">Hay una sala abierta. Para crear otra, primero ciérrala en el Centro de control.</p>`
     : '<a class="home-create" href="#/nuevo"><span>🎮</span>Crear sala de juegos</a>'}
-      <div class="home-steps">
-        <a class="s1" href="${bingoHref}"><i>1</i><span>🎱</span><b>Bingo</b></a>
-        <a class="s2" href="#/sorteoctl"><i>2</i><span>🎲</span><b>Sorteo</b></a>
-        <a class="s3" href="#/ruedas"><i>3</i><span>🎡</span><b>El Rosco</b></a>
-        <a class="s5" href="#/votoctl"><i>4</i><span>🗳️</span><b>Votación</b></a>
-        <a class="s6" href="#/showctl"><i>5</i><span>⭐</span><b>Show</b></a>
-        <a class="s4" href="#/karaokectl"><i>6</i><span>🎤</span><b>Karaoke</b></a>
-        <a class="s7" href="#/instactl"><i>7</i><span>📸</span><b>Síguenos en Instagram</b></a>
-      </div>
-      <a class="home-control" href="#/control">🎛️ Centro de control</a>
+      <a class="home-control home-control-sm" href="#/control">🎛️ Centro de control</a>
       <p style="margin-top:28px"><button id="logout">Cerrar sesión de moderador</button></p>
     </div>`;
   $('#logout').onclick = () => { store.del('adminToken'); route(); };
@@ -248,9 +248,11 @@ views.home = async () => {
 // Centro de control: qué gráfica se ve en la pantalla de OBS
 views.control = async () => {
   if (!(await isAdmin())) return viewLogin();
-  app.innerHTML = `<p class="back"><a href="#/">← Inicio</a></p><h1>Centro de control</h1>
-    <a class="btn lp-open" href="#/light">💡 Sala light · karaoke, show y cartelera en otro local</a>
-    <a class="btn lp-open" href="#/consola">🖥️ Consola general · los 3 locales en una pantalla</a>
+  // Pedido de Cote (20 nov): en la aplicación instalada no hay cómo recargar; botoncito «Refrescar página»
+  app.innerHTML = `<p class="back ctl-top"><a href="#/">← Inicio</a><button type="button" class="ctl-reload" onclick="location.reload()">↻ Refrescar página</button></p><h1>Centro de control</h1>
+    <div class="panel"><h2>Sala de juegos abierta</h2>
+      <p class="muted small">Si hay más de una, a la gente le aparece una lista para elegir. Cierra las que ya no se usan.</p>
+      <div id="open-list"></div></div>
     <a class="btn lp-open" href="#/verticalctl/kennedy">📺 Pantallas de los locales · videos vertical y horizontal</a>
     <div class="panel">
       <h2>En pantalla</h2>
@@ -268,6 +270,8 @@ views.control = async () => {
         <p><b>🎬 OBS</b><small>Fuente de navegador, 1920×1080, transparente</small><a class="link" href="${stageUrl()}" target="_blank">${esc(stageUrl())}</a></p>
       </div>
     </div>
+    <a class="btn lp-open" href="#/light">💡 Sala light · karaoke, show y cartelera en otro local</a>
+    <a class="btn lp-open" href="#/consola">🖥️ Consola general · los 3 locales en una pantalla</a>
     <div class="panel"><h2>Karaoke</h2>
       <p class="muted small">Muestra en pantalla la lista de pedidos del sistema de karaoke (formulario y app del equipo).</p>
       <div class="venue-tabs" id="kar-venue" role="tablist"></div>
@@ -284,9 +288,7 @@ views.control = async () => {
       <details style="margin-top:12px"><summary class="small">Editar horarios y cartelera del mes</summary>
         <form id="ag-form" class="fields" style="grid-template-columns:1fr;margin-top:10px"></form></details>
     </div>
-    <div class="panel"><h2>Bingos abiertos</h2>
-      <p class="muted small">Si hay más de uno, a la gente le aparece una lista para elegir. Cierra los que ya no se usan.</p>
-      <div id="open-list"></div></div>`;
+`;
   // Karaoke: local del día y direcciones de la web app y del formulario de cada local
   const paintKar = (c) => {
     if (!$('#kar-venue')) return;
@@ -470,6 +472,28 @@ function hostSetup(p) {
 
 // Panel del bingo en curso: solo lo que el animador usa durante el juego.
 // Enlaces, QR, textos de la gráfica y cierre de sesión están en «Administración».
+// Instrucciones y criterios para el animador, al partir cada juego (pedido de Cote): cortas y precisas, para leer en voz alta
+window.readAloud = (game, lines) => `<details class="panel howto" open><summary>📢 Instrucciones · ${esc(game)}</summary><ul>${lines.map((l) => `<li>${l}</li>`).join('')}</ul></details>`;
+// Pedido de Cote (20 nov): las instrucciones en pantalla van ordenadas, cada una en su línea, sin pasarse para abajo:
+// si no cabe en el ancho de la pantalla, se achica la letra
+window.fitOneLine = (el, min = 9) => {
+  if (!el || !el.isConnected) return;
+  el.style.fontSize = '';
+  let fs = parseFloat(getComputedStyle(el).fontSize) || 20;
+  while (el.scrollWidth > el.clientWidth + 1 && fs > min) { fs -= 1; el.style.fontSize = `${fs}px`; }
+};
+// Instrucciones de El Rosco: las usan el panel (wheel-ui.js) y los celulares
+window.ROSCO_HOWTO = [
+  '3 participantes.',
+  'Todos juegan desde las mesas.',
+  '<b>Premio mayor</b> para el que gana El Rosco.',
+  '<b>Premio especial</b> para el ganador del público que juega la Trivia del Rosco.',
+];
+const BINGO_HOWTO = [
+  'Todos juegan desde las mesas, con su cartón en el celular.',
+  'Gana quien complete primero la <b>figura</b>.',
+  'Empate: sorteo.',
+]
 async function hostConsole(p) {
   const sid = p.sessionId;
   store.set('lastBingo', p.id); // para el botón «Volver al bingo» del sorteo y del rosco
@@ -478,8 +502,9 @@ async function hostConsole(p) {
   let manual = false;
   let spoken = -1;
   app.innerHTML = `
-    <div><p class="back"><a href="#/">← Inicio</a></p>
+    <div id="host-bingo"><p class="back"><a href="#/">← Inicio</a></p>
       <div class="panel"><h1 id="title"></h1><div id="meta" class="muted"></div><div id="pats" style="margin-top:10px"></div></div>
+      ${window.readAloud('Bingo', BINGO_HOWTO)}
       <div class="cols">
         <div class="panel">
           <div id="draws"></div>
@@ -494,7 +519,7 @@ async function hostConsole(p) {
               <button id="confirmwin">✔ Confirmar ganador</button>
               <button id="keepplaying">▶ Seguir jugando</button>
             </div>
-            <div id="win-confirmed" hidden><p>✔ Ganador confirmado</p><a class="btn big" id="win-next">▶ Siguiente bingo</a>${activitiesNav('bingo')}</div>
+            <div id="win-confirmed" hidden><p>✔ Ganador confirmado</p>${activitiesNav('bingo')}</div>
           </div>
           <div class="row" style="justify-content:center;margin-top:16px"><button id="bigqr"></button></div>
           <div class="row" style="justify-content:center;margin-top:12px"><button class="primary big" id="gen">Generar un número</button></div>
@@ -508,9 +533,8 @@ async function hostConsole(p) {
             <label class="check" hidden><input type="checkbox" id="voice" ${voiceOn ? 'checked' : ''}> Voz</label>
           </div>
         </div>
-        <div class="panel"><h2 id="count"></h2><div id="board"></div><h2 style="margin-top:16px">Orden de salida</h2><div id="history" class="history"></div></div>
+        <div class="panel"><h2 id="count"></h2><div id="board"></div><h2 class="ord-title">Orden de salida</h2><div id="history" class="history"></div></div>
       </div>
-      <a class="btn primary big" href="#/ronda/${p.id}" style="margin-bottom:14px">▶ Siguiente bingo</a>
       ${activitiesNav('bingo')}
       <p class="small" style="text-align:center;margin-top:22px"><a href="#/admin/${p.id}">⚙️ Administración</a></p>
     </div>`;
@@ -522,6 +546,9 @@ async function hostConsole(p) {
     $('#draws').innerHTML = drawsHTML(st, st.drawn);
     $('#count').textContent = `Tablero · ${st.drawn.length} de ${st.values}`;
     $('#board').innerHTML = boardHTML(st, st.drawn, manual);
+    // Pedido de Cote (20 nov): el tablero no va en el panel del animador; aparece solo con «Selección manual», para tocar el número
+    $('#count').style.display = manual ? '' : 'none';
+    $('#board').style.display = manual ? '' : 'none';
     $('#history').innerHTML = st.drawn.map((v) => `<span>${esc(plain(st, v))}</span>`).join('') || '<span class="muted">Aún no se ha generado ningún valor.</span>';
     $('#gen').disabled = st.drawn.length >= st.values || st.auto.on || st.winConfirmed; // ganador confirmado = sorteo terminado
     $('#auto').disabled = !!st.winConfirmed;
@@ -560,6 +587,13 @@ async function hostConsole(p) {
     $('#confirmwin').textContent = '✔ Confirmar ganador';
     $('#tie-hint').hidden = !(tied && !st.tieWinner);
     $('#win-confirmed').hidden = !confirmed;
+    // Pedido de Cote (20 nov): con el ganador aceptado, desaparece todo lo del bingo y queda solo lo que viene (el menú
+    // de juegos con el sorteo)
+    const done = $('#host-bingo');
+    if (done && done.classList.contains('bingo-done') !== confirmed) { done.classList.toggle('bingo-done', confirmed); if (confirmed) window.scrollTo(0, 0); }
+    // Las instrucciones se leen al empezar: desaparecen con el primer número (pedido de Cote)
+    if (done) done.classList.toggle('bingo-started', st.drawn.length > 0);
+    window.setNavFold(st.drawn.length > 0 && !confirmed);
     $('#win-confirmed p').textContent = '✔ Ganador confirmado';
     $('#final').innerHTML = st.finalists ? `<p><b>Selección final:</b> ${st.finalists.map((c) => '#' + (p.startNumber + c - 1)).join(', ') || 'no hay cartones validados'}</p>` : '';
     if (st.drawn.length !== spoken) { if (spoken >= 0 && st.drawn.length > spoken) speak(speakText(st, st.drawn.at(-1))); spoken = st.drawn.length; }
@@ -567,7 +601,6 @@ async function hostConsole(p) {
   $('#gen').onclick = () => act('draw');
   $('#confirmwin').onclick = () => act('confirmwin');
   $('#keepplaying').onclick = () => act('keepplaying');
-  $('#win-next').href = `#/ronda/${p.id}`;
   $('#tiebreak').onclick = () => api('POST', '/api/raffle/tiebreak', { sid }).catch(fail);
   $('#auto').onclick = () => act('auto', { on: !st.auto.on, interval: Number($('#interval').value), stopOnWin: $('#stop').checked });
   $('#manual').onclick = () => { manual = !manual; render(); };
@@ -829,7 +862,33 @@ views.jugar = async (sid) => {
     if (!on && instaOn) { clearInterval(instaOn); instaOn = false; }
     return on;
   };
+  // Instrucciones en el celular (pedido de Cote, 20 nov): al empezar cada juego (y al entrar a la sala) aparecen
+  // 5 segundos las instrucciones del juego en curso: Bingo (cada ronda), El Rosco, El Festival o El objeto más extraño
+  let howtoKey = null;
+  const phoneHowto = (title, lines) => {
+    let el = document.getElementById('phone-howto');
+    if (el) el.remove();
+    el = document.createElement('div'); el.id = 'phone-howto';
+    el.innerHTML = `<div class="ph-card"><small>📢 Instrucciones</small><b>${esc(title)}</b><ul>${lines.map((l) => `<li>${l}</li>`).join('')}</ul><i class="ph-bar"></i></div>`;
+    document.body.appendChild(el);
+    setTimeout(() => { if (el.isConnected) el.remove(); }, 3000); // 3 segundos como máximo (pedido de Cote, 20 nov)
+  };
+  const syncHowto = async () => {
+    const s = st.stage || 'bingo';
+    if (s === 'juego') { howtoKey = null; return; } // sorteo de juegos: el juego que venga después es uno nuevo
+    const key = s === 'rueda' && st.roscoId ? `rosco:${st.roscoId}` : s === 'voto' ? 'voto' : s === 'bingo' || s === 'qr' ? `bingo:${st.round}` : null;
+    if (!key || key === howtoKey) return;
+    howtoKey = key;
+    if (key === 'voto') {
+      const v = await api('GET', '/api/vote').catch(() => null);
+      if (!v || !window.voteHowto) return;
+      howtoKey = `voto:${v.mode}`;
+      const h = window.voteHowto(v); phoneHowto(h.title, h.lines);
+    } else if (key.startsWith('rosco')) phoneHowto('El Rosco', window.ROSCO_HOWTO);
+    else phoneHowto(bingoName(st.name), BINGO_HOWTO);
+  };
   const syncStage = () => {
+    if (!(howtoKey && howtoKey.startsWith('voto') && st.stage === 'voto')) syncHowto();
     const kar = syncKar() | syncVote() | syncInsta();
     const on = (st.stage === 'rueda' && !!st.roscoId) || kar;
     $('#bingo-top').hidden = on;
@@ -1067,6 +1126,12 @@ const sfx = (() => {
     chime: () => { note(1047, 0, 0.5, 'sine', 0.22); note(1319, 0.14, 0.6, 'sine', 0.2); note(1568, 0.28, 0.9, 'sine', 0.18); },
     // Se acabó el tiempo: tres bocinazos de aire comprimido, el último más largo
     alarm: () => { horn(0, 0.45); horn(0.62, 0.45); horn(1.24, 1.1); },
+    // Redoble de tambores (concurso de karaoke): golpes cada vez más rápidos y fuertes, y un platillo al final
+    drum: () => {
+      let t = 0;
+      for (let i = 0; i < 46; i++) { const v = 0.08 + 0.3 * (i / 46); note(110 + (i % 2) * 18, t, 0.06, 'triangle', v); note(70, t, 0.05, 'square', v * 0.5); t += Math.max(0.035, 0.11 - i * 0.0018); }
+      note(55, t, 0.9, 'sawtooth', 0.35); note(2400, t, 1.2, 'square', 0.06, 900); note(1800, t + 0.02, 1.1, 'sine', 0.08, 700);
+    },
     // Ganador: fanfarria ascendente con acorde final
     win: () => {
       [523, 659, 784].forEach((f, i) => { note(f, i * 0.14, 0.2, 'sawtooth', 0.16); note(f, i * 0.14, 0.2, 'square', 0.08); });
@@ -1115,6 +1180,7 @@ views.tablero = async () => {
         else if (show === 'qr') stop = await views.qrFull();
         else if (show === 'karaoke') stop = await views.karaokeFull();
         else if (show === 'voto') stop = await views.votoFull();
+        else if (show === 'juego') stop = await views.juegoDraw('full');
         else if (show === 'insta') stop = await views.instaFull();
         else if (show === 'show') stop = await views.showFull();
         else stop = await views.bingoFull(); // bingo, o la portada si no hay nada en juego
@@ -1338,20 +1404,195 @@ views.karaokectl = async (local) => {
   return () => { clearInterval(timer); if (stopBar) stopBar(); };
 };
 
-// Al terminar cualquier actividad se puede pasar directo a cualquiera de las otras
+// Menú de abajo en el panel de todos los juegos (pedido de Cote): «Sortear juego» y después los juegos con su ícono;
+// más abajo, las demás actividades
+const GAME_INFO = (venue) => ({
+  bingo: { icon: '🎱', name: 'Bingo', href: '' },
+  rosco: { icon: '🎡', name: 'El Rosco', href: '#/sorteoctl' },
+  festival: { icon: '🎤', name: `El Festival de ${{ frida: 'Frida', kennedy: 'Kennedy', tobalaba: 'Tobalaba' }[venue] || 'Frida'}`, href: '#/votoctl/festival' },
+  objeto: { icon: '🗳️', name: 'El objeto más extraño', href: '#/votoctl/objeto' },
+});
 function activitiesNav(current) {
-  const all = [
-    ['bingo', '<button type="button" data-back-bingo><span>🎱</span>Bingo</button>'],
-    ['rosco', '<a class="btn" href="#/sorteoctl"><span>🎡</span>El Rosco</a>'],
-    ['voto', '<a class="btn" href="#/votoctl"><span>🗳️</span>El objeto más extraño</a>'],
+  const games = [
+    ['bingo', '<button type="button" data-back-bingo data-game="bingo"><span>🎱</span>Bingo</button>'],
+    ['rosco', '<a class="btn" data-game="rosco" href="#/sorteoctl"><span>🎡</span>El Rosco</a>'],
+    ['festival', '<a class="btn" data-game="festival" href="#/votoctl/festival"><span>🎤</span><b class="g-fest">El Festival</b></a>'],
+    ['objeto', '<a class="btn" data-game="objeto" href="#/votoctl/objeto"><span>🗳️</span>El objeto más extraño</a>'],
+  ];
+  const more = [
     ['show', '<a class="btn" href="#/showctl"><span>⭐</span>Show</a>'],
     ['karaoke', '<a class="btn" href="#/karaokectl"><span>🎤</span>Karaoke</a>'],
     ['insta', '<a class="btn" href="#/instactl"><span>📸</span>Instagram</a>'],
     ['qr', '<button type="button" data-stage-qr><span>📱</span>QR en pantalla completa</button>'],
   ];
-  return `<div class="act-nav"><small>Ir a otra actividad</small><div>${all.filter(([k]) => k !== current).map(([, h]) => h).join('')}</div></div>`;
+  setTimeout(paintGameNav, 0);
+  return `<div class="act-nav games-nav ${navFoldState() ? 'g-folded' : ''}"><button type="button" class="g-unfold" data-nav-unfold>▸ Ver otros juegos y actividades</button><div class="g-plan"><div class="g-slots"></div><label>¿Cuántos juegos vamos a sortear?<input type="number" class="g-total" min="1" max="10" value="3"></label></div>
+    <button type="button" class="primary big g-draw" data-game-draw>🎲 Sortear juego</button>
+    <button type="button" class="g-undo" data-game-undo disabled>↩️ Deshacer</button>
+    <p class="g-direct" hidden>…o toca un juego para elegirlo directo, sin tómbola</p>
+    <small>Juegos</small><div>${games.map(([k, h]) => (k === current ? h.replace(/data-game="/, 'aria-current="true" data-game="') : h)).join('')}</div>
+    <small>Otras actividades</small><div>${more.filter(([k]) => k !== current).map(([, h]) => h).join('')}</div></div>`;
 }
+// Pedido de Cote (20 nov): mientras hay un juego en curso, el menú de juegos y actividades queda plegado, para no
+// apretar otro por error; «Ver otros juegos y actividades» lo abre. Cada panel avisa si su juego está en curso.
+let navInGame = null; let navOpened = false;
+const navFoldState = () => !!navInGame && !navOpened;
+window.setNavFold = (inGame) => {
+  if (inGame !== navInGame) { navInGame = inGame; navOpened = false; }
+  document.querySelectorAll('.games-nav').forEach((n) => n.classList.toggle('g-folded', navFoldState()));
+};
+window.addEventListener('hashchange', () => { navInGame = null; navOpened = false; });
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('[data-nav-unfold]')) return;
+  navOpened = true;
+  document.querySelectorAll('.games-nav').forEach((n) => n.classList.remove('g-folded'));
+});
+// Marca en el menú los juegos que ya salieron en el sorteo (quedan fuera del sorteo hasta que salgan los demás)
+async function paintGameNav() {
+  const g = await api('GET', '/api/gamedraw').catch(() => null);
+  if (!g) return;
+  const info = GAME_INFO(g.venue);
+  document.querySelectorAll('.g-fest').forEach((b) => { b.textContent = info.festival.name; });
+  document.querySelectorAll('[data-game]').forEach((el) => { const done = g.played.includes(el.dataset.game); el.classList.toggle('g-played', done); el.title = done ? 'Salió en el último sorteo: queda fuera del próximo' : ''; });
+  // Casilleros de la noche y botón: «Sortear el 2.º juego (de 3)»; al completar, se desactiva
+  document.querySelectorAll('.g-total').forEach((i) => { if (document.activeElement !== i) i.value = g.total; });
+  const slots = [`<span class="done">Inicial · ${info.bingo.icon} Bingo</span>`];
+  for (let i = 0; i < g.total; i++) slots.push(g.list[i] ? `<span class="done">${i + 1}.º · ${info[g.list[i]].icon} ${esc(info[g.list[i]].name)}</span>` : `<span>${i + 1}.º · 🔒</span>`);
+  document.querySelectorAll('.g-slots').forEach((el) => { el.innerHTML = slots.join(''); });
+  const full = g.list.length >= g.total;
+  const ready = !full && !!g.ready && (!g.last || g.ready.at > g.last.at);
+  // Pedido de Cote (20 nov): cuántos juegos y sus números se ven solo antes de empezar el sorteo; después se ocultan
+  document.querySelectorAll('.g-plan').forEach((el) => { el.hidden = g.list.length > 0 || ready; });
+  window.gameDrawReady = ready;
+  document.querySelectorAll('.games-nav').forEach((n) => n.classList.toggle('g-ready', ready));
+  document.querySelectorAll('[data-game-draw]').forEach((b) => { b.disabled = full; b.textContent = full ? `✔ Ya se sortearon los ${g.total} juegos` : ready ? `🎰 Girar la tómbola · ${g.list.length + 1}.º juego` : `🎲 Iniciar sorteo del ${g.list.length + 1}.º juego (de ${g.total})`; });
+  document.querySelectorAll('.g-direct').forEach((el) => { el.hidden = !ready; });
+  document.querySelectorAll('[data-game-undo]').forEach((b) => { b.disabled = !g.undoable; });
+}
+document.addEventListener('change', async (e) => {
+  if (!e.target.classList || !e.target.classList.contains('g-total')) return;
+  try { await api('POST', '/api/gamedraw/total', { total: e.target.value }); } catch (err) { fail(err); }
+  paintGameNav();
+});
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-game-draw]');
+  if (!b || b.disabled) return;
+  b.disabled = true;
+  try {
+    if (!window.gameDrawReady) { // primer clic: las pantallas muestran los juegos que pueden salir
+      await api('POST', '/api/gamedraw/ready');
+      toast('En pantalla: los juegos que pueden salir. Ahora gira la tómbola o elige un juego directo.');
+      await paintGameNav();
+      return;
+    }
+    const g = await api('POST', '/api/gamedraw');
+    window.gameDrawReady = false;
+    const info = GAME_INFO((await api('GET', '/api/gamedraw')).venue)[g.last.game];
+    toast(`🎲 Se está sorteando en pantalla… Salió: ${info.icon} ${info.name}`);
+    window.gameDrawGo = setTimeout(() => { if (g.last.game === 'bingo') backToBingo(); else location.hash = info.href; }, 6000); // cuando termina la tómbola en pantalla, el panel pasa a ese juego
+  } catch (err) { fail(err); b.disabled = false; }
+});
+// Deshacer (pedido de Cote): vuelve el sorteo de juegos al paso anterior (antes de «Iniciar sorteo», de la tómbola
+// o de elegir un juego directo)
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-game-undo]');
+  if (!b || b.disabled) return;
+  b.disabled = true;
+  clearTimeout(window.gameDrawGo); // si la tómbola recién giró, el panel ya no pasa a ese juego
+  try { await api('POST', '/api/gamedraw/undo'); toast('↩️ Sorteo de juegos: se volvió al paso anterior'); } catch (err) { fail(err); }
+  paintGameNav();
+});
+// Elegir un juego directo (pedido de Cote): después de «Iniciar sorteo de juegos», tocar un juego del menú lo deja como
+// el siguiente de la noche, sin tómbola; el panel pasa a ese juego
+document.addEventListener('click', async (e) => {
+  const el = e.target.closest('.games-nav [data-game]');
+  if (!el || !window.gameDrawReady) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  try {
+    const g = await api('POST', '/api/gamedraw/pick', { game: el.dataset.game });
+    window.gameDrawReady = false;
+    const info = GAME_INFO((await api('GET', '/api/gamedraw')).venue)[g.last.game];
+    toast(`Siguiente juego: ${info.icon} ${info.name}`);
+    if (g.last.game === 'bingo') backToBingo(); else location.hash = info.href;
+  } catch (err) { fail(err); }
+}, true);
 const BACK_BINGO = activitiesNav('rosco');
+// Sorteo del siguiente juego en pantalla: tómbola con los juegos disponibles y, al final, el que salió en grande;
+// abajo, todos los juegos (los que ya salieron, marcados). kind: 'full' (tablero) o 'gc' (OBS)
+views.juegoDraw = async (kind) => {
+  const ROLL_MS = 4500;
+  // Pedido de Cote: todo centrado y dentro del cuadro, con márgenes; si un texto llega al borde, se achica la letra
+  const fitText = (el) => {
+    if (!el) return;
+    el.style.fontSize = '';
+    let fs = parseFloat(getComputedStyle(el).fontSize) || 20;
+    while (el.scrollWidth > el.clientWidth + 1 && fs > 8) { fs -= 1; el.style.fontSize = `${fs}px`; }
+  };
+  const fitJd = () => {
+    const card = $('#jd .jd-card');
+    if (!card) return;
+    ['.jd-win', '.jd-roll', '.jd-opts'].forEach((q) => fitText(card.querySelector(q)));
+    card.querySelectorAll('.jd-slots span').forEach(fitText);
+  };
+  app.innerHTML = `<div id="jd" class="jd-${kind}"></div>`;
+  let shownAt = 0; let timer = null; let alive = true;
+  const paint = (g) => {
+    const box = $('#jd');
+    const ready = g.ready && (!g.last || g.ready.at > g.last.at);
+    if (!box || (!g.last && !ready)) { if (box) box.innerHTML = ''; return; }
+    const info = GAME_INFO(g.venue);
+    // Casilleros de la noche (pedido de Cote): juego inicial y 1.º, 2.º… sorteados; los que ya salieron quedan bloqueados
+    // con su juego; el que se está sorteando gira; los que faltan, con candado
+    const listOf = (rolling) => {
+      const cells = [`<span class="done"><small>Juego inicial</small>${info.bingo.icon} Bingo</span>`];
+      for (let i = 0; i < g.total; i++) {
+        if (ready && i === g.list.length) { cells.push(`<span class="now"><small>${i + 1}.º juego</small>🎲 …</span>`); continue; }
+        const k = g.list[i]; const cur = !ready && i === g.list.length - 1;
+        cells.push(!k ? `<span class="todo"><small>${i + 1}.º juego</small>🔒</span>`
+          : cur ? `<span class="${rolling ? 'now' : 'on'}"><small>${i + 1}.º juego</small>${rolling ? '🎲 …' : `${info[k].icon} ${esc(info[k].name)}`}</span>`
+            : `<span class="done"><small>${i + 1}.º juego</small>${info[k].icon} ${esc(info[k].name)}</span>`);
+      }
+      return `<div class="jd-list jd-slots">${cells.join('')}</div>`;
+    };
+    if (ready) {
+      // paso 1: los juegos que pueden salir
+      box.innerHTML = `<div class="jd-card"><small>🎲 Sorteo del ${g.list.length + 1}.º juego</small><div class="jd-opts">${g.ready.pool.map((k) => `<span>${info[k].icon} ${esc(info[k].name)}</span>`).join('')}</div>${listOf(true)}</div>`;
+      fitJd(); // en una sola línea, centrado y dentro del cuadro
+      return;
+    }
+    const win = info[g.last.game];
+    const pool = g.last.pool.map((k) => info[k]);
+    const nth = `${g.list.length}.º juego`;
+    const left = g.last.direct ? 0 : ROLL_MS - (Date.now() + (g.offset || 0) - g.last.at); // elegido directo: sin tómbola
+    if (left > 0) {
+      // tómbola: pasan los juegos disponibles cada vez más lento
+      box.innerHTML = `<div class="jd-card"><small>🎲 Sorteo del ${nth}</small><b class="jd-roll"></b>${listOf(true)}</div>`;
+      let i = 0; let wait = 70;
+      fitJd();
+      const spin = () => { if (!alive || !$('.jd-roll')) return; const x = pool[i++ % pool.length]; $('.jd-roll').textContent = `${x.icon} ${x.name}`; fitText($('.jd-roll')); wait *= 1.13; if (Date.now() + (g.offset || 0) - g.last.at < ROLL_MS - 200) timer = setTimeout(spin, wait); else paintWin(); };
+      const paintWin = () => { if (alive) paint({ ...g, last: { ...g.last, at: g.last.at - ROLL_MS } }); };
+      spin();
+      return;
+    }
+    box.innerHTML = `<div class="jd-card won"><small>🎲 El ${nth} es</small><b class="jd-win">${win.icon} ${esc(win.name)}</b>${listOf(false)}</div>`;
+    fitJd();
+    if (Date.now() - shownAt > 1000) { shownAt = Date.now(); sfx.play('win'); }
+  };
+  let last = '';
+  const tick = async () => {
+    const g = await api('GET', '/api/gamedraw').catch(() => null);
+    if (!alive || !g) return;
+    g.offset = g.now - Date.now(); // diferencia de reloj con el servidor
+    const key = JSON.stringify([g.last && g.last.at, g.played, g.total, g.list, g.ready && g.ready.at]);
+    if (key === last) return;
+    last = key;
+    clearTimeout(timer);
+    paint(g);
+  };
+  await tick();
+  const poll = setInterval(tick, 2000);
+  return () => { alive = false; clearTimeout(timer); clearInterval(poll); };
+};
 document.addEventListener('click', (e) => { if (e.target.closest('[data-back-bingo]')) backToBingo(); });
 // «QR en pantalla completa» desde cualquier panel: lo pone en OBS y en el tablero sin salir de donde estás
 document.addEventListener('click', async (e) => {
@@ -1407,6 +1648,7 @@ views.escena = async () => {
         else if (show === 'qr') stop = await views.qrBig();
         else if (show === 'karaoke') stop = await views.karaokeGC();
         else if (show === 'voto') stop = await views.votoGC();
+        else if (show === 'juego') stop = await views.juegoDraw('gc');
         else if (show === 'insta') stop = await views.instaGC();
         else if (show === 'show') stop = await views.showGC();
         joinQr({ sorteo: 'br', rueda: 'bl', show: 'above' }[show]);
@@ -1499,6 +1741,71 @@ setTimeout(syncVenueMark, 700);
 // Fondo de neuronas en las pantallas de las actividades (pedido de Cote: el mismo efecto del fondo de la página
 // web krbstage.cl). Puntos de colores que se mueven lento, unidos por líneas finas, con impulsos que viajan
 // de un punto a otro cercano. Va encima del fondo de colores y debajo de todo lo demás; solo en el tablero.
+// Aviso de KRB Kids (pedido de Cote): en las pantallas del local (no en el GC de OBS ni en los celulares) aparece cada
+// 10 minutos durante 12 segundos «KRB Kids · Juegos para niños dentro de la plataforma»
+(() => {
+  const EVERY_MS = 900000; const SHOW_MS = 12000; // cada 15 minutos (pedido de Cote, 20 nov)
+  const word = [...'KRB Kids'].map((ch, i) => (ch === ' ' ? ' ' : `<i style="color:${['#ff5fa2', '#ffbe0b', '#2bb24c', '#3a86ff', '#ff5fa2', '#ffbe0b', '#2bb24c', '#3a86ff'][i % 8]}">${ch}</i>`)).join('');
+  const show = () => {
+    if (!document.body.classList.contains('full') || /^#\/kids/.test(location.hash)) return;
+    let el = document.getElementById('kids-ad');
+    if (!el) { el = document.createElement('div'); el.id = 'kids-ad'; el.setAttribute('aria-hidden', 'true'); el.innerHTML = `<span class="ka-balloons">🎈🎈</span><b>${word}</b><small>Juegos para niños dentro de la plataforma</small>`; document.body.appendChild(el); }
+    place(el);
+    el.classList.add('on');
+    setTimeout(() => el.classList.remove('on'), SHOW_MS);
+  };
+  // Pedido de Cote: el aviso va en un lugar libre de la pantalla, sin tapar nada. Se buscan en toda la pantalla los
+  // espacios sin textos, imágenes, QR, videos ni recuadros; si no hay espacio para el aviso ancho, se prueba en columna
+  // (para los costados) y más chico. Si en ninguna parte cabe sin tapar, va donde tape menos.
+  const content = (ad) => {
+    const out = []; const W = window.innerWidth; const H = window.innerHeight;
+    const ok = (el) => { if (!el || ad.contains(el) || el.id === 'neural-bg') return false; if (el.checkVisibility) return el.checkVisibility({ opacityProperty: true, visibilityProperty: true }); const cs = getComputedStyle(el); return cs.visibility !== 'hidden' && cs.opacity !== '0' && el.getClientRects().length > 0; };
+    // peso: tapar textos, imágenes, QR y videos es mucho peor que tapar el fondo vacío de un recuadro
+    const add = (r, k) => { if (r.width > 0 && r.height > 0 && r.right > 0 && r.bottom > 0 && r.left < W && r.top < H) out.push({ l: r.left - 8, t: r.top - 8, r: r.right + 8, b: r.bottom + 8, k }); };
+    const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const rg = document.createRange();
+    for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+      if (!n.nodeValue.trim() || !ok(n.parentElement)) continue;
+      rg.selectNodeContents(n); add(rg.getBoundingClientRect(), 30);
+    }
+    document.querySelectorAll('body *').forEach((el) => {
+      if (el.parentElement && el.parentElement.closest('svg')) return;
+      const media = /^(IMG|SVG|CANVAS|VIDEO|IFRAME|INPUT|BUTTON)$/i.test(el.tagName);
+      const r = el.getBoundingClientRect();
+      if (!r.width || !r.height || (!media && r.width * r.height > W * H * 0.85)) return; // los fondos de toda la pantalla no cuentan
+      if (!media) { const cs = getComputedStyle(el); const bg = cs.backgroundImage !== 'none' || !/rgba\(.*,\s*0\)|transparent/.test(cs.backgroundColor); const bd = parseFloat(cs.borderTopWidth) > 0 && !/rgba\(.*,\s*0\)|transparent/.test(cs.borderTopColor); if (!bg && !bd) return; }
+      if (ok(el)) add(r, media ? 30 : 1);
+    });
+    return out;
+  };
+  const place = (el) => {
+    const W = window.innerWidth; const H = window.innerHeight; const mx = W * 0.015; const my = H * 0.02;
+    const rects = content(el);
+    const hitAt = (x, y, w, h) => { let hit = 0; for (const r of rects) { const ix = Math.min(x + w, r.r) - Math.max(x, r.l); const iy = Math.min(y + h, r.b) - Math.max(y, r.t); if (ix > 0 && iy > 0) hit += ix * iy * r.k; } return hit; };
+    let best = null;
+    for (const v of [['ka-tall', 1], ['ka-tall', 0.8], ['ka-tall', 0.62], ['ka-tall', 0.5]]) { // siempre centrado con la imagen (pedido de Cote)
+      el.classList.toggle('ka-tall', v[0] === 'ka-tall'); el.style.setProperty('--ka-s', v[1]);
+      const w = el.offsetWidth * v[1]; const h = el.offsetHeight * v[1];
+      if (w > W - 2 * mx || h > H - 2 * my) continue;
+      const step = Math.max(6, Math.min(W, H) / 60);
+      for (let y = my; y <= H - h - my + 0.5; y += step) {
+        for (let x = mx; x <= W - w - mx + 0.5; x += step) {
+          // primero lo que menos tapa; a igualdad, pegado a un borde (mejor abajo) y del tamaño más grande
+          const hit = hitAt(x, y, w, h);
+          const edge = Math.min(x - mx, W - w - mx - x, (y - my) * 1.5, H - h - my - y);
+          const sc = hit * 10 + edge;
+          if (!best || sc < best.sc) best = { sc, hit, x, y, v };
+        }
+      }
+      if (best && best.hit === 0) break; // cabe sin tapar nada: listo
+    }
+    if (!best) return;
+    el.classList.toggle('ka-tall', best.v[0] === 'ka-tall'); el.style.setProperty('--ka-s', best.v[1]);
+    el.style.left = `${Math.round(best.x)}px`; el.style.top = `${Math.round(best.y)}px`; el.style.bottom = 'auto';
+    el.classList.toggle('ka-top', best.y < H / 3);
+  };
+  setTimeout(() => { show(); setInterval(show, EVERY_MS); }, 60000); // el primero al minuto de abrir la pantalla
+})();
 const neuralBg = (() => {
   // Pedido de Cote (20 nov): el efecto de neuronas de krbstage.cl, más visible y con los colores del local, de fondo en las
   // pantallas (body.full) y, en el GC de OBS (body.obs), solo dentro de los recuadros (nunca sobre la cámara ni sobre el QR).
@@ -1635,3 +1942,23 @@ if (new URLSearchParams(location.search).has('diag')) {
       `errores: ${errs.length ? errs.join(' | ') : 'ninguno'}`].join('\n');
   }, 1500);
 }
+
+// Pedido de Cote (20 nov): botoncito «Refrescar página» en todos los paneles del moderador (en la aplicación instalada
+// no hay cómo recargar). El Centro de control ya lo trae en su encabezado.
+(() => {
+  const PANELS = /^#\/?($|anfitrion|ronda|proyectos|nuevo|admin|votoctl|ruedactl|ruedas|sorteoctl|karaokectl|showctl|instactl|light$|consola|verticalctl)/;
+  const sync = () => {
+    let b = document.getElementById('ctl-reload-fixed');
+    const on = PANELS.test(location.hash || '#/') && !document.body.classList.contains('full') && !document.body.classList.contains('obs') && !!store.get('adminToken');
+    // Pedido de Cote (20 nov): abajo de cada panel, siempre, el enlace al Centro de control (no en el inicio ni en el
+    // mismo Centro de control, que ya lo tienen)
+    let home = document.getElementById('ctl-home-link');
+    const homeOn = on && !/^#\/?($|control)/.test(location.hash || '#/');
+    if (!homeOn && home) home.remove();
+    if (homeOn && !home) { home = document.createElement('p'); home.id = 'ctl-home-link'; home.innerHTML = '<a class="home-control home-control-sm" href="#/control">🎛️ Centro de control</a>'; const appEl = document.getElementById('app'); appEl.parentNode.insertBefore(home, appEl.nextSibling); }
+    if (!on) { if (b) b.remove(); return; }
+    if (!b) { b = document.createElement('button'); b.id = 'ctl-reload-fixed'; b.type = 'button'; b.className = 'ctl-reload'; b.textContent = '↻ Refrescar'; b.onclick = () => location.reload(); document.body.appendChild(b); }
+  };
+  window.addEventListener('hashchange', () => setTimeout(sync, 300));
+  setTimeout(sync, 600);
+})();
