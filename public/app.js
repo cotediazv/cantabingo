@@ -464,6 +464,14 @@ function hostSetup(p) {
 // Enlaces, QR, textos de la gráfica y cierre de sesión están en «Administración».
 // Instrucciones y criterios para el animador, al partir cada juego (pedido de Cote): cortas y precisas, para leer en voz alta
 window.readAloud = (game, lines) => `<details class="panel howto" open><summary>📢 Instrucciones · ${esc(game)}</summary><ul>${lines.map((l) => `<li>${l}</li>`).join('')}</ul></details>`;
+// Pedido de Cote (20 nov): las instrucciones en pantalla van ordenadas, cada una en su línea, sin pasarse para abajo:
+// si no cabe en el ancho de la pantalla, se achica la letra
+window.fitOneLine = (el, min = 9) => {
+  if (!el || !el.isConnected) return;
+  el.style.fontSize = '';
+  let fs = parseFloat(getComputedStyle(el).fontSize) || 20;
+  while (el.scrollWidth > el.clientWidth + 1 && fs > min) { fs -= 1; el.style.fontSize = `${fs}px`; }
+};
 // Instrucciones de El Rosco: las usan el panel (wheel-ui.js) y los celulares
 window.ROSCO_HOWTO = [
   '3 participantes.',
@@ -1426,6 +1434,8 @@ async function paintGameNav() {
   document.querySelectorAll('.g-slots').forEach((el) => { el.innerHTML = slots.join(''); });
   const full = g.list.length >= g.total;
   const ready = !full && !!g.ready && (!g.last || g.ready.at > g.last.at);
+  // Pedido de Cote (20 nov): cuántos juegos y sus números se ven solo antes de empezar el sorteo; después se ocultan
+  document.querySelectorAll('.g-plan').forEach((el) => { el.hidden = g.list.length > 0 || ready; });
   window.gameDrawReady = ready;
   document.querySelectorAll('.games-nav').forEach((n) => n.classList.toggle('g-ready', ready));
   document.querySelectorAll('[data-game-draw]').forEach((b) => { b.disabled = full; b.textContent = full ? `✔ Ya se sortearon los ${g.total} juegos` : ready ? `🎰 Girar la tómbola · ${g.list.length + 1}.º juego` : `🎲 Iniciar sorteo del ${g.list.length + 1}.º juego (de ${g.total})`; });

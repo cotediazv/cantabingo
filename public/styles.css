@@ -2304,3 +2304,9 @@ body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "So
 .vc-again { display: block; margin: -4px auto 14px; padding: 6px 14px; font-size: .9rem; }
 .vc-mini .vc-row { padding: 8px 12px; }
 .vc-mini .vc-row em { font-style: normal; font-weight: 800; color: #3fe08f; white-space: nowrap; }
+
+/* Instrucciones en pantalla: cada una en su línea, sin pasarse para abajo; si no cabe, se achica (fitOneLine) */
+#vf .vf-main > small, #vf .vf-main > b, #vf .vf-main > span, #vf .vf-main > i, .pw-howto, .rv-howto { white-space: nowrap; max-width: 100%; box-sizing: border-box; overflow: hidden; }
+#vf .vf-main > small, #vf .vf-main > span, #vf .vf-main > i { display: inline-block; }
+.pw-howto, .rv-howto { display: block; }
+.games-nav .g-plan[hidden] { display: none; }

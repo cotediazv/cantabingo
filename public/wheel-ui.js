@@ -39,7 +39,7 @@
     }).join('');
     const center = bare ? '' : `
       <text x="50" y="44" font-size="17" text-anchor="middle" dominant-baseline="central" fill="currentColor" font-weight="700" data-timer="${pi}">${clock(c.remainingMs)}</text>
-      <text x="50" y="58" font-size="5" text-anchor="middle" fill="currentColor" font-weight="600">${esc(c.name.slice(0, 18))}</text>
+      <text x="50" y="58" font-size="${Math.min(5, 62 / (Math.max(1, c.name.length) * 0.62)).toFixed(2)}" text-anchor="middle" fill="currentColor" font-weight="600">${esc(c.name)}</text>
       <text x="50" y="66" font-size="4.6" text-anchor="middle" fill="currentColor"><tspan fill="#35c97a">✔ ${c.hits}</tspan>  <tspan fill="#f07a7a">✘ ${c.misses}</tspan></text>`;
     return `<svg viewBox="0 0 100 100" class="wheel ${mine ? 'turn' : ''}" role="img" aria-label="Rosco de ${esc(c.name)}">${DEFS}
       <circle cx="50" cy="50" r="${R}" fill="none" stroke="url(#wg-ring)" stroke-width="${(r * 1.5).toFixed(2)}" opacity=".9"/>
@@ -396,6 +396,7 @@
             <ul>${all.map((n) => `<li>${esc(n)}</li>`).join('')}</ul></div>`;
       };
       const layoutPeople = () => {
+        window.fitOneLine($('.rv-howto')); // las instrucciones en una línea (pedido de Cote)
         const ul = $('.rv-people ul');
         if (!ul) return;
         const items = Array.from(ul.children);
@@ -567,6 +568,7 @@
         <div class="pw-text">${revealCard(st, 'pw-reveal')}${st.question ? `<div class="pw-question">${esc(st.question)}</div>` : ''}</div>
         <div class="wheels n${st.players.length}">${st.players.map((_, i) => `<div class="wheel-box ${i === st.turn && !st.finished ? 'on' : 'off'}">${wheelSVG(st, i)}</div>`).join('')}</div>
         ${st.rank ? `<div class="pw-rankwrap">${rankHTML(st, 'pw-rank')}</div>` : ''}`;
+      window.fitOneLine($('#pw .pw-howto')); // las instrucciones en una línea (pedido de Cote)
       scheduleRevealEnd(st);
     };
     const off = watch(id, onWheel, () => { leave(); if (['#/escena', '#/gc', '#/obs', '#/tablero', `#/${kind}`].includes(location.hash)) route(); else location.hash = `#/${kind}`; });
