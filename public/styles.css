@@ -2277,3 +2277,8 @@ body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "So
 /* Botón Deshacer, debajo de «Sortear juego» */
 .games-nav .g-undo { display: block; margin: 8px auto 4px; padding: 8px 18px; font-weight: 800; }
 .games-nav .g-undo:disabled { opacity: .4; cursor: default; }
+
+/* El objeto más extraño: el botón de inscripciones solo, grande (sin explicación) */
+.vc-signup.vc-obj:not(.on) { border: 0; padding: 0; background: none; }
+.vc-signup.vc-obj:not(.on) p { display: none; }
+.vc-signup.vc-obj:not(.on) button { width: 100%; padding: 14px; font-size: 1.15rem; font-weight: 800; }

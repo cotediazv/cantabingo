@@ -47,7 +47,7 @@
     // El Festival y El objeto más extraño son juegos separados (pedido de Cote): #/votoctl/festival o #/votoctl/objeto
     const want = which === 'festival' ? 'karaoke' : which === 'objeto' ? 'objeto' : '';
     app.innerHTML = `<div id="vc-howto"></div><div class="panel"><h1 style="margin:0" id="vc-h1">${want === 'karaoke' ? '🎤 El Festival' : '🗳️ El objeto más extraño'}</h1>
-        <label class="f" style="margin-top:12px">Nombre del concurso<input type="text" id="vc-title" maxlength="50" placeholder="Ej.: El objeto más extraño"></label>
+        <label class="f" id="vc-title-wrap" style="margin-top:12px" ${want === 'objeto' ? 'hidden' : ''}>Nombre del concurso<input type="text" id="vc-title" maxlength="50" placeholder="Ej.: El objeto más extraño"></label>
         <div id="vc-body" style="margin-top:14px"></div>
       </div>
       ${activitiesNav(want === 'karaoke' ? 'festival' : 'objeto')}
@@ -64,6 +64,10 @@
       if (sig === last) return;
       last = sig;
       if (document.activeElement !== $('#vc-title')) $('#vc-title').value = st.title;
+      // El objeto más extraño (pedido de Cote, 20 nov): el título ya está definido y la gente se inscribe sola desde su
+      // celular: sin campo para el nombre del concurso, sin explicación de las inscripciones y sin anotar a mano
+      const obj = !isK(st);
+      $('#vc-title-wrap').hidden = obj;
       const keep = $('#vc-name') ? $('#vc-name').value : '';
       const keepThing = $('#vc-thing') ? $('#vc-thing').value : '';
       const focus = document.activeElement === $('#vc-name') ? '#vc-name' : document.activeElement === $('#vc-thing') ? '#vc-thing' : '';
@@ -74,18 +78,18 @@
         html = `${want && st.mode !== want ? `<div class="vc-read"><small>Hay un concurso de «${esc(st.title)}» en curso</small><button class="primary big" data-act="reset">Empezar ${want === 'karaoke' ? esc(fest(st)) : 'El objeto más extraño'} (borra el anterior)</button></div>` : ''}
           <label class="f vc-max ${isK(st) ? 'ask' : ''}">${isK(st) ? '¿Cuántos participantes van a cantar?' : 'Cupos (máximo de participantes)'}<input type="number" id="vc-max" min="2" max="30" value="${st.max}"></label>
           ${st.sample ? `<div class="vc-read"><small>Notas al azar en pantalla (sin el promedio)</small>${notesHTML(st, 'vc-notes')}</div>` : ''}
-          <div class="vc-signup ${st.signup ? 'on' : ''}"><p><b>${st.signup ? `📲 Inscripciones abiertas · <span class="v-clock">${clockText()}</span>` : 'Inscripciones desde el celular'}</b>
-            <small>${st.signup ? `A toda la sala le aparece la invitación. Quien se inscribe llega a esta lista con su nombre y ${isK(st) ? 'su canción' : 'lo que trae'}.` : isK(st) ? 'Ábrelas para que la gente se anote sola con la canción y el artista. Corre un reloj de 1:00. Si se inscriben más que los cupos, se sortean.' : 'Ábrelas para que la gente se anote sola, con su nombre y lo que trae. Corre un reloj de 2:00.'}</small></p>
+          <div class="vc-signup ${st.signup ? 'on' : ''} ${obj ? 'vc-obj' : ''}"><p>${obj && !st.signup ? '' : `<b>${st.signup ? `📲 Inscripciones abiertas · <span class="v-clock">${clockText()}</span>` : 'Inscripciones desde el celular'}</b>`}
+            ${obj ? '' : `<small>${st.signup ? `A toda la sala le aparece la invitación. Quien se inscribe llega a esta lista con su nombre y ${isK(st) ? 'su canción' : 'lo que trae'}.` : isK(st) ? 'Ábrelas para que la gente se anote sola con la canción y el artista. Corre un reloj de 1:00. Si se inscriben más que los cupos, se sortean.' : 'Ábrelas para que la gente se anote sola, con su nombre y lo que trae. Corre un reloj de 2:00.'}</small>`}</p>
             <button class="${st.signup ? '' : 'primary'}" data-act="signup" data-on="${st.signup ? '' : '1'}">${st.signup ? 'Cerrar' : 'Abrir inscripciones'}</button></div>
           ${st.overflow ? `<button class="primary big" data-act="draw" style="margin-bottom:12px" ${st.signup ? 'disabled' : ''}>🎲 Sortear los ${st.max} que cantan (se inscribieron ${st.players.length})</button>${st.signup ? '<p class="muted small" style="margin:-6px 0 12px">Cierra las inscripciones para sortear.</p>' : ''}` : ''}
-          <h2>Participantes</h2>
-          <form id="vc-add" class="row" style="gap:8px"><input type="text" id="vc-name" maxlength="30" placeholder="Nombre" autocomplete="off" style="flex:1;min-width:0"><input type="text" id="vc-thing" maxlength="40" placeholder="${isK(st) ? 'Canción · artista (opcional)' : 'Objeto (opcional)'}" autocomplete="off" style="flex:1.3;min-width:0"><button class="primary">Agregar</button></form>
+          ${obj && !st.players.length ? '' : '<h2>Participantes</h2>'}
+          ${obj ? '' : `<form id="vc-add" class="row" style="gap:8px"><input type="text" id="vc-name" maxlength="30" placeholder="Nombre" autocomplete="off" style="flex:1;min-width:0"><input type="text" id="vc-thing" maxlength="40" placeholder="${isK(st) ? 'Canción · artista (opcional)' : 'Objeto (opcional)'}" autocomplete="off" style="flex:1.3;min-width:0"><button class="primary">Agregar</button></form>`}
           <div class="vc-list">${st.players.map((p) => {
     const on = st.open && st.open.id === p.id;
     return `<div class="vc-row ${on ? 'on' : ''}"><p><b>${nm(p)}</b>${thing(p)}<small>${on ? `Votación abierta · <span class="v-clock">${clockText()}</span> · ${st.counts[p.id]} votos` : p.done ? `✔ Votación recibida · ${st.counts[p.id]} votos` : 'Pendiente'}</small></p>
               ${on ? '<button class="primary" data-act="close">Cerrar votación</button>' : `<button data-act="open" data-id="${p.id}">${p.done ? 'Reabrir' : 'Abrir votación'}</button>`}
               ${on ? '' : `<button class="vc-x" data-act="remove" data-id="${p.id}" aria-label="Quitar a ${esc(p.name)}">✕</button>`}</div>`;
-  }).join('') || '<p class="muted">Abre las inscripciones o anota tú a cada participante.</p>'}</div>
+  }).join('') || (obj ? '' : '<p class="muted">Abre las inscripciones o anota tú a cada participante.</p>')}</div>
           ${st.players.length >= 2 ? `<button class="primary big" data-act="results" style="margin-top:16px" ${st.open || pending ? 'disabled' : ''}>🏁 Pasar a los resultados</button>
           ${st.open || pending ? `<p class="muted small" style="margin-top:6px">${st.open ? 'Cierra la votación en curso para continuar.' : `Falta votar a ${pending} participante${pending > 1 ? 's' : ''}.`}</p>` : ''}` : ''}`;
       } else if (st.phase === 'results') {
