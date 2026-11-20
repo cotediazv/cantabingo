@@ -376,10 +376,10 @@
       const load = async () => { if (!id) return; const d = await api('GET', `/api/wheels/${id}/ranking`).catch(() => null); if (d && id) { data = d; paint(); } };
       const html = (from, chunk, pages) => {
         const top = data.list.slice(0, 5);
-        return `<div class="rv-rank"><header class="rv-head"><div class="rv-title"><b>Resultados</b><span>La Trivia del Rosco</span><small>${data.players} ${data.players === 1 ? 'persona jugando' : 'personas jugando'}</small></div>
-          <div class="rv-qr">${qr(joinUrl())}<small>Escanea el código QR<br>con tu celular</small></div></header>
+        // Sin QR en la pantalla vertical (pedido de Cote)
+        return `<div class="rv-rank"><header class="rv-head"><div class="rv-title"><b>Resultados</b><span>La Trivia del Rosco</span><small>${data.players} ${data.players === 1 ? 'persona jugando' : 'personas jugando'}</small></div></header>
           ${top.length ? `<ol class="rv-top">${top.map((t, i) => `<li><em>${i + 1}</em><b>${esc(t.name)}</b><i>${t.score} pts</i></li>`).join('')}</ol>` : '<p class="rv-empty">Todavía nadie suma puntos. ¡Responde desde tu celular!</p>'}
-          <div class="rv-rest" style="--cols:${cols()}">${chunk.length ? `<ol>${chunk.map((t, i) => `<li><em>${from + 6 + i}</em><b>${esc(t.name)}</b><i>${t.score}</i></li>`).join('')}</ol>` : ''}</div>
+          <div class="rv-rest" style="--cols:${cols()};--rows:${Math.max(1, Math.ceil(chunk.length / cols()))}">${chunk.length ? `<ol>${chunk.map((t, i) => `<li><em>${from + 6 + i}</em><b>${esc(t.name)}</b><i>${t.score}</i></li>`).join('')}</ol>` : ''}</div>
           <footer class="rv-pages">${pages > 1 ? `Puestos ${from + 6} al ${from + 5 + chunk.length} · página ${page + 1} de ${pages}` : ''}</footer></div>`;
       };
       const paint = () => {

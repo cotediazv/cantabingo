@@ -2024,3 +2024,11 @@ body.rv-on .join-qr { display: none; }
 .rv-rest li { align-items: start; }
 .rv-rest b { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.15; overflow-wrap: anywhere; }
 .rv-head b { font-size: min(4.9vh, 8.2vw); }
+
+/* Pantalla vertical (pedido de Cote): sin QR (ni en el ranking de El Rosco ni junto a la figura del bingo); el ranking se
+   lee por columnas: 6, 7, 8… hacia abajo y sigue en la columna de la derecha */
+.rv-head { grid-template-columns: minmax(0, 1fr); }
+.rv-head b { font-size: min(7vh, 13vw); }
+.rv-head span { font-size: min(3.4vh, 6vw); }
+.rv-rest ol { grid-auto-flow: column; grid-template-rows: repeat(var(--rows, 1), min-content); }
+@media (orientation: portrait) { #fb .fb-qr { display: none; } #fb .fb-side { grid-template-columns: minmax(0, 1fr); } }
