@@ -24,14 +24,14 @@
   const fest = (st) => `El Festival de ${{ frida: 'Frida', kennedy: 'Kennedy', tobalaba: 'Tobalaba' }[st.venue] || 'Frida'}`;
   // Para leer al partir cada juego (pedido de Cote)
   const howto = (st) => (isK(st) ? window.readAloud(fest(st), [
-    `Elegimos <b>${st.max} personas</b> para cantar. Te inscribes desde tu celular con tu canción y el artista; tienes 1 minuto. Si se inscriben más, sorteamos.`,
-    'Las canciones serán cortas en pro del tiempo.',
-    'Después de cada canción, el público tiene <b>8 segundos</b> para poner su nota del 1 al 10 desde el celular.',
-    'Gana el mejor <b>promedio</b> (con un decimal; si dos empatan, con dos decimales). Los lugares se revelan desde el último y los dos finalistas, con redoble de tambores.',
-  ]) : window.readAloud(st.title || 'Votación', [
-    'Te inscribes desde tu celular con lo que traes; tienes 2 minutos.',
-    'Cada participante sube al escenario y lo presenta. Después, el público pone su nota del 1 al 10 desde el celular.',
-    'Gana el mejor <b>promedio</b>. Los lugares se revelan desde el último y los dos primeros van a la <b>gran final</b>, donde el público elige a uno de los dos.',
+    `${st.max} participantes cantan. Si se inscriben más, sorteo.`,
+    'Canciones cortas.',
+    'Todos votan desde las mesas: nota del 1 al 10.',
+    'Gana el mejor <b>promedio</b>.',
+  ]) : window.readAloud(st.title || 'El objeto más extraño', [
+    'Cada participante presenta su objeto.',
+    'Todos votan desde las mesas: nota del 1 al 10.',
+    'Gran final entre los dos primeros.',
   ]));
   const icon = (st) => (isK(st) ? '🎤' : '🗳️');
   // 5 notas al azar del público tras cada canción (concurso de karaoke)

@@ -473,11 +473,10 @@ function hostSetup(p) {
 // Instrucciones y criterios para el animador, al partir cada juego (pedido de Cote): cortas y precisas, para leer en voz alta
 window.readAloud = (game, lines) => `<details class="panel howto" open><summary>📢 Para leer · ${esc(game)}</summary><ul>${lines.map((l) => `<li>${l}</li>`).join('')}</ul></details>`;
 const BINGO_HOWTO = [
-  'Escanea el código QR con tu celular, pon tu nombre, apellido y participa: te llega tu cartón.',
-  'Voy cantando los números y tú los marcas en tu cartón.',
-  'Gana quien complete primero la <b>figura</b> que aparece en pantalla.',
-  'Si dos o más la completan al mismo tiempo, desempatamos con un sorteo en pantalla.',
-];
+  'Todos juegan desde las mesas, con su cartón en el celular.',
+  'Gana quien complete primero la <b>figura</b>.',
+  'Empate: sorteo.',
+]
 async function hostConsole(p) {
   const sid = p.sessionId;
   store.set('lastBingo', p.id); // para el botón «Volver al bingo» del sorteo y del rosco

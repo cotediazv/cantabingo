@@ -152,11 +152,10 @@
     const act = (action, extra) => api('POST', `/api/wheels/${id}/act`, { action, ...extra }).catch(fail);
     // Para leer al partir (pedido de Cote)
     const HOWTO = [
-      'Elegimos 3 participantes al azar entre todos los conectados.',
-      'Cada concursante tiene su rosco y su tiempo. Por cada letra digo una definición que empieza (o contiene) esa letra.',
-      'Puede responder o decir <b>«pasa»</b>: la letra queda para la siguiente vuelta y el turno pasa al otro concursante. Si se equivoca, también pasa el turno.',
-      'Puntaje: cada respuesta correcta suma 1 y <b>cada dos incorrectas restan 1</b>. Gana quien complete el rosco o tenga más puntos al final; si empatan, gana quien tenga menos incorrectas, y si siguen empatados, sorteo.',
-      'Trivia del Rosco: el público responde la misma pregunta desde su celular, con 3 alternativas. Más rápido, más puntos.',
+      '3 participantes.',
+      'Todos juegan desde las mesas.',
+      '<b>Premio mayor</b> para el que gana El Rosco.',
+      '<b>Premio especial</b> para el ganador de las mesas: el ganador del público, de la Trivia del Rosco.',
     ];
     app.innerHTML = `${window.readAloud ? window.readAloud('El Rosco', HOWTO) : ''}<div class="cols">
         <div class="panel">
