@@ -2282,3 +2282,7 @@ body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "So
 .vc-signup.vc-obj:not(.on) { border: 0; padding: 0; background: none; }
 .vc-signup.vc-obj:not(.on) p { display: none; }
 .vc-signup.vc-obj:not(.on) button { width: 100%; padding: 14px; font-size: 1.15rem; font-weight: 800; }
+
+/* Panel del bingo sin tablero (solo con «Selección manual»): «Orden de salida» arriba del recuadro */
+#count[style*="none"] + #board + .ord-title { margin-top: 0; }
+.ord-title { margin-top: 16px; }

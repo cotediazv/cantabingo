@@ -514,7 +514,7 @@ async function hostConsole(p) {
             <label class="check" hidden><input type="checkbox" id="voice" ${voiceOn ? 'checked' : ''}> Voz</label>
           </div>
         </div>
-        <div class="panel"><h2 id="count"></h2><div id="board"></div><h2 style="margin-top:16px">Orden de salida</h2><div id="history" class="history"></div></div>
+        <div class="panel"><h2 id="count"></h2><div id="board"></div><h2 class="ord-title">Orden de salida</h2><div id="history" class="history"></div></div>
       </div>
       ${activitiesNav('bingo')}
       <p class="small" style="text-align:center;margin-top:22px"><a href="#/admin/${p.id}">⚙️ Administración</a></p>
@@ -527,6 +527,9 @@ async function hostConsole(p) {
     $('#draws').innerHTML = drawsHTML(st, st.drawn);
     $('#count').textContent = `Tablero · ${st.drawn.length} de ${st.values}`;
     $('#board').innerHTML = boardHTML(st, st.drawn, manual);
+    // Pedido de Cote (20 nov): el tablero no va en el panel del animador; aparece solo con «Selección manual», para tocar el número
+    $('#count').style.display = manual ? '' : 'none';
+    $('#board').style.display = manual ? '' : 'none';
     $('#history').innerHTML = st.drawn.map((v) => `<span>${esc(plain(st, v))}</span>`).join('') || '<span class="muted">Aún no se ha generado ningún valor.</span>';
     $('#gen').disabled = st.drawn.length >= st.values || st.auto.on || st.winConfirmed; // ganador confirmado = sorteo terminado
     $('#auto').disabled = !!st.winConfirmed;
