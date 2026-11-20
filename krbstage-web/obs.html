@@ -11,8 +11,7 @@
   arriba, el GC a la izquierda y la pantalla vertical del local a la derecha. El fondo es transparente: en OBS se pone la
   cámara detrás. Fuente de navegador de 1920x1080.
     obs.html?local=kennedy   ·   obs.html?local=tobalaba   ·   obs.html?local=frida
-  El GC es el de la sala de juegos completa (#/escena) cuando la pantalla del local está mostrando los juegos, y si no,
-  el de la sala light del local (#/light-gc/<local>).
+  El GC es el mismo de OBS de la sala de juegos (#/escena), tal cual.
 -->
 <style>
 :root{color-scheme:dark;--kennedy:#47b8e6;--tobalaba:#e5413a;--frida:#e0338f;--tenue:#c9c3d4;
@@ -57,13 +56,8 @@ function fecha(){const h=new Date(new Date().toLocaleString('en-US',{timeZone:'A
 
 // La pantalla vertical del local, tal cual (con la copia liviana del video si la hay)
 document.getElementById('ver').src=`${SALA}${L.liviano?`&liviano=${encodeURIComponent(L.liviano)}&lver=${L.lver}`:''}#/vertical-in/${L.v}`;
-// El GC: el de los juegos cuando la pantalla del local muestra los juegos; si no, el de la sala light del local
-let gcRuta='';
-function ponerGC(r){if(r===gcRuta)return;gcRuta=r;document.getElementById('gc').src=SALA+r}
-function revisarGC(){
-  fetch('https://cantabingo.onrender.com/api/web/pantallas').then(r=>r.json()).then(t=>{const s=t[L.v];ponerGC(s&&s.show==='sala'?'#/escena':`#/light-gc/${k}`)}).catch(()=>{if(!gcRuta)ponerGC(`#/light-gc/${k}`)});
-}
-revisarGC();setInterval(revisarGC,20000);
+// El GC: el mismo de OBS de la sala de juegos (#/escena: bingo, El Rosco, sorteo, etc.), tal cual (pedido de Cote)
+document.getElementById('gc').src=SALA+'#/escena';
 
 // Programa de hoy (o el próximo día), en cinta si no cabe
 function programa(){
