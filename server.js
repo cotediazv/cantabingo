@@ -793,15 +793,27 @@ setInterval(() => {
 // hay, crea 320) y dura hasta las 4 de la mañana siguiente (para que no se cierre en medio de los juegos).
 const AUTO_SALAS = [
   { dow: 'Thu', from: 18 * 60 + 30, venue: 'kennedy', name: 'Los Juegos de Kennedy' },
-  { dow: 'Fri', from: 18 * 60, venue: 'tobalaba', name: 'Los Juegos de Tobalaba' },
-  { dow: 'Sun', from: 13 * 60, venue: 'frida', name: 'Los Juegos de Frida' },
+  { dow: 'Fri', from: 18 * 60, until: 22 * 60 + 45, venue: 'tobalaba', name: 'Los Juegos de Tobalaba' },
+  { dow: 'Sun', from: 13 * 60, until: 17 * 60, venue: 'frida', name: 'Los Juegos de Frida' },
 ];
+// Fin de los juegos (pedido de Cote, 20 nov): Tobalaba a las 22:45 y Frida (domingo) a las 17:00 la sala del local se
+// cierra sola, aunque se haya creado a mano. Kennedy (21:30) no se cierra: los jueves a las 21:45 pasa sola a Karaoke
+// para que el público siga pidiendo canciones. Si a esa hora hay un rosco en juego, se espera a que termine.
 function autoSala() {
   const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
     .formatToParts(new Date()).map((x) => [x.type, x.value]));
   const min = +p.hour * 60 + +p.minute;
   const a = AUTO_SALAS.find((x) => x.dow === p.weekday && min >= x.from);
   if (!a) return;
+  if (a.until && min >= a.until) {
+    const endKey = `${p.year}-${p.month}-${p.day} ${a.venue}`;
+    const open = Object.values(db.sessions)[0];
+    if (db.autoEnd === endKey || !open || (open.theme || 'frida') !== a.venue || roscoLock('none')) return;
+    db.autoEnd = endKey;
+    closeSession(open);
+    console.log(`Fin de los juegos: se cerró ${open.name}`);
+    return;
+  }
   const key = `${p.year}-${p.month}-${p.day} ${a.venue}`;
   if (db.autoSala === key) return;
   db.autoSala = key;
