@@ -686,7 +686,7 @@ html.con-visor,html.con-visor body{overflow:hidden}
 .vt-cinta>span{display:inline-flex;gap:6px 14px;align-items:baseline;padding-right:48px}
 @keyframes vt-cinta{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 @media (prefers-reduced-motion:reduce){.vt-cinta{animation:none}}
-.vt-l2 b{color:var(--c);font-weight:700}.vt-l2 em{font-style:normal;color:#f4bf5a;font-weight:700}.vt-show{color:#fff;font-weight:700}
+.vt-l2 b{color:var(--c);font-weight:700}.vt-l2 small{font-size:.8em;opacity:.85}.vt-l2 em{font-style:normal;color:#f4bf5a;font-weight:700}.vt-show{color:#fff;font-weight:700}
 .visor-pc{flex:none;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;border-radius:999px;padding:5px 12px;font:700 16px var(--f-texto);cursor:pointer}
 .visor-x{flex:none;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;border-radius:999px;padding:7px 13px;font:700 13px var(--f-texto);cursor:pointer}
 .visor-pista{display:flex;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;min-height:0}
@@ -1631,9 +1631,18 @@ elegirLocal('kennedy');
     const hoy=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Santiago'}));
     const w=cartV[L.local]||[];const dHoy=w.find(d=>d.today);
     let prog='';
-    const lista=d=>d.hours.map(h=>`<span><em>${esc(h.time)}</em> ${esc(capi(h.label))}</span>`).join('');
-    if(dHoy&&dHoy.hours&&dHoy.hours.length)prog=`<b>Hoy desde las ${esc(dHoy.hours[0].time)}</b>${dHoy.show?`<span class="vt-show">⭐ ${esc(capi(dHoy.show))}</span>`:''}${lista(dHoy)}`;
-    else{const d=w.find(d=>!d.today&&d.hours&&d.hours.length);if(d)prog=`<b>Próximo: ${esc(capi(d.day))} ${d.date} desde las ${esc(d.hours[0].time)}</b>${d.show?`<span class="vt-show">⭐ ${esc(capi(d.show))}</span>`:''}${lista(d)}`;else prog='<b>Pronto la cartelera de este local</b>'}
+    // (pedido de Cote) «Hoy desde las 18:30 Música Y Videos · 19:00 Previa · … · 20:15 Destacado: ⭐ Especial México por
+    // Verónica Yañez · 21:15 Karaoke»: el primer horario va junto a «Hoy desde las», y en el del show va el show destacado
+    const showTxt=t=>{const m=String(t||'').match(/^(.*?)\s*\(([^()]+)\)\s*$/);return m?`${esc(capi(m[1]))} <small>por</small> ${esc(capi(m[2]))}`:esc(capi(t))};
+    const lista=(d,pre)=>{let puesto=false;
+      const items=d.hours.map((h,k)=>{const esShow=d.show&&/\bSHOW\b/i.test(String(h.label).normalize('NFD').replace(/[\u0300-\u036f]/g,''))&&!puesto;
+        if(esShow)puesto=true;
+        const txt=esShow?`<span class="vt-show">Destacado: ⭐ ${showTxt(d.show)}</span>`:esc(capi(h.label));
+        return k===0?`<span><b>${pre} ${esc(h.time)}</b> ${txt}</span>`:`<span><em>${esc(h.time)}</em> ${txt}</span>`});
+      if(d.show&&!puesto)items.push(`<span class="vt-show">Destacado: ⭐ ${showTxt(d.show)}</span>`);
+      return items.join('')};
+    if(dHoy&&dHoy.hours&&dHoy.hours.length)prog=lista(dHoy,'Hoy desde las');
+    else{const d=w.find(d=>!d.today&&d.hours&&d.hours.length);prog=d?lista(d,`Próximo: ${esc(capi(d.day))} ${d.date} desde las`):'<b>Pronto la cartelera de este local</b>'}
     visor.style.setProperty('--c',L.c);
     visor.querySelectorAll('.visor-slide[data-local]').forEach(sl=>sl.classList.toggle('actual',sl.dataset.local===L.local));
     visor.querySelector('.vt-l1').innerHTML=`<b class="vt-local">${esc(L.n)}</b>${vivo?`<span class="vt-estado en-vivo"><i class="vt-dot"></i>En vivo${DIAG?'<b class="vt-diag"> · atraso …</b>':''}</span>`:'<span class="vt-estado">▣ Pantalla del local</span>'}<span class="vt-fecha">${DIAS[hoy.getDay()]} ${hoy.getDate()} de ${MESL[hoy.getMonth()]}</span><span class="visor-puntos">${ORDEN.map((_,k)=>`<i class="visor-punto${k===idxV?' on':''}"></i>`).join('')}</span>`;
