@@ -462,7 +462,7 @@ function hostSetup(p) {
 // Panel del bingo en curso: solo lo que el animador usa durante el juego.
 // Enlaces, QR, textos de la gráfica y cierre de sesión están en «Administración».
 // Instrucciones y criterios para el animador, al partir cada juego (pedido de Cote): cortas y precisas, para leer en voz alta
-window.readAloud = (game, lines) => `<details class="panel howto" open><summary>📢 Para leer · ${esc(game)}</summary><ul>${lines.map((l) => `<li>${l}</li>`).join('')}</ul></details>`;
+window.readAloud = (game, lines) => `<details class="panel howto" open><summary>📢 Instrucciones · ${esc(game)}</summary><ul>${lines.map((l) => `<li>${l}</li>`).join('')}</ul></details>`;
 const BINGO_HOWTO = [
   'Todos juegan desde las mesas, con su cartón en el celular.',
   'Gana quien complete primero la <b>figura</b>.',
@@ -1454,6 +1454,9 @@ views.juegoDraw = async (kind) => {
     if (ready) {
       // paso 1: los juegos que pueden salir
       box.innerHTML = `<div class="jd-card"><small>🎲 Sorteo del ${g.list.length + 1}.º juego</small><div class="jd-opts">${g.ready.pool.map((k) => `<span>${info[k].icon} ${esc(info[k].name)}</span>`).join('')}</div>${listOf(true)}</div>`;
+      // en una sola línea (pedido de Cote): la letra se achica hasta que todos caben en el ancho
+      const row = $('.jd-opts');
+      if (row) { let fs = parseFloat(getComputedStyle(row.firstElementChild || row).fontSize) || 30; while (row.scrollWidth > row.clientWidth + 1 && fs > 10) { fs -= 1; row.style.fontSize = `${fs}px`; } }
       return;
     }
     const win = info[g.last.game];

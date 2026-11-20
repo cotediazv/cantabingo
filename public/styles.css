@@ -2247,3 +2247,9 @@ body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "So
 .g-direct { margin: 0; text-align: center; font-weight: 800; color: #ffc400; }
 .games-nav.g-ready [data-game] { border-color: #ffc400; }
 .games-nav.g-ready .g-draw { background: #ffc400; color: #1a1a1a; }
+
+/* Sorteo de juegos: los juegos que pueden salir en una sola línea, ajustados al ancho de la pantalla (pedido de Cote) */
+#jd .jd-opts { flex-wrap: nowrap; width: 100%; max-width: 100%; overflow: hidden; gap: 1.2vw; font-size: 4.2vh; }
+#jd .jd-opts span { flex: 0 1 auto; white-space: nowrap; font-size: 1em; padding: .35em .6em; }
+#jd .jd-card { max-width: 94vw; box-sizing: border-box; min-width: 0; }
+@media (orientation: portrait) { #jd .jd-card { width: 94vw; } }
