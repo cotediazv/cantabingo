@@ -850,7 +850,7 @@ views.jugar = async (sid) => {
     el = document.createElement('div'); el.id = 'phone-howto';
     el.innerHTML = `<div class="ph-card"><small>📢 Instrucciones</small><b>${esc(title)}</b><ul>${lines.map((l) => `<li>${l}</li>`).join('')}</ul><i class="ph-bar"></i></div>`;
     document.body.appendChild(el);
-    setTimeout(() => { if (el.isConnected) el.remove(); }, 5000);
+    setTimeout(() => { if (el.isConnected) el.remove(); }, 3000); // 3 segundos como máximo (pedido de Cote, 20 nov)
   };
   const syncHowto = async () => {
     const s = st.stage || 'bingo';
