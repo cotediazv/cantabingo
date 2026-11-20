@@ -42,7 +42,11 @@ body.solo video{position:fixed;inset:0;width:100%;height:100%;object-fit:contain
 .pant iframe{position:absolute;left:0;top:0;border:0;transform-origin:0 0}
 .previa .estado.local{color:var(--c);font-size:8px;letter-spacing:.1em;padding:3px 7px;left:6px;top:6px;background:rgba(0,0,0,.55)} /* chiquitito (pedido de Cote) */
 body.solo .pant{position:fixed;display:grid;place-items:center;background:#000}
-body.solo .pant-caja{position:relative;width:min(100vw,calc(100vh*16/9));aspect-ratio:16/9;overflow:hidden}
+body.solo .pant-caja{position:relative;width:min(100vw,calc(100dvh*16/9));aspect-ratio:16/9;overflow:hidden}
+body.solo .pant{height:100dvh}
+/* (pedido de Cote) limpio: sin textos encima de la pantalla del local; el botón se esconde y vuelve al tocar */
+#aviso.sobre{display:none!important}
+.flotante{transition:opacity .4s}body.limpio .flotante{opacity:0;pointer-events:none}
 #aviso.sobre{inset:auto 0 70px 0;place-content:end center;font-size:16px}#aviso.sobre b{font-size:22px}
 #aviso.sobre b,#aviso.sobre span{justify-self:center;background:rgba(0,0,0,.7);border-radius:999px;padding:4px 14px}
 .entrar{display:block;text-align:center;text-decoration:none;font-weight:800;font-size:17px;border-radius:999px;padding:12px;background:var(--c);color:#0c0b12}
@@ -70,7 +74,7 @@ const PANT={kennedy:{r:'#/pantalla/kennedy-h',liv:'https://www.krbstage.cl/horiz
   tobalaba:{r:'#/pantalla/tobalaba'},frida:{r:'#/pantalla/frida-h',liv:'https://www.krbstage.cl/horizontal-frida.mp4',ver:'1795179662255'}};
 const pantSrc=k=>{const P=PANT[k];return `${SALA}/?mudo=1${P.liv?`&liviano=${encodeURIComponent(P.liv)}&lver=${P.ver}`:''}${P.r}`};
 const pantHTML=k=>`<div class="pant"><iframe src="${pantSrc(k)}" width="1920" height="1080" sandbox="allow-scripts allow-same-origin" tabindex="-1" title="Pantalla del local"></iframe></div>`;
-function escalar(){document.querySelectorAll('.pant').forEach(d=>{const f=d.firstElementChild;if(f)f.style.transform=`scale(${d.clientWidth/1920})`})}
+function escalar(){document.querySelectorAll('.pant:not(#pfondo)').forEach(d=>{const f=d.firstElementChild;if(f)f.style.transform=`scale(${d.clientWidth/1920})`})}
 addEventListener('resize',escalar);
 const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const capi=t=>String(t||'').toLowerCase().replace(/(^|[\s(:\-])([^\s(:\-])/g,(m,a,b)=>a+b.toUpperCase());
@@ -88,7 +92,12 @@ if(LOCALES[sel]){
   son.onclick=()=>{v.muted=!v.muted;if(!v.muted)v.play().catch(()=>{});son.textContent=v.muted?'🔇 Activar sonido':'🔊 Silenciar'};
   const cerrar=()=>{if(pc){try{pc.close()}catch(_){}pc=null}};
   const pfondo=document.getElementById('pfondo'),escCaja=()=>{const c=pfondo.querySelector('.pant-caja'),f=c&&c.querySelector('iframe');if(f)f.style.transform=`scale(${c.clientWidth/1920})`};
-  addEventListener('resize',escCaja);requestAnimationFrame(escCaja);aviso.classList.add('sobre');
+  const reesc=()=>{escCaja();setTimeout(escCaja,300);setTimeout(escCaja,800)};
+  addEventListener('resize',reesc);addEventListener('orientationchange',reesc);if(window.visualViewport)visualViewport.addEventListener('resize',reesc);
+  requestAnimationFrame(escCaja);aviso.classList.add('sobre');
+  // los botones se esconden a los 3 s y vuelven al tocar la pantalla
+  let tLimpio;const mostrar=()=>{document.body.classList.remove('limpio');clearTimeout(tLimpio);tLimpio=setTimeout(()=>document.body.classList.add('limpio'),3000)};
+  addEventListener('pointerdown',mostrar);mostrar();
   const reintentar=msg=>{viendo=false;cerrar();aviso.hidden=false;son.hidden=true;v.style.visibility='hidden';pfondo.hidden=false;estado.textContent=msg;setTimeout(conectar,5000)};
   function conectar(){
     cerrar();
