@@ -5,56 +5,126 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex">
 <title>KRB Stage · En vivo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800&family=Manrope:wght@500;700;800&family=JetBrains+Mono:wght@500&display=swap">
 <!--
-  Solo el video en vivo de baja latencia (Cloudflare) de un local, a pantalla completa (pedido de Cote):
-    envivo.html?local=kennedy · envivo.html?local=tobalaba · envivo.html?local=frida
-  Si el local no está transmitiendo, muestra un aviso y vuelve a intentar sola cada 5 segundos.
+  En vivo (pedido de Cote):
+   · envivo.html: los tres locales, cada uno con su vista previa, el botón para entrar a su transmisión y abajo su
+     programación de hoy (o del próximo día); al pie, el logo de KRB Stage.
+   · envivo.html?local=kennedy | tobalaba | frida: solo el video en vivo de baja latencia (Cloudflare) de ese local.
+  Las vistas previas son la imagen de Twitch del en vivo (se renueva cada 30 s): así no se cobra el video de Cloudflare
+  por cada vista previa; el video de baja latencia se abre al entrar a la transmisión.
 -->
 <style>
-html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#fff}
-video{position:fixed;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
-#aviso{position:fixed;inset:0;display:grid;place-content:center;text-align:center;gap:10px;font-size:22px;color:#ccc}
-#aviso b{font-size:30px;color:var(--c)}
-#son{position:fixed;right:16px;bottom:16px;border:1px solid rgba(255,255,255,.5);background:rgba(0,0,0,.6);color:#fff;border-radius:999px;padding:10px 18px;font:700 16px system-ui;cursor:pointer}
+:root{--noche:#0c0b12;--tarima:#15131e;--linea:#2a2636;--texto:#f3eee6;--tenue:#a59fb0;--foco:#f4bf5a;
+  --f-display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;--f-texto:"Manrope",system-ui,sans-serif;--f-dato:"JetBrains Mono",ui-monospace,monospace}
+html,body{margin:0;background:var(--noche);color:var(--texto);font-family:var(--f-texto)}
 [hidden]{display:none!important}
+/* ===== una transmisión ===== */
+body.solo{height:100%;overflow:hidden;background:#000}
+body.solo video{position:fixed;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+#aviso{position:fixed;inset:0;display:grid;place-content:center;text-align:center;gap:10px;font-size:22px;color:#ccc}
+#aviso b{font-family:var(--f-display);font-size:40px;text-transform:uppercase;color:var(--c)}
+.flotante{position:fixed;bottom:16px;border:1px solid rgba(255,255,255,.5);background:rgba(0,0,0,.6);color:#fff;border-radius:999px;padding:10px 18px;font:700 16px var(--f-texto);cursor:pointer;text-decoration:none}
+#son{right:16px}#volver{left:16px}
+/* ===== los tres locales ===== */
+.hub{max-width:1280px;margin:0 auto;padding:28px 20px 40px;display:grid;gap:26px}
+.hub h1{margin:0;font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:clamp(34px,5vw,56px);line-height:1;text-align:center}
+.hub h1 span{color:#ff4d4d}
+.locales{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;align-items:start}
+@media (max-width:900px){.locales{grid-template-columns:1fr}}
+.local{border:1px solid var(--linea);border-top:4px solid var(--c);border-radius:12px;background:var(--tarima);padding:16px;display:grid;gap:12px}
+.local h2{margin:0;font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:28px;line-height:1;color:var(--c)}
+.previa{position:relative;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#000 center/cover no-repeat;border:1px solid var(--linea)}
+.previa .estado{position:absolute;left:10px;top:10px;font-family:var(--f-dato);font-size:12px;letter-spacing:.12em;text-transform:uppercase;background:rgba(0,0,0,.65);border-radius:999px;padding:5px 10px;display:flex;align-items:center;gap:6px}
+.previa .estado i{width:9px;height:9px;border-radius:50%;background:#ff4d4d;box-shadow:0 0 8px #ff4d4d}
+.previa.apagada{display:grid;place-items:center;background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--c) 25%,transparent),#000 75%)}
+.previa.apagada span{color:var(--tenue);font-size:15px}
+.entrar{display:block;text-align:center;text-decoration:none;font-weight:800;font-size:17px;border-radius:999px;padding:12px;background:var(--c);color:#0c0b12}
+.entrar.off{background:transparent;color:var(--c);border:1px solid var(--c)}
+.prog{border-top:1px solid var(--linea);padding-top:10px;display:grid;gap:6px}
+.prog .tit{font-family:var(--f-dato);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--c)}
+.prog .show{font-weight:800}
+.prog ul{list-style:none;margin:0;padding:0;display:grid;gap:3px;font-size:15px}
+.prog time{color:var(--foco);font-weight:700;margin-right:6px}
+.prog .nada{color:var(--tenue);font-size:14px;margin:0}
+.pie{display:grid;place-items:center;padding-top:10px}
+.pie img{width:min(260px,60vw)}
 </style>
 </head>
 <body>
-<video id="v" autoplay playsinline muted></video>
-<div id="aviso"><b id="nombre"></b><span id="estado">Conectando…</span></div>
-<button id="son" hidden>🔇 Activar sonido</button>
 <script>
 const LOCALES={
-  kennedy:{n:'Mercado Kennedy',c:'#47b8e6',whep:'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/c24ccde66ad7d935841dd934d9b3e1cf/webRTC/play'},
-  tobalaba:{n:'Espacio Gastronómico Tobalaba',c:'#e5413a',whep:'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/9c4d261a1b6c2fb79842b6d3821b9018/webRTC/play'},
-  frida:{n:'Frida Kahlo',c:'#e0338f',whep:'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/2c9c627707b0fbc53e20c611f84235a0/webRTC/play'}
+  kennedy:{n:'Mercado Kennedy',c:'#47b8e6',canal:'krbstagekennedy',whep:'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/c24ccde66ad7d935841dd934d9b3e1cf/webRTC/play'},
+  tobalaba:{n:'Espacio Gastronómico Tobalaba',c:'#e5413a',canal:'krbstage3',whep:'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/9c4d261a1b6c2fb79842b6d3821b9018/webRTC/play'},
+  frida:{n:'Frida Kahlo',c:'#e0338f',canal:'krbstage',whep:'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/2c9c627707b0fbc53e20c611f84235a0/webRTC/play'}
 };
-const q=new URLSearchParams(location.search),k=LOCALES[q.get('local')]?q.get('local'):'kennedy',L=LOCALES[k];
-document.documentElement.style.setProperty('--c',L.c);document.title=`${L.n} · En vivo`;
-const v=document.getElementById('v'),aviso=document.getElementById('aviso'),estado=document.getElementById('estado'),son=document.getElementById('son');
-document.getElementById('nombre').textContent=L.n;
-let pc=null,viendo=false;
-// sonido: los navegadores piden un toque antes de dejar sonar
-son.onclick=()=>{v.muted=!v.muted;if(!v.muted)v.play().catch(()=>{});son.textContent=v.muted?'🔇 Activar sonido':'🔊 Silenciar'};
-function cerrar(){if(pc){try{pc.close()}catch(_){}pc=null}}
-function reintentar(msg){viendo=false;cerrar();aviso.hidden=false;son.hidden=true;estado.textContent=msg;setTimeout(conectar,5000)}
-function conectar(){
-  cerrar();
-  pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.cloudflare.com:3478'}],bundlePolicy:'max-bundle'});
-  const ms=new MediaStream(),este=pc;
-  pc.addTransceiver('video',{direction:'recvonly'});pc.addTransceiver('audio',{direction:'recvonly'});
-  pc.ontrack=e=>{ms.addTrack(e.track);v.srcObject=ms;v.play().catch(()=>{})};
-  pc.onconnectionstatechange=()=>{if(pc!==este)return;if(['failed','disconnected','closed'].includes(este.connectionState)&&viendo)reintentar('Se cortó la señal. Reconectando…')};
-  const plazo=setTimeout(()=>{if(!viendo&&pc===este)reintentar('Sin transmisión en este momento. Se conecta sola apenas empiece.')},12000);
-  pc.createOffer().then(o=>pc.setLocalDescription(o)).then(()=>new Promise(r=>{if(este.iceGatheringState==='complete')return r();
-    const t=setTimeout(r,1500);este.addEventListener('icegatheringstatechange',()=>{if(este.iceGatheringState==='complete'){clearTimeout(t);r()}})}))
-    .then(()=>fetch(L.whep,{method:'POST',headers:{'content-type':'application/sdp'},body:este.localDescription.sdp}))
-    .then(r=>{if(!r.ok)throw new Error('WHEP '+r.status);return r.text()})
-    .then(sdp=>este.setRemoteDescription({type:'answer',sdp}))
-    .catch(()=>{clearTimeout(plazo);if(pc===este)reintentar('Sin transmisión en este momento. Se conecta sola apenas empiece.')});
+const SALA='https://cantabingo.onrender.com';
+const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const capi=t=>String(t||'').toLowerCase().replace(/(^|[\s(:\-])([^\s(:\-])/g,(m,a,b)=>a+b.toUpperCase());
+const showTxt=t=>{const m=String(t||'').match(/^(.*?)\s*\(([^()]+)\)\s*$/);return m?`${esc(capi(m[1]))} por ${esc(capi(m[2]))}`:esc(capi(t))};
+const q=new URLSearchParams(location.search),sel=q.get('local');
+
+if(LOCALES[sel]){
+  // ===== una transmisión: solo el video de baja latencia =====
+  const L=LOCALES[sel];document.body.className='solo';document.documentElement.style.setProperty('--c',L.c);document.title=`${L.n} · En vivo`;
+  document.body.insertAdjacentHTML('beforeend',`<video id="v" autoplay playsinline muted></video>
+    <div id="aviso"><b>${esc(L.n)}</b><span id="estado">Conectando…</span></div>
+    <a class="flotante" id="volver" href="envivo.html">← Locales</a><button class="flotante" id="son" hidden>🔇 Activar sonido</button>`);
+  const v=document.getElementById('v'),aviso=document.getElementById('aviso'),estado=document.getElementById('estado'),son=document.getElementById('son');
+  let pc=null,viendo=false;
+  son.onclick=()=>{v.muted=!v.muted;if(!v.muted)v.play().catch(()=>{});son.textContent=v.muted?'🔇 Activar sonido':'🔊 Silenciar'};
+  const cerrar=()=>{if(pc){try{pc.close()}catch(_){}pc=null}};
+  const reintentar=msg=>{viendo=false;cerrar();aviso.hidden=false;son.hidden=true;estado.textContent=msg;setTimeout(conectar,5000)};
+  function conectar(){
+    cerrar();
+    pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.cloudflare.com:3478'}],bundlePolicy:'max-bundle'});
+    const ms=new MediaStream(),este=pc;
+    pc.addTransceiver('video',{direction:'recvonly'});pc.addTransceiver('audio',{direction:'recvonly'});
+    pc.ontrack=e=>{ms.addTrack(e.track);v.srcObject=ms;v.play().catch(()=>{})};
+    pc.onconnectionstatechange=()=>{if(pc!==este)return;if(['failed','disconnected','closed'].includes(este.connectionState)&&viendo)reintentar('Se cortó la señal. Reconectando…')};
+    const plazo=setTimeout(()=>{if(!viendo&&pc===este)reintentar('Sin transmisión en este momento. Se conecta sola apenas empiece.')},12000);
+    pc.createOffer().then(o=>pc.setLocalDescription(o)).then(()=>new Promise(r=>{if(este.iceGatheringState==='complete')return r();
+      const t=setTimeout(r,1500);este.addEventListener('icegatheringstatechange',()=>{if(este.iceGatheringState==='complete'){clearTimeout(t);r()}})}))
+      .then(()=>fetch(L.whep,{method:'POST',headers:{'content-type':'application/sdp'},body:este.localDescription.sdp}))
+      .then(r=>{if(!r.ok)throw new Error('WHEP '+r.status);return r.text()})
+      .then(sdp=>este.setRemoteDescription({type:'answer',sdp}))
+      .catch(()=>{clearTimeout(plazo);if(pc===este)reintentar('Sin transmisión en este momento. Se conecta sola apenas empiece.')});
+  }
+  v.addEventListener('playing',()=>{viendo=true;aviso.hidden=true;son.hidden=false});
+  conectar();
+}else{
+  // ===== los tres locales =====
+  document.body.insertAdjacentHTML('beforeend',`<main class="hub"><h1><span>●</span> En vivo</h1><div class="locales">${Object.entries(LOCALES).map(([k,L])=>`
+    <section class="local" data-k="${k}" style="--c:${L.c}"><h2>${esc(L.n)}</h2>
+      <div class="previa apagada"><span>Sin transmisión en este momento</span></div>
+      <a class="entrar off" href="envivo.html?local=${k}">Entrar a la transmisión</a>
+      <div class="prog"><span class="tit">Programación</span><p class="nada">Cargando…</p></div>
+    </section>`).join('')}</div>
+    <footer class="pie"><img src="krb-stage.svg" alt="KRB Stage"></footer></main>`);
+  // vista previa: la imagen del en vivo de Twitch (gratis), renovada cada 30 s
+  function previas(){
+    fetch(`${SALA}/api/web/twitch`).then(r=>r.json()).then(j=>{
+      for(const [k,L] of Object.entries(LOCALES)){
+        const c=(j.canales||[]).find(x=>x.canal===L.canal),el=document.querySelector(`.local[data-k="${k}"]`),pv=el.querySelector('.previa'),bt=el.querySelector('.entrar');
+        if(c&&c.vivo){pv.classList.remove('apagada');pv.style.backgroundImage=`url("${c.vivo.thumbnail}?t=${Date.now()}")`;pv.innerHTML='<span class="estado"><i></i>En vivo</span>';bt.classList.remove('off')}
+        else{pv.classList.add('apagada');pv.style.backgroundImage='';pv.innerHTML='<span>Sin transmisión en este momento</span>';bt.classList.add('off')}
+      }
+    }).catch(()=>{});
+  }
+  // programación de hoy (o del próximo día que tenga), con el show destacado
+  function programa(){
+    for(const k of Object.keys(LOCALES)){
+      fetch(`${SALA}/api/light/cartelera?local=${k}`).then(r=>r.json()).then(j=>{
+        const w=Array.isArray(j.week)?j.week:[],hoy=w.find(d=>d.today&&d.hours&&d.hours.length),d=hoy||w.find(d=>!d.today&&d.hours&&d.hours.length);
+        const box=document.querySelector(`.local[data-k="${k}"] .prog`);
+        if(!d){box.innerHTML='<span class="tit">Programación</span><p class="nada">Pronto la cartelera de este local.</p>';return}
+        box.innerHTML=`<span class="tit">${hoy?'Hoy':`${esc(capi(d.day))} ${d.date}`}</span>${d.show?`<span class="show">⭐ ${showTxt(d.show)}</span>`:''}
+          <ul>${d.hours.map(h=>`<li><time>${esc(h.time)}</time>${/\bSHOW\b/i.test(String(h.label).normalize('NFD').replace(/[̀-ͯ]/g,''))&&d.show?`Destacado: ${showTxt(d.show)}`:esc(capi(h.label))}</li>`).join('')}</ul>`;
+      }).catch(()=>{});
+    }
+  }
+  previas();programa();setInterval(previas,30000);setInterval(programa,10*60e3);
 }
-v.addEventListener('playing',()=>{viendo=true;aviso.hidden=true;son.hidden=false});
-conectar();
 </script>
 </body>
 </html>
