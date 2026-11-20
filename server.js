@@ -810,6 +810,7 @@ setInterval(() => {
 // Una vez por día: si después se cierra a mano, no se vuelve a crear. Si ya hay una sala abierta de ese local, se deja;
 // si la abierta es de otro local, se cierra y se crea la que toca. Usa los cartones del último bingo de ese local (si no
 // hay, crea 320) y dura hasta las 4 de la mañana siguiente (para que no se cierre en medio de los juegos).
+const AUTO_SALAS_FROM = '2026-11-21'; // la creación automática empieza el sábado 21 de noviembre (pedido de Cote)
 const AUTO_SALAS = [
   { dow: 'Thu', from: 18 * 60 + 30, venue: 'kennedy', name: 'Los Juegos de Kennedy' },
   { dow: 'Fri', from: 18 * 60, until: 22 * 60 + 45, venue: 'tobalaba', name: 'Los Juegos de Tobalaba' },
@@ -834,6 +835,7 @@ function autoSala() {
     return;
   }
   const key = `${p.year}-${p.month}-${p.day} ${a.venue}`;
+  if (`${p.year}-${p.month}-${p.day}` < AUTO_SALAS_FROM) return; // pedido de Cote: hoy (20 nov) la sala se inicia a mano
   if (db.autoSala === key) return;
   db.autoSala = key;
   const open = Object.values(db.sessions)[0];

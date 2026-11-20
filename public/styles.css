@@ -2311,6 +2311,42 @@ body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "So
 .pw-howto, .rv-howto { display: block; }
 .games-nav .g-plan[hidden] { display: none; }
 
+/* Menú de juegos plegado mientras hay un juego en curso (pedido de Cote) */
+.games-nav .g-unfold { display: none; }
+.games-nav.g-folded > *:not(.g-unfold) { display: none !important; }
+.games-nav.g-folded .g-unfold { display: block; width: 100%; margin: 8px 0; padding: 12px; font-weight: 800; }
+/* Bingo: las instrucciones se ocultan con el primer número */
+#host-bingo.bingo-started > .howto { display: none; }
+/* Votaciones: con el ganador anunciado queda solo el menú; «Nuevo concurso» dentro de «Más opciones» */
+#vc-panel[hidden] { display: none; }
+.vc-more { margin-top: 18px; }
+.vc-more summary { cursor: pointer; color: var(--muted, #aaa); font-size: .9rem; }
+.vc-more button { margin-top: 10px; }
+/* El Rosco: instrucciones fuera al empezar; con el ganador aceptado queda solo lo que viene */
+#rosco-ctl.rosco-started > .howto, #rosco-ctl.rosco-done > .howto { display: none; }
+#rosco-ctl.rosco-done > .cols { grid-template-columns: 1fr; }
+#rosco-ctl.rosco-done > .cols > .panel:nth-child(2), #rosco-ctl.rosco-done > .panel, #rosco-ctl.rosco-done > .games-nav, #rosco-ctl.rosco-done > p.small,
+#rosco-ctl.rosco-done #w-question, #rosco-ctl.rosco-done .w-flow, #rosco-ctl.rosco-done .w-keys, #rosco-ctl.rosco-done .cols > .panel:first-child > .row, #rosco-ctl.rosco-done .cols > .panel:first-child > p.muted { display: none !important; }
+/* Sorteo de concursantes: un botón grande; la lista de conectados plegada */
+.rf-main { width: 100%; padding: 16px; font-size: 1.2rem; }
+.rf-more summary { cursor: pointer; font-weight: 800; font-size: 1.1rem; }
+/* Figuras del bingo agrupadas */
+.patterns .pat-group { grid-column: 1 / -1; margin: 12px 0 2px; font-size: 1rem; color: #ffc400; }
+.patterns .pat-group:first-child { margin-top: 0; }
+/* «Refrescar» en todos los paneles */
+#ctl-reload-fixed { position: fixed; top: 8px; right: 8px; z-index: 60; padding: 4px 10px; font-size: .8rem; opacity: .85; }
+
+/* Figuras del bingo: las letras en una pestaña plegada */
+.patterns .pat-letters { grid-column: 1 / -1; margin-top: 12px; }
+.patterns .pat-letters summary { cursor: pointer; font-weight: 800; color: #ffc400; padding: 8px 0; }
+.patterns .pat-letters .patterns { margin-top: 8px; }
+/* Resultados: el lugar en el círculo (3.º) en vez del número del participante */
+.v-no { white-space: nowrap; }
+
+/* Enlace al Centro de control abajo de cada panel */
+#ctl-home-link { text-align: center; margin: 24px auto 40px; }
+#ctl-reload-fixed { position: absolute; }
+
 /* ---------- El Gran Desafío ---------- */
 .home-steps .s8 { grid-column: 1 / -1; background: linear-gradient(135deg, #0a9a94, #2338a8); }
 /* Panel del animador */

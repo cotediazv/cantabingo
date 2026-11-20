@@ -9,7 +9,7 @@
   // Número del participante (orden en que se anotó), para que el animador pueda decir «la número 3»
   const badge = (x) => (x ? `<u class="v-no">${x}</u>` : '');
   const nm = (p) => `${badge(p.no)}${esc(p.name)}`;
-  const versus = (st) => st.final.players.map((p) => nm(p)).join(' <em>vs</em> ');
+  const versus = (st) => st.final.players.map((p) => esc(p.name)).join(' <em>vs</em> ');
   const CELEBRATE_MS = 6000;
   // Reloj del llamado a participar: cada pantalla lo lleva con su propia hora, a partir de lo que dice el servidor
   let clockEnd = 0;
@@ -46,12 +46,12 @@
     if (!(await isAdmin())) return viewLogin();
     // El Festival y El objeto más extraño son juegos separados (pedido de Cote): #/votoctl/festival o #/votoctl/objeto
     const want = which === 'festival' ? 'karaoke' : which === 'objeto' ? 'objeto' : '';
-    app.innerHTML = `<div id="vc-howto"></div><div class="panel"><h1 style="margin:0" id="vc-h1">${want === 'karaoke' ? '🎤 El Festival' : '🗳️ El objeto más extraño'}</h1>
+    app.innerHTML = `<div id="vc-howto"></div><div class="panel" id="vc-panel"><h1 style="margin:0" id="vc-h1">${want === 'karaoke' ? '🎤 El Festival' : '🗳️ El objeto más extraño'}</h1>
         <label class="f" id="vc-title-wrap" style="margin-top:12px" hidden>Nombre del concurso<input type="text" id="vc-title" maxlength="50" placeholder="Ej.: El objeto más extraño"></label>
         <div id="vc-body" style="margin-top:14px"></div>
       </div>
       ${activitiesNav(want === 'karaoke' ? 'festival' : 'objeto')}
-      <p style="margin-top:14px"><button class="big" id="vc-reset">🗑 Nuevo concurso (borra este)</button></p>`;
+      <details class="vc-more" id="vc-more"><summary>Más opciones</summary><button class="big" id="vc-reset">🗑 Nuevo concurso (borra este)</button></details>`;
     await api('POST', '/api/stage', { show: 'voto' }).catch(fail);
     let st = null;
     let last = '';
@@ -101,36 +101,39 @@
   }).join('')}</div>` : ''}`;
       } else if (st.phase === 'results') {
         html = `<h2>Resultados</h2>
-          ${st.next ? `<div class="vc-read"><small>Viene · solo lo ves tú, hasta que lo reveles</small><em>${ord(st.next.place)}</em><b>${nm(st.next)}</b>${st.next.thing ? `<span>${esc(st.next.thing)}</span>` : ''}<i>Nota ${note(st.next.score, st.next.dec)}</i></div>
+          ${st.next ? `<div class="vc-read"><small>Viene · solo lo ves tú, hasta que lo reveles</small><em>${ord(st.next.place)}</em><b>${esc(st.next.name)}</b>${st.next.thing ? `<span>${esc(st.next.thing)}</span>` : ''}<i>Nota ${note(st.next.score, st.next.dec)}</i></div>
             <button class="primary big" data-act="reveal">Revelar ${ord(st.next.place)}</button>`
-    : `<div class="vc-read"><small>Quedan las dos finalistas</small>${st.final.players.map((p) => `<b>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}`).join('<em class="vs">y</em>')}</div>
+    : `<div class="vc-read"><small>Quedan las dos finalistas</small>${st.final.players.map((p) => `<b>${esc(p.name)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}`).join('<em class="vs">y</em>')}</div>
             <button class="primary big" data-act="final">${isK(st) ? '🥁 Redoble de tambores: los dos finalistas' : '⚔️ Gran final: abrir votación'}</button>`}
-          <div class="vc-list">${[...st.places].reverse().map((p) => `<div class="vc-row"><p><b>${ord(p.place)} · ${nm(p)}</b>${thing(p)}<small>Nota ${note(p.score, p.dec)}</small></p></div>`).join('')}</div>`;
+          <div class="vc-list">${[...st.places].reverse().map((p) => `<div class="vc-row"><p><b>${ord(p.place)} · ${esc(p.name)}</b>${thing(p)}<small>Nota ${note(p.score, p.dec)}</small></p></div>`).join('')}</div>`;
       } else if (st.phase === 'final' && isK(st)) {
         html = `<h2>🥁 Redoble de tambores</h2>
-          <div class="vc-read"><small>Los dos finalistas están en pantalla</small>${st.final.players.map((p) => `<b>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}`).join('<em class="vs">y</em>')}</div>
-          <button class="primary big" data-act="winner" style="margin-top:12px">🏆 Revelar 2.º lugar y ganador</button>`;
+          <div class="vc-read"><small>Los dos finalistas están en pantalla</small>${st.final.players.map((p) => `<b>${esc(p.name)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}`).join('<em class="vs">y</em>')}</div>
+          <button class="primary big" data-act="winner" style="margin-top:12px">🏆 Revelar al gran ganador</button>`;
       } else if (st.phase === 'final') {
         const total = Object.values(st.tally).reduce((a, b) => a + b, 0);
         html = `<h2>Gran final</h2>
-          <div class="vc-list">${st.final.players.map((p) => `<div class="vc-row"><p><b>${nm(p)}</b>${thing(p)}<small>${st.final.open ? `Recibiendo votos · <span class="v-clock">${clockText()}</span>` : `${st.tally[p.id]} votos (solo lo ves tú)`}</small></p></div>`).join('')}</div>
+          <div class="vc-list">${st.final.players.map((p) => `<div class="vc-row"><p><b>${esc(p.name)}</b>${thing(p)}<small>${st.final.open ? `Recibiendo votos · <span class="v-clock">${clockText()}</span>` : `${st.tally[p.id]} votos (solo lo ves tú)`}</small></p></div>`).join('')}</div>
           <p class="muted small" style="margin-top:6px">${total} votos en la gran final</p>
           ${st.final.open ? '<button class="primary big" data-act="closefinal" style="margin-top:12px">Cerrar votación</button>'
     : '<button class="primary big" data-act="winner" style="margin-top:12px">🏆 Revelar quién ganó</button><button class="big" data-act="final" style="margin-top:10px">Reabrir votación</button>'}`;
       } else if (isK(st)) {
-        html = `<h2>🏆 Ganó ${nm(st.winner)} · ${note(st.winner.score, st.winner.dec)}</h2>
-          <div class="vc-list">${st.second ? `<div class="vc-row"><p><b>2.º lugar · ${nm(st.second)}</b>${thing(st.second)}<small>Nota ${note(st.second.score, st.second.dec)}</small></p></div>` : ''}
-          ${[...st.places].reverse().map((p) => `<div class="vc-row"><p><b>${ord(p.place)} · ${nm(p)}</b>${thing(p)}<small>Nota ${note(p.score, p.dec)}</small></p></div>`).join('')}</div>`;
+        html = `<h2>🏆 Ganó ${esc(st.winner.name)} · ${note(st.winner.score, st.winner.dec)}</h2>
+          <div class="vc-list">${st.second ? `<div class="vc-row"><p><b>2.º lugar · ${esc(st.second.name)}</b>${thing(st.second)}<small>Nota ${note(st.second.score, st.second.dec)}</small></p></div>` : ''}
+          ${[...st.places].reverse().map((p) => `<div class="vc-row"><p><b>${ord(p.place)} · ${esc(p.name)}</b>${thing(p)}<small>Nota ${note(p.score, p.dec)}</small></p></div>`).join('')}</div>`;
       } else {
-        html = `<h2>🏆 Ganó ${nm(st.winner)}</h2>
-          <div class="vc-list">${st.final.players.map((p) => `<div class="vc-row"><p><b>${nm(p)}</b><small>${st.tally[p.id]} votos en la gran final</small></p></div>`).join('')}
-          ${[...st.places].reverse().map((p) => `<div class="vc-row"><p><b>${ord(p.place)} · ${nm(p)}</b><small>Nota ${note(p.score, p.dec)}</small></p></div>`).join('')}</div>`;
+        html = `<h2>🏆 Ganó ${esc(st.winner.name)}</h2>
+          <div class="vc-list">${st.final.players.map((p) => `<div class="vc-row"><p><b>${esc(p.name)}</b><small>${st.tally[p.id]} votos en la gran final</small></p></div>`).join('')}
+          ${[...st.places].reverse().map((p) => `<div class="vc-row"><p><b>${ord(p.place)} · ${esc(p.name)}</b><small>Nota ${note(p.score, p.dec)}</small></p></div>`).join('')}</div>`;
       }
       box.innerHTML = html;
       const ht = $('#vc-howto');
       const htKey = `${st.mode}|${st.max}|${st.venue}`;
       if (ht && ht.dataset.k !== htKey) { const wasOpen = !ht.firstElementChild || ht.firstElementChild.open; ht.dataset.k = htKey; ht.innerHTML = howto(st); ht.firstElementChild.open = wasOpen; }
       if (ht) ht.hidden = st.phase !== 'voting' || st.signup || st.players.length > 0; // las instrucciones, solo al principio
+      // Pedido de Cote (20 nov): con el ganador anunciado desaparece el juego y queda solo lo que viene (el menú)
+      $('#vc-panel').hidden = st.phase === 'winner';
+      window.setNavFold((st.signup || st.players.length > 0) && st.phase !== 'winner');
       if ($('#vc-name')) { $('#vc-name').value = keep; $('#vc-thing').value = keepThing; if (focus) $(focus).focus(); }
       if ($('#vc-add')) $('#vc-add').onsubmit = async (e) => { e.preventDefault(); const name = $('#vc-name').value; const what = $('#vc-thing').value; if (await act('add', { name, thing: what })) { $('#vc-name').value = ''; $('#vc-thing').value = ''; $('#vc-name').focus(); } };
     };
@@ -168,15 +171,15 @@
       shown = sig;
       const head = `<div class="pvote-head"><b>${icon(st)} ${esc(title(st))}</b></div>`;
       let body;
-      if (st.phase === 'winner') body = `<div class="pvote-win">🏆 ${nm(st.winner)}${thing(st.winner)}<small>¡Ganó ${esc(title(st))}!</small></div>`;
+      if (st.phase === 'winner') body = `<div class="pvote-win">🏆 ${badge('1.º')}${esc(st.winner.name)}${thing(st.winner)}<small>¡Ganó ${esc(title(st))}!</small></div>`;
       else if (st.phase === 'final' && st.final.drum) body = '<p class="pvote-wait">🥁 ¡Redoble de tambores!<br>Mira la pantalla para conocer al ganador.</p>';
       else if (st.phase === 'final' && st.final.open) {
         body = `<p class="pvote-ask">Gran final<b>¿Quién quieres que gane?</b></p>
-          <div class="pvote-duel">${st.final.players.map((p) => `<button type="button" data-v="${p.id}" class="${st.mine === p.id ? 'on' : ''}">${nm(p)}${thing(p)}</button>`).join('')}</div>
+          <div class="pvote-duel">${st.final.players.map((p) => `<button type="button" data-v="${p.id}" class="${st.mine === p.id ? 'on' : ''}">${esc(p.name)}${thing(p)}</button>`).join('')}</div>
           <p class="pvote-clock">Quedan <b class="v-clock">${clockText()}</b></p>
           ${st.mine ? '<p class="pvote-ok">✔ Voto recibido. Puedes cambiarlo mientras la votación esté abierta.</p>' : ''}`;
       } else if (st.phase === 'final') body = '<p class="pvote-wait">Votación cerrada.<br>¡Mira la pantalla para conocer el resultado!</p>';
-      else if (st.phase === 'results') body = `<p class="pvote-wait">Resultados: ¡mira la pantalla!</p>${[...st.places].reverse().map((p) => `<div class="pvote-place"><b>${ord(p.place)}</b><span>${nm(p)}${thing(p)}</span><i>${note(p.score, p.dec)}</i></div>`).join('')}`;
+      else if (st.phase === 'results') body = `<p class="pvote-wait">Resultados: ¡mira la pantalla!</p>${[...st.places].reverse().map((p) => `<div class="pvote-place"><b>${ord(p.place)}</b><span>${esc(p.name)}${thing(p)}</span><i>${note(p.score, p.dec)}</i></div>`).join('')}`;
       else if (st.open) {
         body = `<p class="pvote-ask">Pon tu nota a<b>${nm(st.open)}</b>${thing(st.open)}</p>
           <div class="pvote-keys">${Array.from({ length: 10 }, (_, i) => `<button type="button" data-v="${i + 1}" data-id="${st.open.id}" class="${st.mine === i + 1 ? 'on' : ''}">${i + 1}</button>`).join('')}</div>
@@ -249,22 +252,24 @@
   };
   const winHTML = (st) => `<div class="bwin th-${st.venue}"><div class="confetti">${confetti()}</div>
     <div class="bwin-card"><span class="bwin-sub">${esc(title(st))}</span><span class="vwin-cup">🏆</span>
-      <div class="bwin-names"><span><b ${n(`${st.winner.name}...`)}>${nm(st.winner)}</b>${st.winner.thing ? `<small>${esc(st.winner.thing)}</small>` : ''}</span></div>
-      ${isK(st) && st.winner.score != null ? `<span class="vk-score">Puntaje <b>${note(st.winner.score, st.winner.dec)}</b></span>${st.second ? `<span class="vk-second">2.º lugar · ${esc(st.second.name)} · <b>${note(st.second.score, st.second.dec)}</b></span>` : ''}` : ''}
+      <div class="bwin-names"><span><b ${n(`${st.winner.name}...`)}>${badge('1.º')}${esc(st.winner.name)}</b>${st.winner.thing ? `<small>${esc(st.winner.thing)}</small>` : ''}</span></div>
+      ${isK(st) && st.winner.score != null ? `<span class="vk-score">Puntaje <b>${note(st.winner.score, st.winner.dec)}</b></span>` : ''}
       <span class="bwin-sub">¡Felicitaciones!</span></div></div>`;
 
   // Qué decir en cada momento: etiqueta, línea principal, línea secundaria y bloque de la derecha
-  const scene = (st) => {
+  // Pedido de Cote (20 nov): en la final, después del redoble, primero se revela solo al gran ganador; el 2.º lugar
+  // aparece después, cuando termina la celebración
+  const scene = (st, celebrating = false) => {
     const lastPlace = st.places[st.places.length - 1];
-    if (st.phase === 'winner' && isK(st)) return { tag: 'Ganó', no: st.winner.no, main: st.winner.name, sub: st.second ? `2.º lugar: ${st.second.name} · ${note(st.second.score, st.second.dec)}` : (st.winner.thing || title(st)), score: st.winner.score, dec: st.winner.dec };
-    if (st.phase === 'winner') return { tag: 'Ganó', no: st.winner.no, main: st.winner.name, sub: st.winner.thing || '', side: ['🏆', '¡Felicitaciones!'] };
+    if (st.phase === 'winner' && isK(st)) return { tag: 'Ganó', no: '1.º', main: st.winner.name, sub: st.second && !celebrating ? `2.º lugar: ${st.second.name} · ${note(st.second.score, st.second.dec)}` : (st.winner.thing || title(st)), score: st.winner.score, dec: st.winner.dec };
+    if (st.phase === 'winner') return { tag: 'Ganó', no: '1.º', main: st.winner.name, sub: st.winner.thing || '', side: ['🏆', '¡Felicitaciones!'] };
     if (st.phase === 'final' && st.final.drum) return { tag: 'Los finalistas', duel: true, drum: true, sub: '🥁 ¡Redoble de tambores!', side: ['🥁', '¿Quién ganará?'] };
     if (st.phase === 'final') {
       return st.final.open ? { tag: 'Gran final', duel: true, sub: 'Elige en tu celular a quién quieres que gane', clock: 'Vota ahora', qr: true }
         : { tag: 'Gran final', duel: true, sub: 'Votación cerrada', side: ['✔', 'Ya viene el resultado'] };
     }
     if (st.phase === 'results') {
-      return lastPlace ? { tag: 'Resultados', no: lastPlace.no, main: lastPlace.name, sub: lastPlace.thing ? `${ord(lastPlace.place)} · ${lastPlace.thing}` : ord(lastPlace.place), score: lastPlace.score, dec: lastPlace.dec }
+      return lastPlace ? { tag: 'Resultados', no: `${lastPlace.place}.º`, main: lastPlace.name, sub: lastPlace.thing || '', score: lastPlace.score, dec: lastPlace.dec }
         : { tag: 'Resultados', main: 'Vamos desde el último lugar', sub: 'hasta la gran final', side: ['🏁', `${st.players.length} participantes`] };
     }
     if (st.onstage) return { tag: isK(st) ? 'En el escenario' : 'Presenta su objeto', no: st.onstage.no, main: st.onstage.name, featured: !!st.onstage.thing, sub: st.onstage.thing || '', side: isK(st) ? ['🎤', '¡Aplausos!'] : ['🗳️', 'Atentos'] };
@@ -293,7 +298,7 @@
       const box = $('#vg');
       if (!box) return;
       $('#vg-win').innerHTML = celebrating ? winHTML(st) : '';
-      const s = scene(st);
+      const s = scene(st, celebrating);
       // Lista de inscritos: se ve durante el llamado y hasta que empieza la primera votación
       const roster = st.phase === 'voting' && !st.open && !st.onstage && !st.last && !st.drawn && st.players.length
         ? `<div class="vg-list"><small>Inscritos <b>${st.players.length}/${st.max}</b></small>${st.players.map((p) => `<div><p><b>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}</p></div>`).join('')}</div>` : '';
@@ -343,14 +348,14 @@
       if (!st.clockUntil && ticking && clockLeft() > 700) { ticking = 0; clearTimeout(tickTimer); } // el animador las cerró antes de tiempo: sin bocinas
       const box = $('#vf');
       if (!box) return;
-      const s = scene(st);
+      const s = scene(st, celebrating);
       // Sonidos: redoble al revelar un lugar y fanfarria al conocerse quién ganó
       const cue = st.phase === 'winner' ? 'win' : st.phase === 'final' && st.final && st.final.drum ? 'drum' : st.phase === 'results' && st.places.length ? `place${st.places.length}` : '';
       if (!first && cue && cue !== heard) sfx.play(cue === 'win' ? 'win' : cue === 'drum' ? 'drum' : 'hit');
       heard = cue;
       box.className = `th-${st.venue}`;
       const side = st.phase === 'voting' ? st.players.map((p) => `<div class="${(st.open && st.open.id === p.id) || (st.onstage && st.onstage.id === p.id) ? 'on' : ''}"><em>${p.done ? '✔' : st.open && st.open.id === p.id ? '🗳️' : st.onstage && st.onstage.id === p.id ? '🎤' : '·'}</em><p><b ${n(p.name)}>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}</p></div>`).join('')
-        : [...st.places].reverse().map((p) => `<div><em>${p.place}</em><p><b ${n(p.name)}>${nm(p)}</b><span>Nota ${note(p.score, p.dec)}${p.thing ? ` · ${esc(p.thing)}` : ''}</span></p></div>`).join('');
+        : [...st.places].reverse().map((p) => `<div><em>${p.place}</em><p><b ${n(p.name)}>${esc(p.name)}</b><span>Nota ${note(p.score, p.dec)}${p.thing ? ` · ${esc(p.thing)}` : ''}</span></p></div>`).join('');
       box.innerHTML = `${celebrating ? winHTML(st) : ''}
         <header class="vf-top"><b>${esc(title(st))}</b><span>${icon(st)} ${esc(s.tag)}</span></header>
         <section class="vf-main ${s.featured ? 'featured' : ''}">${st.signup ? `<small>¿Quieres participar?</small><b class="v-clock vf-clock">${clockText()}</b><span style="--n:28">Inscríbete desde tu celular</span>`

@@ -101,9 +101,18 @@ const miniHTML = (id) => {
   return `<span class="mini">${Array.from({ length: 25 }, (_, i) => `<i class="${m & (1 << i) ? 'x' : ''}"></i>`).join('')}</span>`;
 };
 const patternsInline = (ids) => ids.map((id) => `<span class="pat-inline">${miniHTML(id)} ${esc(PATTERNS.byId[id].name)}</span>`).join('');
+// Pedido de Cote (20 nov): las figuras agrupadas en Líneas, Figuras y Letras, para elegir más rápido
+const PAT_GROUPS = [['Líneas', ['linea', 'horizontal', 'vertical', 'diagonal', 'dos-lineas']], ['Letras', null]];
 function patternPicker(selected = ['linea']) {
-  return `<div class="patterns">${PATTERNS.list.map((p) => `<label class="pat">
-    <input type="radio" name="pattern" value="${p.id}" ${selected[0] === p.id ? 'checked' : ''}>${miniHTML(p.id)}<span>${esc(p.name)}</span></label>`).join('')}</div>
+  const one = (p) => `<label class="pat">
+    <input type="radio" name="pattern" value="${p.id}" ${selected[0] === p.id ? 'checked' : ''}>${miniHTML(p.id)}<span>${esc(p.name)}</span></label>`;
+  const lines = PATTERNS.list.filter((p) => PAT_GROUPS[0][1].includes(p.id));
+  const letters = PATTERNS.list.filter((p) => /^Figura [A-Z]$/.test(p.name));
+  const shapes = PATTERNS.list.filter((p) => !lines.includes(p) && !letters.includes(p));
+  // Las letras van en una pestaña plegada (pedido de Cote); se abre sola si la figura elegida es una letra
+  const letterOn = letters.some((p) => p.id === selected[0]);
+  return `<div class="patterns"><h3 class="pat-group">Líneas</h3>${lines.map(one).join('')}<h3 class="pat-group">Figuras</h3>${shapes.map(one).join('')}
+    <details class="pat-letters" ${letterOn ? 'open' : ''}><summary>Letras (A a la Z)</summary><div class="patterns">${letters.map(one).join('')}</div></details></div>
     <p class="muted small" style="margin-top:8px">Un patrón por ronda: al elegir otro, el anterior se desmarca.</p>`;
 }
 function readPatterns(root) {
@@ -241,8 +250,9 @@ views.control = async () => {
   if (!(await isAdmin())) return viewLogin();
   // Pedido de Cote (20 nov): en la aplicación instalada no hay cómo recargar; botoncito «Refrescar página»
   app.innerHTML = `<p class="back ctl-top"><a href="#/">← Inicio</a><button type="button" class="ctl-reload" onclick="location.reload()">↻ Refrescar página</button></p><h1>Centro de control</h1>
-    <a class="btn lp-open" href="#/light">💡 Sala light · karaoke, show y cartelera en otro local</a>
-    <a class="btn lp-open" href="#/consola">🖥️ Consola general · los 3 locales en una pantalla</a>
+    <div class="panel"><h2>Sala de juegos abierta</h2>
+      <p class="muted small">Si hay más de una, a la gente le aparece una lista para elegir. Cierra las que ya no se usan.</p>
+      <div id="open-list"></div></div>
     <a class="btn lp-open" href="#/verticalctl/kennedy">📺 Pantallas de los locales · videos vertical y horizontal</a>
     <div class="panel">
       <h2>En pantalla</h2>
@@ -261,6 +271,8 @@ views.control = async () => {
         <p><b>🎬 OBS</b><small>Fuente de navegador, 1920×1080, transparente</small><a class="link" href="${stageUrl()}" target="_blank">${esc(stageUrl())}</a></p>
       </div>
     </div>
+    <a class="btn lp-open" href="#/light">💡 Sala light · karaoke, show y cartelera en otro local</a>
+    <a class="btn lp-open" href="#/consola">🖥️ Consola general · los 3 locales en una pantalla</a>
     <div class="panel"><h2>Karaoke</h2>
       <p class="muted small">Muestra en pantalla la lista de pedidos del sistema de karaoke (formulario y app del equipo).</p>
       <div class="venue-tabs" id="kar-venue" role="tablist"></div>
@@ -277,9 +289,7 @@ views.control = async () => {
       <details style="margin-top:12px"><summary class="small">Editar horarios y cartelera del mes</summary>
         <form id="ag-form" class="fields" style="grid-template-columns:1fr;margin-top:10px"></form></details>
     </div>
-    <div class="panel"><h2>Bingos abiertos</h2>
-      <p class="muted small">Si hay más de uno, a la gente le aparece una lista para elegir. Cierra los que ya no se usan.</p>
-      <div id="open-list"></div></div>`;
+`;
   // Karaoke: local del día y direcciones de la web app y del formulario de cada local
   const paintKar = (c) => {
     if (!$('#kar-venue')) return;
@@ -582,6 +592,9 @@ async function hostConsole(p) {
     // de juegos con el sorteo)
     const done = $('#host-bingo');
     if (done && done.classList.contains('bingo-done') !== confirmed) { done.classList.toggle('bingo-done', confirmed); if (confirmed) window.scrollTo(0, 0); }
+    // Las instrucciones se leen al empezar: desaparecen con el primer número (pedido de Cote)
+    if (done) done.classList.toggle('bingo-started', st.drawn.length > 0);
+    window.setNavFold(st.drawn.length > 0 && !confirmed);
     $('#win-confirmed p').textContent = '✔ Ganador confirmado';
     $('#final').innerHTML = st.finalists ? `<p><b>Selección final:</b> ${st.finalists.map((c) => '#' + (p.startNumber + c - 1)).join(', ') || 'no hay cartones validados'}</p>` : '';
     if (st.drawn.length !== spoken) { if (spoken >= 0 && st.drawn.length > spoken) speak(speakText(st, st.drawn.at(-1))); spoken = st.drawn.length; }
@@ -1428,13 +1441,27 @@ function activitiesNav(current) {
     ['qr', '<button type="button" data-stage-qr><span>📱</span>QR en pantalla completa</button>'],
   ];
   setTimeout(paintGameNav, 0);
-  return `<div class="act-nav games-nav"><div class="g-plan"><div class="g-slots"></div><label>¿Cuántos juegos vamos a sortear?<input type="number" class="g-total" min="1" max="10" value="3"></label></div>
+  return `<div class="act-nav games-nav ${navFoldState() ? 'g-folded' : ''}"><button type="button" class="g-unfold" data-nav-unfold>▸ Ver otros juegos y actividades</button><div class="g-plan"><div class="g-slots"></div><label>¿Cuántos juegos vamos a sortear?<input type="number" class="g-total" min="1" max="10" value="3"></label></div>
     <button type="button" class="primary big g-draw" data-game-draw>🎲 Sortear juego</button>
     <button type="button" class="g-undo" data-game-undo disabled>↩️ Deshacer</button>
     <p class="g-direct" hidden>…o toca un juego para elegirlo directo, sin tómbola</p>
     <small>Juegos</small><div>${games.map(([k, h]) => (k === current ? h.replace(/data-game="/, 'aria-current="true" data-game="') : h)).join('')}</div>
     <small>Otras actividades</small><div>${more.filter(([k]) => k !== current).map(([, h]) => h).join('')}</div></div>`;
 }
+// Pedido de Cote (20 nov): mientras hay un juego en curso, el menú de juegos y actividades queda plegado, para no
+// apretar otro por error; «Ver otros juegos y actividades» lo abre. Cada panel avisa si su juego está en curso.
+let navInGame = null; let navOpened = false;
+const navFoldState = () => !!navInGame && !navOpened;
+window.setNavFold = (inGame) => {
+  if (inGame !== navInGame) { navInGame = inGame; navOpened = false; }
+  document.querySelectorAll('.games-nav').forEach((n) => n.classList.toggle('g-folded', navFoldState()));
+};
+window.addEventListener('hashchange', () => { navInGame = null; navOpened = false; });
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('[data-nav-unfold]')) return;
+  navOpened = true;
+  document.querySelectorAll('.games-nav').forEach((n) => n.classList.remove('g-folded'));
+});
 // Marca en el menú los juegos que ya salieron en el sorteo (quedan fuera del sorteo hasta que salgan los demás)
 async function paintGameNav() {
   const g = await api('GET', '/api/gamedraw').catch(() => null);
@@ -1931,3 +1958,23 @@ if (new URLSearchParams(location.search).has('diag')) {
       `errores: ${errs.length ? errs.join(' | ') : 'ninguno'}`].join('\n');
   }, 1500);
 }
+
+// Pedido de Cote (20 nov): botoncito «Refrescar página» en todos los paneles del moderador (en la aplicación instalada
+// no hay cómo recargar). El Centro de control ya lo trae en su encabezado.
+(() => {
+  const PANELS = /^#\/?($|anfitrion|ronda|proyectos|nuevo|admin|votoctl|ruedactl|ruedas|sorteoctl|karaokectl|showctl|instactl|light$|consola|verticalctl)/;
+  const sync = () => {
+    let b = document.getElementById('ctl-reload-fixed');
+    const on = PANELS.test(location.hash || '#/') && !document.body.classList.contains('full') && !document.body.classList.contains('obs') && !!store.get('adminToken');
+    // Pedido de Cote (20 nov): abajo de cada panel, siempre, el enlace al Centro de control (no en el inicio ni en el
+    // mismo Centro de control, que ya lo tienen)
+    let home = document.getElementById('ctl-home-link');
+    const homeOn = on && !/^#\/?($|control)/.test(location.hash || '#/');
+    if (!homeOn && home) home.remove();
+    if (homeOn && !home) { home = document.createElement('p'); home.id = 'ctl-home-link'; home.innerHTML = '<a class="home-control home-control-sm" href="#/control">🎛️ Centro de control</a>'; const appEl = document.getElementById('app'); appEl.parentNode.insertBefore(home, appEl.nextSibling); }
+    if (!on) { if (b) b.remove(); return; }
+    if (!b) { b = document.createElement('button'); b.id = 'ctl-reload-fixed'; b.type = 'button'; b.className = 'ctl-reload'; b.textContent = '↻ Refrescar'; b.onclick = () => location.reload(); document.body.appendChild(b); }
+  };
+  window.addEventListener('hashchange', () => setTimeout(sync, 300));
+  setTimeout(sync, 600);
+})();
