@@ -1357,13 +1357,14 @@ views.karaokectl = async (local) => {
 // Menú de abajo en el panel de todos los juegos (pedido de Cote): «Sortear juego» y después los juegos con su ícono;
 // más abajo, las demás actividades
 const GAME_INFO = (venue) => ({
+  bingo: { icon: '🎱', name: 'Bingo', href: '' },
   rosco: { icon: '🎡', name: 'El Rosco', href: '#/sorteoctl' },
   festival: { icon: '🎤', name: `El Festival de ${{ frida: 'Frida', kennedy: 'Kennedy', tobalaba: 'Tobalaba' }[venue] || 'Frida'}`, href: '#/votoctl/festival' },
   objeto: { icon: '🗳️', name: 'El objeto más extraño', href: '#/votoctl/objeto' },
 });
 function activitiesNav(current) {
   const games = [
-    ['bingo', '<button type="button" data-back-bingo><span>🎱</span>Bingo</button>'],
+    ['bingo', '<button type="button" data-back-bingo data-game="bingo"><span>🎱</span>Bingo</button>'],
     ['rosco', '<a class="btn" data-game="rosco" href="#/sorteoctl"><span>🎡</span>El Rosco</a>'],
     ['festival', '<a class="btn" data-game="festival" href="#/votoctl/festival"><span>🎤</span><b class="g-fest">El Festival</b></a>'],
     ['objeto', '<a class="btn" data-game="objeto" href="#/votoctl/objeto"><span>🗳️</span>El objeto más extraño</a>'],
@@ -1395,7 +1396,7 @@ document.addEventListener('click', async (e) => {
     const g = await api('POST', '/api/gamedraw');
     const info = GAME_INFO((await api('GET', '/api/gamedraw')).venue)[g.last.game];
     toast(`🎲 Se está sorteando en pantalla… Salió: ${info.icon} ${info.name}`);
-    setTimeout(() => { location.hash = info.href; }, 6000); // cuando termina la tómbola en pantalla, el panel pasa a ese juego
+    setTimeout(() => { if (g.last.game === 'bingo') backToBingo(); else location.hash = info.href; }, 6000); // cuando termina la tómbola en pantalla, el panel pasa a ese juego
   } catch (err) { fail(err); b.disabled = false; }
 });
 const BACK_BINGO = activitiesNav('rosco');
@@ -1412,7 +1413,7 @@ views.juegoDraw = async (kind) => {
     const win = info[g.last.game];
     const pool = g.last.pool.map((k) => info[k]);
     // mientras gira la tómbola no se marca cuál salió
-    const listOf = (rolling) => `<div class="jd-list">${g.games.map((k) => `<span class="${k === g.last.game ? (rolling ? '' : 'on') : g.played.includes(k) ? 'done' : ''}">${info[k].icon} ${esc(info[k].name)}</span>`).join('')}<span class="bingo">🎱 Bingo · siempre disponible</span></div>`;
+    const listOf = (rolling) => `<div class="jd-list">${g.games.map((k) => `<span class="${k === g.last.game ? (rolling ? '' : 'on') : g.played.includes(k) ? 'done' : ''}">${info[k].icon} ${esc(info[k].name)}</span>`).join('')}</div>`;
     const left = ROLL_MS - (Date.now() + (g.offset || 0) - g.last.at);
     if (left > 0) {
       // tómbola: pasan los juegos disponibles cada vez más lento
