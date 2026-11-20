@@ -239,7 +239,8 @@ views.home = async () => {
 // Centro de control: qué gráfica se ve en la pantalla de OBS
 views.control = async () => {
   if (!(await isAdmin())) return viewLogin();
-  app.innerHTML = `<p class="back"><a href="#/">← Inicio</a></p><h1>Centro de control</h1>
+  // Pedido de Cote (20 nov): en la aplicación instalada no hay cómo recargar; botoncito «Refrescar página»
+  app.innerHTML = `<p class="back ctl-top"><a href="#/">← Inicio</a><button type="button" class="ctl-reload" onclick="location.reload()">↻ Refrescar página</button></p><h1>Centro de control</h1>
     <a class="btn lp-open" href="#/light">💡 Sala light · karaoke, show y cartelera en otro local</a>
     <a class="btn lp-open" href="#/consola">🖥️ Consola general · los 3 locales en una pantalla</a>
     <a class="btn lp-open" href="#/verticalctl/kennedy">📺 Pantallas de los locales · videos vertical y horizontal</a>

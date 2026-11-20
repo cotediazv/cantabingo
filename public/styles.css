@@ -2289,3 +2289,7 @@ body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "So
 
 /* Bingo con ganador aceptado: solo queda lo que viene (menú de juegos y sorteo) */
 #host-bingo.bingo-done > .panel, #host-bingo.bingo-done > .howto, #host-bingo.bingo-done > .cols, #host-bingo.bingo-done > p.small { display: none; }
+
+/* Centro de control: botoncito «Refrescar página» (para la aplicación instalada) */
+.ctl-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.ctl-reload { padding: 5px 12px; font-size: .85rem; }
