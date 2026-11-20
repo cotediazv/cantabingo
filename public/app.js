@@ -1505,9 +1505,17 @@ const neuralBg = (() => {
     let n = Math.round(Math.min(110, (W * H) / (13000 * k * k)));
     if (mode === 'gc') n = Math.round(n * 2.6); // en el GC solo se ve dentro de los recuadros: más puntos para que se note
     if (weak) n = Math.round(n * 0.55);
-    pts = Array.from({ length: n }, () => ({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - 0.5) * 0.5 * k, vy: (Math.random() - 0.5) * 0.5 * k, c: Math.floor(Math.random() * 5) }));
+    pts = Array.from({ length: n }, () => spawn(true));
     pulses = [];
   };
+  // Cada neurona aparece, dura unos segundos y se desvanece; después nace otra en otro lugar (pedido de Cote: que no
+  // quede como telaraña fija)
+  const LIFE = [150, 330]; // en cuadros (a 30 por segundo: 5 a 11 segundos)
+  const spawn = (anyAge) => {
+    const life = LIFE[0] + Math.random() * (LIFE[1] - LIFE[0]);
+    return { x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - 0.5) * 0.5 * k, vy: (Math.random() - 0.5) * 0.5 * k, c: Math.floor(Math.random() * 5), life, age: anyAge ? Math.random() * life : 0 };
+  };
+  const alphaOf = (a) => { const f = a.age / a.life; return f < 0.2 ? f / 0.2 : f > 0.75 ? Math.max(0, (1 - f) / 0.25) : 1; };
   const readBoxes = () => {
     boxes = Array.from(document.querySelectorAll(BOXES)).map((e) => ({ r: e.getBoundingClientRect(), rad: parseFloat(getComputedStyle(e).borderRadius) || 0 })).filter((b) => b.r.width > 0 && b.r.height > 0);
     holes = Array.from(document.querySelectorAll(NO_FX)).map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0);
@@ -1515,28 +1523,29 @@ const neuralBg = (() => {
   };
   const path = (r, rad) => { if (x.roundRect) x.roundRect(r.left, r.top, r.width, r.height, Math.min(rad, r.height / 2)); else x.rect(r.left, r.top, r.width, r.height); };
   const draw = () => {
-    const R = 170 * k;
+    const R = 200 * k;
     x.clearRect(0, 0, W, H);
     if (mode === 'gc') {
       if (Date.now() - boxesAt > 600) readBoxes();
       if (!boxes.length) return;
       x.save(); x.beginPath(); for (const b of boxes) path(b.r, b.rad); x.clip();
     }
-    x.lineWidth = 1.6 * k;
+    x.lineWidth = 2.2 * k;
     for (let i = 0; i < pts.length; i++) {
       const a = pts[i];
       for (let j = i + 1; j < pts.length; j++) {
         const b = pts[j]; const d = Math.hypot(a.x - b.x, a.y - b.y);
-        if (d < R) { x.strokeStyle = `rgba(243,238,230,${(1 - d / R) * (mode === 'gc' ? 0.45 : 0.38)})`; x.beginPath(); x.moveTo(a.x, a.y); x.lineTo(b.x, b.y); x.stroke(); }
+        if (d < R) { x.strokeStyle = `rgba(243,238,230,${(1 - d / R) * (mode === 'gc' ? 0.45 : 0.38) * Math.min(alphaOf(a), alphaOf(b))})`; x.beginPath(); x.moveTo(a.x, a.y); x.lineTo(b.x, b.y); x.stroke(); }
       }
     }
     for (const p of pulses) {
       const px = p.a.x + (p.b.x - p.a.x) * p.t; const py = p.a.y + (p.b.y - p.a.y) * p.t;
-      x.strokeStyle = `${colors[p.a.c]}aa`; x.lineWidth = 2.2 * k; x.beginPath(); x.moveTo(p.a.x, p.a.y); x.lineTo(px, py); x.stroke();
-      x.fillStyle = colors[p.a.c]; x.beginPath(); x.arc(px, py, 5 * k, 0, 7); x.fill();
+      x.globalAlpha = Math.min(alphaOf(p.a), alphaOf(p.b));
+      x.strokeStyle = `${colors[p.a.c]}aa`; x.lineWidth = 3 * k; x.beginPath(); x.moveTo(p.a.x, p.a.y); x.lineTo(px, py); x.stroke();
+      x.fillStyle = colors[p.a.c]; x.beginPath(); x.arc(px, py, 6.5 * k, 0, 7); x.fill();
+      x.globalAlpha = 1;
     }
-    x.globalAlpha = 0.9;
-    for (const a of pts) { x.fillStyle = colors[a.c]; x.beginPath(); x.arc(a.x, a.y, 4 * k, 0, 7); x.fill(); }
+    for (const a of pts) { x.globalAlpha = 0.9 * alphaOf(a); x.fillStyle = colors[a.c]; x.beginPath(); x.arc(a.x, a.y, 5.5 * k, 0, 7); x.fill(); }
     x.globalAlpha = 1;
     if (mode === 'gc') { x.restore(); for (const h of holes) x.clearRect(h.left - 2, h.top - 2, h.width + 4, h.height + 4); }
   };
@@ -1552,7 +1561,12 @@ const neuralBg = (() => {
     raf = requestAnimationFrame(step);
     if (now - last < 33) return; // 30 cuadros por segundo como máximo
     last = now;
-    for (const a of pts) { a.x += a.vx; a.y += a.vy; if (a.x < 0 || a.x > W) a.vx *= -1; if (a.y < 0 || a.y > H) a.vy *= -1; }
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i];
+      a.x += a.vx; a.y += a.vy; if (a.x < 0 || a.x > W) a.vx *= -1; if (a.y < 0 || a.y > H) a.vy *= -1;
+      if (++a.age >= a.life) pts[i] = spawn(false); // se desvaneció: nace otra en otro lugar
+    }
+    pulses = pulses.filter((p) => pts.includes(p.a) && pts.includes(p.b));
     if (Math.random() < 0.12 && pulses.length < 24) newPulse();
     for (const p of pulses) p.t += 0.03;
     pulses = pulses.filter((p) => p.t < 1);
