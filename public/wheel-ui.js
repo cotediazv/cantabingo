@@ -151,12 +151,7 @@
     let st = null;
     const act = (action, extra) => api('POST', `/api/wheels/${id}/act`, { action, ...extra }).catch(fail);
     // Para leer al partir (pedido de Cote)
-    const HOWTO = [
-      '3 participantes.',
-      'Todos juegan desde las mesas.',
-      '<b>Premio mayor</b> para el que gana El Rosco.',
-      '<b>Premio especial</b> para el ganador del público que juega la Trivia del Rosco.',
-    ];
+    const HOWTO = window.ROSCO_HOWTO; // en app.js: lo usan también los celulares
     app.innerHTML = `${window.readAloud ? window.readAloud('El Rosco', HOWTO) : ''}<div class="cols">
         <div class="panel">
           <div class="row between"><div><h1 id="w-name" style="margin:0"></h1><span class="muted" id="w-turn"></span></div><div class="w-letter" id="w-letter"></div></div>

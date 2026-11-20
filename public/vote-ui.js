@@ -23,17 +23,20 @@
   const isK = (st) => st.mode === 'karaoke';
   const fest = (st) => `El Festival de ${{ frida: 'Frida', kennedy: 'Kennedy', tobalaba: 'Tobalaba' }[st.venue] || 'Frida'}`;
   // Para leer al partir cada juego (pedido de Cote)
-  const howto = (st) => (isK(st) ? window.readAloud(fest(st), [
+  const howtoLines = (st) => (isK(st) ? [
     `${st.max} participantes cantan. Si se inscriben más, sorteo.`,
     'Canciones cortas.',
     'Todos votan desde las mesas: nota del 1 al 10.',
     'Al terminar la votación, se muestran en pantalla <b>5 notas del público al azar</b>, que no determinan el promedio. El promedio se conoce al final del concurso.',
     'Gana el mejor <b>promedio</b>.',
-  ]) : window.readAloud(st.title || 'El objeto más extraño', [
+  ] : [
     'Cada participante presenta su objeto.',
     'Todos votan desde las mesas: nota del 1 al 10.',
     'Gran final entre los dos primeros.',
-  ]));
+  ]);
+  const howtoTitle = (st) => (isK(st) ? fest(st) : st.title || 'El objeto más extraño');
+  const howto = (st) => window.readAloud(howtoTitle(st), howtoLines(st));
+  window.voteHowto = (st) => ({ title: howtoTitle(st), lines: howtoLines(st) }); // para los celulares (app.js)
   const icon = (st) => (isK(st) ? '🎤' : '🗳️');
   // 5 notas al azar del público tras cada canción (concurso de karaoke)
   const notesHTML = (st, cls) => (st.sample && st.sample.length ? `<div class="${cls}">${st.sample.map((x) => `<span><i>${x.note}</i><small>${esc(x.name || '')}</small></span>`).join('')}</div>` : '');

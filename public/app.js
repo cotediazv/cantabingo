@@ -463,6 +463,13 @@ function hostSetup(p) {
 // Enlaces, QR, textos de la gráfica y cierre de sesión están en «Administración».
 // Instrucciones y criterios para el animador, al partir cada juego (pedido de Cote): cortas y precisas, para leer en voz alta
 window.readAloud = (game, lines) => `<details class="panel howto" open><summary>📢 Instrucciones · ${esc(game)}</summary><ul>${lines.map((l) => `<li>${l}</li>`).join('')}</ul></details>`;
+// Instrucciones de El Rosco: las usan el panel (wheel-ui.js) y los celulares
+window.ROSCO_HOWTO = [
+  '3 participantes.',
+  'Todos juegan desde las mesas.',
+  '<b>Premio mayor</b> para el que gana El Rosco.',
+  '<b>Premio especial</b> para el ganador del público que juega la Trivia del Rosco.',
+];
 const BINGO_HOWTO = [
   'Todos juegan desde las mesas, con su cartón en el celular.',
   'Gana quien complete primero la <b>figura</b>.',
@@ -826,7 +833,33 @@ views.jugar = async (sid) => {
     if (!on && instaOn) { clearInterval(instaOn); instaOn = false; }
     return on;
   };
+  // Instrucciones en el celular (pedido de Cote, 20 nov): al empezar cada juego (y al entrar a la sala) aparecen
+  // 5 segundos las instrucciones del juego en curso: Bingo (cada ronda), El Rosco, El Festival o El objeto más extraño
+  let howtoKey = null;
+  const phoneHowto = (title, lines) => {
+    let el = document.getElementById('phone-howto');
+    if (el) el.remove();
+    el = document.createElement('div'); el.id = 'phone-howto';
+    el.innerHTML = `<div class="ph-card"><small>📢 Instrucciones</small><b>${esc(title)}</b><ul>${lines.map((l) => `<li>${l}</li>`).join('')}</ul><i class="ph-bar"></i></div>`;
+    document.body.appendChild(el);
+    setTimeout(() => { if (el.isConnected) el.remove(); }, 5000);
+  };
+  const syncHowto = async () => {
+    const s = st.stage || 'bingo';
+    if (s === 'juego') { howtoKey = null; return; } // sorteo de juegos: el juego que venga después es uno nuevo
+    const key = s === 'rueda' && st.roscoId ? `rosco:${st.roscoId}` : s === 'voto' ? 'voto' : s === 'bingo' || s === 'qr' ? `bingo:${st.round}` : null;
+    if (!key || key === howtoKey) return;
+    howtoKey = key;
+    if (key === 'voto') {
+      const v = await api('GET', '/api/vote').catch(() => null);
+      if (!v || !window.voteHowto) return;
+      howtoKey = `voto:${v.mode}`;
+      const h = window.voteHowto(v); phoneHowto(h.title, h.lines);
+    } else if (key.startsWith('rosco')) phoneHowto('El Rosco', window.ROSCO_HOWTO);
+    else phoneHowto(bingoName(st.name), BINGO_HOWTO);
+  };
   const syncStage = () => {
+    if (!(howtoKey && howtoKey.startsWith('voto') && st.stage === 'voto')) syncHowto();
     const kar = syncKar() | syncVote() | syncInsta();
     const on = (st.stage === 'rueda' && !!st.roscoId) || kar;
     $('#bingo-top').hidden = on;

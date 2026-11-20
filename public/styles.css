@@ -2253,3 +2253,14 @@ body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "So
 #jd .jd-opts span { flex: 0 1 auto; white-space: nowrap; font-size: 1em; padding: .35em .6em; }
 #jd .jd-card { max-width: 94vw; box-sizing: border-box; min-width: 0; }
 @media (orientation: portrait) { #jd .jd-card { width: 94vw; } }
+
+/* Instrucciones del juego en el celular, 5 segundos al empezar cada juego (pedido de Cote) */
+#phone-howto { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; padding: 16px; background: rgba(8, 6, 20, .72); animation: ph-in .25s ease-out; }
+#phone-howto .ph-card { position: relative; overflow: hidden; width: min(440px, 100%); padding: 20px 20px 26px; border-radius: 18px; background: var(--raised, #221d44); border: 3px solid #ffc400; color: var(--ink, #fff); box-shadow: 0 12px 40px rgba(0, 0, 0, .6); }
+#phone-howto small { display: block; color: #ffc400; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
+#phone-howto b { display: block; margin: 4px 0 10px; font-size: 1.5rem; line-height: 1.15; }
+#phone-howto ul { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: 1.1rem; line-height: 1.3; }
+#phone-howto li b { display: inline; margin: 0; font-size: inherit; color: #ffc400; }
+#phone-howto .ph-bar { position: absolute; left: 0; bottom: 0; height: 6px; width: 100%; background: #ffc400; transform-origin: left; animation: ph-bar 5s linear forwards; }
+@keyframes ph-bar { to { transform: scaleX(0); } }
+@keyframes ph-in { from { opacity: 0; } }
