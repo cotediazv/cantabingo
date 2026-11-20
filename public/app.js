@@ -1,7 +1,7 @@
 /* global PATTERNS */
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const app = $('#app');
 const store = {
   get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
@@ -975,7 +975,7 @@ const LIVE_CHANNELS = { frida: 'krbstage', kennedy: 'krbstagekennedy', tobalaba:
 let twitchLoading = null;
 const loadTwitch = () => {
   if (window.Twitch && window.Twitch.Player) return Promise.resolve();
-  twitchLoading ||= new Promise((resolve, reject) => {
+  twitchLoading = twitchLoading || new Promise((resolve, reject) => {
     const s = document.createElement('script');
     s.src = 'https://player.twitch.tv/js/embed/v1.js';
     s.onload = resolve;
@@ -993,7 +993,7 @@ const sfx = (() => {
   const ready = () => !!ctx && ctx.state === 'running';
   const unlock = () => {
     try {
-      ctx ||= new (window.AudioContext || window.webkitAudioContext)();
+      ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
       if (ctx.state !== 'running') ctx.resume();
     } catch { /* sin audio */ }
     return ctx;

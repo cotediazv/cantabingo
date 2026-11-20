@@ -12,6 +12,19 @@
   <main id="app"></main>
   <div id="toast" role="status"></div>
   <img class="krb-mark" src="krb-stage.svg" alt="" aria-hidden="true">
+  <script>
+    // Con ?diag=1: navegador y errores de carga, aunque el resto de la página no funcione (escrito para navegadores antiguos)
+    (function () {
+      if (location.search.indexOf('diag') < 0) return;
+      var errs = [];
+      window.addEventListener('error', function (e) { errs.push((e.message || 'error') + (e.filename ? ' · ' + e.filename.split('/').pop() + ':' + e.lineno : '')); });
+      setInterval(function () {
+        var b = document.getElementById('diag-early');
+        if (!b) { b = document.createElement('pre'); b.id = 'diag-early'; b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:2147483647;margin:0;padding:8px;font:12px/1.35 monospace;background:#fff;color:#000;white-space:pre-wrap;word-break:break-all;max-height:45vh;overflow:auto'; document.documentElement.appendChild(b); }
+        b.textContent = navigator.userAgent + '\nerrores de carga: ' + (errs.length ? errs.join(' | ') : 'ninguno');
+      }, 1500);
+    })();
+  </script>
   <script src="patterns.js"></script>
   <script src="app.js"></script>
   <script src="wheel-ui.js"></script>

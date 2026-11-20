@@ -1935,3 +1935,8 @@ body.full #app { z-index: auto; }
 .pw-rank { width: min(94vw, 150vh); }
 /* Pregunta paso a paso: los botones que no corresponden quedan bloqueados en blanco y negro (pedido de Cote) */
 .w-flow button:disabled, .w-keys button:disabled { filter: grayscale(1); opacity: .35; cursor: not-allowed; }
+
+/* Compatibilidad con navegadores antiguos (el Chrome de los decodificadores no conoce «inset»): las mismas posiciones,
+   escritas a la antigua, para que el video, la actividad y la información de las pantallas ocupen toda la pantalla */
+.vt, .vt-video, .vt-act, .vt-empty, #lv, #neural-bg, .pw-rankwrap { top: 0; right: 0; bottom: 0; left: 0; }
+body.full::before { top: -20%; right: -20%; bottom: -20%; left: -20%; }

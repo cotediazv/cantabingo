@@ -1,3 +1,13 @@
+// Compatibilidad con navegadores antiguos (pedido de Cote: el Chrome del decodificador de Kennedy no mostraba nada):
+// si el navegador no trae estas funciones, se agregan aquí. Va primero porque este archivo se carga antes que los demás.
+(function () {
+  function at(n) { n = Math.trunc(n) || 0; if (n < 0) n += this.length; return n < 0 || n >= this.length ? undefined : this[n]; }
+  if (!Array.prototype.at) Object.defineProperty(Array.prototype, 'at', { value: at, writable: true, configurable: true });
+  if (!String.prototype.at) Object.defineProperty(String.prototype, 'at', { value: at, writable: true, configurable: true });
+  if (typeof AbortSignal !== 'undefined' && !AbortSignal.timeout) {
+    AbortSignal.timeout = function (ms) { var c = new AbortController(); setTimeout(function () { c.abort(); }, ms); return c.signal; };
+  }
+})();
 // Catálogo de patrones, compartido entre servidor y navegador.
 // Un cartón es una cuadrícula 5x5; la casilla (fila r, columna c) es el bit r*5+c.
 (function (root) {
