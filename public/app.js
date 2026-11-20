@@ -1502,8 +1502,9 @@ const neuralBg = (() => {
     const dpr = Math.min(2, devicePixelRatio || 1);
     W = innerWidth; H = innerHeight; c.width = W * dpr; c.height = H * dpr; x.setTransform(dpr, 0, 0, dpr, 0, 0);
     k = Math.max(1, Math.min(W, H) / 700); // más grande que antes (pedido de Cote)
-    let n = Math.round(Math.min(110, (W * H) / (13000 * k * k)));
-    if (mode === 'gc') n = Math.round(n * 2.6); // en el GC solo se ve dentro de los recuadros: más puntos para que se note
+    // Pocos destellos a la vez, repartidos (pedido de Cote: uno acá, otro abajo, otro arriba; no cientos, que se ve sucio)
+    let n = Math.round(Math.min(18, (W * H) / (60000 * k * k)));
+    if (mode === 'gc') n = Math.round(n * 2); // en el GC solo se ven los que caen dentro de los recuadros
     if (weak) n = Math.round(n * 0.55);
     pts = Array.from({ length: n }, () => spawn(true));
     pulses = [];
@@ -1567,7 +1568,7 @@ const neuralBg = (() => {
       if (++a.age >= a.life) pts[i] = spawn(false); // se desvaneció: nace otra en otro lugar
     }
     pulses = pulses.filter((p) => pts.includes(p.a) && pts.includes(p.b));
-    if (Math.random() < 0.12 && pulses.length < 24) newPulse();
+    if (Math.random() < 0.05 && pulses.length < 4) newPulse();
     for (const p of pulses) p.t += 0.03;
     pulses = pulses.filter((p) => p.t < 1);
     draw();
