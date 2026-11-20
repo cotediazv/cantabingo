@@ -12,11 +12,11 @@ Sitio: https://cantabingo.onrender.com · Render (plan Starter, disco de 1 GB) �
 - Cuida el consumo: si pide conversar primero, conversar antes de hacer trabajo pesado.
 - El juego se llama **"El Rosco"**. Nunca usar el nombre del programa de TV (marca registrada).
 - **El QR siempre es para entrar a la sala**, nunca a Instagram ni a formularios. Junto al QR, la frase es siempre **«Escanea el código QR con tu celular»** (pedido de Cote, 20 nov; reemplaza a «Únete desde tu celular», «Únete a la sesión», «Escanea y juega»). Al abrir la sala: «Escanea el código QR con tu celular, pon tu nombre, apellido y participa».
-- Paneles simples. Lo que el animador lee en voz alta va grande y destacado.
+- Paneles simples. Lo que el animador lee en voz alta va grande y destacado. Cada juego tiene arriba en el panel del animador un recuadro **«📢 Para leer»** con instrucciones y criterios cortos (`window.readAloud` en `app.js`; Bingo, El Rosco, El Festival y El objeto más extraño).
 - **Nombres siempre completos** (regla de Cote, 20 nov): nombre y apellido(s) se ven enteros en pantallas, GC y listas; si no caben en la línea, se achica la letra, nunca se cortan con «…».
 - En el celular del público, la transmisión en vivo va **siempre abajo** de los juegos y KRB Kids debajo del video.
 - **Sin información duplicada en pantalla** (pedido de Cote, 20 nov): lo que ya dice la franja de arriba o la etiqueta no se repite abajo.
-- **Aviso de KRB Kids** en las pantallas del local (body.full; no en GC ni celulares): cada 3 min durante 12 s, «KRB Kids · Juegos para niños dentro de la plataforma» (`#kids-ad` en `app.js`).
+- **Aviso de KRB Kids** en las pantallas del local (body.full; no en GC ni celulares): cada 10 min durante 12 s, «KRB Kids · Juegos para niños dentro de la plataforma» (`#kids-ad` en `app.js`).
 - Estética: mantener el aspecto nuevo de la Sala de juegos. Colores del bingo: Frida magenta, Kennedy celeste, Tobalaba rojo.
 - La sala se llama "Los Juegos de <local>"; dentro del bingo el título es "El Bingo de <local>".
 - Las claves del moderador son variables de entorno en Render (`ADMIN_USER`, `ADMIN_PASS`). **Nunca escribirlas en este repositorio, que es público.**

@@ -150,7 +150,15 @@
     const TAGS = { g: 'Cultura general', m: 'Música', a: 'Arte', f: 'Fácil' };
     let st = null;
     const act = (action, extra) => api('POST', `/api/wheels/${id}/act`, { action, ...extra }).catch(fail);
-    app.innerHTML = `<div class="cols">
+    // Para leer al partir (pedido de Cote)
+    const HOWTO = [
+      'Elegimos 3 participantes al azar entre todos los conectados.',
+      'Cada concursante tiene su rosco y su tiempo. Por cada letra digo una definición que empieza (o contiene) esa letra.',
+      'Puede responder o decir <b>«pasa»</b>: la letra queda para la siguiente vuelta y el turno pasa al otro concursante. Si se equivoca, también pasa el turno.',
+      'Puntaje: cada respuesta correcta suma 1 y <b>cada dos incorrectas restan 1</b>. Gana quien complete el rosco o tenga más puntos al final; si empatan, gana quien tenga menos incorrectas, y si siguen empatados, sorteo.',
+      'Trivia del Rosco: el público responde la misma pregunta desde su celular, con 3 alternativas. Más rápido, más puntos.',
+    ];
+    app.innerHTML = `${window.readAloud ? window.readAloud('El Rosco', HOWTO) : ''}<div class="cols">
         <div class="panel">
           <div class="row between"><div><h1 id="w-name" style="margin:0"></h1><span class="muted" id="w-turn"></span></div><div class="w-letter" id="w-letter"></div></div>
           <div class="w-question" id="w-question"></div>

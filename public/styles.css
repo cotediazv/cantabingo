@@ -2163,3 +2163,10 @@ body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "So
 #kids-ad b i { font-style: normal; text-shadow: 0 .3vh 0 rgba(0, 0, 0, .15); }
 #kids-ad small { font-size: 2vh; font-weight: 800; color: #333; line-height: 1.1; }
 @media (prefers-reduced-motion: reduce) { #kids-ad { transition: none; } }
+
+/* «Para leer»: instrucciones y criterios en el panel del animador, al partir cada juego */
+.howto { border: 2px solid #ffc400; background: linear-gradient(180deg, rgba(255, 196, 0, .12), rgba(255, 196, 0, .03)); }
+.howto summary { cursor: pointer; font-size: 1.15rem; font-weight: 900; color: #ffc400; }
+.howto ul { margin: 10px 0 0; padding-left: 20px; display: grid; gap: 8px; }
+.howto li { font-size: 1.12rem; line-height: 1.35; }
+.howto b { color: #ffc400; }

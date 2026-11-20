@@ -233,7 +233,7 @@ views.home = async () => {
         <a class="s1" href="${bingoHref}"><i>1</i><span>🎱</span><b>Bingo</b></a>
         <a class="s2" href="#/sorteoctl"><i>2</i><span>🎲</span><b>Sorteo</b></a>
         <a class="s3" href="#/ruedas"><i>3</i><span>🎡</span><b>El Rosco</b></a>
-        <a class="s5" href="#/votoctl"><i>4</i><span>🗳️</span><b>Votación</b></a>
+        <a class="s5" href="#/votoctl"><i>4</i><span>🗳️</span><b>Votación · El Festival</b></a>
         <a class="s6" href="#/showctl"><i>5</i><span>⭐</span><b>Show</b></a>
         <a class="s4" href="#/karaokectl"><i>6</i><span>🎤</span><b>Karaoke</b></a>
         <a class="s7" href="#/instactl"><i>7</i><span>📸</span><b>Síguenos en Instagram</b></a>
@@ -470,6 +470,14 @@ function hostSetup(p) {
 
 // Panel del bingo en curso: solo lo que el animador usa durante el juego.
 // Enlaces, QR, textos de la gráfica y cierre de sesión están en «Administración».
+// Instrucciones y criterios para el animador, al partir cada juego (pedido de Cote): cortas y precisas, para leer en voz alta
+window.readAloud = (game, lines) => `<details class="panel howto" open><summary>📢 Para leer · ${esc(game)}</summary><ul>${lines.map((l) => `<li>${l}</li>`).join('')}</ul></details>`;
+const BINGO_HOWTO = [
+  'Escanea el código QR con tu celular, pon tu nombre, apellido y participa: te llega tu cartón.',
+  'Voy cantando los números y tú los marcas en tu cartón.',
+  'Gana quien complete primero la <b>figura</b> que aparece en pantalla.',
+  'Si dos o más la completan al mismo tiempo, desempatamos con un sorteo en pantalla.',
+];
 async function hostConsole(p) {
   const sid = p.sessionId;
   store.set('lastBingo', p.id); // para el botón «Volver al bingo» del sorteo y del rosco
@@ -480,6 +488,7 @@ async function hostConsole(p) {
   app.innerHTML = `
     <div><p class="back"><a href="#/">← Inicio</a></p>
       <div class="panel"><h1 id="title"></h1><div id="meta" class="muted"></div><div id="pats" style="margin-top:10px"></div></div>
+      ${window.readAloud('Bingo', BINGO_HOWTO)}
       <div class="cols">
         <div class="panel">
           <div id="draws"></div>
@@ -1349,7 +1358,7 @@ function activitiesNav(current) {
   const all = [
     ['bingo', '<button type="button" data-back-bingo><span>🎱</span>Bingo</button>'],
     ['rosco', '<a class="btn" href="#/sorteoctl"><span>🎡</span>El Rosco</a>'],
-    ['voto', '<a class="btn" href="#/votoctl"><span>🗳️</span>El objeto más extraño</a>'],
+    ['voto', '<a class="btn" href="#/votoctl"><span>🗳️</span>Votación · El Festival</a>'],
     ['show', '<a class="btn" href="#/showctl"><span>⭐</span>Show</a>'],
     ['karaoke', '<a class="btn" href="#/karaokectl"><span>🎤</span>Karaoke</a>'],
     ['insta', '<a class="btn" href="#/instactl"><span>📸</span>Instagram</a>'],
@@ -1506,9 +1515,9 @@ setTimeout(syncVenueMark, 700);
 // web krbstage.cl). Puntos de colores que se mueven lento, unidos por líneas finas, con impulsos que viajan
 // de un punto a otro cercano. Va encima del fondo de colores y debajo de todo lo demás; solo en el tablero.
 // Aviso de KRB Kids (pedido de Cote): en las pantallas del local (no en el GC de OBS ni en los celulares) aparece cada
-// 3 minutos durante 12 segundos «KRB Kids · Juegos para niños dentro de la plataforma»
+// 10 minutos durante 12 segundos «KRB Kids · Juegos para niños dentro de la plataforma»
 (() => {
-  const EVERY_MS = 180000; const SHOW_MS = 12000;
+  const EVERY_MS = 600000; const SHOW_MS = 12000; // cada 10 minutos (pedido de Cote)
   const word = [...'KRB Kids'].map((ch, i) => (ch === ' ' ? ' ' : `<i style="color:${['#ff5fa2', '#ffbe0b', '#2bb24c', '#3a86ff', '#ff5fa2', '#ffbe0b', '#2bb24c', '#3a86ff'][i % 8]}">${ch}</i>`)).join('');
   const show = () => {
     if (!document.body.classList.contains('full') || /^#\/kids/.test(location.hash)) return;

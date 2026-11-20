@@ -21,6 +21,18 @@
   const thing = (p) => (p.thing ? `<i class="v-thing">${esc(p.thing)}</i>` : '');
   const withThing = (p) => (p.thing ? `${p.name} · ${p.thing}` : p.name);
   const isK = (st) => st.mode === 'karaoke';
+  const fest = (st) => `El Festival de ${{ frida: 'Frida', kennedy: 'Kennedy', tobalaba: 'Tobalaba' }[st.venue] || 'Frida'}`;
+  // Para leer al partir cada juego (pedido de Cote)
+  const howto = (st) => (isK(st) ? window.readAloud(fest(st), [
+    `Elegimos <b>${st.max} personas</b> para cantar. Te inscribes desde tu celular con tu canción y el artista; tienes 1 minuto. Si se inscriben más, sorteamos.`,
+    'Las canciones serán cortas en pro del tiempo.',
+    'Después de cada canción, el público tiene <b>8 segundos</b> para poner su nota del 1 al 10 desde el celular.',
+    'Gana el mejor <b>promedio</b> (con un decimal; si dos empatan, con dos decimales). Los lugares se revelan desde el último y los dos finalistas, con redoble de tambores.',
+  ]) : window.readAloud(st.title || 'Votación', [
+    'Te inscribes desde tu celular con lo que traes; tienes 2 minutos.',
+    'Cada participante sube al escenario y lo presenta. Después, el público pone su nota del 1 al 10 desde el celular.',
+    'Gana el mejor <b>promedio</b>. Los lugares se revelan desde el último y los dos primeros van a la <b>gran final</b>, donde el público elige a uno de los dos.',
+  ]));
   const icon = (st) => (isK(st) ? '🎤' : '🗳️');
   // 5 notas al azar del público tras cada canción (concurso de karaoke)
   const notesHTML = (st, cls) => (st.sample && st.sample.length ? `<div class="${cls}">${st.sample.map((x) => `<span><i>${x.note}</i><small>${esc(x.name || '')}</small></span>`).join('')}</div>` : '');
@@ -28,7 +40,7 @@
   // ---------- Panel del animador ----------
   views.votoctl = async () => {
     if (!(await isAdmin())) return viewLogin();
-    app.innerHTML = `<div class="panel"><h1 style="margin:0">🗳️ Votación y concurso de karaoke</h1>
+    app.innerHTML = `<div id="vc-howto"></div><div class="panel"><h1 style="margin:0">🗳️ Votación · 🎤 El Festival</h1>
         <label class="f" style="margin-top:12px">Nombre del concurso<input type="text" id="vc-title" maxlength="50" placeholder="Ej.: El objeto más extraño"></label>
         <div id="vc-body" style="margin-top:14px"></div>
       </div>
@@ -53,7 +65,7 @@
       if (st.phase === 'voting') {
         const pending = st.players.filter((p) => !p.done).length;
         // Tipo de concurso (solo antes de anotar participantes) y cupos
-        html = `${st.players.length ? '' : `<div class="vc-modes"><button data-act="mode" data-mode="objeto" class="${isK(st) ? '' : 'primary'}">🗳️ El objeto más extraño</button><button data-act="mode" data-mode="karaoke" class="${isK(st) ? 'primary' : ''}">🎤 Concurso de karaoke</button></div>`}
+        html = `${st.players.length ? '' : `<div class="vc-modes"><button data-act="mode" data-mode="objeto" class="${isK(st) ? '' : 'primary'}">🗳️ El objeto más extraño</button><button data-act="mode" data-mode="karaoke" class="${isK(st) ? 'primary' : ''}">🎤 ${esc(fest(st))}</button></div>`}
           <label class="f vc-max">Cupos (máximo de participantes)<input type="number" id="vc-max" min="2" max="30" value="${st.max}"></label>
           ${st.sample ? `<div class="vc-read"><small>Notas al azar en pantalla (sin el promedio)</small>${notesHTML(st, 'vc-notes')}</div>` : ''}
           <div class="vc-signup ${st.signup ? 'on' : ''}"><p><b>${st.signup ? `📲 Inscripciones abiertas · <span class="v-clock">${clockText()}</span>` : 'Inscripciones desde el celular'}</b>
@@ -98,6 +110,9 @@
           ${[...st.places].reverse().map((p) => `<div class="vc-row"><p><b>${ord(p.place)} · ${nm(p)}</b><small>Nota ${note(p.score, p.dec)}</small></p></div>`).join('')}</div>`;
       }
       box.innerHTML = html;
+      const ht = $('#vc-howto');
+      const htKey = `${st.mode}|${st.max}|${st.venue}`;
+      if (ht && ht.dataset.k !== htKey) { const wasOpen = !ht.firstElementChild || ht.firstElementChild.open; ht.dataset.k = htKey; ht.innerHTML = howto(st); ht.firstElementChild.open = wasOpen; }
       if ($('#vc-name')) { $('#vc-name').value = keep; $('#vc-thing').value = keepThing; if (focus) $(focus).focus(); }
       if ($('#vc-add')) $('#vc-add').onsubmit = async (e) => { e.preventDefault(); const name = $('#vc-name').value; const what = $('#vc-thing').value; if (await act('add', { name, thing: what })) { $('#vc-name').value = ''; $('#vc-thing').value = ''; $('#vc-name').focus(); } };
     };
