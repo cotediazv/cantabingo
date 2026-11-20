@@ -79,7 +79,7 @@
           <label class="f vc-max ${isK(st) ? 'ask' : ''}">${isK(st) ? '¿Cuántos participantes van a cantar?' : 'Cupos (máximo de participantes)'}<input type="number" id="vc-max" min="2" max="30" value="${st.max}"></label>
           ${st.sample ? `<div class="vc-read"><small>Notas al azar en pantalla (sin el promedio)</small>${notesHTML(st, 'vc-notes')}</div>` : ''}
           <div class="vc-signup ${st.signup ? 'on' : ''} ${obj ? 'vc-obj' : ''}"><p>${obj && !st.signup ? '' : `<b>${st.signup ? `📲 Inscripciones abiertas · <span class="v-clock">${clockText()}</span>` : 'Inscripciones desde el celular'}</b>`}
-            ${obj ? '' : `<small>${st.signup ? `A toda la sala le aparece la invitación. Quien se inscribe llega a esta lista con su nombre y ${isK(st) ? 'su canción' : 'lo que trae'}.` : isK(st) ? 'Ábrelas para que la gente se anote sola con la canción y el artista. Corre un reloj de 1:00. Si se inscriben más que los cupos, se sortean.' : 'Ábrelas para que la gente se anote sola, con su nombre y lo que trae. Corre un reloj de 2:00.'}</small>`}</p>
+            ${obj ? '' : `<small>${st.signup ? `A toda la sala le aparece la invitación. Quien se inscribe llega a esta lista con su nombre y ${isK(st) ? 'su canción' : 'lo que trae'}.` : isK(st) ? 'Ábrelas para que la gente se anote sola con la canción y el artista. Corre un reloj de 1:00. Si se inscriben más que los cupos, se sortean.' : 'Ábrelas para que la gente se anote sola, con su nombre y lo que trae. Corre un reloj de 1:30.'}</small>`}</p>
             <button class="${st.signup ? '' : 'primary'}" data-act="signup" data-on="${st.signup ? '' : '1'}">${st.signup ? 'Cerrar' : 'Abrir inscripciones'}</button></div>
           ${st.overflow ? `<button class="primary big" data-act="draw" style="margin-bottom:12px" ${st.signup ? 'disabled' : ''}>🎲 Sortear los ${st.max} que cantan (se inscribieron ${st.players.length})</button>${st.signup ? '<p class="muted small" style="margin:-6px 0 12px">Cierra las inscripciones para sortear.</p>' : ''}` : ''}
           ${obj && !st.players.length ? '' : '<h2>Participantes</h2>'}
@@ -312,7 +312,7 @@
     let tickTimer = null;
     let flip = false;
     let ticking = 0;
-    let total = 120000;
+    let total = 90000;
     const tickLoop = () => {
       clearTimeout(tickTimer);
       tickTimer = null;
@@ -326,7 +326,7 @@
       tickTimer = setTimeout(tickLoop, Math.min(1000 / rate, left + 30));
     };
     const stop = follow((st, celebrating, first) => {
-      total = Math.max(5500, st.clockMs || 120000);
+      total = Math.max(5500, st.clockMs || 90000);
       if (st.clockUntil && st.clockUntil !== ticking) { ticking = st.clockUntil; tickLoop(); }
       if (!st.clockUntil && ticking && clockLeft() > 700) { ticking = 0; clearTimeout(tickTimer); } // el animador las cerró antes de tiempo: sin bocinas
       const box = $('#vf');
