@@ -1510,7 +1510,7 @@ const neuralBg = (() => {
   };
   // Cada neurona aparece, dura unos segundos y se desvanece; después nace otra en otro lugar (pedido de Cote: que no
   // quede como telaraña fija)
-  const LIFE = [150, 330]; // en cuadros (a 30 por segundo: 5 a 11 segundos)
+  const LIFE = [30, 60]; // en cuadros (a 30 por segundo: 1 a 2 segundos, fugaces: pedido de Cote)
   const spawn = (anyAge) => {
     const life = LIFE[0] + Math.random() * (LIFE[1] - LIFE[0]);
     return { x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - 0.5) * 0.5 * k, vy: (Math.random() - 0.5) * 0.5 * k, c: Math.floor(Math.random() * 5), life, age: anyAge ? Math.random() * life : 0 };
