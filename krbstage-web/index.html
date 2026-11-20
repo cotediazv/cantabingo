@@ -635,6 +635,7 @@ h2{margin-top:8px}
 .vivo-fila.pc-falso.pc-h{grid-template-columns:min(72vw,calc(100dvh * 16 / 9)) min(28vw,calc(100dvh * 16 / 9 * .389));gap:14px}
 .pc-cerrar{z-index:90}
 /* modo OBS: todo igual a la pantalla completa, pero el recuadro de la izquierda queda transparente y sin botones */
+html.modo-obs{color-scheme:dark}
 html.modo-obs,html.modo-obs body{background:transparent!important}
 html.modo-obs body>*:not(.visor){display:none!important}
 html.modo-obs .visor{background:transparent}
@@ -1463,7 +1464,7 @@ elegirLocal('kennedy');
     // el conjunto del en vivo. Livianas, sin video (pedido de Cote; reemplaza las repeticiones)
     if(MODO_OBS||!(c&&c.vivo)){const d=document.createElement('div');d.className='ptl-vivo vivo-item con-vertical pantallas';
       d.innerHTML=`<div class="vivo-etq"><span class="rep-icono">▣</span><span style="white-space:nowrap">Pantallas del local</span></div>
-        <div class="vivo-fila">${MODO_OBS?'<div class="pant pant-h obs-hueco"></div>':pant('pant-h',rutaH(L),1920,1080,'Tablero del local',L.livH?{liviano:L.livH,lver:L.lverH}:null)}${pant('pant-v',rutaV(L),1080,1920,'Pantalla vertical del local',L)}</div>
+        <div class="vivo-fila">${MODO_OBS?`<div class="pant pant-h obs-hueco"><iframe src="${SALA}#/escena" width="1920" height="1080" title="GC de la sala de juegos" tabindex="-1"></iframe></div>`:pant('pant-h',rutaH(L),1920,1080,'Tablero del local',L.livH?{liviano:L.livH,lver:L.lverH}:null)}${pant('pant-v',rutaV(L),1080,1920,'Pantalla vertical del local',L)}</div>
         <div class="vivo-botones"><button type="button" class="vivo-pc vivo-full">⛶ Pantalla completa</button></div>`;
       d.querySelectorAll('.pant').forEach(x=>obsPant.observe(x));
       d.querySelector('.vivo-full').onclick=()=>abrirVisor(L.local);return d}
@@ -1584,9 +1585,18 @@ elegirLocal('kennedy');
   // Enlace directo a la pantalla completa de los tres locales, para compartir (pedido de Cote):
   // www.krbstage.cl/#pantallas (empieza en Kennedy) o #pantallas-tobalaba, #pantallas-frida
   let linkHecho=false;
+  // Modo OBS con un solo enlace (www.krbstage.cl/obs.html): el local es el de la sala de juegos abierta; si no hay
+  // ninguna, el del día (jueves Kennedy, viernes Tobalaba, domingo Frida). Se revisa cada 20 s y cambia solo
+  const localDelDia=()=>{const d=new Date(new Date().toLocaleString('en-US',{timeZone:'America/Santiago'}));const h=d.getHours()<6?(d.getDay()+6)%7:d.getDay();return {4:'kennedy',5:'tobalaba',0:'frida'}[h]||'kennedy'};
+  function localSala(){return fetch('https://cantabingo.onrender.com/api/web/pantallas').then(r=>r.json()).then(t=>t.sala||localDelDia()).catch(()=>localDelDia())}
+  function irA(l){if(!visor)return;const k=ORDEN.findIndex(L=>L.local===l);if(k<0||k===idxV)return;idxV=k;ajustarVisor();cabecera();dormir()}
   function abrirLink(){
     if(linkHecho||!/^#pantallas/.test(location.hash))return;linkHecho=true;
     if(MODO_OBS)document.documentElement.classList.add('modo-obs');
+    if(MODO_OBS&&!location.hash.split('-')[1]){
+      if(!sw.checked){sw.checked=true;pintar()}
+      localSala().then(l=>{abrirVisor(l);setInterval(()=>localSala().then(irA),20000)});return;
+    }
     if(!sw.checked){sw.checked=true;pintar()}
     const l=(location.hash.split('-')[1]||'').toLowerCase();abrirVisor(ORDEN.some(L=>L.local===l)?l:'kennedy');
   }

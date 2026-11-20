@@ -6,10 +6,11 @@
 <title>KRB Stage · OBS</title>
 <style>html,body{margin:0;background:transparent}</style>
 <!-- Capa para OBS: lleva a la misma pantalla completa de la web en modo OBS (recuadro de la izquierda transparente).
-     obs.html?local=kennedy · obs.html?local=tobalaba · obs.html?local=frida -->
+     obs.html (local de la sala de juegos abierta) · obs.html?local=kennedy | tobalaba | frida (fijo) -->
 <script>
 const l=new URLSearchParams(location.search).get('local');
-location.replace('/?obs=1#pantallas-'+(['kennedy','tobalaba','frida'].includes(l)?l:'kennedy'));
+// sin local: el de la sala de juegos abierta (cambia solo); con ?local=… queda fijo en ese local
+location.replace('/?obs=1#pantallas'+(['kennedy','tobalaba','frida'].includes(l)?'-'+l:''));
 </script>
 </head>
 <body></body>
