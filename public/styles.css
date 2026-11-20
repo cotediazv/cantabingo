@@ -2286,3 +2286,6 @@ body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "So
 /* Panel del bingo sin tablero (solo con «Selección manual»): «Orden de salida» arriba del recuadro */
 #count[style*="none"] + #board + .ord-title { margin-top: 0; }
 .ord-title { margin-top: 16px; }
+
+/* Bingo con ganador aceptado: solo queda lo que viene (menú de juegos y sorteo) */
+#host-bingo.bingo-done > .panel, #host-bingo.bingo-done > .howto, #host-bingo.bingo-done > .cols, #host-bingo.bingo-done > p.small { display: none; }

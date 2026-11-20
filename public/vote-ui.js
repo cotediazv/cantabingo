@@ -47,7 +47,7 @@
     // El Festival y El objeto más extraño son juegos separados (pedido de Cote): #/votoctl/festival o #/votoctl/objeto
     const want = which === 'festival' ? 'karaoke' : which === 'objeto' ? 'objeto' : '';
     app.innerHTML = `<div id="vc-howto"></div><div class="panel"><h1 style="margin:0" id="vc-h1">${want === 'karaoke' ? '🎤 El Festival' : '🗳️ El objeto más extraño'}</h1>
-        <label class="f" id="vc-title-wrap" style="margin-top:12px" ${want === 'objeto' ? 'hidden' : ''}>Nombre del concurso<input type="text" id="vc-title" maxlength="50" placeholder="Ej.: El objeto más extraño"></label>
+        <label class="f" id="vc-title-wrap" style="margin-top:12px" hidden>Nombre del concurso<input type="text" id="vc-title" maxlength="50" placeholder="Ej.: El objeto más extraño"></label>
         <div id="vc-body" style="margin-top:14px"></div>
       </div>
       ${activitiesNav(want === 'karaoke' ? 'festival' : 'objeto')}
@@ -64,9 +64,10 @@
       if (sig === last) return;
       last = sig;
       if (document.activeElement !== $('#vc-title')) $('#vc-title').value = st.title;
-      // El objeto más extraño (pedido de Cote, 20 nov): el título ya está definido y la gente se inscribe sola desde su
-      // celular: sin campo para el nombre del concurso, sin explicación de las inscripciones y sin anotar a mano
-      const obj = !isK(st);
+      // El objeto más extraño y El Festival (pedido de Cote, 20 nov: «los dos igual de limpios»): el título ya está
+      // definido y la gente se inscribe sola desde su celular: sin campo para el nombre del concurso, sin explicación de
+      // las inscripciones y sin anotar a mano
+      const obj = true;
       $('#vc-title-wrap').hidden = obj;
       const keep = $('#vc-name') ? $('#vc-name').value : '';
       const keepThing = $('#vc-thing') ? $('#vc-thing').value : '';

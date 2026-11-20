@@ -483,7 +483,7 @@ async function hostConsole(p) {
   let manual = false;
   let spoken = -1;
   app.innerHTML = `
-    <div><p class="back"><a href="#/">← Inicio</a></p>
+    <div id="host-bingo"><p class="back"><a href="#/">← Inicio</a></p>
       <div class="panel"><h1 id="title"></h1><div id="meta" class="muted"></div><div id="pats" style="margin-top:10px"></div></div>
       ${window.readAloud('Bingo', BINGO_HOWTO)}
       <div class="cols">
@@ -568,6 +568,10 @@ async function hostConsole(p) {
     $('#confirmwin').textContent = '✔ Confirmar ganador';
     $('#tie-hint').hidden = !(tied && !st.tieWinner);
     $('#win-confirmed').hidden = !confirmed;
+    // Pedido de Cote (20 nov): con el ganador aceptado, desaparece todo lo del bingo y queda solo lo que viene (el menú
+    // de juegos con el sorteo)
+    const done = $('#host-bingo');
+    if (done && done.classList.contains('bingo-done') !== confirmed) { done.classList.toggle('bingo-done', confirmed); if (confirmed) window.scrollTo(0, 0); }
     $('#win-confirmed p').textContent = '✔ Ganador confirmado';
     $('#final').innerHTML = st.finalists ? `<p><b>Selección final:</b> ${st.finalists.map((c) => '#' + (p.startNumber + c - 1)).join(', ') || 'no hay cartones validados'}</p>` : '';
     if (st.drawn.length !== spoken) { if (spoken >= 0 && st.drawn.length > spoken) speak(speakText(st, st.drawn.at(-1))); spoken = st.drawn.length; }
