@@ -199,8 +199,9 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
         w.winAccepted = true; w.winAcceptedAt = Date.now();
         if (db.stage === 'sorteo') setStage('rueda'); // tras un desempate, la pantalla vuelve al rosco
         return null;
-      case 'start': run(w); if (w.runningSince) w.onScreen = true; return null; // «Iniciar pregunta»: el rosco vuelve al GC
+      case 'start': run(w); if (w.runningSince) { w.onScreen = true; w.rankShow = false; } return null; // «Iniciar pregunta»: el rosco vuelve al GC
       case 'show': w.onScreen = b.on !== false; return null; // botón «Rosco en pantalla» (sin correr el tiempo)
+      case 'rank': w.rankShow = b.on !== false; return null; // botón «Desplegar ranking»: top 10 de la Trivia en pantalla y en el GC
       case 'pause': settle(w); return null;
       case 'turn': remember(w); settle(w); w.onScreen = false; w.turn = (w.turn + 1) % w.players.length; return null;
       case 'select': {
@@ -244,6 +245,9 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     crowd: liveKey(w) && optionsFor(w, liveKey(w)) ? { key: liveKey(w), options: optionsFor(w, liveKey(w)) } : null,
     crowdSolved: solvedKeys(w),
     crowdWinner: (w.crowd || {}).winner || null,
+    // Ranking de la Trivia del Rosco desplegado (pedido de Cote): los 10 primeros puestos, en pantalla y en el GC
+    rank: w.rankShow ? standings(w).filter((t) => t.score > 0).slice(0, 10).map((t) => ({ name: t.name, score: t.score, hits: t.hits })) : null,
+    rankPlayers: w.rankShow ? standings(w).length : 0,
     players: w.players.map((c) => ({
       name: c.name, status: c.status, current: c.current, remainingMs: c.remainingMs, active: active(c),
       hits: c.status.filter((x) => x === 'hit').length, misses: c.status.filter((x) => x === 'miss').length,

@@ -137,6 +137,9 @@
   };
 
   // ---------- Moderador: panel de control ----------
+  // Top 10 de la Trivia del Rosco (lo usan el panel, la pantalla del local y el GC)
+  const rankHTML = (st, cls) => `<div class="${cls}"><div class="${cls}-head"><small>Trivia del Rosco</small><b>🏅 Top 10</b><span>${st.rankPlayers} ${st.rankPlayers === 1 ? 'persona jugando' : 'personas jugando'}</span></div>
+    ${st.rank.length ? `<ol>${st.rank.map((t) => `<li><b>${esc(t.name)}</b><em>${t.score} pts</em></li>`).join('')}</ol>` : '<p>Todavía nadie suma puntos</p>'}</div>`;
   views.ruedactl = async (id) => {
     if (!(await isAdmin())) return viewLogin();
     const first = await api('GET', `/api/wheels/${id}`);
@@ -169,6 +172,8 @@
             ${fromBank ? '<button id="w-newq">↻ Preguntas nuevas</button>' : ''}
           </div>
           <p class="muted small" style="margin-top:12px">Teclado: A correcta, F incorrecta, P pasa, Espacio inicia o pausa la pregunta y el reloj. En el GC, el rosco aparece al iniciar la pregunta y sale solo con «Incorrecta» o «Pasa» (queda el marcador). Toca una letra del rosco para saltar a ella o reabrirla.</p>
+          <button class="w-rankbtn" id="w-rank"></button>
+          <div class="w-ranklist" id="w-ranklist" hidden></div>
         </div>
         <div class="panel"><div class="wheels" id="w-wheels"></div></div>
       </div>
@@ -198,6 +203,11 @@
       $('#w-show').textContent = st.onScreen ? '📺 Rosco en pantalla: SÍ · quitar' : '📺 Poner rosco en pantalla';
       $('#w-show').classList.toggle('on', !!st.onScreen);
       $('#w-show').disabled = !!st.runningSince || !!st.winner;
+      // Ranking de la Trivia del Rosco (pedido de Cote): se despliega en la pantalla del local y a un costado del GC
+      $('#w-rank').textContent = st.rank ? '🏅 Recoger ranking (está en pantalla)' : '🏅 Desplegar ranking de la Trivia (top 10)';
+      $('#w-rank').classList.toggle('on', !!st.rank);
+      $('#w-ranklist').hidden = !st.rank;
+      if (st.rank) $('#w-ranklist').innerHTML = rankHTML(st, 'w-rk');
       $('#w-clock').disabled = !c.active;
       $('#w-undo').disabled = !st.canUndo;
       $('#w-swap').hidden = st.players.length < 2;
@@ -212,6 +222,7 @@
     };
     $('#w-clock').onclick = toggleClock;
     $('#w-show').onclick = () => act('show', { on: !st.onScreen });
+    $('#w-rank').onclick = () => act('rank', { on: !st.rank });
     $('#w-tie').onclick = async () => { try { await api('POST', `/api/wheels/${id}/tiebreak`); } catch (err) { fail(err); } };
     $('#w-reset').onclick = () => { if (confirm('¿Reiniciar el rosco? Se borran aciertos, fallos y relojes.')) act('reset'); };
     if (fromBank) $('#w-newq').onclick = async () => {
@@ -395,15 +406,16 @@
             <span class="obs-clock" data-timer="${i}">${clock(c.remainingMs)}</span>
             <span class="obs-name">${esc(c.name)}</span>
             <span class="obs-score"><b class="ok">✔ ${c.hits}</b> <b class="ko">✘ ${c.misses}</b></span></div>`).join('')}</div>
-          ${st.onScreen ? `<div class="obs-wheel">${wheelSVG(st, st.turn, false, true)}</div>
-          <div class="obs-side">${questionCard(st)}${revealCard(st, 'obs-reveal')}</div>` : ''}`;
+          ${st.onScreen ? `<div class="obs-wheel">${wheelSVG(st, st.turn, false, true)}</div>` : ''}
+          ${st.rank ? `<div class="obs-side obs-rankside">${rankHTML(st, 'obs-rank')}</div>` : st.onScreen ? `<div class="obs-side">${questionCard(st)}${revealCard(st, 'obs-reveal')}</div>` : ''}`;
         lastQuestion = st.question;
         scheduleRevealEnd(st);
         return;
       }
       $('#pw').innerHTML = `<h1 class="pw-title">${esc(st.name)}</h1>
         <div class="pw-text">${revealCard(st, 'pw-reveal')}${st.question ? `<div class="pw-question">${esc(st.question)}</div>` : ''}</div>
-        <div class="wheels n${st.players.length}">${st.players.map((_, i) => `<div class="wheel-box ${i === st.turn && !st.finished ? 'on' : 'off'}">${wheelSVG(st, i)}</div>`).join('')}</div>`;
+        <div class="wheels n${st.players.length}">${st.players.map((_, i) => `<div class="wheel-box ${i === st.turn && !st.finished ? 'on' : 'off'}">${wheelSVG(st, i)}</div>`).join('')}</div>
+        ${st.rank ? `<div class="pw-rankwrap">${rankHTML(st, 'pw-rank')}</div>` : ''}`;
       scheduleRevealEnd(st);
     };
     const off = watch(id, onWheel, () => { leave(); if (['#/escena', '#/gc', '#/obs', '#/tablero', `#/${kind}`].includes(location.hash)) route(); else location.hash = `#/${kind}`; });

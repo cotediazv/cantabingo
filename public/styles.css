@@ -1885,3 +1885,42 @@ body.full #app { z-index: auto; }
 .w-go { padding: 22px 10px !important; font-size: 1.5rem !important; background: #ffc400; color: #1a1a1a; border: 0; }
 .w-go.on { background: #ff7a1a; color: #fff; }
 .w-keys button { padding: 26px 8px; font-size: 1.35rem; font-weight: 900; }
+
+/* Ranking de la Trivia del Rosco desplegado (pedido de Cote): panel, GC (a un costado) y pantalla del local */
+.w-rankbtn { width: 100%; margin-top: 14px; padding: 16px 10px; font-size: 1.15rem; font-weight: 800; border-radius: 16px; background: rgba(255, 255, 255, .08); color: #fff; border: 2px solid rgba(255, 196, 0, .6); }
+.w-rankbtn.on { background: #ffc400; color: #1a1a1a; border-color: #ffc400; }
+.w-ranklist { margin-top: 10px; }
+.w-rk-head, .obs-rank-head, .pw-rank-head { display: grid; justify-items: center; gap: 2px; text-align: center; }
+.w-rk-head small, .obs-rank-head small, .pw-rank-head small { font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #ffc400; }
+.w-rk ol, .obs-rank ol, .pw-rank ol { margin: 0; padding: 0; list-style: none; counter-reset: rk; display: grid; }
+.w-rk li, .obs-rank li, .pw-rank li { counter-increment: rk; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; }
+.w-rk li::before, .obs-rank li::before, .pw-rank li::before { content: counter(rk); display: grid; place-items: center; border-radius: 50%; background: #ffc400; color: #1a1a1a; font-weight: 900; }
+.w-rk li b, .obs-rank li b, .pw-rank li b { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-transform: uppercase; }
+.w-rk li em, .obs-rank li em, .pw-rank li em { font-style: normal; font-weight: 900; color: #ffc400; }
+.w-rk li:first-child, .obs-rank li:first-child, .pw-rank li:first-child { background: linear-gradient(90deg, rgba(255, 196, 0, .35), rgba(255, 196, 0, .08)); }
+/* panel */
+.w-rk { display: grid; gap: 8px; padding: 12px; border-radius: 14px; background: rgba(0, 0, 0, .25); }
+.w-rk-head b { font-size: 1.2rem; } .w-rk-head span { font-size: .85rem; opacity: .8; }
+.w-rk ol { gap: 4px; }
+.w-rk li { gap: 10px; padding: 6px 10px; border-radius: 10px; background: rgba(255, 255, 255, .05); font-size: 1rem; }
+.w-rk li::before { width: 26px; height: 26px; font-size: .85rem; }
+/* GC: tarjeta a la derecha */
+.obs-rankside .obs-rank { animation: sidepop .45s cubic-bezier(.2, 1.4, .4, 1); }
+.obs-rank { display: grid; gap: 1.2vh; padding: 2.4vh 2vh; border-radius: 3vh; background: linear-gradient(160deg, #7b2ff7, #e0338f); border: .5vh solid #ffc400; color: #fff; box-shadow: 0 1.2vh 3vh rgba(0, 0, 0, .5); }
+.obs-rank-head small { font-size: 1.8vh; } .obs-rank-head b { font-size: 3.6vh; font-weight: 900; } .obs-rank-head span { font-size: 1.8vh; font-weight: 700; opacity: .9; }
+.obs-rank ol { gap: .6vh; }
+.obs-rank li { gap: 1.2vh; padding: .7vh 1.2vh; border-radius: 1.4vh; background: rgba(0, 0, 0, .28); font-size: 2.4vh; font-weight: 800; }
+.obs-rank li::before { width: 3.4vh; height: 3.4vh; font-size: 1.9vh; }
+.obs-rank p { margin: 0; text-align: center; font-size: 2.4vh; font-weight: 700; }
+/* pantalla del local: la lista completa, encima del rosco */
+.pw-rankwrap { position: fixed; inset: 0; z-index: 5; display: grid; place-items: center; background: rgba(10, 6, 30, .72); }
+.pw-rank { width: min(92vw, 110vh); display: grid; gap: 1.6vh; padding: 3vh 4vh; border-radius: 4vh; background: linear-gradient(160deg, #7b2ff7, #e0338f); border: .8vh solid #ffc400; color: #fff; box-shadow: 0 3vh 9vh rgba(0, 0, 0, .55); animation: sidepop .5s cubic-bezier(.2, 1.4, .4, 1); }
+.pw-rank-head small { font-size: 2.6vh; } .pw-rank-head b { font-size: 6vh; font-weight: 900; } .pw-rank-head span { font-size: 2.6vh; font-weight: 700; opacity: .9; }
+.pw-rank ol { gap: 1vh; grid-template-columns: 1fr 1fr; grid-auto-flow: column; grid-template-rows: repeat(5, auto); column-gap: 2.4vh; }
+.pw-rank li { gap: 1.6vh; padding: 1.1vh 1.8vh; border-radius: 1.8vh; background: rgba(0, 0, 0, .28); font-size: 3.4vh; font-weight: 800; }
+.pw-rank li::before { width: 5vh; height: 5vh; font-size: 2.8vh; }
+.pw-rank p { margin: 0; text-align: center; font-size: 3.4vh; font-weight: 700; }
+@media (orientation: portrait) { .pw-rank ol { grid-template-columns: 1fr; grid-auto-flow: row; grid-template-rows: none; } .pw-rank li { font-size: 2.6vh; } }
+.obs-rank li b, .pw-rank li b { white-space: normal; overflow: hidden; text-overflow: clip; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-height: 1.1; overflow-wrap: anywhere; }
+.obs-rank li { font-size: 2.1vh; }
+.pw-rank li { font-size: 3vh; }

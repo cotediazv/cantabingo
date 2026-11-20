@@ -35,6 +35,7 @@ Sitio: https://cantabingo.onrender.com · Render (plan Starter, disco de 1 GB) �
 - **Salas light** (karaoke, show, cartelera y redes): una por local, **siempre activas** (no se crean ni se cierran; QR fijo), al mismo tiempo que la principal y sin tocarla, en `db.lights[<local>]`; su GC puede mostrar `karaoke`, `show`, `cartelera`, `qr`, `none`.
 - **El Rosco en juego tiene prioridad** (pedido de Cote, 20 nov): mientras un rosco está en juego (empezó, alguien sigue jugando y no hay ganador), la pantalla queda en El Rosco aunque se apriete otra cosa (botones del bingo, escenario a mano, karaoke automático): `roscoLock()` en `server.js` y `inPlay()` en `wheel.js`.
 - **El Rosco en el GC de OBS** (pedido de Cote, 20 nov): el rosco y la pregunta se ven solo desde «Iniciar pregunta» o con el botón «Rosco en pantalla» (`onScreen` en `wheel.js`); con «Incorrecta», «Pasa», reloj agotado o cambio de turno salen al instante y queda solo el marcador. El tablero del local no cambia. Panel: «Rosco en pantalla», «Iniciar pregunta» y Correcta / Incorrecta / Pasa, grandes.
+- **Ranking de la Trivia del Rosco** (pedido de Cote, 20 nov): botón al final del panel de El Rosco «Desplegar ranking» (`rankShow`, acción `rank`): el top 10 con puntaje se ve en el panel, en grande en la pantalla del local y a la derecha del GC; se recoge con el mismo botón o al apretar «Iniciar pregunta».
 - Muchas partes usan «la primera sala abierta» (`Object.values(db.sessions)[0]`) como la sala del día: por eso las salas light van aparte.
 
 | Actividad | Servidor | Interfaz |
