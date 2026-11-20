@@ -1,0 +1,1470 @@
+{
+ "projects": {
+  "63669123ec807a13": {
+   "id": "63669123ec807a13",
+   "created": 1795000000000,
+   "format": "numbers",
+   "values": 75,
+   "items": null,
+   "name": "Prueba",
+   "theme": "kennedy",
+   "headers": "BINGO",
+   "freeCenter": true,
+   "startNumber": 1,
+   "sessionId": "cv667k",
+   "cards": [
+    [
+     12,
+     30,
+     40,
+     59,
+     70,
+     6,
+     26,
+     36,
+     54,
+     65,
+     10,
+     28,
+     0,
+     52,
+     63,
+     3,
+     25,
+     44,
+     49,
+     75,
+     7,
+     22,
+     31,
+     55,
+     67
+    ],
+    [
+     14,
+     18,
+     31,
+     51,
+     62,
+     8,
+     23,
+     33,
+     47,
+     66,
+     4,
+     19,
+     0,
+     56,
+     61,
+     12,
+     29,
+     39,
+     60,
+     71,
+     9,
+     27,
+     45,
+     53,
+     68
+    ],
+    [
+     10,
+     25,
+     36,
+     56,
+     72,
+     15,
+     24,
+     43,
+     50,
+     71,
+     2,
+     29,
+     0,
+     53,
+     67,
+     4,
+     22,
+     39,
+     47,
+     65,
+     11,
+     30,
+     42,
+     59,
+     69
+    ],
+    [
+     3,
+     17,
+     39,
+     54,
+     62,
+     14,
+     29,
+     36,
+     56,
+     66,
+     11,
+     19,
+     0,
+     48,
+     72,
+     15,
+     25,
+     40,
+     55,
+     63,
+     8,
+     23,
+     34,
+     53,
+     64
+    ],
+    [
+     10,
+     17,
+     42,
+     54,
+     73,
+     4,
+     21,
+     34,
+     52,
+     61,
+     6,
+     22,
+     0,
+     58,
+     64,
+     7,
+     20,
+     32,
+     46,
+     70,
+     9,
+     25,
+     40,
+     49,
+     65
+    ],
+    [
+     11,
+     23,
+     34,
+     59,
+     61,
+     6,
+     30,
+     36,
+     46,
+     72,
+     3,
+     19,
+     0,
+     53,
+     74,
+     7,
+     29,
+     38,
+     49,
+     67,
+     10,
+     26,
+     31,
+     48,
+     70
+    ],
+    [
+     8,
+     27,
+     37,
+     56,
+     66,
+     5,
+     28,
+     32,
+     46,
+     73,
+     14,
+     25,
+     0,
+     60,
+     68,
+     3,
+     20,
+     44,
+     52,
+     62,
+     2,
+     30,
+     45,
+     49,
+     65
+    ],
+    [
+     1,
+     23,
+     39,
+     58,
+     70,
+     4,
+     29,
+     32,
+     53,
+     62,
+     13,
+     25,
+     0,
+     47,
+     72,
+     7,
+     26,
+     43,
+     48,
+     74,
+     5,
+     16,
+     38,
+     55,
+     63
+    ],
+    [
+     2,
+     16,
+     41,
+     59,
+     69,
+     9,
+     26,
+     36,
+     60,
+     73,
+     4,
+     19,
+     0,
+     47,
+     65,
+     13,
+     22,
+     32,
+     46,
+     71,
+     3,
+     20,
+     45,
+     53,
+     63
+    ],
+    [
+     8,
+     28,
+     45,
+     55,
+     72,
+     10,
+     18,
+     42,
+     48,
+     73,
+     4,
+     25,
+     0,
+     54,
+     64,
+     14,
+     30,
+     44,
+     51,
+     61,
+     9,
+     24,
+     43,
+     49,
+     66
+    ],
+    [
+     10,
+     16,
+     40,
+     55,
+     61,
+     12,
+     24,
+     32,
+     56,
+     67,
+     9,
+     22,
+     0,
+     52,
+     72,
+     15,
+     18,
+     36,
+     49,
+     74,
+     5,
+     17,
+     34,
+     46,
+     66
+    ],
+    [
+     5,
+     23,
+     37,
+     56,
+     63,
+     12,
+     25,
+     36,
+     46,
+     65,
+     13,
+     21,
+     0,
+     59,
+     68,
+     6,
+     22,
+     38,
+     49,
+     61,
+     8,
+     20,
+     43,
+     51,
+     73
+    ],
+    [
+     8,
+     16,
+     44,
+     58,
+     73,
+     14,
+     24,
+     39,
+     46,
+     72,
+     5,
+     30,
+     0,
+     59,
+     69,
+     13,
+     17,
+     31,
+     52,
+     68,
+     12,
+     19,
+     45,
+     53,
+     62
+    ],
+    [
+     12,
+     28,
+     40,
+     54,
+     64,
+     5,
+     18,
+     34,
+     53,
+     68,
+     1,
+     26,
+     0,
+     51,
+     74,
+     13,
+     25,
+     45,
+     57,
+     61,
+     4,
+     24,
+     41,
+     46,
+     65
+    ],
+    [
+     6,
+     21,
+     43,
+     51,
+     69,
+     7,
+     29,
+     44,
+     60,
+     61,
+     15,
+     27,
+     0,
+     59,
+     62,
+     3,
+     26,
+     39,
+     54,
+     64,
+     8,
+     22,
+     41,
+     56,
+     75
+    ],
+    [
+     14,
+     28,
+     31,
+     56,
+     61,
+     10,
+     23,
+     34,
+     54,
+     74,
+     8,
+     24,
+     0,
+     58,
+     62,
+     3,
+     29,
+     32,
+     46,
+     69,
+     13,
+     22,
+     43,
+     53,
+     63
+    ],
+    [
+     5,
+     22,
+     44,
+     48,
+     74,
+     11,
+     23,
+     42,
+     49,
+     75,
+     15,
+     16,
+     0,
+     46,
+     69,
+     2,
+     25,
+     35,
+     50,
+     70,
+     13,
+     24,
+     32,
+     51,
+     71
+    ],
+    [
+     5,
+     17,
+     34,
+     57,
+     66,
+     7,
+     24,
+     45,
+     51,
+     63,
+     9,
+     25,
+     0,
+     60,
+     75,
+     10,
+     26,
+     43,
+     52,
+     67,
+     3,
+     29,
+     32,
+     54,
+     74
+    ],
+    [
+     12,
+     30,
+     41,
+     58,
+     70,
+     7,
+     29,
+     31,
+     49,
+     63,
+     13,
+     25,
+     0,
+     51,
+     68,
+     11,
+     21,
+     37,
+     54,
+     61,
+     1,
+     19,
+     45,
+     46,
+     62
+    ],
+    [
+     14,
+     29,
+     44,
+     56,
+     70,
+     12,
+     21,
+     39,
+     60,
+     61,
+     8,
+     26,
+     0,
+     54,
+     73,
+     6,
+     18,
+     38,
+     55,
+     66,
+     10,
+     27,
+     35,
+     51,
+     65
+    ],
+    [
+     1,
+     30,
+     37,
+     46,
+     73,
+     2,
+     16,
+     45,
+     58,
+     75,
+     11,
+     26,
+     0,
+     57,
+     70,
+     10,
+     21,
+     44,
+     47,
+     72,
+     3,
+     29,
+     42,
+     53,
+     74
+    ],
+    [
+     9,
+     28,
+     43,
+     48,
+     65,
+     10,
+     24,
+     32,
+     57,
+     72,
+     3,
+     29,
+     0,
+     52,
+     73,
+     14,
+     30,
+     42,
+     53,
+     64,
+     12,
+     23,
+     37,
+     47,
+     74
+    ],
+    [
+     1,
+     27,
+     31,
+     56,
+     68,
+     13,
+     18,
+     43,
+     58,
+     71,
+     3,
+     29,
+     0,
+     60,
+     64,
+     15,
+     24,
+     33,
+     55,
+     69,
+     5,
+     26,
+     42,
+     57,
+     74
+    ],
+    [
+     8,
+     16,
+     31,
+     50,
+     67,
+     13,
+     24,
+     39,
+     52,
+     72,
+     2,
+     25,
+     0,
+     56,
+     73,
+     3,
+     22,
+     45,
+     48,
+     64,
+     7,
+     30,
+     33,
+     47,
+     63
+    ],
+    [
+     7,
+     23,
+     38,
+     54,
+     73,
+     10,
+     25,
+     39,
+     51,
+     70,
+     15,
+     29,
+     0,
+     46,
+     75,
+     2,
+     26,
+     33,
+     57,
+     61,
+     3,
+     28,
+     42,
+     50,
+     63
+    ],
+    [
+     11,
+     21,
+     45,
+     59,
+     62,
+     3,
+     18,
+     35,
+     55,
+     72,
+     8,
+     25,
+     0,
+     47,
+     61,
+     9,
+     23,
+     39,
+     46,
+     74,
+     10,
+     28,
+     40,
+     56,
+     73
+    ],
+    [
+     9,
+     26,
+     44,
+     48,
+     62,
+     2,
+     18,
+     37,
+     54,
+     74,
+     1,
+     16,
+     0,
+     49,
+     70,
+     3,
+     25,
+     35,
+     50,
+     72,
+     15,
+     19,
+     39,
+     60,
+     68
+    ],
+    [
+     3,
+     23,
+     38,
+     53,
+     66,
+     1,
+     17,
+     31,
+     54,
+     65,
+     15,
+     30,
+     0,
+     52,
+     69,
+     7,
+     24,
+     35,
+     56,
+     68,
+     12,
+     16,
+     40,
+     51,
+     62
+    ],
+    [
+     11,
+     29,
+     32,
+     50,
+     69,
+     4,
+     18,
+     43,
+     53,
+     75,
+     13,
+     17,
+     0,
+     52,
+     61,
+     15,
+     19,
+     40,
+     51,
+     74,
+     8,
+     22,
+     37,
+     47,
+     70
+    ],
+    [
+     8,
+     25,
+     45,
+     59,
+     74,
+     10,
+     30,
+     42,
+     55,
+     73,
+     2,
+     23,
+     0,
+     60,
+     66,
+     14,
+     28,
+     40,
+     51,
+     67,
+     13,
+     24,
+     35,
+     47,
+     64
+    ]
+   ]
+  }
+ },
+ "sessions": {
+  "cv667k": {
+   "id": "cv667k",
+   "projectId": "63669123ec807a13",
+   "name": "Prueba",
+   "password": "",
+   "cardsPerPlayer": 1,
+   "showName": true,
+   "isPublic": true,
+   "patterns": [
+    "linea"
+   ],
+   "bigQr": false,
+   "theme": "kennedy",
+   "gc": {
+    "top": "Escanea el código QR con tu celular y participa",
+    "bottom": "Pon tu nombre, apellido y participa"
+   },
+   "round": 1,
+   "drawn": [
+    12,
+    30,
+    6,
+    26,
+    10,
+    25,
+    22,
+    55
+   ],
+   "results": [],
+   "marks": {},
+   "players": {
+    "2b07ff42152b12743f1ae72d": {
+     "name": "ANA PÉREZ SOTO",
+     "first": "ANA",
+     "cards": [
+      1
+     ],
+     "place": ""
+    },
+    "6cead5ec7c8b9da685c1a65a": {
+     "name": "LUIS GONZÁLEZ",
+     "first": "LUIS",
+     "cards": [
+      2
+     ],
+     "place": ""
+    },
+    "a02cf37db80db3670cea0e9a": {
+     "name": "MARÍA JOSÉ FERNÁNDEZ ALLENDE",
+     "first": "MARÍA JOSÉ",
+     "cards": [
+      3
+     ],
+     "place": ""
+    },
+    "46e64be50cddbdd4686b981c": {
+     "name": "PEDRO ROJAS",
+     "first": "PEDRO",
+     "cards": [
+      4
+     ],
+     "place": ""
+    }
+   },
+   "finalists": null,
+   "auto": {
+    "on": false,
+    "interval": 10,
+    "stopOnWin": true
+   },
+   "created": 1795000000000,
+   "expires": 4102444800000,
+   "celebrateAt": 0
+  }
+ },
+ "qrPhraseFix": true,
+ "wheels": {
+  "weaj6d": {
+   "id": "weaj6d",
+   "name": "El Rosco",
+   "created": 4102444799999,
+   "letters": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "J"
+   ],
+   "seconds": 120,
+   "setup": {
+    "players": [
+     "ANA PÉREZ",
+     "LUIS GONZÁLEZ"
+    ]
+   },
+   "bank": {
+    "cats": [
+     "g",
+     "m",
+     "a"
+    ],
+    "levels": [
+     "f",
+     "m"
+    ]
+   },
+   "questions": [
+    [
+     {
+      "q": "Con la A: Cuarto mes del año",
+      "a": "Abril",
+      "cat": "g",
+      "level": "f"
+     },
+     {
+      "q": "Con la B: Libro sagrado del cristianismo",
+      "a": "Biblia",
+      "cat": "g",
+      "level": "f"
+     },
+     {
+      "q": "Con la C: Órgano que bombea la sangre",
+      "a": "Corazón",
+      "cat": "g",
+      "level": "f"
+     },
+     {
+      "q": "Con la D: Día siguiente al sábado",
+      "a": "Domingo",
+      "cat": "g",
+      "level": "f"
+     },
+     {
+      "q": "Con la E: Línea imaginaria que divide la Tierra en hemisferio norte y sur",
+      "a": "Ecuador",
+      "cat": "g",
+      "level": "m"
+     },
+     {
+      "q": "Con la F: Pintora mexicana famosa por sus autorretratos, esposa de Diego Rivera",
+      "a": "Frida Kahlo",
+      "cat": "a",
+      "level": "m"
+     },
+     {
+      "q": "Con la G: Escritor colombiano autor de «Cien años de soledad»",
+      "a": "García Márquez",
+      "cat": "g",
+      "level": "m"
+     },
+     {
+      "q": "Con la H: Compositor austríaco llamado «padre de la sinfonía»",
+      "a": "Haydn",
+      "cat": "m",
+      "level": "m"
+     },
+     {
+      "q": "Con la I: Imperio precolombino con capital en Cuzco",
+      "a": "Inca",
+      "cat": "g",
+      "level": "m"
+     },
+     {
+      "q": "Con la J: Día entre el miércoles y el viernes",
+      "a": "Jueves",
+      "cat": "g",
+      "level": "f"
+     }
+    ],
+    [
+     {
+      "q": "Con la A: Río más caudaloso del mundo",
+      "a": "Amazonas",
+      "cat": "g",
+      "level": "m"
+     },
+     {
+      "q": "Con la B: Libertador venezolano que independizó a varios países de Sudamérica",
+      "a": "Bolívar",
+      "cat": "g",
+      "level": "f"
+     },
+     {
+      "q": "Con la C: País cuya capital es Santiago",
+      "a": "Chile",
+      "cat": "g",
+      "level": "f"
+     },
+     {
+      "q": "Con la D: Río europeo que pasa por Viena y Budapest",
+      "a": "Danubio",
+      "cat": "g",
+      "level": "m"
+     },
+     {
+      "q": "Con la E: Piedra preciosa de color verde intenso",
+      "a": "Esmeralda",
+      "cat": "g",
+      "level": "f"
+     },
+     {
+      "q": "Con la F: Rey del antiguo Egipto",
+      "a": "Faraón",
+      "cat": "g",
+      "level": "f"
+     },
+     {
+      "q": "Con la G: Instrumento de seis cuerdas típico de España",
+      "a": "Guitarra",
+      "cat": "m",
+      "level": "f"
+     },
+     {
+      "q": "Con la H: Tragedia de Shakespeare sobre un príncipe de Dinamarca",
+      "a": "Hamlet",
+      "cat": "g",
+      "level": "m"
+     },
+     {
+      "q": "Con la I: Idioma más usado en el mundo para los negocios y la música pop",
+      "a": "Inglés",
+      "cat": "g",
+      "level": "f"
+     },
+     {
+      "q": "Con la J: País asiático cuya capital es Tokio",
+      "a": "Japón",
+      "cat": "g",
+      "level": "f"
+     }
+    ]
+   ],
+   "turn": 0,
+   "runningSince": null,
+   "history": [],
+   "players": [
+    {
+     "name": "ANA PÉREZ",
+     "status": [
+      "hit",
+      "hit",
+      "hit",
+      "hit",
+      "hit",
+      "hit",
+      "hit",
+      "hit",
+      "hit",
+      "hit"
+     ],
+     "current": 9,
+     "remainingMs": 119989
+    },
+    {
+     "name": "LUIS GONZÁLEZ",
+     "status": [
+      "pending",
+      "pending",
+      "pending",
+      "pending",
+      "pending",
+      "pending",
+      "pending",
+      "pending",
+      "pending",
+      "pending"
+     ],
+     "current": 0,
+     "remainingMs": 120000
+    }
+   ],
+   "onScreen": false,
+   "rankShow": false,
+   "wonAt": 1795000000000,
+   "crowd": {
+    "opts": {
+     "0:0": [
+      "Ayer",
+      "Abril",
+      "Agosto"
+     ],
+     "0:1": [
+      "Bhagavad Gita",
+      "Breviario",
+      "Biblia"
+     ],
+     "0:2": [
+      "Cerebro",
+      "Columna",
+      "Corazón"
+     ],
+     "0:3": [
+      "Domingo",
+      "Descanso",
+      "Diciembre"
+     ],
+     "0:4": [
+      "Eje terrestre",
+      "Ecuador",
+      "Eclíptica"
+     ],
+     "0:5": [
+      "Frida Kahlo",
+      "Fernando Botero",
+      "Francisco de Goya"
+     ],
+     "0:6": [
+      "García Márquez",
+      "García Lorca",
+      "Galeano"
+     ],
+     "0:7": [
+      "Hindemith",
+      "Händel",
+      "Haydn"
+     ],
+     "0:8": [
+      "Inca",
+      "Íbero",
+      "Iroqués"
+     ],
+     "0:9": [
+      "Jornada",
+      "Jueves",
+      "Julio"
+     ]
+    },
+    "ans": {},
+    "shown": {
+     "0:0": 1795206053172,
+     "0:1": 1795206053173,
+     "0:2": 1795206053174,
+     "0:3": 1795206053176,
+     "0:4": 1795206053177,
+     "0:5": 1795206053177,
+     "0:6": 1795206053178,
+     "0:7": 1795206053180,
+     "0:8": 1795206053181,
+     "0:9": 1795206053182
+    },
+    "last": "",
+    "winner": null
+   }
+  }
+ },
+ "bankUsed": {
+  "A:Abril": 1,
+  "B:Biblia": 1,
+  "C:Corazón": 1,
+  "D:Domingo": 1,
+  "E:Ecuador": 1,
+  "F:Frida Kahlo": 1,
+  "G:García Márquez": 1,
+  "H:Haydn": 1,
+  "I:Inca": 1,
+  "J:Jueves": 1,
+  "A:Amazonas": 1,
+  "B:Bolívar": 1,
+  "C:Chile": 1,
+  "D:Danubio": 1,
+  "E:Esmeralda": 1,
+  "F:Faraón": 1,
+  "G:Guitarra": 1,
+  "H:Hamlet": 1,
+  "I:Inglés": 1,
+  "J:Japón": 1
+ },
+ "people": {
+  "ana pérez soto": {
+   "name": "ANA PÉREZ SOTO",
+   "at": 1795000000000
+  },
+  "luis gonzález": {
+   "name": "LUIS GONZÁLEZ",
+   "at": 1795000000000
+  },
+  "maría josé fernández allende": {
+   "name": "MARÍA JOSÉ FERNÁNDEZ ALLENDE",
+   "at": 1795000000000
+  },
+  "pedro rojas": {
+   "name": "PEDRO ROJAS",
+   "at": 1795000000000
+  }
+ },
+ "raffle": {
+  "picked": [
+   "LUIS GONZÁLEZ"
+  ],
+  "roll": {
+   "winner": "LUIS GONZÁLEZ",
+   "names": [
+    "PEDRO ROJAS",
+    "LUIS GONZÁLEZ",
+    "MARÍA JOSÉ FERNÁNDEZ ALLENDE",
+    "ANA PÉREZ SOTO"
+   ],
+   "at": 1795000000000
+  },
+  "mode": "rosco"
+ },
+ "karaoke": {
+  "venue": "frida",
+  "phone": true,
+  "phoneDefault": true,
+  "manual": {},
+  "urls": {
+   "frida": {
+    "exec": "",
+    "form": ""
+   },
+   "kennedy": {
+    "exec": "",
+    "form": ""
+   },
+   "tobalaba": {
+    "exec": "",
+    "form": ""
+   }
+  },
+  "tobalabaExec16nov": true,
+  "withIds": {},
+  "ask": {}
+ },
+ "vote": {
+  "mode": "objeto",
+  "title": "El objeto más extraño",
+  "max": 8,
+  "players": [
+   {
+    "id": "a11d7d65",
+    "name": "CARLA",
+    "thing": "Una tetera con forma de gato",
+    "votes": {
+     "2b07ff42152b12743f1ae72d": 9,
+     "6cead5ec7c8b9da685c1a65a": 8,
+     "a02cf37db80db3670cea0e9a": 10
+    },
+    "done": true,
+    "voters": {
+     "2b07ff42152b12743f1ae72d": "ANA",
+     "6cead5ec7c8b9da685c1a65a": "LUIS",
+     "a02cf37db80db3670cea0e9a": "MARÍA JOSÉ"
+    }
+   },
+   {
+    "id": "ceb1ac22",
+    "name": "DIEGO",
+    "thing": "Un zapato de payaso",
+    "votes": {
+     "2b07ff42152b12743f1ae72d": 5,
+     "6cead5ec7c8b9da685c1a65a": 6,
+     "a02cf37db80db3670cea0e9a": 4
+    },
+    "done": true,
+    "voters": {
+     "2b07ff42152b12743f1ae72d": "ANA",
+     "6cead5ec7c8b9da685c1a65a": "LUIS",
+     "a02cf37db80db3670cea0e9a": "MARÍA JOSÉ"
+    }
+   },
+   {
+    "id": "d5496e8c",
+    "name": "FERNANDA",
+    "thing": "Un disco de vinilo partido",
+    "votes": {
+     "2b07ff42152b12743f1ae72d": 7,
+     "6cead5ec7c8b9da685c1a65a": 7,
+     "a02cf37db80db3670cea0e9a": 8
+    },
+    "done": true,
+    "voters": {
+     "2b07ff42152b12743f1ae72d": "ANA",
+     "6cead5ec7c8b9da685c1a65a": "LUIS",
+     "a02cf37db80db3670cea0e9a": "MARÍA JOSÉ"
+    }
+   }
+  ],
+  "open": null,
+  "last": "d5496e8c",
+  "sample": null,
+  "phase": "results",
+  "rank": [
+   "a11d7d65",
+   "d5496e8c",
+   "ceb1ac22"
+  ],
+  "revealed": 1,
+  "final": {
+   "ids": [
+    "a11d7d65",
+    "d5496e8c"
+   ],
+   "votes": {},
+   "open": false,
+   "closed": false
+  },
+  "winner": null,
+  "winAt": 0,
+  "rev": 15,
+  "onstage": null,
+  "openUntil": 1795206071190,
+  "signup": false
+ },
+ "desafio": {
+  "rev": 14,
+  "phase": "locked",
+  "player": "CAMILA ROJAS VALENZUELA",
+  "prizes": [
+   "100 puntos",
+   "200 puntos",
+   "300 puntos",
+   "500 puntos",
+   "1.000 puntos",
+   "2.000 puntos",
+   "5.000 puntos",
+   "10.000 puntos",
+   "25.000 puntos",
+   "50.000 puntos"
+  ],
+  "safe": [
+   5
+  ],
+  "step": 4,
+  "q": {
+   "text": "¿En qué continente está Egipto?",
+   "options": [
+    "África",
+    "Europa",
+    "Asia",
+    "Oceanía"
+   ],
+   "correct": 0,
+   "level": "m"
+  },
+  "chosen": 2,
+  "hidden": [
+   3,
+   1
+  ],
+  "outcome": null,
+  "used": {
+   "fifty": true,
+   "audience": false,
+   "phone": false,
+   "swap": false
+  },
+  "audience": null,
+  "phoneUntil": 0,
+  "seen": [
+   "¿Cuál es la moneda de Chile?",
+   "¿Qué océano baña las costas de Chile?",
+   "¿Qué ave de granja pone los huevos que comemos a diario?",
+   "¿En qué continente está Egipto?"
+  ]
+ },
+ "desafioUsed": {
+  "¿Cuál es la moneda de Chile?": 1,
+  "¿Qué océano baña las costas de Chile?": 1,
+  "¿Qué ave de granja pone los huevos que comemos a diario?": 1,
+  "¿En qué continente está Egipto?": 1
+ },
+ "insta": {
+  "handles": {
+   "kennedy": "krbstage",
+   "tobalaba": "krbstage",
+   "frida": "krbstage"
+  }
+ },
+ "lights": {
+  "frida": {
+   "id": "L63b520f4",
+   "venue": "frida",
+   "stage": "info",
+   "players": {},
+   "created": 1795206053083
+  },
+  "kennedy": {
+   "id": "L36ddd052",
+   "venue": "kennedy",
+   "stage": "info",
+   "players": {},
+   "created": 1795206053083
+  },
+  "tobalaba": {
+   "id": "L07f0f429",
+   "venue": "tobalaba",
+   "stage": "info",
+   "players": {},
+   "created": 1795206053083
+  }
+ },
+ "lightInfoDefault": true,
+ "lightInfoAll": true,
+ "vertical": {},
+ "webIg": {},
+ "agenda": {
+  "notice": true,
+  "month": "2026-11",
+  "text": {
+   "frida": "Viernes: 19:00 Música / 19:30 Previa en vivo + karaoke / 21:00 Dobles / 22:00 Karaoke y Fiesta / 00:00 Cierre\nSábado: 19:00 Música / 19:30 Previa en vivo + karaoke / 21:00 Dobles / 22:00 Karaoke y Fiesta / 00:00 Cierre\nDomingo: 13:30 Música / 14:00 Bingo / 16:00 Cierre\nDom 1 - El Bingo de Frida\nVie 6 - Doble de Lucero\nSáb 7 - Doble de Pedro Fernández\nDom 8 - El Bingo de Frida\nVie 13 - Doble de Selena\nSáb 14 - Doble de Marco Antonio Solís\nDom 15 - El Bingo de Frida\nVie 20 - Doble de Shakira\nSáb 21 - Doble de Cristian Castro\nDom 22 - El Bingo de Frida\nVie 27 - Especial Caribe Tropical\nSáb 28 - Doble de Ricky Martin\nDom 29 - El Bingo de Frida",
+   "kennedy": "Jueves: 19:00 Música / 20:00 Previa / 20:30 Bingo / 21:00 Stand Up / Karaoke 22:00 / 00:30 fiesta\nViernes: 19:00 Música / 20:30 Previa / Piano 21:15 / Karaoke 22:15 / 00:30 fiesta\nSábado: 19:00 Música / 20:30 Previa / Show 21:00 / Karaoke 22:00 / 00:30 fiesta\nJue 5 - Stand Up: ALEX ORTIZ\nVie 6 - KARAOKE NIGHT SHOW + Piano Man\nSáb 7 - Banda Tributo a Joe Cocker\nJue 12 - Stand Up: KURT CARRERA\nVie 13 - KARAOKE NIGHT SHOW + Piano Man\nSáb 14 - Banda Tributo a Maná\nJue 19 - Stand Up: GONZALO TRUJILLO\nVie 20 - KARAOKE NIGHT SHOW + Piano Man\nSáb 21 - Especial Caribe Tropical\nJue 26 - Stand Up: DAVID PEREZ\nVie 27 - KARAOKE NIGHT SHOW + Piano Man\nSáb 28 - Banda Tributo a Bon Jovi",
+   "tobalaba": "Viernes: 18:30 Música / 19:00 Previa / 19:30 Bingo / 20:15 Show / 21:15 Karaoke / 22:30 Cierre\nVier 06 - Especial Salsa (Miguel Angel Caballero)\nVier 13 - Especial 80's (Marcelo Durán)\nVier 20 - Especial México (Verónica Yañez)\nVier 27 - Especial Balada Italiana (Matias Fajardo)"
+  }
+ },
+ "gameDraw": {
+  "played": [
+   "rosco"
+  ],
+  "last": {
+   "game": "rosco",
+   "pool": [
+    "rosco"
+   ],
+   "at": 1795000000000,
+   "direct": true
+  },
+  "rule2": true,
+  "total": 3,
+  "list": [
+   "rosco"
+  ],
+  "ready": null,
+  "undo": []
+ },
+ "stage": "bingo",
+ "fixture": {
+  "sid": "cv667k",
+  "projectId": "63669123ec807a13",
+  "wheelId": "weaj6d",
+  "phone": {
+   "token": "2b07ff42152b12743f1ae72d",
+   "name": "ANA PÉREZ SOTO"
+  }
+ }
+}

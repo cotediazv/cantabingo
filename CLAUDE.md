@@ -74,6 +74,11 @@ Datos externos: la lista del karaoke sale del Apps Script de cada local (`?modo=
 
 ## Probar y publicar
 
+- **Pruebas automáticas, obligatorias antes de publicar** (desde el 20 nov):
+  - `npm test`: API de todos los juegos (bingo, escenario, El Rosco, votación y Festival, sorteos, El Gran Desafío, karaoke, sala light, pantallas) y compatibilidad con el Chrome antiguo. Tarda segundos. Corre también en GitHub (Actions) en cada subida.
+  - `npm run test:e2e`: recorre tablero, OBS, celular y paneles con datos fijos (`test/e2e/fixture.json`) y compara con capturas de referencia (`test/e2e/pantallas.spec.js-snapshots/`). Si falla, mirar la diferencia en `test-results/`. Si el cambio visible fue pedido, actualizar las referencias con `npm run test:e2e -- --update-snapshots` y revisar las capturas nuevas. Si cambia la forma de los datos, regenerar `fixture.json` con `node test/e2e/make-fixture.js`.
+  - Cada cambio nuevo en un juego agrega o ajusta su prueba en `test/api/<juego>.test.js`.
+- **Chrome antiguo de los decodificadores**: todo lo que corre en el navegador (`public/`) va sin `??`, `?.`, `||=`, `&&=` ni otra sintaxis posterior a 2019, y el CSS sin `inset:` (usar `top/right/bottom/left`). Lo revisa `test/compat.test.js`. `.at()` y `AbortSignal.timeout` tienen reemplazo en `patterns.js`.
 - Probar en local antes de todo: `PORT=3222 ADMIN_USER=mod ADMIN_PASS=clave-prueba DATA_FILE=/tmp/d.json node server.js`, y revisar con Playwright las pantallas afectadas (celular, tablero, OBS). Mirar las capturas, no solo que "quepa".
 - Desde este entorno no se puede abrir script.google.com: para el karaoke y la GLOSA se prueba con servidores simulados (la dirección del karaoke se pone en los datos de prueba; la GLOSA con `GLOSA_TEST_URL`). La prueba real es en el sitio.
 - Probar con contenido real en pantalla (pregunta, respuesta, nombres largos), no con la pantalla vacía.
