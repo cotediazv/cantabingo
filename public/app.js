@@ -687,8 +687,6 @@ views.jugar = async (sid) => {
   app.innerHTML = `<div id="bingo-top"><div class="now" id="now"></div>
     <div id="banner"></div>
     <div class="cards" id="cards"></div></div>
-    <div class="live" id="live"><div id="live-player"></div>
-      <div class="live-bar"><button type="button" id="live-audio">🔇 Activar audio</button><button type="button" id="live-full">⛶ Pantalla completa</button><button type="button" id="live-sync" class="wide">↻ Poner al día el video</button></div></div>
     <div class="prosco" id="prosco" hidden></div>
     <div class="pkar" id="pkar" hidden></div>
     <div class="pvote" id="pvote" hidden></div>
@@ -696,6 +694,8 @@ views.jugar = async (sid) => {
     <div id="bingo-bottom"><button class="primary big" id="sync" style="margin-top:16px">↻ Actualizar y marcar lo que falta</button>
     <p class="muted small" style="margin-top:8px">Marca por ti los valores ya anunciados que se te pasaron.</p>
     <div class="panel" style="margin-top:20px"><h2 id="title" style="margin:0"></h2><span class="muted small" id="meta"></span><div id="pats" style="margin-top:8px"></div></div></div>
+    <div class="live" id="live"><div id="live-player"></div>
+      <div class="live-bar"><button type="button" id="live-audio">🔇 Activar audio</button><button type="button" id="live-full">⛶ Pantalla completa</button><button type="button" id="live-sync" class="wide">↻ Poner al día el video</button></div></div>
     ${window.krbKidsButton ? window.krbKidsButton() : '<a class="btn kids-entry" href="#/kids">🧸 <b>KRB Kids</b><span>Zona de niños</span></a>'}`;
   // Durante El Rosco: se guarda el cartón y quedan el video y, debajo, la pregunta en juego
   let roscoEs = null;

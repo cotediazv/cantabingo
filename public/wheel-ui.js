@@ -405,7 +405,7 @@
     : peopleHTML()}</div>`;
       };
       const fitNames = () => {
-        $$('.rv-top b, .rv-col b').forEach((b) => {
+        $$('.rv-top b, .rv-col b, .rv-people li').forEach((b) => {
           b.style.fontSize = '';
           let f = parseFloat(getComputedStyle(b).fontSize);
           const min = f * 0.45;

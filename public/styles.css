@@ -2089,3 +2089,11 @@ body[data-venue="frida"] .rv-rank, body:not([data-venue]) .rv-rank { --rv-score:
 .rv-people ul { columns: auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-flow: column; grid-template-rows: repeat(var(--rows, 1), min-content); column-gap: 1.6vw; }
 .rv-people li { min-width: 0; }
 .rv-people li { font-size: 1.32vh; line-height: 1.5; }
+
+/* Celular: KRB Kids un poco más grande, debajo del video (pedido de Cote) */
+.kids-entry2 { max-width: 340px; gap: 12px; padding: 11px 22px; margin-top: 18px; }
+.kids-entry2 .kz-logo { width: 54px; height: 54px; }
+.kids-entry2 .kz-name { font-size: 1.75rem; }
+.kids-entry2 .kz-entry-text > .kz-tag, .kids-entry2 .kz-entry-text > span { font-size: .9rem; }
+/* Nombres completos: los largos se achican, no se cortan */
+.rv-people li { text-overflow: clip; }
