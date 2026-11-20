@@ -2198,3 +2198,21 @@ body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "So
 /* El Festival: la pregunta de cuántos cantan, destacada al empezar */
 .vc-max.ask { max-width: none; padding: 14px 16px; border-radius: 14px; border: 2px solid #ffc400; background: rgba(255, 196, 0, .1); font-size: 1.15rem; font-weight: 900; color: #ffc400; }
 .vc-max.ask input { margin-top: 8px; max-width: 160px; font-size: 1.6rem; font-weight: 900; text-align: center; }
+
+/* Juegos de la noche: cuántos se sortean y sus casilleros (pedido de Cote) */
+.g-plan { display: grid; gap: 10px; margin-bottom: 12px; padding: 12px 14px; border-radius: 14px; border: 2px solid #ffc400; background: rgba(255, 196, 0, .08); }
+.g-plan label { font-weight: 900; color: #ffc400; }
+.g-plan input { width: 80px; margin-left: 8px; font-size: 1.2rem; font-weight: 900; text-align: center; }
+.g-slots { display: flex; flex-wrap: wrap; gap: 6px; }
+.g-slots span { padding: 6px 10px; border-radius: 99px; font-size: .9rem; font-weight: 800; background: rgba(255, 255, 255, .08); border: 1px dashed rgba(255, 255, 255, .3); }
+.g-slots span.done { background: rgba(63, 224, 143, .18); border: 1px solid #3fe08f; }
+.jd-slots span { display: grid; justify-items: center; gap: .3vh; min-width: 14vw; padding: 1vh 1.6vw; border-radius: 2vh; }
+.jd-slots span small { font-size: 1.8vh; font-weight: 900; color: #ffc400; text-transform: uppercase; letter-spacing: .04em; }
+.jd-slots span.done { opacity: 1; text-decoration: none; background: rgba(63, 224, 143, .18); border-color: #3fe08f; }
+.jd-slots span.now { border-color: #ffc400; animation: jd-blink .6s ease-in-out infinite alternate; }
+.jd-slots span.on { background: #ffc400; color: #1a1a1a; border-color: #ffc400; }
+.jd-slots span.on small { color: #1a1a1a; }
+.jd-slots span.todo { opacity: .55; }
+@keyframes jd-blink { to { background: rgba(255, 196, 0, .25); } }
+.games-nav .g-plan { display: grid; grid-template-columns: 1fr; justify-items: start; }
+.games-nav .g-slots { justify-content: flex-start; }

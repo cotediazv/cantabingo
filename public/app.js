@@ -1375,7 +1375,8 @@ function activitiesNav(current) {
     ['qr', '<button type="button" data-stage-qr><span>📱</span>QR en pantalla completa</button>'],
   ];
   setTimeout(paintGameNav, 0);
-  return `<div class="act-nav games-nav"><button type="button" class="primary big g-draw" data-game-draw>🎲 Sortear juego</button>
+  return `<div class="act-nav games-nav"><div class="g-plan"><label>¿Cuántos juegos vamos a sortear? <input type="number" class="g-total" min="1" max="10" value="3"></label><div class="g-slots"></div></div>
+    <button type="button" class="primary big g-draw" data-game-draw>🎲 Sortear juego</button>
     <small>Juegos</small><div>${games.filter(([k]) => k !== current).map(([, h]) => h).join('')}</div>
     <small>Otras actividades</small><div>${more.filter(([k]) => k !== current).map(([, h]) => h).join('')}</div></div>`;
 }
@@ -1386,7 +1387,19 @@ async function paintGameNav() {
   const info = GAME_INFO(g.venue);
   document.querySelectorAll('.g-fest').forEach((b) => { b.textContent = info.festival.name; });
   document.querySelectorAll('[data-game]').forEach((el) => { const done = g.played.includes(el.dataset.game); el.classList.toggle('g-played', done); el.title = done ? 'Salió en el último sorteo: queda fuera del próximo' : ''; });
+  // Casilleros de la noche y botón: «Sortear el 2.º juego (de 3)»; al completar, se desactiva
+  document.querySelectorAll('.g-total').forEach((i) => { if (document.activeElement !== i) i.value = g.total; });
+  const slots = [`<span class="done">Inicial · ${info.bingo.icon} Bingo</span>`];
+  for (let i = 0; i < g.total; i++) slots.push(g.list[i] ? `<span class="done">${i + 1}.º · ${info[g.list[i]].icon} ${esc(info[g.list[i]].name)}</span>` : `<span>${i + 1}.º · 🔒</span>`);
+  document.querySelectorAll('.g-slots').forEach((el) => { el.innerHTML = slots.join(''); });
+  const full = g.list.length >= g.total;
+  document.querySelectorAll('[data-game-draw]').forEach((b) => { b.disabled = full; b.textContent = full ? `✔ Ya se sortearon los ${g.total} juegos` : `🎲 Sortear el ${g.list.length + 1}.º juego (de ${g.total})`; });
 }
+document.addEventListener('change', async (e) => {
+  if (!e.target.classList || !e.target.classList.contains('g-total')) return;
+  try { await api('POST', '/api/gamedraw/total', { total: e.target.value }); } catch (err) { fail(err); }
+  paintGameNav();
+});
 document.addEventListener('click', async (e) => {
   const b = e.target.closest('[data-game-draw]');
   if (!b || b.disabled) return;
@@ -1411,19 +1424,30 @@ views.juegoDraw = async (kind) => {
     const info = GAME_INFO(g.venue);
     const win = info[g.last.game];
     const pool = g.last.pool.map((k) => info[k]);
-    // mientras gira la tómbola no se marca cuál salió
-    const listOf = (rolling) => `<div class="jd-list">${g.games.map((k) => `<span class="${k === g.last.game ? (rolling ? '' : 'on') : g.played.includes(k) ? 'done' : ''}">${info[k].icon} ${esc(info[k].name)}</span>`).join('')}</div>`;
+    // Casilleros de la noche (pedido de Cote): juego inicial y 1.º, 2.º… sorteados; los que ya salieron quedan bloqueados
+    // con su juego; el que se está sorteando gira; los que faltan, con candado
+    const listOf = (rolling) => {
+      const cells = [`<span class="done"><small>Juego inicial</small>${info.bingo.icon} Bingo</span>`];
+      for (let i = 0; i < g.total; i++) {
+        const k = g.list[i]; const cur = i === g.list.length - 1;
+        cells.push(!k ? `<span class="todo"><small>${i + 1}.º juego</small>🔒</span>`
+          : cur ? `<span class="${rolling ? 'now' : 'on'}"><small>${i + 1}.º juego</small>${rolling ? '🎲 …' : `${info[k].icon} ${esc(info[k].name)}`}</span>`
+            : `<span class="done"><small>${i + 1}.º juego</small>${info[k].icon} ${esc(info[k].name)}</span>`);
+      }
+      return `<div class="jd-list jd-slots">${cells.join('')}</div>`;
+    };
+    const nth = `${g.list.length}.º juego`;
     const left = ROLL_MS - (Date.now() + (g.offset || 0) - g.last.at);
     if (left > 0) {
       // tómbola: pasan los juegos disponibles cada vez más lento
-      box.innerHTML = `<div class="jd-card"><small>🎲 Sorteo del siguiente juego</small><b class="jd-roll"></b>${listOf(true)}</div>`;
+      box.innerHTML = `<div class="jd-card"><small>🎲 Sorteo del ${nth}</small><b class="jd-roll"></b>${listOf(true)}</div>`;
       let i = 0; let wait = 70;
       const spin = () => { if (!alive || !$('.jd-roll')) return; const x = pool[i++ % pool.length]; $('.jd-roll').textContent = `${x.icon} ${x.name}`; wait *= 1.13; if (Date.now() + (g.offset || 0) - g.last.at < ROLL_MS - 200) timer = setTimeout(spin, wait); else paintWin(); };
       const paintWin = () => { if (alive) paint({ ...g, last: { ...g.last, at: g.last.at - ROLL_MS } }); };
       spin();
       return;
     }
-    box.innerHTML = `<div class="jd-card won"><small>🎲 El siguiente juego es</small><b class="jd-win">${win.icon} ${esc(win.name)}</b>${listOf(false)}</div>`;
+    box.innerHTML = `<div class="jd-card won"><small>🎲 El ${nth} es</small><b class="jd-win">${win.icon} ${esc(win.name)}</b>${listOf(false)}</div>`;
     if (Date.now() - shownAt > 1000) { shownAt = Date.now(); sfx.play('win'); }
   };
   let last = '';
@@ -1431,7 +1455,7 @@ views.juegoDraw = async (kind) => {
     const g = await api('GET', '/api/gamedraw').catch(() => null);
     if (!alive || !g) return;
     g.offset = g.now - Date.now(); // diferencia de reloj con el servidor
-    const key = JSON.stringify([g.last && g.last.at, g.played]);
+    const key = JSON.stringify([g.last && g.last.at, g.played, g.total, g.list]);
     if (key === last) return;
     last = key;
     clearTimeout(timer);

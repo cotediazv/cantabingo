@@ -228,7 +228,7 @@ function closeSession(s) {
 // Se hace al cerrarse la sala (a mano o a las 8 horas) y al crear una nueva.
 function resetEvent() {
   db.people = {};
-  db.gameDraw = { played: [], last: null, rule2: true }; // sorteo del siguiente juego: parte de cero en cada sala
+  db.gameDraw = { played: [], last: null, rule2: true, total: (db.gameDraw || {}).total || 3, list: [] }; // sorteo del siguiente juego: parte de cero en cada sala
   db.raffle = { picked: [], roll: null };
   wheel.clear();
   vote.clear();
@@ -707,11 +707,24 @@ const DRAW_GAMES = ['bingo', 'rosco', 'festival', 'objeto'];
 db.gameDraw ||= { played: [], last: null };
 if (!db.gameDraw.rule2) { db.gameDraw.played = db.gameDraw.last ? [db.gameDraw.last.game] : []; db.gameDraw.rule2 = true; }
 app.get('/api/gamedraw', (_req, res) => res.json({ ...db.gameDraw, games: DRAW_GAMES, venue: (Object.values(db.sessions)[0] || {}).theme || 'frida', now: Date.now() }));
+// Cuántos juegos se sortean esa noche (pedido de Cote): juego inicial (bingo) + 1.º, 2.º, 3.º… sorteados
+db.gameDraw.list ||= [];
+db.gameDraw.total ||= 3;
+app.post('/api/gamedraw/total', requireAdmin, (req, res) => {
+  const n = Math.round(Number((req.body || {}).total));
+  if (!(n >= 1 && n <= 10)) return fail(res, 400, 'Elige entre 1 y 10 juegos');
+  if (n < db.gameDraw.list.length) return fail(res, 400, `Ya se sortearon ${db.gameDraw.list.length} juegos`);
+  db.gameDraw.total = n;
+  save();
+  res.json(db.gameDraw);
+});
 app.post('/api/gamedraw', requireAdmin, (_req, res) => {
   const g = db.gameDraw;
+  if (g.list.length >= g.total) return fail(res, 409, `Ya se sortearon los ${g.total} juegos de la noche`);
   const pool = DRAW_GAMES.filter((x) => !(g.last && g.last.game === x)); // el que salió recién queda fuera de este sorteo
   const game = pool[crypto.randomInt(pool.length)];
   g.played = [game]; // bloqueado solo para el sorteo siguiente
+  g.list.push(game); // queda en su número (1.º, 2.º…) en la pantalla
   g.last = { game, pool, at: Date.now() };
   save();
   if (setStage('juego') === false) return fail(res, 409, 'El Rosco está en juego: el sorteo se verá cuando termine la partida');
