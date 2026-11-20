@@ -34,6 +34,7 @@ Sitio: https://cantabingo.onrender.com · Render (plan Starter, disco de 1 GB) �
 - **Sala principal** (bingo y juegos): una sola abierta a la vez, en `db.sessions`; su escenario (`db.stage`) puede ser `bingo`, `rueda`, `sorteo`, `qr`, `karaoke`, `show`, `voto`, `insta`, `none`.
 - **Salas light** (karaoke, show, cartelera y redes): una por local, **siempre activas** (no se crean ni se cierran; QR fijo), al mismo tiempo que la principal y sin tocarla, en `db.lights[<local>]`; su GC puede mostrar `karaoke`, `show`, `cartelera`, `qr`, `none`.
 - **El Rosco en juego tiene prioridad** (pedido de Cote, 20 nov): mientras un rosco está en juego (empezó, alguien sigue jugando y no hay ganador), la pantalla queda en El Rosco aunque se apriete otra cosa (botones del bingo, escenario a mano, karaoke automático): `roscoLock()` en `server.js` y `inPlay()` en `wheel.js`.
+- **El Rosco en el GC de OBS** (pedido de Cote, 20 nov): el rosco y la pregunta se ven solo desde «Iniciar pregunta» o con el botón «Rosco en pantalla» (`onScreen` en `wheel.js`); con «Incorrecta», «Pasa», reloj agotado o cambio de turno salen al instante y queda solo el marcador. El tablero del local no cambia. Panel: «Rosco en pantalla», «Iniciar pregunta» y Correcta / Incorrecta / Pasa, grandes.
 - Muchas partes usan «la primera sala abierta» (`Object.values(db.sessions)[0]`) como la sala del día: por eso las salas light van aparte.
 
 | Actividad | Servidor | Interfaz |

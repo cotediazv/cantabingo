@@ -153,19 +153,22 @@
           <div id="w-accepted" hidden><p class="w-accepted">✔ Ganador aceptado</p>
             <button class="primary big w-accept" id="w-crowd" data-do="crowdwin">🏅 Mostrar ganador de la Trivia del Rosco</button>
             <div class="vc-read" id="w-crowd-res" hidden></div>${BACK_BINGO}</div>
+          <div class="w-flow">
+            <button class="w-show" id="w-show"></button>
+            <button class="w-go" id="w-clock"></button>
+          </div>
           <div class="w-keys">
-            <button class="w-hit" data-do="hit">✔ Acierto <kbd>A</kbd></button>
-            <button class="w-miss" data-do="miss">✘ Fallo <kbd>F</kbd></button>
-            <button class="w-pass" data-do="pass">↷ Paso <kbd>P</kbd></button>
+            <button class="w-hit" data-do="hit">✔ Correcta <kbd>A</kbd></button>
+            <button class="w-miss" data-do="miss">✘ Incorrecta <kbd>F</kbd></button>
+            <button class="w-pass" data-do="pass">↷ Pasa <kbd>P</kbd></button>
           </div>
           <div class="row" style="margin-top:14px">
-            <button class="primary" id="w-clock"></button>
             <button data-do="undo" id="w-undo">↶ Deshacer</button>
             <button data-do="turn" id="w-swap">Cambiar turno</button>
             <button class="danger" id="w-reset">Reiniciar</button>
             ${fromBank ? '<button id="w-newq">↻ Preguntas nuevas</button>' : ''}
           </div>
-          <p class="muted small" style="margin-top:12px">Teclado: A acierto, F fallo, P paso, Espacio inicia o pausa las preguntas y el reloj. Toca una letra del rosco para saltar a ella o reabrirla.</p>
+          <p class="muted small" style="margin-top:12px">Teclado: A correcta, F incorrecta, P pasa, Espacio inicia o pausa la pregunta y el reloj. En el GC, el rosco aparece al iniciar la pregunta y sale solo con «Incorrecta» o «Pasa» (queda el marcador). Toca una letra del rosco para saltar a ella o reabrirla.</p>
         </div>
         <div class="panel"><div class="wheels" id="w-wheels"></div></div>
       </div>
@@ -181,7 +184,7 @@
       const q = (questions[st.turn] || [])[c.current] || {};
       // La pregunta y su respuesta se muestran al moderador solo con el reloj en marcha
       $('#w-question').innerHTML = !c.active ? (st.tie ? (st.tie.rolling ? '<b>Sorteando el desempate…</b> Mira la pantalla.' : `<b>Hay un empate</b> entre ${st.tie.names.map(esc).join(' y ')}: mismos aciertos y fallos. Primero desempata por sorteo.`) : st.winner ? (st.winAccepted ? `<b>${st.winner.full ? '¡Rosco completo!' : '¡Tenemos ganador!'}</b> El nombre del ganador queda abajo al centro de la pantalla.` : `<b>${st.winner.full ? '¡Rosco completo!' : `¡Gana ${esc(st.winner.name)}!`}</b> ${st.winner.byDraw ? 'Salió elegido en el desempate.' : 'La partida se detuvo y en pantalla se muestra la felicitación.'} Pulsa «Aceptar ganador», o Deshacer si fue un error.`) : '<span class="muted">Este concursante ya terminó su rosco.</span>')
-        : !st.runningSince ? '<span class="muted">Pulsa «Iniciar preguntas» para ver la pregunta de esta letra.</span>'
+        : !st.runningSince ? '<span class="muted">Pulsa «Iniciar pregunta» para ver la pregunta de esta letra.</span>'
         : q.q ? `${q.cat ? `<div class="small muted" style="margin-bottom:6px">${TAGS[q.cat]} · ${q.level === 'f' ? 'Fácil' : 'Medio'}</div>` : ''}<div class="w-qtext">${esc(q.q)}</div>${q.a ? `<div class="w-answer"><small>Respuesta</small><b>${esc(q.a)}</b></div>` : ''}` : '<span class="muted">Sin pregunta cargada para esta letra: léela de tu guion.</span>';
       $('#w-accept').hidden = !st.winner || st.winAccepted;
       $('#w-tie').hidden = !st.tie || st.tie.rolling;
@@ -190,7 +193,11 @@
       $('#w-crowd-res').hidden = !st.crowdWinner;
       if (st.crowdWinner) $('#w-crowd-res').innerHTML = `<small>Ganó la Trivia del Rosco</small><b>${esc(st.crowdWinner.name)}</b><i>${st.crowdWinner.score} puntos · ${st.crowdWinner.hits} aciertos</i><small>Jugaron ${st.crowdWinner.players} personas</small>`;
       $$('.w-keys button').forEach((b) => { b.disabled = !c.active; });
-      $('#w-clock').textContent = st.runningSince ? '⏸ Pausar' : '▶ Iniciar preguntas';
+      $('#w-clock').textContent = st.runningSince ? '⏸ Pausar' : '▶ Iniciar pregunta';
+      $('#w-clock').classList.toggle('on', !!st.runningSince);
+      $('#w-show').textContent = st.onScreen ? '📺 Rosco en pantalla: SÍ · quitar' : '📺 Poner rosco en pantalla';
+      $('#w-show').classList.toggle('on', !!st.onScreen);
+      $('#w-show').disabled = !!st.runningSince || !!st.winner;
       $('#w-clock').disabled = !c.active;
       $('#w-undo').disabled = !st.canUndo;
       $('#w-swap').hidden = st.players.length < 2;
@@ -204,6 +211,7 @@
       if (g) act('select', { index: Number(g.dataset.letter), player: Number(g.dataset.player) });
     };
     $('#w-clock').onclick = toggleClock;
+    $('#w-show').onclick = () => act('show', { on: !st.onScreen });
     $('#w-tie').onclick = async () => { try { await api('POST', `/api/wheels/${id}/tiebreak`); } catch (err) { fail(err); } };
     $('#w-reset').onclick = () => { if (confirm('¿Reiniciar el rosco? Se borran aciertos, fallos y relojes.')) act('reset'); };
     if (fromBank) $('#w-newq').onclick = async () => {
@@ -381,13 +389,14 @@
       wonBy = null; clearTimeout(winTimer); clearTimeout(shrinkTimer);
       if (kind === 'obs') {
         // En OBS: solo la rueda del concursante en turno, con el centro libre para su cámara,
-        // y el reloj con el marcador en una esquina.
+        // y el reloj con el marcador en una esquina. Pedido de Cote: el rosco y la pregunta se ven desde «Iniciar pregunta»
+        // (o con el botón «Rosco en pantalla»); con un fallo o un paso salen al instante y queda solo el marcador.
         $('#pw').innerHTML = `<div class="obs-corner">${st.players.map((c, i) => `<div class="obs-player ${i === st.turn && !st.finished ? 'on' : ''}">
             <span class="obs-clock" data-timer="${i}">${clock(c.remainingMs)}</span>
             <span class="obs-name">${esc(c.name)}</span>
             <span class="obs-score"><b class="ok">✔ ${c.hits}</b> <b class="ko">✘ ${c.misses}</b></span></div>`).join('')}</div>
-          <div class="obs-wheel">${wheelSVG(st, st.turn, false, true)}</div>
-          <div class="obs-side">${questionCard(st)}${revealCard(st, 'obs-reveal')}</div>`;
+          ${st.onScreen ? `<div class="obs-wheel">${wheelSVG(st, st.turn, false, true)}</div>
+          <div class="obs-side">${questionCard(st)}${revealCard(st, 'obs-reveal')}</div>` : ''}`;
         lastQuestion = st.question;
         scheduleRevealEnd(st);
         return;

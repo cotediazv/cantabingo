@@ -1875,3 +1875,13 @@ body.full #app { z-index: auto; }
 .lg-info .lg-main .lg-line { font-size: 3.4vh; font-weight: 800; line-height: 1.35; }
 .lg-info .lg-main .lg-line em { margin-left: .2em; }
 .lg-info .lg-tag { width: 34vh; white-space: normal; }
+
+/* Panel de El Rosco (pedido de Cote): «Rosco en pantalla», «Iniciar pregunta» y abajo Correcta / Incorrecta / Pasa,
+   grandes y fáciles de ver */
+.w-flow { display: grid; gap: 10px; margin: 14px 0 10px; }
+.w-flow button { padding: 16px 10px; font-size: 1.15rem; font-weight: 800; border-radius: 16px; }
+.w-show { background: rgba(255, 255, 255, .08); color: #fff; border: 2px solid rgba(255, 255, 255, .25); }
+.w-show.on { background: #0a9a94; border-color: #0a9a94; }
+.w-go { padding: 22px 10px !important; font-size: 1.5rem !important; background: #ffc400; color: #1a1a1a; border: 0; }
+.w-go.on { background: #ff7a1a; color: #fff; }
+.w-keys button { padding: 26px 8px; font-size: 1.35rem; font-weight: 900; }

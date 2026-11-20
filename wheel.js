@@ -61,7 +61,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     const c = w.players[w.turn];
     if (w.runningSince || !active(c)) return;
     w.runningSince = Date.now();
-    timers[w.id] = setTimeout(() => { settle(w); passTurn(w); broadcast(w); }, c.remainingMs + 30);
+    timers[w.id] = setTimeout(() => { settle(w); w.onScreen = false; passTurn(w); broadcast(w); }, c.remainingMs + 30);
   }
   // Avanza a la siguiente letra abierta del concursante; false si ya no le quedan
   function nextLetter(c) {
@@ -181,8 +181,9 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
         w.reveal = action === 'hit' && solved ? { letter: w.letters[c.current], answer: solved, at: Date.now() } : null;
         c.status[c.current] = action;
         const more = nextLetter(c);
-        if (!more) { settle(w); if (winnerOf(w) < 0) passTurn(w); } // terminó su rosco; si lo completó, la partida se detiene
-        else if (action !== 'hit') { settle(w); passTurn(w); } // fallo o paso: el reloj se detiene siempre y sigue otro, si queda alguno
+        if (!more) { settle(w); w.onScreen = false; if (winnerOf(w) < 0) passTurn(w); } // terminó su rosco; si lo completó, la partida se detiene
+        else if (action !== 'hit') { settle(w); w.onScreen = false; passTurn(w); } // fallo o paso: el reloj se detiene siempre y sigue otro, si queda alguno
+        // (pedido de Cote: con un fallo o un paso el rosco sale al instante del GC y queda solo el marcador, hasta la próxima pregunta)
         return null;
       }
       case 'crowdwin': { // el animador da a conocer al ganador del público
@@ -198,9 +199,10 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
         w.winAccepted = true; w.winAcceptedAt = Date.now();
         if (db.stage === 'sorteo') setStage('rueda'); // tras un desempate, la pantalla vuelve al rosco
         return null;
-      case 'start': run(w); return null;
+      case 'start': run(w); if (w.runningSince) w.onScreen = true; return null; // «Iniciar pregunta»: el rosco vuelve al GC
+      case 'show': w.onScreen = b.on !== false; return null; // botón «Rosco en pantalla» (sin correr el tiempo)
       case 'pause': settle(w); return null;
-      case 'turn': remember(w); settle(w); w.turn = (w.turn + 1) % w.players.length; return null;
+      case 'turn': remember(w); settle(w); w.onScreen = false; w.turn = (w.turn + 1) % w.players.length; return null;
       case 'select': {
         const i = clamp(b.index, 0, w.letters.length - 1, -1);
         const p = w.players[clamp(b.player, 0, w.players.length - 1, w.turn)];
@@ -219,13 +221,14 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
         w.reveal = null; w.winAccepted = false; w.tieWinner = null;
         return null;
       }
-      case 'reset': settle(w); if (w.crowd) { w.crowd.ans = {}; w.crowd.shown = {}; w.crowd.winner = null; } w.winAccepted = false; w.tieWinner = null; w.history = []; w.turn = 0; w.reveal = null; w.players = freshPlayers(w); return null;
+      case 'reset': settle(w); w.onScreen = false; if (w.crowd) { w.crowd.ans = {}; w.crowd.shown = {}; w.crowd.winner = null; } w.winAccepted = false; w.tieWinner = null; w.history = []; w.turn = 0; w.reveal = null; w.players = freshPlayers(w); return null;
       default: return 'Acción desconocida';
     }
   }
 
   const publicState = (w) => ({
     id: w.id, name: w.name, letters: w.letters, seconds: w.seconds, turn: w.turn, runningSince: w.runningSince, now: Date.now(),
+    onScreen: !!(w.onScreen || w.runningSince), // el rosco se ve en el GC (con el tiempo corriendo o con el botón «Rosco en pantalla»)
     finished: !w.players.some(active), canUndo: w.history.length > 0,
     winner: winnerOf(w) >= 0 ? { name: w.players[winnerOf(w)].name, full: w.players[winnerOf(w)].status.every((x) => x === 'hit'),
       hits: count(w.players[winnerOf(w)], 'hit'), misses: count(w.players[winnerOf(w)], 'miss'), byDraw: leaders(w).length > 1 } : null,
