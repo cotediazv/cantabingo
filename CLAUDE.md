@@ -11,7 +11,7 @@ Sitio: https://cantabingo.onrender.com · Render (plan Starter, disco de 1 GB) �
 - No publicar durante un evento en vivo salvo que él lo pida. No repetir el aviso de que cada publicación reinicia el servicio.
 - Cuida el consumo: si pide conversar primero, conversar antes de hacer trabajo pesado.
 - El juego se llama **"El Rosco"**. Nunca usar el nombre del programa de TV (marca registrada).
-- **El QR siempre es para entrar a la sala**, nunca a Instagram ni a formularios. Los textos dicen "desde tu celular", no "escanea el QR".
+- **El QR siempre es para entrar a la sala**, nunca a Instagram ni a formularios. Junto al QR, la frase es siempre **«Escanea el código QR con tu celular»** (pedido de Cote, 20 nov; reemplaza a «Únete desde tu celular», «Únete a la sesión», «Escanea y juega»). Al abrir la sala: «Escanea el código QR con tu celular, pon tu nombre, apellido y participa».
 - Paneles simples. Lo que el animador lee en voz alta va grande y destacado.
 - Estética: mantener el aspecto nuevo de la Sala de juegos. Colores del bingo: Frida magenta, Kennedy celeste, Tobalaba rojo.
 - La sala se llama "Los Juegos de <local>"; dentro del bingo el título es "El Bingo de <local>".

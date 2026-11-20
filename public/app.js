@@ -1363,7 +1363,7 @@ document.addEventListener('click', async (e) => {
 function joinQr(spot) {
   let el = document.getElementById('join-qr');
   if (!spot) { if (el) el.remove(); return; }
-  if (!el) { el = document.createElement('div'); el.id = 'join-qr'; el.innerHTML = `${qr(joinUrl())}<b>Únete a la sesión</b>`; document.body.appendChild(el); }
+  if (!el) { el = document.createElement('div'); el.id = 'join-qr'; el.innerHTML = `${qr(joinUrl())}<b>Escanea el código QR con tu celular</b>`; document.body.appendChild(el); }
   el.className = `join-qr ${spot}`;
 }
 

@@ -105,7 +105,7 @@
     // Sin sesión activa: queda solo el QR arriba a la derecha, sobre fondo transparente
     const idle = () => {
       $('#gc').className = 'th-frida';
-      $('#gc').innerHTML = `<div class="gc-qr">${qr(joinUrl())}</div><div class="gc-idle-label">Escanea y prepárate</div>`;
+      $('#gc').innerHTML = `<div class="gc-qr">${qr(joinUrl())}</div><div class="gc-idle-label">Escanea el código QR con tu celular y prepárate</div>`;
     };
     // Sigue siempre a la sesión activa más reciente; sin sesión, la gráfica queda vacía (transparente)
     const follow = async () => {

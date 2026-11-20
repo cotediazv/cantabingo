@@ -1942,3 +1942,6 @@ body.full #app { z-index: auto; }
 body.full::before { top: -20%; right: -20%; bottom: -20%; left: -20%; }
 /* Enlace corto de cada pantalla (pedido de Cote) */
 .vt-short { font-weight: 800; color: #ffc400; }
+/* QR del tablero del bingo: la frase «Escanea el código QR con tu celular y juega» completa (pedido de Cote) */
+.fb-qr > span { font-size: 1.9vh; line-height: 1.15; }
+#fb .fb-qr > span { font-size: min(1.9vh, 1.7vw); line-height: 1.15; }

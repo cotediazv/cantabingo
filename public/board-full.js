@@ -73,7 +73,7 @@
         <section class="fb-board">${rows}</section>
         <aside class="fb-side">
           <div class="fb-figure"><span>Figura</span><div class="gc-grid">${figure}</div><b>${esc(PATTERNS.byId[id].name)}</b></div>
-          <div class="fb-qr">${qr(joinUrl())}<span>Escanea y juega</span></div>
+          <div class="fb-qr">${qr(joinUrl())}<span>Escanea el código QR con tu celular y juega</span></div>
         </aside>`;
     };
 
