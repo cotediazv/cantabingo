@@ -3,6 +3,7 @@
 // Se escribe en el mismo formato de la cartelera mensual, así basta con pegarla cada mes:
 //   Jueves: 19:00 Música / 20:00 Previa / 20:30 Bingo / 21:00 Stand Up / Karaoke 22:00 / 00:30 fiesta
 //   Jue 5 - Stand Up: ALEX ORTIZ
+const clock = require('../../core/clock'); // hora del sistema (en las pruebas se puede simular otro día)
 const TZ = 'America/Santiago';
 const NIGHT_STARTS = 6; // la «noche» cambia a las 6 AM, igual que en el sistema de karaoke
 const VENUES = { frida: 'Frida Kahlo', kennedy: 'Kennedy', tobalaba: 'Tobalaba' };
@@ -98,7 +99,7 @@ module.exports = function agenda({ app, db, save, requireAdmin, fail, currentVen
 
   // Fecha y hora de Chile de la «noche» en curso
   function nightNow() {
-    const now = process.env.AGENDA_NOW ? new Date(process.env.AGENDA_NOW) : new Date();
+    const now = process.env.AGENDA_NOW ? new Date(process.env.AGENDA_NOW) : clock.date();
     const parts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(now).map((p) => [p.type, p.value]));
     const hour = Number(parts.hour);
     const local = new Date(Date.UTC(Number(parts.year), Number(parts.month) - 1, Number(parts.day)));

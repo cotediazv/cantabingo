@@ -3,6 +3,7 @@
 // Se guarda aparte (db.light), no junto a las salas del bingo: así nada de la sala principal cambia.
 // Show, cartelera y horarios se leen de la GLOSA a través del GC Show de cada local (?modo=json).
 const crypto = require('crypto');
+const clock = require('../../core/clock'); // hora del sistema (en las pruebas se puede simular otro día)
 
 const VENUES = { frida: 'Frida Kahlo', kennedy: 'Kennedy', tobalaba: 'Tobalaba' };
 // GC Show de cada local (Apps Script que lee la GLOSA)
@@ -48,11 +49,11 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
     return { y: +p.year, m: +p.month, d: +p.day, h: +p.hour, min: +p.minute };
   };
   const night = (offsetDays = 0) => {
-    const now = parts(new Date());
+    const now = parts(clock.date());
     const base = new Date(Date.UTC(now.y, now.m - 1, now.d + offsetDays - (now.h < NIGHT_STARTS ? 1 : 0)));
     return { y: base.getUTCFullYear(), m: base.getUTCMonth() + 1, d: base.getUTCDate(), dow: base.getUTCDay() };
   };
-  const minutesNow = () => { const p = parts(new Date()); return (p.h < NIGHT_STARTS ? p.h + 24 : p.h) * 60 + p.min; };
+  const minutesNow = () => { const p = parts(clock.date()); return (p.h < NIGHT_STARTS ? p.h + 24 : p.h) * 60 + p.min; };
   const toMin = (hora) => { const m = String(hora).match(/(\d{1,2})[:.](\d{2})/); if (!m) return null; const h = +m[1]; return (h < NIGHT_STARTS ? h + 24 : h) * 60 + +m[2]; };
 
   // ---------- GLOSA ----------

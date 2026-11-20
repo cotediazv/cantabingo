@@ -2,6 +2,7 @@
 // maneja el sistema de Google (Forms + planilla + AppSheet). Aquí no se guarda ni se modifica
 // ningún pedido: solo se lee la lista que entrega la web app de Apps Script de cada local
 // (.../exec?modo=json) y se reparte a las pantallas.
+const clock = require('../../core/clock'); // hora del sistema (en las pruebas se puede simular otro día)
 const VENUES = {
   frida: 'Frida Kahlo',
   kennedy: 'Kennedy',
@@ -40,7 +41,7 @@ module.exports = function karaoke({ app, db, save, requireAdmin, requireLocal = 
   db.karaoke.manual ||= {}; // local -> { on, last }
   const inHours = (v) => {
     const h = HOURS[v]; if (!h) return false;
-    const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(new Date()).map((x) => [x.type, x.value]));
+    const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(clock.date()).map((x) => [x.type, x.value]));
     const min = +p.hour * 60 + +p.minute;
     if (h.days.includes(p.weekday) && min >= h.from && min < Math.min(h.to, 24 * 60)) return true;
     return h.to > 24 * 60 && h.days.includes(PREV[p.weekday]) && min < h.to - 24 * 60; // pasada la medianoche

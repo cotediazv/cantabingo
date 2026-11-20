@@ -9,6 +9,7 @@ const net = require('net');
 
 const ROOT = path.join(__dirname, '..');
 const ADMIN = { user: 'mod', pass: 'clave-prueba' };
+const QUIET = '2026-11-25T10:00:00-03:00';
 
 const freePort = () => new Promise((resolve, reject) => {
   const srv = net.createServer();
@@ -24,7 +25,9 @@ async function startServer({ env = {}, data, port: fixedPort } = {}) {
   const port = fixedPort || await freePort();
   const child = spawn(process.execPath, ['server.js'], {
     cwd: ROOT,
-    env: { ...process.env, PORT: String(port), DATA_FILE: dataFile, ADMIN_USER: ADMIN.user, ADMIN_PASS: ADMIN.pass, KARAOKE_CLAVE: '', ...env },
+    // KRB_FECHA: un miércoles a media mañana, cuando no corre nada automático (salas, karaoke del jueves).
+    // Las pruebas de horarios ponen otra fecha.
+    env: { ...process.env, PORT: String(port), DATA_FILE: dataFile, ADMIN_USER: ADMIN.user, ADMIN_PASS: ADMIN.pass, KARAOKE_CLAVE: '', KRB_FECHA: QUIET, ...env },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   let log = '';

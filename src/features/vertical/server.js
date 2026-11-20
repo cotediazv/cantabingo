@@ -7,6 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { spawn } = require('child_process');
+const clock = require('../../core/clock'); // hora del sistema (en las pruebas se puede simular otro día)
 
 // Programa para recomprimir los videos (pedido de Cote: que pesen lo menos posible sin perder calidad). Viene con el
 // proyecto (paquete ffmpeg-static); si no está, se usa el ffmpeg del sistema; si tampoco, el video queda tal cual.
@@ -125,7 +126,7 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
   const NEXT = { Thu: 'Fri', Fri: 'Sat', Sat: 'Sun' };
   setInterval(() => {
     const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
-      .formatToParts(new Date()).map((x) => [x.type, x.value]));
+      .formatToParts(clock.date()).map((x) => [x.type, x.value]));
     const min = +p.hour * 60 + +p.minute;
     const day = `${p.year}-${p.month}-${p.day}`;
     for (const [v, s] of Object.entries(SCHEDULE)) {
