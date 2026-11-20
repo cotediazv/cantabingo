@@ -228,7 +228,7 @@ function closeSession(s) {
 // Se hace al cerrarse la sala (a mano o a las 8 horas) y al crear una nueva.
 function resetEvent() {
   db.people = {};
-  db.gameDraw = { played: ['bingo'], last: null }; // sorteo del siguiente juego: cada sala parte con un bingo, que cuenta como jugado
+  db.gameDraw = { played: [], last: null, rule2: true }; // sorteo del siguiente juego: parte de cero en cada sala
   db.raffle = { picked: [], roll: null };
   wheel.clear();
   vote.clear();
@@ -699,19 +699,19 @@ app.get('/api/consola', requireAdmin, async (_req, res) => {
 // Programación del local del día: el de la sala abierta o, si no hay, el elegido en la sección Karaoke
 require('./agenda.js')({ app, db, save, requireAdmin, fail, currentVenue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
 
-// Sorteo del siguiente juego (pedido de Cote): la sala siempre parte con un bingo (cuenta como jugado). Después se sortea
-// entre todos los juegos (Bingo, El Rosco, El Festival y El objeto más extraño); el que sale queda fuera del sorteo hasta
-// que salgan los demás. El sorteo se ve en el tablero y en el GC (escenario «juego»).
+// Sorteo del siguiente juego (pedido de Cote): la sala parte con un bingo; después se sortea entre todos los juegos
+// (Bingo, El Rosco, El Festival y El objeto más extraño; el karaoke no es un juego), el bingo incluido desde el primer
+// sorteo. El juego que sale queda bloqueado solo para el sorteo siguiente y después vuelve a estar disponible.
+// El sorteo se ve en el tablero y en el GC (escenario «juego»).
 const DRAW_GAMES = ['bingo', 'rosco', 'festival', 'objeto'];
-db.gameDraw ||= { played: ['bingo'], last: null };
-if (!db.gameDraw.bingoIn) { if (!db.gameDraw.played.includes('bingo')) db.gameDraw.played.unshift('bingo'); db.gameDraw.bingoIn = true; }
+db.gameDraw ||= { played: [], last: null };
+if (!db.gameDraw.rule2) { db.gameDraw.played = db.gameDraw.last ? [db.gameDraw.last.game] : []; db.gameDraw.rule2 = true; }
 app.get('/api/gamedraw', (_req, res) => res.json({ ...db.gameDraw, games: DRAW_GAMES, venue: (Object.values(db.sessions)[0] || {}).theme || 'frida', now: Date.now() }));
 app.post('/api/gamedraw', requireAdmin, (_req, res) => {
   const g = db.gameDraw;
-  let pool = DRAW_GAMES.filter((x) => !g.played.includes(x));
-  if (!pool.length) { g.played = []; pool = [...DRAW_GAMES]; } // ya salieron todos: vuelven a estar disponibles
+  const pool = DRAW_GAMES.filter((x) => !(g.last && g.last.game === x)); // el que salió recién queda fuera de este sorteo
   const game = pool[crypto.randomInt(pool.length)];
-  g.played.push(game);
+  g.played = [game]; // bloqueado solo para el sorteo siguiente
   g.last = { game, pool, at: Date.now() };
   save();
   if (setStage('juego') === false) return fail(res, 409, 'El Rosco está en juego: el sorteo se verá cuando termine la partida');

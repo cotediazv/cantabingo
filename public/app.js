@@ -1386,7 +1386,7 @@ async function paintGameNav() {
   if (!g) return;
   const info = GAME_INFO(g.venue);
   document.querySelectorAll('.g-fest').forEach((b) => { b.textContent = info.festival.name; });
-  document.querySelectorAll('[data-game]').forEach((el) => { const done = g.played.includes(el.dataset.game); el.classList.toggle('g-played', done); el.title = done ? 'Ya salió en el sorteo' : ''; });
+  document.querySelectorAll('[data-game]').forEach((el) => { const done = g.played.includes(el.dataset.game); el.classList.toggle('g-played', done); el.title = done ? 'Salió en el último sorteo: queda fuera del próximo' : ''; });
 }
 document.addEventListener('click', async (e) => {
   const b = e.target.closest('[data-game-draw]');
