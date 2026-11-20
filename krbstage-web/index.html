@@ -639,7 +639,11 @@ html.modo-obs{color-scheme:dark}
 html.modo-obs,html.modo-obs body{background:transparent!important}
 html.modo-obs body>*:not(.visor){display:none!important}
 html.modo-obs .visor{background:transparent}
-html.modo-obs .visor-top{position:relative;z-index:3;background:color-mix(in srgb,var(--c) 50%,#000);border-bottom-color:#fff}
+html.modo-obs .visor-top{position:relative;z-index:3;background:color-mix(in srgb,var(--c) 22%,#000);border-bottom:4px solid var(--c);padding:14px 28px 12px}
+/* (pedido de Cote) franja de arriba de otro color que el fondo y letras grandes que ocupan todo el ancho */
+html.modo-obs .vt-txt{gap:8px}html.modo-obs .vt-l1{gap:24px;align-items:center}
+html.modo-obs .vt-local{font-size:64px}html.modo-obs .vt-estado{font-size:24px}html.modo-obs .vt-fecha{font-size:32px}
+html.modo-obs .vt-l2{font-size:36px;gap:6px 30px;overflow:hidden}html.modo-obs .vt-l2 span{white-space:nowrap}
 html.modo-obs .vt-local,html.modo-obs .vt-estado,html.modo-obs .vt-l2 b{color:#fff}html.modo-obs .vt-fecha{color:rgba(255,255,255,.85)}html.modo-obs .visor-punto.on{background:#fff}
 html.modo-obs .obs-hueco{background:transparent!important;z-index:1}
 html.modo-obs .visor-slide.actual .obs-hueco{box-shadow:0 0 0 200vmax color-mix(in srgb,var(--c) 50%,#000)} /* fondo del color del local (pedido de Cote) */
@@ -1652,6 +1656,10 @@ elegirLocal('kennedy');
   function cinta(){
     if(!visor)return;const l2=visor.querySelector('.vt-l2');if(!l2||!visor._prog)return;
     l2.classList.remove('mueve');l2.innerHTML=visor._prog;
+    // modo OBS: el programa ocupa todo el ancho en una línea; si no cabe, la letra se achica (sin cinta)
+    if(MODO_OBS){let t=40;l2.style.fontSize=t+'px';while(l2.scrollWidth>l2.clientWidth+2&&t>18){t-=1;l2.style.fontSize=t+'px'}
+      const l1=visor.querySelector('.vt-l1'),n=l1&&l1.querySelector('.vt-local');if(n){let f=64;n.style.fontSize=f+'px';while(l1.scrollWidth>l1.clientWidth+2&&f>32){f-=2;n.style.fontSize=f+'px'}}
+      if(!visor._ajust){visor._ajust=1;ajustarVisor();visor._ajust=0}return}
     if(l2.scrollWidth<=l2.clientWidth+2)return;
     l2.innerHTML=`<div class="vt-cinta"><span>${visor._prog}</span><span aria-hidden="true">${visor._prog}</span></div>`;
     const w=l2.querySelector('.vt-cinta>span').offsetWidth;l2.querySelector('.vt-cinta').style.animationDuration=Math.max(8,w/45)+'s';
