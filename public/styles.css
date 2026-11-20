@@ -1968,3 +1968,8 @@ body.full[data-venue="kennedy"]::before {
 .obs-flash em { font-style: normal; font-size: 6.4vh; font-weight: 900; line-height: 1.05; color: #ffe14d; text-transform: uppercase; text-shadow: .4vh .4vh 0 rgba(0, 0, 0, .3); overflow-wrap: anywhere; }
 @keyframes flashpop { from { transform: translate(-50%, -50%) scale(.6); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .obs-flash { animation: none; } }
+
+/* Neuronas en el GC de OBS (pedido de Cote): encima de los recuadros, solo dentro de ellos, aclarando el color (no tapa
+   el texto ni la cámara: fuera de los recuadros el lienzo queda transparente) */
+#neural-bg.neural-gc { z-index: 30; mix-blend-mode: screen; opacity: .55; }
+#neural-bg.neural-gc { opacity: .8; }

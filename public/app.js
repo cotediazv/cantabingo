@@ -1483,63 +1483,99 @@ setTimeout(syncVenueMark, 700);
 // web krbstage.cl). Puntos de colores que se mueven lento, unidos por líneas finas, con impulsos que viajan
 // de un punto a otro cercano. Va encima del fondo de colores y debajo de todo lo demás; solo en el tablero.
 const neuralBg = (() => {
-  const COLORS = ['#47b8e6', '#e0338f', '#e5413a', '#f3eee6', '#f4bf5a'];
-  let c = null; let x = null; let W = 0; let H = 0; let k = 1; let pts = []; let pulses = []; let raf = 0;
+  // Pedido de Cote (20 nov): el efecto de neuronas de krbstage.cl, más visible y con los colores del local, de fondo en las
+  // pantallas (body.full) y, en el GC de OBS (body.obs), solo dentro de los recuadros (nunca sobre la cámara ni sobre el QR).
+  // Se dibuja en el aparato que muestra la pantalla (no en el servidor), a 30 cuadros por segundo como máximo, y con menos
+  // puntos en aparatos con poca memoria (decodificadores).
+  const PALETTES = {
+    frida: ['#47b8e6', '#e0338f', '#e5413a', '#f3eee6', '#f4bf5a'],
+    tobalaba: ['#ff4d4d', '#ff9a3d', '#ffd166', '#f3eee6', '#e8262e'],
+    kennedy: ['#35c6ff', '#1487cf', '#7fdcff', '#f3eee6', '#f4bf5a'],
+  };
+  // Recuadros de los GC donde va el efecto; los QR quedan siempre limpios
+  const BOXES = '.gc-top, .gc-bottom, .gc-people, .gc-draw, .gc-figure, .obs-player, .obs-question, .obs-rank, .rosco-winlow, .lg-card, .kg-tag, .kg-now, .kg-next, .sg-tag, .sg-main, .vg-tag, .vg-main, .vg-side, .vg-list, .vg-duel';
+  const NO_FX = '.gc-qr, .kg-qr, .vg-qr, .lg-qrbox, .qr';
+  const weak = (navigator.deviceMemory && navigator.deviceMemory <= 2) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2);
+  let c = null; let x = null; let mode = ''; let W = 0; let H = 0; let k = 1; let pts = []; let pulses = []; let raf = 0; let last = 0;
+  let colors = PALETTES.frida; let boxes = []; let holes = []; let boxesAt = 0;
   const build = () => {
     const dpr = Math.min(2, devicePixelRatio || 1);
     W = innerWidth; H = innerHeight; c.width = W * dpr; c.height = H * dpr; x.setTransform(dpr, 0, 0, dpr, 0, 0);
-    k = Math.max(1, Math.min(W, H) / 900); // en pantallas grandes, todo un poco más grande
-    const n = Math.round(Math.min(120, (W * H) / (11000 * k * k)));
-    pts = Array.from({ length: n }, () => ({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - 0.5) * 0.22 * k, vy: (Math.random() - 0.5) * 0.22 * k, c: COLORS[Math.floor(Math.random() * COLORS.length)] }));
+    k = Math.max(1, Math.min(W, H) / 700); // más grande que antes (pedido de Cote)
+    let n = Math.round(Math.min(110, (W * H) / (13000 * k * k)));
+    if (mode === 'gc') n = Math.round(n * 2.6); // en el GC solo se ve dentro de los recuadros: más puntos para que se note
+    if (weak) n = Math.round(n * 0.55);
+    pts = Array.from({ length: n }, () => ({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - 0.5) * 0.5 * k, vy: (Math.random() - 0.5) * 0.5 * k, c: Math.floor(Math.random() * 5) }));
     pulses = [];
   };
+  const readBoxes = () => {
+    boxes = Array.from(document.querySelectorAll(BOXES)).map((e) => ({ r: e.getBoundingClientRect(), rad: parseFloat(getComputedStyle(e).borderRadius) || 0 })).filter((b) => b.r.width > 0 && b.r.height > 0);
+    holes = Array.from(document.querySelectorAll(NO_FX)).map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0);
+    boxesAt = Date.now();
+  };
+  const path = (r, rad) => { if (x.roundRect) x.roundRect(r.left, r.top, r.width, r.height, Math.min(rad, r.height / 2)); else x.rect(r.left, r.top, r.width, r.height); };
   const draw = () => {
-    const R = 140 * k;
+    const R = 170 * k;
     x.clearRect(0, 0, W, H);
-    x.lineWidth = k;
+    if (mode === 'gc') {
+      if (Date.now() - boxesAt > 600) readBoxes();
+      if (!boxes.length) return;
+      x.save(); x.beginPath(); for (const b of boxes) path(b.r, b.rad); x.clip();
+    }
+    x.lineWidth = 1.6 * k;
     for (let i = 0; i < pts.length; i++) {
       const a = pts[i];
       for (let j = i + 1; j < pts.length; j++) {
         const b = pts[j]; const d = Math.hypot(a.x - b.x, a.y - b.y);
-        if (d < R) { x.strokeStyle = `rgba(243,238,230,${(1 - d / R) * 0.24})`; x.beginPath(); x.moveTo(a.x, a.y); x.lineTo(b.x, b.y); x.stroke(); }
+        if (d < R) { x.strokeStyle = `rgba(243,238,230,${(1 - d / R) * (mode === 'gc' ? 0.45 : 0.38)})`; x.beginPath(); x.moveTo(a.x, a.y); x.lineTo(b.x, b.y); x.stroke(); }
       }
     }
     for (const p of pulses) {
       const px = p.a.x + (p.b.x - p.a.x) * p.t; const py = p.a.y + (p.b.y - p.a.y) * p.t;
-      x.strokeStyle = `${p.a.c}66`; x.beginPath(); x.moveTo(p.a.x, p.a.y); x.lineTo(px, py); x.stroke();
-      x.fillStyle = p.a.c; x.beginPath(); x.arc(px, py, 3 * k, 0, 7); x.fill();
+      x.strokeStyle = `${colors[p.a.c]}aa`; x.lineWidth = 2.2 * k; x.beginPath(); x.moveTo(p.a.x, p.a.y); x.lineTo(px, py); x.stroke();
+      x.fillStyle = colors[p.a.c]; x.beginPath(); x.arc(px, py, 5 * k, 0, 7); x.fill();
     }
-    x.globalAlpha = 0.8;
-    for (const a of pts) { x.fillStyle = a.c; x.beginPath(); x.arc(a.x, a.y, 2.4 * k, 0, 7); x.fill(); }
+    x.globalAlpha = 0.9;
+    for (const a of pts) { x.fillStyle = colors[a.c]; x.beginPath(); x.arc(a.x, a.y, 4 * k, 0, 7); x.fill(); }
     x.globalAlpha = 1;
+    if (mode === 'gc') { x.restore(); for (const h of holes) x.clearRect(h.left - 2, h.top - 2, h.width + 4, h.height + 4); }
   };
   const newPulse = () => {
+    if (!pts.length) return;
     const a = pts[Math.floor(Math.random() * pts.length)]; let best = null; let dm = 1e9;
     for (const b of pts) { if (b === a) continue; const d = Math.hypot(a.x - b.x, a.y - b.y); if (d < dm && d > 30 * k) { dm = d; best = b; } }
     if (best) pulses.push({ a, b: best, t: 0 });
   };
-  const step = () => {
+  const step = (now) => {
     raf = 0;
     if (!c || document.hidden) return;
+    raf = requestAnimationFrame(step);
+    if (now - last < 33) return; // 30 cuadros por segundo como máximo
+    last = now;
     for (const a of pts) { a.x += a.vx; a.y += a.vy; if (a.x < 0 || a.x > W) a.vx *= -1; if (a.y < 0 || a.y > H) a.vy *= -1; }
-    if (Math.random() < 0.08 && pulses.length < 20) newPulse();
-    for (const p of pulses) p.t += 0.02;
+    if (Math.random() < 0.12 && pulses.length < 24) newPulse();
+    for (const p of pulses) p.t += 0.03;
     pulses = pulses.filter((p) => p.t < 1);
     draw();
-    raf = requestAnimationFrame(step);
   };
+  const stop = () => { cancelAnimationFrame(raf); raf = 0; if (c) c.remove(); c = null; mode = ''; };
   const sync = () => {
-    const want = document.body.classList.contains('full');
-    if (want && !c) {
-      c = document.createElement('canvas'); c.id = 'neural-bg'; c.setAttribute('aria-hidden', 'true');
-      document.body.insertBefore(c, document.body.firstChild);
-      x = c.getContext('2d'); build();
-      if (matchMedia('(prefers-reduced-motion: reduce)').matches) { for (let i = 0; i < 10; i++) newPulse(); pulses.forEach((p, i) => { p.t = 0.3 + (i % 5) * 0.12; }); draw(); } else step();
-    } else if (!want && c) { cancelAnimationFrame(raf); raf = 0; c.remove(); c = null; }
+    const cl = document.body.classList;
+    const want = cl.contains('full') ? 'full' : cl.contains('obs') ? 'gc' : '';
+    colors = PALETTES[document.body.dataset.venue] || PALETTES.frida;
+    if (want === mode) return;
+    stop();
+    if (!want) return;
+    mode = want;
+    c = document.createElement('canvas'); c.id = 'neural-bg'; c.setAttribute('aria-hidden', 'true');
+    if (mode === 'gc') c.className = 'neural-gc';
+    document.body.insertBefore(c, document.body.firstChild);
+    x = c.getContext('2d'); build();
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) { for (let i = 0; i < 10; i++) newPulse(); pulses.forEach((p, i) => { p.t = 0.3 + (i % 5) * 0.12; }); draw(); } else raf = requestAnimationFrame(step);
   };
-  addEventListener('resize', () => { if (c) { build(); draw(); } });
-  document.addEventListener('visibilitychange', () => { if (c && !document.hidden && !raf && !matchMedia('(prefers-reduced-motion: reduce)').matches) step(); });
-  new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  addEventListener('resize', () => { if (c) { build(); boxesAt = 0; draw(); } });
+  document.addEventListener('visibilitychange', () => { if (c && !document.hidden && !raf && !matchMedia('(prefers-reduced-motion: reduce)').matches) raf = requestAnimationFrame(step); });
+  new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['class', 'data-venue'] });
   sync();
   return { sync };
 })();
