@@ -7,7 +7,7 @@
   views.qrFull = async () => {
     app.innerHTML = `<div id="fb"><div class="fb-idle"><b><i>KRB Stage</i> Sala de juegos</b>
       <div class="fb-idle-qr">${qr(joinUrl())}</div>
-      <small>Escanea el código QR, pon tu nombre y apellido y participa</small></div></div>`;
+      <small>Escanea el código QR con tu celular, pon tu nombre, apellido y participa</small></div></div>`;
     return () => {};
   };
   views.bingoFull = async () => {
@@ -22,7 +22,7 @@
       $('#fb').className = '';
       $('#fb').innerHTML = `<div class="fb-idle"><b><i>KRB Stage</i> Sala de juegos</b>
         <div class="fb-idle-qr">${qr(joinUrl())}</div>
-        <small>Escanea el código QR y prepárate</small><small class="soon">En unos momentos comenzamos</small></div>`;
+        <small>Escanea el código QR con tu celular y prepárate</small><small class="soon">En unos momentos comenzamos</small></div>`;
     };
 
     const draw = (st) => {
@@ -37,7 +37,7 @@
           shown = 'qr';
           $('#fb').innerHTML = `<div class="gc-big-wrap"><div class="gc-big fb-bigqr"><b class="gc-big-title">${esc(st.name)}</b>
             <div class="gc-big-qr">${qr(joinUrl())}</div>
-            <span class="gc-big-text">Escanea el código QR, pon tu nombre y apellido y participa</span>
+            <span class="gc-big-text">Escanea el código QR con tu celular, pon tu nombre, apellido y participa</span>
             <span class="gc-big-count"></span></div></div>`;
         }
         $('.gc-big-count').textContent = count;
@@ -73,7 +73,7 @@
         <section class="fb-board">${rows}</section>
         <aside class="fb-side">
           <div class="fb-figure"><span>Figura</span><div class="gc-grid">${figure}</div><b>${esc(PATTERNS.byId[id].name)}</b></div>
-          <div class="fb-qr">${qr(joinUrl())}<span>Escanea y juega</span></div>
+          <div class="fb-qr">${qr(joinUrl())}<span>Escanea el código QR con tu celular y juega</span></div>
         </aside>`;
     };
 

@@ -36,7 +36,7 @@
       if (!box) return;
       const [a, b] = st.list;
       const html = `
-        <div class="kg-qr">${qr(o.join || joinUrl())}<b>Únete a la sesión</b></div>
+        <div class="kg-qr">${qr(o.join || joinUrl())}<b>Escanea el código QR con tu celular</b></div>
         ${o.nextUp != null ? o.nextUp : nextUpHTML('kg-up')}
         <div class="kg-bar">
           <div class="kg-tag"><img class="kg-logo" src="krb-stage.svg" alt="KRB Stage"><div><small>${esc(st.name)}</small><b>🎤 Karaoke</b></div></div>
@@ -69,7 +69,7 @@
         <section class="kf-now"><img class="kg-logo" src="krb-stage.svg" alt="KRB Stage">${a ? `<small>🎤 Ahora canta</small><b ${n(a.name)}>${esc(a.name)}</b><span ${n(a.song)}>${esc(a.song)}</span>${a.artist ? `<i ${n(a.artist)}>${esc(a.artist)}</i>` : ''}`
     : '<small>🎤 Karaoke</small><b style="--n:16">¡Pide tu canción!</b><span style="--n:16">Desde el celular</span>'}</section>
         <aside class="kf-side">
-          <div class="kf-qr">${qr(join || joinUrl())}<b>Únete a la sesión</b></div>
+          <div class="kf-qr">${qr(join || joinUrl())}<b>Escanea el código QR con tu celular</b></div>
           ${next.length ? `<div class="kf-next"><small>Luego vienen</small>${next.map((p, i) => `<div><em>${i + 2}</em><p><b ${n(p.name)}>${esc(p.name)}</b><span ${n(p.song + p.artist)}>${esc(p.song)}${p.artist ? ` · ${esc(p.artist)}` : ''}</span></p></div>`).join('')}</div>` : ''}
         </aside>`;
     }, local);

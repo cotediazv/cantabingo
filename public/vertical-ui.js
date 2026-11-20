@@ -168,8 +168,8 @@
       <div class="panel vt-links"><h2>🔗 Enlaces de ${esc(VENUE_NAMES[venue])}</h2>
         ${[['🎥 GC para OBS (sala light)', `#/light-gc/${venue}`],
     ['🖥️ Tablero (pantalla horizontal)', `#/pantalla/${pair[1]}`],
-    ['📱 Pantalla vertical girada (pantalla de pie)', `#/vertical/${pair[0]}`],
-    ['📱 Pantalla vertical sin girar', `#/vertical-in/${pair[0]}`]].map(([t, h]) => `<div class="vt-linkrow"><b>${t}</b>
+    ['📱 Pantalla vertical girada (pantalla de pie)', `#/vertical/${pair[0]}`, venue === 'kennedy' ? 'vk' : ''],
+    ['📱 Pantalla vertical sin girar', `#/vertical-in/${pair[0]}`]].map(([t, h, short]) => `<div class="vt-linkrow"><b>${t}${short ? ` <span class="vt-short">· corto: ${esc(`${location.host}/${short}`)}</span>` : ''}</b>
           <div><input class="vt-link" readonly value="${esc(base() + h)}"> <button class="vt-copy">Copiar</button> <a class="btn" href="${h}" target="_blank">Ver</a></div></div>`).join('')}</div>
       <div class="panel vt-both"><h2>Qué mostrar <small class="muted">· las dos pantallas, vertical y horizontal</small></h2>
         <div class="vt-modes">

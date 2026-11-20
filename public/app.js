@@ -1,7 +1,7 @@
 /* global PATTERNS */
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const app = $('#app');
 const store = {
   get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
@@ -233,7 +233,7 @@ views.home = async () => {
         <a class="s1" href="${bingoHref}"><i>1</i><span>🎱</span><b>Bingo</b></a>
         <a class="s2" href="#/sorteoctl"><i>2</i><span>🎲</span><b>Sorteo</b></a>
         <a class="s3" href="#/ruedas"><i>3</i><span>🎡</span><b>El Rosco</b></a>
-        <a class="s5" href="#/votoctl"><i>4</i><span>🗳️</span><b>Votación</b></a>
+        <a class="s5" href="#/votoctl/festival"><i>4</i><span>🎤</span><b>El Festival</b></a>
         <a class="s6" href="#/showctl"><i>5</i><span>⭐</span><b>Show</b></a>
         <a class="s4" href="#/karaokectl"><i>6</i><span>🎤</span><b>Karaoke</b></a>
         <a class="s7" href="#/instactl"><i>7</i><span>📸</span><b>Síguenos en Instagram</b></a>
@@ -472,6 +472,13 @@ function hostSetup(p) {
 
 // Panel del bingo en curso: solo lo que el animador usa durante el juego.
 // Enlaces, QR, textos de la gráfica y cierre de sesión están en «Administración».
+// Instrucciones y criterios para el animador, al partir cada juego (pedido de Cote): cortas y precisas, para leer en voz alta
+window.readAloud = (game, lines) => `<details class="panel howto" open><summary>📢 Para leer · ${esc(game)}</summary><ul>${lines.map((l) => `<li>${l}</li>`).join('')}</ul></details>`;
+const BINGO_HOWTO = [
+  'Todos juegan desde las mesas, con su cartón en el celular.',
+  'Gana quien complete primero la <b>figura</b>.',
+  'Empate: sorteo.',
+]
 async function hostConsole(p) {
   const sid = p.sessionId;
   store.set('lastBingo', p.id); // para el botón «Volver al bingo» del sorteo y del rosco
@@ -482,6 +489,7 @@ async function hostConsole(p) {
   app.innerHTML = `
     <div><p class="back"><a href="#/">← Inicio</a></p>
       <div class="panel"><h1 id="title"></h1><div id="meta" class="muted"></div><div id="pats" style="margin-top:10px"></div></div>
+      ${window.readAloud('Bingo', BINGO_HOWTO)}
       <div class="cols">
         <div class="panel">
           <div id="draws"></div>
@@ -622,8 +630,8 @@ views.admin = async (pid) => {
         <b>Contraseña:</b> ${info.password ? esc(info.password) : '<i>sin contraseña</i>'}</div>${qr(joinUrl())}</div></div>
     <div class="panel"><h2>Textos de la gráfica de OBS</h2>
       <div class="fields" style="margin-top:10px">
-        <label class="f">Franja superior<input type="text" id="gc-top" maxlength="90" value="${esc(info.gc.top)}" placeholder="Escanea el código QR y participa"></label>
-        <label class="f">Franja inferior<input type="text" id="gc-bottom" maxlength="140" value="${esc(info.gc.bottom)}" placeholder="Pon tu nombre y apellido y participa"></label>
+        <label class="f">Franja superior<input type="text" id="gc-top" maxlength="90" value="${esc(info.gc.top)}" placeholder="Escanea el código QR con tu celular y participa"></label>
+        <label class="f">Franja inferior<input type="text" id="gc-bottom" maxlength="140" value="${esc(info.gc.bottom)}" placeholder="Pon tu nombre, apellido y participa"></label>
       </div>
       <p class="muted small" style="margin-top:8px">En la franja inferior, lo que escribas entre asteriscos sale resaltado en amarillo: <b>*CONTRASEÑA: 1234*</b></p>
       <p style="margin-top:10px"><button id="gc-save">Guardar textos</button></p></div>
@@ -689,8 +697,6 @@ views.jugar = async (sid) => {
   app.innerHTML = `<div id="bingo-top"><div class="now" id="now"></div>
     <div id="banner"></div>
     <div class="cards" id="cards"></div></div>
-    <div class="live" id="live"><div id="live-player"></div>
-      <div class="live-bar"><button type="button" id="live-audio">🔇 Activar audio</button><button type="button" id="live-full">⛶ Pantalla completa</button><button type="button" id="live-sync" class="wide">↻ Poner al día el video</button></div></div>
     <div class="prosco" id="prosco" hidden></div>
     <div class="pkar" id="pkar" hidden></div>
     <div class="pvote" id="pvote" hidden></div>
@@ -699,6 +705,8 @@ views.jugar = async (sid) => {
     <div id="bingo-bottom"><button class="primary big" id="sync" style="margin-top:16px">↻ Actualizar y marcar lo que falta</button>
     <p class="muted small" style="margin-top:8px">Marca por ti los valores ya anunciados que se te pasaron.</p>
     <div class="panel" style="margin-top:20px"><h2 id="title" style="margin:0"></h2><span class="muted small" id="meta"></span><div id="pats" style="margin-top:8px"></div></div></div>
+    <div class="live" id="live"><div id="live-player"></div>
+      <div class="live-bar"><button type="button" id="live-audio">🔇 Activar audio</button><button type="button" id="live-full">⛶ Pantalla completa</button><button type="button" id="live-sync" class="wide">↻ Poner al día el video</button></div></div>
     ${window.krbKidsButton ? window.krbKidsButton() : '<a class="btn kids-entry" href="#/kids">🧸 <b>KRB Kids</b><span>Zona de niños</span></a>'}`;
   // Durante El Rosco: se guarda el cartón y quedan el video y, debajo, la pregunta en juego
   let roscoEs = null;
@@ -989,7 +997,7 @@ const LIVE_CHANNELS = { frida: 'krbstage', kennedy: 'krbstagekennedy', tobalaba:
 let twitchLoading = null;
 const loadTwitch = () => {
   if (window.Twitch && window.Twitch.Player) return Promise.resolve();
-  twitchLoading ||= new Promise((resolve, reject) => {
+  twitchLoading = twitchLoading || new Promise((resolve, reject) => {
     const s = document.createElement('script');
     s.src = 'https://player.twitch.tv/js/embed/v1.js';
     s.onload = resolve;
@@ -1007,7 +1015,7 @@ const sfx = (() => {
   const ready = () => !!ctx && ctx.state === 'running';
   const unlock = () => {
     try {
-      ctx ||= new (window.AudioContext || window.webkitAudioContext)();
+      ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
       if (ctx.state !== 'running') ctx.resume();
     } catch { /* sin audio */ }
     return ctx;
@@ -1081,6 +1089,12 @@ const sfx = (() => {
     chime: () => { note(1047, 0, 0.5, 'sine', 0.22); note(1319, 0.14, 0.6, 'sine', 0.2); note(1568, 0.28, 0.9, 'sine', 0.18); },
     // Se acabó el tiempo: tres bocinazos de aire comprimido, el último más largo
     alarm: () => { horn(0, 0.45); horn(0.62, 0.45); horn(1.24, 1.1); },
+    // Redoble de tambores (concurso de karaoke): golpes cada vez más rápidos y fuertes, y un platillo al final
+    drum: () => {
+      let t = 0;
+      for (let i = 0; i < 46; i++) { const v = 0.08 + 0.3 * (i / 46); note(110 + (i % 2) * 18, t, 0.06, 'triangle', v); note(70, t, 0.05, 'square', v * 0.5); t += Math.max(0.035, 0.11 - i * 0.0018); }
+      note(55, t, 0.9, 'sawtooth', 0.35); note(2400, t, 1.2, 'square', 0.06, 900); note(1800, t + 0.02, 1.1, 'sine', 0.08, 700);
+    },
     // Ganador: fanfarria ascendente con acorde final
     win: () => {
       [523, 659, 784].forEach((f, i) => { note(f, i * 0.14, 0.2, 'sawtooth', 0.16); note(f, i * 0.14, 0.2, 'square', 0.08); });
@@ -1106,7 +1120,8 @@ views.tablero = async () => {
   soundBtn.textContent = '🔊 Activar sonido';
   document.body.appendChild(soundBtn);
   // El tablero vertical va mudo (?mudo=1), para que no suene doble junto al tablero principal
-  const mute = new URLSearchParams(location.search).has('mudo');
+  // La pantalla vertical va siempre sin sonido (pedido de Cote): con ?mudo=1 o si la pantalla está de pie
+  const mute = new URLSearchParams(location.search).has('mudo') || innerHeight > innerWidth;
   const paintSound = () => { soundBtn.hidden = mute || sfx.ready(); };
   const enableSound = () => { if (mute) return; const c = sfx.unlock(); if (c) { c.onstatechange = paintSound; Promise.resolve(c.resume()).then(() => { paintSound(); if (!soundBtn.dataset.done) { soundBtn.dataset.done = '1'; sfx.play('hit'); } }).catch(() => {}); } };
   document.addEventListener('pointerdown', enableSound);
@@ -1128,6 +1143,7 @@ views.tablero = async () => {
         else if (show === 'qr') stop = await views.qrFull();
         else if (show === 'karaoke') stop = await views.karaokeFull();
         else if (show === 'voto') stop = await views.votoFull();
+        else if (show === 'juego') stop = await views.juegoDraw('full');
         else if (show === 'insta') stop = await views.instaFull();
         else if (show === 'show') stop = await views.showFull();
         else if (show === 'desafio') stop = await views.desafioFull();
@@ -1352,21 +1368,119 @@ views.karaokectl = async (local) => {
   return () => { clearInterval(timer); if (stopBar) stopBar(); };
 };
 
-// Al terminar cualquier actividad se puede pasar directo a cualquiera de las otras
+// Menú de abajo en el panel de todos los juegos (pedido de Cote): «Sortear juego» y después los juegos con su ícono;
+// más abajo, las demás actividades
+const GAME_INFO = (venue) => ({
+  bingo: { icon: '🎱', name: 'Bingo', href: '' },
+  rosco: { icon: '🎡', name: 'El Rosco', href: '#/sorteoctl' },
+  festival: { icon: '🎤', name: `El Festival de ${{ frida: 'Frida', kennedy: 'Kennedy', tobalaba: 'Tobalaba' }[venue] || 'Frida'}`, href: '#/votoctl/festival' },
+  objeto: { icon: '🗳️', name: 'El objeto más extraño', href: '#/votoctl/objeto' },
+});
 function activitiesNav(current) {
-  const all = [
-    ['bingo', '<button type="button" data-back-bingo><span>🎱</span>Bingo</button>'],
-    ['rosco', '<a class="btn" href="#/sorteoctl"><span>🎡</span>El Rosco</a>'],
-    ['voto', '<a class="btn" href="#/votoctl"><span>🗳️</span>El objeto más extraño</a>'],
+  const games = [
+    ['bingo', '<button type="button" data-back-bingo data-game="bingo"><span>🎱</span>Bingo</button>'],
+    ['rosco', '<a class="btn" data-game="rosco" href="#/sorteoctl"><span>🎡</span>El Rosco</a>'],
+    ['festival', '<a class="btn" data-game="festival" href="#/votoctl/festival"><span>🎤</span><b class="g-fest">El Festival</b></a>'],
+    ['objeto', '<a class="btn" data-game="objeto" href="#/votoctl/objeto"><span>🗳️</span>El objeto más extraño</a>'],
+  ];
+  const more = [
     ['show', '<a class="btn" href="#/showctl"><span>⭐</span>Show</a>'],
     ['karaoke', '<a class="btn" href="#/karaokectl"><span>🎤</span>Karaoke</a>'],
     ['insta', '<a class="btn" href="#/instactl"><span>📸</span>Instagram</a>'],
     ['desafio', '<a class="btn" href="#/desafioctl"><span>🏆</span>El Gran Desafío</a>'],
     ['qr', '<button type="button" data-stage-qr><span>📱</span>QR en pantalla completa</button>'],
   ];
-  return `<div class="act-nav"><small>Ir a otra actividad</small><div>${all.filter(([k]) => k !== current).map(([, h]) => h).join('')}</div></div>`;
+  setTimeout(paintGameNav, 0);
+  return `<div class="act-nav games-nav"><div class="g-plan"><label>¿Cuántos juegos vamos a sortear? <input type="number" class="g-total" min="1" max="10" value="3"></label><div class="g-slots"></div></div>
+    <button type="button" class="primary big g-draw" data-game-draw>🎲 Sortear juego</button>
+    <small>Juegos</small><div>${games.filter(([k]) => k !== current).map(([, h]) => h).join('')}</div>
+    <small>Otras actividades</small><div>${more.filter(([k]) => k !== current).map(([, h]) => h).join('')}</div></div>`;
 }
+// Marca en el menú los juegos que ya salieron en el sorteo (quedan fuera del sorteo hasta que salgan los demás)
+async function paintGameNav() {
+  const g = await api('GET', '/api/gamedraw').catch(() => null);
+  if (!g) return;
+  const info = GAME_INFO(g.venue);
+  document.querySelectorAll('.g-fest').forEach((b) => { b.textContent = info.festival.name; });
+  document.querySelectorAll('[data-game]').forEach((el) => { const done = g.played.includes(el.dataset.game); el.classList.toggle('g-played', done); el.title = done ? 'Salió en el último sorteo: queda fuera del próximo' : ''; });
+  // Casilleros de la noche y botón: «Sortear el 2.º juego (de 3)»; al completar, se desactiva
+  document.querySelectorAll('.g-total').forEach((i) => { if (document.activeElement !== i) i.value = g.total; });
+  const slots = [`<span class="done">Inicial · ${info.bingo.icon} Bingo</span>`];
+  for (let i = 0; i < g.total; i++) slots.push(g.list[i] ? `<span class="done">${i + 1}.º · ${info[g.list[i]].icon} ${esc(info[g.list[i]].name)}</span>` : `<span>${i + 1}.º · 🔒</span>`);
+  document.querySelectorAll('.g-slots').forEach((el) => { el.innerHTML = slots.join(''); });
+  const full = g.list.length >= g.total;
+  document.querySelectorAll('[data-game-draw]').forEach((b) => { b.disabled = full; b.textContent = full ? `✔ Ya se sortearon los ${g.total} juegos` : `🎲 Sortear el ${g.list.length + 1}.º juego (de ${g.total})`; });
+}
+document.addEventListener('change', async (e) => {
+  if (!e.target.classList || !e.target.classList.contains('g-total')) return;
+  try { await api('POST', '/api/gamedraw/total', { total: e.target.value }); } catch (err) { fail(err); }
+  paintGameNav();
+});
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-game-draw]');
+  if (!b || b.disabled) return;
+  b.disabled = true;
+  try {
+    const g = await api('POST', '/api/gamedraw');
+    const info = GAME_INFO((await api('GET', '/api/gamedraw')).venue)[g.last.game];
+    toast(`🎲 Se está sorteando en pantalla… Salió: ${info.icon} ${info.name}`);
+    setTimeout(() => { if (g.last.game === 'bingo') backToBingo(); else location.hash = info.href; }, 6000); // cuando termina la tómbola en pantalla, el panel pasa a ese juego
+  } catch (err) { fail(err); b.disabled = false; }
+});
 const BACK_BINGO = activitiesNav('rosco');
+// Sorteo del siguiente juego en pantalla: tómbola con los juegos disponibles y, al final, el que salió en grande;
+// abajo, todos los juegos (los que ya salieron, marcados). kind: 'full' (tablero) o 'gc' (OBS)
+views.juegoDraw = async (kind) => {
+  const ROLL_MS = 4500;
+  app.innerHTML = `<div id="jd" class="jd-${kind}"></div>`;
+  let shownAt = 0; let timer = null; let alive = true;
+  const paint = (g) => {
+    const box = $('#jd');
+    if (!box || !g.last) { if (box) box.innerHTML = ''; return; }
+    const info = GAME_INFO(g.venue);
+    const win = info[g.last.game];
+    const pool = g.last.pool.map((k) => info[k]);
+    // Casilleros de la noche (pedido de Cote): juego inicial y 1.º, 2.º… sorteados; los que ya salieron quedan bloqueados
+    // con su juego; el que se está sorteando gira; los que faltan, con candado
+    const listOf = (rolling) => {
+      const cells = [`<span class="done"><small>Juego inicial</small>${info.bingo.icon} Bingo</span>`];
+      for (let i = 0; i < g.total; i++) {
+        const k = g.list[i]; const cur = i === g.list.length - 1;
+        cells.push(!k ? `<span class="todo"><small>${i + 1}.º juego</small>🔒</span>`
+          : cur ? `<span class="${rolling ? 'now' : 'on'}"><small>${i + 1}.º juego</small>${rolling ? '🎲 …' : `${info[k].icon} ${esc(info[k].name)}`}</span>`
+            : `<span class="done"><small>${i + 1}.º juego</small>${info[k].icon} ${esc(info[k].name)}</span>`);
+      }
+      return `<div class="jd-list jd-slots">${cells.join('')}</div>`;
+    };
+    const nth = `${g.list.length}.º juego`;
+    const left = ROLL_MS - (Date.now() + (g.offset || 0) - g.last.at);
+    if (left > 0) {
+      // tómbola: pasan los juegos disponibles cada vez más lento
+      box.innerHTML = `<div class="jd-card"><small>🎲 Sorteo del ${nth}</small><b class="jd-roll"></b>${listOf(true)}</div>`;
+      let i = 0; let wait = 70;
+      const spin = () => { if (!alive || !$('.jd-roll')) return; const x = pool[i++ % pool.length]; $('.jd-roll').textContent = `${x.icon} ${x.name}`; wait *= 1.13; if (Date.now() + (g.offset || 0) - g.last.at < ROLL_MS - 200) timer = setTimeout(spin, wait); else paintWin(); };
+      const paintWin = () => { if (alive) paint({ ...g, last: { ...g.last, at: g.last.at - ROLL_MS } }); };
+      spin();
+      return;
+    }
+    box.innerHTML = `<div class="jd-card won"><small>🎲 El ${nth} es</small><b class="jd-win">${win.icon} ${esc(win.name)}</b>${listOf(false)}</div>`;
+    if (Date.now() - shownAt > 1000) { shownAt = Date.now(); sfx.play('win'); }
+  };
+  let last = '';
+  const tick = async () => {
+    const g = await api('GET', '/api/gamedraw').catch(() => null);
+    if (!alive || !g) return;
+    g.offset = g.now - Date.now(); // diferencia de reloj con el servidor
+    const key = JSON.stringify([g.last && g.last.at, g.played, g.total, g.list]);
+    if (key === last) return;
+    last = key;
+    clearTimeout(timer);
+    paint(g);
+  };
+  await tick();
+  const poll = setInterval(tick, 2000);
+  return () => { alive = false; clearTimeout(timer); clearInterval(poll); };
+};
 document.addEventListener('click', (e) => { if (e.target.closest('[data-back-bingo]')) backToBingo(); });
 // «QR en pantalla completa» desde cualquier panel: lo pone en OBS y en el tablero sin salir de donde estás
 document.addEventListener('click', async (e) => {
@@ -1379,9 +1493,25 @@ document.addEventListener('click', async (e) => {
 function joinQr(spot) {
   let el = document.getElementById('join-qr');
   if (!spot) { if (el) el.remove(); return; }
-  if (!el) { el = document.createElement('div'); el.id = 'join-qr'; el.innerHTML = `${qr(joinUrl())}<b>Únete a la sesión</b>`; document.body.appendChild(el); }
+  // Pedido de Cote: el recuadro blanco no se ensancha por la frase; el ancho es el del QR y la frase va en dos líneas
+  // centradas («Escanea el código QR» / «con tu celular»), con la letra justa para caber
+  if (!el) { el = document.createElement('div'); el.id = 'join-qr'; el.innerHTML = `${qr(joinUrl())}<b><span>Escanea el código QR</span><span>con tu celular</span></b>`; document.body.appendChild(el); }
   el.className = `join-qr ${spot}`;
+  fitJoinQr();
 }
+function fitJoinQr() {
+  const el = document.getElementById('join-qr');
+  const code = el && el.querySelector('.qr');
+  const b = el && el.querySelector('b');
+  if (!code || !b) return;
+  b.style.fontSize = '';
+  const max = code.getBoundingClientRect().width;
+  let f = parseFloat(getComputedStyle(b).fontSize) || 16;
+  const wide = () => Math.max(...Array.from(b.children).map((x) => x.getBoundingClientRect().width));
+  for (let i = 0; i < 40 && wide() > max + 1 && f > 6; i++) { f *= 0.96; b.style.fontSize = `${f.toFixed(1)}px`; }
+}
+addEventListener('resize', fitJoinQr);
+if (document.fonts) document.fonts.ready.then(fitJoinQr);
 
 // Pantalla única para OBS: muestra la gráfica que el moderador elija en «Juegos».
 // No requiere iniciar sesión y queda transparente cuando no hay nada que mostrar.
@@ -1406,6 +1536,7 @@ views.escena = async () => {
         else if (show === 'qr') stop = await views.qrBig();
         else if (show === 'karaoke') stop = await views.karaokeGC();
         else if (show === 'voto') stop = await views.votoGC();
+        else if (show === 'juego') stop = await views.juegoDraw('gc');
         else if (show === 'insta') stop = await views.instaGC();
         else if (show === 'show') stop = await views.showGC();
         else if (show === 'desafio') stop = await views.desafioGC();
@@ -1459,6 +1590,14 @@ const VENUE_LOGOS = { kennedy: 'logo-kennedy.png' };
 const SCREEN_ROUTES = ['tablero', 'escena', 'gc', 'obs', 'light-gc', 'karaoke-v', 'light-v'];
 let venueOfSala = '';
 let venueAt = 0;
+// Color de fondo de las pantallas según el local (también en navegadores antiguos, que no leen «:has»)
+const VENUE_BG = { tobalaba: '#2a0608', kennedy: '#06183a', frida: '#1b0f3a' };
+function paintVenueBg() {
+  const full = document.body.classList.contains('full');
+  const bg = full ? VENUE_BG[document.body.dataset.venue] || VENUE_BG.frida : '';
+  if (document.documentElement.style.backgroundColor !== bg) document.documentElement.style.backgroundColor = bg;
+}
+new MutationObserver(paintVenueBg).observe(document.body, { attributes: true, attributeFilter: ['class', 'data-venue'] });
 async function syncVenueMark() {
   const [name, arg] = location.hash.replace(/^#\/?/, '').split('/');
   let v = '';
@@ -1469,6 +1608,9 @@ async function syncVenueMark() {
       v = venueOfSala;
     }
   }
+  // El fondo de las pantallas toma los colores del local (pedido de Cote: que el GC y la pantalla vertical combinen)
+  if ((document.body.dataset.venue || '') !== v) document.body.dataset.venue = v;
+  paintVenueBg();
   let el = document.getElementById('venue-mark');
   const src = VENUE_LOGOS[v];
   if (!src) { if (el) el.remove(); document.body.classList.remove('has-vm'); return; }
@@ -1488,64 +1630,180 @@ setTimeout(syncVenueMark, 700);
 // Fondo de neuronas en las pantallas de las actividades (pedido de Cote: el mismo efecto del fondo de la página
 // web krbstage.cl). Puntos de colores que se mueven lento, unidos por líneas finas, con impulsos que viajan
 // de un punto a otro cercano. Va encima del fondo de colores y debajo de todo lo demás; solo en el tablero.
+// Aviso de KRB Kids (pedido de Cote): en las pantallas del local (no en el GC de OBS ni en los celulares) aparece cada
+// 10 minutos durante 12 segundos «KRB Kids · Juegos para niños dentro de la plataforma»
+(() => {
+  const EVERY_MS = 600000; const SHOW_MS = 12000; // cada 10 minutos (pedido de Cote)
+  const word = [...'KRB Kids'].map((ch, i) => (ch === ' ' ? ' ' : `<i style="color:${['#ff5fa2', '#ffbe0b', '#2bb24c', '#3a86ff', '#ff5fa2', '#ffbe0b', '#2bb24c', '#3a86ff'][i % 8]}">${ch}</i>`)).join('');
+  const show = () => {
+    if (!document.body.classList.contains('full') || /^#\/kids/.test(location.hash)) return;
+    let el = document.getElementById('kids-ad');
+    if (!el) { el = document.createElement('div'); el.id = 'kids-ad'; el.setAttribute('aria-hidden', 'true'); el.innerHTML = `<span class="ka-balloons">🎈🎈</span><b>${word}</b><small>Juegos para niños dentro de la plataforma</small>`; document.body.appendChild(el); }
+    place(el);
+    el.classList.add('on');
+    setTimeout(() => el.classList.remove('on'), SHOW_MS);
+  };
+  // Pedido de Cote: el aviso va en un lugar libre de la pantalla, sin tapar nada. Se buscan en toda la pantalla los
+  // espacios sin textos, imágenes, QR, videos ni recuadros; si no hay espacio para el aviso ancho, se prueba en columna
+  // (para los costados) y más chico. Si en ninguna parte cabe sin tapar, va donde tape menos.
+  const content = (ad) => {
+    const out = []; const W = window.innerWidth; const H = window.innerHeight;
+    const ok = (el) => { if (!el || ad.contains(el) || el.id === 'neural-bg') return false; if (el.checkVisibility) return el.checkVisibility({ opacityProperty: true, visibilityProperty: true }); const cs = getComputedStyle(el); return cs.visibility !== 'hidden' && cs.opacity !== '0' && el.getClientRects().length > 0; };
+    // peso: tapar textos, imágenes, QR y videos es mucho peor que tapar el fondo vacío de un recuadro
+    const add = (r, k) => { if (r.width > 0 && r.height > 0 && r.right > 0 && r.bottom > 0 && r.left < W && r.top < H) out.push({ l: r.left - 8, t: r.top - 8, r: r.right + 8, b: r.bottom + 8, k }); };
+    const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const rg = document.createRange();
+    for (let n = walk.nextNode(); n; n = walk.nextNode()) {
+      if (!n.nodeValue.trim() || !ok(n.parentElement)) continue;
+      rg.selectNodeContents(n); add(rg.getBoundingClientRect(), 30);
+    }
+    document.querySelectorAll('body *').forEach((el) => {
+      if (el.parentElement && el.parentElement.closest('svg')) return;
+      const media = /^(IMG|SVG|CANVAS|VIDEO|IFRAME|INPUT|BUTTON)$/i.test(el.tagName);
+      const r = el.getBoundingClientRect();
+      if (!r.width || !r.height || (!media && r.width * r.height > W * H * 0.85)) return; // los fondos de toda la pantalla no cuentan
+      if (!media) { const cs = getComputedStyle(el); const bg = cs.backgroundImage !== 'none' || !/rgba\(.*,\s*0\)|transparent/.test(cs.backgroundColor); const bd = parseFloat(cs.borderTopWidth) > 0 && !/rgba\(.*,\s*0\)|transparent/.test(cs.borderTopColor); if (!bg && !bd) return; }
+      if (ok(el)) add(r, media ? 30 : 1);
+    });
+    return out;
+  };
+  const place = (el) => {
+    const W = window.innerWidth; const H = window.innerHeight; const mx = W * 0.015; const my = H * 0.02;
+    const rects = content(el);
+    const hitAt = (x, y, w, h) => { let hit = 0; for (const r of rects) { const ix = Math.min(x + w, r.r) - Math.max(x, r.l); const iy = Math.min(y + h, r.b) - Math.max(y, r.t); if (ix > 0 && iy > 0) hit += ix * iy * r.k; } return hit; };
+    let best = null;
+    for (const v of [['', 1], ['ka-tall', 1], ['', 0.8], ['ka-tall', 0.8], ['', 0.62], ['ka-tall', 0.62]]) {
+      el.classList.toggle('ka-tall', v[0] === 'ka-tall'); el.style.setProperty('--ka-s', v[1]);
+      const w = el.offsetWidth * v[1]; const h = el.offsetHeight * v[1];
+      if (w > W - 2 * mx || h > H - 2 * my) continue;
+      const step = Math.max(6, Math.min(W, H) / 60);
+      for (let y = my; y <= H - h - my + 0.5; y += step) {
+        for (let x = mx; x <= W - w - mx + 0.5; x += step) {
+          // primero lo que menos tapa; a igualdad, pegado a un borde (mejor abajo) y del tamaño más grande
+          const hit = hitAt(x, y, w, h);
+          const edge = Math.min(x - mx, W - w - mx - x, (y - my) * 1.5, H - h - my - y);
+          const sc = hit * 10 + edge;
+          if (!best || sc < best.sc) best = { sc, hit, x, y, v };
+        }
+      }
+      if (best && best.hit === 0) break; // cabe sin tapar nada: listo
+    }
+    if (!best) return;
+    el.classList.toggle('ka-tall', best.v[0] === 'ka-tall'); el.style.setProperty('--ka-s', best.v[1]);
+    el.style.left = `${Math.round(best.x)}px`; el.style.top = `${Math.round(best.y)}px`; el.style.bottom = 'auto';
+    el.classList.toggle('ka-top', best.y < H / 3);
+  };
+  setTimeout(() => { show(); setInterval(show, EVERY_MS); }, 60000); // el primero al minuto de abrir la pantalla
+})();
 const neuralBg = (() => {
-  const COLORS = ['#47b8e6', '#e0338f', '#e5413a', '#f3eee6', '#f4bf5a'];
-  let c = null; let x = null; let W = 0; let H = 0; let k = 1; let pts = []; let pulses = []; let raf = 0;
+  // Pedido de Cote (20 nov): el efecto de neuronas de krbstage.cl, más visible y con los colores del local, de fondo en las
+  // pantallas (body.full) y, en el GC de OBS (body.obs), solo dentro de los recuadros (nunca sobre la cámara ni sobre el QR).
+  // Se dibuja en el aparato que muestra la pantalla (no en el servidor), a 30 cuadros por segundo como máximo, y con menos
+  // puntos en aparatos con poca memoria (decodificadores).
+  const PALETTES = {
+    frida: ['#47b8e6', '#e0338f', '#e5413a', '#f3eee6', '#f4bf5a'],
+    tobalaba: ['#ff4d4d', '#ff9a3d', '#ffd166', '#f3eee6', '#e8262e'],
+    kennedy: ['#35c6ff', '#1487cf', '#7fdcff', '#f3eee6', '#f4bf5a'],
+  };
+  // Recuadros de los GC donde va el efecto; los QR quedan siempre limpios
+  const BOXES = '.gc-top, .gc-bottom, .gc-people, .gc-draw, .gc-figure, .obs-player, .obs-question, .obs-rank, .rosco-winlow, .lg-card, .kg-tag, .kg-now, .kg-next, .sg-tag, .sg-main, .vg-tag, .vg-main, .vg-side, .vg-list, .vg-duel';
+  const NO_FX = '.gc-qr, .kg-qr, .vg-qr, .lg-qrbox, .qr';
+  const weak = (navigator.deviceMemory && navigator.deviceMemory <= 2) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2);
+  let c = null; let x = null; let mode = ''; let W = 0; let H = 0; let k = 1; let pts = []; let pulses = []; let raf = 0; let last = 0;
+  let colors = PALETTES.frida; let boxes = []; let holes = []; let boxesAt = 0;
   const build = () => {
     const dpr = Math.min(2, devicePixelRatio || 1);
     W = innerWidth; H = innerHeight; c.width = W * dpr; c.height = H * dpr; x.setTransform(dpr, 0, 0, dpr, 0, 0);
-    k = Math.max(1, Math.min(W, H) / 900); // en pantallas grandes, todo un poco más grande
-    const n = Math.round(Math.min(120, (W * H) / (11000 * k * k)));
-    pts = Array.from({ length: n }, () => ({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - 0.5) * 0.22 * k, vy: (Math.random() - 0.5) * 0.22 * k, c: COLORS[Math.floor(Math.random() * COLORS.length)] }));
+    k = Math.max(1, Math.min(W, H) / 700); // más grande que antes (pedido de Cote)
+    // Pocos destellos a la vez, repartidos (pedido de Cote: uno acá, otro abajo, otro arriba; no cientos, que se ve sucio)
+    let n = Math.round(Math.min(18, (W * H) / (60000 * k * k)));
+    if (mode === 'gc') n = Math.round(n * 2); // en el GC solo se ven los que caen dentro de los recuadros
+    if (weak) n = Math.round(n * 0.55);
+    pts = Array.from({ length: n }, () => spawn(true));
     pulses = [];
   };
+  // Cada neurona aparece, dura unos segundos y se desvanece; después nace otra en otro lugar (pedido de Cote: que no
+  // quede como telaraña fija)
+  const LIFE = [30, 60]; // en cuadros (a 30 por segundo: 1 a 2 segundos, fugaces: pedido de Cote)
+  const spawn = (anyAge) => {
+    const life = LIFE[0] + Math.random() * (LIFE[1] - LIFE[0]);
+    return { x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - 0.5) * 0.5 * k, vy: (Math.random() - 0.5) * 0.5 * k, c: Math.floor(Math.random() * 5), life, age: anyAge ? Math.random() * life : 0 };
+  };
+  const alphaOf = (a) => { const f = a.age / a.life; return f < 0.2 ? f / 0.2 : f > 0.75 ? Math.max(0, (1 - f) / 0.25) : 1; };
+  const readBoxes = () => {
+    boxes = Array.from(document.querySelectorAll(BOXES)).map((e) => ({ r: e.getBoundingClientRect(), rad: parseFloat(getComputedStyle(e).borderRadius) || 0 })).filter((b) => b.r.width > 0 && b.r.height > 0);
+    holes = Array.from(document.querySelectorAll(NO_FX)).map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0);
+    boxesAt = Date.now();
+  };
+  const path = (r, rad) => { if (x.roundRect) x.roundRect(r.left, r.top, r.width, r.height, Math.min(rad, r.height / 2)); else x.rect(r.left, r.top, r.width, r.height); };
   const draw = () => {
-    const R = 140 * k;
+    const R = 200 * k;
     x.clearRect(0, 0, W, H);
-    x.lineWidth = k;
+    if (mode === 'gc') {
+      if (Date.now() - boxesAt > 600) readBoxes();
+      if (!boxes.length) return;
+      x.save(); x.beginPath(); for (const b of boxes) path(b.r, b.rad); x.clip();
+    }
+    x.lineWidth = 2.2 * k;
     for (let i = 0; i < pts.length; i++) {
       const a = pts[i];
       for (let j = i + 1; j < pts.length; j++) {
         const b = pts[j]; const d = Math.hypot(a.x - b.x, a.y - b.y);
-        if (d < R) { x.strokeStyle = `rgba(243,238,230,${(1 - d / R) * 0.24})`; x.beginPath(); x.moveTo(a.x, a.y); x.lineTo(b.x, b.y); x.stroke(); }
+        if (d < R) { x.strokeStyle = `rgba(243,238,230,${(1 - d / R) * (mode === 'gc' ? 0.45 : 0.38) * Math.min(alphaOf(a), alphaOf(b))})`; x.beginPath(); x.moveTo(a.x, a.y); x.lineTo(b.x, b.y); x.stroke(); }
       }
     }
     for (const p of pulses) {
       const px = p.a.x + (p.b.x - p.a.x) * p.t; const py = p.a.y + (p.b.y - p.a.y) * p.t;
-      x.strokeStyle = `${p.a.c}66`; x.beginPath(); x.moveTo(p.a.x, p.a.y); x.lineTo(px, py); x.stroke();
-      x.fillStyle = p.a.c; x.beginPath(); x.arc(px, py, 3 * k, 0, 7); x.fill();
+      x.globalAlpha = Math.min(alphaOf(p.a), alphaOf(p.b));
+      x.strokeStyle = `${colors[p.a.c]}aa`; x.lineWidth = 3 * k; x.beginPath(); x.moveTo(p.a.x, p.a.y); x.lineTo(px, py); x.stroke();
+      x.fillStyle = colors[p.a.c]; x.beginPath(); x.arc(px, py, 6.5 * k, 0, 7); x.fill();
+      x.globalAlpha = 1;
     }
-    x.globalAlpha = 0.8;
-    for (const a of pts) { x.fillStyle = a.c; x.beginPath(); x.arc(a.x, a.y, 2.4 * k, 0, 7); x.fill(); }
+    for (const a of pts) { x.globalAlpha = 0.9 * alphaOf(a); x.fillStyle = colors[a.c]; x.beginPath(); x.arc(a.x, a.y, 5.5 * k, 0, 7); x.fill(); }
     x.globalAlpha = 1;
+    if (mode === 'gc') { x.restore(); for (const h of holes) x.clearRect(h.left - 2, h.top - 2, h.width + 4, h.height + 4); }
   };
   const newPulse = () => {
+    if (!pts.length) return;
     const a = pts[Math.floor(Math.random() * pts.length)]; let best = null; let dm = 1e9;
     for (const b of pts) { if (b === a) continue; const d = Math.hypot(a.x - b.x, a.y - b.y); if (d < dm && d > 30 * k) { dm = d; best = b; } }
     if (best) pulses.push({ a, b: best, t: 0 });
   };
-  const step = () => {
+  const step = (now) => {
     raf = 0;
     if (!c || document.hidden) return;
-    for (const a of pts) { a.x += a.vx; a.y += a.vy; if (a.x < 0 || a.x > W) a.vx *= -1; if (a.y < 0 || a.y > H) a.vy *= -1; }
-    if (Math.random() < 0.08 && pulses.length < 20) newPulse();
-    for (const p of pulses) p.t += 0.02;
+    raf = requestAnimationFrame(step);
+    if (now - last < 33) return; // 30 cuadros por segundo como máximo
+    last = now;
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i];
+      a.x += a.vx; a.y += a.vy; if (a.x < 0 || a.x > W) a.vx *= -1; if (a.y < 0 || a.y > H) a.vy *= -1;
+      if (++a.age >= a.life) pts[i] = spawn(false); // se desvaneció: nace otra en otro lugar
+    }
+    pulses = pulses.filter((p) => pts.includes(p.a) && pts.includes(p.b));
+    if (Math.random() < 0.05 && pulses.length < 4) newPulse();
+    for (const p of pulses) p.t += 0.03;
     pulses = pulses.filter((p) => p.t < 1);
     draw();
-    raf = requestAnimationFrame(step);
   };
+  const stop = () => { cancelAnimationFrame(raf); raf = 0; if (c) c.remove(); c = null; mode = ''; };
   const sync = () => {
-    const want = document.body.classList.contains('full');
-    if (want && !c) {
-      c = document.createElement('canvas'); c.id = 'neural-bg'; c.setAttribute('aria-hidden', 'true');
-      document.body.insertBefore(c, document.body.firstChild);
-      x = c.getContext('2d'); build();
-      if (matchMedia('(prefers-reduced-motion: reduce)').matches) { for (let i = 0; i < 10; i++) newPulse(); pulses.forEach((p, i) => { p.t = 0.3 + (i % 5) * 0.12; }); draw(); } else step();
-    } else if (!want && c) { cancelAnimationFrame(raf); raf = 0; c.remove(); c = null; }
+    const cl = document.body.classList;
+    const want = cl.contains('full') ? 'full' : cl.contains('obs') ? 'gc' : '';
+    colors = PALETTES[document.body.dataset.venue] || PALETTES.frida;
+    if (want === mode) return;
+    stop();
+    if (!want) return;
+    mode = want;
+    c = document.createElement('canvas'); c.id = 'neural-bg'; c.setAttribute('aria-hidden', 'true');
+    if (mode === 'gc') c.className = 'neural-gc';
+    document.body.insertBefore(c, document.body.firstChild);
+    x = c.getContext('2d'); build();
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) { for (let i = 0; i < 10; i++) newPulse(); pulses.forEach((p, i) => { p.t = 0.3 + (i % 5) * 0.12; }); draw(); } else raf = requestAnimationFrame(step);
   };
-  addEventListener('resize', () => { if (c) { build(); draw(); } });
-  document.addEventListener('visibilitychange', () => { if (c && !document.hidden && !raf && !matchMedia('(prefers-reduced-motion: reduce)').matches) step(); });
-  new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  addEventListener('resize', () => { if (c) { build(); boxesAt = 0; draw(); } });
+  document.addEventListener('visibilitychange', () => { if (c && !document.hidden && !raf && !matchMedia('(prefers-reduced-motion: reduce)').matches) raf = requestAnimationFrame(step); });
+  new MutationObserver(sync).observe(document.body, { attributes: true, attributeFilter: ['class', 'data-venue'] });
   sync();
   return { sync };
 })();

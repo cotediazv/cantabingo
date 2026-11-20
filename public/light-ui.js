@@ -188,7 +188,7 @@
           ${c && c.week.length ? weekHTML(c) : '<p class="lg-empty">Pronto la cartelera de la semana</p>'}</div>`;
       } else if (stage === 'qr') {
         const list = k ? k.list.slice(0, 6) : [];
-        box.innerHTML = `<div class="lg-card lg-qr"><div class="lg-qrbox">${qr(lightJoin(st.id))}<b>Únete desde tu celular</b><span>Pide tu canción de karaoke</span></div>
+        box.innerHTML = `<div class="lg-card lg-qr"><div class="lg-qrbox">${qr(lightJoin(st.id))}<b>Escanea el código QR con tu celular</b><span>Pide tu canción de karaoke</span></div>
           <div class="lg-list"><small>🎤 Próximos en cantar</small>${list.length ? list.map((p, i) => `<div><em>${i + 1}</em><p><b>${esc(p.name)}</b><span>${esc(p.song)}${p.artist ? ` · ${esc(p.artist)}` : ''}</span></p></div>`).join('') : '<p class="lg-empty">¡Sé el primero en pedir tu canción!</p>'}</div></div>`;
       } else box.innerHTML = '';
     };
@@ -324,7 +324,7 @@
     document.body.classList.add('full');
     app.innerHTML = `<div id="lv" class="th-${v}${focus === 'qr' ? ' lv-qrmode' : ''}"><header class="lv-top"><small>Esta noche en</small><b>${esc(NAMES[v])}</b><span class="lv-show" hidden></span></header>
       <section class="lv-card"><div class="lv-slide"></div><div class="lv-dots"></div></section>
-      <footer class="lv-qr"><div class="lv-qrbox"></div><div class="lv-qrtext"><b>Únete desde tu celular</b><span>Pide tu canción de karaoke y mira la cartelera</span></div></footer></div>`;
+      <footer class="lv-qr"><div class="lv-qrbox"></div><div class="lv-qrtext"><b>Escanea el código QR con tu celular</b><span>Pide tu canción de karaoke y espera tu turno</span></div></footer></div>`;
     let alive = true;
     let cart = null;
     let kar = null;
@@ -339,7 +339,7 @@
       const out = [];
       if (focus === 'qr') {
         const list = (kar && kar.list) || [];
-        return [`<h2>📱 Únete desde tu celular</h2><div class="lv-bigqr">${joinUrl ? qr(joinUrl) : ''}</div><p class="lv-bigqr-text">Pide tu canción de karaoke y mira la cartelera</p>
+        return [`<h2>📱 Escanea el código QR con tu celular</h2><div class="lv-bigqr">${joinUrl ? qr(joinUrl) : ''}</div><p class="lv-bigqr-text">Pide tu canción de karaoke y espera tu turno</p>
           ${list.length ? `<h2>🎤 Próximos en cantar</h2><ol class="lv-list">${list.slice(0, 4).map((p) => `<li><b>${esc(p.name)}</b><span>${esc(p.song)}</span></li>`).join('')}</ol>` : ''}`];
       }
       if (kar && kar.list && kar.list.length) {

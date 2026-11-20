@@ -137,6 +137,12 @@
   };
 
   // ---------- Moderador: panel de control ----------
+  // Top 10 de la Trivia del Rosco (lo usan el panel, la pantalla del local y el GC)
+  // «Resultados finales» cuando ya se mostró al ganador (pedido de Cote); antes, «Resultados parciales»
+  const rankHTML = (st, cls) => `<div class="${cls}"><div class="${cls}-head"><small>Trivia del Rosco · Top 10</small><b>🏅 ${st.crowdWinner || st.winner ? 'Resultados finales' : 'Resultados parciales'}</b><span>${st.rankPlayers} ${st.rankPlayers === 1 ? 'persona jugando' : 'personas jugando'}</span></div>
+    ${st.rank.length ? `<ol>${st.rank.map((t) => `<li><b>${esc(t.name)}</b><em>${t.score} pts</em></li>`).join('')}</ol>` : '<p>Todavía nadie suma puntos</p>'}</div>`;
+  // En qué paso de la pregunta está el panel: 0 sin juego, 1 poner rosco, 2 iniciar pregunta, 3 responder
+  const stepOf = (st) => { const c = st.players[st.turn]; return !c.active || st.winner || st.tie ? 0 : st.runningSince ? 3 : st.onScreen ? 2 : 1; };
   views.ruedactl = async (id) => {
     if (!(await isAdmin())) return viewLogin();
     const first = await api('GET', `/api/wheels/${id}`);
@@ -144,7 +150,14 @@
     const TAGS = { g: 'Cultura general', m: 'Música', a: 'Arte', f: 'Fácil' };
     let st = null;
     const act = (action, extra) => api('POST', `/api/wheels/${id}/act`, { action, ...extra }).catch(fail);
-    app.innerHTML = `<div class="cols">
+    // Para leer al partir (pedido de Cote)
+    const HOWTO = [
+      '3 participantes.',
+      'Todos juegan desde las mesas.',
+      '<b>Premio mayor</b> para el que gana El Rosco.',
+      '<b>Premio especial</b> para el ganador del público que juega la Trivia del Rosco.',
+    ];
+    app.innerHTML = `${window.readAloud ? window.readAloud('El Rosco', HOWTO) : ''}<div class="cols">
         <div class="panel">
           <div class="row between"><div><h1 id="w-name" style="margin:0"></h1><span class="muted" id="w-turn"></span></div><div class="w-letter" id="w-letter"></div></div>
           <div class="w-question" id="w-question"></div>
@@ -153,19 +166,24 @@
           <div id="w-accepted" hidden><p class="w-accepted">✔ Ganador aceptado</p>
             <button class="primary big w-accept" id="w-crowd" data-do="crowdwin">🏅 Mostrar ganador de la Trivia del Rosco</button>
             <div class="vc-read" id="w-crowd-res" hidden></div>${BACK_BINGO}</div>
+          <div class="w-flow">
+            <button class="w-show" id="w-show"></button>
+            <button class="w-go" id="w-clock"></button>
+          </div>
           <div class="w-keys">
-            <button class="w-hit" data-do="hit">✔ Acierto <kbd>A</kbd></button>
-            <button class="w-miss" data-do="miss">✘ Fallo <kbd>F</kbd></button>
-            <button class="w-pass" data-do="pass">↷ Paso <kbd>P</kbd></button>
+            <button class="w-hit" data-do="hit">✔ Correcta <kbd>A</kbd></button>
+            <button class="w-miss" data-do="miss">✘ Incorrecta <kbd>F</kbd></button>
+            <button class="w-pass" data-do="pass">↷ Pasa <kbd>P</kbd></button>
           </div>
           <div class="row" style="margin-top:14px">
-            <button class="primary" id="w-clock"></button>
             <button data-do="undo" id="w-undo">↶ Deshacer</button>
             <button data-do="turn" id="w-swap">Cambiar turno</button>
             <button class="danger" id="w-reset">Reiniciar</button>
             ${fromBank ? '<button id="w-newq">↻ Preguntas nuevas</button>' : ''}
           </div>
-          <p class="muted small" style="margin-top:12px">Teclado: A acierto, F fallo, P paso, Espacio inicia o pausa las preguntas y el reloj. Toca una letra del rosco para saltar a ella o reabrirla.</p>
+          <p class="muted small" style="margin-top:12px">Paso a paso: 1) Poner rosco en pantalla, 2) Iniciar pregunta, 3) Correcta, Incorrecta o Pasa. Solo se puede apretar el botón del paso que toca. Teclado: Espacio inicia la pregunta; A correcta, F incorrecta, P pasa. Con «Incorrecta» o «Pasa» el rosco sale del GC (queda el marcador). Toca una letra del rosco para saltar a ella o reabrirla.</p>
+          <button class="w-rankbtn" id="w-rank"></button>
+          <div class="w-ranklist" id="w-ranklist" hidden></div>
         </div>
         <div class="panel"><div class="wheels" id="w-wheels"></div></div>
       </div>
@@ -181,7 +199,7 @@
       const q = (questions[st.turn] || [])[c.current] || {};
       // La pregunta y su respuesta se muestran al moderador solo con el reloj en marcha
       $('#w-question').innerHTML = !c.active ? (st.tie ? (st.tie.rolling ? '<b>Sorteando el desempate…</b> Mira la pantalla.' : `<b>Hay un empate</b> entre ${st.tie.names.map(esc).join(' y ')}: mismos aciertos y fallos. Primero desempata por sorteo.`) : st.winner ? (st.winAccepted ? `<b>${st.winner.full ? '¡Rosco completo!' : '¡Tenemos ganador!'}</b> El nombre del ganador queda abajo al centro de la pantalla.` : `<b>${st.winner.full ? '¡Rosco completo!' : `¡Gana ${esc(st.winner.name)}!`}</b> ${st.winner.byDraw ? 'Salió elegido en el desempate.' : 'La partida se detuvo y en pantalla se muestra la felicitación.'} Pulsa «Aceptar ganador», o Deshacer si fue un error.`) : '<span class="muted">Este concursante ya terminó su rosco.</span>')
-        : !st.runningSince ? '<span class="muted">Pulsa «Iniciar preguntas» para ver la pregunta de esta letra.</span>'
+        : !st.runningSince ? '<span class="muted">Pulsa «Iniciar pregunta» para ver la pregunta de esta letra.</span>'
         : q.q ? `${q.cat ? `<div class="small muted" style="margin-bottom:6px">${TAGS[q.cat]} · ${q.level === 'f' ? 'Fácil' : 'Medio'}</div>` : ''}<div class="w-qtext">${esc(q.q)}</div>${q.a ? `<div class="w-answer"><small>Respuesta</small><b>${esc(q.a)}</b></div>` : ''}` : '<span class="muted">Sin pregunta cargada para esta letra: léela de tu guion.</span>';
       $('#w-accept').hidden = !st.winner || st.winAccepted;
       $('#w-tie').hidden = !st.tie || st.tie.rolling;
@@ -189,14 +207,27 @@
       $('#w-crowd').hidden = !!st.crowdWinner;
       $('#w-crowd-res').hidden = !st.crowdWinner;
       if (st.crowdWinner) $('#w-crowd-res').innerHTML = `<small>Ganó la Trivia del Rosco</small><b>${esc(st.crowdWinner.name)}</b><i>${st.crowdWinner.score} puntos · ${st.crowdWinner.hits} aciertos</i><small>Jugaron ${st.crowdWinner.players} personas</small>`;
-      $$('.w-keys button').forEach((b) => { b.disabled = !c.active; });
-      $('#w-clock').textContent = st.runningSince ? '⏸ Pausar' : '▶ Iniciar preguntas';
-      $('#w-clock').disabled = !c.active;
+      // Pregunta paso a paso (pedido de Cote): solo se puede apretar el botón del paso que toca; los demás quedan
+      // bloqueados en blanco y negro. 1) Poner rosco en pantalla → 2) Iniciar pregunta → 3) Correcta / Incorrecta / Pasa
+      // (con Correcta se sigue en el paso 3; con Incorrecta o Pasa el rosco sale y se vuelve al paso 1)
+      const step = stepOf(st);
+      $$('.w-keys button').forEach((b) => { b.disabled = step !== 3; });
+      $('#w-clock').textContent = st.runningSince ? '⏱ Pregunta en curso' : '▶ Iniciar pregunta';
+      $('#w-clock').classList.toggle('on', !!st.runningSince);
+      $('#w-show').textContent = st.onScreen ? '📺 Rosco en pantalla ✓' : '📺 Poner rosco en pantalla';
+      $('#w-show').classList.toggle('on', !!st.onScreen);
+      $('#w-show').disabled = step !== 1;
+      // Ranking de la Trivia del Rosco (pedido de Cote): se despliega en la pantalla del local y a un costado del GC
+      $('#w-rank').textContent = st.rank ? '🏅 Recoger ranking (está en pantalla)' : '🏅 Desplegar ranking de la Trivia (top 10)';
+      $('#w-rank').classList.toggle('on', !!st.rank);
+      $('#w-ranklist').hidden = !st.rank;
+      if (st.rank) $('#w-ranklist').innerHTML = rankHTML(st, 'w-rk');
+      $('#w-clock').disabled = step !== 2;
       $('#w-undo').disabled = !st.canUndo;
       $('#w-swap').hidden = st.players.length < 2;
       $('#w-wheels').innerHTML = st.players.map((_, i) => `<div class="wheel-box ${i === st.turn ? 'on' : 'off'}">${wheelSVG(st, i, true)}</div>`).join('');
     };
-    const toggleClock = () => act(st.runningSince ? 'pause' : 'start');
+    const toggleClock = () => { if (stepOf(st) === 2) act('start'); };
     app.onclick = (e) => {
       const btn = e.target.closest('[data-do]');
       if (btn && !btn.disabled) return void act(btn.dataset.do);
@@ -204,6 +235,8 @@
       if (g) act('select', { index: Number(g.dataset.letter), player: Number(g.dataset.player) });
     };
     $('#w-clock').onclick = toggleClock;
+    $('#w-show').onclick = () => { if (stepOf(st) === 1) act('show', { on: true }); };
+    $('#w-rank').onclick = () => act('rank', { on: !st.rank });
     $('#w-tie').onclick = async () => { try { await api('POST', `/api/wheels/${id}/tiebreak`); } catch (err) { fail(err); } };
     $('#w-reset').onclick = () => { if (confirm('¿Reiniciar el rosco? Se borran aciertos, fallos y relojes.')) act('reset'); };
     if (fromBank) $('#w-newq').onclick = async () => {
@@ -214,7 +247,7 @@
       if (!st || e.ctrlKey || e.metaKey || e.altKey || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
       const k = e.key.toLowerCase();
       const map = { a: 'hit', f: 'miss', p: 'pass' };
-      if (k === ' ') { e.preventDefault(); toggleClock(); } else if (map[k] && st.players[st.turn].active) act(map[k]);
+      if (k === ' ') { e.preventDefault(); toggleClock(); } else if (map[k] && stepOf(st) === 3) act(map[k]);
     };
     document.addEventListener('keydown', onKey);
     const stopClocks = startClocks(() => st);
@@ -265,11 +298,34 @@
       return `<aside class="${cls} ${fresh ? 'pop' : ''}" data-reveal><span class="rv-head">✔ Letra ${esc(state.reveal.letter)}</span><span class="rv-answer">${esc(state.reveal.answer)}</span></aside>`;
     };
     const hideReveal = () => $$('[data-reveal]').forEach((el) => { el.hidden = true; });
+    // Aviso en el centro del GC al apretar «Incorrecta» o «Pasa» (pedido de Cote): dura 1,5 s y suena
+    let lastFlash = 0;
+    let flashTimer = null;
+    const flashLeft = (state) => (state.flash ? 1500 - (Date.now() + state.offset - state.flash.at) : 0);
+    const flashCard = (state) => {
+      if (flashLeft(state) <= 0) return '';
+      const f = state.flash;
+      return f.kind === 'miss'
+        ? `<div class="obs-flash miss" data-flash><b>✘ Incorrecto</b>${f.answer ? `<span>La respuesta correcta era</span><em>${esc(f.answer)}</em>` : ''}</div>`
+        : `<div class="obs-flash pass" data-flash><b>↷ ${esc(f.name)} pasa</b></div>`;
+    };
+    const scheduleFlash = (state) => {
+      if (!state.flash || flashLeft(state) <= 0) return;
+      if (state.flash.at !== lastFlash) {
+        lastFlash = state.flash.at;
+        const name = state.flash.kind === 'miss' ? 'miss' : 'pass';
+        sfx.played.push(name);
+        const c = sfx.unlock(); // en OBS el audio queda activo sin tocar la pantalla
+        if (c && c.state !== 'running') Promise.resolve(c.resume()).then(() => sfx.play(name)).catch(() => {}); else sfx.play(name);
+      }
+      clearTimeout(flashTimer);
+      flashTimer = setTimeout(() => $$('[data-flash]').forEach((el) => el.remove()), Math.max(0, flashLeft(state)));
+    };
     const scheduleRevealEnd = (state) => {
       clearTimeout(revealTimer);
       if (!state.reveal) return;
       lastReveal = state.reveal.at;
-      revealTimer = setTimeout(hideReveal, Math.max(0, revealLeft(state)));
+      revealTimer = setTimeout(() => { hideReveal(); if (!state.question && $('#pw') && $('.pw-title')) $('#pw').classList.add('pw-idle'); }, Math.max(0, revealLeft(state)));
     };
     document.body.classList.add('wheel-screen');
     if (kind === 'obs') document.body.classList.add('obs');
@@ -277,7 +333,7 @@
     const stopClocks = startClocks(() => st);
     const WIN_HOLD_MS = 15000;
     let winTimer = null;
-    const leave = () => { clearTimeout(shrinkTimer); clearTimeout(tickTimer); clearTimeout(winTimer); document.body.classList.remove('wheel-screen', 'obs'); };
+    const leave = () => { const pw = $('#pw'); if (pw) pw.classList.remove('pw-idle'); rankV.hide(); clearTimeout(shrinkTimer); clearTimeout(tickTimer); clearTimeout(winTimer); document.body.classList.remove('wheel-screen', 'obs'); };
     // Efectos de sonido del tablero del DJ: acierto, fallo, paso y ganador
     let heard = null;
     const soundFor = (s) => {
@@ -319,10 +375,116 @@
       if (!running) { clearTimeout(tickTimer); tickTimer = null; } else if (!tickTimer) tickLoop();
     };
     let shrinkTimer = null;
+    // Ranking vertical: 5 primeros en grande y el resto en columnas, por páginas que cambian solas; se actualiza cada 5 s
+    const rankV = (() => {
+      let id = null; let data = null; let page = 0; let tPoll = null; let tPage = null; let cap = 60; let capFor = '';
+      const PAGE_MS = 8000;
+      const cols = () => (innerWidth >= 700 ? 3 : 2);
+      const load = async () => { if (!id) return; const d = await api('GET', `/api/wheels/${id}/ranking`).catch(() => null); if (d && id) { data = d; paint(); } };
+      // Cada columna en su propio recuadro (pedido de Cote): 6, 7, 8… hacia abajo y luego la columna siguiente
+      const colsOf = (chunk, from) => {
+        const n = cols(); const rows = Math.max(1, Math.ceil(chunk.length / n)); let out = '';
+        for (let c = 0; c < n; c++) {
+          const part = chunk.slice(c * rows, c * rows + rows);
+          out += `<ol class="rv-col">${part.map((t, i) => `<li><em>${from + 6 + c * rows + i}</em><b>${esc(t.name)}</b><i>${t.score}</i></li>`).join('')}</ol>`;
+        }
+        return out;
+      };
+      // Antes de empezar: «¡Pronto! Ya comenzamos» y la lista de todos los que están en la sala, en muchas columnas, de a
+      // 80 por página (pedido de Cote: que se vea la cantidad de gente que participa)
+      // Todos los participantes caben siempre en la pantalla (pedido de Cote): con pocos, grandes; con muchos, más columnas
+      // y letra más chica. Se actualiza cada 5 s a medida que entra gente (sin páginas).
+      const peopleHTML = () => {
+        const all = data.people || [];
+        return `<div class="rv-soon small"><b>¡Pronto!</b><span>Ya comenzamos</span><small class="rv-howto">Elegimos 3 participantes al azar entre todos los conectados</small></div>
+          <div class="rv-people"><small>${all.length} ${all.length === 1 ? 'persona participando' : 'personas participando'}</small>
+            <ul>${all.map((n) => `<li>${esc(n)}</li>`).join('')}</ul></div>`;
+      };
+      const layoutPeople = () => {
+        const ul = $('.rv-people ul');
+        if (!ul) return;
+        const items = Array.from(ul.children);
+        const n = items.length;
+        if (!n) return;
+        const W = ul.clientWidth; const H = ul.clientHeight;
+        const font = getComputedStyle(items[0]);
+        if (!layoutPeople.c) layoutPeople.c = document.createElement("canvas").getContext("2d");
+        const ctx = layoutPeople.c;
+        ctx.font = `${font.fontWeight} 100px ${font.fontFamily}`;
+        const longest = Math.max(...items.map((li) => ctx.measureText(li.textContent.toUpperCase()).width)) / 100; // ancho por cada px de letra
+        const GAP = 0.03 * W; const LH = 1.3;
+        let best = { size: 0, cols: 1 };
+        for (let cols = 1; cols <= 10; cols++) {
+          const rows = Math.ceil(n / cols);
+          const colW = (W - GAP * (cols - 1)) / cols;
+          const size = Math.min(H / (rows * LH), colW / longest, innerHeight * 0.06);
+          if (size > best.size) best = { size, cols };
+        }
+        ul.style.setProperty('--cols', best.cols);
+        ul.style.setProperty('--rows', Math.ceil(n / best.cols));
+        ul.style.fontSize = `${Math.max(5, best.size * 0.97).toFixed(1)}px`;
+      };
+      const html = (from, chunk, pages) => {
+        const top = data.list.slice(0, 5);
+        // Sin QR en la pantalla vertical (pedido de Cote). Si todavía nadie juega: «¡Pronto! Ya comenzamos»
+        return `<div class="rv-rank"><header class="rv-head"><div class="rv-title"><b>Resultados</b><span>La Trivia del Rosco</span>${top.length ? `<small>${data.players} ${data.players === 1 ? 'persona jugando' : 'personas jugando'}</small>` : ''}</div></header>
+          ${top.length ? `<ol class="rv-top">${top.map((t, i) => `<li><em>${i + 1}</em><b>${esc(t.name)}</b><i>${t.score} pts</i></li>`).join('')}</ol>
+          <div class="rv-rest" style="--cols:${cols()}">${colsOf(chunk, from)}</div>
+          <footer class="rv-pages">${pages > 1 ? `Puestos ${from + 6} al ${from + 5 + chunk.length} · página ${page + 1} de ${pages}` : ''}</footer>`
+    : peopleHTML()}</div>`;
+      };
+      const fitNames = () => {
+        layoutPeople();
+        $$('.rv-top b, .rv-col b').forEach((b) => {
+          b.style.fontSize = '';
+          let f = parseFloat(getComputedStyle(b).fontSize);
+          const min = f * 0.45;
+          for (let i = 0; i < 30 && b.scrollWidth > b.clientWidth + 1 && f > min; i++) { f *= 0.94; b.style.fontSize = `${f.toFixed(1)}px`; }
+        });
+      };
+      const paint = () => {
+        if (!id || !data) return;
+        const rest = data.list.slice(5);
+        // Cuántos caben en una página: se prueba y se ajusta a lo que de verdad cabe en la pantalla
+        const key = `${innerWidth}x${innerHeight}`;
+        if (capFor !== key) { capFor = key; cap = 90; }
+        for (let tries = 0; tries < 40; tries++) {
+          const pages = Math.max(1, Math.ceil(rest.length / cap));
+          page %= pages;
+          const from = page * cap;
+          $('#pw').innerHTML = html(from, rest.slice(from, from + cap), pages);
+          // Nombres en una sola línea (pedido de Cote): cada nombre largo se achica hasta caber en su columna
+          fitNames();
+          const box = $('.rv-rest');
+          if (!box || box.scrollHeight <= box.clientHeight + 1 || cap <= cols()) break;
+          cap = Math.max(cols(), cap - cols());
+        }
+      };
+      return {
+        show(wid) {
+          document.body.classList.add('rv-on');
+          if (id === wid) return;
+          id = wid; page = 0; data = null;
+          load(); clearInterval(tPoll); clearInterval(tPage);
+          tPoll = setInterval(load, 5000);
+          tPage = setInterval(() => { page++; paint(); }, PAGE_MS);
+        },
+        hide() { document.body.classList.remove('rv-on'); if (!id) return; id = null; clearInterval(tPoll); clearInterval(tPage); },
+      };
+    })();
     const onWheel = (s) => {
       st = s;
+      if (st.winner || st.crowdWinner) rankV.hide();
       soundFor(s);
       clockSound(s);
+      // Ranking desplegado con el ganador ya en pantalla: los resultados finales encima (al recogerlo vuelve la felicitación)
+      if (st.rank && (st.winner || st.crowdWinner)) {
+        wonBy = null; clearTimeout(winTimer); clearTimeout(shrinkTimer);
+        $('#pw').innerHTML = kind === 'obs' && !document.body.classList.contains('full')
+          ? `<div class="obs-side obs-rankside wide">${rankHTML(st, 'obs-rank')}</div>`
+          : `<div class="pw-rankwrap">${rankHTML(st, 'pw-rank')}</div>`;
+        return;
+      }
       // Ganador del Rosco en línea (el público): 15 segundos en pantalla y después se retira
       if (st.crowdWinner) {
         const full = document.body.classList.contains('full');
@@ -333,7 +495,7 @@
         const gone = () => {
           wonBy = `${key}|gone`;
           $('#pw').innerHTML = full ? `<div id="fb"><div class="fb-idle"><b><i>KRB Stage</i> Sala de juegos</b><div class="fb-idle-qr">${qr(joinUrl())}</div>
-            <small>Escanea el código QR y prepárate</small></div></div>` : '';
+            <small>Escanea el código QR con tu celular y prepárate</small></div></div>` : '';
         };
         if (left <= 0) { if (wonBy !== `${key}|gone`) gone(); return; }
         winTimer = setTimeout(gone, left);
@@ -359,7 +521,7 @@
         const cleared = () => {
           wonBy = st.winner.name + '|gone';
           $('#pw').innerHTML = full ? `<div id="fb"><div class="fb-idle"><b><i>KRB Stage</i> Sala de juegos</b><div class="fb-idle-qr">${qr(joinUrl())}</div>
-            <small>Escanea el código QR y prepárate</small></div></div>` : '';
+            <small>Escanea el código QR con tu celular y prepárate</small></div></div>` : '';
         };
         clearTimeout(winTimer);
         if (left <= 0) { if (wonBy !== st.winner.name + '|gone') cleared(); return; }
@@ -381,20 +543,35 @@
       wonBy = null; clearTimeout(winTimer); clearTimeout(shrinkTimer);
       if (kind === 'obs') {
         // En OBS: solo la rueda del concursante en turno, con el centro libre para su cámara,
-        // y el reloj con el marcador en una esquina.
+        // y el reloj con el marcador en una esquina. Pedido de Cote: el rosco y la pregunta se ven desde «Iniciar pregunta»
+        // (o con el botón «Rosco en pantalla»); con un fallo o un paso salen al instante y queda solo el marcador.
         $('#pw').innerHTML = `<div class="obs-corner">${st.players.map((c, i) => `<div class="obs-player ${i === st.turn && !st.finished ? 'on' : ''}">
             <span class="obs-clock" data-timer="${i}">${clock(c.remainingMs)}</span>
             <span class="obs-name">${esc(c.name)}</span>
             <span class="obs-score"><b class="ok">✔ ${c.hits}</b> <b class="ko">✘ ${c.misses}</b></span></div>`).join('')}</div>
-          <div class="obs-wheel">${wheelSVG(st, st.turn, false, true)}</div>
-          <div class="obs-side">${questionCard(st)}${revealCard(st, 'obs-reveal')}</div>`;
+          ${st.onScreen ? `<div class="obs-wheel">${wheelSVG(st, st.turn, false, true)}</div>` : ''}
+          ${st.rank ? `<div class="obs-side obs-rankside ${st.onScreen ? '' : 'wide'}">${rankHTML(st, 'obs-rank')}</div>` : st.onScreen ? `<div class="obs-side">${questionCard(st)}${revealCard(st, 'obs-reveal')}</div>` : ''}
+          ${flashCard(st)}`;
         lastQuestion = st.question;
         scheduleRevealEnd(st);
+        scheduleFlash(st);
         return;
       }
-      $('#pw').innerHTML = `<h1 class="pw-title">${esc(st.name)}</h1>
+      // Pantalla vertical (pedido de Cote): en vez de los roscos, el ranking completo de la Trivia del Rosco
+      if (kind === 'rueda' && document.body.classList.contains('full') && innerHeight > innerWidth) { rankV.show(st.id); return; }
+      rankV.hide();
+      // Sin pregunta ni respuesta en pantalla (pedido de Cote): el título crece y ocupa el espacio de arriba, con letras de
+      // colores que se mueven; al iniciar la pregunta vuelve a su tamaño
+      const idle = !st.question && revealLeft(st) <= 0;
+      const fun = [...String(st.name)].map((ch, i) => (ch === ' ' ? '<i class="sp"> </i>' : `<i style="--i:${i}">${esc(ch)}</i>`)).join('');
+      $('#pw').classList.toggle('pw-idle', idle);
+      // Instrucciones antes de empezar (pedido de Cote)
+      const started = !!st.runningSince || st.players.some((c) => c.status.some((x) => x !== 'pending'));
+      $('#pw').classList.toggle('pw-howto-on', idle && !started);
+      $('#pw').innerHTML = `<h1 class="pw-title"><span class="pw-plain">${esc(st.name)}</span><span class="pw-fun" aria-hidden="true">${fun}</span>${started ? '' : '<small class="pw-howto">Elegimos 3 participantes al azar entre todos los conectados</small>'}</h1>
         <div class="pw-text">${revealCard(st, 'pw-reveal')}${st.question ? `<div class="pw-question">${esc(st.question)}</div>` : ''}</div>
-        <div class="wheels n${st.players.length}">${st.players.map((_, i) => `<div class="wheel-box ${i === st.turn && !st.finished ? 'on' : 'off'}">${wheelSVG(st, i)}</div>`).join('')}</div>`;
+        <div class="wheels n${st.players.length}">${st.players.map((_, i) => `<div class="wheel-box ${i === st.turn && !st.finished ? 'on' : 'off'}">${wheelSVG(st, i)}</div>`).join('')}</div>
+        ${st.rank ? `<div class="pw-rankwrap">${rankHTML(st, 'pw-rank')}</div>` : ''}`;
       scheduleRevealEnd(st);
     };
     const off = watch(id, onWheel, () => { leave(); if (['#/escena', '#/gc', '#/obs', '#/tablero', `#/${kind}`].includes(location.hash)) route(); else location.hash = `#/${kind}`; });

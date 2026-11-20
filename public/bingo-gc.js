@@ -14,7 +14,7 @@
     const s = ((await api('GET', '/api/current').catch(() => ({}))).sessions || [])[0];
     app.innerHTML = `<div id="gc" class="th-${s ? s.theme : 'frida'}"><div class="gc-big-wrap"><div class="gc-big"><b class="gc-big-title">${s ? esc(s.name) : 'KRB Stage · Sala de juegos'}</b>
       <div class="gc-big-qr">${qr(joinUrl())}</div>
-      <span class="gc-big-text">Escanea el código QR, pon tu nombre y apellido y participa</span></div></div></div>`;
+      <span class="gc-big-text">Escanea el código QR con tu celular, pon tu nombre, apellido y participa</span></div></div></div>`;
     return () => document.body.classList.remove('obs', 'gc-screen');
   };
 
@@ -79,7 +79,7 @@
           bigShown = true;
           $('#gc').innerHTML = `<div class="gc-big-wrap"><div class="gc-big"><b class="gc-big-title">${esc(st.name)}</b>
             <div class="gc-big-qr">${qr(joinUrl())}</div>
-            <span class="gc-big-text">Escanea el código QR, pon tu nombre y apellido y participa</span>
+            <span class="gc-big-text">Escanea el código QR con tu celular, pon tu nombre, apellido y participa</span>
             <span class="gc-big-count"></span></div></div>`;
         }
         $('.gc-big-count').textContent = count;
@@ -100,12 +100,15 @@
           <div class="gc-grid">${figure}</div>
           <b class="${PATTERNS.byId[id].name.length > 10 ? 'long' : ''}">${esc(PATTERNS.byId[id].name)}</b>
         </div>`;
+      // La frase de la franja de arriba se achica hasta caber completa (pedido de Cote: que no se corte con «…»)
+      const sub = $('.gc-sub');
+      if (sub) { sub.style.fontSize = ''; for (let f = 4; f > 2 && sub.scrollWidth > sub.clientWidth + 1; f -= 0.2) sub.style.fontSize = `${f.toFixed(1)}vh`; }
     };
 
     // Sin sesión activa: queda solo el QR arriba a la derecha, sobre fondo transparente
     const idle = () => {
       $('#gc').className = 'th-frida';
-      $('#gc').innerHTML = `<div class="gc-qr">${qr(joinUrl())}</div><div class="gc-idle-label">Escanea y prepárate</div>`;
+      $('#gc').innerHTML = `<div class="gc-qr">${qr(joinUrl())}</div><div class="gc-idle-label">Escanea el código QR con tu celular y prepárate</div>`;
     };
     // Sigue siempre a la sesión activa más reciente; sin sesión, la gráfica queda vacía (transparente)
     const follow = async () => {
