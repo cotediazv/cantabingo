@@ -670,6 +670,11 @@ html.con-visor,html.con-visor body{overflow:hidden}
 .vt-fecha{font-size:clamp(13px,1.7vh,18px);color:var(--tenue);overflow:hidden;text-overflow:ellipsis}
 .vt-l2{display:flex;gap:6px 14px;align-items:baseline;font-size:clamp(12.5px,1.7vh,18px);white-space:nowrap;overflow-x:auto;scrollbar-width:none;color:#e9e4f0}
 .vt-l2::-webkit-scrollbar{display:none}
+.vt-l2.mueve{overflow:hidden;display:block;-webkit-mask-image:linear-gradient(90deg,transparent,#000 3%,#000 97%,transparent);mask-image:linear-gradient(90deg,transparent,#000 3%,#000 97%,transparent)}
+.vt-cinta{display:inline-flex;white-space:nowrap;animation:vt-cinta linear infinite}
+.vt-cinta>span{display:inline-flex;gap:6px 14px;align-items:baseline;padding-right:48px}
+@keyframes vt-cinta{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.vt-cinta{animation:none}}
 .vt-l2 b{color:var(--c);font-weight:700}.vt-l2 em{font-style:normal;color:#f4bf5a;font-weight:700}.vt-show{color:#fff;font-weight:700}
 .visor-pc{flex:none;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;border-radius:999px;padding:5px 12px;font:700 16px var(--f-texto);cursor:pointer}
 .visor-x{flex:none;border:1px solid rgba(255,255,255,.4);background:rgba(0,0,0,.6);color:#fff;border-radius:999px;padding:7px 13px;font:700 13px var(--f-texto);cursor:pointer}
@@ -1607,10 +1612,19 @@ elegirLocal('kennedy');
     else{const d=w.find(d=>!d.today&&d.hours&&d.hours.length);if(d)prog=`<b>Próximo: ${esc(capi(d.day))} ${d.date} desde las ${esc(d.hours[0].time)}</b>${d.show?`<span class="vt-show">⭐ ${esc(capi(d.show))}</span>`:''}${lista(d)}`;else prog='<b>Pronto la cartelera de este local</b>'}
     visor.style.setProperty('--c',L.c);
     visor.querySelector('.vt-l1').innerHTML=`<b class="vt-local">${esc(L.n)}</b>${vivo?`<span class="vt-estado en-vivo"><i class="vt-dot"></i>En vivo${DIAG?'<b class="vt-diag"> · atraso …</b>':''}</span>`:'<span class="vt-estado">▣ Pantalla del local</span>'}<span class="vt-fecha">${DIAS[hoy.getDay()]} ${hoy.getDate()} de ${MESL[hoy.getMonth()]}</span><span class="visor-puntos">${ORDEN.map((_,k)=>`<i class="visor-punto${k===idxV?' on':''}"></i>`).join('')}</span>`;
-    visor.querySelector('.vt-l2').innerHTML=prog;
+    visor.querySelector('.vt-l2').innerHTML=prog;visor._prog=prog;cinta();
+  }
+  // Si el programa de hoy no cabe en la línea, se va moviendo (como cinta) para mostrar todo (pedido de Cote)
+  function cinta(){
+    if(!visor)return;const l2=visor.querySelector('.vt-l2');if(!l2||!visor._prog)return;
+    l2.classList.remove('mueve');l2.innerHTML=visor._prog;
+    if(l2.scrollWidth<=l2.clientWidth+2)return;
+    l2.innerHTML=`<div class="vt-cinta"><span>${visor._prog}</span><span aria-hidden="true">${visor._prog}</span></div>`;
+    const w=l2.querySelector('.vt-cinta>span').offsetWidth;l2.querySelector('.vt-cinta').style.animationDuration=Math.max(8,w/45)+'s';
+    l2.classList.add('mueve');
   }
   function ajustarVisor(){
-    if(!visor)return;
+    if(!visor)return;cinta();
     visor.style.height=innerHeight+'px';
     const pista=visor.querySelector('.visor-pista'),W=pista.clientWidth,flechas=matchMedia('(hover:hover)').matches?96:84;
     pista.querySelectorAll('.visor-slide').forEach(sl=>{
