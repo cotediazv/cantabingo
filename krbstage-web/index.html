@@ -639,7 +639,10 @@ html.modo-obs{color-scheme:dark}
 html.modo-obs,html.modo-obs body{background:transparent!important}
 html.modo-obs body>*:not(.visor){display:none!important}
 html.modo-obs .visor{background:transparent}
-html.modo-obs .visor-top{position:relative;z-index:3;background:color-mix(in srgb,var(--c) 22%,#000);border-bottom:4px solid var(--c);padding:14px 28px 12px}
+html.modo-obs .visor{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:var(--obs-esp,48px);box-sizing:border-box}
+html.modo-obs .visor-top{position:relative;z-index:3;background:color-mix(in srgb,var(--c) 22%,#000);border:3px solid var(--c);border-radius:14px;padding:14px 28px 12px;box-sizing:border-box;flex:none}
+html.modo-obs .visor-pista{flex:none;width:100%;height:var(--obs-h,700px);margin-top:var(--obs-esp,48px)}
+html.modo-obs .visor-pista{overflow:visible}html.modo-obs .visor-slide:not(.actual){display:none}html.modo-obs .visor-slide{padding:0}html.modo-obs .visor-slide>.ptl-vivo{gap:0}
 /* (pedido de Cote) franja de arriba de otro color que el fondo y letras grandes que ocupan todo el ancho */
 html.modo-obs .vt-txt{gap:8px}html.modo-obs .vt-l1{gap:24px;align-items:center}
 html.modo-obs .vt-local{font-size:64px}html.modo-obs .vt-estado{font-size:24px}html.modo-obs .vt-fecha{font-size:32px}
@@ -1665,9 +1668,25 @@ elegirLocal('kennedy');
     const w=l2.querySelector('.vt-cinta>span').offsetWidth;l2.querySelector('.vt-cinta').style.animationDuration=Math.max(8,w/45)+'s';
     l2.classList.add('mueve');
   }
+  // Modo OBS (pedido de Cote): composición ordenada: la franja de arriba con los mismos márgenes laterales que las
+  // pantallas de abajo, y el mismo espacio arriba, entre la franja y las pantallas, y abajo
+  function obsComponer(){
+    const W=innerWidth,H=innerHeight,lado=Math.round(W*.04),gap=Math.round(W*.012),top=visor.querySelector('.visor-top');
+    const ancho=W-2*lado;top.style.width=ancho+'px';
+    const th=top.offsetHeight,aire=Math.round(H*.045);
+    const h=Math.floor(Math.min((ancho-gap)/(16/9+9/16),H-th-3*aire));
+    const wh=Math.floor(h*16/9),wv=ancho-gap-wh,esp=Math.max(aire,Math.round((H-th-h)/3));
+    visor.style.setProperty('--obs-esp',esp+'px');visor.style.setProperty('--obs-h',h+'px');
+    const pista=visor.querySelector('.visor-pista');
+    pista.querySelectorAll('.visor-slide').forEach(sl=>{const f=sl.querySelector('.vivo-fila');if(!f)return;
+      f.style.gridTemplateColumns=`${wh}px ${wv}px`;f.style.gap=gap+'px';
+      f.querySelectorAll('.pant').forEach(d=>d.style.height=h+'px')});
+    pista.scrollLeft=(idxV+1)*pista.clientWidth;requestAnimationFrame(escalar);
+  }
   function ajustarVisor(){
     if(!visor)return;cinta();
     visor.style.height=innerHeight+'px';
+    if(MODO_OBS){obsComponer();return}
     const pista=visor.querySelector('.visor-pista'),W=pista.clientWidth,flechas=matchMedia('(hover:hover)').matches?96:84;
     pista.querySelectorAll('.visor-slide').forEach(sl=>{
       const f=sl.querySelector('.vivo-fila');if(!f)return;const bt=sl.querySelector('.vivo-botones');
