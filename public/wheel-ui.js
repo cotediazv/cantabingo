@@ -374,16 +374,26 @@
       const PAGE_MS = 8000;
       const cols = () => (innerWidth >= 700 ? 3 : 2);
       const load = async () => { if (!id) return; const d = await api('GET', `/api/wheels/${id}/ranking`).catch(() => null); if (d && id) { data = d; paint(); } };
+      // Cada columna en su propio recuadro (pedido de Cote): 6, 7, 8… hacia abajo y luego la columna siguiente
+      const colsOf = (chunk, from) => {
+        const n = cols(); const rows = Math.max(1, Math.ceil(chunk.length / n)); let out = '';
+        for (let c = 0; c < n; c++) {
+          const part = chunk.slice(c * rows, c * rows + rows);
+          out += `<ol class="rv-col">${part.map((t, i) => `<li><em>${from + 6 + c * rows + i}</em><b>${esc(t.name)}</b><i>${t.score}</i></li>`).join('')}</ol>`;
+        }
+        return out;
+      };
       const html = (from, chunk, pages) => {
         const top = data.list.slice(0, 5);
-        // Sin QR en la pantalla vertical (pedido de Cote)
+        // Sin QR en la pantalla vertical (pedido de Cote). Si todavía nadie juega: «¡Pronto! Ya comenzamos»
         return `<div class="rv-rank"><header class="rv-head"><div class="rv-title"><b>Resultados</b><span>La Trivia del Rosco</span><small>${data.players} ${data.players === 1 ? 'persona jugando' : 'personas jugando'}</small></div></header>
-          ${top.length ? `<ol class="rv-top">${top.map((t, i) => `<li><em>${i + 1}</em><b>${esc(t.name)}</b><i>${t.score} pts</i></li>`).join('')}</ol>` : '<p class="rv-empty">Todavía nadie suma puntos. ¡Responde desde tu celular!</p>'}
-          <div class="rv-rest" style="--cols:${cols()};--rows:${Math.max(1, Math.ceil(chunk.length / cols()))}">${chunk.length ? `<ol>${chunk.map((t, i) => `<li><em>${from + 6 + i}</em><b>${esc(t.name)}</b><i>${t.score}</i></li>`).join('')}</ol>` : ''}</div>
-          <footer class="rv-pages">${pages > 1 ? `Puestos ${from + 6} al ${from + 5 + chunk.length} · página ${page + 1} de ${pages}` : ''}</footer></div>`;
+          ${top.length ? `<ol class="rv-top">${top.map((t, i) => `<li><em>${i + 1}</em><b>${esc(t.name)}</b><i>${t.score} pts</i></li>`).join('')}</ol>
+          <div class="rv-rest" style="--cols:${cols()}">${colsOf(chunk, from)}</div>
+          <footer class="rv-pages">${pages > 1 ? `Puestos ${from + 6} al ${from + 5 + chunk.length} · página ${page + 1} de ${pages}` : ''}</footer>`
+    : '<div class="rv-soon"><b>¡Pronto!</b><span>Ya comenzamos</span></div>'}</div>`;
       };
       const fitNames = () => {
-        $$('.rv-top b, .rv-rest b').forEach((b) => {
+        $$('.rv-top b, .rv-col b').forEach((b) => {
           b.style.fontSize = '';
           let f = parseFloat(getComputedStyle(b).fontSize);
           const min = f * 0.45;

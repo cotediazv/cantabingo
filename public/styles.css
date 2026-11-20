@@ -2037,3 +2037,24 @@ body.rv-on .join-qr { display: none; }
 .rv-top b, .rv-rest b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; line-height: 1.2; }
 .rv-top li { align-items: center; }
 .rv-rest li { align-items: center; font-size: 1.6vh; }
+
+/* Ranking vertical (pedido de Cote): cada columna en su recuadro; el puntaje en el color del local; «¡Pronto! Ya comenzamos» */
+.rv-rank { --rv-score: #7fdcff; }
+body[data-venue="tobalaba"] .rv-rank { --rv-score: #ffb27a; }
+body[data-venue="frida"] .rv-rank, body:not([data-venue]) .rv-rank { --rv-score: #ff8fc8; }
+.rv-rest { display: grid; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr)); gap: 1.4vw; padding: 0; background: none; align-items: start; }
+.rv-col { margin: 0; padding: 1.2vh 1.6vw; list-style: none; display: grid; gap: .6vh; border-radius: 1.8vh; background: rgba(0, 0, 0, .38); border: .25vh solid rgba(255, 255, 255, .14); }
+.rv-col:empty { display: none; }
+.rv-col li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: .8vw; font-size: 1.6vh; font-weight: 700; line-height: 1.25; }
+.rv-col em { font-style: normal; font-weight: 900; color: #ffc400; }
+.rv-col b { font-weight: 800; text-transform: uppercase; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
+.rv-col i, .rv-top i { font-style: normal; font-weight: 900; color: var(--rv-score); }
+.rv-soon { grid-row: 2 / -1; align-self: center; display: grid; justify-items: center; gap: 1vh; text-align: center; }
+.rv-soon b { font-size: min(11vh, 20vw); font-weight: 900; line-height: 1; text-transform: uppercase; color: #ffc400; text-shadow: .5vh .5vh 0 rgba(0, 0, 0, .3); }
+.rv-soon span { font-size: min(5.5vh, 10vw); font-weight: 900; text-transform: uppercase; }
+.rv-rest .rv-col { grid-auto-flow: row; grid-template-rows: none; grid-template-columns: minmax(0, 1fr); align-content: start; }
+.rv-rank { grid-template-columns: minmax(0, 1fr); }
+.rv-soon { min-width: 0; }
+.rv-soon b { font-size: min(10vh, 15vw); }
+.rv-soon span { font-size: min(5vh, 8vw); }
+.rv-rest .rv-col { margin: 0; padding: 1.2vh 1.8vw; gap: .55vh 0; }
