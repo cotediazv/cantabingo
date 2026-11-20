@@ -2032,3 +2032,8 @@ body.rv-on .join-qr { display: none; }
 .rv-head span { font-size: min(3.4vh, 6vw); }
 .rv-rest ol { grid-auto-flow: column; grid-template-rows: repeat(var(--rows, 1), min-content); }
 @media (orientation: portrait) { #fb .fb-qr { display: none; } #fb .fb-side { grid-template-columns: minmax(0, 1fr); } }
+
+/* Ranking vertical: cada nombre en una sola línea (se achica si es largo; pedido de Cote) */
+.rv-top b, .rv-rest b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; line-height: 1.2; }
+.rv-top li { align-items: center; }
+.rv-rest li { align-items: center; font-size: 1.6vh; }

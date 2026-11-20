@@ -1092,7 +1092,8 @@ views.tablero = async () => {
   soundBtn.textContent = '🔊 Activar sonido';
   document.body.appendChild(soundBtn);
   // El tablero vertical va mudo (?mudo=1), para que no suene doble junto al tablero principal
-  const mute = new URLSearchParams(location.search).has('mudo');
+  // La pantalla vertical va siempre sin sonido (pedido de Cote): con ?mudo=1 o si la pantalla está de pie
+  const mute = new URLSearchParams(location.search).has('mudo') || innerHeight > innerWidth;
   const paintSound = () => { soundBtn.hidden = mute || sfx.ready(); };
   const enableSound = () => { if (mute) return; const c = sfx.unlock(); if (c) { c.onstatechange = paintSound; Promise.resolve(c.resume()).then(() => { paintSound(); if (!soundBtn.dataset.done) { soundBtn.dataset.done = '1'; sfx.play('hit'); } }).catch(() => {}); } };
   document.addEventListener('pointerdown', enableSound);

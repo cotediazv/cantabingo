@@ -382,6 +382,14 @@
           <div class="rv-rest" style="--cols:${cols()};--rows:${Math.max(1, Math.ceil(chunk.length / cols()))}">${chunk.length ? `<ol>${chunk.map((t, i) => `<li><em>${from + 6 + i}</em><b>${esc(t.name)}</b><i>${t.score}</i></li>`).join('')}</ol>` : ''}</div>
           <footer class="rv-pages">${pages > 1 ? `Puestos ${from + 6} al ${from + 5 + chunk.length} · página ${page + 1} de ${pages}` : ''}</footer></div>`;
       };
+      const fitNames = () => {
+        $$('.rv-top b, .rv-rest b').forEach((b) => {
+          b.style.fontSize = '';
+          let f = parseFloat(getComputedStyle(b).fontSize);
+          const min = f * 0.45;
+          for (let i = 0; i < 30 && b.scrollWidth > b.clientWidth + 1 && f > min; i++) { f *= 0.94; b.style.fontSize = `${f.toFixed(1)}px`; }
+        });
+      };
       const paint = () => {
         if (!id || !data) return;
         const rest = data.list.slice(5);
@@ -393,6 +401,8 @@
           page %= pages;
           const from = page * cap;
           $('#pw').innerHTML = html(from, rest.slice(from, from + cap), pages);
+          // Nombres en una sola línea (pedido de Cote): cada nombre largo se achica hasta caber en su columna
+          fitNames();
           const box = $('.rv-rest');
           if (!box || box.scrollHeight <= box.clientHeight + 1 || cap <= cols()) break;
           cap = Math.max(cols(), cap - cols());
