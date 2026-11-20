@@ -38,7 +38,13 @@ body.solo video{position:fixed;inset:0;width:100%;height:100%;object-fit:contain
 .previa .estado{position:absolute;left:10px;top:10px;font-family:var(--f-dato);font-size:12px;letter-spacing:.12em;text-transform:uppercase;background:rgba(0,0,0,.65);border-radius:999px;padding:5px 10px;display:flex;align-items:center;gap:6px}
 .previa .estado i{width:9px;height:9px;border-radius:50%;background:#ff4d4d;box-shadow:0 0 8px #ff4d4d}
 .previa.apagada{display:grid;place-items:center;background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--c) 25%,transparent),#000 75%)}
-.previa.apagada span{color:var(--tenue);font-size:15px}
+.pant{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.pant iframe{position:absolute;left:0;top:0;border:0;transform-origin:0 0}
+.previa .estado.local{color:var(--c)}
+body.solo .pant{position:fixed;display:grid;place-items:center;background:#000}
+body.solo .pant-caja{position:relative;width:min(100vw,calc(100vh*16/9));aspect-ratio:16/9;overflow:hidden}
+#aviso.sobre{inset:auto 0 70px 0;place-content:end center;font-size:16px}#aviso.sobre b{font-size:22px}
+#aviso.sobre b,#aviso.sobre span{justify-self:center;background:rgba(0,0,0,.7);border-radius:999px;padding:4px 14px}
 .entrar{display:block;text-align:center;text-decoration:none;font-weight:800;font-size:17px;border-radius:999px;padding:12px;background:var(--c);color:#0c0b12}
 .entrar.off{background:transparent;color:var(--c);border:1px solid var(--c)}
 .prog{border-top:1px solid var(--linea);padding-top:10px;display:grid;gap:6px}
@@ -59,6 +65,13 @@ const LOCALES={
   frida:{n:'Frida Kahlo',c:'#e0338f',canal:'krbstage',whep:'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/2c9c627707b0fbc53e20c611f84235a0/webRTC/play'}
 };
 const SALA='https://cantabingo.onrender.com';
+// Sin transmisión: la pantalla horizontal del local (pedido de Cote), con la copia liviana del video si la hay
+const PANT={kennedy:{r:'#/pantalla/kennedy-h',liv:'https://www.krbstage.cl/horizontal-kennedy.mp4',ver:'1795119093974'},
+  tobalaba:{r:'#/pantalla/tobalaba'},frida:{r:'#/pantalla/frida-h',liv:'https://www.krbstage.cl/horizontal-frida.mp4',ver:'1795179662255'}};
+const pantSrc=k=>{const P=PANT[k];return `${SALA}/?mudo=1${P.liv?`&liviano=${encodeURIComponent(P.liv)}&lver=${P.ver}`:''}${P.r}`};
+const pantHTML=k=>`<div class="pant"><iframe src="${pantSrc(k)}" width="1920" height="1080" sandbox="allow-scripts allow-same-origin" tabindex="-1" title="Pantalla del local"></iframe></div>`;
+function escalar(){document.querySelectorAll('.pant').forEach(d=>{const f=d.firstElementChild;if(f)f.style.transform=`scale(${d.clientWidth/1920})`})}
+addEventListener('resize',escalar);
 const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const capi=t=>String(t||'').toLowerCase().replace(/(^|[\s(:\-])([^\s(:\-])/g,(m,a,b)=>a+b.toUpperCase());
 const showTxt=t=>{const m=String(t||'').match(/^(.*?)\s*\(([^()]+)\)\s*$/);return m?`${esc(capi(m[1]))} por ${esc(capi(m[2]))}`:esc(capi(t))};
@@ -67,14 +80,16 @@ const q=new URLSearchParams(location.search),sel=q.get('local');
 if(LOCALES[sel]){
   // ===== una transmisión: solo el video de baja latencia =====
   const L=LOCALES[sel];document.body.className='solo';document.documentElement.style.setProperty('--c',L.c);document.title=`${L.n} · En vivo`;
-  document.body.insertAdjacentHTML('beforeend',`<video id="v" autoplay playsinline muted></video>
+  document.body.insertAdjacentHTML('beforeend',`<div class="pant" id="pfondo"><div class="pant-caja">${pantHTML(sel).replace('<div class="pant">','').replace(/<\/div>$/,'')}</div></div><video id="v" autoplay playsinline muted></video>
     <div id="aviso"><b>${esc(L.n)}</b><span id="estado">Conectando…</span></div>
     <a class="flotante" id="volver" href="envivo.html">← Locales</a><button class="flotante" id="son" hidden>🔇 Activar sonido</button>`);
   const v=document.getElementById('v'),aviso=document.getElementById('aviso'),estado=document.getElementById('estado'),son=document.getElementById('son');
   let pc=null,viendo=false;
   son.onclick=()=>{v.muted=!v.muted;if(!v.muted)v.play().catch(()=>{});son.textContent=v.muted?'🔇 Activar sonido':'🔊 Silenciar'};
   const cerrar=()=>{if(pc){try{pc.close()}catch(_){}pc=null}};
-  const reintentar=msg=>{viendo=false;cerrar();aviso.hidden=false;son.hidden=true;estado.textContent=msg;setTimeout(conectar,5000)};
+  const pfondo=document.getElementById('pfondo'),escCaja=()=>{const c=pfondo.querySelector('.pant-caja'),f=c&&c.querySelector('iframe');if(f)f.style.transform=`scale(${c.clientWidth/1920})`};
+  addEventListener('resize',escCaja);requestAnimationFrame(escCaja);aviso.classList.add('sobre');
+  const reintentar=msg=>{viendo=false;cerrar();aviso.hidden=false;son.hidden=true;v.style.visibility='hidden';pfondo.hidden=false;estado.textContent=msg;setTimeout(conectar,5000)};
   function conectar(){
     cerrar();
     pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.cloudflare.com:3478'}],bundlePolicy:'max-bundle'});
@@ -90,13 +105,14 @@ if(LOCALES[sel]){
       .then(sdp=>este.setRemoteDescription({type:'answer',sdp}))
       .catch(()=>{clearTimeout(plazo);if(pc===este)reintentar('Sin transmisión en este momento. Se conecta sola apenas empiece.')});
   }
-  v.addEventListener('playing',()=>{viendo=true;aviso.hidden=true;son.hidden=false});
+  v.style.visibility='hidden';
+  v.addEventListener('playing',()=>{viendo=true;aviso.hidden=true;son.hidden=false;v.style.visibility='';pfondo.hidden=true});
   conectar();
 }else{
   // ===== los tres locales =====
   document.body.insertAdjacentHTML('beforeend',`<main class="hub"><h1><span>●</span> En vivo</h1><div class="locales">${Object.entries(LOCALES).map(([k,L])=>`
     <section class="local" data-k="${k}" style="--c:${L.c}"><h2>${esc(L.n)}</h2>
-      <div class="previa apagada"><span>Sin transmisión en este momento</span></div>
+      <div class="previa">${pantHTML(k)}<span class="estado local">▣ Pantalla del local</span></div>
       <a class="entrar off" href="envivo.html?local=${k}">Entrar a la transmisión</a>
       <div class="prog"><span class="tit">Programación</span><p class="nada">Cargando…</p></div>
     </section>`).join('')}</div>
@@ -107,7 +123,8 @@ if(LOCALES[sel]){
       for(const [k,L] of Object.entries(LOCALES)){
         const c=(j.canales||[]).find(x=>x.canal===L.canal),el=document.querySelector(`.local[data-k="${k}"]`),pv=el.querySelector('.previa'),bt=el.querySelector('.entrar');
         if(c&&c.vivo){pv.classList.remove('apagada');pv.style.backgroundImage=`url("${c.vivo.thumbnail}?t=${Date.now()}")`;pv.innerHTML='<span class="estado"><i></i>En vivo</span>';bt.classList.remove('off')}
-        else{pv.classList.add('apagada');pv.style.backgroundImage='';pv.innerHTML='<span>Sin transmisión en este momento</span>';bt.classList.add('off')}
+        else{pv.style.backgroundImage='';bt.classList.add('off');
+          if(!pv.querySelector('.pant')){pv.classList.remove('apagada');pv.innerHTML=pantHTML(k)+'<span class="estado local">▣ Pantalla del local</span>';requestAnimationFrame(escalar)}}
       }
     }).catch(()=>{});
   }
@@ -123,7 +140,7 @@ if(LOCALES[sel]){
       }).catch(()=>{});
     }
   }
-  previas();programa();setInterval(previas,30000);setInterval(programa,10*60e3);
+  requestAnimationFrame(escalar);previas();programa();setInterval(previas,30000);setInterval(programa,10*60e3);
 }
 </script>
 </body>
