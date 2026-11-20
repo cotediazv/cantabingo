@@ -639,6 +639,7 @@ html.modo-obs{color-scheme:dark}
 html.modo-obs,html.modo-obs body{background:transparent!important}
 html.modo-obs body>*:not(.visor){display:none!important}
 html.modo-obs .visor{background:transparent}
+html.modo-obs.obs-escalado,html.modo-obs.obs-escalado body{background:#000!important} /* en el celular (para probar): fuera del cuadro, negro */
 html.modo-obs .visor{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:var(--obs-esp,48px);box-sizing:border-box}
 html.modo-obs .visor-top{position:relative;z-index:3;background:color-mix(in srgb,var(--c) 22%,#000);border:3px solid var(--c);border-radius:14px;padding:14px 28px 12px;box-sizing:border-box;flex:none}
 html.modo-obs .visor-pista{flex:none;width:100%;height:var(--obs-h,700px);margin-top:var(--obs-gap,23px)}
@@ -1680,10 +1681,12 @@ elegirLocal('kennedy');
     const cv=document.createElement('canvas');cv.className='obs-neuronas';visor.prepend(cv);const x=cv.getContext('2d');
     let pts=[],ult=0;const ahora=()=>performance.now();
     const color=()=>getComputedStyle(visor).getPropertyValue('--c').trim();
-    const huecos=()=>[...visor.querySelectorAll('.visor-slide.actual .pant,.visor-top')].map(e=>e.getBoundingClientRect());
+    const huecos=()=>{const vr=visor.getBoundingClientRect(),k=vr.width/1920||1;
+      return [...visor.querySelectorAll('.visor-slide.actual .pant,.visor-top')].map(e=>{const r=e.getBoundingClientRect();
+        return {left:(r.left-vr.left)/k,top:(r.top-vr.top)/k,width:r.width/k,height:r.height/k,right:(r.right-vr.left)/k,bottom:(r.bottom-vr.top)/k}})};
     const fuera=(px,py,hs)=>!hs.some(r=>px>r.left-14&&px<r.right+14&&py>r.top-14&&py<r.bottom+14);
     function cuadro(t){if(!visor||!cv.isConnected)return;requestAnimationFrame(cuadro);if(t-ult<33)return;ult=t;
-      const W=cv.width=innerWidth,H=cv.height=innerHeight,hs=huecos();
+      const W=cv.width=1920,H=cv.height=1080,hs=huecos();
       // nace una de vez en cuando (máximo 14 a la vez), siempre fuera de los recuadros
       if(pts.length<14&&Math.random()<.08){for(let k=0;k<20;k++){const px=Math.random()*W,py=Math.random()*H;if(fuera(px,py,hs)){pts.push({x:px,y:py,n:t,v:1500+Math.random()*2000});break}}}
       pts=pts.filter(p=>t-p.n<p.v);
@@ -1704,7 +1707,10 @@ elegirLocal('kennedy');
     obsNeuronas();
     // (pedido de Cote) todo lo más grande posible, con un solo margen: el mismo entre las dos pantallas, entre la franja
     // y las pantallas, y hacia los bordes
-    const W=innerWidth,H=innerHeight,g=Math.round(W*.012),top=visor.querySelector('.visor-top');
+    const W=1920,H=1080,g=Math.round(W*.012),top=visor.querySelector('.visor-top');
+    const k=Math.min(innerWidth/W,innerHeight/H);
+    Object.assign(visor.style,{width:W+'px',height:H+'px',transformOrigin:'0 0',transform:`scale(${k})`,left:Math.round((innerWidth-W*k)/2)+'px',top:Math.round((innerHeight-H*k)/2)+'px'});
+    document.documentElement.classList.toggle('obs-escalado',Math.abs(k-1)>.01);
     top.style.width=(W-2*g)+'px';let th=top.offsetHeight;
     let h=Math.floor(Math.min((W-3*g)/(16/9+9/16),H-th-3*g));
     let wh=Math.floor(h*16/9),wv=Math.floor(h*9/16);const fila=wh+g+wv;
