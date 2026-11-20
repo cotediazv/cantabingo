@@ -2195,3 +2195,6 @@ body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "So
 @media (prefers-reduced-motion: reduce) { .jd-win { animation: none; } }
 .jd-gc .jd-list span { font-size: 2.2vh; padding: .6vh 1.4vw; }
 .games-nav .g-played::after { content: '⏸ fuera del próximo sorteo'; }
+/* El Festival: la pregunta de cuántos cantan, destacada al empezar */
+.vc-max.ask { max-width: none; padding: 14px 16px; border-radius: 14px; border: 2px solid #ffc400; background: rgba(255, 196, 0, .1); font-size: 1.15rem; font-weight: 900; color: #ffc400; }
+.vc-max.ask input { margin-top: 8px; max-width: 160px; font-size: 1.6rem; font-weight: 900; text-align: center; }

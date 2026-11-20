@@ -27,6 +27,7 @@
     `${st.max} participantes cantan. Si se inscriben más, sorteo.`,
     'Canciones cortas.',
     'Todos votan desde las mesas: nota del 1 al 10.',
+    'Al terminar la votación, se muestran en pantalla <b>5 notas del público al azar</b>, que no determinan el promedio. El promedio se conoce al final del concurso.',
     'Gana el mejor <b>promedio</b>.',
   ]) : window.readAloud(st.title || 'El objeto más extraño', [
     'Cada participante presenta su objeto.',
@@ -68,7 +69,7 @@
         const pending = st.players.filter((p) => !p.done).length;
         // Tipo de concurso (solo antes de anotar participantes) y cupos
         html = `${want && st.mode !== want ? `<div class="vc-read"><small>Hay un concurso de «${esc(st.title)}» en curso</small><button class="primary big" data-act="reset">Empezar ${want === 'karaoke' ? esc(fest(st)) : 'El objeto más extraño'} (borra el anterior)</button></div>` : ''}
-          <label class="f vc-max">Cupos (máximo de participantes)<input type="number" id="vc-max" min="2" max="30" value="${st.max}"></label>
+          <label class="f vc-max ${isK(st) ? 'ask' : ''}">${isK(st) ? '¿Cuántos participantes van a cantar?' : 'Cupos (máximo de participantes)'}<input type="number" id="vc-max" min="2" max="30" value="${st.max}"></label>
           ${st.sample ? `<div class="vc-read"><small>Notas al azar en pantalla (sin el promedio)</small>${notesHTML(st, 'vc-notes')}</div>` : ''}
           <div class="vc-signup ${st.signup ? 'on' : ''}"><p><b>${st.signup ? `📲 Inscripciones abiertas · <span class="v-clock">${clockText()}</span>` : 'Inscripciones desde el celular'}</b>
             <small>${st.signup ? `A toda la sala le aparece la invitación. Quien se inscribe llega a esta lista con su nombre y ${isK(st) ? 'su canción' : 'lo que trae'}.` : isK(st) ? 'Ábrelas para que la gente se anote sola con la canción y el artista. Corre un reloj de 1:00. Si se inscriben más que los cupos, se sortean.' : 'Ábrelas para que la gente se anote sola, con su nombre y lo que trae. Corre un reloj de 2:00.'}</small></p>
@@ -132,7 +133,7 @@
     const tick = async () => { const r = await api('GET', '/api/vote/host').catch(() => null); if (r) { st = r; paint(); } };
     await tick();
     await ensureMode();
-    if (want) $('#vc-h1').textContent = want === 'karaoke' ? `🎤 ${fest(st)}` : '🗳️ El objeto más extraño';
+    $('#vc-h1').textContent = (want || st.mode) === 'karaoke' ? `🎤 ${fest(st)}` : '🗳️ El objeto más extraño';
     const timer = setInterval(tick, 1500);
     return () => clearInterval(timer);
   };

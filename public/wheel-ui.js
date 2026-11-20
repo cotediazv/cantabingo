@@ -155,7 +155,7 @@
       '3 participantes.',
       'Todos juegan desde las mesas.',
       '<b>Premio mayor</b> para el que gana El Rosco.',
-      '<b>Premio especial</b> para el ganador de las mesas: el ganador del público, de la Trivia del Rosco.',
+      '<b>Premio especial</b> para el ganador del público que juega la Trivia del Rosco.',
     ];
     app.innerHTML = `${window.readAloud ? window.readAloud('El Rosco', HOWTO) : ''}<div class="cols">
         <div class="panel">
