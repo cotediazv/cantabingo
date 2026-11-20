@@ -652,6 +652,9 @@ h2{margin-top:8px}
 .pcr-nada{margin:0;font-size:13px;color:var(--tenue)}
 /* las pantallas del local no se pueden tocar: una capa encima recibe el dedo (en el iPhone, tocarlas abría la pantalla sola) */
 .pant::after{content:"";position:absolute;inset:0;z-index:1}
+/* capa encima de cada pantalla: tocarla abre la pantalla completa (en el iPhone, tocar la pantalla abría la de la Sala sola) */
+.pant-tapa{position:absolute;top:0;left:0;right:0;bottom:0;z-index:2;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.visor .pant-tapa{cursor:default}
 html.con-visor-tactil{overscroll-behavior-x:none}
 .visor-aviso{color:#f4bf5a;font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:opacity .5s}
 .visor-aviso.fuera{opacity:0}
@@ -1433,7 +1436,7 @@ elegirLocal('kennedy');
     }).catch(()=>{});
   }
 
-  const pant=(clase,ruta,w,h,t,L)=>`<div class="pant ${clase}"><iframe sandbox="allow-scripts allow-same-origin" src="${SALA}${L&&L.liviano?`&liviano=${encodeURIComponent(L.liviano)}&lver=${L.lver}`:''}${ruta}" width="${w}" height="${h}" title="${t}" loading="lazy" tabindex="-1"></iframe></div>`;
+  const pant=(clase,ruta,w,h,t,L)=>`<div class="pant ${clase}"><iframe sandbox="allow-scripts allow-same-origin" src="${SALA}${L&&L.liviano?`&liviano=${encodeURIComponent(L.liviano)}&lver=${L.lver}`:''}${ruta}" width="${w}" height="${h}" title="${t}" loading="lazy" tabindex="-1"></iframe><span class="pant-tapa" aria-hidden="true"></span></div>`;
   const padres=['www.krbstage.cl','krbstage.cl',location.hostname].filter((x,i,a)=>x&&a.indexOf(x)===i).map(x=>'&parent='+x).join('');
   const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   const fecha=t=>{const d=new Date(t);return isNaN(d)?'':`${d.getDate()} ${MESES[d.getMonth()]}`};
@@ -1672,6 +1675,10 @@ elegirLocal('kennedy');
     v.remove();document.documentElement.classList.remove('con-visor','con-visor-tactil');requestAnimationFrame(escalar);
   }
   addEventListener('popstate',()=>{if(visor)cerrarVisor(true)});
+  // tocar cualquier parte de las pantallas o de la transmisión abre la pantalla completa de ese local (pedido de Cote)
+  document.addEventListener('click',e=>{if(visor)return;const t=e.target.closest('.pant-tapa,.vivo-marco');if(!t)return;
+    const col=t.closest('.ptl-col');if(!col||!ORDEN.some(L=>L.local===col.dataset.local))return;
+    e.preventDefault();e.stopPropagation();abrirVisor(col.dataset.local)},true);
   document.addEventListener('fullscreenchange',()=>{if(visor){const b=visor.querySelector('.visor-pc');if(b&&document.fullscreenElement)b.hidden=true}if(visor&&!document.fullscreenElement&&visor._fs)cerrarVisor();if(visor)visor._fs=!!document.fullscreenElement;setTimeout(ajustarVisor,100)});
   addEventListener('keydown',e=>{if(!visor)return;if(e.key==='Escape')cerrarVisor();if(e.key==='ArrowRight')visor.querySelector('.visor-flecha.der').click();if(e.key==='ArrowLeft')visor.querySelector('.visor-flecha.izq').click()});
   // al girar el teléfono: se vuelve a acomodar (varias veces, porque el iPhone termina de girar después)
