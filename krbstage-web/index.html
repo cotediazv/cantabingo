@@ -647,7 +647,9 @@ html.modo-obs .visor-pista{overflow:visible}html.modo-obs .visor-slide:not(.actu
 html.modo-obs .vt-txt{gap:8px}html.modo-obs .vt-l1{gap:24px;align-items:center}
 html.modo-obs .vt-local{font-size:64px}html.modo-obs .vt-estado{font-size:24px}html.modo-obs .vt-fecha{font-size:32px}
 html.modo-obs .vt-l2{font-size:36px;gap:6px 30px;overflow:hidden}html.modo-obs .vt-l2 span{white-space:nowrap}
-html.modo-obs .vt-local,html.modo-obs .vt-estado,html.modo-obs .vt-l2 b{color:#fff}html.modo-obs .vt-fecha{color:rgba(255,255,255,.85)}html.modo-obs .visor-punto.on{background:#fff}
+html.modo-obs .vt-estado,html.modo-obs .vt-l2 .vt-show{color:#fff}
+/* (pedido de Cote) nombre del local y «Hoy desde las …» en amarillo; sin «Pantalla del local» */
+html.modo-obs .vt-local,html.modo-obs .vt-l2 b{color:#f4bf5a}html.modo-obs .vt-l2 .vt-show b{color:#fff}html.modo-obs .vt-estado{display:none}html.modo-obs .vt-fecha{color:rgba(255,255,255,.85)}html.modo-obs .visor-punto.on{background:#fff}
 html.modo-obs .obs-hueco{background:transparent!important;z-index:1}
 html.modo-obs .visor-slide.actual .obs-hueco{box-shadow:0 0 0 200vmax color-mix(in srgb,var(--c) 50%,#000)} /* fondo del color del local (pedido de Cote) */
 html.modo-obs .visor-slide .pant-v{position:relative;z-index:2}
