@@ -32,6 +32,10 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
   const avg = (p) => { const n = Object.values(p.votes); return n.length ? n.reduce((a, b) => a + b, 0) / n.length : 0; };
   const no = (p) => v().players.indexOf(p) + 1; // número del participante: el orden en que se anotó
   const round1 = (x) => Math.round(x * 10) / 10;
+  const round2 = (x) => Math.round(x * 100) / 100;
+  // Pedido de Cote: el resultado es la nota promedio con un decimal; si dos empatan con un decimal, se muestra el segundo
+  const decOf = (p) => (v().players.some((q) => q !== p && q.done && round1(avg(q)) === round1(avg(p))) ? 2 : 1);
+  const scoreOf = (p) => ({ score: decOf(p) === 2 ? round2(avg(p)) : round1(avg(p)), dec: decOf(p) });
   const cap = () => v().max || MAX_PLAYERS;
   const karaoke = () => v().mode === 'karaoke';
   const festival = () => `El Festival de ${SHORT[venue()] || 'Frida'}`;
@@ -44,7 +48,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
   const places = () => {
     const s = v();
     const n = s.rank.length;
-    return Array.from({ length: s.revealed }, (_, i) => { const p = by(s.rank[n - 1 - i]); return { place: n - i, no: no(p), name: p.name, thing: p.thing || '', score: round1(avg(p)) }; });
+    return Array.from({ length: s.revealed }, (_, i) => { const p = by(s.rank[n - 1 - i]); return { place: n - i, no: no(p), name: p.name, thing: p.thing || '', ...scoreOf(p) }; });
   };
   const finalists = () => (v().final ? v().players.filter((p) => v().final.ids.includes(p.id)).map((p) => ({ id: p.id, no: no(p), name: p.name, thing: p.thing || '' })) : []);
 
@@ -66,8 +70,8 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       places: s.phase === 'voting' ? [] : places(),
       toReveal: s.phase === 'results' ? Math.max(0, s.rank.length - 2 - s.revealed) : 0,
       final: s.final ? { players: finalists(), open: !!s.final.open, closed: !!s.final.closed, drum: !!s.final.drum } : null,
-      winner: s.phase === 'winner' && s.winner ? { no: no(by(s.winner)), name: by(s.winner).name, thing: by(s.winner).thing || '', score: karaoke() ? round1(avg(by(s.winner))) : null } : null, winAt: s.winAt || 0,
-      second: s.phase === 'winner' && karaoke() && s.rank[1] && by(s.rank[1]) ? { no: no(by(s.rank[1])), name: by(s.rank[1]).name, thing: by(s.rank[1]).thing || '', score: round1(avg(by(s.rank[1]))) } : null,
+      winner: s.phase === 'winner' && s.winner ? { no: no(by(s.winner)), name: by(s.winner).name, thing: by(s.winner).thing || '', ...(karaoke() ? scoreOf(by(s.winner)) : { score: null }) } : null, winAt: s.winAt || 0,
+      second: s.phase === 'winner' && karaoke() && s.rank[1] && by(s.rank[1]) ? { no: no(by(s.rank[1])), name: by(s.rank[1]).name, thing: by(s.rank[1]).thing || '', ...scoreOf(by(s.rank[1])) } : null,
     };
   };
 
@@ -91,7 +95,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
     const next = s.phase === 'results' && s.revealed < n - 2 ? by(s.rank[n - 1 - s.revealed]) : null;
     const tally = s.final ? Object.fromEntries(s.final.ids.map((id) => [id, Object.values(s.final.votes).filter((x) => x === id).length])) : null;
     return { ...pub(), counts: Object.fromEntries(s.players.map((p) => [p.id, count(p)])),
-      next: next ? { place: n - s.revealed, no: no(next), name: next.name, thing: next.thing || '', score: round1(avg(next)) } : null, tally };
+      next: next ? { place: n - s.revealed, no: no(next), name: next.name, thing: next.thing || '', ...scoreOf(next) } : null, tally };
   };
   app.get('/api/vote/host', requireAdmin, (_req, res) => res.json(hostState()));
 
@@ -109,7 +113,8 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       if (!Number.isInteger(n) || n < 1 || n > 10) return fail(res, 400, 'La nota va del 1 al 10');
       if (b.id && b.id !== s.open) return fail(res, 409, 'Esa votación ya se cerró');
       by(s.open).votes[token] = n;
-      (by(s.open).voters ||= {})[token] = (findPlayer(String(b.sid || ''), token) || {}).name || '';
+      const who = findPlayer(String(b.sid || ''), token) || {};
+      (by(s.open).voters ||= {})[token] = who.first || String(who.name || '').split(' ')[0] || ''; // solo el nombre (pedido de Cote)
     } else return fail(res, 409, 'La votación está cerrada en este momento');
     save();
     return res.json({ ok: true, mine: b.value });

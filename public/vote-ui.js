@@ -2,7 +2,8 @@
 // Votación del público: panel del animador, teclera del celular, GC de OBS y tablero del DJ.
 (() => {
   const n = (t) => `style="--n:${Math.max(6, String(t).length)}"`;
-  const note = (x) => Number(x).toFixed(1).replace('.', ',');
+  // Nota promedio con un decimal; con dos si empata con otro (el servidor dice cuántos: dec)
+  const note = (x, d) => Number(x).toFixed(d === 2 ? 2 : 1).replace('.', ',');
   const ord = (p) => `${p}.º lugar`;
   const title = (st) => st.title || 'Votación';
   // Número del participante (orden en que se anotó), para que el animador pueda decir «la número 3»
@@ -71,11 +72,11 @@
           ${st.open || pending ? `<p class="muted small" style="margin-top:6px">${st.open ? 'Cierra la votación en curso para continuar.' : `Falta votar a ${pending} participante${pending > 1 ? 's' : ''}.`}</p>` : ''}` : ''}`;
       } else if (st.phase === 'results') {
         html = `<h2>Resultados</h2>
-          ${st.next ? `<div class="vc-read"><small>Viene · solo lo ves tú, hasta que lo reveles</small><em>${ord(st.next.place)}</em><b>${nm(st.next)}</b>${st.next.thing ? `<span>${esc(st.next.thing)}</span>` : ''}<i>Nota ${note(st.next.score)}</i></div>
+          ${st.next ? `<div class="vc-read"><small>Viene · solo lo ves tú, hasta que lo reveles</small><em>${ord(st.next.place)}</em><b>${nm(st.next)}</b>${st.next.thing ? `<span>${esc(st.next.thing)}</span>` : ''}<i>Nota ${note(st.next.score, st.next.dec)}</i></div>
             <button class="primary big" data-act="reveal">Revelar ${ord(st.next.place)}</button>`
     : `<div class="vc-read"><small>Quedan las dos finalistas</small>${st.final.players.map((p) => `<b>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}`).join('<em class="vs">y</em>')}</div>
             <button class="primary big" data-act="final">${isK(st) ? '🥁 Redoble de tambores: los dos finalistas' : '⚔️ Gran final: abrir votación'}</button>`}
-          <div class="vc-list">${[...st.places].reverse().map((p) => `<div class="vc-row"><p><b>${ord(p.place)} · ${nm(p)}</b>${thing(p)}<small>Nota ${note(p.score)}</small></p></div>`).join('')}</div>`;
+          <div class="vc-list">${[...st.places].reverse().map((p) => `<div class="vc-row"><p><b>${ord(p.place)} · ${nm(p)}</b>${thing(p)}<small>Nota ${note(p.score, p.dec)}</small></p></div>`).join('')}</div>`;
       } else if (st.phase === 'final' && isK(st)) {
         html = `<h2>🥁 Redoble de tambores</h2>
           <div class="vc-read"><small>Los dos finalistas están en pantalla</small>${st.final.players.map((p) => `<b>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}`).join('<em class="vs">y</em>')}</div>
@@ -88,13 +89,13 @@
           ${st.final.open ? '<button class="primary big" data-act="closefinal" style="margin-top:12px">Cerrar votación</button>'
     : '<button class="primary big" data-act="winner" style="margin-top:12px">🏆 Revelar quién ganó</button><button class="big" data-act="final" style="margin-top:10px">Reabrir votación</button>'}`;
       } else if (isK(st)) {
-        html = `<h2>🏆 Ganó ${nm(st.winner)} · ${note(st.winner.score)}</h2>
-          <div class="vc-list">${st.second ? `<div class="vc-row"><p><b>2.º lugar · ${nm(st.second)}</b>${thing(st.second)}<small>Nota ${note(st.second.score)}</small></p></div>` : ''}
-          ${[...st.places].reverse().map((p) => `<div class="vc-row"><p><b>${ord(p.place)} · ${nm(p)}</b>${thing(p)}<small>Nota ${note(p.score)}</small></p></div>`).join('')}</div>`;
+        html = `<h2>🏆 Ganó ${nm(st.winner)} · ${note(st.winner.score, st.winner.dec)}</h2>
+          <div class="vc-list">${st.second ? `<div class="vc-row"><p><b>2.º lugar · ${nm(st.second)}</b>${thing(st.second)}<small>Nota ${note(st.second.score, st.second.dec)}</small></p></div>` : ''}
+          ${[...st.places].reverse().map((p) => `<div class="vc-row"><p><b>${ord(p.place)} · ${nm(p)}</b>${thing(p)}<small>Nota ${note(p.score, p.dec)}</small></p></div>`).join('')}</div>`;
       } else {
         html = `<h2>🏆 Ganó ${nm(st.winner)}</h2>
           <div class="vc-list">${st.final.players.map((p) => `<div class="vc-row"><p><b>${nm(p)}</b><small>${st.tally[p.id]} votos en la gran final</small></p></div>`).join('')}
-          ${[...st.places].reverse().map((p) => `<div class="vc-row"><p><b>${ord(p.place)} · ${nm(p)}</b><small>Nota ${note(p.score)}</small></p></div>`).join('')}</div>`;
+          ${[...st.places].reverse().map((p) => `<div class="vc-row"><p><b>${ord(p.place)} · ${nm(p)}</b><small>Nota ${note(p.score, p.dec)}</small></p></div>`).join('')}</div>`;
       }
       box.innerHTML = html;
       if ($('#vc-name')) { $('#vc-name').value = keep; $('#vc-thing').value = keepThing; if (focus) $(focus).focus(); }
@@ -133,7 +134,7 @@
           <p class="pvote-clock">Quedan <b class="v-clock">${clockText()}</b></p>
           ${st.mine ? '<p class="pvote-ok">✔ Voto recibido. Puedes cambiarlo mientras la votación esté abierta.</p>' : ''}`;
       } else if (st.phase === 'final') body = '<p class="pvote-wait">Votación cerrada.<br>¡Mira la pantalla para conocer el resultado!</p>';
-      else if (st.phase === 'results') body = `<p class="pvote-wait">Resultados: ¡mira la pantalla!</p>${[...st.places].reverse().map((p) => `<div class="pvote-place"><b>${ord(p.place)}</b><span>${nm(p)}${thing(p)}</span><i>${note(p.score)}</i></div>`).join('')}`;
+      else if (st.phase === 'results') body = `<p class="pvote-wait">Resultados: ¡mira la pantalla!</p>${[...st.places].reverse().map((p) => `<div class="pvote-place"><b>${ord(p.place)}</b><span>${nm(p)}${thing(p)}</span><i>${note(p.score, p.dec)}</i></div>`).join('')}`;
       else if (st.open) {
         body = `<p class="pvote-ask">Pon tu nota a<b>${nm(st.open)}</b>${thing(st.open)}</p>
           <div class="pvote-keys">${Array.from({ length: 10 }, (_, i) => `<button type="button" data-v="${i + 1}" data-id="${st.open.id}" class="${st.mine === i + 1 ? 'on' : ''}">${i + 1}</button>`).join('')}</div>
@@ -205,13 +206,13 @@
   const winHTML = (st) => `<div class="bwin th-${st.venue}"><div class="confetti">${confetti()}</div>
     <div class="bwin-card"><span class="bwin-sub">${esc(title(st))}</span><span class="vwin-cup">🏆</span>
       <div class="bwin-names"><span><b ${n(`${st.winner.name}...`)}>${nm(st.winner)}</b>${st.winner.thing ? `<small>${esc(st.winner.thing)}</small>` : ''}</span></div>
-      ${isK(st) && st.winner.score != null ? `<span class="vk-score">Puntaje <b>${note(st.winner.score)}</b></span>${st.second ? `<span class="vk-second">2.º lugar · ${esc(st.second.name)} · <b>${note(st.second.score)}</b></span>` : ''}` : ''}
+      ${isK(st) && st.winner.score != null ? `<span class="vk-score">Puntaje <b>${note(st.winner.score, st.winner.dec)}</b></span>${st.second ? `<span class="vk-second">2.º lugar · ${esc(st.second.name)} · <b>${note(st.second.score, st.second.dec)}</b></span>` : ''}` : ''}
       <span class="bwin-sub">¡Felicitaciones!</span></div></div>`;
 
   // Qué decir en cada momento: etiqueta, línea principal, línea secundaria y bloque de la derecha
   const scene = (st) => {
     const lastPlace = st.places[st.places.length - 1];
-    if (st.phase === 'winner' && isK(st)) return { tag: 'Ganó', no: st.winner.no, main: st.winner.name, sub: st.second ? `2.º lugar: ${st.second.name} · ${note(st.second.score)}` : (st.winner.thing || title(st)), score: st.winner.score };
+    if (st.phase === 'winner' && isK(st)) return { tag: 'Ganó', no: st.winner.no, main: st.winner.name, sub: st.second ? `2.º lugar: ${st.second.name} · ${note(st.second.score, st.second.dec)}` : (st.winner.thing || title(st)), score: st.winner.score, dec: st.winner.dec };
     if (st.phase === 'winner') return { tag: 'Ganó', no: st.winner.no, main: st.winner.name, sub: st.winner.thing || title(st), side: ['🏆', '¡Felicitaciones!'] };
     if (st.phase === 'final' && st.final.drum) return { tag: 'Los finalistas', duel: true, drum: true, sub: '🥁 ¡Redoble de tambores!', side: ['🥁', '¿Quién ganará?'] };
     if (st.phase === 'final') {
@@ -219,11 +220,11 @@
         : { tag: 'Gran final', duel: true, sub: 'Votación cerrada', side: ['✔', 'Ya viene el resultado'] };
     }
     if (st.phase === 'results') {
-      return lastPlace ? { tag: 'Resultados', no: lastPlace.no, main: lastPlace.name, sub: lastPlace.thing ? `${ord(lastPlace.place)} · ${lastPlace.thing}` : ord(lastPlace.place), score: lastPlace.score }
+      return lastPlace ? { tag: 'Resultados', no: lastPlace.no, main: lastPlace.name, sub: lastPlace.thing ? `${ord(lastPlace.place)} · ${lastPlace.thing}` : ord(lastPlace.place), score: lastPlace.score, dec: lastPlace.dec }
         : { tag: 'Resultados', main: title(st), sub: 'Vamos desde el último lugar hasta la gran final', side: ['🏁', `${st.players.length} participantes`] };
     }
     if (st.open) return { tag: 'Votación abierta', no: st.open.no, main: st.open.name, featured: !!st.open.thing, sub: st.open.thing || 'Pon tu nota del 1 al 10 desde tu celular', clock: 'Vota del 1 al 10', qr: true };
-    if (st.drawn) return { tag: 'Sorteo de participantes', main: '🎲 ¡Ellos cantan!', sub: st.drawn.join(' · '), side: ['🎤', `${st.drawn.length} participantes`] };
+    if (st.drawn) return { tag: 'Sorteo de participantes', main: '🎲 ¡Ellos cantan!', sub: `${st.drawn.length} participantes`, list: st.drawn, side: ['🎤', `${st.drawn.length} participantes`] };
     if (st.last && st.sample && st.sample.length) return { tag: 'Notas del público', no: st.last.no, main: st.last.name, sub: 'Algunas notas que puso el público', notes: true };
     if (st.last) {
       const next = st.players.find((p) => !p.done);
@@ -248,13 +249,13 @@
       $('#vg-win').innerHTML = celebrating ? winHTML(st) : '';
       const s = scene(st);
       // Lista de inscritos: se ve durante el llamado y hasta que empieza la primera votación
-      const roster = st.phase === 'voting' && !st.open && !st.last && st.players.length
+      const roster = st.phase === 'voting' && !st.open && !st.last && !st.drawn && st.players.length
         ? `<div class="vg-list"><small>Inscritos <b>${st.players.length}/${st.max}</b></small>${st.players.map((p) => `<div><p><b>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}</p></div>`).join('')}</div>` : '';
-      const html = celebrating ? '' : `${s.notes ? `<div class="vk-card">${notesHTML(st, 'vk-notes')}</div>` : ''}${roster}${s.qr || true ? `<div class="vg-qr">${qr(joinUrl())}<b>Si no has participado, escanea el código QR con tu celular y únete a la sesión</b></div>` : ''}
+      const html = celebrating ? '' : `${s.notes ? `<div class="vk-card">${notesHTML(st, 'vk-notes')}</div>` : ''}${s.list ? `<div class="vk-card"><ol class="vk-list">${s.list.map((x) => `<li>${esc(x)}</li>`).join('')}</ol></div>` : ''}${roster}${s.qr || true ? `<div class="vg-qr">${qr(joinUrl())}<b>Si no has participado, escanea el código QR con tu celular y únete a la sesión</b></div>` : ''}
         <div class="vg-bar">
           <div class="vg-tag"><small>${esc(title(st))}</small><b>${icon(st)} ${esc(s.tag)}</b></div>
           <div class="vg-main ${s.featured ? 'featured' : ''}">${s.duel ? `<b class="vg-duel" ${n(st.final.players.map((p) => `${p.name}...`).join(' vs '))}>${versus(st)}</b>` : `<b ${n(s.no ? `${s.main}...` : s.main)}>${badge(s.no)}${esc(s.main)}</b>`}<span ${n(s.sub)}>${esc(s.sub)}</span></div>
-          ${s.notes ? '<div class="vg-side"><small>Notas</small><b>8 s</b></div>' : s.clock ? `<div class="vg-side score"><small>${esc(s.clock)}</small><b class="v-clock">${clockText()}</b></div>` : s.score != null ? `<div class="vg-side score"><small>Nota</small><b>${note(s.score)}</b></div>` : `<div class="vg-side"><small ${n(s.side[0])}>${esc(s.side[0])}</small><b ${n(s.side[1])}>${esc(s.side[1])}</b></div>`}
+          ${s.notes ? '<div class="vg-side"><small>Notas</small><b>8 s</b></div>' : s.clock ? `<div class="vg-side score"><small>${esc(s.clock)}</small><b class="v-clock">${clockText()}</b></div>` : s.score != null ? `<div class="vg-side score"><small>Nota</small><b>${note(s.score, s.dec)}</b></div>` : `<div class="vg-side"><small ${n(s.side[0])}>${esc(s.side[0])}</small><b ${n(s.side[1])}>${esc(s.side[1])}</b></div>`}
         </div>`;
       clearTimeout(swap);
       // Si solo cambió un detalle (llegó otro inscrito), se actualiza en el lugar, sin sacar y volver a entrar el zócalo
@@ -303,13 +304,13 @@
       heard = cue;
       box.className = `th-${st.venue}`;
       const side = st.phase === 'voting' ? st.players.map((p) => `<div class="${st.open && st.open.id === p.id ? 'on' : ''}"><em>${p.done ? '✔' : st.open && st.open.id === p.id ? '🗳️' : '·'}</em><p><b ${n(p.name)}>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}</p></div>`).join('')
-        : [...st.places].reverse().map((p) => `<div><em>${p.place}</em><p><b ${n(p.name)}>${nm(p)}</b><span>Nota ${note(p.score)}${p.thing ? ` · ${esc(p.thing)}` : ''}</span></p></div>`).join('');
+        : [...st.places].reverse().map((p) => `<div><em>${p.place}</em><p><b ${n(p.name)}>${nm(p)}</b><span>Nota ${note(p.score, p.dec)}${p.thing ? ` · ${esc(p.thing)}` : ''}</span></p></div>`).join('');
       box.innerHTML = `${celebrating ? winHTML(st) : ''}
         <header class="vf-top"><b>${esc(title(st))}</b><span>${icon(st)} ${esc(s.tag)}</span></header>
         <section class="vf-main ${s.featured ? 'featured' : ''}">${st.signup ? `<small>¿Quieres participar?</small><b class="v-clock vf-clock">${clockText()}</b><span style="--n:28">Inscríbete desde tu celular</span>`
     : `<small ${n(s.sub)}>${esc(s.sub)}</small>
           ${s.duel ? `<b class="vg-duel" ${n(st.final.players.map((p) => `${p.name}...`).join(' vs '))}>${versus(st)}</b>` : `<b ${n(s.no ? `${s.main}...` : s.main)}>${badge(s.no)}${esc(s.main)}</b>`}
-          ${s.notes ? notesHTML(st, 'vk-notes big') : s.clock ? `<i class="v-clock">${clockText()}</i>` : s.score != null ? `<i>${s.tag === 'Ganó' ? 'Puntaje' : 'Nota'} ${note(s.score)}</i>` : s.side ? `<span ${n(s.side[1])}>${esc(s.side[1])}</span>` : ''}`}</section>
+          ${s.list ? `<ol class="vk-list">${s.list.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>` : s.notes ? notesHTML(st, 'vk-notes big') : s.clock ? `<i class="v-clock">${clockText()}</i>` : s.score != null ? `<i>${s.tag === 'Ganó' ? 'Puntaje' : 'Nota'} ${note(s.score, s.dec)}</i>` : s.side ? `<span ${n(s.side[1])}>${esc(s.side[1])}</span>` : ''}`}</section>
         <aside class="vf-side">
           <div class="vf-qr">${qr(joinUrl())}<b>Si no has participado, escanea el código QR con tu celular y únete a la sesión</b></div>
           ${side ? `<div class="vf-list"><small>${st.phase === 'voting' ? 'Participantes' : 'Resultados'}</small>${side}</div>` : ''}

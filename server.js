@@ -559,7 +559,7 @@ app.post('/api/sessions/:sid/join', (req, res) => {
     for (let c = 1; c <= p.cards.length && cards.length < s.cardsPerPlayer; c++) if (!taken.has(c)) cards.push(c);
     if (!cards.length) return fail(res, 409, 'Ya no quedan cartones disponibles en esta sesión');
     token = id(12);
-    pl = s.players[token] = { name: `${first} ${last}`, cards, place };
+    pl = s.players[token] = { name: `${first} ${last}`, first, cards, place };
     // Lista de participantes para el sorteo de concursantes del rosco (sin repetir nombres)
     (db.people ||= {})[pl.name.toLowerCase().replace(/\s+/g, ' ')] = { name: pl.name, at: Date.now() };
     evaluate(s);

@@ -2147,3 +2147,8 @@ body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "So
 .vk-notes.big i { width: 10vh; height: 10vh; font-size: 5.4vh; }
 .vk-notes.big small { font-size: 2vh; }
 #vf .vf-main { min-width: 0; overflow: hidden; }
+/* Listas de participantes: un nombre por línea, ordenados (pedido de Cote) */
+.vk-list { margin: 1.4vh 0 0; padding: 0; list-style: none; display: grid; gap: .6vh; justify-items: center; }
+.vk-list li { font-size: 3.4vh; font-weight: 900; line-height: 1.15; text-transform: uppercase; white-space: nowrap; color: #fff; text-shadow: .25vh .25vh 0 rgba(0, 0, 0, .35); }
+.vk-card .vk-list { margin: 0; }
+.vk-card .vk-list li { font-size: 3vh; }
