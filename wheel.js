@@ -95,6 +95,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
   // Si nadie lo completa y todos terminaron, gana quien tiene más puntos: cada acierto suma 1 y cada 2 fallos
   // quitan 1 (pedido de Cote; un fallo suelto no resta). A igualdad de puntos, gana quien tiene menos fallos.
   // Con dos o más igualados hay empate, que el animador resuelve por sorteo en pantalla.
+  const FLASH_MS = 1500; // aviso de «Incorrecto» / «pasa» en el GC
   const TIE_ROLL_MS = 6500; // lo que dura la tómbola
   const count = (c, what) => c.status.filter((x) => x === what).length;
   const score = (c) => (count(c, 'hit') - Math.floor(count(c, 'miss') / 2)) * 1000 - count(c, 'miss');
@@ -179,6 +180,9 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
         // Al acertar, la respuesta se revela al público durante unos segundos
         const solved = ((w.questions[w.turn] || [])[c.current] || {}).a;
         w.reveal = action === 'hit' && solved ? { letter: w.letters[c.current], answer: solved, at: Date.now() } : null;
+        // Aviso en el centro del GC (pedido de Cote): «Incorrecto» con la respuesta correcta, o «<concursante> pasa», 1,5 s
+        w.flash = action === 'miss' ? { kind: 'miss', letter: w.letters[c.current], answer: solved || '', at: Date.now() }
+          : action === 'pass' ? { kind: 'pass', name: c.name, letter: w.letters[c.current], at: Date.now() } : null;
         c.status[c.current] = action;
         const more = nextLetter(c);
         if (!more) { settle(w); w.onScreen = false; if (winnerOf(w) < 0) passTurn(w); } // terminó su rosco; si lo completó, la partida se detiene
@@ -219,7 +223,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
         if (!last) return 'No hay nada que deshacer';
         settle(w);
         Object.assign(w, JSON.parse(last));
-        w.reveal = null; w.winAccepted = false; w.tieWinner = null;
+        w.reveal = null; w.flash = null; w.winAccepted = false; w.tieWinner = null;
         return null;
       }
       case 'reset': settle(w); w.onScreen = false; if (w.crowd) { w.crowd.ans = {}; w.crowd.shown = {}; w.crowd.winner = null; } w.winAccepted = false; w.tieWinner = null; w.history = []; w.turn = 0; w.reveal = null; w.players = freshPlayers(w); return null;
@@ -238,6 +242,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     wonAt: w.wonAt || 0,
     winAccepted: winnerOf(w) >= 0 && !!w.winAccepted, winAcceptedAt: w.winAcceptedAt || 0,
     reveal: w.reveal && Date.now() - w.reveal.at < REVEAL_MS ? w.reveal : null,
+    flash: w.flash && Date.now() - w.flash.at < FLASH_MS ? w.flash : null,
     // Al público va solo el enunciado de la letra en juego; la respuesta nunca sale del panel del moderador
     // y solo mientras su reloj está corriendo.
     question: w.runningSince && active(w.players[w.turn]) ? ((w.questions[w.turn] || [])[w.players[w.turn].current] || {}).q || '' : '',

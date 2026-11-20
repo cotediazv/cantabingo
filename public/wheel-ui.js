@@ -291,6 +291,29 @@
       return `<aside class="${cls} ${fresh ? 'pop' : ''}" data-reveal><span class="rv-head">✔ Letra ${esc(state.reveal.letter)}</span><span class="rv-answer">${esc(state.reveal.answer)}</span></aside>`;
     };
     const hideReveal = () => $$('[data-reveal]').forEach((el) => { el.hidden = true; });
+    // Aviso en el centro del GC al apretar «Incorrecta» o «Pasa» (pedido de Cote): dura 1,5 s y suena
+    let lastFlash = 0;
+    let flashTimer = null;
+    const flashLeft = (state) => (state.flash ? 1500 - (Date.now() + state.offset - state.flash.at) : 0);
+    const flashCard = (state) => {
+      if (flashLeft(state) <= 0) return '';
+      const f = state.flash;
+      return f.kind === 'miss'
+        ? `<div class="obs-flash miss" data-flash><b>✘ Incorrecto</b>${f.answer ? `<span>La respuesta correcta era</span><em>${esc(f.answer)}</em>` : ''}</div>`
+        : `<div class="obs-flash pass" data-flash><b>↷ ${esc(f.name)} pasa</b></div>`;
+    };
+    const scheduleFlash = (state) => {
+      if (!state.flash || flashLeft(state) <= 0) return;
+      if (state.flash.at !== lastFlash) {
+        lastFlash = state.flash.at;
+        const name = state.flash.kind === 'miss' ? 'miss' : 'pass';
+        sfx.played.push(name);
+        const c = sfx.unlock(); // en OBS el audio queda activo sin tocar la pantalla
+        if (c && c.state !== 'running') Promise.resolve(c.resume()).then(() => sfx.play(name)).catch(() => {}); else sfx.play(name);
+      }
+      clearTimeout(flashTimer);
+      flashTimer = setTimeout(() => $$('[data-flash]').forEach((el) => el.remove()), Math.max(0, flashLeft(state)));
+    };
     const scheduleRevealEnd = (state) => {
       clearTimeout(revealTimer);
       if (!state.reveal) return;
@@ -422,9 +445,11 @@
             <span class="obs-name">${esc(c.name)}</span>
             <span class="obs-score"><b class="ok">✔ ${c.hits}</b> <b class="ko">✘ ${c.misses}</b></span></div>`).join('')}</div>
           ${st.onScreen ? `<div class="obs-wheel">${wheelSVG(st, st.turn, false, true)}</div>` : ''}
-          ${st.rank ? `<div class="obs-side obs-rankside ${st.onScreen ? '' : 'wide'}">${rankHTML(st, 'obs-rank')}</div>` : st.onScreen ? `<div class="obs-side">${questionCard(st)}${revealCard(st, 'obs-reveal')}</div>` : ''}`;
+          ${st.rank ? `<div class="obs-side obs-rankside ${st.onScreen ? '' : 'wide'}">${rankHTML(st, 'obs-rank')}</div>` : st.onScreen ? `<div class="obs-side">${questionCard(st)}${revealCard(st, 'obs-reveal')}</div>` : ''}
+          ${flashCard(st)}`;
         lastQuestion = st.question;
         scheduleRevealEnd(st);
+        scheduleFlash(st);
         return;
       }
       $('#pw').innerHTML = `<h1 class="pw-title">${esc(st.name)}</h1>

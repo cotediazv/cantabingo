@@ -1956,3 +1956,15 @@ body.full[data-venue="kennedy"]::before {
     radial-gradient(circle at 70% 85%, rgba(26, 63, 184, .55), transparent 40%), radial-gradient(circle at 15% 85%, rgba(10, 40, 110, .6), transparent 38%); }
 #fb.th-tobalaba .fb-board { background: rgba(45, 4, 10, .55); border-color: rgba(255, 140, 140, .18); }
 #fb.th-kennedy .fb-board { background: rgba(2, 18, 50, .55); border-color: rgba(140, 200, 255, .18); }
+
+/* El Rosco en el GC: aviso al centro con «Incorrecto» y la respuesta, o «<concursante> pasa» (1,5 s, pedido de Cote) */
+.obs-flash { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 20; display: grid; justify-items: center; gap: 1vh;
+  min-width: 44vw; max-width: 80vw; padding: 3vh 6vh; border-radius: 4vh; border: .7vh solid #fff; color: #fff; text-align: center;
+  box-shadow: 0 2vh 6vh rgba(0, 0, 0, .55); animation: flashpop .25s cubic-bezier(.2, 1.5, .4, 1); }
+.obs-flash.miss { background: linear-gradient(160deg, #e8262e, #8a0f14); }
+.obs-flash.pass { background: linear-gradient(160deg, #ff9a1a, #b85c00); }
+.obs-flash b { font-size: 8vh; font-weight: 900; line-height: 1.05; text-transform: uppercase; text-shadow: .4vh .4vh 0 rgba(0, 0, 0, .3); }
+.obs-flash span { font-size: 3.4vh; font-weight: 700; opacity: .95; }
+.obs-flash em { font-style: normal; font-size: 6.4vh; font-weight: 900; line-height: 1.05; color: #ffe14d; text-transform: uppercase; text-shadow: .4vh .4vh 0 rgba(0, 0, 0, .3); overflow-wrap: anywhere; }
+@keyframes flashpop { from { transform: translate(-50%, -50%) scale(.6); opacity: 0; } to { transform: translate(-50%, -50%) scale(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .obs-flash { animation: none; } }
