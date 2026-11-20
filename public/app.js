@@ -1399,6 +1399,7 @@ function activitiesNav(current) {
   setTimeout(paintGameNav, 0);
   return `<div class="act-nav games-nav"><div class="g-plan"><div class="g-slots"></div><label>¿Cuántos juegos vamos a sortear?<input type="number" class="g-total" min="1" max="10" value="3"></label></div>
     <button type="button" class="primary big g-draw" data-game-draw>🎲 Sortear juego</button>
+    <button type="button" class="g-undo" data-game-undo disabled>↩️ Deshacer</button>
     <p class="g-direct" hidden>…o toca un juego para elegirlo directo, sin tómbola</p>
     <small>Juegos</small><div>${games.map(([k, h]) => (k === current ? h.replace(/data-game="/, 'aria-current="true" data-game="') : h)).join('')}</div>
     <small>Otras actividades</small><div>${more.filter(([k]) => k !== current).map(([, h]) => h).join('')}</div></div>`;
@@ -1421,6 +1422,7 @@ async function paintGameNav() {
   document.querySelectorAll('.games-nav').forEach((n) => n.classList.toggle('g-ready', ready));
   document.querySelectorAll('[data-game-draw]').forEach((b) => { b.disabled = full; b.textContent = full ? `✔ Ya se sortearon los ${g.total} juegos` : ready ? `🎰 Girar la tómbola · ${g.list.length + 1}.º juego` : `🎲 Iniciar sorteo del ${g.list.length + 1}.º juego (de ${g.total})`; });
   document.querySelectorAll('.g-direct').forEach((el) => { el.hidden = !ready; });
+  document.querySelectorAll('[data-game-undo]').forEach((b) => { b.disabled = !g.undoable; });
 }
 document.addEventListener('change', async (e) => {
   if (!e.target.classList || !e.target.classList.contains('g-total')) return;
@@ -1442,8 +1444,18 @@ document.addEventListener('click', async (e) => {
     window.gameDrawReady = false;
     const info = GAME_INFO((await api('GET', '/api/gamedraw')).venue)[g.last.game];
     toast(`🎲 Se está sorteando en pantalla… Salió: ${info.icon} ${info.name}`);
-    setTimeout(() => { if (g.last.game === 'bingo') backToBingo(); else location.hash = info.href; }, 6000); // cuando termina la tómbola en pantalla, el panel pasa a ese juego
+    window.gameDrawGo = setTimeout(() => { if (g.last.game === 'bingo') backToBingo(); else location.hash = info.href; }, 6000); // cuando termina la tómbola en pantalla, el panel pasa a ese juego
   } catch (err) { fail(err); b.disabled = false; }
+});
+// Deshacer (pedido de Cote): vuelve el sorteo de juegos al paso anterior (antes de «Iniciar sorteo», de la tómbola
+// o de elegir un juego directo)
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-game-undo]');
+  if (!b || b.disabled) return;
+  b.disabled = true;
+  clearTimeout(window.gameDrawGo); // si la tómbola recién giró, el panel ya no pasa a ese juego
+  try { await api('POST', '/api/gamedraw/undo'); toast('↩️ Sorteo de juegos: se volvió al paso anterior'); } catch (err) { fail(err); }
+  paintGameNav();
 });
 // Elegir un juego directo (pedido de Cote): después de «Iniciar sorteo de juegos», tocar un juego del menú lo deja como
 // el siguiente de la noche, sin tómbola; el panel pasa a ese juego
@@ -1464,6 +1476,19 @@ const BACK_BINGO = activitiesNav('rosco');
 // abajo, todos los juegos (los que ya salieron, marcados). kind: 'full' (tablero) o 'gc' (OBS)
 views.juegoDraw = async (kind) => {
   const ROLL_MS = 4500;
+  // Pedido de Cote: todo centrado y dentro del cuadro, con márgenes; si un texto llega al borde, se achica la letra
+  const fitText = (el) => {
+    if (!el) return;
+    el.style.fontSize = '';
+    let fs = parseFloat(getComputedStyle(el).fontSize) || 20;
+    while (el.scrollWidth > el.clientWidth + 1 && fs > 8) { fs -= 1; el.style.fontSize = `${fs}px`; }
+  };
+  const fitJd = () => {
+    const card = $('#jd .jd-card');
+    if (!card) return;
+    ['.jd-win', '.jd-roll', '.jd-opts'].forEach((q) => fitText(card.querySelector(q)));
+    card.querySelectorAll('.jd-slots span').forEach(fitText);
+  };
   app.innerHTML = `<div id="jd" class="jd-${kind}"></div>`;
   let shownAt = 0; let timer = null; let alive = true;
   const paint = (g) => {
@@ -1477,7 +1502,7 @@ views.juegoDraw = async (kind) => {
       const cells = [`<span class="done"><small>Juego inicial</small>${info.bingo.icon} Bingo</span>`];
       for (let i = 0; i < g.total; i++) {
         if (ready && i === g.list.length) { cells.push(`<span class="now"><small>${i + 1}.º juego</small>🎲 …</span>`); continue; }
-        const k = g.list[i]; const cur = i === g.list.length - 1;
+        const k = g.list[i]; const cur = !ready && i === g.list.length - 1;
         cells.push(!k ? `<span class="todo"><small>${i + 1}.º juego</small>🔒</span>`
           : cur ? `<span class="${rolling ? 'now' : 'on'}"><small>${i + 1}.º juego</small>${rolling ? '🎲 …' : `${info[k].icon} ${esc(info[k].name)}`}</span>`
             : `<span class="done"><small>${i + 1}.º juego</small>${info[k].icon} ${esc(info[k].name)}</span>`);
@@ -1487,9 +1512,7 @@ views.juegoDraw = async (kind) => {
     if (ready) {
       // paso 1: los juegos que pueden salir
       box.innerHTML = `<div class="jd-card"><small>🎲 Sorteo del ${g.list.length + 1}.º juego</small><div class="jd-opts">${g.ready.pool.map((k) => `<span>${info[k].icon} ${esc(info[k].name)}</span>`).join('')}</div>${listOf(true)}</div>`;
-      // en una sola línea (pedido de Cote): la letra se achica hasta que todos caben en el ancho
-      const row = $('.jd-opts');
-      if (row) { let fs = parseFloat(getComputedStyle(row.firstElementChild || row).fontSize) || 30; while (row.scrollWidth > row.clientWidth + 1 && fs > 10) { fs -= 1; row.style.fontSize = `${fs}px`; } }
+      fitJd(); // en una sola línea, centrado y dentro del cuadro
       return;
     }
     const win = info[g.last.game];
@@ -1500,12 +1523,14 @@ views.juegoDraw = async (kind) => {
       // tómbola: pasan los juegos disponibles cada vez más lento
       box.innerHTML = `<div class="jd-card"><small>🎲 Sorteo del ${nth}</small><b class="jd-roll"></b>${listOf(true)}</div>`;
       let i = 0; let wait = 70;
-      const spin = () => { if (!alive || !$('.jd-roll')) return; const x = pool[i++ % pool.length]; $('.jd-roll').textContent = `${x.icon} ${x.name}`; wait *= 1.13; if (Date.now() + (g.offset || 0) - g.last.at < ROLL_MS - 200) timer = setTimeout(spin, wait); else paintWin(); };
+      fitJd();
+      const spin = () => { if (!alive || !$('.jd-roll')) return; const x = pool[i++ % pool.length]; $('.jd-roll').textContent = `${x.icon} ${x.name}`; fitText($('.jd-roll')); wait *= 1.13; if (Date.now() + (g.offset || 0) - g.last.at < ROLL_MS - 200) timer = setTimeout(spin, wait); else paintWin(); };
       const paintWin = () => { if (alive) paint({ ...g, last: { ...g.last, at: g.last.at - ROLL_MS } }); };
       spin();
       return;
     }
     box.innerHTML = `<div class="jd-card won"><small>🎲 El ${nth} es</small><b class="jd-win">${win.icon} ${esc(win.name)}</b>${listOf(false)}</div>`;
+    fitJd();
     if (Date.now() - shownAt > 1000) { shownAt = Date.now(); sfx.play('win'); }
   };
   let last = '';

@@ -2264,3 +2264,16 @@ body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "So
 #phone-howto .ph-bar { position: absolute; left: 0; bottom: 0; height: 6px; width: 100%; background: #ffc400; transform-origin: left; animation: ph-bar 5s linear forwards; }
 @keyframes ph-bar { to { transform: scaleX(0); } }
 @keyframes ph-in { from { opacity: 0; } }
+
+/* Sorteo de juegos: todo centrado y dentro del cuadro, con márgenes que siempre se respetan (pedido de Cote) */
+#jd { place-items: center; padding: 3vh 3vw; box-sizing: border-box; }
+#jd .jd-card { width: auto; max-width: 92vw; max-height: 92vh; overflow: hidden; }
+@media (orientation: portrait) { #jd .jd-card { width: 92vw; } }
+#jd .jd-card > * { max-width: 100%; box-sizing: border-box; }
+#jd .jd-roll, #jd .jd-win { display: block; max-width: 100%; overflow: hidden; text-align: center; }
+#jd .jd-slots { max-width: 100%; justify-content: center; }
+#jd .jd-slots span { max-width: 100%; box-sizing: border-box; overflow: hidden; white-space: nowrap; }
+@media (orientation: portrait) { #jd .jd-slots span { min-width: 26vw; } #jd .jd-roll, #jd .jd-win { font-size: 7vh; } }
+/* Botón Deshacer, debajo de «Sortear juego» */
+.games-nav .g-undo { display: block; margin: 8px auto 4px; padding: 8px 18px; font-weight: 800; }
+.games-nav .g-undo:disabled { opacity: .4; cursor: default; }
