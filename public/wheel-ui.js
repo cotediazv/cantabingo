@@ -389,7 +389,7 @@
       // y letra más chica. Se actualiza cada 5 s a medida que entra gente (sin páginas).
       const peopleHTML = () => {
         const all = data.people || [];
-        return `<div class="rv-soon small"><b>¡Pronto!</b><span>Ya comenzamos</span></div>
+        return `<div class="rv-soon small"><b>¡Pronto!</b><span>Ya comenzamos</span><small class="rv-howto">Elegimos 3 participantes al azar entre todos los conectados</small></div>
           <div class="rv-people"><small>${all.length} ${all.length === 1 ? 'persona participando' : 'personas participando'}</small>
             <ul>${all.map((n) => `<li>${esc(n)}</li>`).join('')}</ul></div>`;
       };
@@ -558,7 +558,10 @@
       const idle = !st.question && revealLeft(st) <= 0;
       const fun = [...String(st.name)].map((ch, i) => (ch === ' ' ? '<i class="sp"> </i>' : `<i style="--i:${i}">${esc(ch)}</i>`)).join('');
       $('#pw').classList.toggle('pw-idle', idle);
-      $('#pw').innerHTML = `<h1 class="pw-title"><span class="pw-plain">${esc(st.name)}</span><span class="pw-fun" aria-hidden="true">${fun}</span></h1>
+      // Instrucciones antes de empezar (pedido de Cote)
+      const started = !!st.runningSince || st.players.some((c) => c.status.some((x) => x !== 'pending'));
+      $('#pw').classList.toggle('pw-howto-on', idle && !started);
+      $('#pw').innerHTML = `<h1 class="pw-title"><span class="pw-plain">${esc(st.name)}</span><span class="pw-fun" aria-hidden="true">${fun}</span>${started ? '' : '<small class="pw-howto">Elegimos 3 participantes al azar entre todos los conectados</small>'}</h1>
         <div class="pw-text">${revealCard(st, 'pw-reveal')}${st.question ? `<div class="pw-question">${esc(st.question)}</div>` : ''}</div>
         <div class="wheels n${st.players.length}">${st.players.map((_, i) => `<div class="wheel-box ${i === st.turn && !st.finished ? 'on' : 'off'}">${wheelSVG(st, i)}</div>`).join('')}</div>
         ${st.rank ? `<div class="pw-rankwrap">${rankHTML(st, 'pw-rank')}</div>` : ''}`;

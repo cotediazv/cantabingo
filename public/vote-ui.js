@@ -22,7 +22,7 @@
   const isK = (st) => st.mode === 'karaoke';
   const icon = (st) => (isK(st) ? '🎤' : '🗳️');
   // 5 notas al azar del público tras cada canción (concurso de karaoke)
-  const notesHTML = (st, cls) => (st.sample && st.sample.length ? `<div class="${cls}">${st.sample.map((x, i) => `<i style="--i:${i}">${x}</i>`).join('')}</div>` : '');
+  const notesHTML = (st, cls) => (st.sample && st.sample.length ? `<div class="${cls}">${st.sample.map((x) => `<span><i>${x.note}</i><small>${esc(x.name || '')}</small></span>`).join('')}</div>` : '');
 
   // ---------- Panel del animador ----------
   views.votoctl = async () => {
@@ -41,7 +41,7 @@
       const box = $('#vc-body');
       if (!box || !st) return;
       setClock(st);
-      const sig = JSON.stringify([st.mode, st.max, st.phase, st.signup, st.players, st.open, st.counts, st.places, st.next, st.final, st.tally, st.winner, st.sample]);
+      const sig = JSON.stringify([st.mode, st.title, st.max, st.phase, st.signup, st.players, st.open, st.counts, st.places, st.next, st.final, st.tally, st.winner, st.sample, st.overflow]);
       if (sig === last) return;
       last = sig;
       if (document.activeElement !== $('#vc-title')) $('#vc-title').value = st.title;
@@ -56,8 +56,9 @@
           <label class="f vc-max">Cupos (máximo de participantes)<input type="number" id="vc-max" min="2" max="30" value="${st.max}"></label>
           ${st.sample ? `<div class="vc-read"><small>Notas al azar en pantalla (sin el promedio)</small>${notesHTML(st, 'vc-notes')}</div>` : ''}
           <div class="vc-signup ${st.signup ? 'on' : ''}"><p><b>${st.signup ? `📲 Inscripciones abiertas · <span class="v-clock">${clockText()}</span>` : 'Inscripciones desde el celular'}</b>
-            <small>${st.signup ? `A toda la sala le aparece la invitación. Quien se inscribe llega a esta lista con su nombre y ${isK(st) ? 'su canción' : 'lo que trae'}.` : `Ábrelas para que la gente se anote sola, con su nombre y ${isK(st) ? 'la canción y el artista' : 'lo que trae'}. Corre un reloj de 2:00.`}</small></p>
+            <small>${st.signup ? `A toda la sala le aparece la invitación. Quien se inscribe llega a esta lista con su nombre y ${isK(st) ? 'su canción' : 'lo que trae'}.` : isK(st) ? 'Ábrelas para que la gente se anote sola con la canción y el artista. Corre un reloj de 1:00. Si se inscriben más que los cupos, se sortean.' : 'Ábrelas para que la gente se anote sola, con su nombre y lo que trae. Corre un reloj de 2:00.'}</small></p>
             <button class="${st.signup ? '' : 'primary'}" data-act="signup" data-on="${st.signup ? '' : '1'}">${st.signup ? 'Cerrar' : 'Abrir inscripciones'}</button></div>
+          ${st.overflow ? `<button class="primary big" data-act="draw" style="margin-bottom:12px" ${st.signup ? 'disabled' : ''}>🎲 Sortear los ${st.max} que cantan (se inscribieron ${st.players.length})</button>${st.signup ? '<p class="muted small" style="margin:-6px 0 12px">Cierra las inscripciones para sortear.</p>' : ''}` : ''}
           <h2>Participantes</h2>
           <form id="vc-add" class="row" style="gap:8px"><input type="text" id="vc-name" maxlength="30" placeholder="Nombre" autocomplete="off" style="flex:1;min-width:0"><input type="text" id="vc-thing" maxlength="40" placeholder="${isK(st) ? 'Canción · artista (opcional)' : 'Objeto (opcional)'}" autocomplete="off" style="flex:1.3;min-width:0"><button class="primary">Agregar</button></form>
           <div class="vc-list">${st.players.map((p) => {
@@ -138,9 +139,10 @@
           <div class="pvote-keys">${Array.from({ length: 10 }, (_, i) => `<button type="button" data-v="${i + 1}" data-id="${st.open.id}" class="${st.mine === i + 1 ? 'on' : ''}">${i + 1}</button>`).join('')}</div>
           <p class="pvote-clock">Quedan <b class="v-clock">${clockText()}</b></p>
           ${st.mine ? `<p class="pvote-ok">✔ Tu nota: ${st.mine}. Puedes cambiarla mientras la votación esté abierta.</p>` : '<p class="muted small" style="text-align:center">1 es la nota más baja y 10 la más alta.</p>'}`;
-      } else if (st.me) body = `<div class="pvote-in">✔ Estás en la lista<b>${badge(st.me.no)}${esc(st.me.thing)}</b><small>Atento al llamado del animador para subir al escenario.</small></div>`;
+      } else if (st.me && isK(st) && st.overflow) body = `<div class="pvote-in">✔ Estás inscrito<b>${esc(st.me.thing)}</b><small>Se inscribieron más personas que los cupos: haremos un sorteo. ¡Mira la pantalla!</small></div>`;
+      else if (st.me) body = `<div class="pvote-in">✔ Estás en la lista<b>${badge(st.me.no)}${esc(st.me.thing)}</b><small>Atento al llamado del animador para subir al escenario.</small></div>`;
       else if (st.signup && st.room) {
-        body = `<form id="pv-join"><p class="pvote-ask">¿Quieres participar?<b>¡Sube a nuestro escenario!</b></p>
+        body = `<form id="pv-join"><p class="pvote-ask">${isK(st) ? '¿Quieres cantar?<b>¡Inscríbete con tu canción!</b>' : '¿Quieres participar?<b>¡Sube a nuestro escenario!</b>'}</p>
           ${isK(st) ? `<label class="f">Canción<input type="text" id="pv-song" maxlength="50" required minlength="2" autocomplete="off" placeholder="Nombre de la canción"></label>
           <label class="f">Artista<input type="text" id="pv-artist" maxlength="40" required minlength="2" autocomplete="off" placeholder="Quién la canta"></label>`
     : '<label class="f">¿Con qué participas?<input type="text" id="pv-thing" maxlength="40" required minlength="2" autocomplete="off" placeholder="Descripción de tu objeto"></label>'}
@@ -221,12 +223,15 @@
         : { tag: 'Resultados', main: title(st), sub: 'Vamos desde el último lugar hasta la gran final', side: ['🏁', `${st.players.length} participantes`] };
     }
     if (st.open) return { tag: 'Votación abierta', no: st.open.no, main: st.open.name, featured: !!st.open.thing, sub: st.open.thing || 'Pon tu nota del 1 al 10 desde tu celular', clock: 'Vota del 1 al 10', qr: true };
+    if (st.drawn) return { tag: 'Sorteo de participantes', main: '🎲 ¡Ellos cantan!', sub: st.drawn.join(' · '), side: ['🎤', `${st.drawn.length} participantes`] };
     if (st.last && st.sample && st.sample.length) return { tag: 'Notas del público', no: st.last.no, main: st.last.name, sub: 'Algunas notas que puso el público', notes: true };
     if (st.last) {
       const next = st.players.find((p) => !p.done);
       return { tag: 'Votación cerrada', no: st.last.no, main: st.last.name, sub: '✔ Votación recibida', side: next ? ['Sigue', `N.º ${next.no} · ${next.name}`] : ['🏁', 'Ya vienen los resultados'] };
     }
-    if (st.signup) return { tag: 'Inscripciones abiertas', main: title(st), sub: '¿Quieres participar? Inscríbete desde tu celular', clock: 'Tiempo', qr: true };
+    if (st.signup) return { tag: 'Inscripciones abiertas', main: title(st), sub: isK(st) ? '¿Quieres cantar? Inscríbete desde tu celular con tu canción' : '¿Quieres participar? Inscríbete desde tu celular', clock: 'Tiempo', qr: true };
+    // Instrucciones del festival (pedido de Cote)
+    if (isK(st)) return { tag: 'Cómo se juega', main: title(st), sub: `Elegimos ${st.max} personas para cantar. Las canciones serán cortas en pro del tiempo.`, side: ['🎤', 'Vota del 1 al 10'], qr: true };
     return { tag: 'Votación del público', main: title(st), sub: 'Prepárate para votar', side: ['Vota', 'Desde tu celular'], qr: true };
   };
 
@@ -245,15 +250,15 @@
       // Lista de inscritos: se ve durante el llamado y hasta que empieza la primera votación
       const roster = st.phase === 'voting' && !st.open && !st.last && st.players.length
         ? `<div class="vg-list"><small>Inscritos <b>${st.players.length}/${st.max}</b></small>${st.players.map((p) => `<div><p><b>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}</p></div>`).join('')}</div>` : '';
-      const html = celebrating ? '' : `${roster}${s.qr || true ? `<div class="vg-qr">${qr(joinUrl())}<b>Si no has participado, escanea el código QR con tu celular y únete a la sesión</b></div>` : ''}
+      const html = celebrating ? '' : `${s.notes ? `<div class="vk-card">${notesHTML(st, 'vk-notes')}</div>` : ''}${roster}${s.qr || true ? `<div class="vg-qr">${qr(joinUrl())}<b>Si no has participado, escanea el código QR con tu celular y únete a la sesión</b></div>` : ''}
         <div class="vg-bar">
           <div class="vg-tag"><small>${esc(title(st))}</small><b>${icon(st)} ${esc(s.tag)}</b></div>
           <div class="vg-main ${s.featured ? 'featured' : ''}">${s.duel ? `<b class="vg-duel" ${n(st.final.players.map((p) => `${p.name}...`).join(' vs '))}>${versus(st)}</b>` : `<b ${n(s.no ? `${s.main}...` : s.main)}>${badge(s.no)}${esc(s.main)}</b>`}<span ${n(s.sub)}>${esc(s.sub)}</span></div>
-          ${s.notes ? `<div class="vg-side vk-side">${notesHTML(st, 'vk-notes')}</div>` : s.clock ? `<div class="vg-side score"><small>${esc(s.clock)}</small><b class="v-clock">${clockText()}</b></div>` : s.score != null ? `<div class="vg-side score"><small>Nota</small><b>${note(s.score)}</b></div>` : `<div class="vg-side"><small ${n(s.side[0])}>${esc(s.side[0])}</small><b ${n(s.side[1])}>${esc(s.side[1])}</b></div>`}
+          ${s.notes ? '<div class="vg-side"><small>Notas</small><b>8 s</b></div>' : s.clock ? `<div class="vg-side score"><small>${esc(s.clock)}</small><b class="v-clock">${clockText()}</b></div>` : s.score != null ? `<div class="vg-side score"><small>Nota</small><b>${note(s.score)}</b></div>` : `<div class="vg-side"><small ${n(s.side[0])}>${esc(s.side[0])}</small><b ${n(s.side[1])}>${esc(s.side[1])}</b></div>`}
         </div>`;
       clearTimeout(swap);
       // Si solo cambió un detalle (llegó otro inscrito), se actualiza en el lugar, sin sacar y volver a entrar el zócalo
-      const key = celebrating ? '' : JSON.stringify([s.tag, s.main, s.sub, !!s.qr]);
+      const key = celebrating ? '' : JSON.stringify([s.tag, s.main, s.sub, !!s.qr, !!s.notes]);
       // Redoble de tambores (concurso de karaoke) también en el GC, para la transmisión
       if (s.drum && drumHeard !== st.rev) { drumHeard = st.rev; sfx.unlock(); sfx.play('drum'); }
       if (key && key === sceneKey && box.classList.contains('on')) { box.innerHTML = html; return; }
