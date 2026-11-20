@@ -642,6 +642,7 @@ html.modo-obs .visor{background:transparent}
 html.modo-obs .visor{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding-top:var(--obs-esp,48px);box-sizing:border-box}
 html.modo-obs .visor-top{position:relative;z-index:3;background:color-mix(in srgb,var(--c) 22%,#000);border:3px solid var(--c);border-radius:14px;padding:14px 28px 12px;box-sizing:border-box;flex:none}
 html.modo-obs .visor-pista{flex:none;width:100%;height:var(--obs-h,700px);margin-top:var(--obs-esp,48px)}
+html.modo-obs .obs-neuronas{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:2}
 html.modo-obs .visor-pista{overflow:visible}html.modo-obs .visor-slide:not(.actual){display:none}html.modo-obs .visor-slide{padding:0}html.modo-obs .visor-slide>.ptl-vivo{gap:0}
 /* (pedido de Cote) franja de arriba de otro color que el fondo y letras grandes que ocupan todo el ancho */
 html.modo-obs .vt-txt{gap:8px}html.modo-obs .vt-l1{gap:24px;align-items:center}
@@ -651,7 +652,7 @@ html.modo-obs .vt-estado,html.modo-obs .vt-l2 .vt-show{color:#fff}
 /* (pedido de Cote) nombre del local y «Hoy desde las …» en amarillo; sin «Pantalla del local» */
 html.modo-obs .vt-local,html.modo-obs .vt-l2 b{color:#f4bf5a}html.modo-obs .vt-l2 .vt-show b{color:#fff}html.modo-obs .vt-estado{display:none}html.modo-obs .vt-fecha{color:rgba(255,255,255,.85)}html.modo-obs .visor-punto.on{background:#fff}
 html.modo-obs .obs-hueco{background:transparent!important;z-index:1}
-html.modo-obs .visor-slide.actual .obs-hueco{box-shadow:0 0 0 200vmax color-mix(in srgb,var(--c) 50%,#000)} /* fondo del color del local (pedido de Cote) */
+html.modo-obs .visor-slide.actual .obs-hueco{box-shadow:0 0 0 200vmax color-mix(in srgb,var(--c) 35%,#000)} /* fondo del color del local (pedido de Cote) */
 html.modo-obs .visor-slide .pant-v{position:relative;z-index:2}
 html.modo-obs .visor-flecha,html.modo-obs .visor-x,html.modo-obs .visor-pc,html.modo-obs .visor-aviso,html.modo-obs .vivo-botones{display:none!important}
 #funciona[hidden]{display:none}
@@ -1672,7 +1673,35 @@ elegirLocal('kennedy');
   }
   // Modo OBS (pedido de Cote): composición ordenada: la franja de arriba con los mismos márgenes laterales que las
   // pantallas de abajo, y el mismo espacio arriba, entre la franja y las pantallas, y abajo
+  // Neuronas del fondo (pedido de Cote): pocas, aparecen, se conectan y se desvanecen. Nunca sobre el recuadro del GC
+  // (que queda transparente para la cámara), ni sobre la pantalla vertical ni la franja de arriba
+  function obsNeuronas(){
+    if(visor.querySelector('.obs-neuronas'))return;
+    const cv=document.createElement('canvas');cv.className='obs-neuronas';visor.prepend(cv);const x=cv.getContext('2d');
+    let pts=[],ult=0;const ahora=()=>performance.now();
+    const color=()=>getComputedStyle(visor).getPropertyValue('--c').trim();
+    const huecos=()=>[...visor.querySelectorAll('.visor-slide.actual .pant,.visor-top')].map(e=>e.getBoundingClientRect());
+    const fuera=(px,py,hs)=>!hs.some(r=>px>r.left-14&&px<r.right+14&&py>r.top-14&&py<r.bottom+14);
+    function cuadro(t){if(!visor||!cv.isConnected)return;requestAnimationFrame(cuadro);if(t-ult<33)return;ult=t;
+      const W=cv.width=innerWidth,H=cv.height=innerHeight,hs=huecos();
+      // nace una de vez en cuando (máximo 14 a la vez), siempre fuera de los recuadros
+      if(pts.length<14&&Math.random()<.08){for(let k=0;k<20;k++){const px=Math.random()*W,py=Math.random()*H;if(fuera(px,py,hs)){pts.push({x:px,y:py,n:t,v:1500+Math.random()*2000});break}}}
+      pts=pts.filter(p=>t-p.n<p.v);
+      const a=p=>{const e=(t-p.n)/p.v;return e<.25?e/.25:e>.7?(1-e)/.3:1};
+      x.lineWidth=1.4;x.strokeStyle='#fff';
+      for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){const p=pts[i],q=pts[j],d=Math.hypot(p.x-q.x,p.y-q.y);if(d>420)continue;
+        x.globalAlpha=Math.min(a(p),a(q))*(1-d/420)*.55;x.beginPath();x.moveTo(p.x,p.y);x.lineTo(q.x,q.y);x.stroke()}
+      const c=color()||'#fff';
+      for(const p of pts){const al=a(p);x.globalAlpha=al;x.fillStyle='#fff';x.beginPath();x.arc(p.x,p.y,3.2,0,7);x.fill();
+        x.globalAlpha=al*.35;x.fillStyle=c;x.beginPath();x.arc(p.x,p.y,10,0,7);x.fill()}
+      x.globalAlpha=1;
+      // los recuadros quedan limpios (el del GC, transparente)
+      for(const r of hs)x.clearRect(r.left,r.top,r.width,r.height);
+    }
+    requestAnimationFrame(cuadro);
+  }
   function obsComponer(){
+    obsNeuronas();
     const W=innerWidth,H=innerHeight,lado=Math.round(W*.04),gap=Math.round(W*.012),top=visor.querySelector('.visor-top');
     const ancho=W-2*lado;top.style.width=ancho+'px';
     const th=top.offsetHeight,aire=Math.round(H*.045);
