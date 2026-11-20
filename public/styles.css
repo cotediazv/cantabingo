@@ -1924,3 +1924,12 @@ body.full #app { z-index: auto; }
 .obs-rank li b, .pw-rank li b { white-space: normal; overflow: hidden; text-overflow: clip; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-height: 1.1; overflow-wrap: anywhere; }
 .obs-rank li { font-size: 2.1vh; }
 .pw-rank li { font-size: 3vh; }
+/* Ranking: nombre y apellido completos, sin cortar (pedido de Cote) */
+.w-rk li b, .obs-rank li b, .pw-rank li b { display: block; white-space: normal; overflow: visible; text-overflow: clip; -webkit-line-clamp: unset; overflow-wrap: anywhere; line-height: 1.15; }
+.obs-rankside.wide { width: min(46vw, 82vh); }
+.obs-rank-head b { font-size: 3.2vh; }
+.pw-rank-head b { font-size: 5.4vh; }
+/* «Poner rosco en pantalla»: morado claro (pedido de Cote) */
+.w-show { background: #c4b5fd; color: #2e1065; border-color: #c4b5fd; }
+.w-show.on { background: #8b5cf6; color: #fff; border-color: #8b5cf6; }
+.pw-rank { width: min(94vw, 150vh); }

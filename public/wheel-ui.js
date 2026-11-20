@@ -138,7 +138,8 @@
 
   // ---------- Moderador: panel de control ----------
   // Top 10 de la Trivia del Rosco (lo usan el panel, la pantalla del local y el GC)
-  const rankHTML = (st, cls) => `<div class="${cls}"><div class="${cls}-head"><small>Trivia del Rosco</small><b>🏅 Top 10</b><span>${st.rankPlayers} ${st.rankPlayers === 1 ? 'persona jugando' : 'personas jugando'}</span></div>
+  // «Resultados finales» cuando ya se mostró al ganador (pedido de Cote); antes, «Resultados parciales»
+  const rankHTML = (st, cls) => `<div class="${cls}"><div class="${cls}-head"><small>Trivia del Rosco · Top 10</small><b>🏅 ${st.crowdWinner || st.winner ? 'Resultados finales' : 'Resultados parciales'}</b><span>${st.rankPlayers} ${st.rankPlayers === 1 ? 'persona jugando' : 'personas jugando'}</span></div>
     ${st.rank.length ? `<ol>${st.rank.map((t) => `<li><b>${esc(t.name)}</b><em>${t.score} pts</em></li>`).join('')}</ol>` : '<p>Todavía nadie suma puntos</p>'}</div>`;
   views.ruedactl = async (id) => {
     if (!(await isAdmin())) return viewLogin();
@@ -342,6 +343,14 @@
       st = s;
       soundFor(s);
       clockSound(s);
+      // Ranking desplegado con el ganador ya en pantalla: los resultados finales encima (al recogerlo vuelve la felicitación)
+      if (st.rank && (st.winner || st.crowdWinner)) {
+        wonBy = null; clearTimeout(winTimer); clearTimeout(shrinkTimer);
+        $('#pw').innerHTML = kind === 'obs' && !document.body.classList.contains('full')
+          ? `<div class="obs-side obs-rankside wide">${rankHTML(st, 'obs-rank')}</div>`
+          : `<div class="pw-rankwrap">${rankHTML(st, 'pw-rank')}</div>`;
+        return;
+      }
       // Ganador del Rosco en línea (el público): 15 segundos en pantalla y después se retira
       if (st.crowdWinner) {
         const full = document.body.classList.contains('full');
@@ -407,7 +416,7 @@
             <span class="obs-name">${esc(c.name)}</span>
             <span class="obs-score"><b class="ok">✔ ${c.hits}</b> <b class="ko">✘ ${c.misses}</b></span></div>`).join('')}</div>
           ${st.onScreen ? `<div class="obs-wheel">${wheelSVG(st, st.turn, false, true)}</div>` : ''}
-          ${st.rank ? `<div class="obs-side obs-rankside">${rankHTML(st, 'obs-rank')}</div>` : st.onScreen ? `<div class="obs-side">${questionCard(st)}${revealCard(st, 'obs-reveal')}</div>` : ''}`;
+          ${st.rank ? `<div class="obs-side obs-rankside ${st.onScreen ? '' : 'wide'}">${rankHTML(st, 'obs-rank')}</div>` : st.onScreen ? `<div class="obs-side">${questionCard(st)}${revealCard(st, 'obs-reveal')}</div>` : ''}`;
         lastQuestion = st.question;
         scheduleRevealEnd(st);
         return;
