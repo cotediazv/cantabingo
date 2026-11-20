@@ -326,7 +326,7 @@
     const stopClocks = startClocks(() => st);
     const WIN_HOLD_MS = 15000;
     let winTimer = null;
-    const leave = () => { clearTimeout(shrinkTimer); clearTimeout(tickTimer); clearTimeout(winTimer); document.body.classList.remove('wheel-screen', 'obs'); };
+    const leave = () => { rankV.hide(); clearTimeout(shrinkTimer); clearTimeout(tickTimer); clearTimeout(winTimer); document.body.classList.remove('wheel-screen', 'obs'); };
     // Efectos de sonido del tablero del DJ: acierto, fallo, paso y ganador
     let heard = null;
     const soundFor = (s) => {
@@ -368,8 +368,51 @@
       if (!running) { clearTimeout(tickTimer); tickTimer = null; } else if (!tickTimer) tickLoop();
     };
     let shrinkTimer = null;
+    // Ranking vertical: 5 primeros en grande y el resto en columnas, por páginas que cambian solas; se actualiza cada 5 s
+    const rankV = (() => {
+      let id = null; let data = null; let page = 0; let tPoll = null; let tPage = null; let cap = 60; let capFor = '';
+      const PAGE_MS = 8000;
+      const cols = () => (innerWidth >= 700 ? 3 : 2);
+      const load = async () => { if (!id) return; const d = await api('GET', `/api/wheels/${id}/ranking`).catch(() => null); if (d && id) { data = d; paint(); } };
+      const html = (from, chunk, pages) => {
+        const top = data.list.slice(0, 5);
+        // Sin QR en la pantalla vertical (pedido de Cote)
+        return `<div class="rv-rank"><header class="rv-head"><div class="rv-title"><b>Resultados</b><span>La Trivia del Rosco</span><small>${data.players} ${data.players === 1 ? 'persona jugando' : 'personas jugando'}</small></div></header>
+          ${top.length ? `<ol class="rv-top">${top.map((t, i) => `<li><em>${i + 1}</em><b>${esc(t.name)}</b><i>${t.score} pts</i></li>`).join('')}</ol>` : '<p class="rv-empty">Todavía nadie suma puntos. ¡Responde desde tu celular!</p>'}
+          <div class="rv-rest" style="--cols:${cols()};--rows:${Math.max(1, Math.ceil(chunk.length / cols()))}">${chunk.length ? `<ol>${chunk.map((t, i) => `<li><em>${from + 6 + i}</em><b>${esc(t.name)}</b><i>${t.score}</i></li>`).join('')}</ol>` : ''}</div>
+          <footer class="rv-pages">${pages > 1 ? `Puestos ${from + 6} al ${from + 5 + chunk.length} · página ${page + 1} de ${pages}` : ''}</footer></div>`;
+      };
+      const paint = () => {
+        if (!id || !data) return;
+        const rest = data.list.slice(5);
+        // Cuántos caben en una página: se prueba y se ajusta a lo que de verdad cabe en la pantalla
+        const key = `${innerWidth}x${innerHeight}`;
+        if (capFor !== key) { capFor = key; cap = 90; }
+        for (let tries = 0; tries < 40; tries++) {
+          const pages = Math.max(1, Math.ceil(rest.length / cap));
+          page %= pages;
+          const from = page * cap;
+          $('#pw').innerHTML = html(from, rest.slice(from, from + cap), pages);
+          const box = $('.rv-rest');
+          if (!box || box.scrollHeight <= box.clientHeight + 1 || cap <= cols()) break;
+          cap = Math.max(cols(), cap - cols());
+        }
+      };
+      return {
+        show(wid) {
+          document.body.classList.add('rv-on');
+          if (id === wid) return;
+          id = wid; page = 0; data = null;
+          load(); clearInterval(tPoll); clearInterval(tPage);
+          tPoll = setInterval(load, 5000);
+          tPage = setInterval(() => { page++; paint(); }, PAGE_MS);
+        },
+        hide() { document.body.classList.remove('rv-on'); if (!id) return; id = null; clearInterval(tPoll); clearInterval(tPage); },
+      };
+    })();
     const onWheel = (s) => {
       st = s;
+      if (st.winner || st.crowdWinner) rankV.hide();
       soundFor(s);
       clockSound(s);
       // Ranking desplegado con el ganador ya en pantalla: los resultados finales encima (al recogerlo vuelve la felicitación)
@@ -452,6 +495,9 @@
         scheduleFlash(st);
         return;
       }
+      // Pantalla vertical (pedido de Cote): en vez de los roscos, el ranking completo de la Trivia del Rosco
+      if (kind === 'rueda' && document.body.classList.contains('full') && innerHeight > innerWidth) { rankV.show(st.id); return; }
+      rankV.hide();
       $('#pw').innerHTML = `<h1 class="pw-title">${esc(st.name)}</h1>
         <div class="pw-text">${revealCard(st, 'pw-reveal')}${st.question ? `<div class="pw-question">${esc(st.question)}</div>` : ''}</div>
         <div class="wheels n${st.players.length}">${st.players.map((_, i) => `<div class="wheel-box ${i === st.turn && !st.finished ? 'on' : 'off'}">${wheelSVG(st, i)}</div>`).join('')}</div>
