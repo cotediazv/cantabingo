@@ -318,7 +318,7 @@
       clearTimeout(revealTimer);
       if (!state.reveal) return;
       lastReveal = state.reveal.at;
-      revealTimer = setTimeout(hideReveal, Math.max(0, revealLeft(state)));
+      revealTimer = setTimeout(() => { hideReveal(); if (!state.question && $('#pw') && $('.pw-title')) $('#pw').classList.add('pw-idle'); }, Math.max(0, revealLeft(state)));
     };
     document.body.classList.add('wheel-screen');
     if (kind === 'obs') document.body.classList.add('obs');
@@ -326,7 +326,7 @@
     const stopClocks = startClocks(() => st);
     const WIN_HOLD_MS = 15000;
     let winTimer = null;
-    const leave = () => { rankV.hide(); clearTimeout(shrinkTimer); clearTimeout(tickTimer); clearTimeout(winTimer); document.body.classList.remove('wheel-screen', 'obs'); };
+    const leave = () => { const pw = $('#pw'); if (pw) pw.classList.remove('pw-idle'); rankV.hide(); clearTimeout(shrinkTimer); clearTimeout(tickTimer); clearTimeout(winTimer); document.body.classList.remove('wheel-screen', 'obs'); };
     // Efectos de sonido del tablero del DJ: acierto, fallo, paso y ganador
     let heard = null;
     const soundFor = (s) => {
@@ -518,7 +518,12 @@
       // Pantalla vertical (pedido de Cote): en vez de los roscos, el ranking completo de la Trivia del Rosco
       if (kind === 'rueda' && document.body.classList.contains('full') && innerHeight > innerWidth) { rankV.show(st.id); return; }
       rankV.hide();
-      $('#pw').innerHTML = `<h1 class="pw-title">${esc(st.name)}</h1>
+      // Sin pregunta ni respuesta en pantalla (pedido de Cote): el título crece y ocupa el espacio de arriba, con letras de
+      // colores que se mueven; al iniciar la pregunta vuelve a su tamaño
+      const idle = !st.question && revealLeft(st) <= 0;
+      const fun = [...String(st.name)].map((ch, i) => (ch === ' ' ? '<i class="sp"> </i>' : `<i style="--i:${i}">${esc(ch)}</i>`)).join('');
+      $('#pw').classList.toggle('pw-idle', idle);
+      $('#pw').innerHTML = `<h1 class="pw-title"><span class="pw-plain">${esc(st.name)}</span><span class="pw-fun" aria-hidden="true">${fun}</span></h1>
         <div class="pw-text">${revealCard(st, 'pw-reveal')}${st.question ? `<div class="pw-question">${esc(st.question)}</div>` : ''}</div>
         <div class="wheels n${st.players.length}">${st.players.map((_, i) => `<div class="wheel-box ${i === st.turn && !st.finished ? 'on' : 'off'}">${wheelSVG(st, i)}</div>`).join('')}</div>
         ${st.rank ? `<div class="pw-rankwrap">${rankHTML(st, 'pw-rank')}</div>` : ''}`;

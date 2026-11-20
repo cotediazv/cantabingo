@@ -2058,3 +2058,21 @@ body[data-venue="frida"] .rv-rank, body:not([data-venue]) .rv-rank { --rv-score:
 .rv-soon b { font-size: min(10vh, 15vw); }
 .rv-soon span { font-size: min(5vh, 8vw); }
 .rv-rest .rv-col { margin: 0; padding: 1.2vh 1.8vw; gap: .55vh 0; }
+
+/* El Rosco en la pantalla horizontal (pedido de Cote): sin pregunta, el título ocupa todo el espacio de arriba, grande,
+   con cada letra de un color y moviéndose como ola; con pregunta vuelve a su tamaño */
+.pw-title .pw-fun { display: none; }
+@media (orientation: landscape) {
+  body.full.wheel-screen #pw.pw-idle { grid-template-rows: 30vh minmax(0, 1fr); }
+  body.full.wheel-screen #pw.pw-idle .pw-text { display: none; }
+  body.full.wheel-screen #pw.pw-idle .pw-title { align-self: center; overflow: visible; font-size: 19vh; line-height: 1; padding-top: 1vh; }
+  body.full.wheel-screen #pw.pw-idle .pw-plain { display: none; }
+  body.full.wheel-screen #pw.pw-idle .pw-fun { display: inline-flex; }
+  .pw-fun i { display: inline-block; font-style: normal; font-weight: 700; text-transform: uppercase; animation: rosco-wave 2.6s ease-in-out infinite; animation-delay: calc(var(--i, 0) * .12s);
+    -webkit-text-stroke: .5vh rgba(0, 0, 0, .25); text-shadow: 0 .8vh 0 rgba(0, 0, 0, .28), 0 0 4vh rgba(255, 255, 255, .25); }
+  .pw-fun i.sp { width: .35em; animation: none; }
+  .pw-fun i:nth-child(6n+1) { color: #ffe14d; } .pw-fun i:nth-child(6n+2) { color: #ff4fa3; } .pw-fun i:nth-child(6n+3) { color: #35c6ff; }
+  .pw-fun i:nth-child(6n+4) { color: #3fe08f; } .pw-fun i:nth-child(6n+5) { color: #ff9a3d; } .pw-fun i:nth-child(6n) { color: #b98bff; }
+}
+@keyframes rosco-wave { 0%, 100% { transform: translateY(0) rotate(0); } 25% { transform: translateY(-2.4vh) rotate(-4deg); } 50% { transform: translateY(0) rotate(0); } 75% { transform: translateY(1vh) rotate(3deg); } }
+@media (prefers-reduced-motion: reduce) { .pw-fun i { animation: none; } }
