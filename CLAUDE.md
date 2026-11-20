@@ -45,7 +45,7 @@ Sitio: https://cantabingo.onrender.com · Render (plan Starter, disco de 1 GB) �
 | Bingo, salas, escenario | `server.js` | `public/app.js`, `bingo-gc.js`, `board-full.js`, `patterns.js` |
 | Sorteo de concursantes | `raffle.js` | `public/raffle-ui.js` |
 | El Rosco y Trivia del Rosco (antes «Rosco en Línea»; público, 3 alternativas, puntaje por rapidez, top 5) | `wheel.js`, `questions-bank.js`, `questions-alternatives.js` | `public/wheel-ui.js`, `app.js` |
-| Votación "El objeto más extraño" | `vote.js` | `public/vote-ui.js` |
+| Votación "El objeto más extraño" y **Concurso de karaoke** (modo `karaoke` de la votación, se elige en el panel antes de anotar: inscripción desde el celular con canción y artista, cupos a elección, nota del 1 al 10 tras cada canción, 5 notas al azar en pantalla sin el promedio, lugares desde el último, los 2 finalistas con redoble de tambores y se muestran el puntaje del 2.º y del ganador) | `vote.js` | `public/vote-ui.js` |
 | Show (cartelera) | `agenda.js` | `public/agenda-ui.js` |
 | Karaoke (lee la lista de las planillas de cada local; pedidos desde el celular por horario de cada local, hora de Chile: Kennedy jue a sáb 21:45–00:30, Frida vie y sáb 18:30–00:00, Tobalaba vie 21:00–22:10; abierto o cerrado a mano vale hasta 30 min sin actividad: `HOURS` y `phoneOn()` en `karaoke.js`) | `karaoke.js` | `public/karaoke-ui.js` |
 | Síguenos en Instagram | `insta.js` | `public/insta-ui.js` |

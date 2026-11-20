@@ -2103,3 +2103,19 @@ body[data-venue="frida"] .rv-rank, body:not([data-venue]) .rv-rank { --rv-score:
 .rv-people li { font-size: 1em; line-height: 1.3; white-space: nowrap; overflow: visible; text-overflow: clip; }
 .rv-people ul { justify-items: center; justify-content: center; }
 .rv-people li { text-align: center; }
+
+/* Concurso de karaoke (modo de la votación, pedido de Cote) */
+.vc-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.vc-modes button { padding: 14px 8px; font-weight: 800; border-radius: 14px; }
+.vc-max { max-width: 260px; margin-bottom: 12px; }
+.vc-notes, .vk-notes { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.vc-notes i, .vk-notes i { font-style: normal; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: #ffc400; color: #1a1a1a; font-weight: 900; font-size: 1.3rem; }
+.vk-notes i { width: 7vh; height: 7vh; font-size: 3.6vh; box-shadow: 0 .6vh 0 rgba(0, 0, 0, .3); animation: vk-pop .5s cubic-bezier(.2, 1.6, .4, 1) both; animation-delay: calc(var(--i, 0) * .35s); }
+.vk-notes.big { margin-top: 2vh; gap: 2vw; }
+.vk-notes.big i { width: 13vh; height: 13vh; font-size: 7vh; }
+.vk-side { display: grid; place-items: center; }
+@keyframes vk-pop { from { transform: scale(0) rotate(-30deg); opacity: 0; } to { transform: scale(1) rotate(0); opacity: 1; } }
+.vk-score { font-size: 5vh; font-weight: 900; color: #ffc400; }
+.vk-score b { font-size: 7vh; }
+.vk-second { font-size: 3vh; font-weight: 800; opacity: .95; }
+@media (prefers-reduced-motion: reduce) { .vk-notes i { animation: none; } }
