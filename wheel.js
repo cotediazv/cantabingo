@@ -14,6 +14,8 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
   db.bankUsed ||= {}; // cuántas veces se ha usado cada pregunta del banco
   const clients = {}; // id -> Set<res>
   const timers = {}; // id -> temporizador de fin de reloj
+  const showTimers = {}; // id -> temporizador del botón «Rosco en pantalla»
+  const SHOW_MS = 10000;
   for (const w of Object.values(db.wheels)) { w.runningSince = null; w.history = []; } // tras reiniciar, el reloj queda en pausa
 
   const str = (v, max, def = '') => (typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : def);
@@ -204,7 +206,16 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
         if (db.stage === 'sorteo') setStage('rueda'); // tras un desempate, la pantalla vuelve al rosco
         return null;
       case 'start': run(w); if (w.runningSince) { w.onScreen = true; w.rankShow = false; } return null; // «Iniciar pregunta»: el rosco vuelve al GC
-      case 'show': w.onScreen = b.on !== false; return null; // botón «Rosco en pantalla» (sin correr el tiempo)
+      case 'show': { // botón «Rosco en pantalla» (sin correr el tiempo)
+        w.onScreen = b.on !== false;
+        // Pedido de Cote: si en 10 s no se inicia la pregunta, el rosco sale solo de pantalla y hay que volver a apretarlo
+        clearTimeout(showTimers[w.id]);
+        if (w.onScreen) {
+          const at = w.onScreenAt = Date.now();
+          showTimers[w.id] = setTimeout(() => { if (db.wheels[w.id] && w.onScreen && !w.runningSince && w.onScreenAt === at) { w.onScreen = false; broadcast(w); } }, SHOW_MS);
+        }
+        return null;
+      }
       case 'rank': w.rankShow = b.on !== false; return null; // botón «Desplegar ranking»: top 10 de la Trivia en pantalla y en el GC
       case 'pause': settle(w); return null;
       case 'turn': remember(w); settle(w); w.onScreen = false; w.turn = (w.turn + 1) % w.players.length; return null;
