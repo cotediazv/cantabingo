@@ -1427,7 +1427,9 @@ function activitiesNav(current) {
     ['qr', '<button type="button" data-stage-qr><span>📱</span>QR en pantalla completa</button>'],
   ];
   setTimeout(paintGameNav, 0);
-  return `<div class="act-nav games-nav ${navFoldState() ? 'g-folded' : ''}"><button type="button" class="g-unfold" data-nav-unfold>▸ Ver otros juegos y actividades</button><div class="g-plan"><div class="g-slots"></div><label>¿Cuántos juegos vamos a sortear?<input type="number" class="g-total" min="1" max="10" value="3"></label></div>
+  return `<div class="act-nav games-nav ${navFoldState() ? 'g-folded' : ''}"><button type="button" class="g-unfold" data-nav-unfold>▸ Ver otros juegos y actividades</button>
+    <div class="g-tabs" role="tablist"><button type="button" role="tab" data-draw-mode="draw">🎲 Sortear juegos</button><button type="button" role="tab" data-draw-mode="free">👆 Elegir libremente</button></div>
+    <p class="g-free-title">👆 Toca el siguiente juego</p><div class="g-plan"><div class="g-slots"></div><label>¿Cuántos juegos vamos a sortear?<input type="number" class="g-total" min="1" max="10" value="3"></label></div>
     <button type="button" class="primary big g-draw" data-game-draw>🎲 Sortear juego</button>
     <button type="button" class="g-undo" data-game-undo disabled>↩️ Deshacer</button>
     <p class="g-direct" hidden>…o toca un juego para elegirlo directo, sin tómbola</p>
@@ -1465,7 +1467,9 @@ async function paintGameNav() {
   // Pedido de Cote (20 nov): cuántos juegos y sus números se ven solo antes de empezar el sorteo; después se ocultan
   document.querySelectorAll('.g-plan').forEach((el) => { el.hidden = g.list.length > 0 || ready; });
   window.gameDrawReady = ready;
-  document.querySelectorAll('.games-nav').forEach((n) => n.classList.toggle('g-ready', ready));
+  document.querySelectorAll('.games-nav').forEach((n) => { n.classList.toggle('g-ready', ready); n.classList.toggle('g-free', !!g.free); });
+  // Pestañas «Sortear juegos» / «Elegir libremente» (pedido de Cote, 21 nov)
+  document.querySelectorAll('[data-draw-mode]').forEach((b) => { const on = (b.dataset.drawMode === 'free') === !!g.free; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
   document.querySelectorAll('[data-game-draw]').forEach((b) => { b.disabled = full; b.textContent = full ? `✔ Ya se sortearon los ${g.total} juegos` : ready ? `🎰 Girar la tómbola · ${g.list.length + 1}.º juego` : `🎲 Iniciar sorteo del ${g.list.length + 1}.º juego (de ${g.total})`; });
   document.querySelectorAll('.g-direct').forEach((el) => { el.hidden = !ready; });
   document.querySelectorAll('[data-game-undo]').forEach((b) => { b.disabled = !g.undoable; });
@@ -1492,6 +1496,14 @@ document.addEventListener('click', async (e) => {
     toast(`🎲 Se está sorteando en pantalla… Salió: ${info.icon} ${info.name}`);
     window.gameDrawGo = setTimeout(() => { if (g.last.game === 'bingo') backToBingo(); else location.hash = info.href; }, 6000); // cuando termina la tómbola en pantalla, el panel pasa a ese juego
   } catch (err) { fail(err); b.disabled = false; }
+});
+// Pestañas del menú de juegos: «Sortear juegos» o «Elegir libremente» (pedido de Cote, 21 nov)
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-draw-mode]');
+  if (!b) return;
+  clearTimeout(window.gameDrawGo);
+  try { await api('POST', '/api/gamedraw/mode', { free: b.dataset.drawMode === 'free' }); } catch (err) { fail(err); }
+  paintGameNav();
 });
 // Deshacer (pedido de Cote): vuelve el sorteo de juegos al paso anterior (antes de «Iniciar sorteo», de la tómbola
 // o de elegir un juego directo)
