@@ -2346,3 +2346,12 @@ body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "So
 /* Enlace al Centro de control abajo de cada panel */
 #ctl-home-link { text-align: center; margin: 24px auto 40px; }
 #ctl-reload-fixed { position: absolute; }
+
+/* KRB Kids: juegos con movimiento (Salto, Carrera, Fruta) */
+.kz-canvas { display: block; width: min(100%, 720px); aspect-ratio: 8 / 5; border-radius: 22px; box-shadow: 0 6px 0 rgba(74, 44, 138, .25); touch-action: none; background: #c9f2ff; }
+.kz-canvas.kz-tall { width: min(100%, 420px); aspect-ratio: 600 / 760; }
+.kz-pad3 { grid-template-columns: 1fr 1.3fr 1fr; width: min(100%, 420px); }
+.kz-pad2 { grid-template-columns: 1fr 1fr; width: min(100%, 360px); }
+.kz-pad1 { grid-template-columns: 1fr; width: min(100%, 300px); }
+.kz-pad .kz-jump { background: #ffc400; color: #4a2c8a; font-size: 2.4rem; }
+.kz-canvas.kz-tall { width: auto; height: min(56vh, 532px); max-width: 100%; }
