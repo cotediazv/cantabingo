@@ -61,8 +61,8 @@
   .plan .count { float: right; width: 38%; text-align: center; color: #ffc400; font-weight: bold; }
   .plan .count b { display: block; font-size: 34px; color: #fff; margin: 4px 0; }
   .plan .count button { padding: 6px 14px; }
-  .tabs2 { display: table; width: 100%; table-layout: fixed; border: 2px solid #5a54a0; border-radius: 14px; margin: 4px 0 10px; overflow: hidden; }
-  .tabs2 button { display: table-cell; width: 50%; margin: 0; border: 0; border-radius: 0; padding: 14px 4px; background: #1d1838; color: #a9a3cf; vertical-align: middle; }
+  .tabs2 { width: 100%; border: 2px solid #5a54a0; border-radius: 14px; margin: 4px 0 10px; overflow: hidden; }
+  .tabs2 button { float: left; width: 50%; height: 54px; margin: 0; border: 0; border-radius: 0; padding: 0 4px; background: #1d1838; color: #a9a3cf; line-height: 1.15; overflow: hidden; }
   .tabs2 button.on { background: #ffc400; color: #1a1a1a; }
   .sec { text-align: center; color: #a9a3cf; font-size: 13px; font-weight: bold; letter-spacing: 1px; margin: 14px 0 4px; }
   .game { float: left; width: 48%; margin: 4px 1%; border-radius: 16px; padding: 14px 6px; min-height: 76px; }
@@ -519,7 +519,9 @@ A.drawMode = function (el) {
   var free = !!el.getAttribute('data-free');
   if (S.draw && !!S.draw.free === free) return; // la pestaña que ya está elegida no hace nada
   clearTimeout(goTimer);
-  if (S.draw) S.draw.free = free; // se marca al instante
+  if (S.draw) S.draw.free = free; // se marca al instante, sin esperar la respuesta
+  var bs = document.querySelectorAll('.tabs2 button');
+  for (var i = 0; i < bs.length; i++) bs[i].className = (!!bs[i].getAttribute('data-free') === free) ? 'on' : '';
   act('POST', '/api/gamedraw/mode', { free: free });
 };
 A.unfold = function () { S.foldOpen = true; refresh(); };

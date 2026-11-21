@@ -167,7 +167,8 @@ function publicState(s, full = false) {
     stage: db.stage || 'bingo', roscoId: db.stage === 'rueda' ? (Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).id || null : null,
     celebrateAt: s.celebrateAt || 0,
     voteRev: (db.vote || {}).rev || 0, // los celulares vuelven a leer la votación cuando cambia
-    gameSeq: (db.gameDraw || {}).seq || 0, // sube con cada juego que empieza (sorteado o elegido): los celulares muestran sus instrucciones
+    gameSeq: (db.gameDraw || {}).seq || 0, // sube con cada juego que empieza (sorteado o elegido)
+    voteGen: (db.vote || {}).gen || 0, // cambia con cada concurso nuevo (El Festival u objeto): los celulares muestran sus instrucciones
     winConfirmed: roundOver(s), winConfirmedAt: s.confirmedAt || 0, now: Date.now(),
     patterns: s.patterns, drawn: s.drawn, results, finalists: s.finalists || null,
     auto: s.auto, cardsPerPlayer: s.cardsPerPlayer, totalCards: p.cards.length,
@@ -737,9 +738,18 @@ app.post('/api/gamedraw/mode', requireAdmin, (req, res) => {
 // «Elegir libremente»: el juego elegido empieza de cero (como uno sorteado) pero sin número de la noche
 const notFree = (res) => { if (db.gameDraw.free) { fail(res, 409, 'Está elegida la pestaña «Elegir libremente»: no hay sorteo'); return false; } return true; };
 app.post('/api/gamedraw/free', requireAdmin, (req, res) => {
+  if (!db.gameDraw.free) return fail(res, 409, 'Está elegida la pestaña «Sortear juegos»: el juego sale en el sorteo');
   const game = String((req.body || {}).game);
   if (!DRAW_GAMES.includes(game)) return fail(res, 400, 'Juego no válido');
-  if (game === 'festival' || game === 'objeto') vote.start(game === 'festival' ? 'karaoke' : 'objeto');
+  if (game === 'festival' || game === 'objeto') {
+    const mode = game === 'festival' ? 'karaoke' : 'objeto';
+    const v = db.vote || {};
+    // Un concurso del mismo tipo que sigue en curso (con inscritos o inscripciones abiertas y sin ganador) no se borra:
+    // tocarlo en el menú solo vuelve a su panel
+    const enCurso = (v.mode || 'objeto') === mode && !v.winner && ((v.players || []).length || v.signup);
+    if (!enCurso) vote.start(mode);
+    setStage('voto'); // las pantallas y los celulares pasan de inmediato al juego elegido
+  }
   db.gameDraw.seq = (db.gameDraw.seq || 0) + 1;
   save();
   res.json(db.gameDraw);
