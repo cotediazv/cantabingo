@@ -376,7 +376,7 @@
           <div class="vf-qr">${qr(joinUrl())}<b>Si no has participado, escanea el código QR con tu celular y únete a la sesión</b></div>
           ${side ? `<div class="vf-list"><small>${st.phase === 'voting' ? 'Participantes' : 'Resultados'}</small>${side}</div>` : ''}
         </aside>`;
-      box.querySelectorAll('.vf-main > small, .vf-main > b, .vf-main > span, .vf-main > i').forEach((el) => window.fitOneLine(el)); // cada línea en su línea
+      box.querySelectorAll('.vf-top > b, .vf-main > small, .vf-main > b, .vf-main > span, .vf-main > i').forEach((el) => window.fitOneLine(el)); // cada línea en su línea (el título también: «El Festival de Mercado Kennedy»)
     });
     return () => { stop(); ticking = 0; clearTimeout(tickTimer); };
   };

@@ -342,6 +342,7 @@
     const v = NAMES[local] ? local : 'kennedy';
     // #/light-v/<local>/qr: QR grande con los próximos en cantar · #/light-v/<local>/show: el show y lo de esta noche
     // · #/light-v/<local>/karaoke: la información que va cambiando, con el QR para pedir canciones
+    const mine = location.hash; // si mientras carga se cambia de botón (otra dirección), esta vista ya no pinta nada
     const focus = (location.hash.split('/')[3] || '').replace(/[^a-z]/g, '');
     const karOnly = !!QR_ONLY_KAR[v];
     const withQr = !karOnly || focus === 'karaoke' || focus === 'qr';
@@ -357,6 +358,7 @@
     // que podía ser de otro local)
     let joinUrl = '';
     const light = await api('GET', `/api/light?local=${v}`).catch(() => null);
+    if (location.hash !== mine) return () => {};
     if (light && light.id) { joinUrl = `${location.origin}${location.pathname}#/l/${light.id}`; $('.lv-qrbox').innerHTML = qr(joinUrl); }
     // Qué recuadros hay para mostrar (solo los que tienen algo)
     const slides = () => {
@@ -408,7 +410,7 @@
     window.addEventListener('resize', fitTop);
     if (document.fonts) document.fonts.ready.then(() => { fit(); fitTop(); });
     const paint = () => {
-      if (!alive || !$('#lv')) return;
+      if (!alive || !$('#lv') || location.hash !== mine) return;
       const all = slides();
       idx %= all.length;
       const slide = $('.lv-slide');
@@ -424,6 +426,7 @@
     const loadCart = async () => { const c = await api('GET', `/api/light/cartelera?local=${v}`).catch(() => null); if (c) cart = c; };
     const loadKar = async () => { const k = await api('GET', `/api/karaoke?local=${v}`).catch(() => null); if (k) kar = k; };
     await Promise.all([loadCart(), loadKar()]);
+    if (location.hash !== mine) { window.removeEventListener('resize', fitTop); return () => {}; }
     paint();
     const tSlide = setInterval(() => { idx++; paint(); }, SLIDE_MS);
     const tCart = setInterval(loadCart, 60000);

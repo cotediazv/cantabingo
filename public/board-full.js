@@ -75,6 +75,8 @@
           <div class="fb-figure"><span>Figura</span><div class="gc-grid">${figure}</div><b>${esc(PATTERNS.byId[id].name)}</b></div>
           <div class="fb-qr">${qr(joinUrl())}<span>Escanea el código QR con tu celular y juega</span></div>
         </aside>`;
+      // El título entero (ej. «El Bingo de Mercado Kennedy»): si no cabe se achica la letra, nunca se corta con «…»
+      if (window.fitOneLine) { window.fitOneLine($('#fb .fb-title'), 14); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => window.fitOneLine($('#fb .fb-title'), 14)); }
     };
 
     const follow = async () => {

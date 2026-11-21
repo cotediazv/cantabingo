@@ -101,6 +101,9 @@
           <b class="${PATTERNS.byId[id].name.length > 10 ? 'long' : ''}">${esc(PATTERNS.byId[id].name)}</b>
         </div>`;
       // La frase de la franja de arriba se achica hasta caber completa (pedido de Cote: que no se corte con «…»)
+      // El título también (ej. «El Bingo de Mercado Kennedy»), antes que la frase, que usa el espacio que él deja
+      const ti = $('.gc-title');
+      if (ti) { ti.style.fontSize = ''; for (let f = 6; f > 3 && ti.scrollWidth > ti.clientWidth + 1; f -= 0.2) ti.style.fontSize = `${f.toFixed(1)}vh`; }
       const sub = $('.gc-sub');
       if (sub) { sub.style.fontSize = ''; for (let f = 4; f > 2 && sub.scrollWidth > sub.clientWidth + 1; f -= 0.2) sub.style.fontSize = `${f.toFixed(1)}vh`; }
     };

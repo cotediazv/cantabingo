@@ -2634,3 +2634,7 @@ body.kids[data-kz-level="8"] { background: linear-gradient(160deg, #fdffb6 0%, #
 .lp-custom button.on { background: #ffc400; color: #1a1a1a; }
 @media (max-width: 560px) { .lp-custom { flex-direction: column; } }
 .lg-custom .lg-main .lg-line { font-size: 4vh; }
+
+/* Nombres largos («El Bingo/El Festival de Mercado Kennedy»): nunca «…»; la letra se achica hasta que quepan */
+.fb-title, .gc-title, .vf-top b { text-overflow: clip; }
+#jd .jd-card { grid-template-columns: minmax(0, 1fr); }
