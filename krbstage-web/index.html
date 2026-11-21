@@ -868,6 +868,52 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
 .esp-mont.crece .esp-media{transform:scale(1.25);z-index:6;box-shadow:0 22px 50px -10px rgba(0,0,0,.9)}
 @media (max-width:900px){.esp-mont .esp-media{transform-origin:center center}.esp-mont:nth-child(3n+1) .esp-media{transform-origin:left center}.esp-mont:nth-child(3n) .esp-media{transform-origin:right center}}
 @media (max-width:560px){.esp-mont:nth-child(n) .esp-media{transform-origin:right center}.esp-mont:nth-child(odd) .esp-media{transform-origin:left center}}
+/* ===== ¿Quiénes somos? (pedido de Cote): mejor disposición de los textos, el logo más bonito y más interactivo ===== */
+.quienes{position:relative;overflow:hidden}
+.quienes .envoltura{display:block}
+.qs-cabeza{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:clamp(28px,5vw,72px);align-items:center}
+.qs-cabeza h2{font-size:clamp(46px,6.6vw,96px)}
+.qs-brilla{background:linear-gradient(100deg,var(--foco) 0%,var(--foco) 35%,#fff1cf 50%,var(--foco) 65%,#e6a93c 100%);background-size:260% 100%;background-position:100% 0;-webkit-background-clip:text;background-clip:text;color:transparent;animation:qsBrillo 7s ease-in-out infinite}
+@keyframes qsBrillo{0%,100%{background-position:100% 0}50%{background-position:0 0}}
+.qs-logo{justify-self:center;width:min(100%,330px);perspective:900px}
+.qs-emblema{all:unset;position:relative;display:grid;place-items:center;width:100%;aspect-ratio:1;border-radius:50%;cursor:pointer;transform-style:preserve-3d;transition:transform .2s ease-out;animation:qsFlota 6s ease-in-out infinite}
+.qs-emblema:focus-visible{outline:2px solid var(--foco);outline-offset:6px}
+.qs-aro{position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--kennedy),var(--frida),var(--tobalaba),var(--foco),var(--kennedy));-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3px));mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3px));animation:qsGira 14s linear infinite}
+.qs-halo{position:absolute;inset:10%;border-radius:50%;background:radial-gradient(circle,rgba(244,191,90,.25),rgba(224,51,143,.12) 45%,transparent 70%);animation:qsLatido 3.4s ease-in-out infinite}
+.qs-emblema img{position:relative;width:54%;height:auto;transform:translateZ(46px);filter:drop-shadow(0 10px 26px rgba(0,0,0,.7))}
+.qs-emblema.pulso .qs-aro{animation-duration:1.2s}
+.qs-emblema.pulso .qs-halo{animation:qsDestello .9s ease-out}
+@keyframes qsGira{to{transform:rotate(1turn)}}
+@keyframes qsFlota{0%,100%{translate:0 0}50%{translate:0 -10px}}
+@keyframes qsLatido{0%,100%{opacity:.55;scale:1}50%{opacity:1;scale:1.08}}
+@keyframes qsDestello{0%{opacity:1;scale:1}40%{opacity:1;scale:1.35}100%{opacity:.55;scale:1}}
+.quienes .qs-cree{margin:clamp(40px,6vw,72px) 0 0;max-width:30em;font-size:clamp(24px,2.7vw,38px);line-height:1.35;font-weight:500;color:var(--texto);text-wrap:pretty}
+.qs-cree .pq{color:rgba(243,238,230,.2);transition:color .4s ease}
+.qs-cree .pq.on{color:var(--texto)}
+.qs-cree .pq.oro.on{color:var(--foco)}
+.qs-momentos{margin-top:clamp(40px,6vw,64px)}
+.qs-momentos h3{margin:0 0 16px;font-family:var(--f-dato);font-weight:400;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--foco)}
+.qs-momentos ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.qs-momentos li{position:relative;overflow:hidden;display:grid;gap:16px;align-content:start;border:1px solid var(--linea);border-radius:14px;background:var(--tarima);padding:22px 20px 26px;transition:transform .3s ease,border-color .3s ease,box-shadow .3s ease}
+.qs-momentos li::before{content:"";position:absolute;right:-40px;bottom:-60px;width:170px;height:170px;border-radius:50%;background:radial-gradient(circle,var(--c) 0%,transparent 65%);opacity:.16;transition:opacity .3s ease,transform .3s ease}
+.qs-momentos li:hover{transform:translateY(-6px);border-color:var(--c);box-shadow:0 18px 40px -20px var(--c)}
+.qs-momentos li:hover::before{opacity:.38;transform:scale(1.2)}
+.qs-momentos svg{width:40px;height:40px;fill:none;stroke:var(--c);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;transition:transform .3s ease}
+.qs-momentos li:hover svg{transform:rotate(-8deg) scale(1.14)}
+.qs-momentos span{position:relative;font-size:18px;line-height:1.4;color:var(--texto)}
+.qs-anima .qs-momentos li{opacity:0;translate:0 26px}
+.qs-anima .qs-momentos li.ok{animation:qsSube .7s ease forwards;animation-delay:var(--d,0s)}
+@keyframes qsSube{to{opacity:1;translate:0 0}}
+.quienes .qs-equipo{margin:clamp(40px,6vw,64px) 0 0;max-width:46ch;padding-left:20px;border-left:3px solid var(--foco);font-size:clamp(20px,2.2vw,26px)!important;line-height:1.45}
+@media (max-width:900px){
+  .qs-cabeza{grid-template-columns:1fr}
+  .qs-logo{width:min(56%,210px);justify-self:center}
+  .qs-momentos ul{grid-template-columns:1fr 1fr;gap:10px}
+  .qs-momentos li{padding:16px 14px 18px;gap:12px}
+  .qs-momentos svg{width:32px;height:32px}
+  .qs-momentos span{font-size:15px}
+}
+@media (prefers-reduced-motion:reduce){.qs-anima .qs-momentos li{opacity:1;translate:none}}
 /* ===== KRB Interactivo (pedido de Cote): juegos interactivos para mucha gente, mezclados con la animación en vivo ===== */
 .interactivo{position:relative;overflow:hidden;border-block:1px solid var(--linea);background:
   radial-gradient(circle at 8% 12%,color-mix(in srgb,var(--kennedy) 16%,transparent),transparent 42%),
@@ -934,8 +980,8 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
     <a class="marca" href="#inicio" aria-label="KRB Stage, inicio"><img src="krb-stage.svg" alt="KRB Stage" width="64" height="40"></a>
     <button class="hamb" id="hamb" aria-expanded="false" aria-controls="menu">Menú</button>
     <ul class="menu" id="menu">
-      <li><a href="#quienes">Quiénes somos</a></li>
       <li><a href="#tulocal">Producciones actuales</a></li>
+      <li><a href="#quienes">Quiénes somos</a></li>
       <li><a href="#interactivo">KRB Interactivo</a></li>
       <li><a href="#hacemos">Qué hacemos</a></li>
       <li><a href="#medida">A la medida</a></li>
@@ -975,21 +1021,6 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
   </section>
 
 
-  <section class="banda quienes" id="quienes">
-    <div class="envoltura">
-      <div>
-        <div class="etiqueta">¿Quiénes somos?</div>
-        <h2>Somos una productora de <span style="color:var(--foco)">emociones en vivo</span>.</h2>
-      </div>
-      <div>
-        <p>Creemos que una noche cualquiera puede convertirse en un recuerdo para siempre. Que una canción puede unir a dos desconocidos, a un abuelo con su nieto, a una mesa con todo el salón.</p>
-        <p>Por eso creamos momentos: la piel de gallina cuando suena la banda tributo, la sorpresa de ver en escena al artista que admiras, las risas compartidas con el humor y la emoción de jugar todos juntos.</p>
-        <p class="esmero">KRB Stage se conforma de un equipo especialista, multidisciplinario, capaz de conformar varios grupos simultáneos para las más distintas actividades y necesidades.</p>
-        <div class="ficha ficha-logo"><img src="krb-stage.svg" alt="KRB Stage" width="160" height="100"></div>
-      </div>
-    </div>
-  </section>
-
   <section class="banda tulocal" id="tulocal">
     <div class="envoltura">
       <div class="ptl-cabeza"><h3 class="ptl-tit">Producciones actuales</h3></div>
@@ -1018,6 +1049,34 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
     </div>
   </section>
 
+
+  <section class="banda quienes" id="quienes">
+    <div class="envoltura">
+      <div class="qs-cabeza">
+        <div class="qs-tit">
+          <div class="etiqueta">¿Quiénes somos?</div>
+          <h2>Somos una productora de <span class="qs-brilla">emociones en vivo</span>.</h2>
+        </div>
+        <div class="qs-logo">
+          <button type="button" class="qs-emblema" aria-label="KRB Stage">
+            <span class="qs-aro" aria-hidden="true"></span><span class="qs-halo" aria-hidden="true"></span>
+            <img src="krb-stage.svg" alt="KRB Stage" width="160" height="100">
+          </button>
+        </div>
+      </div>
+      <p class="qs-cree">Creemos que una noche cualquiera puede convertirse en un recuerdo para siempre. Que una canción puede unir a dos desconocidos, a un abuelo con su nieto, a una mesa con todo el salón.</p>
+      <div class="qs-momentos">
+        <h3>Por eso creamos momentos:</h3>
+        <ul>
+          <li style="--c:var(--kennedy)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m18 3 3 3-7 7"/><path d="M14 10a3 3 0 0 0-4.2 0l-.9.9a3.4 3.4 0 0 1-2.2 1 3.3 3.3 0 0 0-2.1 5.7l.8.8a3.3 3.3 0 0 0 5.7-2.1 3.4 3.4 0 0 1 1-2.2l.9-.9A3 3 0 0 0 14 10Z"/><circle cx="10" cy="14" r="1"/></svg><span>La piel de gallina cuando suena la banda tributo</span></li>
+          <li style="--c:var(--frida)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"/></svg><span>La sorpresa de ver en escena al artista que admiras</span></li>
+          <li style="--c:var(--tobalaba)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 14a4.5 4.5 0 0 0 8 0"/><path d="M9 9.5h.01M15 9.5h.01"/></svg><span>Las risas compartidas con el humor</span></li>
+          <li style="--c:var(--foco)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 11v3M5.5 12.5h3"/><path d="M15.5 11.5h.01M17.5 13.5h.01"/></svg><span>La emoción de jugar todos juntos</span></li>
+        </ul>
+      </div>
+      <p class="esmero qs-equipo">KRB Stage se conforma de un equipo especialista, multidisciplinario, capaz de conformar varios grupos simultáneos para las más distintas actividades y necesidades.</p>
+    </div>
+  </section>
 
   <section class="banda interactivo" id="interactivo">
     <div class="envoltura">
@@ -2143,6 +2202,36 @@ function lineas(x,pts,dist,alfa){ // agrupa las líneas en 4 tonos: pocas órden
 </script>
 
 <script>
+// ¿Quiénes somos? (pedido de Cote): las palabras se encienden al bajar, el logo se inclina con el mouse y destella
+// al tocarlo, y los momentos aparecen de a uno
+(function(){
+  const sec=document.getElementById('quienes');if(!sec)return;
+  const lento=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const p=sec.querySelector('.qs-cree'),em=sec.querySelector('.qs-emblema');
+  if(p&&!lento){
+    const ws=p.textContent.trim().split(/\s+/);p.textContent='';
+    const oro=['un','recuerdo','para','siempre.'];let k=ws.findIndex((w,i)=>oro.every((o,j)=>ws[i+j]===o));
+    const spans=ws.map((w,i)=>{const sp=document.createElement('span');sp.className='pq'+(k>=0&&i>=k&&i<k+oro.length?' oro':'');sp.textContent=w;p.append(sp,' ');return sp});
+    let pend=false;
+    const pinta=()=>{pend=false;const r=p.getBoundingClientRect(),vh=innerHeight;const t=Math.max(0,Math.min(1,(vh*.88-r.top)/(r.height+vh*.38)));const n=Math.round(t*spans.length);spans.forEach((sp,i)=>sp.classList.toggle('on',i<n))};
+    addEventListener('scroll',()=>{if(!pend){pend=true;requestAnimationFrame(pinta)}},{passive:true});addEventListener('resize',pinta);pinta();
+  }
+  if(em){
+    const cab=sec.querySelector('.qs-cabeza');
+    if(!lento&&matchMedia('(hover: hover) and (pointer: fine)').matches){
+      cab.addEventListener('mousemove',e=>{const r=em.getBoundingClientRect(),x=(e.clientX-(r.left+r.width/2))/r.width,y=(e.clientY-(r.top+r.height/2))/r.height;
+        em.style.transform=`rotateY(${Math.max(-1,Math.min(1,x))*16}deg) rotateX(${Math.max(-1,Math.min(1,-y))*16}deg)`});
+      cab.addEventListener('mouseleave',()=>{em.style.transform=''});
+    }
+    em.addEventListener('click',()=>{em.classList.remove('pulso');void em.offsetWidth;em.classList.add('pulso');setTimeout(()=>em.classList.remove('pulso'),1300)});
+  }
+  if(!lento&&'IntersectionObserver' in window){
+    sec.classList.add('qs-anima');
+    const lis=[...sec.querySelectorAll('.qs-momentos li')];lis.forEach((li,i)=>li.style.setProperty('--d',(i*.12)+'s'));
+    const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){lis.forEach(li=>li.classList.add('ok'));io.disconnect()}}),{threshold:.25});
+    io.observe(sec.querySelector('.qs-momentos'));
+  }
+})();
 // KRB Interactivo: un juego por pestaña, con la pantalla del local y el celular reales (capturas de la Sala de juegos)
 (function(){
   const J=[
