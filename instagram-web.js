@@ -229,21 +229,34 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
   const SEG_MS = 3600e3;
   const seg = { cuentas: CUENTAS.map((handle) => ({ handle, seguidores: null })), at: 0, cargando: false, error: '' };
   async function calcularSeguidores() {
-    const token = tokenOf('kennedy');
-    if (!token) throw new Error('Falta la clave');
-    const tk = (db.webIg.kennedy || {}).token || token;
-    if (!igIds.kennedy) await mediaFacebook('kennedy', tk);
-    const base = igIds.kennedy || Object.values(igIds)[0];
-    if (!base) throw new Error('No se encontró la cuenta del portafolio');
     const errores = [];
     for (const c of seg.cuentas) {
-      try {
-        const r = await getJson(`${FB}/${base}?fields=business_discovery.username(${c.handle}){username,followers_count}&access_token=${encodeURIComponent(tk)}`);
-        const n = r.business_discovery && r.business_discovery.followers_count;
-        if (typeof n === 'number') c.seguidores = n;
-      } catch (e) { errores.push(`@${c.handle}: ${e.message}`); }
+      // el lugar de esa cuenta (los actuales primero), para usar su propia clave
+      const v = TODOS.find((x) => handleDe(x).toLowerCase() === c.handle);
+      const tk = v ? (tokenOf(v), (db.webIg[v] || {}).token || '') : '';
+      const intentos = [];
+      if (tk) {
+        // 1) la cuenta tal como la ve el portafolio de Facebook
+        intentos.push(async () => {
+          if (!igIds[v]) { try { await mediaFacebook(v, tk); } catch (_) {} }
+          if (!igIds[v]) throw new Error('sin cuenta en el portafolio');
+          return (await getJson(`${FB}/${igIds[v]}?fields=followers_count&access_token=${encodeURIComponent(tk)}`)).followers_count;
+        });
+        // 2) clave de Instagram de la propia cuenta
+        intentos.push(async () => {
+          const j = await getJson(`${API}/me?fields=username,followers_count&access_token=${encodeURIComponent(tk)}`);
+          if (String(j.username || '').toLowerCase() !== c.handle) throw new Error('la clave es de otra cuenta');
+          return j.followers_count;
+        });
+      }
+      const fallos = [];
+      for (const intento of intentos) {
+        try { const n = await intento(); if (typeof n === 'number') { c.seguidores = n; fallos.length = 0; break; } } catch (e) { fallos.push(e.message); }
+      }
+      if (!intentos.length) fallos.push('sin clave');
+      if (fallos.length && c.seguidores == null) errores.push(`@${c.handle}: ${fallos.join(' / ')}`);
     }
-    return errores.join(' | ').slice(0, 300);
+    return errores.join(' | ').slice(0, 400);
   }
   function seguidores() {
     if (!seg.cargando && Date.now() - seg.at > SEG_MS) {
