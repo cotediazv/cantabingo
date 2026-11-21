@@ -2605,3 +2605,19 @@ body.kids[data-kz-level="8"] { background: linear-gradient(160deg, #fdffb6 0%, #
 .kf-web { grid-column: 1 / -1; margin: 0; padding: 1.2vh 2.4vh; border-radius: 99px; text-align: center; font-size: 2.8vh; font-weight: 800; line-height: 1.2; background: rgba(14, 12, 30, .8); border: var(--gc-line) solid var(--gc-yellow); }
 .kf-web b { color: var(--gc-yellow); font-weight: 900; }
 @media (orientation: portrait) and (min-width: 300px) { #kf.kf-webon { grid-template-rows: auto minmax(0, 1fr) auto auto; } .kf-web { font-size: 2.4vh; } }
+
+/* Sala light: switch «Video cartelera» (pedido de Cote, 21 nov) debajo de los botones del GC */
+.lp-switch { display: flex; align-items: center; gap: 14px; margin-top: 14px; padding: 12px 14px; border-radius: 14px; border: 2px solid var(--line, #3a3360); background: rgba(255, 255, 255, .04); cursor: pointer; user-select: none; }
+.lp-switch input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.lp-switch i { flex: none; position: relative; width: 58px; height: 32px; border-radius: 99px; background: #5b557a; transition: background .2s; }
+.lp-switch i::after { content: ""; position: absolute; left: 4px; top: 4px; width: 24px; height: 24px; border-radius: 50%; background: #fff; transition: transform .2s; box-shadow: 0 2px 6px rgba(0, 0, 0, .35); }
+.lp-switch.on { border-color: #ffc400; background: rgba(255, 196, 0, .1); }
+.lp-switch.on i { background: #1fa45a; }
+.lp-switch.on i::after { transform: translateX(26px); }
+.lp-switch span { display: grid; gap: 2px; }
+.lp-switch b { font-size: 1.1rem; }
+.lp-switch small { opacity: .8; }
+/* El nombre del local entero en una línea («Mercado Kennedy»): la columna no se estira con el texto, se achica la letra */
+@media (orientation: portrait) { #lv { grid-template-columns: minmax(0, 1fr); } }
+.lv-top { min-width: 0; }
+.lv-top b { max-width: 100%; overflow: hidden; }

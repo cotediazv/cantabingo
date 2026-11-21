@@ -1,6 +1,6 @@
 // «Síguenos en Instagram»: cada local tiene su cuenta. Al ponerlo en pantalla, a toda la sala le aparece
 // en el celular la cuenta del local con un botón para abrir Instagram y seguirla.
-const VENUES = { frida: 'Frida Kahlo', kennedy: 'Kennedy', tobalaba: 'Tobalaba' };
+const VENUES = { frida: 'Frida Kahlo', kennedy: 'Mercado Kennedy', tobalaba: 'Tobalaba' }; // el local se llama Mercado Kennedy (pedido de Cote, 21 nov)
 
 module.exports = function insta({ app, db, save, requireAdmin, fail, venue }) {
   db.insta ||= { handles: {} };

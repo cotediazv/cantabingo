@@ -2,7 +2,7 @@
 // Sala light: karaoke, show, lo que viene y cartelera de la semana en un local, al mismo tiempo que la
 // sala principal y sin tocarla. Panel (#/light), GC para OBS (#/light-gc) y celular del público (#/l/<sala>).
 (() => {
-  const VENUES = { kennedy: 'Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' };
+  const VENUES = { kennedy: 'Mercado Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' }; // el local se llama Mercado Kennedy (pedido de Cote, 21 nov)
   const lightJoin = (id) => `${location.origin}${location.pathname}#/l/${id}`;
   const gcUrl = (v) => `${location.origin}${location.pathname}#/light-gc/${v}`;
   const teamUrl = (v) => `${location.origin}${location.pathname}#/equipo/${v}`;
@@ -34,7 +34,7 @@
             <div class="lp-key-row"><input type="text" name="clave" minlength="4" required autocomplete="off" placeholder="${key[v] ? 'Cambiar la clave' : 'Clave de este local'}"><button class="primary">Guardar</button></div></form>`).join('')}</div>
         <div class="panel"><h2 style="margin-top:0">Pantallas verticales</h2>
           <p class="muted small">Enlace para el decodificador de cada pantalla de pie (sale girado). El video y el modo se manejan en <a href="#/verticalctl/kennedy">Pantallas de los locales</a>.</p>
-          ${[['kennedy', 'Kennedy'], ['frida', 'Frida Kahlo'], ['tobalaba-v', 'Tobalaba']].map(([k, n]) => `<p class="small"><b>${esc(n)}</b><br><a href="${esc(`${location.origin}${location.pathname}#/vertical/${k}`)}" target="_blank">${esc(`${location.origin}${location.pathname}#/vertical/${k}`)}</a></p>`).join('')}</div>`;
+          ${[['kennedy', 'Mercado Kennedy'], ['frida', 'Frida Kahlo'], ['tobalaba-v', 'Tobalaba']].map(([k, n]) => `<p class="small"><b>${esc(n)}</b><br><a href="${esc(`${location.origin}${location.pathname}#/vertical/${k}`)}" target="_blank">${esc(`${location.origin}${location.pathname}#/vertical/${k}`)}</a></p>`).join('')}</div>`;
       document.querySelectorAll('.lp-key').forEach((f) => { f.onsubmit = async (e) => { e.preventDefault(); try { await api('POST', '/api/staff/clave', { local: f.dataset.v, clave: new FormData(f).get('clave') }); toast(`Clave de ${VENUES[f.dataset.v]} guardada`); last = ''; paint(); } catch (err) { fail(err); } }; });
     };
     await paint();
@@ -72,13 +72,17 @@
       last = sig;
       top.innerHTML = `<h1 style="margin:0">${esc(st.title)}</h1><span class="muted">${st.players} ${st.players === 1 ? 'persona entró' : 'personas entraron'} a la sala</span>
         <h2 style="margin:16px 0 10px">En pantalla (GC)</h2>
-        <div class="lp-stages">${STAGES.map(([k, i, t]) => `<button type="button" data-st="${k}" class="${st.stage === k ? 'on' : ''}"><span>${i}</span>${t}</button>`).join('')}</div>`;
+        <div class="lp-stages">${STAGES.map(([k, i, t]) => `<button type="button" data-st="${k}" class="${st.stage === k ? 'on' : ''}"><span>${i}</span>${t}</button>`).join('')}</div>
+        <label class="lp-switch${st.video ? ' on' : ''}"><input type="checkbox" data-video ${st.video ? 'checked' : ''}><i></i><span><b>🎬 Video cartelera</b><small>La pantalla vertical deja puesto el video subido hasta que se cambie el GC</small></span></label>`;
       bottom.innerHTML = `<h2 style="margin-top:0">Direcciones</h2>
         <div class="lp-links"><div>${qr(lightJoin(st.id))}</div><div>
           <p class="small"><b>Para entrar desde el celular</b> (es el QR de la sala light):<br><a href="${esc(lightJoin(st.id))}" target="_blank">${esc(lightJoin(st.id))}</a></p>
           <p class="small"><b>GC para OBS</b> (fuente de navegador):<br><a href="${esc(gcUrl(v))}" target="_blank">${esc(gcUrl(v))}</a></p></div></div>
 `;
       top.querySelectorAll('[data-st]').forEach((b) => { b.onclick = async () => { try { await api('POST', '/api/light/stage', { show: b.dataset.st, local: v }); last = ''; paint(); } catch (err) { fail(err); } }; });
+      // Switch «Video cartelera» (pedido de Cote, 21 nov): se apaga solo al cambiar el GC
+      const sw = top.querySelector('[data-video]');
+      if (sw) sw.onchange = async () => { sw.closest('.lp-switch').classList.toggle('on', sw.checked); try { await api('POST', '/api/light/video', { local: v, on: sw.checked }); toast(sw.checked ? 'Video cartelera en la pantalla vertical' : 'La pantalla vertical vuelve a seguir el GC'); } catch (err) { sw.checked = !sw.checked; fail(err); } last = ''; paint(); };
     };
     paint();
     const timer = setInterval(paint, 4000);
@@ -306,7 +310,7 @@
 // arriba lo de esta noche; al medio, un recuadro que va cambiando solo (ahora y a continuación, horarios de hoy, la semana,
 // la cartelera del mes y el karaoke cuando hay lista); abajo, grande, el QR para entrar a la sala light desde el celular.
 (() => {
-  const NAMES = { kennedy: 'Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' };
+  const NAMES = { kennedy: 'Mercado Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' };
   const DAYS = { LUNES: 'Lunes', MARTES: 'Martes', MIERCOLES: 'Miércoles', JUEVES: 'Jueves', VIERNES: 'Viernes', SABADO: 'Sábado', DOMINGO: 'Domingo' };
   const day = (d) => DAYS[String(d || '').toUpperCase()] || String(d || '');
   const cap = (t) => String(t || '').toLocaleLowerCase('es').replace(/(^|[\s:(«"-])(\p{L})/gu, (m, a, b) => a + b.toLocaleUpperCase('es'));
@@ -380,7 +384,17 @@
       slide.style.zoom = 1;
       for (let z = 0.95; z > 0.5 && slide.scrollHeight > slide.clientHeight + 1; z -= 0.05) slide.style.zoom = z.toFixed(2);
     };
-    if (document.fonts) document.fonts.ready.then(fit);
+    // El nombre del local (ej. «Mercado Kennedy») va entero en una línea: si no cabe, se achica la letra
+    const fitTop = () => {
+      const b = $('.lv-top b');
+      if (!b) return;
+      b.style.fontSize = ''; b.style.whiteSpace = 'nowrap';
+      let px = parseFloat(getComputedStyle(b).fontSize) || 40;
+      while (b.scrollWidth > b.clientWidth + 1 && px > 12) { px -= 1; b.style.fontSize = `${px}px`; }
+    };
+    fitTop();
+    window.addEventListener('resize', fitTop);
+    if (document.fonts) document.fonts.ready.then(() => { fit(); fitTop(); });
     const paint = () => {
       if (!alive || !$('#lv')) return;
       const all = slides();
@@ -402,6 +416,6 @@
     const tSlide = setInterval(() => { idx++; paint(); }, SLIDE_MS);
     const tCart = setInterval(loadCart, 60000);
     const tKar = setInterval(loadKar, 5000);
-    return () => { alive = false; clearInterval(tSlide); clearInterval(tCart); clearInterval(tKar); document.body.classList.remove('full'); };
+    return () => { alive = false; clearInterval(tSlide); clearInterval(tCart); clearInterval(tKar); window.removeEventListener('resize', fitTop); document.body.classList.remove('full'); };
   };
 })();

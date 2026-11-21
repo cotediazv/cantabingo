@@ -4,7 +4,7 @@
 // (.../exec?modo=json) y se reparte a las pantallas.
 const VENUES = {
   frida: 'Frida Kahlo',
-  kennedy: 'Kennedy',
+  kennedy: 'Mercado Kennedy', // nombre del local (pedido de Cote, 21 nov: «se llama Mercado Kennedy»)
   tobalaba: 'Tobalaba',
 };
 // Valores iniciales conocidos; el resto se completa desde el Centro de control

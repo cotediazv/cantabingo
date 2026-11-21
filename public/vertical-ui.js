@@ -4,9 +4,9 @@
 (() => {
   // Pantallas: verticales (de pie, la imagen se entrega girada) y horizontales, en los tres locales
   const SCREENS = {
-    kennedy: { venue: 'kennedy', name: 'Kennedy', up: true },
+    kennedy: { venue: 'kennedy', name: 'Mercado Kennedy', up: true },
     // horizontales de Kennedy y Frida, con su propio video (pedido de Cote)
-    'kennedy-h': { venue: 'kennedy', name: 'Kennedy', up: false },
+    'kennedy-h': { venue: 'kennedy', name: 'Mercado Kennedy', up: false },
     frida: { venue: 'frida', name: 'Frida Kahlo', up: true },
     'frida-h': { venue: 'frida', name: 'Frida Kahlo', up: false },
     'tobalaba-v': { venue: 'tobalaba', name: 'Tobalaba', up: true },
@@ -90,7 +90,7 @@
   // Panel por local (pedido de Cote): una pestaña por local y, dentro, dos espacios, la pantalla vertical y la horizontal,
   // cada una con su video, su modo y su enlace para el decodificador. #/verticalctl/<local> (también acepta una pantalla).
   const VENUE_SCREENS = { kennedy: ['kennedy', 'kennedy-h'], frida: ['frida', 'frida-h'], tobalaba: ['tobalaba-v', 'tobalaba'] };
-  const VENUE_NAMES = { kennedy: 'Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' };
+  const VENUE_NAMES = { kennedy: 'Mercado Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' };
   const NAMES = { video: '🎬 Video de la cartelera', sala: '🎲 Juegos (sala completa)', light: '💡 Información del local (QR, cartelera, horarios)', karaoke: '🎤 Karaoke (sala light)' };
   // Un espacio (vertical u horizontal) dentro del panel del local
   const screenBox = (root, v, onState) => {
@@ -108,7 +108,7 @@
     let lastSig = '';
     const paint = (st) => {
       q('.vt-show').textContent = st.show === 'sala' && !st.activity ? '🎲 Portada de la sala (no hay video subido)' : NAMES[st.show] || st.show;
-      q('.vt-why').textContent = st.mode === 'auto' ? (st.activity ? 'Hay una actividad en este local.' : 'No hay actividad en este local.') : 'Puesto a mano.';
+      q('.vt-why').textContent = st.lightVideo ? 'Puesto desde la sala light (switch «Video cartelera»), hasta que se cambie el GC.' : st.mode === 'auto' ? (st.activity ? 'Hay una actividad en este local.' : 'No hay actividad en este local.') : 'Puesto a mano.';
       onState(v, st);
       q('.vt-cur').innerHTML = st.video
         ? `<video class="vt-prev" src="/vertical/${v}.mp4?v=${st.video}" muted controls playsinline preload="metadata"></video>

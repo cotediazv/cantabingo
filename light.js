@@ -4,7 +4,7 @@
 // Show, cartelera y horarios se leen de la GLOSA a través del GC Show de cada local (?modo=json).
 const crypto = require('crypto');
 
-const VENUES = { frida: 'Frida Kahlo', kennedy: 'Kennedy', tobalaba: 'Tobalaba' };
+const VENUES = { frida: 'Frida Kahlo', kennedy: 'Mercado Kennedy', tobalaba: 'Tobalaba' }; // el local se llama Mercado Kennedy (pedido de Cote, 21 nov)
 // GC Show de cada local (Apps Script que lee la GLOSA)
 const GLOSA = {
   kennedy: 'https://script.google.com/macros/s/AKfycbzgCkymn_Lu4m3l_kDr68B4fOmyCdIYi4W-vdHP3CrT5f_R7drx-Ryht6E-ltZf9BERNA/exec',
@@ -110,7 +110,7 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
   // ---------- Estado ----------
   const pub = (v) => {
     const l = db.lights[v];
-    return l ? { open: true, id: l.id, venue: v, name: VENUES[v], title: `Sala light · ${VENUES[v]}`, stage: l.stage, players: Object.keys(l.players).length } : { open: false, venue: v, name: VENUES[v] };
+    return l ? { open: true, id: l.id, venue: v, name: VENUES[v], title: `Sala light · ${VENUES[v]}`, stage: l.stage, video: !!l.video, players: Object.keys(l.players).length } : { open: false, venue: v, name: VENUES[v] };
   };
   // Sin ?local= devuelve la lista de las salas light abiertas (y, por compatibilidad, la primera)
   app.get('/api/light', (req, res) => {
@@ -141,8 +141,19 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
     if (!db.lights[v]) return fail(res, 404, 'No hay una sala light abierta en este local');
     if (!STAGES.includes(show)) return fail(res, 400, 'Opción no válida');
     db.lights[v].stage = show;
+    db.lights[v].video = false; // cambiar el GC apaga el switch «Video cartelera» (pedido de Cote, 21 nov)
     save();
     if (show === 'karaoke' || show === 'qr') karaoke.refreshVenue(v);
+    res.json(pub(v));
+  });
+  // Switch «Video cartelera» (pedido de Cote, 21 nov): deja puesto en la pantalla vertical del local (versión completa y
+  // liviana) el video de la cartelera que está subido, hasta que alguien cambie el GC desde la sala light
+  app.post('/api/light/video', requireLocal, (req, res) => {
+    const b = req.body || {};
+    const v = String(b.local || '');
+    if (!db.lights[v]) return fail(res, 404, 'No hay una sala light abierta en este local');
+    db.lights[v].video = !!b.on;
+    save();
     res.json(pub(v));
   });
 
