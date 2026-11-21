@@ -60,6 +60,9 @@
   .lv-sh { display: block; }
   .lv-by { display: block; font-size: .85em; color: #ffd76a; }
   .lv-by small { font-size: .7em; color: #fff; }
+  /* Flyers del Instagram del local (pedido de Cote, 21 nov): pasan dentro del mismo recuadro, un poco más chicos */
+  .lv-flyer { text-align: center; }
+  .lv-flyer img { max-width: 88%; border-radius: 1.6rem; border: .4rem solid #ffc400; }
   .lv-dots { position: absolute; left: 0; right: 0; bottom: 1.4rem; text-align: center; }
   .lv-dots i { display: inline-block; width: 1.4rem; height: 1.4rem; margin: 0 .5rem; border-radius: 50%; background: rgba(255, 255, 255, .3); }
   .lv-dots i.on { background: #ffc400; }
@@ -337,7 +340,7 @@
 
   // Información del local (como el fondo vertical de la sala light): lo de esta noche, un recuadro que va cambiando y el QR
   function viewInfo(focus) {
-    var cart = null; var kar = null; var idx = 0; var mySeq = viewSeq;
+    var cart = null; var kar = null; var idx = 0; var mySeq = viewSeq; var flyers = [];
     var karOnly = !!QR_ONLY_KAR[VENUE];
     var withQr = !karOnly || focus === 'kar' || focus === 'qr';
     view.innerHTML = '<div class="abs lv-top" style="top:4rem"><small>Esta noche en</small><b class="fit">' + h(NAMES[VENUE]) + '</b><span id="lvshow" class="fit hide"></span></div>' +
@@ -398,19 +401,33 @@
       if (!out.length) out.push('<h2>🎶 Bienvenidos</h2><div class="lv-now"><b>KRB Stage</b><span>Música, shows y karaoke</span></div>');
       return out;
     }
+    // Centrado en el recuadro (sin QR el recuadro es más alto: el texto no queda pegado arriba con un hueco abajo)
+    function center() {
+      var slide = $('lvslide'); var inner = $('lvin');
+      if (!slide || !inner) return;
+      slide.style.paddingTop = '0';
+      slide.style.paddingTop = Math.max(0, Math.floor((slide.clientHeight - inner.offsetHeight) / 2)) + 'px';
+    }
     function paint() {
       var slide = $('lvslide');
       if (!slide || mySeq !== viewSeq) return; // una respuesta atrasada de la vista anterior no pinta sobre la nueva
       var all = slides();
-      idx = idx % all.length;
+      // Flyers del Instagram del local (pedido de Cote, 21 nov; solo en la pantalla vertical): al final de cada vuelta pasa
+      // un flyer distinto, dentro del mismo recuadro
+      var turn = Math.floor(idx / (all.length + 1));
+      if (flyers.length && focus !== 'qr' && !/(^| )wide( |$)/.test(cv.className)) all.push('<div class="lv-flyer"><img id="lvfly" alt="" src="' + h(flyers[turn % flyers.length].url) + '"></div>');
+      var at = idx % all.length;
       slide.style.paddingTop = '0';
-      slide.innerHTML = '<div id="lvin">' + all[idx] + '</div>';
-      fitBox(slide);
-      // Centrado en el recuadro (sin QR el recuadro es más alto: el texto no queda pegado arriba con un hueco abajo)
-      var inner = $('lvin');
-      if (inner) slide.style.paddingTop = Math.max(0, Math.floor((slide.clientHeight - inner.offsetHeight) / 2)) + 'px';
+      slide.innerHTML = '<div id="lvin">' + all[at] + '</div>';
+      var fly = $('lvfly');
+      if (fly) {
+        fly.style.maxHeight = Math.floor(slide.clientHeight * 0.9) + 'px';
+        fly.onload = center;
+        fly.onerror = function () { var bad = fly.getAttribute('src'); var keep = []; for (var f = 0; f < flyers.length; f++) if (flyers[f].url !== bad) keep.push(flyers[f]); flyers = keep; idx++; paint(); }; // un flyer que no carga se salta
+      } else fitBox(slide);
+      center();
       var dots = '';
-      if (all.length > 1) for (var i = 0; i < all.length; i++) dots += '<i class="' + (i === idx ? 'on' : '') + '"></i>';
+      if (all.length > 1) for (var i = 0; i < all.length; i++) dots += '<i class="' + (i === at ? 'on' : '') + '"></i>';
       $('lvdots').innerHTML = dots;
       var sh = $('lvshow');
       if (cart && cart.show) { sh.className = 'fit'; sh.innerHTML = '⭐ ' + h(cap(cart.show)); fitLine(sh); } else sh.className = 'fit hide';
@@ -418,7 +435,9 @@
     }
     function loadCart() { get('/api/light/cartelera?local=' + VENUE, function (c) { if (c) { cart = c; paint(); } }); }
     function loadKar() { get('/api/karaoke?local=' + VENUE, function (k) { if (k) kar = k; }); }
-    loadCart(); loadKar(); paint();
+    function loadFly() { get('/api/web/flyers?local=' + VENUE, function (r) { if (r && r.flyers) flyers = r.flyers; }); }
+    loadCart(); loadKar(); loadFly(); paint();
+    every(viewTimers, 10 * 60000, loadFly);
     every(viewTimers, 9000, function () { idx++; paint(); });
     every(viewTimers, 60000, loadCart);
     every(viewTimers, 5000, loadKar);

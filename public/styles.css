@@ -2638,3 +2638,7 @@ body.kids[data-kz-level="8"] { background: linear-gradient(160deg, #fdffb6 0%, #
 /* Nombres largos («El Bingo/El Festival de Mercado Kennedy»): nunca «…»; la letra se achica hasta que quepan */
 .fb-title, .gc-title, .vf-top b { text-overflow: clip; }
 #jd .jd-card { grid-template-columns: minmax(0, 1fr); }
+
+/* Flyers del Instagram del local en la pantalla vertical (pedido de Cote, 21 nov): dentro del mismo recuadro, un poco más chicos */
+.lv-flyer { display: grid; place-items: center; min-height: 0; }
+.lv-flyer img { display: block; max-width: 90%; border-radius: 2vh; border: .5vh solid var(--lv-gold); box-shadow: 0 1vh 3vh rgba(0, 0, 0, .4); }

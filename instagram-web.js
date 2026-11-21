@@ -140,10 +140,13 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
       // Flyers de la cartelera: las 4 publicaciones de imagen más recientes
       const flyers = j.data.filter((m) => (m.media_type === 'IMAGE' || m.media_type === 'CAROUSEL_ALBUM') && m.media_url).slice(0, 4)
         .map((m) => ({ url: m.media_url, link: m.permalink || '', date: m.timestamp || '' }));
-      cache[v] = { videos, flyers, error: '', at: Date.now() };
+      // Para las pantallas verticales de los locales (pedido de Cote, 21 nov): todos los flyers leídos (hasta 12)
+      const flyersAll = j.data.filter((m) => (m.media_type === 'IMAGE' || m.media_type === 'CAROUSEL_ALBUM') && m.media_url).slice(0, 12)
+        .map((m) => ({ url: m.media_url, date: m.timestamp || '' }));
+      cache[v] = { videos, flyers, flyersAll, error: '', at: Date.now() };
     } else {
       // Si falla, se sigue mostrando lo último bueno y se reintenta en 2 minutos
-      cache[v] = { videos: (c || {}).videos || [], flyers: (c || {}).flyers || [], error: errores.join(' | '), at: Date.now() - ttl + 2 * 60e3 };
+      cache[v] = { videos: (c || {}).videos || [], flyers: (c || {}).flyers || [], flyersAll: (c || {}).flyersAll || [], error: errores.join(' | '), at: Date.now() - ttl + 2 * 60e3 };
     }
     return cache[v];
   }
@@ -251,6 +254,13 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
       out[v] = { handle: handleDe(v), videos: ligero ? r.videos.slice(0, 6) : r.videos, total: r.videos.length, flyers: r.flyers || [], error: r.error || '' };
     }));
     res.json(out);
+  });
+  // Pública (solo lectura): los flyers (publicaciones de imagen) del Instagram de un local, para su pantalla vertical
+  app.get('/api/web/flyers', async (req, res) => {
+    const v = String(req.query.local || '');
+    if (!TODOS.includes(v)) return res.json({ flyers: [] });
+    const r = await videosOf(v).catch(() => null);
+    res.json({ flyers: (r && (r.flyersAll || r.flyers)) || [] });
   });
   app.get('/api/web/instagram/lugar', async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');

@@ -354,6 +354,7 @@
     let cart = null;
     let kar = null;
     let idx = 0;
+    let flyers = []; // flyers del Instagram del local (pedido de Cote, 21 nov): pasan en el mismo recuadro, solo en la pantalla vertical
     // El QR lleva a la sala light de este mismo local (en Tobalaba también: antes llevaba a la sala de juegos abierta,
     // que podía ser de otro local)
     let joinUrl = '';
@@ -412,25 +413,34 @@
     const paint = () => {
       if (!alive || !$('#lv') || location.hash !== mine) return;
       const all = slides();
-      idx %= all.length;
+      // Al final de cada vuelta pasa un flyer distinto del Instagram del local (solo con la pantalla de pie)
+      const turn = Math.floor(idx / (all.length + 1));
+      if (flyers.length && focus !== 'qr' && innerHeight > innerWidth) all.push(`<div class="lv-flyer"><img alt="" src="${esc(flyers[turn % flyers.length].url)}"></div>`);
+      const at = idx % all.length;
       const slide = $('.lv-slide');
       slide.style.zoom = 1;
-      slide.innerHTML = all[idx];
-      fit();
-      setTimeout(fit, 400); // otra vez cuando ya cargaron las letras
-      $('.lv-dots').innerHTML = all.length > 1 ? all.map((_, i) => `<i class="${i === idx ? 'on' : ''}"></i>`).join('') : '';
+      slide.innerHTML = all[at];
+      const fly = slide.querySelector('.lv-flyer img');
+      if (fly) {
+        fly.style.maxHeight = `${Math.floor(slide.clientHeight * 0.92)}px`;
+        fly.onerror = () => { const bad = fly.getAttribute('src'); flyers = flyers.filter((f) => f.url !== bad); idx++; paint(); }; // un flyer que no carga se salta
+      } else { fit(); setTimeout(fit, 400); } // otra vez cuando ya cargaron las letras
+      $('.lv-dots').innerHTML = all.length > 1 ? all.map((_, i) => `<i class="${i === at ? 'on' : ''}"></i>`).join('') : '';
       const show = $('.lv-show');
       show.hidden = !(cart && cart.show);
       if (cart && cart.show) show.innerHTML = `⭐ ${showHtml(cart.show)}`;
     };
     const loadCart = async () => { const c = await api('GET', `/api/light/cartelera?local=${v}`).catch(() => null); if (c) cart = c; };
     const loadKar = async () => { const k = await api('GET', `/api/karaoke?local=${v}`).catch(() => null); if (k) kar = k; };
+    const loadFly = async () => { const r = await api('GET', `/api/web/flyers?local=${v}`).catch(() => null); if (r && r.flyers) flyers = r.flyers; };
+    loadFly(); // sin esperar: si Instagram demora, la pantalla parte igual
+    const tFly = setInterval(loadFly, 10 * 60000);
     await Promise.all([loadCart(), loadKar()]);
-    if (location.hash !== mine) { window.removeEventListener('resize', fitTop); return () => {}; }
+    if (location.hash !== mine) { window.removeEventListener('resize', fitTop); clearInterval(tFly); return () => {}; }
     paint();
     const tSlide = setInterval(() => { idx++; paint(); }, SLIDE_MS);
     const tCart = setInterval(loadCart, 60000);
     const tKar = setInterval(loadKar, 5000);
-    return () => { alive = false; clearInterval(tSlide); clearInterval(tCart); clearInterval(tKar); window.removeEventListener('resize', fitTop); document.body.classList.remove('full'); };
+    return () => { alive = false; clearInterval(tSlide); clearInterval(tCart); clearInterval(tKar); clearInterval(tFly); window.removeEventListener('resize', fitTop); document.body.classList.remove('full'); };
   };
 })();
