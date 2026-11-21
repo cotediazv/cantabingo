@@ -235,7 +235,9 @@
     var en = document.fullscreenEnabled || document.webkitFullscreenEnabled || document.mozFullScreenEnabled || document.msFullscreenEnabled;
     return !!fsReq() && (en === true || (en === undefined && !IOS));
   }
-  function videoFsOk() { return cur === 'video' && !!vid.webkitEnterFullscreen; }
+  // La pantalla completa del video de Apple (iPad viejo) muestra el video sin girar: con la página girada no sirve
+  // (pedido de Cote: el video tiene que verse girado). La de página (decodificador) sí mantiene el giro.
+  function videoFsOk() { return cur === 'video' && !!vid.webkitEnterFullscreen && !/(^| )rot( |$)/.test(cv.className); }
   function fsCan() { return !fsEl() && (pageFsOk() || videoFsOk()); }
   function fsShow() {
     clearTimeout(fsHide);
@@ -246,6 +248,7 @@
   fsBtn.onclick = function (e) {
     if (e && e.stopPropagation) e.stopPropagation();
     clearTimeout(fsHide); fsBtn.className = 'hide';
+    if (cur === 'video' && vid.paused) onTouch(); // si el navegador pedía tocar para partir, este toque lo parte
     if (pageFsOk()) { try { fsReq().call(document.documentElement); return; } catch (x) { /* sigue con el video */ } }
     if (vid.webkitEnterFullscreen && cur === 'video') {
       try { if (vid.paused) play(); vid.webkitEnterFullscreen(); } catch (x2) { tap.className = ''; } // si el video aún no carga: tocar y volver a intentar
@@ -253,10 +256,39 @@
   };
   document.addEventListener('touchstart', fsShow, false);
   document.addEventListener('mousemove', fsShow, false);
-  document.addEventListener('keydown', function () { fsShow(); if (!fsBtn.className) { try { fsBtn.focus(); } catch (x) { /* nada */ } } }, false);
+  document.addEventListener('keydown', function () { onTouch(); fsShow(); if (!fsBtn.className) { try { fsBtn.focus(); } catch (x) { /* nada */ } } }, false); // una tecla del control también parte el video
   var fsEv = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
   for (var fe = 0; fe < fsEv.length; fe++) document.addEventListener(fsEv[fe], fsShow, false);
   vid.addEventListener('webkitendfullscreen', function () { if (cur === 'video') play(); }, false); // al volver de la pantalla completa del iPad, el video sigue
+
+  // ---------- Vigilante del video (pedido de Cote, 21 nov) ----------
+  // Cada 10 s revisa que el video esté avanzando. Si se detuvo, lo vuelve a partir; si lleva 20 s congelado (sin avanzar),
+  // lo vuelve a cargar; si aun así no se recupera, recarga la página, pero solo donde el video parte solo (en el iPad viejo
+  // una recarga volvería a pedir el toque). Si todo anda bien no hace nada: sin parpadeos ni descargas de más.
+  var vTicks = 0; var vStuck = 0; var vFixes = 0; var touched = false; var autoOk = false;
+  vid.addEventListener('timeupdate', function () { vTicks++; }, false);
+  vid.addEventListener('playing', function () { if (!touched) autoOk = true; }, false); // partió sin que nadie tocara: aquí el video parte solo
+  function wasTouched() { touched = true; }
+  document.addEventListener('touchstart', wasTouched, false);
+  document.addEventListener('mousedown', wasTouched, false);
+  document.addEventListener('keydown', wasTouched, false);
+  setInterval(function () {
+    var moved = vTicks > 0; vTicks = 0;
+    if (cur !== 'video' || !vid.getAttribute('src')) { vStuck = 0; vFixes = 0; return; }
+    if (vid.paused) { vStuck = 0; play(); return; } // se detuvo: a seguir (si el navegador pide un toque, queda el aviso para tocar)
+    if (moved) { vStuck = 0; vFixes = 0; return; }
+    if (++vStuck < 2) return;
+    vStuck = 0; vFixes++;
+    try {
+      if (vFixes === 1) vid.load(); // 1.º: volver a cargar el mismo video (sin descargarlo de nuevo)
+      else if (vFixes === 2) vid.src = vid.src.replace(/([?&])r=\d+/, '') + (vid.src.indexOf('?') < 0 ? '?' : '&') + 'r=' + new Date().getTime(); // 2.º: bajarlo de nuevo, una vez
+      else if (autoOk && !fsEl() && reloadOk()) { reloadMark(); location.reload(); return; } // 3.º: recargar la página (como máximo cada 30 min)
+      else if (vFixes % 6 === 0) vid.load(); // y después, de vez en cuando, sin descargar de más
+    } catch (e) { /* nada */ }
+    play();
+  }, 10000);
+  function reloadOk() { try { return new Date().getTime() - (+window.localStorage.getItem('pvReloadAt') || 0) > 30 * 60 * 1000; } catch (e) { return true; } }
+  function reloadMark() { try { window.localStorage.setItem('pvReloadAt', String(new Date().getTime())); } catch (e) { /* nada */ } }
 
   // ---------- Vistas ----------
   var cur = '';
@@ -623,7 +655,8 @@
   setInterval(tick, 3000);
   // Cada 6 horas se recarga sola (versión nueva y memoria limpia), salvo en medio de los juegos o en pantalla completa
   // (al recargar se saldría de la pantalla completa y habría que volver a apretar el botón)
-  setTimeout(function () { setInterval(function () { if (cur !== 'sala' && !fsEl() && !vid.webkitDisplayingFullscreen) location.reload(); }, 60000); }, 6 * 3600 * 1000);
+  // (y nunca donde el video necesita un toque para partir, como el iPad viejo: después de recargar volvería a pedirlo)
+  setTimeout(function () { setInterval(function () { if (cur !== 'sala' && !fsEl() && !vid.webkitDisplayingFullscreen && (autoOk || !ver)) location.reload(); }, 60000); }, 6 * 3600 * 1000);
   // Revisión: con ?diag=1, el navegador y los errores
   if (Q.diag) {
     var d = document.createElement('pre'); d.id = 'diag'; document.body.appendChild(d);
