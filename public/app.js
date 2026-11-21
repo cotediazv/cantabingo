@@ -989,7 +989,7 @@ views.jugar = async (sid) => {
             <p class="pvote-ask">¿Quieres jugar?</p><div class="pact-yesno"><button type="button" class="primary big" data-raffle="1">✅ Sí, quiero jugar</button><button type="button" class="big" data-raffle="0">🙅 No, gracias, prefiero jugar online</button></div>`
           : myName ? '<div class="pvote-win">✅ ¡Confirmado!<small>Acércate a nuestro escenario para jugar El Rosco</small></div>'
             : iDeclined ? '<p class="pvote-ask">👍 Elegiste jugar online<b>Juega la Trivia del Rosco desde tu celular</b></p>'
-              : '<p class="pvote-ask">¡Prepárate!<b>Puedes salir a participar en nuestro escenario</b></p>') +
+              : '<p class="pvote-ask">¡Prepárate!<b>Puedes salir elegido para participar en nuestro escenario</b></p>') +
           (rolling ? '<p class="pvote-wait">🎲 Sorteando en pantalla…</p>' : '') +
           (seen.length ? `<div class="pact-list"><small>Ya salieron</small>${seen.map((n, i) => `<p><em>${i + 1}.º</em><span>${esc(n)}</span><i>${(r.confirm || {})[n] === 'ok' ? '✅' : '⏳'}</i></p>`).join('')}</div>` : '') +
           '<p class="pact-next">Después: <b>🎡 El Rosco</b> · y tú juegas la Trivia del Rosco desde el celular</p>';
@@ -1018,7 +1018,7 @@ views.jugar = async (sid) => {
         '<p class="pact-next">Ya viene el próximo juego</p>';
     } else if (k === 'rueda') {
       head = '🎡 El Rosco';
-      body = '<p class="pvote-wait">Ya viene el sorteo de concursantes: ¡puedes salir a participar en nuestro escenario!</p>';
+      body = '<p class="pvote-wait">Ya viene el sorteo de concursantes: ¡puedes salir elegido para participar en nuestro escenario!</p>';
     } else {
       head = `🎮 Los Juegos de ${venueShort()}`;
       body = '<p class="pvote-ask">¡Ya estás en la sala!<b>Mira la pantalla: ya viene el próximo juego</b></p><p class="pact-next">Bingo, El Rosco, El Festival o El objeto más extraño</p>';
@@ -1051,7 +1051,7 @@ views.jugar = async (sid) => {
     return on;
   };
   // Instrucciones en el celular (pedido de Cote, 20 nov): al empezar cada juego (y al entrar a la sala) aparecen
-  // 3 segundos las instrucciones del juego en curso: Bingo (cada ronda), El Rosco, El Festival o El objeto más extraño
+  // 2 segundos las instrucciones del juego en curso: Bingo (cada ronda), El Rosco, El Festival o El objeto más extraño
   // Cada juego tiene su propia clave: bingo por ronda (desde que se elige la figura), El Rosco por rosco cargado y la votación
   // por concurso (voteGen); cada clave se muestra una sola vez (volver a un juego que sigue no las repite)
   let howtoKey = null;
@@ -1062,7 +1062,11 @@ views.jugar = async (sid) => {
     el = document.createElement('div'); el.id = 'phone-howto';
     el.innerHTML = `<div class="ph-card"><small>📢 Instrucciones</small><b>${esc(title)}</b><ul>${lines.map((l) => `<li>${l}</li>`).join('')}</ul><i class="ph-bar"></i></div>`;
     document.body.appendChild(el);
-    setTimeout(() => { if (el.isConnected) el.remove(); }, 3000); // 3 segundos como máximo (pedido de Cote, 20 nov)
+    // Pedido de Cote (21 nov): desaparece a los 2 segundos, o antes si la persona toca el mensaje o cualquier parte de la
+    // pantalla (el aviso cubre toda la pantalla: ese toque solo lo cierra, no aprieta lo que está debajo)
+    const close = () => { if (el.isConnected) el.remove(); };
+    el.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); close(); });
+    setTimeout(close, 2000);
   };
   const syncHowto = async () => {
     const s = st.stage || 'bingo';

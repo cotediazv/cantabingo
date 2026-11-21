@@ -10,7 +10,7 @@
     return [
       { key: 'reglas', icon: '🗳️', title: '¡Tú eliges el próximo juego!', lines: ['Entra a la sala escaneando el código QR', 'Cuando parta la votación, toca en tu celular el juego que quieres', 'Tienes 30 segundos y puedes cambiar tu voto', 'Gana el que tenga más de la mitad de los votos; si ninguno, segunda vuelta entre los 2 más votados'] },
       { key: 'bingo', icon: '🎱', title: 'Bingo', lines: ['Cada uno tiene su cartón en el celular', 'Marca los números que van saliendo', 'Gana quien completa primero la figura: línea, cruz, corazón…'] },
-      { key: 'rosco', icon: '🎡', title: 'El Rosco', lines: ['Sorteamos 3 concursantes entre los conectados', 'Una pregunta por cada letra, contra el reloj: 90 segundos cada uno', 'Gana quien acierta más letras. Tú juegas la Trivia del Rosco desde el celular'] },
+      { key: 'rosco', icon: '🎡', title: 'El Rosco', lines: ['Sorteamos 3 concursantes entre los conectados', 'Una pregunta por cada letra, contra el reloj: 2 minutos cada uno', 'Gana quien acierta más letras. Tú juegas la Trivia del Rosco desde el celular'] },
       { key: 'festival', icon: '🎤', title: 'El Festival de ' + (venueShort || 'Frida'), lines: ['Concurso de karaoke: te inscribes desde el celular con tu canción', 'Cantas una canción corta y el público pone nota del 1 al 10', 'Gana el mejor promedio'] },
       { key: 'objeto', icon: '🗳️', title: 'El objeto más extraño', lines: ['Te inscribes desde el celular con el objeto más raro que tengas a mano', 'Lo muestras en el escenario y el público pone nota del 1 al 10', 'Los 2 mejores van a la gran final y el público elige al ganador'] },
       { key: 'votar', icon: '🗳️', title: '¡A votar!', lines: ['La votación dura 30 segundos', 'Toca en tu celular el juego que quieres jugar'] },
@@ -49,7 +49,7 @@
         var fill = i < 5 ? '#2fbf71' : i === 5 ? '#e5484d' : i === 6 ? '#2b6fff' : '#3a3466';
         s += '<circle' + (i === 6 ? ' class="gi-pulse"' : '') + ' cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="12" fill="' + fill + '" stroke="#ffffff" stroke-width="2"/><text x="' + cx.toFixed(1) + '" y="' + (cy + 5).toFixed(1) + '" text-anchor="middle" font-size="13" fill="#ffffff">' + L[i] + '</text>';
       }
-      s += '<text x="110" y="66" text-anchor="middle" font-size="12" fill="#ffd76a">quedan</text><text x="110" y="86" text-anchor="middle" font-size="22" fill="#ffffff">1:30</text>';
+      s += '<text x="110" y="66" text-anchor="middle" font-size="12" fill="#ffd76a">quedan</text><text x="110" y="86" text-anchor="middle" font-size="22" fill="#ffffff">2:00</text>';
     } else if (key === 'festival') {
       s += '<rect x="44" y="18" width="34" height="50" rx="17" fill="#d8d3ff" stroke="#ffffff" stroke-width="3"/><path d="M38 52 a23 23 0 0 0 46 0" fill="none" stroke="#ffffff" stroke-width="4"/><rect x="58" y="76" width="6" height="34" fill="#ffffff"/><rect x="44" y="110" width="34" height="6" rx="3" fill="#ffffff"/>' +
         '<text class="gi-up" x="92" y="40" font-size="22" fill="#ffc400">♪</text><text class="gi-up" style="animation-delay:.8s" x="104" y="64" font-size="18" fill="#ff2e93">♫</text>' +

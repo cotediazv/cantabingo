@@ -2587,3 +2587,7 @@ body.kids[data-kz-level="8"] { background: linear-gradient(160deg, #fdffb6 0%, #
 .pact .pact-list p i { float: none; flex: none; }
 /* «📣 Para anunciar» del ganador del bingo: fuera de las columnas, que se ocultan al confirmar el ganador (revisión 21 nov) */
 #host-bingo > #win-ann:not(:empty) { margin: 14px 0; }
+
+/* Instrucciones en el celular (pedido de Cote, 21 nov): 2 segundos, o se cierran al tocar cualquier parte de la pantalla */
+#phone-howto { cursor: pointer; }
+#phone-howto .ph-bar { animation-duration: 2s; }
