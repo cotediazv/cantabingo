@@ -584,7 +584,7 @@ h2{margin-top:8px}
 .ptl-switch input:focus-visible+.sw-pista{outline:2px solid var(--foco);outline-offset:2px}
 .ptl-switch input:not(:checked)~.op-ig,.ptl-switch input:checked~.op-tw{color:var(--texto)}
 .op-tw{display:inline-flex;align-items:center;gap:6px}
-.ptl-col.modo-tw>.ptl-grilla,.ptl-col.modo-tw>.ptl-pag{display:none!important}
+
 .ptl-tw{display:grid;gap:8px;align-content:start}
 .tw-etq{font-family:var(--f-dato);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#a970ff}
 .tw-grilla{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
@@ -595,7 +595,7 @@ h2{margin-top:8px}
 .tw-nada{color:var(--tenue);font-size:14px;margin:8px 0}
 .ptl-pag{display:none!important}
 .ptl-vivo{display:grid;gap:8px;align-content:start}
-@media (min-width:901px){#tulocal .ptl-vivo,#tulocal .ptl-tw{grid-row:2}}
+@media (min-width:901px){#tulocal .ptl-grilla{grid-row:2}#tulocal .ptl-vivo,#tulocal .ptl-tw{grid-row:3;margin-top:10px}}
 .ptl-vivo .vivo-etq{display:flex;align-items:center;gap:8px;font-family:var(--f-dato);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#ff4d4d;min-width:0}
 .ptl-vivo .vivo-tit{flex:1;min-width:0;color:var(--tenue);letter-spacing:.04em;text-transform:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ptl-vivo .vivo-fila{gap:8px}
@@ -665,6 +665,16 @@ html.modo-obs .visor-flecha,html.modo-obs .visor-x,html.modo-obs .visor-pc,html.
 .pcr-tit{display:flex;justify-content:space-between;align-items:baseline;gap:4px 10px;flex-wrap:wrap}
 .pcr-tit b{font-family:var(--f-dato);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--c)}
 .pcr-tit span{font-size:12px;color:var(--tenue)}
+.pcr-tit b small{font-size:inherit;letter-spacing:.06em;text-transform:none;font-weight:500}
+.kids-link{color:var(--foco);font-weight:700;text-decoration:underline;text-underline-offset:3px}
+.ig-seg{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:4px}.ig-seg:empty{display:none}
+.ig-seg a{display:inline-flex;align-items:center;gap:8px;color:var(--texto);text-decoration:none;font-size:14px}
+.ig-seg a:hover b{text-decoration:underline}
+.lista .ig-seg li{display:block;padding:0;border:0}
+.lista .ig-seg svg{width:16px;height:16px;flex:none;fill:none;stroke:var(--foco);stroke-width:2.4;margin:0}
+.ig-seg b{font-weight:700}.ig-seg span{color:var(--tenue)}
+.ptl-sub{margin:6px 0 0;color:var(--tenue);font-size:clamp(15px,1.4vw,18px)}
+.ptl-sub+.ptl-pruebas{margin-top:24px}
 .pcr-dia{border-radius:8px;padding:8px 10px;background:rgba(255,255,255,.03);display:grid;gap:4px}
 .pcr-dia.hoy{outline:1px solid var(--c);background:color-mix(in srgb,var(--c) 10%,transparent)}
 .pcr-cab{display:flex;justify-content:space-between;align-items:baseline;gap:4px 10px;flex-wrap:wrap}
@@ -847,8 +857,8 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
     <button class="hamb" id="hamb" aria-expanded="false" aria-controls="menu">Menú</button>
     <ul class="menu" id="menu">
       <li><a href="#quienes">Quiénes somos</a></li>
+      <li><a href="#tulocal">Producciones actuales</a></li>
       <li><a href="#hacemos">Qué hacemos</a></li>
-      <li><a href="#tulocal">Dónde producimos</a></li>
       <li><a href="#medida">A la medida</a></li>
       <li><a href="#carteleras">Cartelera</a></li>
       <li><a href="#gancho">Para tu local</a></li>
@@ -901,36 +911,10 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
     </div>
   </section>
 
-  <section class="banda hacemos" id="hacemos">
-    <div class="envoltura">
-      <div class="etiqueta">Qué hacemos</div>
-      <h2>Escenario, pantallas<br>y celular</h2>
-      <ul class="lista">
-        <li>
-          <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 4v14"/><circle cx="16" cy="22" r="5"/><path d="M8 9l3 3M24 9l-3 3M4 18h4M24 18h4"/></svg>
-          <div><h3>Shows en vivo</h3><p>Música en vivo, dobles, tributos, stand up, karaoke y DJ para cada noche.</p></div>
-        </li>
-        <li>
-          <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="9" y="3" width="14" height="26" rx="3"/><path d="M14 25h4"/><path d="M13 12l3 3 5-6"/></svg>
-          <div><h3>Entretención interactiva</h3><p>El público juega y participa desde su celular, sin descargar nada.</p></div>
-        </li>
-        <li>
-          <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="11" cy="11" r="4"/><circle cx="22" cy="14" r="3"/><path d="M4 27c0-5 3-9 7-9s7 4 7 9M17 27c0-4 2-7 5-7s5 3 5 7"/></svg>
-          <div><h3>Para toda la familia</h3><p>Con KRB Kids, los más pequeños también tienen sus propios juegos.</p></div>
-        </li>
-        <li>
-          <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="4" width="24" height="24" rx="7"/><circle cx="16" cy="16" r="5.5"/><circle cx="23" cy="9" r="1"/></svg>
-          <div><h3>Redes sociales</h3><p>Difusión de la cartelera y de lo que pasa en cada local.</p></div>
-        </li>
-      </ul>
-    </div>
-  </section>
-
   <section class="banda tulocal" id="tulocal">
     <div class="envoltura">
-      <div class="ptl-cabeza"><h3 class="ptl-tit">Dónde producimos</h3>
-        <label class="ptl-switch"><span class="op-ig">Instagram</span><input type="checkbox" id="sw-twitch" role="switch" aria-label="Ver Twitch: en vivo o últimas transmisiones"><span class="sw-pista"><span class="sw-bola"></span></span><span class="op-tw"><span class="punto-vivo" hidden></span>Twitch · en vivo</span></label>
-      </div>
+      <div class="ptl-cabeza"><h3 class="ptl-tit">Producciones actuales</h3></div>
+      <p class="ptl-sub">Señales en vivo y registros</p>
       <div class="ptl-pruebas">
         <div class="ptl-col" data-local="kennedy" style="--c:var(--kennedy)">
           <article class="ptl-prueba"><span class="ptl-num">Mercado Kennedy</span><b>Más de tres años de éxito sostenido</b><small class="ptl-dato ptl-desde">Desde mayo de 2023 a la fecha</small><small class="ptl-dato">Parque Arauco Oriente, 4.º piso · Jueves a sábado</small><a class="ptl-arroba" href="https://www.instagram.com/krbstage/" target="_blank" rel="noopener">@krbstage</a></article>
@@ -977,6 +961,31 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
         </div>
       <div class="desliza">Desliza para ver los otros lugares →</div>
       </div>
+    </div>
+  </section>
+
+  <section class="banda hacemos" id="hacemos">
+    <div class="envoltura">
+      <div class="etiqueta">Qué hacemos</div>
+      <h2>Escenario, pantallas<br>y celular</h2>
+      <ul class="lista">
+        <li>
+          <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 4v14"/><circle cx="16" cy="22" r="5"/><path d="M8 9l3 3M24 9l-3 3M4 18h4M24 18h4"/></svg>
+          <div><h3>Shows en vivo</h3><p>Música en vivo, dobles, tributos, stand up, karaoke y DJ para cada noche.</p></div>
+        </li>
+        <li>
+          <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="9" y="3" width="14" height="26" rx="3"/><path d="M14 25h4"/><path d="M13 12l3 3 5-6"/></svg>
+          <div><h3>Entretención interactiva</h3><p>El público juega y participa desde su celular, sin descargar nada.</p></div>
+        </li>
+        <li>
+          <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="11" cy="11" r="4"/><circle cx="22" cy="14" r="3"/><path d="M4 27c0-5 3-9 7-9s7 4 7 9M17 27c0-4 2-7 5-7s5 3 5 7"/></svg>
+          <div><h3>Para toda la familia</h3><p>Con <a class="kids-link" href="https://cantabingo.onrender.com/#/kids" target="_blank" rel="noopener">KRB Kids</a>, los más pequeños también tienen sus propios juegos.</p></div>
+        </li>
+        <li>
+          <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="4" width="24" height="24" rx="7"/><circle cx="16" cy="16" r="5.5"/><circle cx="23" cy="9" r="1"/></svg>
+          <div><h3>Redes sociales</h3><p>Difusión de la cartelera y de lo que pasa en cada local.</p><ul class="ig-seg" id="ig-seg"></ul></div>
+        </li>
+      </ul>
     </div>
   </section>
 
@@ -1223,11 +1232,20 @@ document.addEventListener('ended',e=>{const v=e.target;if(v.tagName!=='VIDEO'||!
 window.recibirIg=d=>{igDatos=d;pintarFlyers();pintarColumnas()};
 // Cartelera semanal de cada local, debajo de sus videos en «Dónde producimos» (pedido de Cote): los días de esta semana
 // con su show y horarios; el de hoy destacado. Sale en vivo de la cartelera de cada local y se actualiza sola
+// Seguidores de cada cuenta de Instagram bajo «Redes sociales» (pedido de Cote); se actualiza solo cada 10 minutos
+function pintarSeguidores(){
+  fetch('https://cantabingo.onrender.com/api/web/seguidores',{signal:AbortSignal.timeout(10000)}).then(r=>r.json()).then(j=>{
+    const ico='<svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4" y="4" width="24" height="24" rx="7"/><circle cx="16" cy="16" r="5.5"/><circle cx="23" cy="9" r="1"/></svg>';
+    const l=(j.cuentas||[]).filter(c=>typeof c.seguidores==='number');if(!l.length)return;
+    $('#ig-seg').innerHTML=l.map(c=>`<li><a href="https://www.instagram.com/${esc(c.handle)}/" target="_blank" rel="noopener">${ico}<b>@${esc(c.handle)}</b><span>${c.seguidores.toLocaleString('es-CL')} seguidores</span></a></li>`).join('');
+  }).catch(()=>{});
+}
+pintarSeguidores();setInterval(pintarSeguidores,10*60e3);
 async function pintarCarteleras(){
   await Promise.all([...document.querySelectorAll('.ptl-cart')].map(async el=>{
     const v=el.dataset.local,d=await cargar(v);
     const dias=(d.week||[]).filter(enSemana).filter(w=>(w.hours&&w.hours.length)||w.show);
-    el.innerHTML=`<div class="pcr-tit"><b>Cartelera semanal</b><span>${esc(semanaTxt())}</span></div>`+(dias.length?dias.map(w=>{
+    el.innerHTML=`<div class="pcr-tit"><b>Cartelera semanal <small>(transmisión en vivo)</small></b><span>${esc(semanaTxt())}</span></div>`+(dias.length?dias.map(w=>{
       const hoy=fechaDe(w).getTime()===hoyChile().getTime();
       return `<div class="pcr-dia${hoy?' hoy':''}"><div class="pcr-cab"><b>${hoy?'Hoy · ':''}${esc(DIAS[plano(w.day)]||w.day)} ${w.date}</b>${w.show?`<span class="pcr-show">⭐ ${esc(nomShow(w.show))}</span>`:''}</div>
         <ul>${(w.hours||[]).map(h=>`<li><time>${esc(h.time)}</time>${esc(nomShow(h.label))}</li>`).join('')}</ul></div>`}).join(''):'<p class="pcr-nada">Sin funciones programadas esta semana.</p>');
@@ -1443,9 +1461,8 @@ elegirLocal('kennedy');
   // Switch «Instagram / Twitch» arriba de «Dónde producimos»: con Twitch, cada local muestra su transmisión en vivo
   // (con la pantalla del local al lado) o, si no está transmitiendo, sus últimas transmisiones guardadas.
   // Se prende solo cuando algún local está en vivo (salvo que la persona lo haya movido a mano).
-  const sw=$('#sw-twitch'),punto=document.querySelector('.ptl-switch .punto-vivo');
+  const sw={checked:true},punto={}; // sin switch (pedido de Cote): Instagram y el en vivo se ven siempre, uno debajo del otro
   let datosTw=[],aMano=false,clave='',canalSonando=null,visor=null;const ultimoVivo={},packs={};
-  sw.addEventListener('change',()=>{aMano=true;pintar()});
   // las pantallas del local se dibujan a su tamaño real (1920x1080 o 1080x1920) y se achican para caber
   const escalar=()=>document.querySelectorAll('.vivo-fila .pant').forEach(d=>{const f=d.firstElementChild;if(!f||!f.width)return;f.style.transform=`scale(${d.clientWidth/f.width})`});
   const obsPant=new ResizeObserver(escalar);
@@ -1575,10 +1592,9 @@ elegirLocal('kennedy');
       if(!(visor&&modo&&viejo&&visor.contains(viejo)))col.querySelectorAll('.ptl-vivo,.ptl-tw').forEach(x=>x.remove());
       col.classList.toggle('modo-tw',modo);
       if(!modo){delete packs[L.local];continue}
-      const g=col.querySelector('.ptl-grilla');if(g&&g._apagar)g._apagar();
       const nuevo=packVivo(canal,L,c);packs[L.local]=nuevo;
       if(visor&&viejo&&visor.contains(viejo))viejo.replaceWith(nuevo); // abierto en pantalla completa: no se desarma
-      else col.querySelector('.ptl-prueba').after(nuevo);
+      else col.querySelector('.ptl-enlaces').before(nuevo); // fila 3: debajo de los videos de Instagram
     }
     if(visor){ajustarVisor();dormir()}
     requestAnimationFrame(escalar);

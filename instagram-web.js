@@ -223,6 +223,57 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
     }
   });
 
+  // Seguidores de las cuentas de Instagram de KRB Stage (pedido de Cote: bajo «Redes sociales» de la página web).
+  // Se leen con la clave del portafolio (la de Kennedy), cada 1 hora y en segundo plano; si una falla, queda el último dato bueno
+  const CUENTAS = ['krbstage', 'krbstage1', 'krbstage2', 'krbstage3', 'krbstage4'];
+  const SEG_MS = 3600e3;
+  const seg = { cuentas: CUENTAS.map((handle) => ({ handle, seguidores: null })), at: 0, cargando: false, error: '' };
+  async function calcularSeguidores() {
+    const errores = [];
+    for (const c of seg.cuentas) {
+      // el lugar de esa cuenta (los actuales primero), para usar su propia clave
+      const v = TODOS.find((x) => handleDe(x).toLowerCase() === c.handle);
+      const tk = v ? (tokenOf(v), (db.webIg[v] || {}).token || '') : '';
+      const intentos = [];
+      if (tk) {
+        // 1) la cuenta tal como la ve el portafolio de Facebook
+        intentos.push(async () => {
+          if (!igIds[v]) { try { await mediaFacebook(v, tk); } catch (_) {} }
+          if (!igIds[v]) throw new Error('sin cuenta en el portafolio');
+          return (await getJson(`${FB}/${igIds[v]}?fields=followers_count&access_token=${encodeURIComponent(tk)}`)).followers_count;
+        });
+        // 2) clave de Instagram de la propia cuenta
+        intentos.push(async () => {
+          const j = await getJson(`${API}/me?fields=username,followers_count&access_token=${encodeURIComponent(tk)}`);
+          if (String(j.username || '').toLowerCase() !== c.handle) throw new Error('la clave es de otra cuenta');
+          return j.followers_count;
+        });
+      }
+      const fallos = [];
+      for (const intento of intentos) {
+        try { const n = await intento(); if (typeof n === 'number') { c.seguidores = n; fallos.length = 0; break; } } catch (e) { fallos.push(e.message); }
+      }
+      if (!intentos.length) fallos.push('sin clave');
+      if (fallos.length && c.seguidores == null) errores.push(`@${c.handle}: ${fallos.join(' / ')}`);
+    }
+    return errores.join(' | ').slice(0, 400);
+  }
+  function seguidores() {
+    if (!seg.cargando && Date.now() - seg.at > SEG_MS) {
+      seg.cargando = true;
+      calcularSeguidores()
+        .then((error) => { seg.at = Date.now() - (error ? SEG_MS - 10 * 60e3 : 0); seg.error = error; })
+        .catch((e) => { seg.at = Date.now() - SEG_MS + 10 * 60e3; seg.error = String(e.message || e).slice(0, 200); }) // reintenta en 10 minutos
+        .finally(() => { seg.cargando = false; });
+    }
+    return seg;
+  }
+  app.get('/api/web/seguidores', (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    const s = seguidores();
+    res.json({ cuentas: s.cuentas, error: s.error || '' });
+  });
+
   // Pública (solo lectura): la usa la página web
   // ?ligero=1: solo lo que la página muestra primero (los 20 más populares y los 6 últimos videos de cada lugar);
   // el resto se pide con /api/web/instagram/lugar?local=… cuando alguien pasa de página o abre la pantalla completa
