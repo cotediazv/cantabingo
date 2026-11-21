@@ -255,10 +255,12 @@ app.use(express.static(path.join(__dirname, 'public'), { setHeaders: (res) => re
 // Enlace corto de la pantalla vertical de Kennedy (pedido de Cote: fácil de escribir con el control del decodificador;
 // solo esta, los demás enlaces siguen como están porque los OBS ya están configurados). Lo que vaya después de «?»
 // (por ejemplo ?diag=1) se mantiene.
-const SHORT_LINKS = { vk: '#/vertical/kennedy' };
+// /cc: Centro de control liviano para el iPad viejo (pedido de Cote, 21 nov; public/cc.html)
+const SHORT_LINKS = { vk: '#/vertical/kennedy', cc: '/cc.html' };
 app.get('/:short', (req, res, next) => {
   const to = SHORT_LINKS[String(req.params.short).toLowerCase()];
   if (!to) return next();
+  if (to.startsWith('/')) return res.redirect(302, to);
   const i = req.originalUrl.indexOf('?');
   res.redirect(302, `/${i >= 0 ? req.originalUrl.slice(i) : ''}${to}`);
 });

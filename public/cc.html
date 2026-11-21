@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Control KRB · liviano</title>
+<!-- Centro de control liviano (pedido de Cote, 21 nov): para el iPad viejo (iOS 9.3.5, Chrome/Safari antiguos).
+     Escrito en JavaScript antiguo (sin funciones flecha, let/const, fetch ni plantillas) y CSS sin grid, para que
+     funcione en navegadores de 2016. Enlace corto: cantabingo.onrender.com/cc -->
+<style>
+  body { margin: 0; padding: 14px; background: #14112a; color: #fff; font-family: -apple-system, Helvetica, Arial, sans-serif; font-size: 18px; }
+  h1 { font-size: 24px; margin: 0 0 12px; }
+  h2 { font-size: 18px; margin: 18px 0 8px; color: #ffc400; }
+  .box { background: #221d44; border: 1px solid #5a54a0; border-radius: 14px; padding: 14px; margin-bottom: 14px; }
+  .muted { color: #b9b4dc; font-size: 15px; }
+  input { width: 100%; box-sizing: border-box; font-size: 18px; padding: 10px; margin: 6px 0 10px; border-radius: 8px; border: 1px solid #5a54a0; background: #14112a; color: #fff; }
+  button { font-size: 18px; font-weight: bold; color: #fff; background: #3a3470; border: 2px solid #5a54a0; border-radius: 12px; padding: 14px 8px; cursor: pointer; -webkit-appearance: none; }
+  .big { width: 100%; background: #6c5ce7; border-color: #6c5ce7; }
+  .grid { overflow: hidden; margin: 0 -5px; }
+  .grid button { float: left; width: 46%; margin: 5px 2%; box-sizing: border-box; min-height: 64px; }
+  .grid button.on { background: #1f9d55; border-color: #3fe08f; }
+  .top { overflow: hidden; margin-bottom: 8px; }
+  .top h1 { float: left; }
+  .top button { float: right; font-size: 14px; padding: 6px 12px; }
+  #msg { min-height: 22px; color: #ffc400; font-size: 15px; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="top"><h1>Control KRB</h1><button type="button" onclick="location.reload()">↻ Refrescar</button></div>
+<div id="login" class="box" style="display:none">
+  <p class="muted">Entra con tu usuario y clave de moderador.</p>
+  <input id="user" type="text" placeholder="Usuario" autocapitalize="off" autocorrect="off">
+  <input id="pass" type="password" placeholder="Clave">
+  <button type="button" class="big" onclick="entrar()">Entrar</button>
+</div>
+<div id="panel" style="display:none">
+  <div class="box"><h2 style="margin-top:0">Sala de juegos abierta</h2><div id="sala" class="muted">Cargando…</div></div>
+  <div class="box"><h2 style="margin-top:0">En pantalla</h2>
+    <div class="grid" id="stage">
+      <button type="button" data-show="bingo">🎱 Bingo</button><button type="button" data-show="sorteo">🎲 Sorteo</button>
+      <button type="button" data-show="rueda">🎡 El Rosco</button><button type="button" data-show="qr">📱 QR en pantalla</button>
+      <button type="button" data-show="karaoke">🎤 Karaoke</button><button type="button" data-show="show">⭐ Show</button>
+      <button type="button" data-show="voto">🗳️ Votación</button><button type="button" data-show="insta">📸 Instagram</button>
+      <button type="button" data-show="none">⬛ Nada</button>
+    </div>
+  </div>
+  <p class="muted" style="text-align:center"><a href="#" onclick="salir(); return false" style="color:#b9b4dc">Cerrar sesión</a></p>
+</div>
+<div id="msg"></div>
+<script>
+var token = '';
+try { token = window.localStorage.getItem('adminToken') || ''; } catch (e) { token = ''; }
+function $(id) { return document.getElementById(id); }
+function msg(t) { $('msg').innerHTML = t || ''; }
+function pedir(metodo, ruta, datos, listo) {
+  var x = new XMLHttpRequest();
+  x.open(metodo, ruta, true);
+  x.setRequestHeader('Content-Type', 'application/json');
+  if (token) x.setRequestHeader('x-admin', token);
+  x.timeout = 15000;
+  x.onreadystatechange = function () {
+    if (x.readyState !== 4) return;
+    var r = null;
+    try { r = JSON.parse(x.responseText); } catch (e) { r = null; }
+    if (x.status === 401) { mostrarLogin(); return; }
+    listo(x.status >= 200 && x.status < 300 ? null : ((r && r.error) || 'Sin conexión, intenta de nuevo'), r);
+  };
+  x.ontimeout = function () { listo('Sin conexión, intenta de nuevo', null); };
+  x.send(datos ? JSON.stringify(datos) : null);
+}
+function mostrarLogin() { $('login').style.display = 'block'; $('panel').style.display = 'none'; }
+function mostrarPanel() { $('login').style.display = 'none'; $('panel').style.display = 'block'; leer(); }
+function entrar() {
+  msg('Entrando…');
+  pedir('POST', '/api/login', { user: $('user').value, pass: $('pass').value }, function (err, r) {
+    if (err) { msg(err); return; }
+    token = r.token;
+    try { window.localStorage.setItem('adminToken', token); } catch (e) { /* modo privado: queda solo en esta pestaña */ }
+    msg('');
+    mostrarPanel();
+  });
+}
+function salir() { token = ''; try { window.localStorage.removeItem('adminToken'); } catch (e) { /* nada */ } mostrarLogin(); }
+function pintarEscena(show) {
+  var b = $('stage').getElementsByTagName('button');
+  for (var i = 0; i < b.length; i++) b[i].className = b[i].getAttribute('data-show') === show ? 'on' : '';
+}
+function leer() {
+  pedir('GET', '/api/stage', null, function (err, r) { if (!err && r) pintarEscena(r.show); });
+  pedir('GET', '/api/sessions', null, function (err, r) {
+    if (err || !r) return;
+    if (!r.length) { $('sala').innerHTML = 'No hay ninguna sala abierta.'; return; }
+    var h = '';
+    for (var i = 0; i < r.length; i++) h += '<b style="color:#fff">' + String(r[i].name).replace(/[<&]/g, '') + '</b> · ronda ' + r[i].round + '<br>';
+    $('sala').innerHTML = h;
+  });
+}
+$('stage').onclick = function (e) {
+  var t = e.target || e.srcElement;
+  while (t && t !== this && !t.getAttribute('data-show')) t = t.parentNode;
+  if (!t || t === this) return;
+  var show = t.getAttribute('data-show');
+  msg('Cambiando…');
+  pedir('POST', '/api/stage', { show: show }, function (err) {
+    msg(err || '');
+    if (!err) pintarEscena(show);
+  });
+};
+// ¿Sigue válida la sesión guardada?
+if (token) pedir('GET', '/api/me', null, function (err, r) { if (!err && r && r.admin) mostrarPanel(); else mostrarLogin(); });
+else mostrarLogin();
+setInterval(function () { if ($('panel').style.display === 'block') leer(); }, 5000);
+</script>
+</body>
+</html>
