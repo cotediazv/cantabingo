@@ -71,6 +71,15 @@
   .tabs2 button.on { background: #ffc400; color: #1a1a1a; }
   .tabs2.t3 button { width: 33.333%; font-size: 15px; }
   .modes { overflow: hidden; margin: 6px 0 10px; }
+  .who { float: right; max-width: 58%; margin: 0 0 8px 12px; padding: 8px 14px; border-radius: 14px; border: 3px solid #4fd1ff; background: #0d2633; text-align: right; }
+  .who small { display: block; font-size: 14px; color: #a9d8ea; }
+  .who b { display: block; font-size: 32px; line-height: 1.1; color: #4fd1ff; word-wrap: break-word; }
+  .who.flash { -webkit-animation: whoFlash 1.8s ease-out 1; animation: whoFlash 1.8s ease-out 1; }
+  @-webkit-keyframes whoFlash { 0% { background: #4fd1ff; -webkit-transform: scale(1.08); } 100% { background: #0d2633; -webkit-transform: scale(1); } }
+  @keyframes whoFlash { 0% { background: #4fd1ff; transform: scale(1.08); } 100% { background: #0d2633; transform: scale(1); } }
+  .who.flash b { -webkit-animation: whoFlashTxt 1.8s ease-out 1; animation: whoFlashTxt 1.8s ease-out 1; }
+  @-webkit-keyframes whoFlashTxt { 0% { color: #0d2633; } 100% { color: #4fd1ff; } }
+  @keyframes whoFlashTxt { 0% { color: #0d2633; } 100% { color: #4fd1ff; } }
   .figs { overflow: hidden; }
   .fig { float: left; width: 31.33%; height: 122px; margin: 0 1% 8px; padding: 10px 4px 6px; border-radius: 14px; background: #1d1838; border: 2px solid #3a3466; text-align: center; vertical-align: top; }
   .fig.on { border-color: #ffc400; background: #2a2410; }
@@ -469,7 +478,12 @@ function renderRosco(w) {
   if (!started && !w.winAccepted) o += howto('El Rosco', ROSCO_HOWTO);
   o += '<div class="panel">';
   if (!w.winAccepted) {
-    o += '<h1>' + h(w.name) + '</h1><div class="muted">' + (w.winner ? '🏆 Gana ' + h(w.winner.name) + ' (' + w.winner.hits + ' ✔ · ' + w.winner.misses + ' ✘)' : w.tie ? 'Empate' : 'Turno de ' + h(c.name)) + '</div>';
+    // Pedido de Cote (21 nov): arriba a la derecha, «Es el turno de» chico y el nombre grande y en color; al cambiar el
+    // turno (Pasa, Incorrecta o se acabó el tiempo) se destaca unos segundos, como guía para el animador
+    var turnFlash = S.lastTurn !== undefined && S.lastTurn !== w.turn;
+    S.lastTurn = w.turn;
+    if (c.active && !w.winner && !w.tie) o += '<div class="who' + (turnFlash ? ' flash' : '') + '"><small>Es el turno de</small><b>' + h(c.name) + '</b></div>';
+    o += '<h1>' + h(w.name) + '</h1><div class="muted">' + (w.winner ? '🏆 Gana ' + h(w.winner.name) + ' (' + w.winner.hits + ' ✔ · ' + w.winner.misses + ' ✘)' : w.tie ? 'Empate' : '') + '</div><div style="clear:both"></div>';
     o += '<div class="now"><small>Letra · reloj</small><b style="font-size:30px">' + h(c.active ? w.letters[c.current] : '—') + '</b> · <b id="rclock">' + clock(roscoLeft(w)) + '</b> <span class="muted">' + c.hits + ' ✔ · ' + c.misses + ' ✘</span></div>';
     var q = ((w.questions || [])[w.turn] || [])[c.current] || {};
     o += '<div class="q' + (w.runningSince && c.active ? ' live' : '') + '">' + (!c.active ? (w.tie ? (w.tie.rolling ? '<b>Sorteando el desempate…</b> Mira la pantalla.' : '<b>Hay un empate</b> entre ' + h(w.tie.names.join(' y ')) + '. Primero desempata por sorteo.') : 'Juego terminado.') :

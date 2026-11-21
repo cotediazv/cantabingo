@@ -2564,3 +2564,12 @@ body.kids[data-kz-level="8"] { background: linear-gradient(160deg, #fdffb6 0%, #
 .rf-st { display: block; font-weight: 700; color: var(--muted, #b9b4dc); }
 .rf-st.ok { color: #5fe0a0; }
 .rf-dec { margin: 8px 0 0; text-align: center; font-weight: 700; color: var(--muted, #b9b4dc); }
+/* El Rosco: «Es el turno de» y el nombre grande arriba a la derecha (pedido de Cote, 21 nov) */
+.w-topright { display: flex; align-items: center; gap: 12px; }
+.w-who { padding: 8px 14px; border-radius: 14px; border: 3px solid #4fd1ff; background: rgba(79, 209, 255, .12); text-align: right; max-width: 360px; }
+.w-who small { display: block; font-size: .85rem; font-weight: 700; color: #a9d8ea; }
+.w-who b { display: block; font-size: 2rem; line-height: 1.1; font-weight: 900; color: #4fd1ff; overflow-wrap: anywhere; }
+.w-who.flash { animation: whoFlash 1.8s ease-out 1; }
+.w-who.flash b { animation: whoFlashTxt 1.8s ease-out 1; }
+@keyframes whoFlash { 0% { background: #4fd1ff; transform: scale(1.08); } 100% { background: rgba(79, 209, 255, .12); transform: scale(1); } }
+@keyframes whoFlashTxt { 0% { color: #0d2633; } 100% { color: #4fd1ff; } }

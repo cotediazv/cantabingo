@@ -149,12 +149,13 @@
     const { questions, fromBank } = first;
     const TAGS = { g: 'Cultura general', m: 'Música', a: 'Arte', f: 'Fácil' };
     let st = null;
+    let lastTurn = null; // para destacar el nombre cuando cambia el turno
     const act = (action, extra) => api('POST', `/api/wheels/${id}/act`, { action, ...extra }).catch(fail);
     // Para leer al partir (pedido de Cote)
     const HOWTO = window.ROSCO_HOWTO; // en app.js: lo usan también los celulares
     app.innerHTML = `<div id="rosco-ctl">${window.readAloud ? window.readAloud('El Rosco', HOWTO) : ''}<div class="cols">
         <div class="panel">
-          <div class="row between"><div><h1 id="w-name" style="margin:0"></h1><span class="muted" id="w-turn"></span></div><div class="w-letter" id="w-letter"></div></div>
+          <div class="row between"><div><h1 id="w-name" style="margin:0"></h1><span class="muted" id="w-turn"></span></div><div class="w-topright"><div class="w-who" id="w-who" hidden><small>Es el turno de</small><b></b></div><div class="w-letter" id="w-letter"></div></div></div>
           <div class="w-question" id="w-question"></div>
           <button class="primary big w-accept" id="w-tie" hidden>🎲 Desempatar por sorteo</button>
           <button class="primary big w-accept" id="w-accept" data-do="acceptwin" hidden>✔ Aceptar ganador</button>
@@ -190,7 +191,17 @@
     const render = () => {
       const c = st.players[st.turn];
       $('#w-name').textContent = st.name;
-      $('#w-turn').textContent = st.winner ? (st.winner.full ? `🏆 ${st.winner.name} completó el rosco` : `🏆 Gana ${st.winner.name} (${st.winner.hits} ✔ · ${st.winner.misses} ✘)${st.winner.byDraw ? ', por sorteo' : ''}`) : st.tie ? `Empate: ${st.tie.names.join(' y ')}` : st.finished ? 'Juego terminado' : `Turno de ${c.name}`;
+      $('#w-turn').textContent = st.winner ? (st.winner.full ? `🏆 ${st.winner.name} completó el rosco` : `🏆 Gana ${st.winner.name} (${st.winner.hits} ✔ · ${st.winner.misses} ✘)${st.winner.byDraw ? ', por sorteo' : ''}`) : st.tie ? `Empate: ${st.tie.names.join(' y ')}` : st.finished ? 'Juego terminado' : '';
+      // Pedido de Cote (21 nov): arriba a la derecha, «Es el turno de» chico y el nombre grande y en color; al cambiar el
+      // turno (Pasa, Incorrecta o se acabó el tiempo) se destaca unos segundos, como guía para el animador
+      const who = $('#w-who');
+      const showWho = c.active && !st.winner && !st.tie;
+      who.hidden = !showWho;
+      if (showWho) {
+        who.querySelector('b').textContent = c.name;
+        if (lastTurn !== null && lastTurn !== st.turn) { who.classList.remove('flash'); void who.offsetWidth; who.classList.add('flash'); }
+      }
+      lastTurn = st.turn;
       $('#w-letter').textContent = c.active ? st.letters[c.current] : '—';
       const q = (questions[st.turn] || [])[c.current] || {};
       // La pregunta y su respuesta se muestran al moderador solo con el reloj en marcha
