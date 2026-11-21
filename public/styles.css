@@ -2591,3 +2591,17 @@ body.kids[data-kz-level="8"] { background: linear-gradient(160deg, #fdffb6 0%, #
 /* Instrucciones en el celular (pedido de Cote, 21 nov): 2 segundos, o se cierran al tocar cualquier parte de la pantalla */
 #phone-howto { cursor: pointer; }
 #phone-howto .ph-bar { animation-duration: 2s; }
+
+/* Pantalla vertical de Kennedy (pedido de Cote, 21 nov): el QR solo con los botones del karaoke de la sala light; con los
+   demás no hay QR y el recuadro ocupa ese espacio. Con el QR, abajo: «Ve los registros en vivo… en krbstage.cl» */
+#lv.lv-noqr .lv-qr { display: none; }
+#lv.lv-noqr { grid-template-rows: auto minmax(0, 1fr); }
+#lv.lv-webon { grid-template-rows: auto minmax(0, 1fr) auto auto; }
+#lv.lv-webon.lv-qrmode { grid-template-rows: auto minmax(0, 1fr) auto; }
+.lv-web { margin: 0; padding: 1.2vh 2.4vh; border-radius: 99px; text-align: center; font-size: 2.6vh; font-weight: 800; line-height: 1.2; background: var(--lv-shade); }
+.lv-web b { color: var(--lv-gold); font-weight: 900; }
+@media (orientation: landscape) { #lv.lv-noqr { grid-template-columns: minmax(0, 1fr); } .lv-web { grid-column: 1 / -1; } }
+#kf.kf-webon { grid-template-rows: 13vh minmax(0, 1fr) auto; }
+.kf-web { grid-column: 1 / -1; margin: 0; padding: 1.2vh 2.4vh; border-radius: 99px; text-align: center; font-size: 2.8vh; font-weight: 800; line-height: 1.2; background: rgba(14, 12, 30, .8); border: var(--gc-line) solid var(--gc-yellow); }
+.kf-web b { color: var(--gc-yellow); font-weight: 900; }
+@media (orientation: portrait) and (min-width: 300px) { #kf.kf-webon { grid-template-rows: auto minmax(0, 1fr) auto auto; } .kf-web { font-size: 2.4vh; } }

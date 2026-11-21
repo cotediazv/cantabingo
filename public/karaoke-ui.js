@@ -55,7 +55,7 @@
 
   // ---------- Tablero del DJ ----------
   // Con local y enlace la usa la pantalla vertical para el karaoke de la sala light de ese local
-  views.karaokeFull = async (local = '', join = '') => {
+  views.karaokeFull = async (local = '', join = '', opts = {}) => {
     document.body.classList.add('logo-in-box');
     app.innerHTML = '<div id="kf"></div>';
     const stop = follow((st) => {
@@ -63,7 +63,7 @@
       if (!box) return;
       const [a, ...rest] = st.list;
       const next = rest.slice(0, 3);
-      box.className = `th-${st.venue}`;
+      box.className = `th-${st.venue}${opts.web ? ' kf-webon' : ''}`;
       box.innerHTML = `
         <header class="kf-top"><b>Karaoke ${esc(st.name)}</b><span>${st.total ? `${st.total} en la lista` : 'Lista abierta'}</span></header>
         <section class="kf-now"><img class="kg-logo" src="krb-stage.svg" alt="KRB Stage">${a ? `<small>🎤 Ahora canta</small><b ${n(a.name)}>${esc(a.name)}</b><span ${n(a.song)}>${esc(a.song)}</span>${a.artist ? `<i ${n(a.artist)}>${esc(a.artist)}</i>` : ''}`
@@ -71,7 +71,7 @@
         <aside class="kf-side">
           <div class="kf-qr">${qr(join || joinUrl())}<b>Escanea el código QR con tu celular</b></div>
           ${next.length ? `<div class="kf-next"><small>Luego vienen</small>${next.map((p, i) => `<div><em>${i + 2}</em><p><b ${n(p.name)}>${esc(p.name)}</b><span ${n(p.song + p.artist)}>${esc(p.song)}${p.artist ? ` · ${esc(p.artist)}` : ''}</span></p></div>`).join('')}</div>` : ''}
-        </aside>`;
+        </aside>${opts.web ? '<p class="kf-web">Ve los registros en vivo de esta y todas las noches en <b>krbstage.cl</b></p>' : ''}`;
     }, local);
     return () => { stop(); document.body.classList.remove('logo-in-box'); };
   };

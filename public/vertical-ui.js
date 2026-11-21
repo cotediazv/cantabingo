@@ -58,11 +58,12 @@
       // Con la información del local en pantalla, se sigue lo que el equipo elige en el panel de la sala light del local
       // (Karaoke, Show y lo que viene, Cartelera, QR grande y lista); «Nada» deja la información con los shows que vienen
       // (Karaoke sin nadie en la lista: el cartón base con las actividades)
-      if (st.show === 'light') st.show = { karaoke: st.karaokeNow ? 'karaoke' : 'light', qr: 'light-qr', show: 'light-show' }[st.lightStage] || 'light';
+      // (Karaoke sin nadie cantando: la información que va cambiando, con el QR para pedir canciones)
+      if (st.show === 'light') st.show = { karaoke: st.karaokeNow ? 'karaoke' : 'light-kar', qr: 'light-qr', show: 'light-show' }[st.lightStage] || 'light';
       if (st.show === 'karaoke' && !lightId) lightId = ((await api('GET', `/api/light?local=${venue}`).catch(() => ({}))) || {}).id || '';
       // Fondo de la sala light cuando toca; sin video subido y sin actividad en este local: el logo (no el tablero de la
       // sala abierta, que puede ser de otro local)
-      const want = st.show === 'video' ? 'video' : st.show === 'light' ? `#/light-v/${venue}` : st.show === 'light-qr' ? `#/light-v/${venue}/qr` : st.show === 'light-show' ? `#/light-v/${venue}/show` : st.show === 'karaoke' ? `#/karaoke-v/${venue}/${lightId}` : !st.activity ? 'video' : '#/tablero';
+      const want = st.show === 'video' ? 'video' : st.show === 'light' ? `#/light-v/${venue}` : st.show === 'light-qr' ? `#/light-v/${venue}/qr` : st.show === 'light-show' ? `#/light-v/${venue}/show` : st.show === 'light-kar' ? `#/light-v/${venue}/karaoke` : st.show === 'karaoke' ? `#/karaoke-v/${venue}/${lightId}` : !st.activity ? 'video' : '#/tablero';
       if (want === shown) return;
       shown = want;
       const isVideo = want === 'video';
@@ -80,7 +81,8 @@
   views['karaoke-v'] = async () => {
     const [, local, id] = location.hash.replace(/^#\/?/, '').split('/'); // #/karaoke-v/<local>/<sala light>
     document.body.classList.add('full');
-    const stop = await views.karaokeFull(pick(local), id ? `${base()}#/l/${id}` : '');
+    // En la pantalla vertical de Kennedy, abajo: dónde ver las transmisiones (pedido de Cote, 21 nov)
+    const stop = await views.karaokeFull(pick(local), id ? `${base()}#/l/${id}` : '', { web: pick(local) === 'kennedy' });
     return () => { document.body.classList.remove('full'); if (typeof stop === 'function') stop(); };
   };
 

@@ -317,14 +317,22 @@
     const m = String(t || '').match(/^(.*?)\s*\(([^()]+)\)\s*$/);
     return m ? `<span class="lv-sh">${esc(cap(m[1]))}</span><span class="lv-by"><small>por</small> ${esc(cap(m[2]))}</span>` : `<span class="lv-sh">${esc(cap(t))}</span>`;
   };
+  // Pedido de Cote (21 nov): en la pantalla vertical de Kennedy el QR es solo para pedir canciones. Se ve solo con los botones
+  // del karaoke de la sala light (Karaoke: #/light-v/<local>/karaoke, y QR grande y lista: /qr), y abajo dice dónde ver las
+  // transmisiones; con los demás botones (Información que va cambiando, Show, Cartelera, Nada) no hay QR.
+  const QR_ONLY_KAR = { kennedy: true };
   views['light-v'] = async (local) => {
     const v = NAMES[local] ? local : 'kennedy';
     // #/light-v/<local>/qr: QR grande con los próximos en cantar · #/light-v/<local>/show: el show y lo de esta noche
+    // · #/light-v/<local>/karaoke: la información que va cambiando, con el QR para pedir canciones
     const focus = (location.hash.split('/')[3] || '').replace(/[^a-z]/g, '');
+    const karOnly = !!QR_ONLY_KAR[v];
+    const withQr = !karOnly || focus === 'karaoke' || focus === 'qr';
+    const web = karOnly && withQr;
     document.body.classList.add('full');
-    app.innerHTML = `<div id="lv" class="th-${v}${focus === 'qr' ? ' lv-qrmode' : ''}"><header class="lv-top"><small>Esta noche en</small><b>${esc(NAMES[v])}</b><span class="lv-show" hidden></span></header>
+    app.innerHTML = `<div id="lv" class="th-${v}${focus === 'qr' ? ' lv-qrmode' : ''}${withQr ? '' : ' lv-noqr'}${web ? ' lv-webon' : ''}"><header class="lv-top"><small>Esta noche en</small><b>${esc(NAMES[v])}</b><span class="lv-show" hidden></span></header>
       <section class="lv-card"><div class="lv-slide"></div><div class="lv-dots"></div></section>
-      <footer class="lv-qr"><div class="lv-qrbox"></div><div class="lv-qrtext"><b>Escanea el código QR con tu celular</b><span>Pide tu canción de karaoke y espera tu turno</span></div></footer></div>`;
+      <footer class="lv-qr"><div class="lv-qrbox"></div><div class="lv-qrtext"><b>Escanea el código QR con tu celular</b><span>Pide tu canción de karaoke y espera tu turno</span></div></footer>${web ? `<p class="lv-web">Ve los registros en vivo de esta y todas las noches en <b>krbstage.cl</b></p>` : ''}</div>`;
     let alive = true;
     let cart = null;
     let kar = null;
