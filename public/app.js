@@ -968,12 +968,19 @@ views.jugar = async (sid) => {
         body = `<p class="pvote-wait">${rolling ? '🎲 Sorteando en pantalla…' : r.roll && r.roll.winner ? `Ganó el desempate:<br><b>${esc(r.roll.winner)}</b>` : 'Se sortea el ganador entre los cartones empatados.'}</p>`;
       } else {
         const picked = r.picked || [];
-        const mine = picked.some((n) => String(n).toLowerCase() === String(me.name || '').toLowerCase()) && !rolling;
+        const same = (n) => String(n).toLowerCase() === String(me.name || '').toLowerCase();
+        const myName = rolling ? null : picked.find(same);
+        const myState = myName ? (r.confirm || {})[myName] : null;
+        const iDeclined = (r.declined || []).some(same);
         head = '🎲 Sorteo de concursantes · El Rosco';
-        body = (mine ? '<div class="pvote-win">🎉 ¡Saliste sorteado!<small>Acércate a nuestro escenario para jugar El Rosco</small></div>'
-          : '<p class="pvote-ask">¡Prepárate!<b>Puedes salir a participar en nuestro escenario</b></p>') +
+        // Pedido de Cote (21 nov): quien sale sorteado confirma si quiere jugar en el escenario o prefiere jugar online
+        body = (myName && myState !== 'ok' ? `<div class="pvote-win">🎉 ¡Saliste sorteado!<small>Para jugar El Rosco en nuestro escenario</small></div>
+            <p class="pvote-ask">¿Quieres jugar?</p><div class="pact-yesno"><button type="button" class="primary big" data-raffle="1">✅ Sí, quiero jugar</button><button type="button" class="big" data-raffle="0">🙅 No, gracias, prefiero jugar online</button></div>`
+          : myName ? '<div class="pvote-win">✅ ¡Confirmado!<small>Acércate a nuestro escenario para jugar El Rosco</small></div>'
+            : iDeclined ? '<p class="pvote-ask">👍 Elegiste jugar online<b>Juega la Trivia del Rosco desde tu celular</b></p>'
+              : '<p class="pvote-ask">¡Prepárate!<b>Puedes salir a participar en nuestro escenario</b></p>') +
           (rolling ? '<p class="pvote-wait">🎲 Sorteando en pantalla…</p>' : '') +
-          (picked.length ? `<div class="pact-list"><small>Ya salieron</small>${picked.map((n, i) => `<p><em>${i + 1}.º</em>${esc(n)}</p>`).join('')}</div>` : '') +
+          (picked.length ? `<div class="pact-list"><small>Ya salieron</small>${picked.map((n, i) => `<p><em>${i + 1}.º</em>${esc(n)}<i>${(r.confirm || {})[n] === 'ok' ? '✅' : '⏳'}</i></p>`).join('')}</div>` : '') +
           '<p class="pact-next">Después: <b>🎡 El Rosco</b> · y tú juegas la Trivia del Rosco desde el celular</p>';
       }
     } else if (k === 'juego') {
@@ -1000,6 +1007,13 @@ views.jugar = async (sid) => {
     }
     const html = `<div class="pvote-head"><b>${esc(head)}</b></div>${body}`;
     if (html !== actShown) { actShown = html; box.innerHTML = html; }
+    box.onclick = async (e) => {
+      const b = e.target.closest('[data-raffle]');
+      if (!b) return;
+      box.querySelectorAll('[data-raffle]').forEach((x) => { x.disabled = true; });
+      try { await api('POST', '/api/raffle/answer', { sid, token: me.token, play: b.dataset.raffle === '1' }); } catch (err) { fail(err); }
+      actShown = ''; drawAct();
+    };
   };
   const syncAct = () => {
     const k = actOf();

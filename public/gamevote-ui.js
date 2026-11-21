@@ -91,7 +91,8 @@
         const t = textsOf(g, info);
         box.innerHTML = `<div class="gv-card"><div class="gv-main"><small class="gv-top">${t.top}</small><b class="gv-big">${t.big}</b>${t.line ? `<p class="gv-line">${t.line}</p>` : ''}
           <div class="gv-rings n${optionsOf(g).length}">${optionsOf(g).map((k) => ring(k, info, clsOf(g, k))).join('')}</div><small class="gv-total"></small></div>${qrBox}</div>`;
-        setRings(box, { ...g, counts: Object.fromEntries(optionsOf(g).map((k) => [k, 0])), total: 0 }); // parte en cero y se llena con animación
+        const zeros = {}; optionsOf(g).forEach((k) => { zeros[k] = 0; });
+        setRings(box, { ...g, counts: zeros, total: 0 }); // parte en cero y se llena con animación
         fit();
         if (g.phase === 'done' && Date.now() + off - g.decidedAt < 15000 && played !== g.id) { played = g.id; sfx.play('win'); }
         const now = g;
@@ -176,6 +177,7 @@
 
   // ---------- Panel del animador: recuadro de la pestaña «Por votación» en el menú de juegos ----------
   let panelT = null; let lastSeen = null;
+  window.addEventListener('hashchange', () => { lastSeen = null; }); // al cambiar de vista se olvida lo visto
   const goGame = (k, info) => { if (k === 'bingo') backToBingo(); else location.hash = info[k].href; };
   window.startGvIntro = async () => {
     const g = await api('GET', '/api/gamevote').catch(() => null);
@@ -187,7 +189,7 @@
     const boxes = document.querySelectorAll('.g-vote');
     if (!boxes.length || how !== 'votacion') return;
     const g = await api('GET', '/api/gamevote').catch(() => null);
-    if (!g) return;
+    if (!g) { panelT = setTimeout(() => window.paintGvote(how), 3000); return; } // un corte de red no deja el recuadro detenido
     if (g.phase === 'voting' || (g.phase === 'result' && g.runoff)) window.openNavMode('votacion'); // a medio hacer: se despliega sola
     const info = GAME_INFO(g.venue);
     const off = g.now - Date.now();
@@ -216,9 +218,11 @@
       html = `<p class="gvp-help">El público elige el próximo juego desde su celular, en 30 segundos. Gana el juego con más de la mitad de los votos; si ninguno lo logra, hay segunda vuelta entre los 2 primeros.</p>
         <button type="button" class="primary big g-draw" data-gv-start>🗳️ Iniciar votación (30 s)</button>${introBtn}`;
     }
-    boxes.forEach((b) => { if (b.innerHTML !== html) b.innerHTML = html; });
-    // Cuando se decide el ganador mientras el panel mira la votación, el panel pasa solo a ese juego (como el sorteo)
-    if (lastSeen && lastSeen.id === g.id && lastSeen.phase === 'voting' && g.phase === 'done' && g.winner) {
+    boxes.forEach((b) => { if (b.dataset.h !== html) { b.dataset.h = html; b.innerHTML = html; } }); // solo si cambió (no se pierde un toque)
+    // Cuando se decide el ganador mientras el panel mira la votación, el panel pasa solo a ese juego (como el sorteo);
+    // no si el resultado es de antes (el animador estaba en otra vista)
+    const shown = [...boxes].some((b) => b.offsetParent !== null);
+    if (shown && lastSeen && lastSeen.id === g.id && lastSeen.phase === 'voting' && g.phase === 'done' && g.winner && Date.now() + off - g.decidedAt < 12000) {
       toast(`🗳️ Ganó ${info[g.winner].icon} ${info[g.winner].name}. En unos segundos pasamos al juego…`);
       clearTimeout(window.gameDrawGo);
       window.gameDrawGo = setTimeout(() => goGame(g.winner, info), 8000);

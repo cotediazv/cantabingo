@@ -76,6 +76,7 @@
   .modes button.mode.on { background: #ffc400; color: #1a1a1a; border-color: #ffc400; }
   .modes.lobby { margin-top: 24px; }
   .modes.lobby button.mode { float: none; display: block; width: 100%; margin: 0 0 16px; height: 140px; font-size: 26px; }
+  @media (min-width: 900px) { .modes.lobby button.mode { float: left; width: 32%; margin: 0 2% 16px 0; } .modes.lobby button.mode:last-child { margin-right: 0; } }
   .gvnow { text-align: center; color: #ffc400; font-weight: bold; font-size: 18px; margin: 6px 0 10px; }
   .gvwin { text-align: center; color: #ffc400; font-weight: bold; font-size: 22px; margin: 6px 0 10px; }
   .gvhelp { text-align: center; color: #a9a3cf; font-weight: bold; margin: 6px 0 10px; }
@@ -83,8 +84,8 @@
   .gvrow .bar { position: absolute; left: 0; top: 0; bottom: 0; opacity: .45; }
   .gvrow span, .gvrow b { position: relative; }
   .gvrow b { float: right; }
-  .gvrow.dim { opacity: .45; }
-  .gvrow.win, .gvrow.sel { border-color: #ffc400; }
+  .gvrow.gdim { opacity: .45; }
+  .gvrow.gwin, .gvrow.gsel { border-color: #ffc400; }
   .sec { text-align: center; color: #a9a3cf; font-size: 13px; font-weight: bold; letter-spacing: 1px; margin: 14px 0 4px; }
   .game { float: left; width: 48%; margin: 4px 1%; border-radius: 16px; padding: 14px 6px; min-height: 76px; }
   .game { height: 96px; overflow: hidden; }
@@ -189,7 +190,7 @@ function gvHtml() {
   var rows = '';
   for (var i = 0; i < opts.length; i++) {
     var k = opts[i]; var n = (g.counts || {})[k] || 0; var p = gvPct(n, g.total);
-    var cls = g.phase === 'done' ? (k === g.winner ? 'win' : 'dim') : (g.phase === 'result' && g.runoff ? (g.runoff.indexOf(k) >= 0 ? 'sel' : 'dim') : '');
+    var cls = g.phase === 'done' ? (k === g.winner ? 'gwin' : 'gdim') : (g.phase === 'result' && g.runoff ? (g.runoff.indexOf(k) >= 0 ? 'gsel' : 'gdim') : '');
     rows += '<div class="gvrow ' + cls + '"><div class="bar" style="width:' + p.toFixed(1) + '%;background:' + GVC[k] + '"></div><b>' + gvFmt(p) + ' · ' + votos(n) + '</b><span>' + gameIcon(k) + ' ' + h(gameName(k)) + '</span></div>';
   }
   var cancel = '<div class="center">' + btn('✖ Cancelar votación', 'gvReset', '', '') + '</div>';
@@ -401,16 +402,20 @@ views.sorteoctl = function () {
       api('GET', '/api/people', null, function (e2, p) {
         if (!r || !p) return;
         var picked = r.picked || []; var full = picked.length >= 3;
-        var free = 0; for (var i = 0; i < p.connected.length; i++) if (picked.indexOf(p.connected[i]) < 0) free++;
+        var cf = r.confirm || {}; var dec = r.declined || [];
+        var allOk = picked.length > 0; for (var a = 0; a < picked.length; a++) if (cf[picked[a]] !== 'ok') allOk = false;
+        var free = 0; for (var i = 0; i < p.connected.length; i++) if (picked.indexOf(p.connected[i]) < 0 && dec.indexOf(p.connected[i]) < 0) free++;
+        var lastP = picked[picked.length - 1];
         var rollingR = r.mode !== 'tie' && r.roll && new Date().getTime() + offset < r.roll.at + (r.rollMs || 6000);
         var o = topBar(['#/', 'Inicio']) + '<h1>Sorteo de concursantes</h1>' +
-          (rollingR ? '<div class="panel ann"><small>📣 PARA ANUNCIAR</small><span class="ann-t">🎲 Sorteando en pantalla…</span></div>' : picked.length ? ann('🎲 Salió sorteado · ' + picked.length + '.º de 3 para El Rosco', [picked[picked.length - 1]], ['¡Que se acerque a nuestro escenario!']) : '') +
+          (rollingR ? '<div class="panel ann"><small>📣 PARA ANUNCIAR</small><span class="ann-t">🎲 Sorteando en pantalla…</span></div>' : picked.length ? ann('🎲 Salió sorteado · ' + picked.length + '.º de 3 para El Rosco', [lastP], [cf[lastP] === 'ok' ? '✅ ¡Confirmó! Que se acerque a nuestro escenario' : '⏳ Esperando que confirme en su celular si quiere jugar']) : '') +
+          (!rollingR && dec.length ? '<p class="muted" style="text-align:center">🙅 Prefirieron jugar online (no entran al sorteo): ' + h(dec.join(', ')) + '</p>' : '') +
           '<div class="panel">' +
-          btn(full ? '✔ Cargar El Rosco con los 3' : '🎲 Sortear concursante (' + (picked.length + 1) + '.º de 3)', full ? 'loadRosco' : 'raffleDraw', '', 'big primary', !full && !free) +
+          btn(full ? (allOk ? '✔ Cargar El Rosco con los 3' : '⏳ Esperando que confirmen en su celular') : '🎲 Sortear concursante (' + (picked.length + 1) + '.º de 3)', full ? 'loadRosco' : 'raffleDraw', '', 'big primary', full ? !allOk : !free) +
           '<h2>Concursantes elegidos</h2>';
-        for (var k = 0; k < picked.length; k++) o += '<div class="item"><b>' + (k + 1) + '. ' + h(picked[k]) + '</b><span class="r">' + btn('✏️ Editar', 'rename', d('n', picked[k])) + btn('Quitar', 'unpick', d('n', picked[k])) + '</span></div>';
+        for (var k = 0; k < picked.length; k++) o += '<div class="item"><b>' + (k + 1) + '. ' + h(picked[k]) + '</b> <span class="muted">' + (cf[picked[k]] === 'ok' ? '✅ Confirmó' : '⏳ Esperando que confirme') + '</span><span class="r">' + (cf[picked[k]] === 'ok' ? '' : btn('✔ Confirmar', 'confirmPick', d('n', picked[k]))) + btn('✏️ Editar', 'rename', d('n', picked[k])) + btn('Quitar', 'unpick', d('n', picked[k])) + '</span></div>';
         if (!picked.length) o += '<p class="muted">Todavía no has sorteado a nadie.</p>';
-        if (picked.length && !full) o += btn('✔ Cargar El Rosco con ' + picked.length, 'loadRosco', '');
+        if (picked.length && !full) o += btn('✔ Cargar El Rosco con ' + picked.length, 'loadRosco', '', '', !allOk);
         o += btn('Empezar de nuevo', 'raffleReset', '') + '</div>';
         o += '<div class="panel"><b>▸ ' + p.connected.length + ' conectados ahora · ' + p.names.length + ' en la lista</b></div>';
         o += nav('rosco', false) + foot();
@@ -611,10 +616,10 @@ A.drawMode = function (el) {
   refresh();
   api('POST', '/api/gamedraw/mode', { how: how }, function (err) { if (err) toast(err); if (how === 'votacion') gvAutoIntro(); else refresh(); });
 };
-A.gvStart = function () { clearTimeout(goTimer); api('POST', '/api/gamevote/start', null, function (err, r) { if (err) { toast(err); return; } S.gv = r; toast('🗳️ Votación abierta: 30 segundos para votar desde el celular'); refresh(); }); };
+A.gvStart = function () { clearTimeout(goTimer); api('POST', '/api/gamevote/start', null, function (err, r) { if (err) { toast(err); return; } S.gv = r; S.gvVoting = r.id; toast('🗳️ Votación abierta: 30 segundos para votar desde el celular'); refresh(); gvPoll(); }); };
 A.gvReset = function () { clearTimeout(goTimer); api('POST', '/api/gamevote/reset', null, function (err, r) { if (err) { toast(err); return; } S.gv = r; toast('Votación cancelada'); refresh(); }); };
 A.gvGo = function (el) { clearTimeout(goTimer); toGame(el.getAttribute('data-g')); };
-A.gvIntro = function () { act('POST', '/api/gamevote/intro', null, '📢 En pantalla: las reglas y cada juego, antes de votar'); };
+A.gvIntro = function () { clearTimeout(goTimer); act('POST', '/api/gamevote/intro', null, '📢 En pantalla: las reglas y cada juego, antes de votar'); };
 A.gvNext = function () { act('POST', '/api/gamevote/next', null, ''); };
 // Al entrar en «Por votación», primero la presentación (salvo que haya una votación abierta o una segunda vuelta pendiente)
 function gvAutoIntro() {
@@ -642,12 +647,13 @@ A.game = function (el) {
   // «Manual»: el juego empieza de cero, sin número de la noche
   if (g && howOf(g) === 'manual') { api('POST', '/api/gamedraw/free', { game: k }, function (err) { if (err) { toast(err); return; } toGame(k); }); return; }
   var ready = g && howOf(g) === 'sorteo' && g.list.length < g.total && g.ready && (!g.last || g.ready.at > g.last.at);
-  if (ready) { api('POST', '/api/gamedraw/pick', { game: k }, function (err) { if (err) { toast(err); return; } toast('Siguiente juego: ' + gameName(k)); toGame(k); }); return; }
+  if (ready) { api('POST', '/api/gamedraw/pick', { game: k }, function (err, r) { if (err) { toast(err); return; } if (r) S.draw = r; toast('Siguiente juego: ' + gameName(k)); toGame(k); }); return; }
   toGame(k);
 };
 A.stage = function (el) { var s = el.getAttribute('data-s'); act('POST', '/api/stage', { show: s }, s === 'qr' ? 'QR en pantalla completa' : 'En pantalla'); };
 A.goKaraoke = function () { go('#/karaoke'); };
 A.raffleDraw = function () { act('POST', '/api/raffle/draw', null, 'Sorteando en pantalla…'); };
+A.confirmPick = function (el) { act('POST', '/api/raffle/confirm', { name: el.getAttribute('data-n') }, '✅ Confirmado'); };
 A.raffleReset = function () { act('POST', '/api/raffle/reset', null); };
 A.unpick = function (el) { act('POST', '/api/raffle/remove', { name: el.getAttribute('data-n') }); };
 A.rename = function (el) { var from = el.getAttribute('data-n'); var to = window.prompt('Corrige el nombre:', from); if (to === null || to === from) return; act('POST', '/api/people/rename', { from: from, to: to }, 'Nombre corregido'); };
@@ -712,7 +718,9 @@ function gvPoll() {
       var box = $('gvbox'); var html = gvHtml();
       if (box && (html !== gvLast || box.innerHTML === '')) { box.innerHTML = html; gvLast = html; }
       if (!box && !S.navMode && (r.phase === 'voting' || (r.phase === 'result' && r.runoff)) && document.querySelector('.modes')) refresh(); // se despliega sola
-      if (prev && prev.id === r.id && prev.phase === 'voting' && r.phase === 'done' && r.winner) {
+      if (r.phase === 'voting' && box) S.gvVoting = r.id; // el iPad está mirando esta votación
+      if (box && S.gvVoting === r.id && prev && prev.id === r.id && prev.phase === 'voting' && r.phase === 'done' && r.winner) {
+        S.gvVoting = null;
         toast('🗳️ Ganó ' + gameIcon(r.winner) + ' ' + gameName(r.winner) + '. En unos segundos pasamos al juego…');
         clearTimeout(goTimer);
         goTimer = setTimeout(function () { toGame(r.winner); }, 8000);
@@ -733,6 +741,7 @@ function route() {
   S.foldOpen = false; // como en la plataforma completa: al cambiar de vista, el menú vuelve a plegarse si hay un juego en curso
   S.navMode = null; // al entrar a otra vista, el menú parte con los tres botones
   S.fx = ''; // acciones que cada vista hace una sola vez al entrar
+  S.gvVoting = null; // al cambiar de vista no se pasa solo a un juego por una votación vista antes
   var v = views[name] || views.home;
   refresh = function () { clearInterval(poll); clearInterval(tick); v(parts[1]); };
   window.scrollTo(0, 0);

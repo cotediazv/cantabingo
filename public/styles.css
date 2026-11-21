@@ -2557,3 +2557,10 @@ body.kids[data-kz-level="8"] { background: linear-gradient(160deg, #fdffb6 0%, #
 .pcrowd-rank > div.me em, .pcrowd-rank > div.you em { color: #1a1a1a; }
 /* Ranking obligatorio cada 2 rondas en El Rosco (pedido de Cote, 21 nov) */
 .w-rankbtn.due { background: #ffc400; color: #1a1a1a; border-color: #ffc400; font-weight: 900; animation: giPulse 1.2s ease-in-out infinite; }
+/* Confirmación de quien sale sorteado (pedido de Cote, 21 nov) */
+.pact .pact-yesno { display: grid; gap: 10px; margin: 8px 0 12px; }
+.pact .pact-yesno button { width: 100%; margin: 0; }
+.pact .pact-list p i { float: right; font-style: normal; }
+.rf-st { display: block; font-weight: 700; color: var(--muted, #b9b4dc); }
+.rf-st.ok { color: #5fe0a0; }
+.rf-dec { margin: 8px 0 0; text-align: center; font-weight: 700; color: var(--muted, #b9b4dc); }

@@ -778,7 +778,9 @@ app.post('/api/gamedraw/mode', requireAdmin, (req, res) => {
 const startContest = (game) => {
   const mode = game === 'festival' ? 'karaoke' : 'objeto';
   const v = db.vote || {};
-  if ((v.mode || 'objeto') === mode && !v.winner) return;
+  if (v.winner) { vote.start(mode); return; } // el anterior ya terminó: uno nuevo
+  if ((v.mode || 'objeto') === mode) return; // del mismo tipo y sin ganador: sigue el mismo
+  if ((v.players || []).length || v.signup) return; // otro concurso en curso: no se borra (el panel ofrece reemplazarlo)
   vote.start(mode);
 };
 // Cada pestaña permite solo su forma de elegir
@@ -945,6 +947,7 @@ app.post('/api/gamevote/start', requireAdmin, (_req, res) => {
   if (howOf() !== 'votacion') return fail(res, 409, 'Elige primero la pestaña «Por votación»');
   if (!Object.keys(db.sessions).length) return fail(res, 409, 'Primero crea la sala de juegos');
   const g = db.gameVote;
+  if (g.phase === 'voting' && Date.now() >= g.until) gvClose(); // la vuelta ya terminó: primero se cuentan sus votos
   if (g.phase === 'voting' && Date.now() < g.until) return fail(res, 409, 'Ya hay una votación abierta');
   if (roscoLock('votojuego')) return fail(res, 409, 'El Rosco está en juego: la votación se hace cuando termine la partida');
   const second = g.phase === 'result' && Array.isArray(g.runoff) && g.runoff.length === 2;

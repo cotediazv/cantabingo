@@ -32,26 +32,33 @@
       $('#rf-count').textContent = `${p.connected.length} conectados ahora · ${p.names.length} en la lista`;
       $('#rf-people').innerHTML = p.names.map((n) => `<div class="row between rf-row ${online.has(n) ? 'on' : 'off'}"><span>${online.has(n) ? '🟢' : '⚪'} ${esc(n)}</span><span class="row" style="gap:6px"><button data-edit="${esc(n)}">✏️ Editar</button><button class="danger" data-drop="${esc(n)}">Quitar</button></span></div>`).join('')
         || '<p class="muted">Aún no hay nadie. Aparecerán al unirse al bingo.</p>';
-      $('#rf-picked').innerHTML = picked.length ? picked.map((n, i) => `<div class="row between" style="padding:8px 0;border-bottom:1px solid var(--line)"><b>${i + 1}. ${esc(n)}</b><span class="row" style="gap:6px"><button data-edit="${esc(n)}">✏️ Editar</button><button data-remove="${esc(n)}">Quitar</button></span></div>`).join('')
+      const cf = r.confirm || {};
+      const allOk = picked.length > 0 && picked.every((n) => cf[n] === 'ok');
+      $('#rf-picked').innerHTML = picked.length ? picked.map((n, i) => `<div class="row between" style="padding:8px 0;border-bottom:1px solid var(--line)"><b>${i + 1}. ${esc(n)} <small class="rf-st ${cf[n] === 'ok' ? 'ok' : ''}">${cf[n] === 'ok' ? '✅ Confirmó' : '⏳ Esperando que confirme en su celular'}</small></b>${cf[n] === 'ok' ? '' : `<button data-confirm="${esc(n)}">✔ Confirmar a mano</button>`}<span class="row" style="gap:6px"><button data-edit="${esc(n)}">✏️ Editar</button><button data-remove="${esc(n)}">Quitar</button></span></div>`).join('')
         : '<p class="muted">Todavía no has sorteado a nadie.</p>';
       // Pedido de Cote (21 nov): el concursante que salió, grande para anunciarlo (cuando la tómbola ya terminó en pantalla)
       const off = (r.now || Date.now()) - Date.now();
       const rolling = r.mode !== 'tie' && r.roll && Date.now() + off < r.roll.at + (r.rollMs || 6000);
-      const annKey = rolling ? 'roll' : picked.length ? picked.join('|') : '';
+      const lastP = picked[picked.length - 1];
+      const dec = r.declined || [];
+      const annKey = rolling ? 'roll' : `${picked.join('|')}#${lastP ? cf[lastP] : ''}#${dec.join('|')}`;
       if ($('#rf-ann').dataset.k !== annKey) {
         $('#rf-ann').dataset.k = annKey;
         $('#rf-ann').innerHTML = rolling ? '<div class="panel ann"><small>📣 Para anunciar</small><span class="ann-t">🎲 Sorteando en pantalla…</span></div>'
-          : picked.length ? window.annHtml(`🎲 Salió sorteado · ${picked.length}.º de 3 para El Rosco`, [picked[picked.length - 1]], ['¡Que se acerque a nuestro escenario!']) : '';
+          : picked.length ? window.annHtml(`🎲 Salió sorteado · ${picked.length}.º de 3 para El Rosco`, [lastP], [cf[lastP] === 'ok' ? '✅ ¡Confirmó! Que se acerque a nuestro escenario' : '⏳ Esperando que confirme en su celular si quiere jugar'])
+          : '';
+        if (!rolling && dec.length) $('#rf-ann').insertAdjacentHTML('beforeend', `<p class="rf-dec">🙅 Prefirieron jugar online (no entran al sorteo): ${dec.map(esc).join(', ')}</p>`);
         if (rolling) setTimeout(load, r.roll.at + (r.rollMs || 6000) - (Date.now() + off) + 300);
       }
       // Pedido de Cote (20 nov): un solo botón que avanza: sortear a los 3 concursantes y, con los 3, cargar El Rosco
       const full = picked.length >= 3;
-      $('#rf-draw').textContent = full ? '✔ Cargar El Rosco con los 3' : `🎲 Sortear concursante (${picked.length + 1}.º de 3)`;
+      // Con los 3 elegidos, El Rosco se carga cuando los 3 confirmaron (pedido de Cote, 21 nov)
+      $('#rf-draw').textContent = full ? (allOk ? '✔ Cargar El Rosco con los 3' : '⏳ Esperando que confirmen en su celular') : `🎲 Sortear concursante (${picked.length + 1}.º de 3)`;
       $('#rf-draw').dataset.load = full ? '1' : '';
-      $('#rf-draw').disabled = !full && p.connected.filter((n) => !picked.includes(n)).length === 0;
+      $('#rf-draw').disabled = full ? !allOk : p.connected.filter((n) => !picked.includes(n) && !dec.includes(n)).length === 0;
       $('#rf-create').hidden = full || !picked.length;
       $('#rf-create').textContent = `✔ Cargar El Rosco con ${picked.length}`;
-      $('#rf-create').disabled = !picked.length;
+      $('#rf-create').disabled = !allOk;
     };
     $('#rf-draw').onclick = async () => {
       if ($('#rf-draw').dataset.load) { $('#rf-create').click(); return; }
@@ -68,6 +75,7 @@
       const d = e.target.dataset;
       if (d.edit) return void edit(d.edit);
       if (d.remove) { await api('POST', '/api/raffle/remove', { name: d.remove }).catch(fail); await load(); }
+      if (d.confirm) { await api('POST', '/api/raffle/confirm', { name: d.confirm }).catch(fail); await load(); } // ya está en el escenario
     };
     $('#rf-people').onclick = async (e) => {
       const d = e.target.dataset;
