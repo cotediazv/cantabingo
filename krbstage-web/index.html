@@ -847,6 +847,57 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
   .dos{grid-template-columns:1fr}
   body{font-size:16px}
 }
+/* ===== KRB Interactivo (pedido de Cote): juegos interactivos para mucha gente, mezclados con la animación en vivo ===== */
+.interactivo{position:relative;overflow:hidden;border-block:1px solid var(--linea);background:
+  radial-gradient(circle at 8% 12%,color-mix(in srgb,var(--kennedy) 16%,transparent),transparent 42%),
+  radial-gradient(circle at 92% 30%,color-mix(in srgb,var(--frida) 14%,transparent),transparent 40%),
+  radial-gradient(circle at 50% 100%,color-mix(in srgb,var(--tobalaba) 12%,transparent),transparent 45%),
+  rgba(21,19,30,.55)}
+.int-bajada{max-width:760px;margin:18px 0 0;font-size:clamp(18px,2vw,22px);color:var(--texto)}
+.int-cifras{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:32px}
+.int-cifra{border:1px solid var(--linea);border-radius:10px;background:var(--tarima);padding:16px 18px}
+.int-cifra b{display:block;font-family:var(--f-display);font-weight:800;font-size:clamp(40px,5vw,60px);line-height:1;color:var(--foco)}
+.int-cifra span{display:block;margin-top:6px;font-size:14px;color:var(--tenue)}
+.int-pasos{list-style:none;margin:36px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.int-pasos li{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start;border:1px solid var(--linea);border-radius:10px;background:var(--tarima);padding:18px}
+.int-pasos b{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--foco);color:var(--noche);font-family:var(--f-display);font-weight:800;font-size:26px;line-height:1}
+.int-pasos h3{margin:2px 0 6px;font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:22px;line-height:1.05}
+.int-pasos p{margin:0;font-size:15px;color:var(--tenue);line-height:1.5}
+.int-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-top:40px}
+.int-tab{border:1px solid var(--linea);border-radius:999px;background:transparent;color:var(--tenue);font:600 14px var(--f-texto);padding:9px 16px;cursor:pointer;transition:background .2s,color .2s,border-color .2s}
+.int-tab:hover{color:var(--texto)}
+.int-tab[aria-selected="true"]{background:var(--c,var(--foco));border-color:var(--c,var(--foco));color:var(--noche)}
+.int-juego{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:28px;align-items:center;margin-top:18px;border:1px solid var(--linea);border-radius:14px;background:var(--tarima);padding:22px}
+.int-medios{position:relative;padding-right:min(17%,120px);padding-bottom:28px}
+.int-medios.sin-cel{padding:0}
+.int-local{margin:0;border-radius:10px;overflow:hidden;border:1px solid var(--linea);background:var(--noche);aspect-ratio:16/9}
+.int-local img,.int-cel img{display:block;width:100%;height:100%;object-fit:cover}
+.int-cel{position:absolute;right:0;bottom:0;width:min(26%,190px);margin:0;aspect-ratio:390/844;border-radius:22px;overflow:hidden;border:5px solid #26222f;box-shadow:0 18px 40px -12px rgba(0,0,0,.8);background:var(--noche)}
+.int-medios.solo-cel{padding:0;display:flex;justify-content:center}
+.int-medios.solo-cel .int-cel{position:static;width:min(60%,250px)}
+.int-medios figcaption{position:absolute;left:10px;top:10px;font-family:var(--f-dato);font-size:11px;letter-spacing:.12em;text-transform:uppercase;background:rgba(12,11,18,.75);border-radius:999px;padding:4px 10px;color:var(--texto)}
+.int-txt .etiqueta{color:var(--c,var(--foco))}
+.int-txt h3{margin:8px 0 10px;font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:clamp(30px,3.4vw,42px);line-height:1}
+.int-txt p{margin:0;color:var(--tenue)}
+.int-txt ul{list-style:none;margin:16px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.int-txt li{border:1px solid var(--linea);border-radius:999px;padding:5px 11px;font-size:13px;color:var(--texto)}
+.int-txt a.int-ir{display:inline-block;margin-top:16px;color:var(--c,var(--foco));font-weight:700}
+.int-anim{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:32px;align-items:center;margin-top:40px}
+.int-anim h3{margin:10px 0 12px;font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:clamp(30px,3.4vw,44px);line-height:1}
+.int-anim p{margin:0;color:var(--tenue)}
+.int-donde{list-style:none;margin:18px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.int-donde li{border:1px solid var(--linea);border-radius:999px;padding:5px 11px;font-size:13px}
+.int-panel{position:relative;margin:0;border-radius:12px;overflow:hidden;border:1px solid var(--linea);background:var(--noche)}
+.int-panel img{display:block;width:100%;height:auto}
+.int-panel figcaption{position:absolute;left:10px;top:10px;font-family:var(--f-dato);font-size:11px;letter-spacing:.12em;text-transform:uppercase;background:rgba(12,11,18,.75);border-radius:999px;padding:4px 10px}
+@media (max-width:900px){
+  .int-pasos{grid-template-columns:1fr}
+  .int-juego{grid-template-columns:1fr;padding:14px;gap:18px}
+  .int-anim{grid-template-columns:1fr;gap:20px}
+  .int-tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-20px;padding-inline:20px}
+  .int-tabs::-webkit-scrollbar{display:none}
+  .int-tab{flex:none}
+}
 </style>
 
 </head>
@@ -858,6 +909,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
     <ul class="menu" id="menu">
       <li><a href="#quienes">Quiénes somos</a></li>
       <li><a href="#tulocal">Producciones actuales</a></li>
+      <li><a href="#interactivo">KRB Interactivo</a></li>
       <li><a href="#hacemos">Qué hacemos</a></li>
       <li><a href="#medida">A la medida</a></li>
       <li><a href="#carteleras">Cartelera</a></li>
@@ -936,6 +988,32 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
         </div>
       </div>
       <div class="desliza">Desliza para ver los otros locales →</div>
+    </div>
+  </section>
+
+
+  <section class="banda interactivo" id="interactivo">
+    <div class="envoltura">
+      <div class="etiqueta">Innovación · Desarrollo y aplicación de juegos interactivos</div>
+      <h2>KRB Interactivo</h2>
+      <p class="int-bajada">Desarrollamos y aplicamos juegos interactivos para grandes volúmenes de personas, mezclados con la animación en vivo.</p>
+      <div class="int-cifras" id="int-cifras" hidden></div>
+      <ol class="int-pasos">
+        <li><b>1</b><div><h3>Escanea el código QR con tu celular</h3><p>Sin descargar nada: el código de la pantalla abre la sala de juegos en el navegador.</p></div></li>
+        <li><b>2</b><div><h3>Pon tu nombre, apellido y participa</h3><p>Cada persona juega desde su celular: cartones, respuestas, notas y votos.</p></div></li>
+        <li><b>3</b><div><h3>El animador lo lleva en vivo</h3><p>Conduce cada juego desde su panel y las pantallas del local y la transmisión lo muestran al instante.</p></div></li>
+      </ol>
+      <div class="int-tabs" role="tablist" aria-label="Juegos de la sala" id="int-tabs"></div>
+      <div class="int-juego" id="int-juego" role="tabpanel" aria-live="polite"></div>
+      <div class="int-anim">
+        <div class="int-anim-txt">
+          <div class="etiqueta">Animación interactiva</div>
+          <h3>El juego y el show, en una sola experiencia</h3>
+          <p>El animador conduce cada juego paso a paso desde su panel: lo que lee en voz alta aparece grande y destacado, y solo se activa el botón del paso que toca. Mientras tanto, el público responde, vota y canta desde su celular, y todo se ve al instante en el escenario, en las pantallas del local y en la transmisión.</p>
+          <ul class="int-donde"><li>Celular del público</li><li>Pantallas del local</li><li>Pantalla vertical</li><li>Transmisión en vivo</li><li>Panel del animador</li></ul>
+        </div>
+        <figure class="int-panel"><img src="interactivo/panel-rosco.webp" alt="Panel del animador de El Rosco, con los botones paso a paso" loading="lazy" width="1280" height="900"><figcaption>Panel del animador · El Rosco</figcaption></figure>
+      </div>
     </div>
   </section>
 
@@ -2012,5 +2090,42 @@ function lineas(x,pts,dist,alfa){ // agrupa las líneas en 4 tonos: pocas órden
 })();
 </script>
 
+<script>
+// KRB Interactivo: un juego por pestaña, con la pantalla del local y el celular reales (capturas de la Sala de juegos)
+(function(){
+  const J=[
+    {k:'bingo',n:'Bingo',c:'var(--frida)',et:'El Bingo de cada local',t:'Bingo',
+     p:'Cartones digitales en el celular, números con su letra en la pantalla y figuras que cambian en cada ronda. El ganador aparece en pantalla al instante.',
+     li:['Cartones en el celular','Líneas, figuras y letras','Ganador al instante'],local:'bingo-local',cel:'bingo-cel'},
+    {k:'rosco',n:'El Rosco y la Trivia',c:'var(--kennedy)',et:'En el escenario y en el celular',t:'El Rosco',
+     p:'Elegimos 3 participantes al azar entre todos los conectados: una pregunta por cada letra y 90 segundos por participante. Mientras ellos juegan, todo el público responde la Trivia del Rosco desde su celular, con 3 alternativas y puntaje por rapidez.',
+     li:['3 participantes al azar','90 segundos','Trivia para todo el público','Ranking en pantalla'],local:'rosco-local',cel:'trivia-cel'},
+    {k:'festival',n:'El Festival',c:'var(--tobalaba)',et:'Concurso de karaoke',t:'El Festival',
+     p:'Inscripción desde el celular con canción y artista. Después de cada canción, el público pone nota del 1 al 10, las notas aparecen en pantalla y los finalistas se definen con redoble de tambores.',
+     li:['Inscripción desde el celular','Notas del 1 al 10','Finalistas en pantalla'],local:'festival-local',cel:'festival-cel'},
+    {k:'objeto',n:'El objeto más extraño',c:'var(--foco)',et:'Votación del público',t:'El objeto más extraño',
+     p:'Los participantes se inscriben desde el celular y presentan su objeto en el escenario. El público vota y la pantalla muestra al ganador.',
+     li:['Inscripción desde el celular','Votación en vivo'],local:'objeto-local'},
+    {k:'sorteo',n:'Sorteo de juegos',c:'var(--ok)',et:'La noche se arma en vivo',t:'Sorteo de juegos',
+     p:'Una tómbola en pantalla elige el siguiente juego de la noche. El que sale queda bloqueado para el sorteo siguiente, así cada noche es distinta.',
+     li:['Tómbola en pantalla','Cada noche distinta'],local:'sorteo-local'},
+    {k:'kids',n:'KRB Kids',c:'#b38cff',et:'Para toda la familia',t:'KRB Kids',
+     p:'Los más pequeños también tienen sus propios juegos dentro de la plataforma: sin sonido ni texto, por niveles y con trofeo al final.',
+     li:['Sin descargar nada','Por niveles'],cel:'kids-cel',ir:{href:'https://cantabingo.onrender.com/#/kids',txt:'Jugar KRB Kids →'}}
+  ];
+  const tabs=document.getElementById('int-tabs'),caja=document.getElementById('int-juego');if(!tabs||!caja)return;
+  const img=(f,alt,cls)=>`<figure class="${cls}"><img src="interactivo/${f}.webp" alt="${alt}" loading="lazy"></figure>`;
+  function ver(i){
+    const g=J[i];caja.style.setProperty('--c',g.c);
+    tabs.querySelectorAll('.int-tab').forEach((b,k)=>{b.setAttribute('aria-selected',k===i);b.tabIndex=k===i?0:-1});
+    const medios=g.local&&g.cel?'':g.cel?' solo-cel':' sin-cel';
+    caja.innerHTML=`<div class="int-medios${medios}">${g.local?img(g.local,`${g.t}: pantalla del local`,'int-local'):''}${g.cel?img(g.cel,`${g.t}: celular del público`,'int-cel'):''}${g.local?'<figcaption>Pantalla del local</figcaption>':''}</div>
+      <div class="int-txt"><div class="etiqueta">${g.et}</div><h3>${g.t}</h3><p>${g.p}</p><ul>${g.li.map(x=>`<li>${x}</li>`).join('')}</ul>${g.ir?`<a class="int-ir" href="${g.ir.href}" target="_blank" rel="noopener">${g.ir.txt}</a>`:''}</div>`;
+  }
+  tabs.innerHTML=J.map((g,i)=>`<button type="button" class="int-tab" role="tab" style="--c:${g.c}" aria-selected="false">${g.n}</button>`).join('');
+  tabs.querySelectorAll('.int-tab').forEach((b,i)=>{b.onclick=()=>ver(i);b.onkeydown=e=>{const d=e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0;if(d){const n=(i+d+J.length)%J.length;ver(n);tabs.children[n].focus()}}});
+  ver(0);
+})();
+</script>
 </body>
 </html>
