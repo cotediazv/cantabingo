@@ -847,6 +847,78 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
   .dos{grid-template-columns:1fr}
   body{font-size:16px}
 }
+/* ===== Videos de Instagram (pedido de Cote): al pasar el mouse, el video crece y se reproduce con sonido
+   (el sonido, desde el primer clic en la página: regla de los navegadores) ===== */
+.ptl-grilla button,.esp-media{transition:transform .28s ease,box-shadow .28s ease}
+.ptl-grilla button:nth-child(1){transform-origin:left top}.ptl-grilla button:nth-child(2){transform-origin:center top}.ptl-grilla button:nth-child(3){transform-origin:right top}
+.ptl-grilla button:nth-child(4){transform-origin:left bottom}.ptl-grilla button:nth-child(5){transform-origin:center bottom}.ptl-grilla button:nth-child(6){transform-origin:right bottom}
+.esp-mont:nth-child(5n+1) .esp-media{transform-origin:left center}.esp-mont:nth-child(5n) .esp-media{transform-origin:right center}
+@media (hover:hover) and (pointer:fine){
+  .ptl-grilla button:hover{transform:scale(1.6);z-index:6;box-shadow:0 22px 50px -10px rgba(0,0,0,.9)}
+  .esp-mont:hover .esp-media{transform:scale(1.3);z-index:6;box-shadow:0 22px 50px -10px rgba(0,0,0,.9)}
+}
+/* celular: crece con el toque */
+.ptl-grilla button.crece{transform:scale(1.8);z-index:6;box-shadow:0 22px 50px -10px rgba(0,0,0,.9)}
+.esp-mont.crece .esp-media{transform:scale(1.25);z-index:6;box-shadow:0 22px 50px -10px rgba(0,0,0,.9)}
+@media (max-width:900px){.esp-mont .esp-media{transform-origin:center center}.esp-mont:nth-child(3n+1) .esp-media{transform-origin:left center}.esp-mont:nth-child(3n) .esp-media{transform-origin:right center}}
+@media (max-width:560px){.esp-mont:nth-child(n) .esp-media{transform-origin:right center}.esp-mont:nth-child(odd) .esp-media{transform-origin:left center}}
+/* ===== KRB Interactivo (pedido de Cote): juegos interactivos para mucha gente, mezclados con la animación en vivo ===== */
+.interactivo{position:relative;overflow:hidden;border-block:1px solid var(--linea);background:
+  radial-gradient(circle at 8% 12%,color-mix(in srgb,var(--kennedy) 16%,transparent),transparent 42%),
+  radial-gradient(circle at 92% 30%,color-mix(in srgb,var(--frida) 14%,transparent),transparent 40%),
+  radial-gradient(circle at 50% 100%,color-mix(in srgb,var(--tobalaba) 12%,transparent),transparent 45%),
+  rgba(21,19,30,.55)}
+.int-bajada{max-width:760px;margin:18px 0 0;font-size:clamp(18px,2vw,22px);color:var(--texto)}
+.int-cifras{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-top:32px}
+.int-cifra{border:1px solid var(--linea);border-radius:10px;background:var(--tarima);padding:16px 18px}
+.int-cifra b{display:block;font-family:var(--f-display);font-weight:800;font-size:clamp(40px,5vw,60px);line-height:1;color:var(--foco)}
+.int-cifra span{display:block;margin-top:6px;font-size:14px;color:var(--tenue)}
+.int-pasos{list-style:none;margin:36px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.int-pasos li{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start;border:1px solid var(--linea);border-radius:10px;background:var(--tarima);padding:18px}
+.int-pasos b{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--foco);color:var(--noche);font-family:var(--f-display);font-weight:800;font-size:26px;line-height:1}
+.int-pasos h3{margin:2px 0 6px;font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:22px;line-height:1.05}
+.int-pasos p{margin:0;font-size:15px;color:var(--tenue);line-height:1.5}
+.int-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-top:40px}
+.int-tab{border:1px solid var(--linea);border-radius:999px;background:transparent;color:var(--tenue);font:600 14px var(--f-texto);padding:9px 16px;cursor:pointer;transition:background .2s,color .2s,border-color .2s}
+.int-tab:hover{color:var(--texto)}
+.int-tab[aria-selected="true"]{background:var(--c,var(--foco));border-color:var(--c,var(--foco));color:var(--noche)}
+.int-juego{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:28px;align-items:center;margin-top:18px;border:1px solid var(--linea);border-radius:14px;background:var(--tarima);padding:22px}
+.int-medios{position:relative;padding-right:min(15%,110px);padding-bottom:24px}
+.int-medios.sin-cel{padding:0 0 24px}
+.int-local{margin:0;border-radius:10px;overflow:hidden;border:1px solid var(--linea);background:var(--noche);aspect-ratio:16/9}
+.int-local img,.int-cel img{display:block;width:100%;height:100%;object-fit:cover}
+.int-cel{position:absolute;right:0;bottom:0;width:min(22%,165px);margin:0;aspect-ratio:390/844;border-radius:22px;overflow:hidden;border:5px solid #26222f;box-shadow:0 18px 40px -12px rgba(0,0,0,.8);background:var(--noche)}
+.int-medios.solo-cel{padding:0;display:flex;justify-content:center}
+.int-medios.solo-cel .int-cel{position:static;width:min(60%,250px)}
+.int-cap{position:absolute;left:2px;bottom:0;font-family:var(--f-dato);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--tenue);line-height:1}
+.int-txt .etiqueta{color:var(--c,var(--foco))}
+.int-txt h3{margin:8px 0 10px;font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:clamp(30px,3.4vw,42px);line-height:1}
+.int-txt p{margin:0;color:var(--tenue)}
+.int-txt ul{list-style:none;margin:16px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.int-txt li{border:1px solid var(--linea);border-radius:999px;padding:5px 11px;font-size:13px;color:var(--texto)}
+.int-txt a.int-ir{display:inline-block;margin-top:16px;color:var(--c,var(--foco));font-weight:700}
+.int-anim{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:32px;align-items:center;margin-top:40px}
+.int-anim h3{margin:10px 0 12px;font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:clamp(30px,3.4vw,44px);line-height:1}
+.int-anim p{margin:0;color:var(--tenue)}
+.int-donde{list-style:none;margin:18px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.int-donde li{border:1px solid var(--linea);border-radius:999px;padding:5px 11px;font-size:13px}
+.int-panel{margin:0}
+.int-panel img{display:block;width:100%;height:auto;border-radius:12px;border:1px solid var(--linea);background:var(--noche)}
+.int-panel figcaption,.int-pantallas figcaption{margin-top:8px;font-family:var(--f-dato);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--tenue)}
+.int-pantallas{display:grid;grid-template-columns:minmax(0,3.16fr) minmax(0,1fr);gap:14px;margin-top:24px}
+.int-pantallas figure{margin:0;min-width:0}
+.int-cam{border-radius:12px;overflow:hidden;border:1px solid var(--linea);background:var(--noche)}
+.int-cam img{display:block;width:100%;height:100%;object-fit:cover}
+.int-gc .int-cam{aspect-ratio:16/9;background:url(portada.jpg) center/cover no-repeat} /* el GC es transparente: debajo, una imagen del escenario hace de cámara */
+.int-vert .int-cam{aspect-ratio:9/16}
+@media (max-width:900px){
+  .int-pasos{grid-template-columns:1fr}
+  .int-juego{grid-template-columns:1fr;padding:14px;gap:18px}
+  .int-anim{grid-template-columns:1fr;gap:20px}
+  .int-tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-inline:-20px;padding-inline:20px}
+  .int-tabs::-webkit-scrollbar{display:none}
+  .int-tab{flex:none}
+}
 </style>
 
 </head>
@@ -858,6 +930,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
     <ul class="menu" id="menu">
       <li><a href="#quienes">Quiénes somos</a></li>
       <li><a href="#tulocal">Producciones actuales</a></li>
+      <li><a href="#interactivo">KRB Interactivo</a></li>
       <li><a href="#hacemos">Qué hacemos</a></li>
       <li><a href="#medida">A la medida</a></li>
       <li><a href="#carteleras">Cartelera</a></li>
@@ -940,6 +1013,35 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
   </section>
 
 
+  <section class="banda interactivo" id="interactivo">
+    <div class="envoltura">
+      <div class="etiqueta">Innovación</div>
+      <h2>KRB Interactivo</h2>
+      <p class="int-bajada">Desarrollamos y aplicamos juegos interactivos para grandes volúmenes de personas, mezclados con la animación en vivo.</p>
+      <div class="int-cifras" id="int-cifras" hidden></div>
+      <ol class="int-pasos">
+        <li><b>1</b><div><h3>Escanea el código QR con tu celular</h3><p>El código de la pantalla abre la sala de juegos en el navegador.</p></div></li>
+        <li><b>2</b><div><h3>Pon tu nombre, apellido y participa</h3><p>Desde ahí juega: cartones, respuestas, notas y votos.</p></div></li>
+        <li><b>3</b><div><h3>El animador lo lleva en vivo</h3><p>Las pantallas del local y la transmisión muestran cada juego al instante.</p></div></li>
+      </ol>
+      <div class="int-tabs" role="tablist" aria-label="Juegos de la sala" id="int-tabs"></div>
+      <div class="int-juego" id="int-juego" role="tabpanel" aria-live="polite"></div>
+      <div class="int-anim">
+        <div class="int-anim-txt">
+          <div class="etiqueta">Animación interactiva</div>
+          <h3>El juego y el show, en una sola experiencia</h3>
+          <p>El animador conduce cada juego paso a paso desde su panel: lo que lee en voz alta aparece grande y destacado, y solo se activa el botón del paso que toca. Mientras tanto, el público responde, vota y canta desde su celular.</p>
+        </div>
+        <figure class="int-panel"><img src="interactivo/panel-rosco.webp" alt="Panel del animador de El Rosco, con los botones paso a paso" loading="lazy" width="1280" height="900"><figcaption>Panel del animador · El Rosco</figcaption></figure>
+      </div>
+      <div class="int-pantallas">
+        <figure class="int-gc"><div class="int-cam"><img src="interactivo/escena-bingo.webp" alt="El bingo sobre la cámara en la transmisión en vivo" loading="lazy" width="1280" height="720"></div><figcaption>Transmisión en vivo</figcaption></figure>
+        <figure class="int-vert"><div class="int-cam"><img src="interactivo/trivia-vertical.webp" alt="Ranking de la Trivia del Rosco en la pantalla vertical del local" loading="lazy" width="540" height="960"></div><figcaption>Pantalla vertical</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+
   <section class="banda tulocal" id="producidos">
     <div class="envoltura">
       <h3 class="ptl-tit">Producciones y colaboraciones pasadas</h3>
@@ -999,8 +1101,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
             <li><span><strong><a href="https://www.instagram.com/kararockband/" target="_blank" rel="noopener">Kararock Band®</a></strong> (Laboratorio KRB Stage): nuestra banda propia de músicos profesionales que acompaña a los más destacados dobles nacionales e internacionales.</span></li>
             <li><span><strong>Pistas de ultra calidad</strong> producidas por KRB Stage, con videoclip sincronizado.</span></li>
             <li><span><strong>Dobles, bailarines, iluminación, humo y pantalla</strong>, en un solo espectáculo.</span></li>
-            <li><span><strong>Amplificación, iluminación, escenario, puesta en escena</strong>, intervenciones y más.</span></li>
-            <li><span><strong>Exclusivo:</strong> la banda y la producción son de KRB Stage.</span></li>
+            <li><span><strong>Amplificación, escenario, puesta en escena</strong>, intervenciones y más.</span></li>
           </ul>
         </div>
         <div class="esp-ejemplo">
@@ -1065,7 +1166,6 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
           <h2>Tu local vende, tu público disfruta</h2>
         </div>
         <div>
-          <p class="ptl-frase">Un local necesita <b>vender</b>. La gente busca <b>conectar y disfrutar</b>.</p>
           <p>En KRB Stage ideamos y diseñamos <strong>estrategias en conjunto</strong> para que cada uno de los espacios logre su identidad y flujo propio.</p>
         </div>
       </div>
@@ -1212,6 +1312,13 @@ const puedeSonar=()=>!navigator.userActivation||navigator.userActivation.hasBeen
 let videoEncima=null;
 const sonar=v=>{document.querySelectorAll('.ptl-grilla video,.esp-media video').forEach(o=>{if(o!==v)o.muted=true});
   if(!v.getAttribute('src')&&v.dataset.src)v.src=v.dataset.src;v.muted=false;v.volume=1;v.play().catch(()=>{v.muted=true;v.play().catch(()=>{})})};
+// En el celular (sin mouse) el «crecer» va con el dedo (pedido de Cote): el primer toque agranda ese video y lo
+// reproduce con sonido (el toque permite el sonido); otro toque en el mismo lo abre en pantalla completa.
+// Tocar en otra parte, o que el bloque salga de la pantalla, lo vuelve a su tamaño y en silencio
+let creciendo=null;
+function achicar(){if(!creciendo)return;const v=creciendo.querySelector('video');creciendo.classList.remove('crece');if(v)v.muted=true;creciendo=null}
+function crecer(el,v){if(creciendo&&creciendo!==el)achicar();creciendo=el;el.classList.add('crece');if(v)sonar(v)}
+addEventListener('pointerdown',e=>{if(creciendo&&!creciendo.contains(e.target))achicar()},true);
 function sonarAlPasar(caja,v){
   if(!conMouse)return;
   caja.addEventListener('mouseenter',()=>{videoEncima=v;
@@ -1282,16 +1389,18 @@ function pintarColumnas(){
     let pag=0,vs=[],activo=false;
     // prendido: los 6 se mueven (sin sonido; con el mouse encima, suena ese). Apagado: quedan quietos en su imagen
     caja._prender=()=>{activo=true;caja.classList.add('activo');if(quieto)return;vs.forEach(v=>{if(!v.getAttribute('src'))v.src=v.dataset.src;v.play().catch(()=>{})})};
-    caja._apagar=()=>{activo=false;caja.classList.remove('activo');vs.forEach(v=>{v.pause();v.muted=true})};
+    caja._apagar=()=>{activo=false;caja.classList.remove('activo');if(creciendo&&caja.contains(creciendo))achicar();vs.forEach(v=>{v.pause();v.muted=true})};
     function pintar(){
       vs.forEach(v=>{v.pause();v.removeAttribute('src');v.load()});
       const vids=paginas[pag].vids;
       caja.innerHTML=vids.map((x,i)=>`<button data-i="${i}" aria-label="Ver video"><video muted playsinline preload="none" ${x.poster?(caja._cerca?`poster="${esc(x.poster)}"`:`data-poster="${esc(x.poster)}"`):''} data-src="${esc(x.url)}"></video></button>`).join('')+'<span class="ptl-vacio"></span>'.repeat(6-vids.length); // la página guarda el mismo alto
       vs=[...caja.querySelectorAll('video')];
       caja.querySelectorAll('button').forEach(b=>{sonarAlPasar(b,b.querySelector('video'));b.onclick=e=>{
-        if(!activo){activarBloque(caja);return} // primer toque (celular): se activa el bloque
+        // celular: el primer toque en un video lo agranda y suena (y activa el bloque); el segundo, pantalla completa
+        if(!conMouse&&!b.classList.contains('crece')){if(!activo)activarBloque(caja);crecer(b,b.querySelector('video'));return}
+        if(!activo){activarBloque(caja);return}
         // en pantalla completa se puede seguir con todos los videos del lugar (del 6 pasa al 7, a la página siguiente)
-        caja._apagar();const i=+b.dataset.i;
+        achicar();caja._apagar();const i=+b.dataset.i;
         completar().then(()=>{const todos=paginas.flatMap(p=>p.vids),antes=paginas.slice(0,pag).reduce((n,p)=>n+p.vids.length,0);
           abrirPC(todos.map(x=>({video:x.url,poster:x.poster})),antes+i,()=>activarBloque(caja))})}});
       if(nav)nav.querySelector('span').textContent=paginas[pag].nombre;
@@ -1852,7 +1961,9 @@ document.querySelectorAll('.esp-montados').forEach(g=>{const PRIMEROS=['DF4JT1kg
     vids[code]=x;const card=cards.find(c=>c.dataset.code===code);if(!card)return;
     const m=card.querySelector('.esp-media');const v=document.createElement('video');v.muted=true;v.playsInline=true;v.preload='metadata';if(x.poster)v.poster=x.poster;v.dataset.src=x.url;m.prepend(v);vistos.observe(v);sonarAlPasar(card,v);
     card.querySelector('.esp-ver').textContent='▶ Pantalla completa';
-    card.onclick=e=>{e.preventDefault();const lista=cards.filter(c=>vids[c.dataset.code]);abrirPC(lista.map(c=>({video:vids[c.dataset.code].url,poster:vids[c.dataset.code].poster})),lista.indexOf(card))};
+    card.onclick=e=>{e.preventDefault();
+      if(!conMouse&&!card.classList.contains('crece')){crecer(card,v);return} // celular: primer toque, crece y suena
+      achicar();const lista=cards.filter(c=>vids[c.dataset.code]);abrirPC(lista.map(c=>({video:vids[c.dataset.code].url,poster:vids[c.dataset.code].poster})),lista.indexOf(card))};
   }
   const buscar=(loc,dia)=>fetch(`https://cantabingo.onrender.com/api/web/instagram/buscar?local=${loc}&desde=${dia}&hasta=${dia}`,{signal:AbortSignal.timeout(30000)}).then(r=>{if(!r.ok)throw 0;return r.json()});
   // se buscan recién cuando la sección se acerca a la pantalla (así no compiten con la carga inicial)
@@ -2012,5 +2123,39 @@ function lineas(x,pts,dist,alfa){ // agrupa las líneas en 4 tonos: pocas órden
 })();
 </script>
 
+<script>
+// KRB Interactivo: un juego por pestaña, con la pantalla del local y el celular reales (capturas de la Sala de juegos)
+(function(){
+  const J=[
+    {k:'bingo',n:'Bingo',c:'var(--frida)',et:'El Bingo de cada local',t:'Bingo',
+     p:'Cartones digitales en el celular, números con su letra en la pantalla y figuras que cambian en cada ronda. El ganador aparece al instante.',
+     li:['Cartones en el celular','Líneas, figuras y letras','Ganador al instante'],local:'bingo-local',cel:'bingo-cel'},
+    {k:'rosco',n:'El Rosco y la Trivia',c:'var(--kennedy)',et:'En el escenario y en el celular',t:'El Rosco',
+     p:'Elegimos 3 participantes al azar entre todos los conectados: una pregunta por cada letra y 90 segundos por participante. Mientras ellos juegan, todo el público responde la Trivia del Rosco desde su celular, con 3 alternativas y puntaje por rapidez.',
+     li:['3 participantes al azar','90 segundos','Trivia para todo el público','Ranking en pantalla'],local:'rosco-local',cel:'trivia-cel'},
+    {k:'festival',n:'El Festival',c:'var(--tobalaba)',et:'Concurso de karaoke',t:'El Festival',
+     p:'Inscripción desde el celular con canción y artista. Después de cada canción, el público pone nota del 1 al 10, las notas aparecen en pantalla y los finalistas se definen con redoble de tambores.',
+     li:['Inscripción desde el celular','Notas del 1 al 10','Finalistas en pantalla'],local:'festival-local',cel:'festival-cel'},
+    {k:'objeto',n:'El objeto más extraño',c:'var(--foco)',et:'Votación del público',t:'El objeto más extraño',
+     p:'Los participantes se inscriben desde el celular y presentan su objeto en el escenario. El público vota y la pantalla muestra al ganador.',
+     li:['Inscripción desde el celular','Votación en vivo'],local:'objeto-local'},
+    {k:'sorteo',n:'Sorteo de juegos',c:'var(--ok)',et:'La noche se arma en vivo',t:'Sorteo de juegos',
+     p:'Una tómbola en pantalla elige el siguiente juego de la noche. El que sale queda bloqueado para el sorteo siguiente, así cada noche es distinta.',
+     li:['Tómbola en pantalla','Cada noche distinta'],local:'sorteo-local'}
+  ];
+  const tabs=document.getElementById('int-tabs'),caja=document.getElementById('int-juego');if(!tabs||!caja)return;
+  const img=(f,alt,cls)=>`<figure class="${cls}"><img src="interactivo/${f}.webp" alt="${alt}" loading="lazy"></figure>`;
+  function ver(i){
+    const g=J[i];caja.style.setProperty('--c',g.c);
+    tabs.querySelectorAll('.int-tab').forEach((b,k)=>{b.setAttribute('aria-selected',k===i);b.tabIndex=k===i?0:-1});
+    const medios=g.local&&g.cel?'':g.cel?' solo-cel':' sin-cel';
+    caja.innerHTML=`<div class="int-medios${medios}">${g.local?img(g.local,`${g.t}: pantalla del local`,'int-local'):''}${g.cel?img(g.cel,`${g.t}: celular del público`,'int-cel'):''}${g.local?'<span class="int-cap">Pantalla del local</span>':''}</div>
+      <div class="int-txt"><div class="etiqueta">${g.et}</div><h3>${g.t}</h3><p>${g.p}</p>${g.ir?`<a class="int-ir" href="${g.ir.href}" target="_blank" rel="noopener">${g.ir.txt}</a>`:''}</div>`;
+  }
+  tabs.innerHTML=J.map((g,i)=>`<button type="button" class="int-tab" role="tab" style="--c:${g.c}" aria-selected="false">${g.n}</button>`).join('');
+  tabs.querySelectorAll('.int-tab').forEach((b,i)=>{b.onclick=()=>ver(i);b.onkeydown=e=>{const d=e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0;if(d){const n=(i+d+J.length)%J.length;ver(n);tabs.children[n].focus()}}});
+  ver(0);
+})();
+</script>
 </body>
 </html>
