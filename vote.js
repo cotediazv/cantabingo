@@ -11,7 +11,7 @@ const crypto = require('crypto');
 const MAX_PLAYERS = 8;
 const TITLE = 'El objeto más extraño';
 const TITLES = { objeto: TITLE, karaoke: '' }; // el festival se llama según el local (ver festival())
-const SHORT = { frida: 'Frida', kennedy: 'Kennedy', tobalaba: 'Tobalaba' };
+const SHORT = { frida: 'Frida', kennedy: 'Mercado Kennedy', tobalaba: 'Tobalaba' }; // el local se llama Mercado Kennedy (pedido de Cote, 21 nov)
 // El Festival (concurso de karaoke, pedido de Cote): votación de 8 s por canción, inscripción de 1 minuto, 5 notas en
 // pantalla durante 8 s
 const K_OPEN_MS = 8000;

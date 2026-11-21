@@ -54,6 +54,13 @@ for (const signal of ['SIGTERM', 'SIGINT']) {
     process.exit(0);
   });
 }
+// Una sola vez (pedido de Cote, 21 nov: «el local se llama Mercado Kennedy»): las salas y proyectos guardados con el nombre
+// corto pasan a «Los Juegos de Mercado Kennedy» (así el bingo dice «El Bingo de Mercado Kennedy»)
+if (!db.mercadoKennedy) {
+  for (const x of [...Object.values(db.sessions || {}), ...Object.values(db.projects || {})]) if (x && x.name === 'Los Juegos de Kennedy') x.name = 'Los Juegos de Mercado Kennedy';
+  db.mercadoKennedy = true;
+  save();
+}
 const id = (n = 8) => crypto.randomBytes(n).toString('hex');
 const shortId = () => {
   const abc = 'abcdefghjkmnpqrstuvwxyz23456789';
@@ -1037,7 +1044,7 @@ setInterval(() => {
   if (!s || s.theme !== AUTO_KARAOKE.venue) return;
   if (roscoLock('karaoke')) return; // con El Rosco en juego se espera a que termine (hasta las 22:00)
   db.autoKaraoke = day;
-  if (db.stage !== 'karaoke') { setStage('karaoke'); karaoke.refresh(); console.log('Escenario a Karaoke automático (jueves 21:45, Kennedy)'); }
+  if (db.stage !== 'karaoke') { setStage('karaoke'); karaoke.refresh(); console.log('Escenario a Karaoke automático (jueves 21:45, Mercado Kennedy)'); }
   save();
 }, 20e3);
 
@@ -1048,7 +1055,7 @@ setInterval(() => {
 // hay, crea 320) y dura hasta las 4 de la mañana siguiente (para que no se cierre en medio de los juegos).
 const AUTO_SALAS_FROM = '2026-11-21'; // la creación automática empieza el sábado 21 de noviembre (pedido de Cote)
 const AUTO_SALAS = [
-  { dow: 'Thu', from: 18 * 60 + 30, venue: 'kennedy', name: 'Los Juegos de Kennedy' },
+  { dow: 'Thu', from: 18 * 60 + 30, venue: 'kennedy', name: 'Los Juegos de Mercado Kennedy' }, // el local se llama Mercado Kennedy (pedido de Cote, 21 nov)
   { dow: 'Fri', from: 18 * 60, until: 22 * 60 + 45, venue: 'tobalaba', name: 'Los Juegos de Tobalaba' },
   { dow: 'Sun', from: 13 * 60, until: 17 * 60, venue: 'frida', name: 'Los Juegos de Frida' },
 ];

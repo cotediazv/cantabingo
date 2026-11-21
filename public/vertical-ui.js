@@ -81,8 +81,7 @@
   views['karaoke-v'] = async () => {
     const [, local, id] = location.hash.replace(/^#\/?/, '').split('/'); // #/karaoke-v/<local>/<sala light>
     document.body.classList.add('full');
-    // En la pantalla vertical de Kennedy, abajo: dónde ver las transmisiones (pedido de Cote, 21 nov)
-    const stop = await views.karaokeFull(pick(local), id ? `${base()}#/l/${id}` : '', { web: pick(local) === 'kennedy' });
+    const stop = await views.karaokeFull(pick(local), id ? `${base()}#/l/${id}` : '');
     return () => { document.body.classList.remove('full'); if (typeof stop === 'function') stop(); };
   };
 

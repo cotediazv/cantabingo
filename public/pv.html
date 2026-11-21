@@ -64,9 +64,6 @@
   .lv-dots i { display: inline-block; width: 1.4rem; height: 1.4rem; margin: 0 .5rem; border-radius: 50%; background: rgba(255, 255, 255, .3); }
   .lv-dots i.on { background: #ffc400; }
   .lv-qr { position: absolute; left: 3rem; right: 3rem; bottom: 6rem; height: 24rem; text-align: center; white-space: nowrap; }
-  /* Kennedy (pedido de Cote, 21 nov): con el QR para pedir canciones, abajo dónde ver las transmisiones */
-  .pv-web { position: absolute; left: 3rem; right: 3rem; bottom: 5rem; text-align: center; font-size: 2.3rem; font-weight: 600; line-height: 1.25; color: #fff; }
-  .pv-web b { color: #ffc400; font-weight: 700; }
   .lv-qr .qrw { width: 22rem; vertical-align: middle; }
   .lv-qrtext { display: inline-block; vertical-align: middle; width: 25rem; margin-left: 2.4rem; text-align: left; white-space: normal; }
   .lv-qrtext b { display: block; font-size: 3.2rem; line-height: 1.15; font-weight: 700; }
@@ -137,7 +134,7 @@
   var P = SCREENS[Q.p] ? Q.p : 'kennedy';
   var VENUE = SCREENS[P][0];
   var NAMES = { kennedy: 'Mercado Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' }; // nombre del local (pedido de Cote, 21 nov)
-  var SHORT = { kennedy: 'Kennedy', frida: 'Frida', tobalaba: 'Tobalaba' };
+  var SHORT = { kennedy: 'Mercado Kennedy', frida: 'Frida', tobalaba: 'Tobalaba' }; // en los juegos también «Mercado Kennedy» (pedido de Cote, 21 nov)
   var FIG = { linea: 'Línea (cualquiera)', horizontal: 'Línea horizontal', vertical: 'Línea vertical', diagonal: 'Diagonal', 'dos-lineas': 'Dos líneas', esquinas: 'Cuatro esquinas', sello: 'Sello (2×2 en una esquina)', cruz: 'Cruz', marco: 'Marco', cuadro: 'Cuadro central', diamante: 'Diamante', piramide: 'Pirámide', 'piramide-inv': 'Pirámide invertida', reloj: 'Reloj de arena', corazon: 'Corazón', estrella: 'Estrella', lleno: 'Cartón lleno' };
   var GAMES = { bingo: ['🎱', 'Bingo'], rosco: ['🎡', 'El Rosco'], festival: ['🎤', 'El Festival de ' + SHORT[VENUE]], objeto: ['🗳️', 'El objeto más extraño'] };
   var GVC = { bingo: '#ff2e93', rosco: '#9b6bff', festival: '#ffc400', objeto: '#19d6b0' };
@@ -307,14 +304,13 @@
     vid.className = 'hide';
     try { vid.pause(); } catch (e) { /* nada */ }
     if (want === 'logo') { view.innerHTML = '<img class="logo-big" src="krb-stage.svg" alt="KRB Stage">'; return; }
-    if (want === 'karaoke') { lightJoin(function (url) { if (cur === 'karaoke') viewKaraoke(VENUE, url, viewTimers, !!QR_ONLY_KAR[VENUE]); }); return; }
+    if (want === 'karaoke') { lightJoin(function (url) { if (cur === 'karaoke') viewKaraoke(VENUE, url, viewTimers); }); return; }
     if (want === 'sala') { viewSala(); return; }
     viewInfo(want === 'info-qr' ? 'qr' : want === 'info-show' ? 'show' : want === 'info-kar' ? 'kar' : '');
   }
   // Pedido de Cote (21 nov): en la pantalla vertical de Kennedy el QR es solo para pedir canciones: se ve solo con los botones
-  // del karaoke de la sala light (Karaoke y QR grande y lista) y abajo dice dónde ver las transmisiones; con los demás, sin QR
+  // del karaoke de la sala light (Karaoke y QR grande y lista); con los demás, sin QR
   var QR_ONLY_KAR = { kennedy: true };
-  var WEB_LINE = 'Ve los registros en vivo de esta y todas las noches en <b>krbstage.cl</b>';
   var lightUrl = '';
   function lightJoin(cb) {
     if (lightUrl) { cb(lightUrl); return; }
@@ -326,13 +322,10 @@
     var cart = null; var kar = null; var idx = 0;
     var karOnly = !!QR_ONLY_KAR[VENUE];
     var withQr = !karOnly || focus === 'kar' || focus === 'qr';
-    var web = karOnly && withQr;
     view.innerHTML = '<div class="abs lv-top" style="top:4rem"><small>Esta noche en</small><b class="fit">' + h(NAMES[VENUE]) + '</b><span id="lvshow" class="fit hide"></span></div>' +
       '<div class="lv-card card"><div class="lv-slide" id="lvslide"></div><div class="lv-dots" id="lvdots"></div></div>' +
       '<div class="lv-qr" id="lvfoot"><div class="qrw" id="lvqr"></div><div class="lv-qrtext"><b>Escanea el código QR con tu celular</b><span>Pide tu canción de karaoke y espera tu turno</span></div></div>';
-    if (web) view.innerHTML += '<div class="pv-web" id="lvweb">' + WEB_LINE + '</div>';
-    if (focus === 'qr' || !withQr) { $('lvfoot').className = 'lv-qr hide'; view.querySelector('.lv-card').style.bottom = web ? '11.5rem' : '6rem'; }
-    else if (web) { $('lvfoot').style.bottom = '11.5rem'; view.querySelector('.lv-card').style.bottom = '38.5rem'; }
+    if (focus === 'qr' || !withQr) { $('lvfoot').className = 'lv-qr hide'; view.querySelector('.lv-card').style.bottom = '6rem'; }
     lightJoin(function (url) { var b = $('lvqr'); if (b && withQr) b.innerHTML = qrImg(url); paint(); });
     function slides() {
       var out = []; var i;
@@ -410,7 +403,7 @@
   }
 
   // Karaoke a pantalla completa: quién canta, los que vienen y el QR para pedir canciones
-  function viewKaraoke(venue, joinUrl, timers, web) {
+  function viewKaraoke(venue, joinUrl, timers) {
     var last = '';
     function paint(st) {
       var list = st.list || []; var a = list[0];
@@ -422,8 +415,7 @@
       view.innerHTML = '<div class="abs" style="top:4rem"><b class="fit" style="display:block;font-size:5.6rem">Karaoke ' + h(NAMES[venue]) + '</b><span class="g-sub">' + (st.total ? st.total + ' en la lista' : 'Lista abierta') + '</span></div>' +
         '<div class="kf-now card">' + (a ? '<small>🎤 Ahora canta</small><b class="fit">' + h(a.name) + '</b><span class="fit">' + h(a.song) + '</span>' + (a.artist ? '<i class="fit">' + h(a.artist) + '</i>' : '')
           : '<small>🎤 Karaoke</small><b>¡Pide tu canción!</b><span>Desde el celular</span>') + '</div>' +
-        '<div class="kf-bottom"' + (web ? ' style="bottom:11.5rem"' : '') + '><div class="kf-next">' + (nx ? '<small>Luego vienen</small>' + nx : '') + '</div><div class="kf-qr"><div class="qrw">' + qrImg(joinUrl) + '</div><div class="qrp">Escanea el código QR con tu celular</div></div></div>' +
-        (web ? '<div class="pv-web">' + WEB_LINE + '</div>' : '');
+        '<div class="kf-bottom"><div class="kf-next">' + (nx ? '<small>Luego vienen</small>' + nx : '') + '</div><div class="kf-qr"><div class="qrw">' + qrImg(joinUrl) + '</div><div class="qrp">Escanea el código QR con tu celular</div></div></div>';
       fitAll();
     }
     function load() { get('/api/karaoke?local=' + venue, function (st) { if (st && (timers === viewTimers ? cur === 'karaoke' : true)) paint(st); }); }

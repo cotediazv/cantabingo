@@ -416,7 +416,7 @@ views.nuevo = async () => {
         <div class="seg" id="venues" role="tablist">
           <button type="button" role="tab" data-venue="frida" class="on">Frida</button>
           <button type="button" role="tab" data-venue="tobalaba">Tobalaba</button>
-          <button type="button" role="tab" data-venue="kennedy">Kennedy</button>
+          <button type="button" role="tab" data-venue="kennedy">Mercado Kennedy</button>
           <button type="button" role="tab" data-venue="new">Otro nombre</button>
         </div>
         <p class="muted small" id="venue-note" style="margin-top:8px"></p>
@@ -424,13 +424,13 @@ views.nuevo = async () => {
       </div>
       <label class="f" id="pname-wrap" hidden>Nombre del bingo<input type="text" name="name" maxlength="60" value="Los Juegos de Frida"></label>
       <label class="f" id="ptheme-wrap" hidden>Colores en pantalla<select id="ptheme">
-        <option value="frida">Magenta (como Frida)</option><option value="tobalaba">Rojo (como Tobalaba)</option><option value="kennedy">Celeste azulado (como Kennedy)</option></select></label>
+        <option value="frida">Magenta (como Frida)</option><option value="tobalaba">Rojo (como Tobalaba)</option><option value="kennedy">Celeste azulado (como Mercado Kennedy)</option></select></label>
       <label class="f">Número de cartones <span class="hint">de 25 a 3.000</span><input type="number" name="count" min="25" max="3000" value="320" required></label>
       <div class="wide"><button class="primary big">Crear los cartones</button></div>
     </form>`;
   const f = $('#f');
   // Pestañas de local: cada una fija el nombre y los colores de la pantalla; «Otro nombre» deja elegirlos
-  const VENUES = { frida: ['Los Juegos de Frida', 'magenta'], tobalaba: ['Los Juegos de Tobalaba', 'rojo'], kennedy: ['Los Juegos de Kennedy', 'celeste azulado'] };
+  const VENUES = { frida: ['Los Juegos de Frida', 'magenta'], tobalaba: ['Los Juegos de Tobalaba', 'rojo'], kennedy: ['Los Juegos de Mercado Kennedy', 'celeste azulado'] }; // el local se llama Mercado Kennedy (pedido de Cote, 21 nov)
   const pickVenue = (v) => {
     $$('#venues button').forEach((b) => { b.classList.toggle('on', b.dataset.venue === v); b.setAttribute('aria-selected', b.dataset.venue === v); });
     const custom = v === 'new';
@@ -959,7 +959,7 @@ views.jugar = async (sid) => {
     if (s === 'bingo' && st.winConfirmed) return 'bingofin'; // bingo con ganador confirmado: el resultado y lo que viene
     return '';
   };
-  const venueShort = () => (({ frida: 'Frida', kennedy: 'Kennedy', tobalaba: 'Tobalaba' })[st.theme] || 'Frida');
+  const venueShort = () => (({ frida: 'Frida', kennedy: 'Mercado Kennedy', tobalaba: 'Tobalaba' })[st.theme] || 'Frida');
   const drawAct = async () => {
     const box = $('#pact');
     if (!box || box.hidden) return;
@@ -1504,7 +1504,7 @@ views.karaokectl = async (local) => {
       <div id="kc-list" style="margin-top:14px"></div>
       <div id="kc-sung-box" hidden><button type="button" id="kc-sung-btn" class="kc-sung-btn">✓ Ya cantaron</button><div id="kc-sung"></div></div>
       <label class="check" style="margin-top:14px"><input type="checkbox" id="kc-phone"> Permitir pedir canciones desde el celular</label>
-      <p class="muted small" style="margin:4px 0 0">Se abre y se cierra solo según el horario del local (Kennedy: jue a sáb 21:45–00:30 · Frida: vie y sáb 18:30–00:00 · Tobalaba: vie 21:00–22:10). Si lo cambias a mano, vale hasta que pasan 30 minutos sin pedidos.</p>
+      <p class="muted small" style="margin:4px 0 0">Se abre y se cierra solo según el horario del local (Mercado Kennedy: jue a sáb 21:45–00:30 · Frida: vie y sáb 18:30–00:00 · Tobalaba: vie 21:00–22:10). Si lo cambias a mano, vale hasta que pasan 30 minutos sin pedidos.</p>
       <p class="muted small" id="kc-note" style="margin-top:10px"></p>
     </div>
     ${light ? `<div class="panel" id="kc-lb"></div>${staff ? '' : '<p class="back"><a href="#/light">← Salas light</a></p>'}` : activitiesNav('karaoke')}`;
@@ -1620,7 +1620,7 @@ views.karaokectl = async (local) => {
 const GAME_INFO = (venue) => ({
   bingo: { icon: '🎱', name: 'Bingo', href: '' },
   rosco: { icon: '🎡', name: 'El Rosco', href: '#/sorteoctl' },
-  festival: { icon: '🎤', name: `El Festival de ${{ frida: 'Frida', kennedy: 'Kennedy', tobalaba: 'Tobalaba' }[venue] || 'Frida'}`, href: '#/votoctl/festival' },
+  festival: { icon: '🎤', name: `El Festival de ${{ frida: 'Frida', kennedy: 'Mercado Kennedy', tobalaba: 'Tobalaba' }[venue] || 'Frida'}`, href: '#/votoctl/festival' },
   objeto: { icon: '🗳️', name: 'El objeto más extraño', href: '#/votoctl/objeto' },
 });
 // Menú de juegos (pedido de Cote, 21 nov): tres botones grandes, «Manual», «Por sorteo» y «Por votación», y nada más;

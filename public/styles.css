@@ -2593,18 +2593,10 @@ body.kids[data-kz-level="8"] { background: linear-gradient(160deg, #fdffb6 0%, #
 #phone-howto .ph-bar { animation-duration: 2s; }
 
 /* Pantalla vertical de Kennedy (pedido de Cote, 21 nov): el QR solo con los botones del karaoke de la sala light; con los
-   demás no hay QR y el recuadro ocupa ese espacio. Con el QR, abajo: «Ve los registros en vivo… en krbstage.cl» */
+   demás no hay QR y el recuadro ocupa ese espacio */
 #lv.lv-noqr .lv-qr { display: none; }
 #lv.lv-noqr { grid-template-rows: auto minmax(0, 1fr); }
-#lv.lv-webon { grid-template-rows: auto minmax(0, 1fr) auto auto; }
-#lv.lv-webon.lv-qrmode { grid-template-rows: auto minmax(0, 1fr) auto; }
-.lv-web { margin: 0; padding: 1.2vh 2.4vh; border-radius: 99px; text-align: center; font-size: 2.6vh; font-weight: 800; line-height: 1.2; background: var(--lv-shade); }
-.lv-web b { color: var(--lv-gold); font-weight: 900; }
-@media (orientation: landscape) { #lv.lv-noqr { grid-template-columns: minmax(0, 1fr); } .lv-web { grid-column: 1 / -1; } }
-#kf.kf-webon { grid-template-rows: 13vh minmax(0, 1fr) auto; }
-.kf-web { grid-column: 1 / -1; margin: 0; padding: 1.2vh 2.4vh; border-radius: 99px; text-align: center; font-size: 2.8vh; font-weight: 800; line-height: 1.2; background: rgba(14, 12, 30, .8); border: var(--gc-line) solid var(--gc-yellow); }
-.kf-web b { color: var(--gc-yellow); font-weight: 900; }
-@media (orientation: portrait) and (min-width: 300px) { #kf.kf-webon { grid-template-rows: auto minmax(0, 1fr) auto auto; } .kf-web { font-size: 2.4vh; } }
+@media (orientation: landscape) { #lv.lv-noqr { grid-template-columns: minmax(0, 1fr); } }
 
 /* Sala light: switch «Video cartelera» (pedido de Cote, 21 nov) debajo de los botones del GC */
 .lp-switch { display: flex; align-items: center; gap: 14px; margin-top: 14px; padding: 12px 14px; border-radius: 14px; border: 2px solid var(--line, #3a3360); background: rgba(255, 255, 255, .04); cursor: pointer; user-select: none; }
@@ -2621,3 +2613,8 @@ body.kids[data-kz-level="8"] { background: linear-gradient(160deg, #fdffb6 0%, #
 @media (orientation: portrait) { #lv { grid-template-columns: minmax(0, 1fr); } }
 .lv-top { min-width: 0; }
 .lv-top b { max-width: 100%; overflow: hidden; }
+
+/* Celular de la sala light (pedido de Cote, 21 nov): siempre al final, dónde ver las transmisiones */
+.lm-web { margin: 18px 4px 8px; text-align: center; font-size: 1.05rem; font-weight: 700; line-height: 1.35; opacity: .92; }
+.lm-web a { color: #ffc400; text-decoration: none; }
+.lm-web a b { font-weight: 900; }

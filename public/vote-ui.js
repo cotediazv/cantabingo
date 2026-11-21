@@ -21,7 +21,7 @@
   const thing = (p) => (p.thing ? `<i class="v-thing">${esc(p.thing)}</i>` : '');
   const withThing = (p) => (p.thing ? `${p.name} · ${p.thing}` : p.name);
   const isK = (st) => st.mode === 'karaoke';
-  const fest = (st) => `El Festival de ${{ frida: 'Frida', kennedy: 'Kennedy', tobalaba: 'Tobalaba' }[st.venue] || 'Frida'}`;
+  const fest = (st) => `El Festival de ${{ frida: 'Frida', kennedy: 'Mercado Kennedy', tobalaba: 'Tobalaba' }[st.venue] || 'Frida'}`;
   // Para leer al partir cada juego (pedido de Cote)
   const howtoLines = (st) => (isK(st) ? [
     `${st.max} participantes cantan. Si se inscriben más, sorteo.`,

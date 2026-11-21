@@ -51,7 +51,7 @@
 
   // Presentación antes de votar (public/gameintro.js): lámina que toca y su contenido
   const introNow = (g, off) => (window.GAME_INTRO && g.intro ? window.GAME_INTRO.stepOf(g.intro, Date.now() + off) : 0);
-  const introSlide = (g, i) => (window.GAME_INTRO ? window.GAME_INTRO.slides(({ frida: 'Frida', kennedy: 'Kennedy', tobalaba: 'Tobalaba' })[g.venue] || 'Frida')[i] : null);
+  const introSlide = (g, i) => (window.GAME_INTRO ? window.GAME_INTRO.slides(({ frida: 'Frida', kennedy: 'Mercado Kennedy', tobalaba: 'Tobalaba' })[g.venue] || 'Frida')[i] : null);
   const introDots = (i) => `<div class="gv-dots">${[0, 1, 2, 3, 4, 5].map((k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>`;
   const introHtml = (g, i, qrBox) => {
     const sl = introSlide(g, i);

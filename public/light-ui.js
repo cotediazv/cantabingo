@@ -215,7 +215,7 @@
           <label class="f">Nombre<input type="text" name="name" maxlength="20" required autocomplete="given-name" autocapitalize="words"></label>
           <label class="f">Apellido<input type="text" name="surname" maxlength="25" required autocomplete="family-name" autocapitalize="words"></label>
           ${info.places.length ? `<label class="f">¿Dónde estás?<select name="place" required><option value="">Elige tu lugar</option>${info.places.map((x) => `<option>${esc(x)}</option>`).join('')}</select></label>` : ''}
-          <button class="primary big">Entrar</button></form></div>`;
+          <button class="primary big">Entrar</button></form></div><p class="lm-web">Ve los registros en vivo de esta y todas las noches en <a href="https://krbstage.cl" target="_blank" rel="noopener"><b>krbstage.cl</b></a></p>`;
       $('#lj').onsubmit = async (e) => {
         e.preventDefault();
         try { me = await api('POST', `/api/light/${id}/join`, Object.fromEntries(new FormData(e.target))); store.set(key, JSON.stringify({ token: me.token })); main(); } catch (err) { fail(err); }
@@ -229,7 +229,8 @@
       app.innerHTML = `<div class="panel lm"><h1 style="margin:0">${esc(info.title)}</h1><p class="muted small" style="margin:4px 0 0">Hola, <b>${esc(me.name)}</b></p>
         <div class="lm-tabs"><button data-tab="karaoke">🎤 Karaoke</button><button data-tab="cartelera">📅 Cartelera</button><button data-tab="redes">📸 Redes</button></div>
         <div id="lm-body"></div></div>
-        ${window.krbKidsButton ? window.krbKidsButton() : '<a class="btn kids-entry" href="#/kids">🧸 <b>KRB Kids</b><span>Zona de niños</span></a>'}`;
+        ${window.krbKidsButton ? window.krbKidsButton() : '<a class="btn kids-entry" href="#/kids">🧸 <b>KRB Kids</b><span>Zona de niños</span></a>'}
+        <p class="lm-web">Ve los registros en vivo de esta y todas las noches en <a href="https://krbstage.cl" target="_blank" rel="noopener"><b>krbstage.cl</b></a></p>`; // siempre al final (pedido de Cote, 21 nov)
       app.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = () => { tab = b.dataset.tab; shown = ''; draw(); }; });
       draw();
       clearInterval(timer);
@@ -322,8 +323,8 @@
     return m ? `<span class="lv-sh">${esc(cap(m[1]))}</span><span class="lv-by"><small>por</small> ${esc(cap(m[2]))}</span>` : `<span class="lv-sh">${esc(cap(t))}</span>`;
   };
   // Pedido de Cote (21 nov): en la pantalla vertical de Kennedy el QR es solo para pedir canciones. Se ve solo con los botones
-  // del karaoke de la sala light (Karaoke: #/light-v/<local>/karaoke, y QR grande y lista: /qr), y abajo dice dónde ver las
-  // transmisiones; con los demás botones (Información que va cambiando, Show, Cartelera, Nada) no hay QR.
+  // del karaoke de la sala light (Karaoke: #/light-v/<local>/karaoke, y QR grande y lista: /qr); con los demás botones
+  // (Información que va cambiando, Show, Cartelera, Nada) no hay QR. (La frase de krbstage.cl va en el celular, no aquí.)
   const QR_ONLY_KAR = { kennedy: true };
   views['light-v'] = async (local) => {
     const v = NAMES[local] ? local : 'kennedy';
@@ -332,11 +333,10 @@
     const focus = (location.hash.split('/')[3] || '').replace(/[^a-z]/g, '');
     const karOnly = !!QR_ONLY_KAR[v];
     const withQr = !karOnly || focus === 'karaoke' || focus === 'qr';
-    const web = karOnly && withQr;
     document.body.classList.add('full');
-    app.innerHTML = `<div id="lv" class="th-${v}${focus === 'qr' ? ' lv-qrmode' : ''}${withQr ? '' : ' lv-noqr'}${web ? ' lv-webon' : ''}"><header class="lv-top"><small>Esta noche en</small><b>${esc(NAMES[v])}</b><span class="lv-show" hidden></span></header>
+    app.innerHTML = `<div id="lv" class="th-${v}${focus === 'qr' ? ' lv-qrmode' : ''}${withQr ? '' : ' lv-noqr'}"><header class="lv-top"><small>Esta noche en</small><b>${esc(NAMES[v])}</b><span class="lv-show" hidden></span></header>
       <section class="lv-card"><div class="lv-slide"></div><div class="lv-dots"></div></section>
-      <footer class="lv-qr"><div class="lv-qrbox"></div><div class="lv-qrtext"><b>Escanea el código QR con tu celular</b><span>Pide tu canción de karaoke y espera tu turno</span></div></footer>${web ? `<p class="lv-web">Ve los registros en vivo de esta y todas las noches en <b>krbstage.cl</b></p>` : ''}</div>`;
+      <footer class="lv-qr"><div class="lv-qrbox"></div><div class="lv-qrtext"><b>Escanea el código QR con tu celular</b><span>Pide tu canción de karaoke y espera tu turno</span></div></footer></div>`;
     let alive = true;
     let cart = null;
     let kar = null;
