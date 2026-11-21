@@ -167,6 +167,7 @@ function publicState(s, full = false) {
     stage: db.stage || 'bingo', roscoId: db.stage === 'rueda' ? (Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).id || null : null,
     celebrateAt: s.celebrateAt || 0,
     voteRev: (db.vote || {}).rev || 0, // los celulares vuelven a leer la votación cuando cambia
+    gameSeq: (db.gameDraw || {}).seq || 0, // sube con cada juego que empieza (sorteado o elegido): los celulares muestran sus instrucciones
     winConfirmed: roundOver(s), winConfirmedAt: s.confirmedAt || 0, now: Date.now(),
     patterns: s.patterns, drawn: s.drawn, results, finalists: s.finalists || null,
     auto: s.auto, cardsPerPlayer: s.cardsPerPlayer, totalCards: p.cards.length,
@@ -720,7 +721,20 @@ db.gameDraw.total ||= 3;
 // el animador elige el siguiente juego tocándolo. La elección queda guardada para las noches siguientes.
 app.post('/api/gamedraw/mode', requireAdmin, (req, res) => {
   db.gameDraw.free = !!(req.body || {}).free;
-  if (db.gameDraw.free) db.gameDraw.ready = null; // un sorteo a medio empezar se cancela
+  if (db.gameDraw.free) {
+    db.gameDraw.ready = null; // un sorteo a medio empezar se cancela
+    if (db.stage === 'juego' && !roscoLock('bingo')) setStage('bingo'); // y las pantallas no quedan con el sorteo vacío
+  }
+  save();
+  res.json(db.gameDraw);
+});
+// «Elegir libremente»: el juego elegido empieza de cero (como uno sorteado) pero sin número de la noche
+const notFree = (res) => { if (db.gameDraw.free) { fail(res, 409, 'Está elegida la pestaña «Elegir libremente»: no hay sorteo'); return false; } return true; };
+app.post('/api/gamedraw/free', requireAdmin, (req, res) => {
+  const game = String((req.body || {}).game);
+  if (!DRAW_GAMES.includes(game)) return fail(res, 400, 'Juego no válido');
+  if (game === 'festival' || game === 'objeto') vote.start(game === 'festival' ? 'karaoke' : 'objeto');
+  db.gameDraw.seq = (db.gameDraw.seq || 0) + 1;
   save();
   res.json(db.gameDraw);
 });
@@ -742,10 +756,12 @@ app.post('/api/gamedraw/undo', requireAdmin, (_req, res) => {
   const g = db.gameDraw;
   if (!g.undo || !g.undo.length) return fail(res, 400, 'No hay nada que deshacer');
   Object.assign(g, JSON.parse(g.undo.pop()));
+  if (g.free) g.ready = null; // con «Elegir libremente» no vuelve un sorteo a medio empezar
   save();
   res.json(db.gameDraw);
 });
 app.post('/api/gamedraw/ready', requireAdmin, (_req, res) => {
+  if (!notFree(res)) return;
   const g = db.gameDraw;
   if (g.list.length >= g.total) return fail(res, 409, `Ya se sortearon los ${g.total} juegos de la noche`);
   drawSnap(g);
@@ -755,12 +771,13 @@ app.post('/api/gamedraw/ready', requireAdmin, (_req, res) => {
   res.json(db.gameDraw);
 });
 app.post('/api/gamedraw/pick', requireAdmin, (req, res) => {
+  if (!notFree(res)) return;
   const g = db.gameDraw;
   const game = String((req.body || {}).game);
   if (!DRAW_GAMES.includes(game)) return fail(res, 400, 'Juego no válido');
   if (g.list.length >= g.total) return fail(res, 409, `Ya se sortearon los ${g.total} juegos de la noche`);
   drawSnap(g);
-  g.played = [game]; g.list.push(game); g.ready = null;
+  g.played = [game]; g.list.push(game); g.ready = null; g.seq = (g.seq || 0) + 1;
   g.last = { game, pool: [game], at: Date.now(), direct: true };
   if (game === 'festival' || game === 'objeto') vote.start(game === 'festival' ? 'karaoke' : 'objeto');
   save();
@@ -768,6 +785,7 @@ app.post('/api/gamedraw/pick', requireAdmin, (req, res) => {
   res.json(db.gameDraw);
 });
 app.post('/api/gamedraw', requireAdmin, (_req, res) => {
+  if (!notFree(res)) return;
   const g = db.gameDraw;
   if (g.list.length >= g.total) return fail(res, 409, `Ya se sortearon los ${g.total} juegos de la noche`);
   const pool = DRAW_GAMES.filter((x) => !(g.last && g.last.game === x)); // el que salió recién queda fuera de este sorteo
@@ -775,7 +793,7 @@ app.post('/api/gamedraw', requireAdmin, (_req, res) => {
   const game = pool[crypto.randomInt(pool.length)];
   g.played = [game]; // bloqueado solo para el sorteo siguiente
   g.list.push(game); // queda en su número (1.º, 2.º…) en la pantalla
-  g.ready = null;
+  g.ready = null; g.seq = (g.seq || 0) + 1;
   g.last = { game, pool, at: Date.now() };
   if (game === 'festival' || game === 'objeto') vote.start(game === 'festival' ? 'karaoke' : 'objeto'); // la votación queda lista con su título
   save();

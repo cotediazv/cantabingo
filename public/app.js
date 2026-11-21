@@ -865,6 +865,7 @@ views.jugar = async (sid) => {
   // Instrucciones en el celular (pedido de Cote, 20 nov): al empezar cada juego (y al entrar a la sala) aparecen
   // 5 segundos las instrucciones del juego en curso: Bingo (cada ronda), El Rosco, El Festival o El objeto más extraño
   let howtoKey = null;
+  let howtoSeq = null; // cada juego que empieza (sorteado o elegido libremente) vuelve a mostrar las instrucciones
   const phoneHowto = (title, lines) => {
     let el = document.getElementById('phone-howto');
     if (el) el.remove();
@@ -888,6 +889,7 @@ views.jugar = async (sid) => {
     else phoneHowto(bingoName(st.name), BINGO_HOWTO);
   };
   const syncStage = () => {
+    if (st.gameSeq !== howtoSeq) { if (howtoSeq !== null) howtoKey = null; howtoSeq = st.gameSeq; }
     if (!(howtoKey && howtoKey.startsWith('voto') && st.stage === 'voto')) syncHowto();
     const kar = syncKar() | syncVote() | syncInsta();
     const on = (st.stage === 'rueda' && !!st.roscoId) || kar;
@@ -1456,14 +1458,14 @@ async function paintGameNav() {
   if (!g) return;
   const info = GAME_INFO(g.venue);
   document.querySelectorAll('.g-fest').forEach((b) => { b.textContent = info.festival.name; });
-  document.querySelectorAll('[data-game]').forEach((el) => { const done = g.played.includes(el.dataset.game); el.classList.toggle('g-played', done); el.title = done ? 'Salió en el último sorteo: queda fuera del próximo' : ''; });
+  document.querySelectorAll('[data-game]').forEach((el) => { const done = !g.free && g.played.includes(el.dataset.game); el.classList.toggle('g-played', done); el.title = done ? 'Salió en el último sorteo: queda fuera del próximo' : ''; });
   // Casilleros de la noche y botón: «Sortear el 2.º juego (de 3)»; al completar, se desactiva
   document.querySelectorAll('.g-total').forEach((i) => { if (document.activeElement !== i) i.value = g.total; });
   const slots = [`<span class="done">Inicial · ${info.bingo.icon} Bingo</span>`];
   for (let i = 0; i < g.total; i++) slots.push(g.list[i] ? `<span class="done">${i + 1}.º · ${info[g.list[i]].icon} ${esc(info[g.list[i]].name)}</span>` : `<span>${i + 1}.º · 🔒</span>`);
   document.querySelectorAll('.g-slots').forEach((el) => { el.innerHTML = slots.join(''); });
   const full = g.list.length >= g.total;
-  const ready = !full && !!g.ready && (!g.last || g.ready.at > g.last.at);
+  const ready = !g.free && !full && !!g.ready && (!g.last || g.ready.at > g.last.at);
   // Pedido de Cote (20 nov): cuántos juegos y sus números se ven solo antes de empezar el sorteo; después se ocultan
   document.querySelectorAll('.g-plan').forEach((el) => { el.hidden = g.list.length > 0 || ready; });
   window.gameDrawReady = ready;
@@ -1500,9 +1502,14 @@ document.addEventListener('click', async (e) => {
 // Pestañas del menú de juegos: «Sortear juegos» o «Elegir libremente» (pedido de Cote, 21 nov)
 document.addEventListener('click', async (e) => {
   const b = e.target.closest('[data-draw-mode]');
-  if (!b) return;
+  if (!b || b.classList.contains('on')) return; // la pestaña que ya está elegida no hace nada
+  const free = b.dataset.drawMode === 'free';
   clearTimeout(window.gameDrawGo);
-  try { await api('POST', '/api/gamedraw/mode', { free: b.dataset.drawMode === 'free' }); } catch (err) { fail(err); }
+  // Se marca al instante (sin esperar al servidor), para que no quede un sorteo a medio empezar a un toque
+  if (free) window.gameDrawReady = false;
+  document.querySelectorAll('.games-nav').forEach((n) => n.classList.toggle('g-free', free));
+  document.querySelectorAll('[data-draw-mode]').forEach((x) => x.classList.toggle('on', (x.dataset.drawMode === 'free') === free));
+  try { await api('POST', '/api/gamedraw/mode', { free }); } catch (err) { fail(err); }
   paintGameNav();
 });
 // Deshacer (pedido de Cote): vuelve el sorteo de juegos al paso anterior (antes de «Iniciar sorteo», de la tómbola
@@ -1519,7 +1526,16 @@ document.addEventListener('click', async (e) => {
 // el siguiente de la noche, sin tómbola; el panel pasa a ese juego
 document.addEventListener('click', async (e) => {
   const el = e.target.closest('.games-nav [data-game]');
-  if (!el || !window.gameDrawReady) return;
+  if (!el) return;
+  // «Elegir libremente»: el juego empieza de cero, sin número de la noche, y el panel pasa a él
+  const nav = el.closest('.games-nav');
+  if (nav && nav.classList.contains('g-free')) {
+    e.preventDefault(); e.stopImmediatePropagation();
+    try { await api('POST', '/api/gamedraw/free', { game: el.dataset.game }); } catch (err) { fail(err); return; }
+    if (el.dataset.game === 'bingo') backToBingo(); else location.hash = el.getAttribute('href');
+    return;
+  }
+  if (!window.gameDrawReady) return;
   e.preventDefault(); e.stopImmediatePropagation();
   try {
     const g = await api('POST', '/api/gamedraw/pick', { game: el.dataset.game });

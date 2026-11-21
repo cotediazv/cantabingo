@@ -61,8 +61,8 @@
   .plan .count { float: right; width: 38%; text-align: center; color: #ffc400; font-weight: bold; }
   .plan .count b { display: block; font-size: 34px; color: #fff; margin: 4px 0; }
   .plan .count button { padding: 6px 14px; }
-  .tabs2 { overflow: hidden; border: 2px solid #5a54a0; border-radius: 14px; margin: 4px 0 10px; }
-  .tabs2 button { float: left; width: 50%; margin: 0; border: 0; border-radius: 0; padding: 14px 4px; background: #1d1838; color: #a9a3cf; }
+  .tabs2 { display: table; width: 100%; table-layout: fixed; border: 2px solid #5a54a0; border-radius: 14px; margin: 4px 0 10px; overflow: hidden; }
+  .tabs2 button { display: table-cell; width: 50%; margin: 0; border: 0; border-radius: 0; padding: 14px 4px; background: #1d1838; color: #a9a3cf; vertical-align: middle; }
   .tabs2 button.on { background: #ffc400; color: #1a1a1a; }
   .sec { text-align: center; color: #a9a3cf; font-size: 13px; font-weight: bold; letter-spacing: 1px; margin: 14px 0 4px; }
   .game { float: left; width: 48%; margin: 4px 1%; border-radius: 16px; padding: 14px 6px; min-height: 76px; }
@@ -475,12 +475,18 @@ A.manual = function () { manual = !manual; refresh(); };
 A.pickNum = function (el) { var s = sala(); if (s) act('POST', '/api/sessions/' + s.id + '/host/draw', { value: Number(el.getAttribute('data-v')) }); };
 A.tieBingo = function () { var s = sala(); if (s) act('POST', '/api/raffle/tiebreak', { sid: s.id }); };
 A.ronda = function () { var s = sala(); if (s) api('POST', '/api/sessions/' + s.id + '/host/restart', { patterns: [$('fig').value] }, function (err) { if (err) toast(err); else go('#/bingo'); }); };
-A.drawMode = function (el) { clearTimeout(goTimer); act('POST', '/api/gamedraw/mode', { free: !!el.getAttribute('data-free') }); };
+A.drawMode = function (el) {
+  var free = !!el.getAttribute('data-free');
+  if (S.draw && !!S.draw.free === free) return; // la pestaña que ya está elegida no hace nada
+  clearTimeout(goTimer);
+  if (S.draw) S.draw.free = free; // se marca al instante
+  act('POST', '/api/gamedraw/mode', { free: free });
+};
 A.unfold = function () { S.foldOpen = true; refresh(); };
 A.total = function (el) { act('POST', '/api/gamedraw/total', { total: Number(el.getAttribute('data-n')) }); };
 A.undo = function () { clearTimeout(goTimer); act('POST', '/api/gamedraw/undo', null, '↩️ Sorteo de juegos: se volvió al paso anterior'); };
 A.draw = function () {
-  var g = S.draw; if (!g) return;
+  var g = S.draw; if (!g || g.free) return;
   var ready = g.ready && (!g.last || g.ready.at > g.last.at);
   if (!ready) { act('POST', '/api/gamedraw/ready', null, 'En pantalla: los juegos que pueden salir. Ahora gira la tómbola o elige un juego directo.'); return; }
   api('POST', '/api/gamedraw', null, function (err, r) {
@@ -492,6 +498,8 @@ A.draw = function () {
 };
 A.game = function (el) {
   var k = el.getAttribute('data-g'); var g = S.draw;
+  // «Elegir libremente»: el juego empieza de cero, sin número de la noche
+  if (g && g.free) { api('POST', '/api/gamedraw/free', { game: k }, function (err) { if (err) { toast(err); return; } toGame(k); }); return; }
   var ready = g && !g.free && g.list.length < g.total && g.ready && (!g.last || g.ready.at > g.last.at);
   if (ready) { api('POST', '/api/gamedraw/pick', { game: k }, function (err) { if (err) { toast(err); return; } toast('Siguiente juego: ' + gameName(k)); toGame(k); }); return; }
   toGame(k);
