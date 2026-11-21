@@ -66,6 +66,11 @@
   .tabs2 button.on { background: #ffc400; color: #1a1a1a; }
   .tabs2.t3 button { width: 33.333%; font-size: 15px; }
   .modes { overflow: hidden; margin: 6px 0 10px; }
+  .ann { text-align: center; border: 3px solid #ffc400; background: #2a2410; }
+  .ann small { display: block; color: #ffc400; font-weight: bold; letter-spacing: 1px; }
+  .ann .ann-t { display: block; font-size: 20px; font-weight: bold; margin-top: 6px; }
+  .ann .ann-n { display: block; font-size: 34px; font-weight: bold; line-height: 1.1; margin: 8px 0; word-wrap: break-word; }
+  .ann .ann-l { display: block; font-size: 18px; color: #d8d3ff; margin-top: 4px; }
   .modes button.mode { float: left; width: 32%; margin: 0 2% 0 0; height: 110px; border-radius: 18px; font-size: 18px; font-weight: bold; border: 2px solid #5a54a0; }
   .modes button.mode:last-child { margin-right: 0; }
   .modes button.mode.on { background: #ffc400; color: #1a1a1a; border-color: #ffc400; }
@@ -162,6 +167,14 @@ var GAMES = [['bingo', '🎱', 'Bingo'], ['rosco', '🎡', 'El Rosco'], ['festiv
 function festName() { var s = sala(); return 'El Festival de ' + ((s && V[s.theme]) || 'Frida'); }
 function gameName(k) { return k === 'festival' ? festName() : k === 'rosco' ? 'El Rosco' : k === 'objeto' ? 'El objeto más extraño' : 'Bingo'; }
 function gameIcon(k) { for (var i = 0; i < GAMES.length; i++) if (GAMES[i][0] === k) return GAMES[i][1]; return ''; }
+// Pedido de Cote (21 nov): al dar a conocer un ganador, un premio o una información, el animador lo ve grande en su panel
+function ann(title, names, lines) {
+  var o = '<div class="panel ann"><small>📣 PARA ANUNCIAR</small><span class="ann-t">' + h(title) + '</span>';
+  for (var i = 0; i < names.length; i++) o += '<b class="ann-n">' + h(names[i]) + '</b>';
+  for (var j = 0; j < (lines || []).length; j++) if (lines[j]) o += '<span class="ann-l">' + h(lines[j]) + '</span>';
+  return o + '</div>';
+}
+function noteOf(x, d) { return Number(x).toFixed(d === 2 ? 2 : 1).replace('.', ','); }
 // Cómo se elige el juego (pedido de Cote, 21 nov): «Manual», «Por sorteo» o «Por votación»
 function howOf(g) { return g ? (g.how || (g.free ? 'manual' : 'sorteo')) : 'sorteo'; }
 // Votación del juego: 30 s, gana el que pasa la mitad de los votos; si no, segunda vuelta entre los 2 primeros
@@ -289,7 +302,11 @@ views.bingo = function () {
         if (e2 || !st || location.hash !== '#/bingo') return;
         if (!st.started && !st.winConfirmed) { go('#/figura'); return; } // el bingo empieza eligiendo la figura
         var o = topBar(['#/', 'Inicio']);
-        if (st.winConfirmed) { o += nav('bingo', false) + foot(); render(o); return; } // con el ganador aceptado, solo lo que viene
+        if (st.winConfirmed) { // con el ganador aceptado: el ganador para anunciarlo y lo que viene
+          var wn = []; var wc = [];
+          for (var wi = 0; wi < (st.results || []).length; wi++) { var rr = st.results[wi]; if (rr.validated && !rr.dismissed && rr.confirmed) { wn.push(rr.name || 'Participante'); wc.push('#' + (st.startNumber + rr.cardNo - 1)); } }
+          o += ann(wn.length > 1 ? '🏆 ¡Bingo! Ganaron' : '🏆 ¡Bingo! Ganó', wn, ['Cartón ' + wc.join(' · '), 'Figura: ' + figName((st.patterns || [])[0])]) + nav('bingo', false) + foot(); render(o); return;
+        }
         var mins = Math.max(0, Math.round((st.expires - new Date().getTime() - offset) / 60000));
         o += '<div class="panel"><h1>' + h(bingoName(st.name)) + '</h1><div class="muted">Ronda ' + st.round + ' · ' + st.players + ' participantes · ' + (st.players * st.cardsPerPlayer) + ' de ' + st.totalCards + ' cartones repartidos · quedan ' + Math.floor(mins / 60) + ' h ' + (mins % 60) + ' min</div><p style="margin:8px 0 0">Figura: <b>' + h(figName(st.patterns[0])) + '</b></p></div>';
         if (!st.drawn.length) o += howto('Bingo', BINGO_HOWTO);
@@ -385,7 +402,10 @@ views.sorteoctl = function () {
         if (!r || !p) return;
         var picked = r.picked || []; var full = picked.length >= 3;
         var free = 0; for (var i = 0; i < p.connected.length; i++) if (picked.indexOf(p.connected[i]) < 0) free++;
-        var o = topBar(['#/', 'Inicio']) + '<h1>Sorteo de concursantes</h1><div class="panel">' +
+        var rollingR = r.mode !== 'tie' && r.roll && new Date().getTime() + offset < r.roll.at + (r.rollMs || 6000);
+        var o = topBar(['#/', 'Inicio']) + '<h1>Sorteo de concursantes</h1>' +
+          (rollingR ? '<div class="panel ann"><small>📣 PARA ANUNCIAR</small><span class="ann-t">🎲 Sorteando en pantalla…</span></div>' : picked.length ? ann('🎲 Salió sorteado · ' + picked.length + '.º de 3 para El Rosco', [picked[picked.length - 1]], ['¡Que se acerque a nuestro escenario!']) : '') +
+          '<div class="panel">' +
           btn(full ? '✔ Cargar El Rosco con los 3' : '🎲 Sortear concursante (' + (picked.length + 1) + '.º de 3)', full ? 'loadRosco' : 'raffleDraw', '', 'big primary', !full && !free) +
           '<h2>Concursantes elegidos</h2>';
         for (var k = 0; k < picked.length; k++) o += '<div class="item"><b>' + (k + 1) + '. ' + h(picked[k]) + '</b><span class="r">' + btn('✏️ Editar', 'rename', d('n', picked[k])) + btn('Quitar', 'unpick', d('n', picked[k])) + '</span></div>';
@@ -404,40 +424,46 @@ views.sorteoctl = function () {
 function stepOf(w) { var c = w.players[w.turn]; return !c.active || w.winner || w.tie ? 0 : w.runningSince ? 3 : w.onScreen ? 2 : 1; }
 function roscoLeft(w) { var c = w.players[w.turn]; return w.runningSince ? c.remainingMs - (new Date().getTime() + offset - w.runningSince) : c.remainingMs; }
 var W = null;
+// Panel de El Rosco: se dibuja con el estado del rosco (al leerlo cada 3 s o, al instante, con la respuesta de cada acción)
+function renderRosco(w) {
+  if (location.hash !== '#/rosco' || !w) return;
+  W = w;
+  var c = w.players[w.turn]; var step = stepOf(w);
+  var started = !!w.runningSince; for (var i = 0; i < w.players.length; i++) for (var j = 0; j < w.players[i].status.length; j++) if (w.players[i].status[j] !== 'pending') started = true;
+  var o = topBar(['#/', 'Inicio']);
+  if (!started && !w.winAccepted) o += howto('El Rosco', ROSCO_HOWTO);
+  o += '<div class="panel">';
+  if (!w.winAccepted) {
+    o += '<h1>' + h(w.name) + '</h1><div class="muted">' + (w.winner ? '🏆 Gana ' + h(w.winner.name) + ' (' + w.winner.hits + ' ✔ · ' + w.winner.misses + ' ✘)' : w.tie ? 'Empate' : 'Turno de ' + h(c.name)) + '</div>';
+    o += '<div class="now"><small>Letra · reloj</small><b style="font-size:30px">' + h(c.active ? w.letters[c.current] : '—') + '</b> · <b id="rclock">' + clock(roscoLeft(w)) + '</b> <span class="muted">' + c.hits + ' ✔ · ' + c.misses + ' ✘</span></div>';
+    var q = ((w.questions || [])[w.turn] || [])[c.current] || {};
+    o += '<div class="q">' + (!c.active ? (w.tie ? (w.tie.rolling ? '<b>Sorteando el desempate…</b> Mira la pantalla.' : '<b>Hay un empate</b> entre ' + h(w.tie.names.join(' y ')) + '. Primero desempata por sorteo.') : 'Juego terminado.') :
+      !w.runningSince ? '<span class="muted">Pulsa «Iniciar pregunta» para ver la pregunta de esta letra.</span>' : h(q.q || '') + (q.a ? '<div class="a">Respuesta: ' + h(q.a) + '</div>' : '')) + '</div>';
+    if (w.tie && !w.tie.rolling) o += btn('🎲 Desempatar por sorteo', 'tieRosco', '', 'big warn');
+    if (w.winner && !w.winAccepted) o += btn('✔ Aceptar ganador', 'wheel', d('x', 'acceptwin'), 'big ok');
+    if (w.rankDue && !w.runningSince) o += '<div class="ann" style="padding:12px;border-radius:14px;margin:8px 0"><b style="font-size:20px">📊 Terminaron ' + (w.rankEvery || 2) + ' rondas</b><br>Antes de la próxima pregunta, despliega el ranking de la Trivia en pantalla.</div>' + btn('📊 Desplegar ranking de la Trivia (obligatorio)', 'roscoRank', '', 'big warn');
+    o += btn(w.onScreen ? '📺 Rosco en pantalla ✓' : '📺 Poner rosco en pantalla', 'roscoShow', '', 'big', step !== 1 || w.rankDue);
+    o += btn(w.runningSince ? '⏱ Pregunta en curso' : '▶ Iniciar pregunta', 'wheel', d('x', 'start'), 'big primary', step !== 2 || w.rankDue);
+    o += '<div class="row">' + btn('✔ Correcta', 'wheel', d('x', 'hit'), 'third ok', step !== 3) + btn('✘ Incorrecta', 'wheel', d('x', 'miss'), 'third bad', step !== 3) + btn('↷ Pasa', 'wheel', d('x', 'pass'), 'third warn', step !== 3) + '</div>';
+    o += '<div class="row">' + btn('↶ Deshacer', 'wheel', d('x', 'undo'), '', !w.canUndo) + (w.players.length > 1 ? btn('Cambiar turno', 'wheel', d('x', 'turn')) : '') + btn('Reiniciar', 'roscoReset', '', 'bad') + (w.fromBank ? btn('↻ Preguntas nuevas', 'newQ') : '') + '</div>';
+  } else {
+    if (w.winner) o += ann('🏆 Premio mayor · ' + (w.winner.full ? '¡Completó el rosco!' : 'Ganó El Rosco'), [w.winner.name], [w.winner.hits + ' aciertos · ' + w.winner.misses + ' fallos' + (w.winner.byDraw ? ' · salió en el desempate' : '')]);
+    if (!w.crowdWinner) o += btn('🏅 Mostrar ganador de la Trivia del Rosco', 'wheel', d('x', 'crowdwin'), 'big primary');
+    else o += w.crowdWinner.none ? ann('🏅 Trivia del Rosco', ['Nadie sumó puntos'], ['Jugaron ' + w.crowdWinner.players + ' personas']) : ann('🏅 Premio especial · Ganó la Trivia del Rosco', [w.crowdWinner.name], [w.crowdWinner.score + ' puntos · ' + w.crowdWinner.hits + ' aciertos']);
+  }
+  o += btn(w.rank ? '🏅 Recoger ranking (está en pantalla)' : '🏅 Desplegar ranking de la Trivia (top 10)', 'roscoRank', '', 'big' + (w.rank ? ' on' : ''));
+  if (w.rank) { o += '<ol>'; for (var r = 0; r < w.rank.length; r++) o += '<li><b>' + h(w.rank[r].name) + '</b> · ' + w.rank[r].score + ' pts</li>'; o += '</ol>'; }
+  // Pedido de Cote (21 nov): al final, sí o sí se muestra el ganador de la Trivia antes de seguir (sin menú hasta eso)
+  o += '</div>' + (w.winAccepted && !w.crowdWinner ? '' : nav('rosco', started && !w.winAccepted)) + foot();
+  render(o);
+}
 views.rosco = function () {
   var load = function () {
+    if (S.roscoBusy) return; // mientras se manda una acción, no se pisa lo que ya se dibujó
     api('GET', '/api/gamedraw', null, function (e0, g) { S.draw = g; });
     api('GET', '/api/wheels', null, function (e1, list) {
       if (!list || !list.length) { go('#/sorteoctl'); return; }
-      api('GET', '/api/wheels/' + list[0].id, null, function (e2, w) {
-        if (!w) return; W = w;
-        var c = w.players[w.turn]; var step = stepOf(w);
-        var started = !!w.runningSince; for (var i = 0; i < w.players.length; i++) for (var j = 0; j < w.players[i].status.length; j++) if (w.players[i].status[j] !== 'pending') started = true;
-        var o = topBar(['#/', 'Inicio']);
-        if (!started && !w.winAccepted) o += howto('El Rosco', ROSCO_HOWTO);
-        o += '<div class="panel">';
-        if (!w.winAccepted) {
-          o += '<h1>' + h(w.name) + '</h1><div class="muted">' + (w.winner ? '🏆 Gana ' + h(w.winner.name) + ' (' + w.winner.hits + ' ✔ · ' + w.winner.misses + ' ✘)' : w.tie ? 'Empate' : 'Turno de ' + h(c.name)) + '</div>';
-          o += '<div class="now"><small>Letra · reloj</small><b style="font-size:30px">' + h(c.active ? w.letters[c.current] : '—') + '</b> · <b id="rclock">' + clock(roscoLeft(w)) + '</b> <span class="muted">' + c.hits + ' ✔ · ' + c.misses + ' ✘</span></div>';
-          var q = ((w.questions || [])[w.turn] || [])[c.current] || {};
-          o += '<div class="q">' + (!c.active ? (w.tie ? (w.tie.rolling ? '<b>Sorteando el desempate…</b> Mira la pantalla.' : '<b>Hay un empate</b> entre ' + h(w.tie.names.join(' y ')) + '. Primero desempata por sorteo.') : 'Juego terminado.') :
-            !w.runningSince ? '<span class="muted">Pulsa «Iniciar pregunta» para ver la pregunta de esta letra.</span>' : h(q.q || '') + (q.a ? '<div class="a">Respuesta: ' + h(q.a) + '</div>' : '')) + '</div>';
-          if (w.tie && !w.tie.rolling) o += btn('🎲 Desempatar por sorteo', 'tieRosco', '', 'big warn');
-          if (w.winner && !w.winAccepted) o += btn('✔ Aceptar ganador', 'wheel', d('x', 'acceptwin'), 'big ok');
-          o += btn(w.onScreen ? '📺 Rosco en pantalla ✓' : '📺 Poner rosco en pantalla', 'roscoShow', '', 'big', step !== 1);
-          o += btn(w.runningSince ? '⏱ Pregunta en curso' : '▶ Iniciar pregunta', 'wheel', d('x', 'start'), 'big primary', step !== 2);
-          o += '<div class="row">' + btn('✔ Correcta', 'wheel', d('x', 'hit'), 'third ok', step !== 3) + btn('✘ Incorrecta', 'wheel', d('x', 'miss'), 'third bad', step !== 3) + btn('↷ Pasa', 'wheel', d('x', 'pass'), 'third warn', step !== 3) + '</div>';
-          o += '<div class="row">' + btn('↶ Deshacer', 'wheel', d('x', 'undo'), '', !w.canUndo) + (w.players.length > 1 ? btn('Cambiar turno', 'wheel', d('x', 'turn')) : '') + btn('Reiniciar', 'roscoReset', '', 'bad') + (w.fromBank ? btn('↻ Preguntas nuevas', 'newQ') : '') + '</div>';
-        } else {
-          o += '<p style="background:#1f9d55;border-radius:12px;padding:10px;text-align:center;font-weight:bold">✔ Ganador aceptado</p>';
-          if (!w.crowdWinner) o += btn('🏅 Mostrar ganador de la Trivia del Rosco', 'wheel', d('x', 'crowdwin'), 'big primary');
-          else o += '<div class="now"><small>Ganó la Trivia del Rosco</small><b>' + h(w.crowdWinner.name) + '</b><br><span class="muted">' + w.crowdWinner.score + ' puntos · ' + w.crowdWinner.hits + ' aciertos</span></div>';
-        }
-        o += btn(w.rank ? '🏅 Recoger ranking (está en pantalla)' : '🏅 Desplegar ranking de la Trivia (top 10)', 'roscoRank', '', 'big' + (w.rank ? ' on' : ''));
-        if (w.rank) { o += '<ol>'; for (var r = 0; r < w.rank.length; r++) o += '<li><b>' + h(w.rank[r].name) + '</b> · ' + w.rank[r].score + ' pts</li>'; o += '</ol>'; }
-        o += '</div>' + nav('rosco', started && !w.winAccepted) + foot();
-        render(o);
-      });
+      api('GET', '/api/wheels/' + list[0].id, null, function (e2, w) { if (w && !S.roscoBusy) renderRosco(w); });
     });
   };
   load(); poll = setInterval(load, 3000);
@@ -457,7 +483,10 @@ function votoView(want) {
       checked = true;
       var isK = mode === 'karaoke'; var name = isK ? festName() : 'El objeto más extraño';
       var o = topBar(['#/', 'Inicio']);
-      if (st.phase === 'winner' && st.mode === mode) { o += nav(want, false) + foot(); render(o); return; } // con ganador, solo lo que viene
+      if (st.phase === 'winner' && st.mode === mode) { // con ganador: el ganador para anunciarlo y lo que viene
+        o += ann('🏆 Ganó ' + name, [st.winner ? st.winner.name : ''], [st.winner && st.winner.thing ? st.winner.thing : '', isK && st.winner && st.winner.score != null ? 'Nota ' + noteOf(st.winner.score, st.winner.dec) : '', st.second ? '2.º lugar: ' + st.second.name + ' · nota ' + noteOf(st.second.score, st.second.dec) : '']);
+        o += nav(want, false) + foot(); render(o); return;
+      }
       var startedV = st.signup || st.players.length > 0;
       if (st.phase === 'voting' && !startedV && st.mode === mode) o += howto(name, isK ? [st.max + ' participantes cantan. Si se inscriben más, sorteo.', 'Canciones cortas.', 'Todos votan desde las mesas: nota del 1 al 10.', 'Al terminar la votación, se muestran en pantalla <em>5 notas del público al azar</em>, que no determinan el promedio. El promedio se conoce al final del concurso.', 'Gana el mejor <em>promedio</em>.'] : ['Cada participante presenta su objeto.', 'Todos votan desde las mesas: nota del 1 al 10.', 'Gran final entre los dos primeros.']);
       o += '<div class="panel"><h1>' + (isK ? '🎤 ' : '🗳️ ') + h(name) + '</h1>';
@@ -623,9 +652,27 @@ A.raffleReset = function () { act('POST', '/api/raffle/reset', null); };
 A.unpick = function (el) { act('POST', '/api/raffle/remove', { name: el.getAttribute('data-n') }); };
 A.rename = function (el) { var from = el.getAttribute('data-n'); var to = window.prompt('Corrige el nombre:', from); if (to === null || to === from) return; act('POST', '/api/people/rename', { from: from, to: to }, 'Nombre corregido'); };
 A.loadRosco = function () { api('GET', '/api/raffle', null, function (e, r) { if (!r) return; api('POST', '/api/wheels', { name: 'El Rosco', players: r.picked }, function (err) { if (err) toast(err); else go('#/rosco'); }); }); };
-A.wheel = function (el) { if (W) act('POST', '/api/wheels/' + W.id + '/act', { action: el.getAttribute('data-x') }); };
-A.roscoShow = function () { if (W) act('POST', '/api/wheels/' + W.id + '/act', { action: 'show', on: true }); };
-A.roscoRank = function () { if (W) act('POST', '/api/wheels/' + W.id + '/act', { action: 'rank', on: !W.rank }); };
+// Pedido de Cote (21 nov): «Iniciar pregunta» tenía casi un segundo de desfase en el iPad (se esperaba la respuesta y dos
+// lecturas más). Ahora la pregunta y el reloj aparecen al instante con lo que el panel ya tiene, y el panel se vuelve a
+// dibujar con la respuesta de la acción misma
+function wheelAct(body) {
+  if (!W) return;
+  var id = W.id;
+  S.roscoBusy = true;
+  var bs = document.querySelectorAll('#app button'); for (var i = 0; i < bs.length; i++) if (bs[i].getAttribute('data-a') === 'wheel') bs[i].disabled = true; // sin doble toque
+  api('POST', '/api/wheels/' + id + '/act', body, function (err, r) {
+    S.roscoBusy = false;
+    if (err) { toast(err); refresh(); return; }
+    if (r && r.players) renderRosco(r); else refresh();
+  });
+}
+A.wheel = function (el) {
+  var x = el.getAttribute('data-x');
+  if (x === 'start' && W && stepOf(W) === 2) { W.runningSince = new Date().getTime() + offset; W.onScreen = true; renderRosco(W); } // la pregunta, ya
+  wheelAct({ action: x });
+};
+A.roscoShow = function () { if (W) { W.onScreen = true; renderRosco(W); wheelAct({ action: 'show', on: true }); } };
+A.roscoRank = function () { if (W) wheelAct({ action: 'rank', on: !W.rank }); };
 A.tieRosco = function () { if (W) act('POST', '/api/wheels/' + W.id + '/tiebreak', null); };
 A.roscoReset = function () { if (W && window.confirm('¿Reiniciar el rosco? Se borran aciertos, fallos y relojes.')) act('POST', '/api/wheels/' + W.id + '/act', { action: 'reset' }); };
 A.newQ = function () { if (W && window.confirm('¿Cambiar todas las preguntas por otras del banco? El rosco se reinicia.')) act('POST', '/api/wheels/' + W.id + '/newquestions', null); };

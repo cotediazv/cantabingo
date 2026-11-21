@@ -50,6 +50,7 @@
         <label class="f" id="vc-title-wrap" style="margin-top:12px" hidden>Nombre del concurso<input type="text" id="vc-title" maxlength="50" placeholder="Ej.: El objeto más extraño"></label>
         <div id="vc-body" style="margin-top:14px"></div>
       </div>
+      <div id="vc-win" hidden></div>
       ${activitiesNav(want === 'karaoke' ? 'festival' : 'objeto')}
       <details class="vc-more" id="vc-more"><summary>Más opciones</summary><button class="big" id="vc-reset">🗑 Nuevo concurso (borra este)</button></details>`;
     await api('POST', '/api/stage', { show: 'voto' }).catch(fail);
@@ -133,6 +134,15 @@
       if (ht) ht.hidden = st.phase !== 'voting' || st.signup || st.players.length > 0; // las instrucciones, solo al principio
       // Pedido de Cote (20 nov): con el ganador anunciado desaparece el juego y queda solo lo que viene (el menú)
       $('#vc-panel').hidden = st.phase === 'winner';
+      // Pedido de Cote (21 nov): con el ganador anunciado, su nombre y su nota grandes para anunciarlo
+      const vw = $('#vc-win');
+      const vwKey = st.phase === 'winner' && st.winner ? JSON.stringify([st.winner, st.second]) : '';
+      if (vw && vw.dataset.k !== vwKey) {
+        vw.dataset.k = vwKey;
+        vw.hidden = !vwKey;
+        vw.innerHTML = vwKey ? window.annHtml(`🏆 Ganó ${title(st)}`, [st.winner.name], [st.winner.thing || '', isK(st) && st.winner.score != null ? `Nota ${note(st.winner.score, st.winner.dec)}` : '',
+          st.second ? `2.º lugar: ${st.second.name} · nota ${note(st.second.score, st.second.dec)}` : '']) : '';
+      }
       window.setNavFold((st.signup || st.players.length > 0) && st.phase !== 'winner');
       if ($('#vc-name')) { $('#vc-name').value = keep; $('#vc-thing').value = keepThing; if (focus) $(focus).focus(); }
       if ($('#vc-add')) $('#vc-add').onsubmit = async (e) => { e.preventDefault(); const name = $('#vc-name').value; const what = $('#vc-thing').value; if (await act('add', { name, thing: what })) { $('#vc-name').value = ''; $('#vc-thing').value = ''; $('#vc-name').focus(); } };

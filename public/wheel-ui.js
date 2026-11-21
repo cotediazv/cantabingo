@@ -158,9 +158,9 @@
           <div class="w-question" id="w-question"></div>
           <button class="primary big w-accept" id="w-tie" hidden>🎲 Desempatar por sorteo</button>
           <button class="primary big w-accept" id="w-accept" data-do="acceptwin" hidden>✔ Aceptar ganador</button>
-          <div id="w-accepted" hidden><p class="w-accepted">✔ Ganador aceptado</p>
+          <div id="w-accepted" hidden><div class="w-accepted">✔ Ganador aceptado</div>
             <button class="primary big w-accept" id="w-crowd" data-do="crowdwin">🏅 Mostrar ganador de la Trivia del Rosco</button>
-            <div class="vc-read" id="w-crowd-res" hidden></div>${BACK_BINGO}</div>
+            <div class="vc-read" id="w-crowd-res" hidden></div><div id="w-after" hidden>${BACK_BINGO}</div></div>
           <div class="w-flow">
             <button class="w-show" id="w-show"></button>
             <button class="w-go" id="w-clock"></button>
@@ -202,7 +202,14 @@
       $('#w-accepted').hidden = !st.winAccepted;
       $('#w-crowd').hidden = !!st.crowdWinner;
       $('#w-crowd-res').hidden = !st.crowdWinner;
-      if (st.crowdWinner) $('#w-crowd-res').innerHTML = `<small>Ganó la Trivia del Rosco</small><b>${esc(st.crowdWinner.name)}</b><i>${st.crowdWinner.score} puntos · ${st.crowdWinner.hits} aciertos</i><small>Jugaron ${st.crowdWinner.players} personas</small>`;
+      if (st.crowdWinner) $('#w-crowd-res').innerHTML = st.crowdWinner.none ? window.annHtml('🏅 Trivia del Rosco', ['Nadie sumó puntos'], [`Jugaron ${st.crowdWinner.players} personas`])
+        : window.annHtml('🏅 Premio especial · Ganó la Trivia del Rosco', [st.crowdWinner.name], [`${st.crowdWinner.score} puntos · ${st.crowdWinner.hits} aciertos`, `Jugaron ${st.crowdWinner.players} personas`]);
+      // Pedido de Cote (21 nov): al final, sí o sí se muestra el ganador de la Trivia antes de seguir con lo que viene
+      $('#w-after').hidden = !st.crowdWinner;
+      // Pedido de Cote (21 nov): con el ganador aceptado, su nombre y su premio grandes para anunciarlo
+      const wa = $('#w-accepted .w-accepted');
+      const waKey = st.winAccepted && st.winner ? `${st.winner.name}|${st.winner.hits}|${st.winner.misses}` : '';
+      if (wa && wa.dataset.k !== waKey) { wa.dataset.k = waKey; wa.classList.toggle('w-ann', !!waKey); wa.innerHTML = waKey ? window.annHtml(`🏆 Premio mayor · ${st.winner.full ? '¡Completó el rosco!' : 'Ganó El Rosco'}`, [st.winner.name], [`${st.winner.hits} aciertos · ${st.winner.misses} fallos${st.winner.byDraw ? ' · salió en el desempate' : ''}`]) : '✔ Ganador aceptado'; }
       // Pregunta paso a paso (pedido de Cote): solo se puede apretar el botón del paso que toca; los demás quedan
       // bloqueados en blanco y negro. 1) Poner rosco en pantalla → 2) Iniciar pregunta → 3) Correcta / Incorrecta / Pasa
       // (con Correcta se sigue en el paso 3; con Incorrecta o Pasa el rosco sale y se vuelve al paso 1)
@@ -212,13 +219,15 @@
       $('#w-clock').classList.toggle('on', !!st.runningSince);
       $('#w-show').textContent = st.onScreen ? '📺 Rosco en pantalla ✓' : '📺 Poner rosco en pantalla';
       $('#w-show').classList.toggle('on', !!st.onScreen);
-      $('#w-show').disabled = step !== 1;
+      $('#w-show').disabled = step !== 1 || !!st.rankDue;
       // Ranking de la Trivia del Rosco (pedido de Cote): se despliega en la pantalla del local y a un costado del GC
-      $('#w-rank').textContent = st.rank ? '🏅 Recoger ranking (está en pantalla)' : '🏅 Desplegar ranking de la Trivia (top 10)';
+      $('#w-rank').textContent = st.rank ? '🏅 Recoger ranking (está en pantalla)' : st.rankDue ? `📊 Terminaron ${st.rankEvery || 2} rondas: despliega el ranking de la Trivia (obligatorio)` : '🏅 Desplegar ranking de la Trivia (top 10)';
       $('#w-rank').classList.toggle('on', !!st.rank);
+      $('#w-rank').classList.toggle('due', !!st.rankDue); // paso obligatorio cada 2 rondas (pedido de Cote, 21 nov)
+      if (st.rankDue && !st.runningSince) $('#w-question').innerHTML = `<b>📊 Terminaron ${st.rankEvery || 2} rondas.</b> Antes de la próxima pregunta, despliega el ranking de la Trivia del Rosco en pantalla (botón de abajo).`;
       $('#w-ranklist').hidden = !st.rank;
       if (st.rank) $('#w-ranklist').innerHTML = rankHTML(st, 'w-rk');
-      $('#w-clock').disabled = step !== 2;
+      $('#w-clock').disabled = step !== 2 || !!st.rankDue;
       $('#w-undo').disabled = !st.canUndo;
       $('#w-swap').hidden = st.players.length < 2;
       $('#w-wheels').innerHTML = st.players.map((_, i) => `<div class="wheel-box ${i === st.turn ? 'on' : 'off'}">${wheelSVG(st, i, true)}</div>`).join('');
@@ -505,7 +514,9 @@
         if (wonBy === key) return;
         wonBy = key;
         if (full) sfx.play('win');
-        $('#pw').innerHTML = full ? `<div class="win-screen"><div class="win-card"><span class="win-trophy">🏅</span><span class="win-name" style="--n:${cw.name.length}">${esc(cw.name)}</span>
+        $('#pw').innerHTML = cw.none ? (full ? '<div class="win-screen"><div class="win-card"><span class="win-trophy">🏅</span><span class="win-name" style="--n:17">Trivia del Rosco</span><span class="win-text">Esta vez nadie sumó puntos</span><span class="win-sub">¡En la próxima!</span></div></div>'
+            : '<div class="rosco-winlow"><span class="rosco-winlow-tag">🏅 Trivia del Rosco</span><b style="--n:17">Nadie sumó puntos</b><small>¡En la próxima!</small></div>')
+          : full ? `<div class="win-screen"><div class="win-card"><span class="win-trophy">🏅</span><span class="win-name" style="--n:${cw.name.length}">${esc(cw.name)}</span>
               <span class="win-text">¡Ganó la Trivia del Rosco! ${cw.score} puntos</span><span class="win-sub">¡Felicitaciones!</span></div></div>`
           : `<div class="rosco-winlow"><span class="rosco-winlow-tag">🏅 Ganó la Trivia del Rosco</span><b style="--n:${cw.name.length}">${esc(cw.name)}</b><small>${cw.score} puntos · ¡Felicitaciones!</small></div>`;
         return;

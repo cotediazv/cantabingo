@@ -7,6 +7,7 @@
     app.innerHTML = `<h1>Sorteo de concursantes</h1>
       <div class="cols">
         <div class="panel">
+          <div id="rf-ann"></div>
           <p style="margin:14px 0"><button class="primary big rf-main" id="rf-draw">🎲 Sortear un concursante</button></p>
           <h2>Concursantes elegidos</h2>
           <div id="rf-picked" style="margin:10px 0"></div>
@@ -33,6 +34,16 @@
         || '<p class="muted">Aún no hay nadie. Aparecerán al unirse al bingo.</p>';
       $('#rf-picked').innerHTML = picked.length ? picked.map((n, i) => `<div class="row between" style="padding:8px 0;border-bottom:1px solid var(--line)"><b>${i + 1}. ${esc(n)}</b><span class="row" style="gap:6px"><button data-edit="${esc(n)}">✏️ Editar</button><button data-remove="${esc(n)}">Quitar</button></span></div>`).join('')
         : '<p class="muted">Todavía no has sorteado a nadie.</p>';
+      // Pedido de Cote (21 nov): el concursante que salió, grande para anunciarlo (cuando la tómbola ya terminó en pantalla)
+      const off = (r.now || Date.now()) - Date.now();
+      const rolling = r.mode !== 'tie' && r.roll && Date.now() + off < r.roll.at + (r.rollMs || 6000);
+      const annKey = rolling ? 'roll' : picked.length ? picked.join('|') : '';
+      if ($('#rf-ann').dataset.k !== annKey) {
+        $('#rf-ann').dataset.k = annKey;
+        $('#rf-ann').innerHTML = rolling ? '<div class="panel ann"><small>📣 Para anunciar</small><span class="ann-t">🎲 Sorteando en pantalla…</span></div>'
+          : picked.length ? window.annHtml(`🎲 Salió sorteado · ${picked.length}.º de 3 para El Rosco`, [picked[picked.length - 1]], ['¡Que se acerque a nuestro escenario!']) : '';
+        if (rolling) setTimeout(load, r.roll.at + (r.rollMs || 6000) - (Date.now() + off) + 300);
+      }
       // Pedido de Cote (20 nov): un solo botón que avanza: sortear a los 3 concursantes y, con los 3, cargar El Rosco
       const full = picked.length >= 3;
       $('#rf-draw').textContent = full ? '✔ Cargar El Rosco con los 3' : `🎲 Sortear concursante (${picked.length + 1}.º de 3)`;

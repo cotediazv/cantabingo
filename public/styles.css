@@ -2531,3 +2531,29 @@ body.kids[data-kz-level="8"] { background: linear-gradient(160deg, #fdffb6 0%, #
 .pgvote .pgv-intro .gi svg { display: block; width: 100%; max-width: 320px; height: auto; margin: 0 auto; }
 .pgvote .pgv-intro ul { text-align: left; margin: 10px 0; padding-left: 20px; font-size: 1.05rem; line-height: 1.35; }
 .g-vote .gvp-help { font-size: .95rem; }
+
+/* Recuadro «📣 Para anunciar» (pedido de Cote, 21 nov): ganador, premio o información, grande en el panel del animador */
+.ann { text-align: center; border: 3px solid #ffc400; background: rgba(255, 196, 0, .08); }
+.ann small { display: block; font-weight: 900; color: #ffc400; letter-spacing: .08em; text-transform: uppercase; }
+.ann .ann-t { display: block; margin-top: 6px; font-size: 1.25rem; font-weight: 900; }
+.ann .ann-n { display: block; margin: 8px 0; font-size: 2.2rem; font-weight: 900; line-height: 1.1; overflow-wrap: anywhere; }
+.ann .ann-l { display: block; margin-top: 4px; font-size: 1.1rem; font-weight: 700; color: var(--muted, #b9b4dc); }
+.w-accepted.w-ann { padding: 0; background: none; }
+.w-accepted .ann { margin: 0; }
+/* Celular: nombre de la actividad y lo que viene (sorteos, QR, show, espera entre juegos) */
+.pact .pact-list { margin: 12px 0; }
+.pact .pact-list small { display: block; text-align: center; font-weight: 800; color: #ffd76a; margin-bottom: 6px; }
+.pact .pact-list p { margin: 0 0 6px; padding: 10px 12px; border-radius: 12px; background: rgba(0, 0, 0, .25); font-size: 1.15rem; font-weight: 800; }
+.pact .pact-list em { font-style: normal; color: #ffc400; margin-right: 8px; }
+.pact .pact-next { margin: 12px 0 4px; text-align: center; font-weight: 700; color: #d8d3ff; }
+/* Ranking de la Trivia en los celulares (pedido de Cote, 21 nov): sale cuando el animador lo despliega */
+.pcrowd-rank { margin: 12px 0; padding: 12px; border-radius: 14px; border: 2px solid #ffc400; background: rgba(255, 196, 0, .1); }
+.pcrowd-rank small { display: block; text-align: center; font-weight: 900; color: #ffc400; letter-spacing: .04em; }
+.pcrowd-rank > b { display: block; text-align: center; font-size: 1.15rem; margin: 2px 0 8px; }
+.pcrowd-rank > div { display: flex; gap: 8px; align-items: baseline; padding: 6px 8px; border-radius: 10px; font-weight: 800; }
+.pcrowd-rank > div em { font-style: normal; color: #ffc400; min-width: 2.4em; }
+.pcrowd-rank > div span { flex: 1; overflow-wrap: anywhere; }
+.pcrowd-rank > div.me, .pcrowd-rank > div.you { background: #ffc400; color: #1a1a1a; }
+.pcrowd-rank > div.me em, .pcrowd-rank > div.you em { color: #1a1a1a; }
+/* Ranking obligatorio cada 2 rondas en El Rosco (pedido de Cote, 21 nov) */
+.w-rankbtn.due { background: #ffc400; color: #1a1a1a; border-color: #ffc400; font-weight: 900; animation: giPulse 1.2s ease-in-out infinite; }
