@@ -1229,7 +1229,7 @@ async function pintarCarteleras(){
   await Promise.all([...document.querySelectorAll('.ptl-cart')].map(async el=>{
     const v=el.dataset.local,d=await cargar(v);
     const dias=(d.week||[]).filter(enSemana).filter(w=>(w.hours&&w.hours.length)||w.show);
-    el.innerHTML=`<div class="pcr-tit"><b>Cartelera semanal <small>(transmisión en vivo en todas)</small></b><span>${esc(semanaTxt())}</span></div>`+(dias.length?dias.map(w=>{
+    el.innerHTML=`<div class="pcr-tit"><b>Cartelera semanal <small>(transmisión en vivo)</small></b><span>${esc(semanaTxt())}</span></div>`+(dias.length?dias.map(w=>{
       const hoy=fechaDe(w).getTime()===hoyChile().getTime();
       return `<div class="pcr-dia${hoy?' hoy':''}"><div class="pcr-cab"><b>${hoy?'Hoy · ':''}${esc(DIAS[plano(w.day)]||w.day)} ${w.date}</b>${w.show?`<span class="pcr-show">⭐ ${esc(nomShow(w.show))}</span>`:''}</div>
         <ul>${(w.hours||[]).map(h=>`<li><time>${esc(h.time)}</time>${esc(nomShow(h.label))}</li>`).join('')}</ul></div>`}).join(''):'<p class="pcr-nada">Sin funciones programadas esta semana.</p>');
