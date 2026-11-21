@@ -51,6 +51,11 @@
   .now b { font-size: 22px; }
   .q { background: #120f24; border-radius: 12px; padding: 12px; margin: 8px 0; font-size: 19px; }
   .a { color: #3fe08f; font-weight: bold; margin-top: 6px; }
+  /* Pedido de Cote (21 nov): la pregunta del rosco grande y en amarillo fuerte, para que el animador la lea de un vistazo */
+  .q.live { border: 3px solid #ffd400; background: #1a1606; padding: 14px 16px; }
+  .qt { font-size: 32px; line-height: 1.25; font-weight: bold; color: #ffd400; }
+  .q.live .a { font-size: 28px; margin-top: 12px; }
+  .q.live .a small { display: block; font-size: 15px; color: #a9a3cf; letter-spacing: 1px; text-transform: uppercase; }
   .item { padding: 9px 0; border-bottom: 1px solid #3a3470; overflow: hidden; }
   .item .r { float: right; }
   .item .r button { font-size: 14px; padding: 6px 10px; margin: 0 0 0 4px; }
@@ -467,8 +472,8 @@ function renderRosco(w) {
     o += '<h1>' + h(w.name) + '</h1><div class="muted">' + (w.winner ? '🏆 Gana ' + h(w.winner.name) + ' (' + w.winner.hits + ' ✔ · ' + w.winner.misses + ' ✘)' : w.tie ? 'Empate' : 'Turno de ' + h(c.name)) + '</div>';
     o += '<div class="now"><small>Letra · reloj</small><b style="font-size:30px">' + h(c.active ? w.letters[c.current] : '—') + '</b> · <b id="rclock">' + clock(roscoLeft(w)) + '</b> <span class="muted">' + c.hits + ' ✔ · ' + c.misses + ' ✘</span></div>';
     var q = ((w.questions || [])[w.turn] || [])[c.current] || {};
-    o += '<div class="q">' + (!c.active ? (w.tie ? (w.tie.rolling ? '<b>Sorteando el desempate…</b> Mira la pantalla.' : '<b>Hay un empate</b> entre ' + h(w.tie.names.join(' y ')) + '. Primero desempata por sorteo.') : 'Juego terminado.') :
-      !w.runningSince ? '<span class="muted">Pulsa «Iniciar pregunta» para ver la pregunta de esta letra.</span>' : h(q.q || '') + (q.a ? '<div class="a">Respuesta: ' + h(q.a) + '</div>' : '')) + '</div>';
+    o += '<div class="q' + (w.runningSince && c.active ? ' live' : '') + '">' + (!c.active ? (w.tie ? (w.tie.rolling ? '<b>Sorteando el desempate…</b> Mira la pantalla.' : '<b>Hay un empate</b> entre ' + h(w.tie.names.join(' y ')) + '. Primero desempata por sorteo.') : 'Juego terminado.') :
+      !w.runningSince ? '<span class="muted">Pulsa «Iniciar pregunta» para ver la pregunta de esta letra.</span>' : '<div class="qt">' + h(q.q || '') + '</div>' + (q.a ? '<div class="a"><small>Respuesta</small>' + h(q.a) + '</div>' : '')) + '</div>';
     if (w.tie && !w.tie.rolling) o += btn('🎲 Desempatar por sorteo', 'tieRosco', '', 'big warn');
     if (w.winner && !w.winAccepted) o += btn('✔ Aceptar ganador', 'wheel', d('x', 'acceptwin'), 'big ok');
     if (w.rankDue && !w.runningSince) o += '<div class="ann" style="padding:12px;border-radius:14px;margin:8px 0"><b style="font-size:20px">📊 Terminaron ' + (w.rankEvery || 2) + ' rondas</b><br>Antes de la próxima pregunta, despliega el ranking de la Trivia en pantalla.</div>' + btn('📊 Desplegar ranking de la Trivia (obligatorio)', 'roscoRank', '', 'big warn');
