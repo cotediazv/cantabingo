@@ -516,6 +516,8 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
   res.json({ ok: true });
 });
 
+// Estado completo del bingo para el Centro de control liviano del iPad viejo (/cc), que no usa conexiones en vivo
+app.get('/api/sessions/:sid/host/state', (req, res) => { const s = hostSession(req, res); if (s) res.json(publicState(s, true)); });
 app.get('/api/sessions/:sid/host', (req, res) => {
   const s = hostSession(req, res);
   if (s) res.json({ password: s.password, isPublic: s.isPublic, round: s.round, patterns: s.patterns, gc: s.gc || gcDefaults(), roundOver: roundOver(s) });
