@@ -459,14 +459,12 @@ views.juegos = async () => {
   const open = (await activeSessions())[0];
   if (!open) { location.hash = '#/'; return undefined; }
   store.set('lastBingo', open.projectId);
-  app.innerHTML = `<p class="back"><a href="#/">← Inicio</a></p><div class="panel"><h1 style="margin:0">${esc(open.name)}</h1><p class="muted" id="jg-meta" style="margin:6px 0 0"></p>
-      <div id="jg-cur"></div></div>
-    ${activitiesNav('')}`;
+  // Pedido de Cote (21 nov): al crear la sala, tres botones y nada más (Manual, Por sorteo, Por votación)
+  app.innerHTML = `<p class="back"><a href="#/">← Inicio</a></p><div id="jg-cur"></div>${activitiesNav('', { lobby: true })}`;
   const venue = open.theme || 'frida';
   const paint = async () => {
     const st = await api('GET', `/api/sessions/${open.id}/host/state`).catch(() => null);
-    if (!st || !$('#jg-meta')) return;
-    $('#jg-meta').textContent = `${st.players} participantes · Escanea el código QR con tu celular, pon tu nombre, apellido y participa`;
+    if (!st || !$('#jg-cur')) return;
     // Si hay un juego en curso, se vuelve a él con un botón grande y el menú queda plegado (para no sortear otro por error)
     const cur = st.current;
     const info = cur && GAME_INFO(venue)[cur.game];
@@ -476,7 +474,7 @@ views.juegos = async () => {
     window.setNavFold(!!cur);
   };
   await paint();
-  const t = setInterval(paint, 4000);
+  const t = setInterval(() => { paint(); paintGameNav(); }, 4000); // también lo que se haga desde otro equipo (iPad)
   return () => clearInterval(t);
 };
 // Figura del bingo cuando el bingo sale en el sorteo o se elige (antes del primer número)
@@ -1493,7 +1491,11 @@ const GAME_INFO = (venue) => ({
   festival: { icon: '🎤', name: `El Festival de ${{ frida: 'Frida', kennedy: 'Kennedy', tobalaba: 'Tobalaba' }[venue] || 'Frida'}`, href: '#/votoctl/festival' },
   objeto: { icon: '🗳️', name: 'El objeto más extraño', href: '#/votoctl/objeto' },
 });
-function activitiesNav(current) {
+// Menú de juegos (pedido de Cote, 21 nov): tres botones grandes, «Manual», «Por sorteo» y «Por votación», y nada más;
+// al tocar uno se despliega lo de esa modalidad en su momento (Manual: los juegos para tocar; Por sorteo: cuántos juegos
+// y el botón del sorteo, y los juegos solo para elegir directo después de «Iniciar sorteo»; Por votación: la votación).
+// En el lobby (opts.lobby) no van las otras actividades.
+function activitiesNav(current, opts = {}) {
   const games = [
     ['bingo', '<button type="button" data-back-bingo data-game="bingo"><span>🎱</span>Bingo</button>'],
     ['rosco', '<a class="btn" data-game="rosco" href="#/sorteoctl"><span>🎡</span>El Rosco</a>'],
@@ -1507,15 +1509,31 @@ function activitiesNav(current) {
     ['qr', '<button type="button" data-stage-qr><span>📱</span>QR en pantalla completa</button>'],
   ];
   setTimeout(paintGameNav, 0);
-  return `<div class="act-nav games-nav ${navFoldState() ? 'g-folded' : ''}"><button type="button" class="g-unfold" data-nav-unfold>▸ Ver otros juegos y actividades</button>
-    <div class="g-tabs" role="tablist"><button type="button" role="tab" data-draw-mode="manual">👆 Manual</button><button type="button" role="tab" data-draw-mode="sorteo">🎲 Por sorteo</button><button type="button" role="tab" data-draw-mode="votacion">🗳️ Por votación</button></div>
-    <p class="g-free-title">👆 Toca el siguiente juego</p><section class="g-vote"></section><div class="g-plan"><div class="g-slots"></div><label>¿Cuántos juegos vamos a sortear?<input type="number" class="g-total" min="1" max="10" value="3"></label></div>
+  return `<div class="act-nav games-nav ${navFoldState() ? 'g-folded' : ''}${opts.lobby ? ' g-lobby' : ''}"><button type="button" class="g-unfold" data-nav-unfold>▸ Ver otros juegos y actividades</button>
+    <div class="g-modes" role="tablist"><button type="button" role="tab" data-draw-mode="manual"><span>👆</span>Manual</button><button type="button" role="tab" data-draw-mode="sorteo"><span>🎲</span>Por sorteo</button><button type="button" role="tab" data-draw-mode="votacion"><span>🗳️</span>Por votación</button></div>
+    <section class="g-body"><p class="g-free-title">👆 Toca el siguiente juego</p><section class="g-vote"></section>
+    <div class="g-plan"><div class="g-slots"></div><label>¿Cuántos juegos vamos a sortear?<input type="number" class="g-total" min="1" max="10" value="3"></label></div>
     <button type="button" class="primary big g-draw" data-game-draw>🎲 Sortear juego</button>
     <button type="button" class="g-undo" data-game-undo disabled>↩️ Deshacer</button>
     <p class="g-direct" hidden>…o toca un juego para elegirlo directo, sin tómbola</p>
-    <small>Juegos</small><div>${games.map(([k, h]) => (k === current ? h.replace(/data-game="/, 'aria-current="true" data-game="') : h)).join('')}</div>
-    <small>Otras actividades</small><div>${more.filter(([k]) => k !== current).map(([, h]) => h).join('')}</div></div>`;
+    <div class="g-games">${games.map(([k, h]) => (k === current ? h.replace(/data-game="/, 'aria-current="true" data-game="') : h)).join('')}</div></section>
+    ${opts.lobby ? '' : `<small>Otras actividades</small><div>${more.filter(([k]) => k !== current).map(([, h]) => h).join('')}</div>`}</div>`;
 }
+// Modalidad desplegada en el menú: ninguna al entrar (solo los tres botones), salvo que haya algo a medio hacer en una
+// (un sorteo iniciado o una votación abierta o con segunda vuelta pendiente), que se despliega sola
+let navOpen = null;
+window.addEventListener('hashchange', () => { navOpen = null; });
+const applyNavOpen = (ready) => {
+  document.querySelectorAll('.games-nav').forEach((n) => {
+    n.classList.toggle('g-open', !!navOpen);
+    n.classList.toggle('g-free', navOpen === 'manual');
+    n.classList.toggle('g-smode', navOpen === 'sorteo');
+    n.classList.toggle('g-vmode', navOpen === 'votacion');
+    if (ready !== undefined) n.classList.toggle('g-ready', ready && navOpen === 'sorteo');
+  });
+  document.querySelectorAll('[data-draw-mode]').forEach((b) => { const on = b.dataset.drawMode === navOpen; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+};
+window.openNavMode = (how) => { if (!navOpen) { navOpen = how; applyNavOpen(); } };
 // Pedido de Cote (20 nov): mientras hay un juego en curso, el menú de juegos y actividades queda plegado, para no
 // apretar otro por error; «Ver otros juegos y actividades» lo abre. Cada panel avisa si su juego está en curso.
 let navInGame = null; let navOpened = false;
@@ -1548,9 +1566,8 @@ async function paintGameNav() {
   // Pedido de Cote (20 nov): cuántos juegos y sus números se ven solo antes de empezar el sorteo; después se ocultan
   document.querySelectorAll('.g-plan').forEach((el) => { el.hidden = g.list.length > 0 || ready; });
   window.gameDrawReady = ready;
-  document.querySelectorAll('.games-nav').forEach((n) => { n.classList.toggle('g-ready', ready); n.classList.toggle('g-free', how === 'manual'); n.classList.toggle('g-vmode', how === 'votacion'); });
-  // Pestañas «Manual» / «Por sorteo» / «Por votación» (pedido de Cote, 21 nov)
-  document.querySelectorAll('[data-draw-mode]').forEach((b) => { const on = b.dataset.drawMode === how; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+  if (!navOpen && ready) navOpen = 'sorteo'; // un sorteo iniciado (también desde otro equipo) se despliega solo
+  applyNavOpen(ready);
   if (window.paintGvote) window.paintGvote(how);
   document.querySelectorAll('[data-game-draw]').forEach((b) => { b.disabled = full; b.textContent = full ? `✔ Ya se sortearon los ${g.total} juegos` : ready ? `🎰 Girar la tómbola · ${g.list.length + 1}.º juego` : `🎲 Iniciar sorteo del ${g.list.length + 1}.º juego (de ${g.total})`; });
   document.querySelectorAll('.g-direct').forEach((el) => { el.hidden = !ready; });
@@ -1579,17 +1596,19 @@ document.addEventListener('click', async (e) => {
     window.gameDrawGo = setTimeout(() => { if (g.last.game === 'bingo') backToBingo(); else location.hash = info.href; }, 6000); // cuando termina la tómbola en pantalla, el panel pasa a ese juego
   } catch (err) { fail(err); b.disabled = false; }
 });
-// Pestañas del menú de juegos: «Manual», «Por sorteo» o «Por votación» (pedido de Cote, 21 nov)
+// Botones de modalidad (pedido de Cote, 21 nov): al tocar uno se despliega su menú y queda elegido en el servidor
+// (un sorteo o una votación a medio hacer de otra modalidad se cancela); tocar el desplegado lo vuelve a plegar
 document.addEventListener('click', async (e) => {
   const b = e.target.closest('[data-draw-mode]');
-  if (!b || b.classList.contains('on')) return; // la pestaña que ya está elegida no hace nada
+  if (!b) return;
   const how = b.dataset.drawMode;
   clearTimeout(window.gameDrawGo);
-  // Se marca al instante (sin esperar al servidor), para que no quede un sorteo a medio empezar a un toque
+  if (navOpen === how) { navOpen = null; applyNavOpen(false); return; }
+  navOpen = how;
   if (how !== 'sorteo') window.gameDrawReady = false;
-  document.querySelectorAll('.games-nav').forEach((n) => { n.classList.toggle('g-free', how === 'manual'); n.classList.toggle('g-vmode', how === 'votacion'); n.classList.remove('g-ready'); });
-  document.querySelectorAll('[data-draw-mode]').forEach((x) => x.classList.toggle('on', x.dataset.drawMode === how));
-  try { await api('POST', '/api/gamedraw/mode', { how }); } catch (err) { fail(err); }
+  applyNavOpen(false); // se despliega al instante, sin esperar al servidor
+  const g = await api('GET', '/api/gamedraw').catch(() => null);
+  if (!g || (g.how || (g.free ? 'manual' : 'sorteo')) !== how) { try { await api('POST', '/api/gamedraw/mode', { how }); } catch (err) { fail(err); } }
   paintGameNav();
 });
 // Deshacer (pedido de Cote): vuelve el sorteo de juegos al paso anterior (antes de «Iniciar sorteo», de la tómbola

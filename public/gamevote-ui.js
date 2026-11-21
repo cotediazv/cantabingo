@@ -158,6 +158,7 @@
     if (!boxes.length || how !== 'votacion') return;
     const g = await api('GET', '/api/gamevote').catch(() => null);
     if (!g) return;
+    if (g.phase === 'voting' || (g.phase === 'result' && g.runoff)) window.openNavMode('votacion'); // a medio hacer: se despliega sola
     const info = GAME_INFO(g.venue);
     const off = g.now - Date.now();
     const rows = `<div class="gvp-rows">${optionsOf(g).map((k) => { const n = (g.counts || {})[k] || 0; const p = pctOf(n, g.total); return `<div class="gvp-row ${clsOf(g, k)}" style="--c:${COLORS[k]};--p:${p.toFixed(1)}%"><span>${nameOf(info, k)}</span><b>${fmtPct(p)} · ${votos(n)}</b></div>`; }).join('')}</div>`;

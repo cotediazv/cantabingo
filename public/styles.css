@@ -2471,3 +2471,23 @@ body.kids[data-kz-level="8"] { background: linear-gradient(160deg, #fdffb6 0%, #
   #gv .gv-qr b { font-size: 1.7vw; }
   #gv.gv-gc .gv-card { max-width: 94vw; }
 }
+
+/* Menú de juegos con tres botones (pedido de Cote, 21 nov): «Manual», «Por sorteo» y «Por votación», y nada más;
+   al tocar uno se despliega lo suyo. En el lobby, los tres botones grandes */
+.games-nav > .g-modes { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 12px; }
+.games-nav > .g-modes > button { min-height: 96px; font-size: 1.1rem; font-weight: 900; border: 2px solid #5a54a0; }
+.games-nav > .g-modes > button.on { background: #ffc400; color: #1a1a1a; border-color: #ffc400; }
+.games-nav.g-lobby { margin-top: 28px; }
+.games-nav.g-lobby > .g-modes { gap: 16px; }
+.games-nav.g-lobby > .g-modes > button { min-height: 150px; font-size: 1.5rem; border-radius: 22px; }
+.games-nav.g-lobby > .g-modes > button span { font-size: 2.8rem; }
+@media (max-width: 700px) {
+  .games-nav.g-lobby > .g-modes { grid-template-columns: 1fr; }
+  .games-nav.g-lobby > .g-modes > button { min-height: 116px; }
+}
+.games-nav .g-body { display: none; }
+.games-nav.g-open .g-body { display: block; }
+.games-nav .g-games { display: none; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 6px 0 14px; }
+.games-nav.g-free .g-games, .games-nav.g-smode.g-ready .g-games { display: grid; }
+.games-nav .g-games > * { display: grid; justify-items: center; align-content: center; gap: 4px; min-height: 84px; padding: 12px 8px; border-radius: 16px; font-size: 1.05rem; font-weight: 700; text-align: center; text-decoration: none; line-height: 1.2; margin: 0; width: auto; }
+.games-nav:not(.g-smode) .g-plan, .games-nav:not(.g-smode) [data-game-draw], .games-nav:not(.g-smode) [data-game-undo], .games-nav:not(.g-smode) .g-direct { display: none !important; }
