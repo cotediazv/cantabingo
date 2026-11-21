@@ -868,6 +868,20 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
 .esp-mont.crece .esp-media{transform:scale(1.25);z-index:6;box-shadow:0 22px 50px -10px rgba(0,0,0,.9)}
 @media (max-width:900px){.esp-mont .esp-media{transform-origin:center center}.esp-mont:nth-child(3n+1) .esp-media{transform-origin:left center}.esp-mont:nth-child(3n) .esp-media{transform-origin:right center}}
 @media (max-width:560px){.esp-mont:nth-child(n) .esp-media{transform-origin:right center}.esp-mont:nth-child(odd) .esp-media{transform-origin:left center}}
+/* ===== Reproductor sobre la página (pedido de Cote): de fondo la página de KRB Stage; flechas sin fin y cruz para volver ===== */
+.pc{background:rgba(12,11,18,.72);-webkit-backdrop-filter:blur(14px) saturate(1.15);backdrop-filter:blur(14px) saturate(1.15)}
+.pc-pista>*{background:transparent;box-sizing:border-box;padding:clamp(64px,9vh,88px) clamp(80px,9vw,140px)}
+.pc-x,.pc-flecha{position:absolute;z-index:3;display:grid;place-items:center;border-radius:50%;border:1px solid rgba(243,238,230,.35);background:rgba(12,11,18,.72);color:#fff;cursor:pointer;line-height:1;padding:0;transition:background .2s,color .2s,border-color .2s}
+.pc-x{top:max(16px,env(safe-area-inset-top));right:max(16px,env(safe-area-inset-right));width:50px;height:50px;font-size:22px}
+.pc-flecha{top:50%;transform:translateY(-50%);width:56px;height:56px;font-size:34px;padding-bottom:4px}
+.pc-ant{left:max(18px,env(safe-area-inset-left))}.pc-sig{right:max(18px,env(safe-area-inset-right))}
+.pc-x:hover,.pc-flecha:hover,.pc-x:focus-visible,.pc-flecha:focus-visible{background:var(--foco);border-color:var(--foco);color:var(--noche)}
+@media (max-width:700px){
+  .pc-pista>*{padding:max(72px,calc(env(safe-area-inset-top) + 64px)) 12px max(86px,calc(env(safe-area-inset-bottom) + 78px))}
+  .pc-x{width:46px;height:46px}
+  .pc-flecha{top:auto;bottom:max(18px,calc(env(safe-area-inset-bottom) + 12px));transform:none;width:50px;height:50px;font-size:30px}
+  .pc-ant{left:calc(50% - 62px)}.pc-sig{right:calc(50% - 62px)}
+}
 /* ===== ¿Quiénes somos? (pedido de Cote): mejor disposición de los textos, el logo más bonito y más interactivo ===== */
 .quienes{position:relative;overflow:hidden}
 .quienes .envoltura{display:block}
@@ -993,7 +1007,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
 </header>
 
 <canvas id="red-fondo" aria-hidden="true"></canvas>
-<div class="pc" id="pc" hidden role="dialog" aria-label="Pantalla completa"><div class="pc-pista" id="pc-pista"></div></div>
+<div class="pc" id="pc" hidden role="dialog" aria-label="Videos"><div class="pc-pista" id="pc-pista"></div><button type="button" class="pc-x" id="pc-x" aria-label="Cerrar y volver a la página">✕</button><button type="button" class="pc-flecha pc-ant" id="pc-ant" aria-label="Anterior">‹</button><button type="button" class="pc-flecha pc-sig" id="pc-sig" aria-label="Siguiente">›</button></div>
 <main>
   <section class="portada" id="inicio">
     <video id="video-portada" class="video-portada" muted loop playsinline preload="none" poster="portada.jpg" aria-hidden="true"></video>
@@ -1499,14 +1513,17 @@ function pintarColumnas(){
 const pc=$('#pc'),pcPista=$('#pc-pista');let pcItems=[],pcI=0,pcSonido=true,pcAlCerrar=null;
 function pcMedio(x){if(x.img){const im=document.createElement('img');im.src=x.img;im.alt='';im.draggable=false;return im}
   if(x.yt||x.tw){const d=document.createElement('div');d.className='pc-emb';if(x.thumb)d.style.backgroundImage=`url("${x.thumb}")`;d._x=x;return d}
-  const v=document.createElement('video');v.playsInline=true;v.preload='auto';if(x.poster)v.poster=x.poster;v.dataset.src=x.video;return v}
+  const v=document.createElement('video');v.playsInline=true;v.loop=true;v.preload='auto';if(x.poster)v.poster=x.poster;v.dataset.src=x.video;return v}
 function pcMostrar(i,animar){
-  pcI=Math.max(0,Math.min(pcItems.length-1,i));
-  pcPista.style.transition=animar?'transform .3s ease':'none';
+  const n=Math.max(1,pcItems.length),antes=pcI;pcI=((i%n)+n)%n;
+  const vuelta=n>2&&Math.abs(pcI-antes)>1; // del último al primero (o al revés): sin recorrer todos
+  pcPista.style.transition=animar&&!vuelta?'transform .3s ease':'none';
+  pc.querySelectorAll('.pc-flecha').forEach(b=>b.hidden=n<2);
   pcPista.style.transform=`translateX(${-pcI*100}%)`;
   [...pcPista.children].forEach((el,j)=>{if(el.classList.contains('pc-emb')){j===pcI?embEncender(el):embApagar(el);return}
     if(el.tagName!=='VIDEO')return;
-    if(Math.abs(j-pcI)<=1){if(!el.getAttribute('src'))el.src=el.dataset.src}else if(el.getAttribute('src')){el.pause();el.removeAttribute('src');el.load()}
+    const dist=Math.min(Math.abs(j-pcI),n-Math.abs(j-pcI));
+    if(dist<=1){if(!el.getAttribute('src'))el.src=el.dataset.src}else if(el.getAttribute('src')){el.pause();el.removeAttribute('src');el.load()}
     if(j===pcI){el.muted=!pcSonido;el.volume=1;el.play().then(pcAviso,e=>{if(e&&e.name==='NotAllowedError'){el.muted=true;pcSonido=false;el.play().catch(()=>{})}pcAviso()})}else el.pause()});
   pcAviso();
 }
@@ -1545,6 +1562,15 @@ function cerrarPC(desdeAtras){
   if(pcAlCerrar)pcAlCerrar();
 }
 addEventListener('popstate',()=>cerrarPC(true));
+// ¿el toque cayó fuera de la imagen del video? (el video se ve entero dentro de su recuadro)
+function pcFuera(el,x,y){const r=el.getBoundingClientRect(),cs=getComputedStyle(el);
+  const pl=parseFloat(cs.paddingLeft)||0,pr=parseFloat(cs.paddingRight)||0,pt=parseFloat(cs.paddingTop)||0,pb=parseFloat(cs.paddingBottom)||0;
+  const cw=r.width-pl-pr,ch=r.height-pt-pb,iw=el.videoWidth||el.naturalWidth,ih=el.videoHeight||el.naturalHeight;
+  let w=cw,h=ch;if(iw&&ih){const k=Math.min(cw/iw,ch/ih);w=iw*k;h=ih*k}
+  const l=r.left+pl+(cw-w)/2,t=r.top+pt+(ch-h)/2;return x<l||x>l+w||y<t||y>t+h}
+// la cruz y las flechas (no deben iniciar el arrastre del reproductor)
+[['pc-x',()=>cerrarPC()],['pc-ant',()=>pcMostrar(pcI-1,true)],['pc-sig',()=>pcMostrar(pcI+1,true)]].forEach(([id,f])=>{const b=document.getElementById(id);
+  b.addEventListener('pointerdown',e=>e.stopPropagation());b.addEventListener('click',e=>{e.stopPropagation();f()})});
 // arrastre con el dedo o el mouse: la imagen sigue al dedo
 let pcX=null,pcY=null,pcT=0,pcMovio=false;
 pc.addEventListener('pointerdown',e=>{try{pc.setPointerCapture(e.pointerId)}catch(_){}pcX=e.clientX;pcY=e.clientY;pcT=Date.now();pcMovio=false;pcPista.style.transition='none'});
@@ -1557,7 +1583,7 @@ const pcSoltar=e=>{if(pcX==null)return;const dx=e.clientX-pcX,dy=e.clientY-pcY;p
   if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)){pcMostrar(pcI+(dx<0?1:-1),true);return}
   pcMostrar(pcI,true);
   // un toque sin arrastrar: activa el sonido si estaba en silencio, o pausa/sigue el video
-  if(!pcMovio&&Date.now()-pcT<400){const el=pcPista.children[pcI];if(el&&el._toggle){el._toggle();return}if(el&&el.tagName==='VIDEO'){if(el.muted){el.muted=false;el.volume=1;pcSonido=true;el.play().catch(()=>{})}else el.paused?el.play().catch(()=>{}):el.pause();pcAviso()}}};
+  if(!pcMovio&&Date.now()-pcT<400){const el=pcPista.children[pcI];if(el&&!el._toggle&&pcFuera(el,e.clientX,e.clientY)){cerrarPC();return}if(el&&el._toggle){el._toggle();return}if(el&&el.tagName==='VIDEO'){if(el.muted){el.muted=false;el.volume=1;pcSonido=true;el.play().catch(()=>{})}else el.paused?el.play().catch(()=>{}):el.pause();pcAviso()}}};
 pc.addEventListener('pointerup',pcSoltar);pc.addEventListener('pointercancel',pcSoltar);
 let pcRueda=0;pc.addEventListener('wheel',e=>{e.preventDefault();const d=Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY;const t=Date.now();if(t-pcRueda<450||Math.abs(d)<20)return;pcRueda=t;pcMostrar(pcI+(d>0?1:-1),true)},{passive:false});
 addEventListener('keydown',e=>{if(pc.hidden)return;if(e.key==='Escape')cerrarPC();if(e.key==='ArrowRight')pcMostrar(pcI+1,true);if(e.key==='ArrowLeft')pcMostrar(pcI-1,true)});
