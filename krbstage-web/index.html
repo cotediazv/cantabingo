@@ -868,6 +868,15 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
 .esp-mont.crece .esp-media{transform:scale(1.25);z-index:6;box-shadow:0 22px 50px -10px rgba(0,0,0,.9)}
 @media (max-width:900px){.esp-mont .esp-media{transform-origin:center center}.esp-mont:nth-child(3n+1) .esp-media{transform-origin:left center}.esp-mont:nth-child(3n) .esp-media{transform-origin:right center}}
 @media (max-width:560px){.esp-mont:nth-child(n) .esp-media{transform-origin:right center}.esp-mont:nth-child(odd) .esp-media{transform-origin:left center}}
+/* ===== Videos de Instagram (pedido de Cote): fecha arriba a la izquierda y flechas a los costados para pasar de a 6 ===== */
+.ptl-grilla{position:relative}
+.ig-fecha{position:absolute;left:4px;top:4px;z-index:2;font-family:var(--f-dato);font-size:10px;line-height:1.2;letter-spacing:.03em;color:var(--texto);background:rgba(12,11,18,.78);border-radius:4px;padding:2px 5px;pointer-events:none;white-space:nowrap}
+.ptl-grilla.con-pag{padding-left:42px!important;padding-right:42px!important}
+.ig-pag{position:absolute;top:50%;transform:translateY(-50%);z-index:7;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--c,var(--foco));background:rgba(12,11,18,.85);color:var(--c,var(--foco));font-size:22px;line-height:1;padding-bottom:3px;box-sizing:border-box;cursor:pointer;user-select:none;transition:background .2s,color .2s,opacity .2s}
+.ig-pag-ant{left:5px}.ig-pag-sig{right:5px}
+.ig-pag:hover,.ig-pag:focus-visible{background:var(--c,var(--foco));color:var(--noche);outline:none}
+.ig-pag.off{opacity:.25;cursor:default;pointer-events:none}
+@media (max-width:900px){.ptl-grilla.con-pag{padding-left:38px!important;padding-right:38px!important}.ig-pag{width:30px;height:30px;font-size:20px}}
 /* ===== Switch «Repeticiones Twitch» (pedido de Cote): a la izquierda de la fila «Pantallas del local» ===== */
 .rep-sw{display:inline-flex;align-items:center;gap:8px;margin-right:6px;padding:4px 12px 4px 4px;border:1px solid var(--linea);border-radius:999px;background:var(--tarima);cursor:pointer;user-select:none;white-space:nowrap;flex:none;color:var(--tenue);text-transform:none;letter-spacing:.04em}
 .rep-sw input{position:absolute;opacity:0;width:1px;height:1px}
@@ -1467,27 +1476,33 @@ pintarCarteleras();setInterval(()=>{['kennedy','tobalaba','frida'].forEach(v=>de
 // Ya activo, tocar un video lo abre en pantalla completa. Las páginas se cambian con las flechas.
 let bloqueActivo=null;
 function activarBloque(caja){if(bloqueActivo&&bloqueActivo!==caja)bloqueActivo._apagar();bloqueActivo=caja;caja._prender()}
+// fecha corta del video (hora de Chile): «15 nov» este año, «3 mar 2024» los anteriores
+const MESES_IG=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function fechaIG(iso){const d=new Date(iso);if(!iso||isNaN(d))return '';
+  const p=new Intl.DateTimeFormat('es-CL',{timeZone:'America/Santiago',day:'numeric',month:'numeric',year:'numeric'}).formatToParts(d),g=t=>+((p.find(x=>x.type===t)||{}).value||0);
+  const a=g('year'),hoy=+new Intl.DateTimeFormat('es-CL',{timeZone:'America/Santiago',year:'numeric'}).format(new Date());
+  return `${g('day')} ${MESES_IG[g('month')-1]}${a&&a!==hoy?' '+a:''}`}
 function pintarColumnas(){
   document.querySelectorAll('.ptl-col').forEach(col=>{
     const dl=(igDatos||{})[col.dataset.local]||{};
-    // 6 elegidos al azar entre los 20 más populares (cambian cada vez que se abre la página)
-    const populares=(dl.populares||[]).filter(x=>x&&x.url).map(x=>[Math.random(),x]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]).slice(0,6);
-    const enPop=new Set(populares.map(x=>x.link||x.url));
+    // (pedido de Cote) todos los videos de la cuenta, del último hacia atrás, de a 6 por página (sin «Más populares»)
     let paginas=[];
-    const armarPaginas=()=>{const resto=(dl.videos||[]).filter(x=>x&&x.url&&!enPop.has(x.link||x.url)).slice(0,60);
-      paginas=[];if(populares.length)paginas.push({vids:populares});
-      for(let i=0;i<resto.length;i+=6)paginas.push({vids:resto.slice(i,i+6)});
+    const armarPaginas=()=>{const vids=(dl.videos||[]).filter(x=>x&&x.url);
+      paginas=[];for(let i=0;i<vids.length;i+=6)paginas.push({vids:vids.slice(i,i+6)});
       // mientras no llega la lista completa, el total se estima con lo que informa la Sala
-      const total=dl._completo?paginas.length:Math.max(paginas.length,(populares.length?1:0)+Math.ceil(Math.max(0,Math.min(60,(dl.total||0)-populares.length))/6));
-      paginas.forEach((p,i)=>p.nombre=i===0&&populares.length?'Más populares':`${i+1} de ${total}`);
-      paginas.total=total};
+      paginas.total=dl._completo?paginas.length:Math.max(paginas.length,Math.ceil((dl.total||vids.length)/6))};
     armarPaginas();
     if(!paginas.length)return;
     // la lista completa de videos del lugar se pide recién cuando alguien pasa de página o abre la pantalla completa
     const completar=async()=>{if(dl._completo)return;try{const j=await fetch('https://cantabingo.onrender.com/api/web/instagram/lugar?local='+col.dataset.local,{signal:AbortSignal.timeout(15000)}).then(r=>r.json());if(Array.isArray(j.videos)&&j.videos.length){dl.videos=j.videos;dl._completo=true;armarPaginas()}}catch(_){}};
     const caja=col.querySelector('.ptl-grilla');caja.hidden=false;
-    let nav=col.querySelector('.ptl-pag');if(nav)nav.remove();nav=null;
-    if(paginas.total>1){nav=document.createElement('div');nav.className='ptl-pag';nav.innerHTML='<button class="ptl-pag-ant" aria-label="Página anterior">‹</button><span></span><button class="ptl-pag-sig" aria-label="Página siguiente">›</button>';caja.after(nav)}
+    col.querySelectorAll('.ptl-pag').forEach(x=>x.remove());
+    // flechas a los costados de los 6 videos (pedido de Cote): › los 6 anteriores, ‹ los más nuevos
+    const fl=[['ant','‹','Videos más nuevos',-1],['sig','›','Videos anteriores',1]].map(([k,t,l,d])=>{const b=document.createElement('span');
+      b.className='ig-pag ig-pag-'+k;b.textContent=t;b.setAttribute('role','button');b.tabIndex=0;b.setAttribute('aria-label',l);b.title=l;
+      const ve=e=>{e.preventDefault();e.stopPropagation();if(!b.classList.contains('off'))ir(d)};b.addEventListener('click',ve);b.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')ve(e)});
+      b.addEventListener('pointerdown',e=>e.stopPropagation());return b});
+    caja.classList.toggle('con-pag',paginas.total>1);
     let pag=0,vs=[],activo=false;
     // prendido: los 6 se mueven (sin sonido; con el mouse encima, suena ese). Apagado: quedan quietos en su imagen
     caja._prender=()=>{activo=true;caja.classList.add('activo');if(quieto)return;vs.forEach(v=>{if(!v.getAttribute('src'))v.src=v.dataset.src;v.play().catch(()=>{})})};
@@ -1495,7 +1510,7 @@ function pintarColumnas(){
     function pintar(){
       vs.forEach(v=>{v.pause();v.removeAttribute('src');v.load()});
       const vids=paginas[pag].vids;
-      caja.innerHTML=vids.map((x,i)=>`<button data-i="${i}" aria-label="Ver video"><video muted playsinline preload="none" ${x.poster?(caja._cerca?`poster="${esc(x.poster)}"`:`data-poster="${esc(x.poster)}"`):''} data-src="${esc(x.url)}"></video></button>`).join('')+'<span class="ptl-vacio"></span>'.repeat(6-vids.length); // la página guarda el mismo alto
+      caja.innerHTML=vids.map((x,i)=>`<button data-i="${i}" aria-label="Ver video${x.date?' del '+fechaIG(x.date):''}"><video muted playsinline preload="none" ${x.poster?(caja._cerca?`poster="${esc(x.poster)}"`:`data-poster="${esc(x.poster)}"`):''} data-src="${esc(x.url)}"></video>${x.date?`<span class="ig-fecha">${fechaIG(x.date)}</span>`:''}</button>`).join('')+'<span class="ptl-vacio"></span>'.repeat(6-vids.length); // la página guarda el mismo alto
       vs=[...caja.querySelectorAll('video')];
       caja.querySelectorAll('button').forEach(b=>{sonarAlPasar(b,b.querySelector('video'));ponerParlante(b,b.querySelector('video'));b.onclick=e=>{
         // celular: el primer toque en un video lo agranda y suena (y activa el bloque); el segundo, pantalla completa
@@ -1505,12 +1520,11 @@ function pintarColumnas(){
         achicar();caja._apagar();const i=+b.dataset.i;
         completar().then(()=>{const todos=paginas.flatMap(p=>p.vids),antes=paginas.slice(0,pag).reduce((n,p)=>n+p.vids.length,0);
           abrirPC(todos.map(x=>({video:x.url,poster:x.poster})),antes+i,()=>activarBloque(caja))})}});
-      if(nav)nav.querySelector('span').textContent=paginas[pag].nombre;
+      if(paginas.total>1){fl.forEach(b=>caja.appendChild(b));fl[0].classList.toggle('off',pag<=0);fl[1].classList.toggle('off',pag>=paginas.total-1)}
       if(activo)caja._prender();
     }
     const portadas=i=>Promise.all(paginas[i].vids.map(x=>x.poster?new Promise(ok=>{const im=new Image();im.onload=im.onerror=ok;im.src=x.poster;setTimeout(ok,4000)}):0));
-    const ir=async d=>{await completar();const n=(pag+d+paginas.length)%paginas.length;portadas(n).then(()=>{pag=n;pintar();portadas((n+1)%paginas.length)})};
-    if(nav){nav.querySelector('.ptl-pag-ant').onclick=()=>ir(-1);nav.querySelector('.ptl-pag-sig').onclick=()=>ir(1)}
+    const ir=async d=>{await completar();const n=pag+d;if(n<0||n>=paginas.length)return;portadas(n).then(()=>{pag=n;pintar();if(n+1<paginas.length)portadas(n+1)})};
     if(conMouse){col.onmouseenter=()=>activarBloque(caja);col.onmouseleave=()=>{if(bloqueActivo===caja){caja._apagar();bloqueActivo=null}}}
     pintar();
     // las fotos de los videos se bajan recién cuando el bloque se acerca a la pantalla (la página abre más rápido)
