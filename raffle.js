@@ -26,7 +26,8 @@ module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, 
     const r = db.raffle;
     // Desempate del bingo: la misma tómbola, pero solo entre los ganadores empatados
     if (r.mode === 'tie' && r.tie) return res.json({ mode: 'tie', picked: [], roll: r.tie, rollMs: ROLL_MS, now: Date.now(), pool: r.tie.tied });
-    return res.json({ mode: 'rosco', picked: r.picked, confirm: conf(), declined: declined(), roll: r.roll, rollMs: ROLL_MS, now: Date.now(), pool: names().filter((n) => connectedNames().has(n) && !declined().includes(n)).length });
+    const on = connectedNames(); const no = new Set(declined()); // una sola vez por consulta (la leen todos los celulares)
+    return res.json({ mode: 'rosco', picked: r.picked, confirm: conf(), declined: declined(), roll: r.roll, rollMs: ROLL_MS, now: Date.now(), pool: names().filter((n) => on.has(n) && !no.has(n)).length });
   });
 
   app.get('/api/people', requireAdmin, (_req, res) => { const on = connectedNames(); res.json({ names: names(), connected: names().filter((n) => on.has(n)) }); });
@@ -42,7 +43,7 @@ module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, 
   // en las sesiones de bingo abiertas (ganadores incluidos) y en los roscos ya creados.
   app.post('/api/people/rename', requireAdmin, (req, res) => {
     const from = String((req.body || {}).from || '');
-    const to = String((req.body || {}).to || '').trim().replace(/\s+/g, ' ').slice(0, 30).toLocaleUpperCase('es');
+    const to = String((req.body || {}).to || '').trim().replace(/\s+/g, ' ').slice(0, 50).toLocaleUpperCase('es');
     if (!to) return fail(res, 400, 'Escribe el nombre corregido');
     if (!db.people[key(from)]) return fail(res, 404, 'Esa persona ya no está en la lista');
     if (key(to) !== key(from) && db.people[key(to)]) return fail(res, 400, 'Ya hay otra persona con ese nombre');
@@ -141,6 +142,7 @@ module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, 
       r.picked = r.picked.filter((n) => n !== name);
       delete conf()[name];
       if (!declined().includes(name)) declined().push(name);
+      if (r.roll && r.roll.winner === name) r.roll = null; // la pantalla deja de anunciarlo
     }
     save();
     res.json({ picked: r.picked, confirm: conf(), declined: declined() });

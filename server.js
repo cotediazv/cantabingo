@@ -160,9 +160,16 @@ const currentGame = (s) => {
   const st = db.stage || 'bingo';
   if (st === 'rueda') {
     const w = Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0];
-    return w && !w.winAccepted ? { game: 'rosco', wheel: w.id } : null;
+    // Termina con el ganador aceptado y el de la Trivia ya mostrado (pedido de Cote: el ganador de la Trivia sale sí o sí)
+    return w && !(w.winAccepted && (w.crowd || {}).winner) ? { game: 'rosco', wheel: w.id } : null;
   }
-  if (st === 'sorteo') return (db.raffle || {}).mode === 'tie' ? { game: 'bingo' } : { game: 'rosco' }; // el desempate del bingo usa el mismo sorteo
+  if (st === 'sorteo') { // el desempate (del bingo o de El Rosco) usa el mismo sorteo
+    const r = db.raffle || {};
+    if (r.mode !== 'tie') return { game: 'rosco' };
+    if ((r.tie || {}).game !== 'rosco') return { game: 'bingo' };
+    const w = Object.values(db.wheels || {}).sort((x, y) => y.created - x.created)[0];
+    return w ? { game: 'rosco', wheel: w.id } : { game: 'rosco' }; // vuelve al panel de El Rosco, donde se acepta al ganador
+  }
   if (st === 'voto') { const v = db.vote || {}; return v.winner ? null : { game: v.mode === 'karaoke' ? 'festival' : 'objeto' }; }
   if (st === 'bingo') return bingoStarted(s) && !roundOver(s) ? { game: 'bingo' } : null;
   return null;

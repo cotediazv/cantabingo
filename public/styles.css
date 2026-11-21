@@ -2580,3 +2580,10 @@ body.kids[data-kz-level="8"] { background: linear-gradient(160deg, #fdffb6 0%, #
 .rank-ann .rank-ann-list em { font-style: normal; color: #ffc400; min-width: 2.4em; }
 .rank-ann .rank-ann-list b { flex: 1; overflow-wrap: anywhere; }
 .rank-ann .rank-ann-list i { font-style: normal; color: #ffc400; white-space: nowrap; }
+
+/* Lista «Ya salieron» del celular: el ✅/⏳ queda dentro de la fila aunque el nombre sea largo (revisión 21 nov) */
+.pact .pact-list p { display: flex; align-items: center; gap: 8px; }
+.pact .pact-list p span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.pact .pact-list p i { float: none; flex: none; }
+/* «📣 Para anunciar» del ganador del bingo: fuera de las columnas, que se ocultan al confirmar el ganador (revisión 21 nov) */
+#host-bingo > #win-ann:not(:empty) { margin: 14px 0; }

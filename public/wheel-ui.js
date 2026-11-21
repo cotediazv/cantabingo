@@ -162,7 +162,7 @@
           <button class="primary big w-accept" id="w-accept" data-do="acceptwin" hidden>✔ Aceptar ganador</button>
           <div id="w-accepted" hidden><div class="w-accepted">✔ Ganador aceptado</div>
             <button class="primary big w-accept" id="w-crowd" data-do="crowdwin">🏅 Mostrar ganador de la Trivia del Rosco</button>
-            <div class="vc-read" id="w-crowd-res" hidden></div><div id="w-after" hidden>${BACK_BINGO}</div></div>
+            <div class="w-ann" id="w-crowd-res" hidden></div><div id="w-after" hidden>${BACK_BINGO}</div></div>
           <div class="w-flow">
             <button class="w-show" id="w-show"></button>
             <button class="w-go" id="w-clock"></button>
@@ -214,14 +214,15 @@
       $('#w-accepted').hidden = !st.winAccepted;
       $('#w-crowd').hidden = !!st.crowdWinner;
       $('#w-crowd-res').hidden = !st.crowdWinner;
-      if (st.crowdWinner) $('#w-crowd-res').innerHTML = st.crowdWinner.none ? window.annHtml('🏅 Trivia del Rosco', ['Nadie sumó puntos'], [`Jugaron ${st.crowdWinner.players} personas`])
-        : window.annHtml('🏅 Premio especial · Ganó la Trivia del Rosco', [st.crowdWinner.name], [`${st.crowdWinner.score} puntos · ${st.crowdWinner.hits} aciertos`, `Jugaron ${st.crowdWinner.players} personas`]);
+      const many = (n, one, more) => `${n} ${n === 1 ? one : more}`; // «1 acierto», «2 aciertos»
+      if (st.crowdWinner) $('#w-crowd-res').innerHTML = st.crowdWinner.none ? window.annHtml('🏅 Trivia del Rosco', ['Nadie sumó puntos'], [`Jugaron ${many(st.crowdWinner.players, 'persona', 'personas')}`])
+        : window.annHtml('🏅 Premio especial · Ganó la Trivia del Rosco', [st.crowdWinner.name], [`${many(st.crowdWinner.score, 'punto', 'puntos')} · ${many(st.crowdWinner.hits, 'acierto', 'aciertos')}`, `Jugaron ${many(st.crowdWinner.players, 'persona', 'personas')}`]);
       // Pedido de Cote (21 nov): al final, sí o sí se muestra el ganador de la Trivia antes de seguir con lo que viene
       $('#w-after').hidden = !st.crowdWinner;
       // Pedido de Cote (21 nov): con el ganador aceptado, su nombre y su premio grandes para anunciarlo
       const wa = $('#w-accepted .w-accepted');
       const waKey = st.winAccepted && st.winner ? `${st.winner.name}|${st.winner.hits}|${st.winner.misses}` : '';
-      if (wa && wa.dataset.k !== waKey) { wa.dataset.k = waKey; wa.classList.toggle('w-ann', !!waKey); wa.innerHTML = waKey ? window.annHtml(`🏆 Premio mayor · ${st.winner.full ? '¡Completó el rosco!' : 'Ganó El Rosco'}`, [st.winner.name], [`${st.winner.hits} aciertos · ${st.winner.misses} fallos${st.winner.byDraw ? ' · salió en el desempate' : ''}`]) : '✔ Ganador aceptado'; }
+      if (wa && wa.dataset.k !== waKey) { wa.dataset.k = waKey; wa.classList.toggle('w-ann', !!waKey); wa.innerHTML = waKey ? window.annHtml(`🏆 Premio mayor · ${st.winner.full ? '¡Completó el rosco!' : 'Ganó El Rosco'}`, [st.winner.name], [`${st.winner.hits} ${st.winner.hits === 1 ? 'acierto' : 'aciertos'} · ${st.winner.misses} ${st.winner.misses === 1 ? 'fallo' : 'fallos'}${st.winner.byDraw ? ' · salió en el desempate' : ''}`]) : '✔ Ganador aceptado'; }
       // Pregunta paso a paso (pedido de Cote): solo se puede apretar el botón del paso que toca; los demás quedan
       // bloqueados en blanco y negro. 1) Poner rosco en pantalla → 2) Iniciar pregunta → 3) Correcta / Incorrecta / Pasa
       // (con Correcta se sigue en el paso 3; con Incorrecta o Pasa el rosco sale y se vuelve al paso 1)

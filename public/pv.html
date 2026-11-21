@@ -431,8 +431,9 @@
       view.innerHTML = o;
     }
     function load() {
-      if (!wid) { get('/api/wheels', function (l) { if (l && l.length) { wid = l[0].id; load(); } }); return; }
-      get('/api/wheels/' + wid + '/ranking', function (r) { if (r && cur === 'sala') paint(r); });
+      // /api/wheel-current es público (la lista /api/wheels es solo del moderador)
+      if (!wid) { get('/api/wheel-current', function (l) { if (l && l.wheels && l.wheels.length && cur === 'sala') { wid = l.wheels[0].id; load(); } }); return; }
+      get('/api/wheels/' + wid + '/ranking', function (r) { if (r && cur === 'sala') paint(r); else if (!r) wid = ''; }); // si se cargó otro rosco, se vuelve a buscar
     }
     load();
     every(stageTimers, 5000, load);
@@ -444,10 +445,12 @@
       var sig = JSON.stringify([r.picked, rolling, r.mode, r.roll && r.roll.winner]);
       if (sig === last) return;
       last = sig;
-      var o = '<div class="abs g-title fit">' + (r.mode === 'tie' ? 'Desempate del bingo' : '🎲 Sorteo de concursantes') + '</div>';
+      var isRosco = r.mode === 'tie' && r.roll && r.roll.game === 'rosco'; // El Rosco usa el mismo sorteo para su desempate
+      var o = '<div class="abs g-title fit">' + (isRosco ? '🏆 ¡Ganador de El Rosco!' : r.mode === 'tie' ? 'Desempate del bingo' : '🎲 Sorteo de concursantes') + '</div>';
       if (rolling) o += '<div class="abs big gold" style="top:30rem">🎲 Sorteando…</div>';
       else if (r.mode === 'tie' && r.roll && r.roll.winner) o += '<div class="abs" style="top:28rem"><div class="g-sub">Ganó</div><b class="big fit" style="display:block">' + h(r.roll.winner) + '</b></div>';
-      var picked = r.picked || [];
+      var picked = [];
+      for (var k = 0; k < (r.picked || []).length; k++) if (!(rolling && r.roll && r.picked[k] === r.roll.winner)) picked.push(r.picked[k]); // mientras gira, sin adelantar el nombre
       if (picked.length) { o += '<div class="abs" style="top:' + (rolling ? 44 : 22) + 'rem"><ol class="rows">'; for (var i = 0; i < picked.length; i++) o += '<li class="top"><em>' + (i + 1) + '.º</em>' + h(picked[i]) + '</li>'; o += '</ol></div>'; }
       o += qrFoot();
       view.innerHTML = o;
