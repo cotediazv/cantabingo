@@ -25,12 +25,19 @@
     // iPad viejo no ejecutan esta página y quedaba solo el logo): pasan solas a la versión liviana (pv.html), con las mismas
     // reglas. Escrito en JavaScript antiguo para que corra en cualquier navegador.
     (function () {
-      var m = /^#\/(vertical|vertical-in|pantalla)\/([a-z-]+)/.exec(location.hash || '');
-      if (!m) return;
+      // Los enlaces cortos escritos con «#» (ej. cantabingo.onrender.com/#/vk) llevan al mismo lugar que sin «#»
+      var SHORT = { '#/vk': '#/vertical/kennedy', '#/cc': '/cc.html' };
+      var hash = location.hash || '';
+      var to = SHORT[hash.toLowerCase().replace(/\/+$/, '')];
+      if (to && to.charAt(0) === '/') { location.replace(to + location.search); return; }
+      if (to) hash = to;
+      var m = /^#\/(vertical|vertical-in|pantalla)\/([a-z-]+)/.exec(hash);
       var old = false;
-      try { new Function('try{}catch{}; var o = { ...{} }; var f = async function () {}; return [1].at(-1);')(); } catch (e) { old = true; }
-      if (!old && (!Object.fromEntries || !(window.CSS && CSS.supports && CSS.supports('inset', '0')))) old = true;
-      if (!old) return;
+      if (m) {
+        try { new Function('try{}catch{}; var o = { ...{} }; var f = async function () {}; return [1].at(-1);')(); } catch (e) { old = true; }
+        if (!old && (!Object.fromEntries || !(window.CSS && CSS.supports && CSS.supports('inset', '0')))) old = true;
+      }
+      if (!old) { if (hash !== location.hash) location.replace(location.pathname + location.search + hash); return; }
       var q = location.search.replace(/^\?/, '');
       location.replace('/pv.html?p=' + m[2] + (m[1] === 'vertical' ? '&girar=1' : '') + (q ? '&' + q : ''));
     })();
