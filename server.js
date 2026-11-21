@@ -153,6 +153,20 @@ function evaluate(s) {
 }
 // El moderador recibe la lista completa de resultados; los participantes solo los cartones
 // ganadores (sin nombres), que es lo único que necesitan y pesa mucho menos.
+// El bingo de la ronda empezó: se eligió su figura (en #/figura o al pasar de ronda) o ya hay números
+const bingoStarted = (s) => s.drawn.length > 0 || s.figRound === s.round;
+// Juego en curso en la sala (para «Volver al juego en curso» en Juegos): lo que está en pantalla y aún no termina
+const currentGame = (s) => {
+  const st = db.stage || 'bingo';
+  if (st === 'rueda') {
+    const w = Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0];
+    return w && !w.winAccepted ? { game: 'rosco', wheel: w.id } : null;
+  }
+  if (st === 'sorteo') return { game: 'rosco' };
+  if (st === 'voto') { const v = db.vote || {}; return v.winner ? null : { game: v.mode === 'karaoke' ? 'festival' : 'objeto' }; }
+  if (st === 'bingo') return bingoStarted(s) && !roundOver(s) ? { game: 'bingo' } : null;
+  return null;
+};
 function publicState(s, full = false) {
   const p = db.projects[s.projectId];
   const results = full ? s.results : s.results.filter((r) => r.validated && !r.dismissed).map((r) => ({ cardNo: r.cardNo, pattern: r.pattern, validated: true, name: r.name }));
@@ -170,9 +184,11 @@ function publicState(s, full = false) {
     gameSeq: (db.gameDraw || {}).seq || 0, // sube con cada juego que empieza (sorteado o elegido)
     voteGen: (db.vote || {}).gen || 0, // cambia con cada concurso nuevo (El Festival u objeto): los celulares muestran sus instrucciones
     winConfirmed: roundOver(s), winConfirmedAt: s.confirmedAt || 0, now: Date.now(),
+    started: bingoStarted(s), // el bingo de esta ronda empezó (figura elegida o ya hay números); antes, la sala espera el primer juego
     patterns: s.patterns, drawn: s.drawn, results, finalists: s.finalists || null,
     auto: s.auto, cardsPerPlayer: s.cardsPerPlayer, totalCards: p.cards.length,
     players: Object.values(s.players).length,
+    ...(full ? { current: currentGame(s) } : {}),
   };
 }
 // Los avisos se agrupan: si llegan muchos cambios seguidos (cientos de personas entrando o
@@ -472,7 +488,7 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
       break;
     case 'restart':
       stopAuto(s);
-      Object.assign(s, { round: s.round + 1, drawn: [], results: [], marks: {}, finalists: null, tieWinner: null, hideWin: false, confirmedAt: 0, patterns: cleanPatterns(b.patterns) });
+      Object.assign(s, { round: s.round + 1, figRound: s.round + 1, drawn: [], results: [], marks: {}, finalists: null, tieWinner: null, hideWin: false, confirmedAt: 0, patterns: cleanPatterns(b.patterns) });
       setStage('bingo'); // la ronda nueva devuelve la pantalla a la gráfica del bingo
       evaluate(s);
       break;
@@ -501,6 +517,7 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
     case 'patterns':
       if (s.drawn.length || roundOver(s)) return fail(res, 400, 'El bingo ya empezó: la figura se cambia en la ronda siguiente');
       s.patterns = cleanPatterns(b.patterns);
+      s.figRound = s.round; // figura elegida: el bingo de esta ronda empezó
       break;
     case 'hidewin': s.hideWin = b.hide !== false; break; // quitar o volver a mostrar la celebración en pantalla
     case 'gc':
@@ -528,7 +545,7 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
 app.get('/api/sessions/:sid/host/state', (req, res) => { const s = hostSession(req, res); if (s) res.json(publicState(s, true)); });
 app.get('/api/sessions/:sid/host', (req, res) => {
   const s = hostSession(req, res);
-  if (s) res.json({ password: s.password, isPublic: s.isPublic, round: s.round, patterns: s.patterns, gc: s.gc || gcDefaults(), roundOver: roundOver(s), drawn: s.drawn.length });
+  if (s) res.json({ password: s.password, isPublic: s.isPublic, round: s.round, patterns: s.patterns, gc: s.gc || gcDefaults(), roundOver: roundOver(s), drawn: s.drawn.length, started: bingoStarted(s) });
 });
 
 // Sesiones activas: a ellas llevan el enlace y el QR fijos
@@ -713,7 +730,7 @@ app.get('/api/consola', requireAdmin, async (_req, res) => {
 // Programación del local del día: el de la sala abierta o, si no hay, el elegido en la sección Karaoke
 require('./agenda.js')({ app, db, save, requireAdmin, fail, currentVenue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
 
-// Sorteo del siguiente juego (pedido de Cote): la sala parte con un bingo; después se sortea entre todos los juegos
+// Sorteo del siguiente juego (pedido de Cote): la sala parte en Juegos, sin bingo (21 nov), y se sortea entre todos los juegos
 // (Bingo, El Rosco, El Festival y El objeto más extraño; el karaoke no es un juego), el bingo incluido desde el primer
 // sorteo. El juego que sale queda bloqueado solo para el sorteo siguiente y después vuelve a estar disponible.
 // El sorteo se ve en el tablero y en el GC (escenario «juego»).
@@ -721,7 +738,7 @@ const DRAW_GAMES = ['bingo', 'rosco', 'festival', 'objeto'];
 db.gameDraw ||= { played: [], last: null };
 if (!db.gameDraw.rule2) { db.gameDraw.played = db.gameDraw.last ? [db.gameDraw.last.game] : []; db.gameDraw.rule2 = true; }
 app.get('/api/gamedraw', (_req, res) => res.json({ ...db.gameDraw, undo: undefined, undoable: !!(db.gameDraw.undo || []).length, games: DRAW_GAMES, venue: (Object.values(db.sessions)[0] || {}).theme || 'frida', now: Date.now() }));
-// Cuántos juegos se sortean esa noche (pedido de Cote): juego inicial (bingo) + 1.º, 2.º, 3.º… sorteados
+// Cuántos juegos se sortean esa noche (pedido de Cote): 1.º, 2.º, 3.º… sorteados
 db.gameDraw.list ||= [];
 db.gameDraw.total ||= 3;
 // Pestañas «Sortear juegos» / «Elegir libremente» (pedido de Cote, 21 nov): con «Elegir libremente» no hay sorteo;

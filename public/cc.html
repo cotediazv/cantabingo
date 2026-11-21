@@ -178,7 +178,7 @@ function nav(current, inGame) {
 }
 var goTimer = null;
 function toGame(k) {
-  if (k === 'bingo') { var s = sala(); if (!s) { go('#/'); return; } api('GET', '/api/sessions/' + s.id + '/host/state', null, function (err, st) { if (!err && st && st.winConfirmed) go('#/ronda'); else if (!err && st && !st.drawn.length) go('#/figura'); else { api('POST', '/api/stage', { show: 'bingo' }); go('#/bingo'); } }); return; }
+  if (k === 'bingo') { var s = sala(); if (!s) { go('#/'); return; } api('GET', '/api/sessions/' + s.id + '/host/state', null, function (err, st) { if (!err && st && st.winConfirmed) go('#/ronda'); else if (!err && st && !st.started) go('#/figura'); else { api('POST', '/api/stage', { show: 'bingo' }); go('#/bingo'); } }); return; }
   if (k === 'rosco') { go('#/sorteoctl'); return; }
   go('#/' + k);
 }
@@ -234,7 +234,8 @@ views.bingo = function () {
       if (!s) { go('#/'); return; }
       api('GET', '/api/gamedraw', null, function (e1, g) { S.draw = g; });
       api('GET', '/api/sessions/' + s.id + '/host/state', null, function (e2, st) {
-        if (e2 || !st) return;
+        if (e2 || !st || location.hash !== '#/bingo') return;
+        if (!st.started && !st.winConfirmed) { go('#/figura'); return; } // el bingo empieza eligiendo la figura
         var o = topBar(['#/', 'Inicio']);
         if (st.winConfirmed) { o += nav('bingo', false) + foot(); render(o); return; } // con el ganador aceptado, solo lo que viene
         var mins = Math.max(0, Math.round((st.expires - new Date().getTime() - offset) / 60000));
@@ -286,9 +287,12 @@ views.juegos = function () {
       api('GET', '/api/gamedraw', null, function (e1, g) {
         S.draw = g;
         api('GET', '/api/sessions/' + s.id + '/host/state', null, function (e2, st) {
-          if (!st) return;
-          render(topBar(['#/', 'Inicio']) + '<div class="panel"><h1>' + h(s.name) + '</h1><p class="muted">' + st.players + ' participantes · Escanea el código QR con tu celular, pon tu nombre, apellido y participa</p><div class="center">' +
-            btn(st.bigQr ? '📱 QR grande en pantalla: quitar' : '📱 Mostrar QR grande en pantalla', 'bigqr', d('on', st.bigQr ? '' : '1')) + '</div></div>' + nav('', false) + foot());
+          if (!st || location.hash !== '#/juegos') return; // ya se pasó a otra vista
+          // Juego en curso: botón grande para volver a él y el menú plegado (para no sortear otro por error)
+          var cur = st.current; var to = '';
+          if (cur) to = cur.game === 'bingo' ? '#/bingo' : cur.game === 'rosco' ? (cur.wheel ? '#/rosco' : '#/sorteoctl') : '#/' + cur.game;
+          render(topBar(['#/', 'Inicio']) + '<div class="panel"><h1>' + h(s.name) + '</h1><p class="muted">' + st.players + ' participantes · Escanea el código QR con tu celular, pon tu nombre, apellido y participa</p>' +
+            (cur ? '<a class="btn big primary" href="' + to + '">▶ Volver al juego en curso: ' + gameIcon(cur.game) + ' ' + h(gameName(cur.game)) + '</a>' : '') + '</div>' + nav('', !!cur) + foot());
         });
       });
     });
@@ -301,8 +305,9 @@ views.figura = function () {
     S.sala = r ? r.sessions : null; var s = sala();
     if (!s) { go('#/'); return; }
     api('GET', '/api/sessions/' + s.id + '/host/state', null, function (e2, st) {
-      if (!st) return;
-      if (st.drawn.length || st.winConfirmed) { go('#/bingo'); return; }
+      if (!st || location.hash !== '#/figura') return;
+      if (st.winConfirmed) { go('#/ronda'); return; }
+      if (st.started) { go('#/bingo'); return; }
       render(topBar(['#/juegos', 'Juegos']) + '<h1>' + h(bingoName(st.name)) + '</h1><div class="panel"><h2>¿Qué figura se juega?</h2>' + figPicker(st.patterns[0]) + btn('Empezar el bingo', 'figura', '', 'big primary') + '</div>');
     });
   });
@@ -499,7 +504,10 @@ A.crear = function (el) {
   api('POST', '/api/projects', { name: name, theme: v, count: $('count').value, format: 'numbers', values: 75, headers: 'BINGO', freeCenter: false, startNumber: 1 }, function (err, p) {
     if (err) { toast(err); return; }
     // La sala ya no parte con el bingo (pedido de Cote, 21 nov): se abre de inmediato y se va a Juegos
-    api('POST', '/api/projects/' + p.id + '/session', { name: name, theme: v, password: '', cardsPerPlayer: 1, isPublic: true, showName: true, patterns: ['linea'] }, function (e2) { if (e2) { toast(e2); return; } toast(''); go('#/juegos'); });
+    api('POST', '/api/projects/' + p.id + '/session', { name: name, theme: v, password: '', cardsPerPlayer: 1, isPublic: true, showName: true, patterns: ['linea'] }, function (e2) {
+      if (e2) { toast(e2); api('DELETE', '/api/projects/' + p.id); return; } // si la sala no se abrió, no queda un proyecto suelto
+      toast(''); go('#/juegos');
+    });
   });
 };
 A.activar = function (el) {
@@ -512,7 +520,7 @@ A.pickNum = function (el) { var s = sala(); if (s) act('POST', '/api/sessions/' 
 A.tieBingo = function () { var s = sala(); if (s) act('POST', '/api/raffle/tiebreak', { sid: s.id }); };
 A.figura = function () {
   var s = sala(); if (!s) return;
-  api('POST', '/api/sessions/' + s.id + '/host/patterns', { patterns: [$('fig').value] }, function (err) { if (err) { toast(err); return; } api('POST', '/api/stage', { show: 'bingo' }); go('#/bingo'); });
+  api('POST', '/api/sessions/' + s.id + '/host/patterns', { patterns: [$('fig').value] }, function (err) { if (err) { toast(err); if (/ya empez/.test(err)) go('#/bingo'); return; } api('POST', '/api/stage', { show: 'bingo' }); go('#/bingo'); });
 };
 A.ronda = function () { var s = sala(); if (s) api('POST', '/api/sessions/' + s.id + '/host/restart', { patterns: [$('fig').value] }, function (err) { if (err) toast(err); else go('#/bingo'); }); };
 A.drawMode = function (el) {

@@ -219,7 +219,7 @@ const isAdmin = async () => Boolean(store.get('adminToken')) && (await api('GET'
 
 // Catálogo de juegos de la plataforma. Para sumar uno: agregar aquí su entrada y sus vistas.
 const GAMES = [
-  { id: 'bingo', icon: '🎮', name: 'Crea sala de juegos', desc: 'El juego n.º 1 es el Bingo.', href: '#/proyectos' },
+  { id: 'bingo', icon: '🎮', name: 'Crea sala de juegos', desc: 'Bingo, El Rosco, El Festival y El objeto más extraño.', href: '#/nuevo' },
   { id: 'rueda', hidden: true, icon: '🎡', name: 'El Rosco', desc: 'Un rosco de letras por concursante, con reloj. Tú marcas acierto, fallo o paso; el público ve el rosco y la pregunta.', href: '#/ruedas' },
   { id: 'sorteo', hidden: true, icon: '🎲', name: 'Sorteo de concursantes', desc: 'Elige al azar, entre quienes jugaron el bingo, a los concursantes de El Rosco. Se ve en pantalla.', href: '#/sorteoctl' },
 ];
@@ -443,10 +443,12 @@ views.nuevo = async () => {
     // Pedido de Cote (21 nov): la sala ya no parte con el bingo. Se abre de inmediato y se va a Juegos (sortear o elegir)
     try {
       const p = await api('POST', '/api/projects', body);
-      await api('POST', `/api/projects/${p.id}/session`, { name: p.name, theme: p.theme || 'frida', password: '', cardsPerPlayer: 1, isPublic: true, showName: true, patterns: ['linea'] });
+      try {
+        await api('POST', `/api/projects/${p.id}/session`, { name: p.name, theme: p.theme || 'frida', password: '', cardsPerPlayer: 1, isPublic: true, showName: true, patterns: ['linea'] });
+      } catch (err) { await api('DELETE', `/api/projects/${p.id}`).catch(() => {}); throw err; } // si la sala no se abrió, no queda un proyecto suelto
       store.set('lastBingo', p.id);
       location.hash = '#/juegos';
-    } catch (err) { fail(err); }
+    } catch (err) { fail(err); if ((await activeSessions()).length) location.hash = '#/juegos'; }
   };
 };
 
@@ -458,16 +460,21 @@ views.juegos = async () => {
   if (!open) { location.hash = '#/'; return undefined; }
   store.set('lastBingo', open.projectId);
   app.innerHTML = `<p class="back"><a href="#/">← Inicio</a></p><div class="panel"><h1 style="margin:0">${esc(open.name)}</h1><p class="muted" id="jg-meta" style="margin:6px 0 0"></p>
-      <div class="row" style="justify-content:center;margin-top:12px"><button id="jg-qr"></button></div></div>
+      <div id="jg-cur"></div></div>
     ${activitiesNav('')}`;
-  let st = null;
+  const venue = open.theme || 'frida';
   const paint = async () => {
-    st = await api('GET', `/api/sessions/${open.id}/host/state`).catch(() => st);
+    const st = await api('GET', `/api/sessions/${open.id}/host/state`).catch(() => null);
     if (!st || !$('#jg-meta')) return;
     $('#jg-meta').textContent = `${st.players} participantes · Escanea el código QR con tu celular, pon tu nombre, apellido y participa`;
-    $('#jg-qr').textContent = st.bigQr ? '📱 QR grande en pantalla: quitar' : '📱 Mostrar QR grande en pantalla';
+    // Si hay un juego en curso, se vuelve a él con un botón grande y el menú queda plegado (para no sortear otro por error)
+    const cur = st.current;
+    const info = cur && GAME_INFO(venue)[cur.game];
+    const href = !cur ? '' : cur.game === 'bingo' ? `#/anfitrion/${open.projectId}` : cur.wheel ? `#/ruedactl/${cur.wheel}` : info.href;
+    const html = cur ? `<a class="home-create open ctl-go" href="${href}"><span>▶</span>Volver al juego en curso: ${info.icon} ${esc(info.name)}</a>` : '';
+    if ($('#jg-cur').innerHTML !== html) $('#jg-cur').innerHTML = html;
+    window.setNavFold(!!cur);
   };
-  $('#jg-qr').onclick = async () => { try { await api('POST', `/api/sessions/${open.id}/host/bigqr`, { on: !(st && st.bigQr) }); } catch (err) { fail(err); } paint(); };
   await paint();
   const t = setInterval(paint, 4000);
   return () => clearInterval(t);
@@ -478,7 +485,8 @@ views.figura = async (pid) => {
   const p = await api('GET', `/api/projects/${pid}`);
   if (!p.sessionId) { location.hash = '#/'; return undefined; }
   const info = await api('GET', `/api/sessions/${p.sessionId}/host`);
-  if (info.drawn || info.roundOver) { location.hash = `#/anfitrion/${pid}`; return undefined; }
+  if (info.roundOver) { location.hash = `#/ronda/${pid}`; return undefined; }
+  if (info.started) { location.hash = `#/anfitrion/${pid}`; return undefined; }
   app.innerHTML = `<p class="back"><a href="#/juegos">← Juegos</a></p><h1>${esc(bingoName(p.name))}</h1>
     <form class="panel" id="f"><h2>¿Qué figura se juega?</h2>${patternPicker(info.patterns)}
       <button class="primary big">Empezar el bingo</button></form>`;
@@ -490,35 +498,36 @@ views.figura = async (pid) => {
       await api('POST', `/api/sessions/${p.sessionId}/host/patterns`, { patterns });
       await api('POST', '/api/stage', { show: 'bingo' }).catch(() => {});
       location.hash = `#/anfitrion/${pid}`;
-    } catch (err) { fail(err); }
+    } catch (err) {
+      fail(err);
+      if (/ya empezó/.test(err.message)) location.hash = `#/anfitrion/${pid}`; // otro equipo ya sacó un número: se sigue en el panel
+    }
   };
   return undefined;
 };
 views.anfitrion = async (pid) => {
   const p = await api('GET', `/api/projects/${pid}`);
   if (!p.sessionId) return hostSetup(p);
+  // El panel del bingo se abre cuando el bingo empezó (figura elegida); antes se elige la figura
+  const info = await api('GET', `/api/sessions/${p.sessionId}/host`).catch(() => null);
+  if (info && !info.started && !info.roundOver) { location.hash = `#/figura/${pid}`; return undefined; }
   return hostConsole(p);
 };
 
-// Antes de activar solo se elige la figura: el nombre y los colores vienen del paso anterior,
-// no hay contraseña y cada participante recibe un cartón.
+// Proyecto sin sala (desde «Mis proyectos»): se abre la sala y se va a Juegos, sin bingo (pedido de Cote, 21 nov)
 function hostSetup(p) {
   app.innerHTML = `
     ${BACK}<h1>${esc(p.name)}</h1>
     <form class="panel" id="f">
-      <h2>¿Qué figura se juega?</h2>
-      ${patternPicker()}
-      <p class="muted small">${p.cards.length} cartones, uno por participante. Podrás cambiar la figura en cada ronda.</p>
-      <button class="primary big">Activar el generador</button>
+      <p class="muted small">${p.cards.length} cartones, uno por participante.</p>
+      <button class="primary big">🎮 Crear sala de juegos</button>
     </form>`;
-  const f = $('#f');
-  f.onsubmit = async (e) => {
+  $('#f').onsubmit = async (e) => {
     e.preventDefault();
-    const patterns = readPatterns(f);
-    if (!patterns) return;
     try {
-      await api('POST', `/api/projects/${p.id}/session`, { name: p.name, theme: p.theme || 'frida', password: '', cardsPerPlayer: 1, isPublic: true, showName: true, patterns });
-      route();
+      await api('POST', `/api/projects/${p.id}/session`, { name: p.name, theme: p.theme || 'frida', password: '', cardsPerPlayer: 1, isPublic: true, showName: true, patterns: ['linea'] });
+      store.set('lastBingo', p.id);
+      location.hash = '#/juegos';
     } catch (err) { fail(err); }
   };
 }
@@ -917,7 +926,7 @@ views.jugar = async (sid) => {
   };
   // Instrucciones en el celular (pedido de Cote, 20 nov): al empezar cada juego (y al entrar a la sala) aparecen
   // 3 segundos las instrucciones del juego en curso: Bingo (cada ronda), El Rosco, El Festival o El objeto más extraño
-  // Cada juego tiene su propia clave: bingo por ronda (desde el primer número), El Rosco por rosco cargado y la votación
+  // Cada juego tiene su propia clave: bingo por ronda (desde que se elige la figura), El Rosco por rosco cargado y la votación
   // por concurso (voteGen); cada clave se muestra una sola vez (volver a un juego que sigue no las repite)
   let howtoKey = null;
   const howtoShown = new Set();
@@ -931,7 +940,7 @@ views.jugar = async (sid) => {
   };
   const syncHowto = async () => {
     const s = st.stage || 'bingo';
-    const key = s === 'rueda' && st.roscoId ? `rosco:${st.roscoId}` : s === 'voto' ? `voto:${st.voteGen}` : s === 'bingo' && st.drawn && st.drawn.length && !st.winConfirmed ? `bingo:${st.round}` : null;
+    const key = s === 'rueda' && st.roscoId ? `rosco:${st.roscoId}` : s === 'voto' ? `voto:${st.voteGen}` : s === 'bingo' && st.started && !st.winConfirmed ? `bingo:${st.round}` : null;
     if (!key || howtoShown.has(key)) return;
     howtoShown.add(key); howtoKey = key;
     if (key.startsWith('voto')) {
@@ -976,7 +985,7 @@ views.jugar = async (sid) => {
     round = st.round;
     $('#title').textContent = bingoName(st.name);
     $('#meta').textContent = `${me.name} · Ronda ${st.round} · ${st.drawn.length} valores anunciados`;
-    $('#pats').innerHTML = patternsInline(st.patterns);
+    $('#pats').innerHTML = st.started ? patternsInline(st.patterns) : ''; // la figura se ve cuando el bingo empieza
     $('#now').innerHTML = `${ballHTML(st, st.drawn.at(-1), 'mid')}<div><div class="small"><b>Valor actual</b> · anteriores:</div>
       <div class="history">${st.drawn.slice(-7, -1).reverse().map((v) => `<span>${esc(plain(st, v))}</span>`).join('') || '<span>—</span>'}</div></div>`;
     const mine = st.results.filter((r) => r.validated && marks[r.cardNo]);
@@ -998,7 +1007,7 @@ views.jugar = async (sid) => {
     $('#cards').innerHTML = me.cards.map((c) => {
       const m = maskOf(c);
       const green = mine.filter((r) => r.cardNo === c.no).reduce((g, r) => g | PATTERNS.completed(r.pattern, m), 0);
-      return cardHTML(st, c.cells, { no: me.startNumber + c.no - 1, marks: m, green, hint: bestFor(m), note: noteFor(m) });
+      return cardHTML(st, c.cells, { no: me.startNumber + c.no - 1, marks: m, green, hint: st.started ? bestFor(m) : 0, note: st.started ? noteFor(m) : '' });
     }).join('');
   };
   $('#cards').onclick = async (e) => {
@@ -1275,16 +1284,18 @@ function winScreenHTML(st) {
 
 // Vuelve al panel del bingo en curso y devuelve la pantalla de OBS a su gráfica
 async function backToBingo() {
-  const id = store.get('lastBingo');
+  const open = (await activeSessions())[0];
+  if (!open) { location.hash = '#/'; return; } // sin sala abierta no hay bingo: se parte creando la sala
+  const id = open.projectId;
+  store.set('lastBingo', id);
   // Si el bingo anterior ya tiene ganador confirmado, no se vuelve a mostrar: se pasa directo a crear el siguiente
   try {
-    const p = id && await api('GET', `/api/projects/${id}`);
-    const info = p && p.sessionId ? await api('GET', `/api/sessions/${p.sessionId}/host`) : null;
-    if (info && info.roundOver) { location.hash = `#/ronda/${id}`; return; }
-    if (info && !info.drawn) { location.hash = `#/figura/${id}`; return; } // bingo sin empezar: primero la figura
+    const info = await api('GET', `/api/sessions/${open.id}/host`);
+    if (info.roundOver) { location.hash = `#/ronda/${id}`; return; }
+    if (!info.started) { location.hash = `#/figura/${id}`; return; } // bingo sin empezar: primero la figura
   } catch { /* sin datos: se sigue al panel */ }
   await api('POST', '/api/stage', { show: 'bingo' }).catch(() => {});
-  location.hash = id ? `#/anfitrion/${id}` : '#/proyectos';
+  location.hash = `#/anfitrion/${id}`;
 }
 // ---------- Karaoke: buscador de canciones ----------
 // Mientras la persona escribe, se consulta el catálogo de iTunes y se ofrecen canciones reales;
