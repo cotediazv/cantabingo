@@ -786,6 +786,7 @@ views.jugar = async (sid) => {
     <div class="pkar" id="pkar" hidden></div>
     <div class="pvote" id="pvote" hidden></div>
     <div class="pvote pinsta" id="pinsta" hidden></div>
+    <div class="pvote pgvote" id="pgvote" hidden></div>
     <div id="bingo-bottom"><button class="primary big" id="sync" style="margin-top:16px">↻ Actualizar y marcar lo que falta</button>
     <p class="muted small" style="margin-top:8px">Marca por ti los valores ya anunciados que se te pasaron.</p>
     <div class="panel" style="margin-top:20px"><h2 id="title" style="margin:0"></h2><span class="muted small" id="meta"></span><div id="pats" style="margin-top:8px"></div></div></div>
@@ -924,6 +925,17 @@ views.jugar = async (sid) => {
     if (!on && instaOn) { clearInterval(instaOn); instaOn = false; }
     return on;
   };
+  // Votación del próximo juego (pedido de Cote, 21 nov): los juegos para votar; se vuelve a leer al abrir o cerrar cada
+  // vuelta (gameVoteRev) y, por si acaso, cada 8 segundos
+  let gvRev = null; let gvTimer = null;
+  const syncGvote = () => {
+    const on = st.stage === 'votojuego';
+    $('#pgvote').hidden = !on;
+    if (on && !gvTimer) { window.phoneGvote.reset(); gvRev = null; gvTimer = setInterval(() => window.phoneGvote.draw(sid, me.token), 8000); }
+    if (on && gvRev !== st.gameVoteRev) { gvRev = st.gameVoteRev; window.phoneGvote.draw(sid, me.token); }
+    if (!on && gvTimer) { clearInterval(gvTimer); gvTimer = null; window.phoneGvote.stop(); }
+    return on;
+  };
   // Instrucciones en el celular (pedido de Cote, 20 nov): al empezar cada juego (y al entrar a la sala) aparecen
   // 3 segundos las instrucciones del juego en curso: Bingo (cada ronda), El Rosco, El Festival o El objeto más extraño
   // Cada juego tiene su propia clave: bingo por ronda (desde que se elige la figura), El Rosco por rosco cargado y la votación
@@ -952,7 +964,7 @@ views.jugar = async (sid) => {
   };
   const syncStage = () => {
     syncHowto();
-    const kar = syncKar() | syncVote() | syncInsta();
+    const kar = syncKar() | syncVote() | syncInsta() | syncGvote();
     const on = (st.stage === 'rueda' && !!st.roscoId) || kar;
     $('#bingo-top').hidden = on;
     $('#bingo-bottom').hidden = on;
@@ -1090,7 +1102,7 @@ views.jugar = async (sid) => {
   const onFs = () => { if (!document.fullscreenElement && $('#live') && $('#live').classList.contains('full') && $('#live').requestFullscreen) setFull(false); };
   document.addEventListener('fullscreenchange', onFs);
   const off = subscribe(sid, (s) => { st = s; render(); startLive(); }, () => { store.del(key); backToStart(); }, false, me.token);
-  return () => { off(); stopRosco(); clearInterval(karTimer); clearInterval(voteTimer); clearInterval(instaOn); liveFor = null; player = null; document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('visibilitychange', onBack); document.body.classList.remove('live-open'); };
+  return () => { off(); stopRosco(); clearInterval(karTimer); clearInterval(voteTimer); clearInterval(instaOn); clearInterval(gvTimer); window.phoneGvote.stop(); liveFor = null; player = null; document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('visibilitychange', onBack); document.body.classList.remove('live-open'); };
 };
 // Canal de Twitch de cada local (uno por local: KRB Stage en Frida, KRB Stage Kennedy en Kennedy, KRB Stage 3 en Tobalaba)
 const LIVE_CHANNELS = { frida: 'krbstage', kennedy: 'krbstagekennedy', tobalaba: 'krbstage3' };
@@ -1244,6 +1256,7 @@ views.tablero = async () => {
         else if (show === 'karaoke') stop = await views.karaokeFull();
         else if (show === 'voto') stop = await views.votoFull();
         else if (show === 'juego') stop = await views.juegoDraw('full');
+        else if (show === 'votojuego') stop = await views.gameVote('full'); // el QR va dentro del cuadro
         else if (show === 'insta') stop = await views.instaFull();
         else if (show === 'show') stop = await views.showFull();
         else stop = await views.bingoFull(); // bingo, o la portada si no hay nada en juego
@@ -1495,8 +1508,8 @@ function activitiesNav(current) {
   ];
   setTimeout(paintGameNav, 0);
   return `<div class="act-nav games-nav ${navFoldState() ? 'g-folded' : ''}"><button type="button" class="g-unfold" data-nav-unfold>▸ Ver otros juegos y actividades</button>
-    <div class="g-tabs" role="tablist"><button type="button" role="tab" data-draw-mode="draw">🎲 Sortear juegos</button><button type="button" role="tab" data-draw-mode="free">👆 Elegir libremente</button></div>
-    <p class="g-free-title">👆 Toca el siguiente juego</p><div class="g-plan"><div class="g-slots"></div><label>¿Cuántos juegos vamos a sortear?<input type="number" class="g-total" min="1" max="10" value="3"></label></div>
+    <div class="g-tabs" role="tablist"><button type="button" role="tab" data-draw-mode="manual">👆 Manual</button><button type="button" role="tab" data-draw-mode="sorteo">🎲 Por sorteo</button><button type="button" role="tab" data-draw-mode="votacion">🗳️ Por votación</button></div>
+    <p class="g-free-title">👆 Toca el siguiente juego</p><section class="g-vote"></section><div class="g-plan"><div class="g-slots"></div><label>¿Cuántos juegos vamos a sortear?<input type="number" class="g-total" min="1" max="10" value="3"></label></div>
     <button type="button" class="primary big g-draw" data-game-draw>🎲 Sortear juego</button>
     <button type="button" class="g-undo" data-game-undo disabled>↩️ Deshacer</button>
     <p class="g-direct" hidden>…o toca un juego para elegirlo directo, sin tómbola</p>
@@ -1522,21 +1535,23 @@ async function paintGameNav() {
   const g = await api('GET', '/api/gamedraw').catch(() => null);
   if (!g) return;
   const info = GAME_INFO(g.venue);
+  const how = g.how || (g.free ? 'manual' : 'sorteo'); // pestaña elegida: «Manual», «Por sorteo» o «Por votación»
   document.querySelectorAll('.g-fest').forEach((b) => { b.textContent = info.festival.name; });
-  document.querySelectorAll('[data-game]').forEach((el) => { const done = !g.free && g.played.includes(el.dataset.game); el.classList.toggle('g-played', done); el.title = done ? 'Salió en el último sorteo: queda fuera del próximo' : ''; });
+  document.querySelectorAll('[data-game]').forEach((el) => { const done = how === 'sorteo' && g.played.includes(el.dataset.game); el.classList.toggle('g-played', done); el.title = done ? 'Salió en el último sorteo: queda fuera del próximo' : ''; });
   // Casilleros de la noche y botón: «Sortear el 2.º juego (de 3)»; al completar, se desactiva
   document.querySelectorAll('.g-total').forEach((i) => { if (document.activeElement !== i) i.value = g.total; });
   const slots = []; // la noche ya no parte con un bingo (pedido de Cote, 21 nov): 1.º, 2.º, 3.º…
   for (let i = 0; i < g.total; i++) slots.push(g.list[i] ? `<span class="done">${i + 1}.º · ${info[g.list[i]].icon} ${esc(info[g.list[i]].name)}</span>` : `<span>${i + 1}.º · 🔒</span>`);
   document.querySelectorAll('.g-slots').forEach((el) => { el.innerHTML = slots.join(''); });
   const full = g.list.length >= g.total;
-  const ready = !g.free && !full && !!g.ready && (!g.last || g.ready.at > g.last.at);
+  const ready = how === 'sorteo' && !full && !!g.ready && (!g.last || g.ready.at > g.last.at);
   // Pedido de Cote (20 nov): cuántos juegos y sus números se ven solo antes de empezar el sorteo; después se ocultan
   document.querySelectorAll('.g-plan').forEach((el) => { el.hidden = g.list.length > 0 || ready; });
   window.gameDrawReady = ready;
-  document.querySelectorAll('.games-nav').forEach((n) => { n.classList.toggle('g-ready', ready); n.classList.toggle('g-free', !!g.free); });
-  // Pestañas «Sortear juegos» / «Elegir libremente» (pedido de Cote, 21 nov)
-  document.querySelectorAll('[data-draw-mode]').forEach((b) => { const on = (b.dataset.drawMode === 'free') === !!g.free; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+  document.querySelectorAll('.games-nav').forEach((n) => { n.classList.toggle('g-ready', ready); n.classList.toggle('g-free', how === 'manual'); n.classList.toggle('g-vmode', how === 'votacion'); });
+  // Pestañas «Manual» / «Por sorteo» / «Por votación» (pedido de Cote, 21 nov)
+  document.querySelectorAll('[data-draw-mode]').forEach((b) => { const on = b.dataset.drawMode === how; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
+  if (window.paintGvote) window.paintGvote(how);
   document.querySelectorAll('[data-game-draw]').forEach((b) => { b.disabled = full; b.textContent = full ? `✔ Ya se sortearon los ${g.total} juegos` : ready ? `🎰 Girar la tómbola · ${g.list.length + 1}.º juego` : `🎲 Iniciar sorteo del ${g.list.length + 1}.º juego (de ${g.total})`; });
   document.querySelectorAll('.g-direct').forEach((el) => { el.hidden = !ready; });
   document.querySelectorAll('[data-game-undo]').forEach((b) => { b.disabled = !g.undoable; });
@@ -1564,17 +1579,17 @@ document.addEventListener('click', async (e) => {
     window.gameDrawGo = setTimeout(() => { if (g.last.game === 'bingo') backToBingo(); else location.hash = info.href; }, 6000); // cuando termina la tómbola en pantalla, el panel pasa a ese juego
   } catch (err) { fail(err); b.disabled = false; }
 });
-// Pestañas del menú de juegos: «Sortear juegos» o «Elegir libremente» (pedido de Cote, 21 nov)
+// Pestañas del menú de juegos: «Manual», «Por sorteo» o «Por votación» (pedido de Cote, 21 nov)
 document.addEventListener('click', async (e) => {
   const b = e.target.closest('[data-draw-mode]');
   if (!b || b.classList.contains('on')) return; // la pestaña que ya está elegida no hace nada
-  const free = b.dataset.drawMode === 'free';
+  const how = b.dataset.drawMode;
   clearTimeout(window.gameDrawGo);
   // Se marca al instante (sin esperar al servidor), para que no quede un sorteo a medio empezar a un toque
-  if (free) window.gameDrawReady = false;
-  document.querySelectorAll('.games-nav').forEach((n) => n.classList.toggle('g-free', free));
-  document.querySelectorAll('[data-draw-mode]').forEach((x) => x.classList.toggle('on', (x.dataset.drawMode === 'free') === free));
-  try { await api('POST', '/api/gamedraw/mode', { free }); } catch (err) { fail(err); }
+  if (how !== 'sorteo') window.gameDrawReady = false;
+  document.querySelectorAll('.games-nav').forEach((n) => { n.classList.toggle('g-free', how === 'manual'); n.classList.toggle('g-vmode', how === 'votacion'); n.classList.remove('g-ready'); });
+  document.querySelectorAll('[data-draw-mode]').forEach((x) => x.classList.toggle('on', x.dataset.drawMode === how));
+  try { await api('POST', '/api/gamedraw/mode', { how }); } catch (err) { fail(err); }
   paintGameNav();
 });
 // Deshacer (pedido de Cote): vuelve el sorteo de juegos al paso anterior (antes de «Iniciar sorteo», de la tómbola
@@ -1743,9 +1758,10 @@ views.escena = async () => {
         else if (show === 'karaoke') stop = await views.karaokeGC();
         else if (show === 'voto') stop = await views.votoGC();
         else if (show === 'juego') stop = await views.juegoDraw('gc');
+        else if (show === 'votojuego') stop = await views.gameVote('gc');
         else if (show === 'insta') stop = await views.instaGC();
         else if (show === 'show') stop = await views.showGC();
-        joinQr({ sorteo: 'br', rueda: 'bl', show: 'above' }[show]);
+        joinQr({ sorteo: 'br', rueda: 'bl', show: 'above', votojuego: 'br' }[show]);
         document.body.classList.add('obs');
       }
     } finally { busy = false; }

@@ -64,6 +64,16 @@
   .tabs2 { width: 100%; border: 2px solid #5a54a0; border-radius: 14px; margin: 4px 0 10px; overflow: hidden; }
   .tabs2 button { float: left; width: 50%; height: 54px; margin: 0; border: 0; border-radius: 0; padding: 0 4px; background: #1d1838; color: #a9a3cf; line-height: 1.15; overflow: hidden; }
   .tabs2 button.on { background: #ffc400; color: #1a1a1a; }
+  .tabs2.t3 button { width: 33.333%; font-size: 15px; }
+  .gvnow { text-align: center; color: #ffc400; font-weight: bold; font-size: 18px; margin: 6px 0 10px; }
+  .gvwin { text-align: center; color: #ffc400; font-weight: bold; font-size: 22px; margin: 6px 0 10px; }
+  .gvhelp { text-align: center; color: #a9a3cf; font-weight: bold; margin: 6px 0 10px; }
+  .gvrow { position: relative; overflow: hidden; margin: 0 0 6px; padding: 10px 12px; border-radius: 10px; border: 1px solid #3a3466; background: #1d1838; font-weight: bold; }
+  .gvrow .bar { position: absolute; left: 0; top: 0; bottom: 0; opacity: .45; }
+  .gvrow span, .gvrow b { position: relative; }
+  .gvrow b { float: right; }
+  .gvrow.dim { opacity: .45; }
+  .gvrow.win, .gvrow.sel { border-color: #ffc400; }
   .sec { text-align: center; color: #a9a3cf; font-size: 13px; font-weight: bold; letter-spacing: 1px; margin: 14px 0 4px; }
   .game { float: left; width: 48%; margin: 4px 1%; border-radius: 16px; padding: 14px 6px; min-height: 76px; }
   .game { height: 96px; overflow: hidden; }
@@ -145,15 +155,41 @@ var GAMES = [['bingo', '🎱', 'Bingo'], ['rosco', '🎡', 'El Rosco'], ['festiv
 function festName() { var s = sala(); return 'El Festival de ' + ((s && V[s.theme]) || 'Frida'); }
 function gameName(k) { return k === 'festival' ? festName() : k === 'rosco' ? 'El Rosco' : k === 'objeto' ? 'El objeto más extraño' : 'Bingo'; }
 function gameIcon(k) { for (var i = 0; i < GAMES.length; i++) if (GAMES[i][0] === k) return GAMES[i][1]; return ''; }
+// Cómo se elige el juego (pedido de Cote, 21 nov): «Manual», «Por sorteo» o «Por votación»
+function howOf(g) { return g ? (g.how || (g.free ? 'manual' : 'sorteo')) : 'sorteo'; }
+// Votación del juego: 30 s, gana el que pasa la mitad de los votos; si no, segunda vuelta entre los 2 primeros
+var GVC = { bingo: '#ff2e93', rosco: '#9b6bff', festival: '#ffc400', objeto: '#19d6b0' };
+function gvPct(n, t) { return t ? (n * 100) / t : 0; }
+function gvFmt(p) { var r = Math.round(p); return (r === 50 && p !== 50 ? p.toFixed(1).replace('.', ',') : r) + '%'; }
+function votos(n) { return n + (n === 1 ? ' voto' : ' votos'); }
+function gvHtml() {
+  var g = S.gv;
+  if (!g) return '<p class="gvhelp">Cargando la votación…</p>';
+  var opts = g.options && g.options.length ? g.options : ['bingo', 'rosco', 'festival', 'objeto'];
+  var rows = '';
+  for (var i = 0; i < opts.length; i++) {
+    var k = opts[i]; var n = (g.counts || {})[k] || 0; var p = gvPct(n, g.total);
+    var cls = g.phase === 'done' ? (k === g.winner ? 'win' : 'dim') : (g.phase === 'result' && g.runoff ? (g.runoff.indexOf(k) >= 0 ? 'sel' : 'dim') : '');
+    rows += '<div class="gvrow ' + cls + '"><div class="bar" style="width:' + p.toFixed(1) + '%;background:' + GVC[k] + '"></div><b>' + gvFmt(p) + ' · ' + votos(n) + '</b><span>' + gameIcon(k) + ' ' + h(gameName(k)) + '</span></div>';
+  }
+  var cancel = '<div class="center">' + btn('✖ Cancelar votación', 'gvReset', '', '') + '</div>';
+  if (g.phase === 'voting') return '<p class="gvnow">🗳️ ' + (g.round === 2 ? 'Segunda vuelta' : 'Votación abierta') + ' · quedan ' + clock(g.until - (new Date().getTime() + offset)) + ' · ' + votos(g.total) + '</p>' + rows + btn('🗳️ Votando…', 'none', '', 'big primary', true) + cancel;
+  if (g.phase === 'result' && g.empty) return '<p class="gvnow">Nadie votó.</p>' + btn('🗳️ Repetir votación (30 s)', 'gvStart', '', 'big primary') + cancel;
+  if (g.phase === 'result' && g.runoff) return '<p class="gvnow">Nadie superó el 50%. Segunda vuelta: ' + gameIcon(g.runoff[0]) + ' ' + h(gameName(g.runoff[0])) + ' y ' + gameIcon(g.runoff[1]) + ' ' + h(gameName(g.runoff[1])) + (g.tie2 ? ' (empate en el 2.º lugar: se sorteó)' : '') + '.</p>' + rows + btn('🗳️ Iniciar segunda vuelta (30 s)', 'gvStart', '', 'big primary') + cancel;
+  if (g.phase === 'done' && g.winner) return '<p class="gvwin">🏆 Ganó ' + gameIcon(g.winner) + ' ' + h(gameName(g.winner)) + (g.tie ? ' (empate: se decidió por sorteo)' : '') + '</p>' + rows + btn('▶ Ir a ' + gameIcon(g.winner) + ' ' + h(gameName(g.winner)), 'gvGo', d('g', g.winner), 'big primary') + '<div class="center">' + btn('🗳️ Nueva votación (30 s)', 'gvStart', '', '') + '</div>';
+  return '<p class="gvhelp">El público elige el próximo juego desde su celular, en 30 segundos. Gana el juego con más de la mitad de los votos; si ninguno lo logra, hay segunda vuelta entre los 2 primeros.</p>' + btn('🗳️ Iniciar votación (30 s)', 'gvStart', '', 'big primary');
+}
 function nav(current, inGame) {
   var g = S.draw;
   var folded = inGame && !S.foldOpen;
   if (folded) return '<button type="button" class="big" data-a="unfold">▸ Ver otros juegos y actividades</button>';
   var o = '';
   // Pestañas «Sortear juegos» / «Elegir libremente» (pedido de Cote, 21 nov), igual que en la plataforma completa
-  if (g) o += '<div class="tabs2">' + btn('🎲 Sortear juegos', 'drawMode', d('free', ''), g.free ? '' : 'on') + btn('👆 Elegir libremente', 'drawMode', d('free', '1'), g.free ? 'on' : '') + '</div>';
-  if (g && g.free) o += '<p class="center" style="color:#ffc400;font-weight:bold;margin:4px 0">👆 Toca el siguiente juego</p>';
-  if (g && !g.free) {
+  var how = howOf(g);
+  if (g) o += '<div class="tabs2 t3">' + btn('👆 Manual', 'drawMode', d('how', 'manual'), how === 'manual' ? 'on' : '') + btn('🎲 Por sorteo', 'drawMode', d('how', 'sorteo'), how === 'sorteo' ? 'on' : '') + btn('🗳️ Por votación', 'drawMode', d('how', 'votacion'), how === 'votacion' ? 'on' : '') + '</div>';
+  if (g && how === 'manual') o += '<p class="center" style="color:#ffc400;font-weight:bold;margin:4px 0">👆 Toca el siguiente juego</p>';
+  if (g && how === 'votacion') o += '<div id="gvbox">' + gvHtml() + '</div>';
+  if (g && how === 'sorteo') {
     var full = g.list.length >= g.total;
     var ready = !full && g.ready && (!g.last || g.ready.at > g.last.at);
     if (!g.list.length && !ready) {
@@ -168,7 +204,7 @@ function nav(current, inGame) {
   o += '<div class="sec">JUEGOS</div><div class="row">';
   for (var k = 0; k < GAMES.length; k++) {
     var gk = GAMES[k][0];
-    var played = g && !g.free && g.played && g.played.indexOf(gk) >= 0;
+    var played = g && how === 'sorteo' && g.played && g.played.indexOf(gk) >= 0;
     o += btn(GAMES[k][1] + '<br>' + h(gameName(gk)) + (played ? '<br><small style="color:#3fe08f">fuera del próximo sorteo</small>' : ''), 'game', d('g', gk), 'game' + (gk === current ? ' cur' : '') + (played ? ' played' : ''));
   }
   o += '</div><div class="sec">OTRAS ACTIVIDADES</div><div class="row">' +
@@ -214,15 +250,6 @@ views.nuevo = function () {
   };
   A.venue = function (el) { v = el.getAttribute('data-v'); var c = $('count').value; paint(); $('count').value = c; };
   paint();
-};
-
-views.activar = function (pid) {
-  api('GET', '/api/projects', null, function (err, list) {
-    var p = null; for (var i = 0; list && i < list.length; i++) if (list[i].id === pid) p = list[i];
-    if (!p) { go('#/'); return; }
-    render(topBar(['#/', 'Inicio']) + '<h1>' + h(p.name) + '</h1><div class="panel"><h2>¿Qué figura se juega?</h2>' + figPicker('linea') +
-      '<p class="muted">' + p.count + ' cartones, uno por participante. Podrás cambiar la figura en cada ronda.</p>' + btn('Activar el generador', 'activar', d('pid', p.id) + d('name', p.name) + d('theme', p.theme), 'big primary') + '</div>');
-  });
 };
 
 var manual = false;
@@ -510,9 +537,6 @@ A.crear = function (el) {
     });
   });
 };
-A.activar = function (el) {
-  api('POST', '/api/projects/' + el.getAttribute('data-pid') + '/session', { name: el.getAttribute('data-name'), theme: el.getAttribute('data-theme'), password: '', cardsPerPlayer: 1, isPublic: true, showName: true, patterns: [$('fig').value] }, function (err) { if (err) { toast(err); return; } go('#/bingo'); });
-};
 A.host = function (el) { var s = sala(); if (s) act('POST', '/api/sessions/' + s.id + '/host/' + el.getAttribute('data-x'), {}); };
 A.bigqr = function (el) { var s = sala(); if (s) act('POST', '/api/sessions/' + s.id + '/host/bigqr', { on: !!el.getAttribute('data-on') }); };
 A.manual = function () { manual = !manual; refresh(); };
@@ -524,19 +548,22 @@ A.figura = function () {
 };
 A.ronda = function () { var s = sala(); if (s) api('POST', '/api/sessions/' + s.id + '/host/restart', { patterns: [$('fig').value] }, function (err) { if (err) toast(err); else go('#/bingo'); }); };
 A.drawMode = function (el) {
-  var free = !!el.getAttribute('data-free');
-  if (S.draw && !!S.draw.free === free) return; // la pestaña que ya está elegida no hace nada
+  var how = el.getAttribute('data-how');
+  if (S.draw && howOf(S.draw) === how) return; // la pestaña que ya está elegida no hace nada
   clearTimeout(goTimer);
-  if (S.draw) S.draw.free = free; // se marca al instante, sin esperar la respuesta
+  if (S.draw) { S.draw.how = how; S.draw.free = how === 'manual'; } // se marca al instante, sin esperar la respuesta
   var bs = document.querySelectorAll('.tabs2 button');
-  for (var i = 0; i < bs.length; i++) bs[i].className = (!!bs[i].getAttribute('data-free') === free) ? 'on' : '';
-  act('POST', '/api/gamedraw/mode', { free: free });
+  for (var i = 0; i < bs.length; i++) bs[i].className = bs[i].getAttribute('data-how') === how ? 'on' : '';
+  act('POST', '/api/gamedraw/mode', { how: how });
 };
+A.gvStart = function () { clearTimeout(goTimer); api('POST', '/api/gamevote/start', null, function (err, r) { if (err) { toast(err); return; } S.gv = r; toast('🗳️ Votación abierta: 30 segundos para votar desde el celular'); refresh(); }); };
+A.gvReset = function () { clearTimeout(goTimer); api('POST', '/api/gamevote/reset', null, function (err, r) { if (err) { toast(err); return; } S.gv = r; toast('Votación cancelada'); refresh(); }); };
+A.gvGo = function (el) { clearTimeout(goTimer); toGame(el.getAttribute('data-g')); };
 A.unfold = function () { S.foldOpen = true; refresh(); };
 A.total = function (el) { act('POST', '/api/gamedraw/total', { total: Number(el.getAttribute('data-n')) }); };
 A.undo = function () { clearTimeout(goTimer); act('POST', '/api/gamedraw/undo', null, '↩️ Sorteo de juegos: se volvió al paso anterior'); };
 A.draw = function () {
-  var g = S.draw; if (!g || g.free) return;
+  var g = S.draw; if (!g || howOf(g) !== 'sorteo') return;
   var ready = g.ready && (!g.last || g.ready.at > g.last.at);
   if (!ready) { act('POST', '/api/gamedraw/ready', null, 'En pantalla: los juegos que pueden salir. Ahora gira la tómbola o elige un juego directo.'); return; }
   api('POST', '/api/gamedraw', null, function (err, r) {
@@ -548,9 +575,9 @@ A.draw = function () {
 };
 A.game = function (el) {
   var k = el.getAttribute('data-g'); var g = S.draw;
-  // «Elegir libremente»: el juego empieza de cero, sin número de la noche
-  if (g && g.free) { api('POST', '/api/gamedraw/free', { game: k }, function (err) { if (err) { toast(err); return; } toGame(k); }); return; }
-  var ready = g && !g.free && g.list.length < g.total && g.ready && (!g.last || g.ready.at > g.last.at);
+  // «Manual»: el juego empieza de cero, sin número de la noche
+  if (g && howOf(g) === 'manual') { api('POST', '/api/gamedraw/free', { game: k }, function (err) { if (err) { toast(err); return; } toGame(k); }); return; }
+  var ready = g && howOf(g) === 'sorteo' && g.list.length < g.total && g.ready && (!g.last || g.ready.at > g.last.at);
   if (ready) { api('POST', '/api/gamedraw/pick', { game: k }, function (err) { if (err) { toast(err); return; } toast('Siguiente juego: ' + gameName(k)); toGame(k); }); return; }
   toGame(k);
 };
@@ -590,6 +617,28 @@ document.onclick = function (e) {
   var f = A[t.getAttribute('data-a')];
   if (f) { if (e.preventDefault) e.preventDefault(); f(t); }
 };
+
+// Votación del juego: se lee cada segundo mientras está abierta (reloj y votos) y, si el ganador sale mientras el
+// panel mira, el panel pasa solo a ese juego (como el sorteo)
+var gvT = null; var gvLast = '';
+function gvPoll() {
+  clearTimeout(gvT);
+  if (!token || howOf(S.draw) !== 'votacion' || !$('gvbox')) { gvT = setTimeout(gvPoll, 2000); return; }
+  api('GET', '/api/gamevote', null, function (err, r) {
+    if (r) {
+      var prev = S.gv; S.gv = r;
+      var box = $('gvbox'); var html = gvHtml();
+      if (box && (html !== gvLast || box.innerHTML === '')) { box.innerHTML = html; gvLast = html; }
+      if (prev && prev.id === r.id && prev.phase === 'voting' && r.phase === 'done' && r.winner) {
+        toast('🗳️ Ganó ' + gameIcon(r.winner) + ' ' + gameName(r.winner) + '. En unos segundos pasamos al juego…');
+        clearTimeout(goTimer);
+        goTimer = setTimeout(function () { toGame(r.winner); }, 8000);
+      }
+    }
+    gvT = setTimeout(gvPoll, r && r.phase === 'voting' ? 1000 : 2500);
+  });
+}
+gvPoll();
 
 // ---------- Rutas ----------
 var refresh = function () {};

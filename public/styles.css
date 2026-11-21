@@ -2385,3 +2385,89 @@ body.kids[data-kz-level="8"] { background: linear-gradient(160deg, #fdffb6 0%, #
 /* Centro de control: botón grande para ir a la sala en juego o crear una */
 .home-create.ctl-go { margin: 6px 0 14px; padding: 16px 14px; font-size: 1.2rem; }
 .home-create.ctl-go span { font-size: 1.6rem; }
+
+/* ---------- Elegir el juego: pestañas «Manual» / «Por sorteo» / «Por votación» (pedido de Cote, 21 nov) ---------- */
+.games-nav .g-tabs button { line-height: 1.2; }
+.games-nav .g-vote { display: none; }
+.games-nav.g-vmode .g-vote { display: block; margin-bottom: 12px; }
+.games-nav.g-vmode [data-game-draw], .games-nav.g-vmode [data-game-undo], .games-nav.g-vmode .g-plan, .games-nav.g-vmode .g-direct, .games-nav.g-vmode .g-free-title { display: none !important; }
+.g-vote .gvp-help { margin: 0 0 10px; text-align: center; font-weight: 700; color: var(--muted, #b9b4dc); line-height: 1.35; }
+.g-vote .gvp-now { margin: 0 0 10px; text-align: center; font-weight: 900; font-size: 1.1rem; color: #ffc400; }
+.g-vote .gvp-now b { font-variant-numeric: tabular-nums; }
+.g-vote .gvp-win { margin: 0 0 10px; text-align: center; font-weight: 900; font-size: 1.35rem; color: #ffc400; }
+.g-vote .gvp-rows, .pgvote .pgv-rows { display: grid; gap: 6px; margin: 0 0 12px; }
+.g-vote .gvp-row, .pgvote .pgv-row { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 8px 12px; border-radius: 10px; font-weight: 800;
+  background: linear-gradient(90deg, rgba(255, 196, 0, .32) var(--p), rgba(255, 255, 255, .06) var(--p)); /* navegadores antiguos */
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 45%, transparent) var(--p), rgba(255, 255, 255, .06) var(--p)); border: 1px solid rgba(255, 255, 255, .14); }
+.g-vote .gvp-row b, .pgvote .pgv-row b { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.g-vote .gvp-row.dim, .pgvote .pgv-row.dim { opacity: .45; }
+.g-vote .gvp-row.win, .g-vote .gvp-row.sel, .pgvote .pgv-row.win, .pgvote .pgv-row.sel { border-color: #ffc400; }
+.g-vote .g-draw { width: 100%; margin-bottom: 6px; }
+.g-vote span { font-size: inherit; line-height: inherit; pointer-events: auto; } /* sin el tamaño de los íconos del menú */
+.g-vote .gvp-row span { overflow-wrap: anywhere; }
+
+/* Celular: los juegos para votar */
+.pgvote .pgv-opts { grid-template-columns: 1fr 1fr; }
+.pgvote .pgv-opts button { border-left: 8px solid var(--c); font-size: 1.2rem; padding: 18px 8px; }
+.pgvote .pvote-win { margin: 12px 0; }
+
+/* Tablero y GC: un gráfico en círculo por juego, con su porcentaje y sus votos */
+#gv { position: fixed; top: 0; right: 0; bottom: 0; left: 0; display: grid; place-items: center; padding: 3vh 3vw; box-sizing: border-box; z-index: 3; }
+#gv .gv-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; grid-gap: 3vw; gap: 3vw; max-width: 94vw; padding: 3.5vh 3.5vw; box-sizing: border-box; overflow: hidden;
+  border-radius: 4vh; text-align: center; color: #fff; background: rgba(14, 12, 30, .92); border: .7vh solid #ffc400; box-shadow: 0 2vh 6vh rgba(0, 0, 0, .55); }
+#gv .gv-main { display: grid; justify-items: center; grid-gap: 1.8vh; gap: 1.8vh; min-width: 0; }
+#gv .gv-main > * { max-width: 100%; box-sizing: border-box; }
+#gv .gv-top { font-size: 3.4vh; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; color: #ffc400; }
+#gv .gv-big { display: block; font-size: 7vh; font-weight: 900; line-height: 1.1; white-space: nowrap; overflow: hidden; }
+#gv .gv-line { margin: 0; font-size: 3.6vh; font-weight: 800; white-space: nowrap; overflow: hidden; }
+#gv .gv-line b { color: #ffc400; font-variant-numeric: tabular-nums; }
+#gv .gv-rings { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); justify-content: center; justify-items: center; grid-gap: 3vw; gap: 3vw; width: 100%; margin-top: 1vh; }
+#gv .gv-opt { display: grid; justify-items: center; grid-gap: 1.2vh; gap: 1.2vh; min-width: 0; transition: opacity .4s; }
+#gv .gv-ring { position: relative; width: 14vw; width: min(25vh, 14vw); }
+#gv .gv-ring svg { display: block; width: 100%; height: auto; transform: rotate(-90deg); }
+#gv .gv-track { fill: none; stroke: rgba(255, 255, 255, .14); stroke-width: 12; }
+#gv .gv-arc { fill: none; stroke: var(--c); stroke-width: 12; transition: stroke-dasharray .6s ease; }
+#gv .gv-in { position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+#gv .gv-in b { font-size: 3.4vw; font-size: min(6vh, 3.4vw); font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
+#gv .gv-in small { margin-top: .6vh; font-size: 1.4vw; font-size: min(2.4vh, 1.4vw); font-weight: 800; color: #d8d3ff; }
+#gv .gv-name { display: block; max-width: 16vw; font-size: 2.8vh; font-weight: 900; line-height: 1.15; white-space: normal; text-align: center; }
+#gv .gv-rings.n2 .gv-ring { width: 20vw; width: min(30vh, 20vw); }
+#gv .gv-rings.n2 .gv-name { max-width: 22vw; }
+#gv .gv-opt.dim { opacity: .35; }
+#gv .gv-opt.win .gv-ring, #gv .gv-opt.sel .gv-ring { filter: drop-shadow(0 0 1.6vh var(--c)); }
+#gv .gv-opt.win .gv-name, #gv .gv-opt.sel .gv-name { color: #ffc400; }
+#gv .gv-total { font-size: 2.6vh; font-weight: 800; color: #d8d3ff; min-height: 1em; }
+#gv .gv-qr { display: grid; justify-items: center; gap: 1vh; width: 20vh; padding: 1.4vh; border-radius: 2.2vh; background: #fff; }
+#gv .gv-qr .qr { display: block; width: 100%; height: auto; border: 0; padding: 0; border-radius: 0; }
+#gv .gv-qr b { font-size: 1.9vh; font-weight: 900; line-height: 1.15; text-transform: uppercase; color: #c4175e; }
+/* GC de OBS: cuadro abajo al centro, más chico y sin tapar el QR de la esquina */
+#gv.gv-gc { place-items: end center; padding: 0 0 4vh; }
+#gv.gv-gc .gv-card { grid-template-columns: 1fr; max-width: 72vw; padding: 2vh 2.6vw; gap: 1vh; }
+#gv.gv-gc .gv-main { gap: 1vh; }
+#gv.gv-gc .gv-top { font-size: 2.4vh; }
+#gv.gv-gc .gv-big { font-size: 4.6vh; }
+#gv.gv-gc .gv-line { font-size: 2.6vh; }
+#gv.gv-gc .gv-ring { width: 12vw; width: min(15vh, 12vw); }
+#gv.gv-gc .gv-name { max-width: 14vw; font-size: 2vh; }
+#gv.gv-gc .gv-in b { font-size: 2.6vw; font-size: min(3.8vh, 2.6vw); }
+#gv.gv-gc .gv-in small { font-size: 1.2vw; font-size: min(1.7vh, 1.2vw); }
+#gv.gv-gc .gv-rings.n2 .gv-ring { width: 14vw; width: min(17vh, 14vw); }
+#gv.gv-gc .gv-total { font-size: 2vh; }
+/* Pantalla de pie: los círculos de a dos y el QR abajo */
+@media (orientation: portrait) {
+  #gv { padding: 2.5vh 3vw 8vh; } /* abajo queda libre la franja de los logos del local */
+  #gv .gv-card { grid-template-columns: 1fr; width: 92vw; max-height: none; grid-gap: 1.6vh; gap: 1.6vh; padding: 2.4vh 4vw; }
+  #gv .gv-main { grid-gap: 1.2vh; gap: 1.2vh; }
+  #gv .gv-top { font-size: 2.4vh; }
+  #gv .gv-big { font-size: 4.4vh; }
+  #gv .gv-line { font-size: 2.6vh; }
+  #gv .gv-rings { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-gap: 2.2vh 4vw; gap: 2.2vh 4vw; justify-items: center; }
+  #gv .gv-ring, #gv .gv-rings.n2 .gv-ring { width: 28vw; width: min(28vw, 16vh); }
+  #gv .gv-name, #gv .gv-rings.n2 .gv-name { width: auto; max-width: 42vw; font-size: 2.1vh; }
+  #gv .gv-in b { font-size: 5.4vw; font-size: min(5.4vw, 3.4vh); }
+  #gv .gv-in small { font-size: 2.4vw; font-size: min(2.4vw, 1.5vh); }
+  #gv .gv-total { font-size: 2vh; }
+  #gv .gv-qr { width: 22vw; justify-self: center; }
+  #gv .gv-qr b { font-size: 1.7vw; }
+  #gv.gv-gc .gv-card { max-width: 94vw; }
+}
