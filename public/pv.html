@@ -60,6 +60,12 @@
   .lv-sh { display: block; }
   .lv-by { display: block; font-size: .85em; color: #ffd76a; }
   .lv-by small { font-size: .7em; color: #fff; }
+  /* El nombre del show dentro del título: del tamaño del título (la regla «.lv-now span» de arriba lo agrandaba casi 3 veces
+     y salía gigante y cortado en «El show de esta noche») */
+  .lv-now b span, .lv-now b .lv-sh { font-size: 1em; margin-top: 0; }
+  .lv-now b .lv-by { font-size: .85em; }
+  .lv-now b .lv-by small { display: inline; font-size: .7em; letter-spacing: 0; text-transform: none; color: #fff; }
+  .lv-slide b, .lv-slide span, .lv-slide li, .lv-slide h2 { word-wrap: break-word; overflow-wrap: break-word; }
   /* Flyers del Instagram del local (pedido de Cote, 21 nov): pasan dentro del mismo recuadro, un poco más chicos */
   .lv-flyer { text-align: center; }
   .lv-flyer img { max-width: 88%; border-radius: 1.6rem; border: .4rem solid #ffc400; }
@@ -186,7 +192,8 @@
     var base = parseFloat(document.documentElement.style.fontSize) || 10;
     var f = 1;
     el.style.fontSize = base + 'px';
-    for (var i = 0; i < 40 && el.scrollHeight > el.clientHeight + 1 && f > 0.4; i++) { f -= 0.04; el.style.fontSize = (base * f).toFixed(2) + 'px'; }
+    // Se achica mientras el contenido no quepa en el alto o en el ancho del recuadro (nunca queda cortado)
+    for (var i = 0; i < 60 && (el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1) && f > 0.2; i++) { f -= 0.03; el.style.fontSize = (base * f).toFixed(2) + 'px'; }
   }
   function fitAll() {
     var els = view.querySelectorAll('.fit');
@@ -438,7 +445,7 @@
     function loadFly() { get('/api/web/flyers?local=' + VENUE, function (r) { if (r && r.flyers) flyers = r.flyers; }); }
     loadCart(); loadKar(); loadFly(); paint();
     every(viewTimers, 10 * 60000, loadFly);
-    every(viewTimers, 9000, function () { idx++; paint(); });
+    every(viewTimers, Q.vtest ? 1500 : 9000, function () { idx++; paint(); });
     every(viewTimers, 60000, loadCart);
     every(viewTimers, 5000, loadKar);
   }
