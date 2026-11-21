@@ -29,7 +29,7 @@
   .top { overflow: hidden; }
   .top h1 { float: left; padding-top: 6px; }
   .top button { float: right; font-size: 14px; padding: 6px 12px; margin: 0; }
-  .ball { display: inline-block; width: 96px; height: 96px; line-height: 96px; border-radius: 50%; background: #ffc400; color: #1a1a1a; font-size: 44px; font-weight: bold; text-align: center; }
+  .ball { display: inline-block; width: 120px; height: 120px; line-height: 120px; border-radius: 50%; background: #ffc400; color: #1a1a1a; font-size: 40px; font-weight: bold; text-align: center; }
   .chips span { display: inline-block; padding: 3px 9px; margin: 2px; border-radius: 99px; border: 1px solid #5a54a0; font-size: 15px; }
   .now { padding: 10px 12px; border: 2px solid #ffc400; border-radius: 12px; margin: 8px 0; }
   .now small { color: #ffc400; font-weight: bold; display: block; }
@@ -171,13 +171,16 @@ P.juegos = function () {
   return out + '</div>';
 };
 
+// Letra del número (B, I, N, G, O), igual que en el panel grande: cada letra tiene un quinto de los números
+function letra(st, v) { var hs = String(st.headers || 'BINGO'); for (var c = 0; c < 5; c++) if (v <= Math.floor(((c + 1) * st.values) / 5)) return hs.charAt(c); return hs.charAt(4); }
+function conLetra(st, v) { return st.format === 'numbers' ? letra(st, v) + ' ' + v : String(v); }
 function figName(id) { for (var i = 0; i < FIGS.length; i++) if (FIGS[i][0] === id) return FIGS[i][1]; return id; }
 function figSelect() { var o = '<select id="fig">'; for (var i = 0; i < FIGS.length; i++) o += '<option value="' + FIGS[i][0] + '">' + h(FIGS[i][1]) + '</option>'; return o + '</select>'; }
 P.bingo = function () {
   var st = S.bingo;
   if (!sala()) return '<div class="box">Primero crea la sala de juegos (pestaña Sala).</div>';
   if (!st) return '<div class="box">Cargando…</div>';
-  var last = st.drawn.length ? st.drawn[st.drawn.length - 1] : '—';
+  var last = st.drawn.length ? conLetra(st, st.drawn[st.drawn.length - 1]) : '—';
   var out = '<div class="box"><h2>' + h(String(st.name).replace(/^Los Juegos de /, 'El Bingo de ')) + '</h2><p class="muted">Ronda ' + st.round + ' · ' + st.players + ' participantes · Figura: <b>' + h(figName(st.patterns[0])) + '</b></p>';
   if (st.winConfirmed) {
     out += '<div class="now"><small>✔ Ganador confirmado</small>';
@@ -201,7 +204,7 @@ P.bingo = function () {
   } else out += btn('Generar un número', 'bingoAct', data('x', 'draw'), 'big');
   out += btn(st.bigQr ? '📱 QR grande en pantalla: quitar' : '📱 Mostrar QR grande en pantalla', 'qr', '', st.bigQr ? 'on' : '');
   out += '<p class="muted" style="margin-top:12px">Orden de salida</p><div class="chips">';
-  for (var n = 0; n < st.drawn.length; n++) out += '<span>' + h(st.drawn[n]) + '</span>';
+  for (var n = 0; n < st.drawn.length; n++) out += '<span>' + h(conLetra(st, st.drawn[n])) + '</span>';
   return out + '</div></div>';
 };
 
