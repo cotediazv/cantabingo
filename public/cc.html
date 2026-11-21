@@ -66,6 +66,17 @@
   .tabs2 button.on { background: #ffc400; color: #1a1a1a; }
   .tabs2.t3 button { width: 33.333%; font-size: 15px; }
   .modes { overflow: hidden; margin: 6px 0 10px; }
+  .figs { overflow: hidden; }
+  .fig { float: left; width: 31.33%; height: 122px; margin: 0 1% 8px; padding: 10px 4px 6px; border-radius: 14px; background: #1d1838; border: 2px solid #3a3466; text-align: center; vertical-align: top; }
+  .fig.on { border-color: #ffc400; background: #2a2410; }
+  .fig span { display: block; margin-top: 6px; font-size: 14px; line-height: 1.15; }
+  .fig span.mini { display: inline-block; width: 57px; margin: 0; font-size: 0; line-height: 0; }
+  .mini i { display: inline-block; width: 9px; height: 9px; margin: 1px; border-radius: 2px; background: #3a3466; }
+  .mini i.x { background: #ff2e93; }
+  .fig.on .mini i.x { background: #ffc400; }
+  .figl { margin: 4px 0 12px; }
+  .figl summary { padding: 10px 0; font-weight: bold; color: #a9a3cf; cursor: pointer; }
+  @media (min-width: 900px) { .fig { width: 23%; } }
   .ann { text-align: center; border: 3px solid #ffc400; background: #2a2410; }
   .ann small { display: block; color: #ffc400; font-weight: bold; letter-spacing: 1px; }
   .ann .ann-t { display: block; font-size: 20px; font-weight: bold; margin-top: 6px; }
@@ -152,11 +163,25 @@ function bingoName(n) { return String(n || '').replace(/^Los Juegos de /, 'El Bi
 function letra(st, v) { var hs = String(st.headers || 'BINGO'); for (var c = 0; c < 5; c++) if (v <= Math.floor(((c + 1) * st.values) / 5)) return hs.charAt(c); return hs.charAt(4); }
 function conLetra(st, v) { return st.format === 'numbers' ? letra(st, v) + ' ' + v : String(v); }
 function figName(id) { var all = LINES.concat(SHAPES, LETTERS); for (var i = 0; i < all.length; i++) if (all[i][0] === id) return all[i][1]; return id; }
+// Pedido de Cote (21 nov): en el iPad las figuras se ven dibujadas (como en la plataforma completa), no solo sus nombres.
+// FIGMASK: casillas de cada figura en el cartón de 5 x 5 (bit i = casilla i, por filas), sacadas de patterns.js
+var FIGMASK = {"linea":31,"horizontal":31,"vertical":1082401,"diagonal":17043521,"dos-lineas":1023,"esquinas":17825809,"sello":99,"cruz":4357252,"marco":33080895,"cuadro":469440,"diamante":4539716,"piramide":32968704,"piramide-inv":4575,"reloj":32969183,"corazon":4685802,"estrella":18168804,"lleno":33554431,"a":18415150,"b":16301615,"c":32539711,"d":16303663,"e":32554047,"f":1096767,"g":33092671,"h":18415153,"i":32641183,"j":6594847,"k":18128177,"l":32539681,"m":18405233,"n":18667121,"o":15255086,"p":1097263,"q":23385646,"r":18136623,"s":33061951,"t":4329631,"u":33080881,"v":4539953,"w":18732593,"x":18157905,"y":4329809,"z":32575775};
+function mini(id) {
+  var m = FIGMASK[id] || 0; var o = '<span class="mini">';
+  for (var i = 0; i < 25; i++) o += '<i' + ((m & (1 << i)) ? ' class="x"' : '') + '></i>';
+  return o + '</span>';
+}
 function figPicker(sel) {
-  var o = '<select id="fig">';
-  var grp = function (name, list) { o += '<optgroup label="' + name + '">'; for (var i = 0; i < list.length; i++) o += '<option value="' + list[i][0] + '"' + (list[i][0] === sel ? ' selected' : '') + '>' + h(list[i][1]) + '</option>'; o += '</optgroup>'; };
-  grp('Líneas', LINES); grp('Figuras', SHAPES); grp('Letras', LETTERS);
-  return o + '</select>';
+  sel = sel || 'linea';
+  var letterOn = false; for (var k = 0; k < LETTERS.length; k++) if (LETTERS[k][0] === sel) letterOn = true;
+  var grp = function (list) {
+    var o = '<div class="figs">';
+    for (var i = 0; i < list.length; i++) o += '<button type="button" class="fig' + (list[i][0] === sel ? ' on' : '') + '" data-a="pickFig" data-f="' + list[i][0] + '">' + mini(list[i][0]) + '<span>' + h(list[i][1]) + '</span></button>';
+    return o + '</div>';
+  };
+  return '<input type="hidden" id="fig" value="' + h(sel) + '">' +
+    '<div class="sec">LÍNEAS</div>' + grp(LINES) + '<div class="sec">FIGURAS</div>' + grp(SHAPES) +
+    '<details class="figl"' + (letterOn ? ' open' : '') + '><summary>Letras (de la A a la Z)</summary>' + grp(LETTERS) + '</details>';
 }
 
 // ---------- Datos compartidos ----------
@@ -604,6 +629,10 @@ A.tieBingo = function () { var s = sala(); if (s) act('POST', '/api/raffle/tiebr
 A.figura = function () {
   var s = sala(); if (!s) return;
   api('POST', '/api/sessions/' + s.id + '/host/patterns', { patterns: [$('fig').value] }, function (err) { if (err) { toast(err); if (/ya empez/.test(err)) go('#/bingo'); return; } api('POST', '/api/stage', { show: 'bingo' }); go('#/bingo'); });
+};
+A.pickFig = function (el) {
+  var f = el.getAttribute('data-f'); $('fig').value = f;
+  var bs = document.querySelectorAll('.fig'); for (var i = 0; i < bs.length; i++) bs[i].className = 'fig' + (bs[i].getAttribute('data-f') === f ? ' on' : '');
 };
 A.ronda = function () { var s = sala(); if (s) api('POST', '/api/sessions/' + s.id + '/host/restart', { patterns: [$('fig').value] }, function (err) { if (err) toast(err); else go('#/bingo'); }); };
 A.drawMode = function (el) {
