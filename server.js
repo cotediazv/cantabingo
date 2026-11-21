@@ -734,7 +734,7 @@ require('./twitch.js')({ app }); // videos y transmisiones en vivo de Twitch, pa
 require('./instagram-web.js')({ app, db, save, insta }); // últimos videos de Instagram de cada local, para la página web
 
 // Consola general: en qué está cada local (sala principal o sala light), su bloque del horario y su karaoke
-const STAGE_NAMES = { bingo: 'Bingo', rueda: 'El Rosco', sorteo: 'Sorteo', qr: 'QR grande', karaoke: 'Karaoke', show: 'Show', voto: 'Votación', insta: 'Instagram', juego: 'Sorteo de juegos', votojuego: 'Votación del juego', none: 'Nada', cartelera: 'Cartelera de la semana' };
+const STAGE_NAMES = { bingo: 'Bingo', rueda: 'El Rosco', sorteo: 'Sorteo', qr: 'QR grande', karaoke: 'Karaoke', show: 'Show', voto: 'Votación', insta: 'Instagram', juego: 'Sorteo de juegos', votojuego: 'Votación del juego', none: 'Nada', cartelera: 'Cartelera de la semana', custom: 'GC personalizable', info: 'Información que va cambiando' };
 app.get('/api/consola', requireAdmin, async (_req, res) => {
   const main = Object.values(db.sessions)[0] || null;
   const out = await Promise.all(['kennedy', 'frida', 'tobalaba'].map(async (v) => {

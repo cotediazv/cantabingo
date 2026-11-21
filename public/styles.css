@@ -2626,3 +2626,11 @@ body.kids[data-kz-level="8"] { background: linear-gradient(160deg, #fdffb6 0%, #
 .kg-qr b { display: grid; justify-items: center; width: 13vh; font-size: 1.2vh; line-height: 1.25; letter-spacing: 0; text-align: center; }
 .kg-qr b span { display: block; white-space: nowrap; }
 .next-up.kg-up { left: 50%; }
+
+/* Sala light: GC personalizable (pedido de Cote, 21 nov): espacio para escribir y botón, debajo de los botones del GC */
+.lp-custom { display: flex; gap: 10px; margin-top: 12px; }
+.lp-custom input { flex: 1; min-width: 0; font-size: 1.1rem; padding: 12px 14px; }
+.lp-custom button { flex: none; font-weight: 800; font-size: 1.05rem; padding: 12px 16px; white-space: nowrap; }
+.lp-custom button.on { background: #ffc400; color: #1a1a1a; }
+@media (max-width: 560px) { .lp-custom { flex-direction: column; } }
+.lg-custom .lg-main .lg-line { font-size: 4vh; }

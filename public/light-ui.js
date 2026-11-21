@@ -69,10 +69,13 @@
       if (!st || !top.isConnected) return;
       const sig = JSON.stringify(st);
       if (sig === last) return;
+      // Mientras se escribe el texto del GC personalizable no se redibuja (se perdería lo escrito)
+      if (document.activeElement && document.activeElement.name === 'text' && top.contains(document.activeElement)) return;
       last = sig;
       top.innerHTML = `<h1 style="margin:0">${esc(st.title)}</h1><span class="muted">${st.players} ${st.players === 1 ? 'persona entró' : 'personas entraron'} a la sala</span>
         <h2 style="margin:16px 0 10px">En pantalla (GC)</h2>
         <div class="lp-stages">${STAGES.map(([k, i, t]) => `<button type="button" data-st="${k}" class="${st.stage === k ? 'on' : ''}"><span>${i}</span>${t}</button>`).join('')}</div>
+        <form class="lp-custom${st.stage === 'custom' ? ' on' : ''}"><input type="text" name="text" maxlength="120" autocomplete="off" placeholder="Escribe aquí el texto del GC" value="${esc(st.text || '')}"><button class="${st.stage === 'custom' ? 'on' : ''}">✏️ GC personalizable</button></form>
         <label class="lp-switch${st.video ? ' on' : ''}"><input type="checkbox" data-video ${st.video ? 'checked' : ''}><i></i><span><b>🎬 Video cartelera</b><small>La pantalla vertical deja puesto el video subido hasta que se cambie el GC</small></span></label>`;
       bottom.innerHTML = `<h2 style="margin-top:0">Direcciones</h2>
         <div class="lp-links"><div>${qr(lightJoin(st.id))}</div><div>
@@ -80,6 +83,9 @@
           <p class="small"><b>GC para OBS</b> (fuente de navegador):<br><a href="${esc(gcUrl(v))}" target="_blank">${esc(gcUrl(v))}</a></p></div></div>
 `;
       top.querySelectorAll('[data-st]').forEach((b) => { b.onclick = async () => { try { await api('POST', '/api/light/stage', { show: b.dataset.st, local: v }); last = ''; paint(); } catch (err) { fail(err); } }; });
+      // GC personalizable (pedido de Cote, 21 nov): pone en el GC el texto escrito
+      const cf = top.querySelector('.lp-custom');
+      if (cf) cf.onsubmit = async (e) => { e.preventDefault(); const text = cf.text.value.trim(); if (!text) { toast('Escribe el texto del GC'); cf.text.focus(); return; } try { cf.text.blur(); await api('POST', '/api/light/stage', { show: 'custom', local: v, text }); toast('GC personalizable en pantalla'); last = ''; paint(); } catch (err) { fail(err); } };
       // Switch «Video cartelera» (pedido de Cote, 21 nov): se apaga solo al cambiar el GC
       const sw = top.querySelector('[data-video]');
       if (sw) sw.onchange = async () => { sw.closest('.lp-switch').classList.toggle('on', sw.checked); try { await api('POST', '/api/light/video', { local: v, on: sw.checked }); toast(sw.checked ? 'Video cartelera en la pantalla vertical' : 'La pantalla vertical vuelve a seguir el GC'); } catch (err) { sw.checked = !sw.checked; fail(err); } last = ''; paint(); };
@@ -152,7 +158,7 @@
       let k = null;
       if (stage === 'qr') k = await api('GET', `/api/karaoke?local=${st.venue}`).catch(() => null);
       if (!alive) return;
-      const sig = JSON.stringify([stage, st.id, st.venue, c && [c.show, c.current, c.next, c.week, c.blocks, c.month], k && k.list.map((p) => [p.name, p.song]), stage === 'info' ? Math.floor(Date.now() / 9000) : 0]);
+      const sig = JSON.stringify([stage, st.id, st.venue, stage === 'custom' ? st.text : '', c && [c.show, c.current, c.next, c.week, c.blocks, c.month], k && k.list.map((p) => [p.name, p.song]), stage === 'info' ? Math.floor(Date.now() / 9000) : 0]);
       if (sig === shown) return;
       const wasKaraoke = shown.startsWith('["karaoke"');
       shown = sig;
@@ -165,7 +171,13 @@
       if (!$('#lg')) app.innerHTML = '<div id="lg"></div>';
       const box = $('#lg');
       box.className = `th-${st.venue || 'kennedy'}`;
-      if (stage === 'show') {
+      if (stage === 'custom') {
+        // GC personalizable: el texto escrito en el panel, en la franja de abajo (corto: grande; largo: en líneas)
+        const t = String(st.text || '');
+        box.innerHTML = `<div class="lg-card lg-bottom lg-info lg-custom">
+          <div class="lg-tag"><small>${esc(VENUES[st.venue] || '')}</small><b>KRB Stage</b></div>
+          <div class="lg-main">${t.length <= 30 ? `<b style="--n:${Math.max(10, t.length)}">${esc(t)}</b>` : `<span class="lg-line">${esc(t)}</span>`}</div></div>`;
+      } else if (stage === 'show') {
         box.innerHTML = `<div class="lg-card lg-bottom">
           <div class="lg-tag"><small>${esc(c ? c.name : '')}</small><b>${c && c.show ? '⭐ Show de hoy' : 'Esta noche'}</b></div>
           <div class="lg-main">${c && c.show ? `<b style="--n:${c.show.length}">${esc(c.show)}</b>` : `<b style="--n:12">KRB Stage</b>`}
