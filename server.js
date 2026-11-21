@@ -153,6 +153,20 @@ function evaluate(s) {
 }
 // El moderador recibe la lista completa de resultados; los participantes solo los cartones
 // ganadores (sin nombres), que es lo único que necesitan y pesa mucho menos.
+// El bingo de la ronda empezó: se eligió su figura (en #/figura o al pasar de ronda) o ya hay números
+const bingoStarted = (s) => s.drawn.length > 0 || s.figRound === s.round;
+// Juego en curso en la sala (para «Volver al juego en curso» en Juegos): lo que está en pantalla y aún no termina
+const currentGame = (s) => {
+  const st = db.stage || 'bingo';
+  if (st === 'rueda') {
+    const w = Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0];
+    return w && !w.winAccepted ? { game: 'rosco', wheel: w.id } : null;
+  }
+  if (st === 'sorteo') return { game: 'rosco' };
+  if (st === 'voto') { const v = db.vote || {}; return v.winner ? null : { game: v.mode === 'karaoke' ? 'festival' : 'objeto' }; }
+  if (st === 'bingo') return bingoStarted(s) && !roundOver(s) ? { game: 'bingo' } : null;
+  return null;
+};
 function publicState(s, full = false) {
   const p = db.projects[s.projectId];
   const results = full ? s.results : s.results.filter((r) => r.validated && !r.dismissed).map((r) => ({ cardNo: r.cardNo, pattern: r.pattern, validated: true, name: r.name }));
@@ -167,10 +181,14 @@ function publicState(s, full = false) {
     stage: db.stage || 'bingo', roscoId: db.stage === 'rueda' ? (Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).id || null : null,
     celebrateAt: s.celebrateAt || 0,
     voteRev: (db.vote || {}).rev || 0, // los celulares vuelven a leer la votación cuando cambia
+    gameSeq: (db.gameDraw || {}).seq || 0, // sube con cada juego que empieza (sorteado o elegido)
+    voteGen: (db.vote || {}).gen || 0, // cambia con cada concurso nuevo (El Festival u objeto): los celulares muestran sus instrucciones
     winConfirmed: roundOver(s), winConfirmedAt: s.confirmedAt || 0, now: Date.now(),
+    started: bingoStarted(s), // el bingo de esta ronda empezó (figura elegida o ya hay números); antes, la sala espera el primer juego
     patterns: s.patterns, drawn: s.drawn, results, finalists: s.finalists || null,
     auto: s.auto, cardsPerPlayer: s.cardsPerPlayer, totalCards: p.cards.length,
     players: Object.values(s.players).length,
+    ...(full ? { current: currentGame(s) } : {}),
   };
 }
 // Los avisos se agrupan: si llegan muchos cambios seguidos (cientos de personas entrando o
@@ -470,7 +488,7 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
       break;
     case 'restart':
       stopAuto(s);
-      Object.assign(s, { round: s.round + 1, drawn: [], results: [], marks: {}, finalists: null, tieWinner: null, hideWin: false, confirmedAt: 0, patterns: cleanPatterns(b.patterns) });
+      Object.assign(s, { round: s.round + 1, figRound: s.round + 1, drawn: [], results: [], marks: {}, finalists: null, tieWinner: null, hideWin: false, confirmedAt: 0, patterns: cleanPatterns(b.patterns) });
       setStage('bingo'); // la ronda nueva devuelve la pantalla a la gráfica del bingo
       evaluate(s);
       break;
@@ -494,6 +512,13 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
       s.tieWinner = null;
       break;
     case 'bigqr': s.bigQr = b.on !== false; break; // cartel con el QR en grande, para antes de empezar
+    // Figura del bingo antes de sacar el primer número (pedido de Cote, 21 nov: la sala ya no parte con el bingo; cuando
+    // el bingo sale en el sorteo o se elige, primero se elige la figura)
+    case 'patterns':
+      if (s.drawn.length || roundOver(s)) return fail(res, 400, 'El bingo ya empezó: la figura se cambia en la ronda siguiente');
+      s.patterns = cleanPatterns(b.patterns);
+      s.figRound = s.round; // figura elegida: el bingo de esta ronda empezó
+      break;
     case 'hidewin': s.hideWin = b.hide !== false; break; // quitar o volver a mostrar la celebración en pantalla
     case 'gc':
       // Textos de las franjas de la gráfica de OBS; quedan como predeterminados para las próximas sesiones
@@ -520,7 +545,7 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
 app.get('/api/sessions/:sid/host/state', (req, res) => { const s = hostSession(req, res); if (s) res.json(publicState(s, true)); });
 app.get('/api/sessions/:sid/host', (req, res) => {
   const s = hostSession(req, res);
-  if (s) res.json({ password: s.password, isPublic: s.isPublic, round: s.round, patterns: s.patterns, gc: s.gc || gcDefaults(), roundOver: roundOver(s) });
+  if (s) res.json({ password: s.password, isPublic: s.isPublic, round: s.round, patterns: s.patterns, gc: s.gc || gcDefaults(), roundOver: roundOver(s), drawn: s.drawn.length, started: bingoStarted(s) });
 });
 
 // Sesiones activas: a ellas llevan el enlace y el QR fijos
@@ -705,7 +730,7 @@ app.get('/api/consola', requireAdmin, async (_req, res) => {
 // Programación del local del día: el de la sala abierta o, si no hay, el elegido en la sección Karaoke
 require('./agenda.js')({ app, db, save, requireAdmin, fail, currentVenue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
 
-// Sorteo del siguiente juego (pedido de Cote): la sala parte con un bingo; después se sortea entre todos los juegos
+// Sorteo del siguiente juego (pedido de Cote): la sala parte en Juegos, sin bingo (21 nov), y se sortea entre todos los juegos
 // (Bingo, El Rosco, El Festival y El objeto más extraño; el karaoke no es un juego), el bingo incluido desde el primer
 // sorteo. El juego que sale queda bloqueado solo para el sorteo siguiente y después vuelve a estar disponible.
 // El sorteo se ve en el tablero y en el GC (escenario «juego»).
@@ -713,14 +738,36 @@ const DRAW_GAMES = ['bingo', 'rosco', 'festival', 'objeto'];
 db.gameDraw ||= { played: [], last: null };
 if (!db.gameDraw.rule2) { db.gameDraw.played = db.gameDraw.last ? [db.gameDraw.last.game] : []; db.gameDraw.rule2 = true; }
 app.get('/api/gamedraw', (_req, res) => res.json({ ...db.gameDraw, undo: undefined, undoable: !!(db.gameDraw.undo || []).length, games: DRAW_GAMES, venue: (Object.values(db.sessions)[0] || {}).theme || 'frida', now: Date.now() }));
-// Cuántos juegos se sortean esa noche (pedido de Cote): juego inicial (bingo) + 1.º, 2.º, 3.º… sorteados
+// Cuántos juegos se sortean esa noche (pedido de Cote): 1.º, 2.º, 3.º… sorteados
 db.gameDraw.list ||= [];
 db.gameDraw.total ||= 3;
 // Pestañas «Sortear juegos» / «Elegir libremente» (pedido de Cote, 21 nov): con «Elegir libremente» no hay sorteo;
 // el animador elige el siguiente juego tocándolo. La elección queda guardada para las noches siguientes.
 app.post('/api/gamedraw/mode', requireAdmin, (req, res) => {
   db.gameDraw.free = !!(req.body || {}).free;
-  if (db.gameDraw.free) db.gameDraw.ready = null; // un sorteo a medio empezar se cancela
+  if (db.gameDraw.free) {
+    db.gameDraw.ready = null; // un sorteo a medio empezar se cancela
+    if (db.stage === 'juego' && !roscoLock('bingo')) setStage('bingo'); // y las pantallas no quedan con el sorteo vacío
+  }
+  save();
+  res.json(db.gameDraw);
+});
+// «Elegir libremente»: el juego elegido empieza de cero (como uno sorteado) pero sin número de la noche
+const notFree = (res) => { if (db.gameDraw.free) { fail(res, 409, 'Está elegida la pestaña «Elegir libremente»: no hay sorteo'); return false; } return true; };
+app.post('/api/gamedraw/free', requireAdmin, (req, res) => {
+  if (!db.gameDraw.free) return fail(res, 409, 'Está elegida la pestaña «Sortear juegos»: el juego sale en el sorteo');
+  const game = String((req.body || {}).game);
+  if (!DRAW_GAMES.includes(game)) return fail(res, 400, 'Juego no válido');
+  if (game === 'festival' || game === 'objeto') {
+    const mode = game === 'festival' ? 'karaoke' : 'objeto';
+    const v = db.vote || {};
+    // Un concurso del mismo tipo que sigue en curso (con inscritos o inscripciones abiertas y sin ganador) no se borra:
+    // tocarlo en el menú solo vuelve a su panel
+    const enCurso = (v.mode || 'objeto') === mode && !v.winner && ((v.players || []).length || v.signup);
+    if (!enCurso) vote.start(mode);
+    setStage('voto'); // las pantallas y los celulares pasan de inmediato al juego elegido
+  }
+  db.gameDraw.seq = (db.gameDraw.seq || 0) + 1;
   save();
   res.json(db.gameDraw);
 });
@@ -742,10 +789,12 @@ app.post('/api/gamedraw/undo', requireAdmin, (_req, res) => {
   const g = db.gameDraw;
   if (!g.undo || !g.undo.length) return fail(res, 400, 'No hay nada que deshacer');
   Object.assign(g, JSON.parse(g.undo.pop()));
+  if (g.free) g.ready = null; // con «Elegir libremente» no vuelve un sorteo a medio empezar
   save();
   res.json(db.gameDraw);
 });
 app.post('/api/gamedraw/ready', requireAdmin, (_req, res) => {
+  if (!notFree(res)) return;
   const g = db.gameDraw;
   if (g.list.length >= g.total) return fail(res, 409, `Ya se sortearon los ${g.total} juegos de la noche`);
   drawSnap(g);
@@ -755,12 +804,13 @@ app.post('/api/gamedraw/ready', requireAdmin, (_req, res) => {
   res.json(db.gameDraw);
 });
 app.post('/api/gamedraw/pick', requireAdmin, (req, res) => {
+  if (!notFree(res)) return;
   const g = db.gameDraw;
   const game = String((req.body || {}).game);
   if (!DRAW_GAMES.includes(game)) return fail(res, 400, 'Juego no válido');
   if (g.list.length >= g.total) return fail(res, 409, `Ya se sortearon los ${g.total} juegos de la noche`);
   drawSnap(g);
-  g.played = [game]; g.list.push(game); g.ready = null;
+  g.played = [game]; g.list.push(game); g.ready = null; g.seq = (g.seq || 0) + 1;
   g.last = { game, pool: [game], at: Date.now(), direct: true };
   if (game === 'festival' || game === 'objeto') vote.start(game === 'festival' ? 'karaoke' : 'objeto');
   save();
@@ -768,6 +818,7 @@ app.post('/api/gamedraw/pick', requireAdmin, (req, res) => {
   res.json(db.gameDraw);
 });
 app.post('/api/gamedraw', requireAdmin, (_req, res) => {
+  if (!notFree(res)) return;
   const g = db.gameDraw;
   if (g.list.length >= g.total) return fail(res, 409, `Ya se sortearon los ${g.total} juegos de la noche`);
   const pool = DRAW_GAMES.filter((x) => !(g.last && g.last.game === x)); // el que salió recién queda fuera de este sorteo
@@ -775,7 +826,7 @@ app.post('/api/gamedraw', requireAdmin, (_req, res) => {
   const game = pool[crypto.randomInt(pool.length)];
   g.played = [game]; // bloqueado solo para el sorteo siguiente
   g.list.push(game); // queda en su número (1.º, 2.º…) en la pantalla
-  g.ready = null;
+  g.ready = null; g.seq = (g.seq || 0) + 1;
   g.last = { game, pool, at: Date.now() };
   if (game === 'festival' || game === 'objeto') vote.start(game === 'festival' ? 'karaoke' : 'objeto'); // la votación queda lista con su título
   save();

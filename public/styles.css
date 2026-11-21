@@ -2378,3 +2378,10 @@ body.kids[data-kz-level="8"] { background: linear-gradient(160deg, #fdffb6 0%, #
 .games-nav.g-free [data-game] { min-height: 110px; font-size: 1.15rem; border: 2px solid #ffc400; }
 .games-nav.g-free [data-game] .g-played-note, .games-nav.g-free [data-game].g-played { opacity: 1; }
 .games-nav.g-free .g-played::after { content: none; }
+
+/* Pestañas del menú de juegos: sin el alto de los botones de juego (regla .act-nav > div > *) */
+.games-nav .g-tabs button { display: block; min-height: 0; }
+
+/* Centro de control: botón grande para ir a la sala en juego o crear una */
+.home-create.ctl-go { margin: 6px 0 14px; padding: 16px 14px; font-size: 1.2rem; }
+.home-create.ctl-go span { font-size: 1.6rem; }
