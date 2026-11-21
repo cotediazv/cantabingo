@@ -1355,7 +1355,8 @@ views.karaokectl = async (local) => {
         queue.shift();
       } catch (err) {
         queue.length = 0;
-        fail(err);
+        // Aviso claro (pedido de Cote, 21 nov): el cambio no quedó en la planilla y el pedido vuelve a la lista
+        fail(new Error(`${job.accion === 'cantado' ? '«Ya cantó»' : 'El cambio'} NO quedó guardado en la planilla: ${err.message} Vuelve a apretarlo.`));
       }
     }
     saving = false;

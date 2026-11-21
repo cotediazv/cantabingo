@@ -20,6 +20,9 @@ const TOBALABA_EXEC = 'https://script.google.com/macros/s/AKfycbx7ZEyg6MmDsxtV9B
 DEFAULTS.tobalaba.exec = TOBALABA_EXEC;
 const POLL_MS = 3000; // cada cuánto se consulta a Google mientras el karaoke está en pantalla
 const TIMEOUT_MS = 10000; // Apps Script puede tardar en un arranque en frío
+const WRITE_TIMEOUT_MS = 25000; // «Ya cantó», Subir y Bajar: Sala.gs espera su turno y busca la hora del pedido (Cote, 21 nov)
+const SUNG_MS = 5 * 60e3; // un pedido que la planilla confirmó como cantado no se vuelve a mostrar por 5 minutos
+const SETTLE_MS = 30e3; // recién después de un cambio, una lista vacía de Google se toma como recálculo y se ignora
 const MAX_ACTIVE = 2; // pedidos sin cantar que puede tener una persona a la vez
 const SEPARATORS = [' – ', ' • ', ' - ']; // "Canción – Artista": se corta por la última aparición
 
@@ -63,6 +66,11 @@ module.exports = function karaoke({ app, db, save, requireAdmin, requireLocal = 
 
   // Lo último que se leyó bien de cada local. Si una consulta falla, se sigue mostrando esto.
   const cache = {}; // local -> { list, at, error }
+  // Pedido de Cote (21 nov): «Ya cantó» desaparecía y volvía. Justo después de anotar, la planilla puede entregar la
+  // lista vieja (con el pedido) o vacía mientras recalcula: se recuerdan los pedidos confirmados como cantados y la hora
+  // del último cambio, para no volver a mostrarlos ni aceptar esa lista vacía
+  const sung = {}; // local -> { id: hasta }
+  const lastWrite = {}; // local -> hora del último cambio confirmado
   let busy = false;
 
   const clean = (v, max = 80) => String(v == null ? '' : v).replace(/\s+/g, ' ').trim().slice(0, max);
@@ -114,7 +122,13 @@ module.exports = function karaoke({ app, db, save, requireAdmin, requireLocal = 
       try { data = JSON.parse(text); } catch { throw new Error(res.ok ? 'La web app no devolvió la lista (¿falta publicar la versión con ?modo=json o el acceso «Cualquier usuario»?)' : `Google respondió ${res.status}`); }
       if (!Array.isArray(data)) throw new Error(clean(data && data.error, 200) || 'Respuesta inesperada de la web app');
       if (startedAt !== writes) return;
-      cache[venue] = { list: normalize(data), at: Date.now(), error: '' };
+      let list = normalize(data);
+      const prev = (cache[venue] || {}).list || [];
+      if (!list.length && prev.length && Date.now() - (lastWrite[venue] || 0) < SETTLE_MS) return; // recalculando: se espera la siguiente lectura
+      const hide = sung[venue] || {};
+      for (const id of Object.keys(hide)) if (hide[id] < Date.now()) delete hide[id];
+      if (Object.keys(hide).length) list = list.filter((p) => !(p.id && hide[p.id]));
+      cache[venue] = { list, at: Date.now(), error: '' };
     } catch (err) {
       // Se conserva la última lista buena para que la pantalla no quede vacía por un fallo pasajero
       cache[venue] = { list: (cache[venue] || {}).list || [], at: (cache[venue] || {}).at || 0, error: clean(err && err.message, 200) || 'No se pudo leer la lista' };
@@ -207,7 +221,7 @@ module.exports = function karaoke({ app, db, save, requireAdmin, requireLocal = 
     if (!KEY) throw new Error('Falta configurar la clave del karaoke en el servidor (KARAOKE_CLAVE)');
     const exec = (db.karaoke.urls[venue] || {}).exec;
     if (!exec) throw new Error('Falta la dirección de la web app de este local');
-    const r = await fetch(exec, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ clave: KEY, ...body }), redirect: 'follow', signal: AbortSignal.timeout(TIMEOUT_MS) });
+    const r = await fetch(exec, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ clave: KEY, ...body }), redirect: 'follow', signal: AbortSignal.timeout(WRITE_TIMEOUT_MS) });
     const text = await r.text();
     let data;
     try { data = JSON.parse(text); } catch { throw new Error(r.ok ? 'La web app no respondió como se esperaba (¿falta instalar Sala.gs y publicar con Nueva versión?)' : `Google respondió ${r.status}`); }
@@ -227,6 +241,8 @@ module.exports = function karaoke({ app, db, save, requireAdmin, requireLocal = 
       await callScript(venue, { accion: b.accion, id: p.id, nombre: p.raw.nombre, cancion: p.raw.cancion });
       // Se responde de inmediato con el cambio ya hecho en la lista; la lectura de Google se hace después
       writes++;
+      lastWrite[venue] = Date.now();
+      if (b.accion === 'cantado') (sung[venue] ||= {})[p.id] = Date.now() + SUNG_MS;
       const list = [...((cache[venue] || {}).list || [])];
       const i = list.findIndex((x) => x.id === p.id);
       if (i >= 0) {
@@ -261,6 +277,8 @@ module.exports = function karaoke({ app, db, save, requireAdmin, requireLocal = 
     acting = true;
     try {
       await callScript(pickVenue(req), { accion: 'volver', fila, claveFila: String(b.key || '').slice(0, 400) });
+      sung[pickVenue(req)] = {}; // un pedido vuelve a la lista: deja de estar oculto
+      lastWrite[pickVenue(req)] = Date.now();
       writes++;
       refresh(pickVenue(req)); // el pedido vuelve a la lista cuando Google lo confirma
       res.json({ ok: true });
