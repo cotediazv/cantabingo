@@ -868,14 +868,14 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
 .int-tab:hover{color:var(--texto)}
 .int-tab[aria-selected="true"]{background:var(--c,var(--foco));border-color:var(--c,var(--foco));color:var(--noche)}
 .int-juego{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:28px;align-items:center;margin-top:18px;border:1px solid var(--linea);border-radius:14px;background:var(--tarima);padding:22px}
-.int-medios{position:relative;padding-right:min(17%,120px);padding-bottom:28px}
-.int-medios.sin-cel{padding:0}
+.int-medios{position:relative;padding-right:min(15%,110px);padding-bottom:24px}
+.int-medios.sin-cel{padding:0 0 24px}
 .int-local{margin:0;border-radius:10px;overflow:hidden;border:1px solid var(--linea);background:var(--noche);aspect-ratio:16/9}
 .int-local img,.int-cel img{display:block;width:100%;height:100%;object-fit:cover}
-.int-cel{position:absolute;right:0;bottom:0;width:min(26%,190px);margin:0;aspect-ratio:390/844;border-radius:22px;overflow:hidden;border:5px solid #26222f;box-shadow:0 18px 40px -12px rgba(0,0,0,.8);background:var(--noche)}
+.int-cel{position:absolute;right:0;bottom:0;width:min(22%,165px);margin:0;aspect-ratio:390/844;border-radius:22px;overflow:hidden;border:5px solid #26222f;box-shadow:0 18px 40px -12px rgba(0,0,0,.8);background:var(--noche)}
 .int-medios.solo-cel{padding:0;display:flex;justify-content:center}
 .int-medios.solo-cel .int-cel{position:static;width:min(60%,250px)}
-.int-medios figcaption{position:absolute;left:10px;top:10px;font-family:var(--f-dato);font-size:11px;letter-spacing:.12em;text-transform:uppercase;background:rgba(12,11,18,.75);border-radius:999px;padding:4px 10px;color:var(--texto)}
+.int-cap{position:absolute;left:2px;bottom:0;font-family:var(--f-dato);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--tenue);line-height:1}
 .int-txt .etiqueta{color:var(--c,var(--foco))}
 .int-txt h3{margin:8px 0 10px;font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:clamp(30px,3.4vw,42px);line-height:1}
 .int-txt p{margin:0;color:var(--tenue)}
@@ -887,9 +887,15 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
 .int-anim p{margin:0;color:var(--tenue)}
 .int-donde{list-style:none;margin:18px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
 .int-donde li{border:1px solid var(--linea);border-radius:999px;padding:5px 11px;font-size:13px}
-.int-panel{position:relative;margin:0;border-radius:12px;overflow:hidden;border:1px solid var(--linea);background:var(--noche)}
-.int-panel img{display:block;width:100%;height:auto}
-.int-panel figcaption{position:absolute;left:10px;top:10px;font-family:var(--f-dato);font-size:11px;letter-spacing:.12em;text-transform:uppercase;background:rgba(12,11,18,.75);border-radius:999px;padding:4px 10px}
+.int-panel{margin:0}
+.int-panel img{display:block;width:100%;height:auto;border-radius:12px;border:1px solid var(--linea);background:var(--noche)}
+.int-panel figcaption,.int-pantallas figcaption{margin-top:8px;font-family:var(--f-dato);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--tenue)}
+.int-pantallas{display:grid;grid-template-columns:minmax(0,3.16fr) minmax(0,1fr);gap:14px;margin-top:24px}
+.int-pantallas figure{margin:0;min-width:0}
+.int-cam{border-radius:12px;overflow:hidden;border:1px solid var(--linea);background:var(--noche)}
+.int-cam img{display:block;width:100%;height:100%;object-fit:cover}
+.int-gc .int-cam{aspect-ratio:16/9;background:url(portada.jpg) center/cover no-repeat} /* el GC es transparente: debajo, una imagen del escenario hace de cámara */
+.int-vert .int-cam{aspect-ratio:9/16}
 @media (max-width:900px){
   .int-pasos{grid-template-columns:1fr}
   .int-juego{grid-template-columns:1fr;padding:14px;gap:18px}
@@ -1013,6 +1019,10 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
           <ul class="int-donde"><li>Celular del público</li><li>Pantallas del local</li><li>Pantalla vertical</li><li>Transmisión en vivo</li><li>Panel del animador</li></ul>
         </div>
         <figure class="int-panel"><img src="interactivo/panel-rosco.webp" alt="Panel del animador de El Rosco, con los botones paso a paso" loading="lazy" width="1280" height="900"><figcaption>Panel del animador · El Rosco</figcaption></figure>
+      </div>
+      <div class="int-pantallas">
+        <figure class="int-gc"><div class="int-cam"><img src="interactivo/escena-bingo.webp" alt="El bingo sobre la cámara en la transmisión en vivo" loading="lazy" width="1280" height="720"></div><figcaption>Transmisión en vivo</figcaption></figure>
+        <figure class="int-vert"><div class="int-cam"><img src="interactivo/trivia-vertical.webp" alt="Ranking de la Trivia del Rosco en la pantalla vertical del local" loading="lazy" width="540" height="960"></div><figcaption>Pantalla vertical</figcaption></figure>
       </div>
     </div>
   </section>
@@ -2119,7 +2129,7 @@ function lineas(x,pts,dist,alfa){ // agrupa las líneas en 4 tonos: pocas órden
     const g=J[i];caja.style.setProperty('--c',g.c);
     tabs.querySelectorAll('.int-tab').forEach((b,k)=>{b.setAttribute('aria-selected',k===i);b.tabIndex=k===i?0:-1});
     const medios=g.local&&g.cel?'':g.cel?' solo-cel':' sin-cel';
-    caja.innerHTML=`<div class="int-medios${medios}">${g.local?img(g.local,`${g.t}: pantalla del local`,'int-local'):''}${g.cel?img(g.cel,`${g.t}: celular del público`,'int-cel'):''}${g.local?'<figcaption>Pantalla del local</figcaption>':''}</div>
+    caja.innerHTML=`<div class="int-medios${medios}">${g.local?img(g.local,`${g.t}: pantalla del local`,'int-local'):''}${g.cel?img(g.cel,`${g.t}: celular del público`,'int-cel'):''}${g.local?'<span class="int-cap">Pantalla del local</span>':''}</div>
       <div class="int-txt"><div class="etiqueta">${g.et}</div><h3>${g.t}</h3><p>${g.p}</p><ul>${g.li.map(x=>`<li>${x}</li>`).join('')}</ul>${g.ir?`<a class="int-ir" href="${g.ir.href}" target="_blank" rel="noopener">${g.ir.txt}</a>`:''}</div>`;
   }
   tabs.innerHTML=J.map((g,i)=>`<button type="button" class="int-tab" role="tab" style="--c:${g.c}" aria-selected="false">${g.n}</button>`).join('');
