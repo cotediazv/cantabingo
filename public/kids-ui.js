@@ -490,13 +490,13 @@
       return () => { alive = false; cancelAnimationFrame(raf); unbind(); };
     },
     carrera(stage) {
-      const LW = 400; const LH = 250; const GY = 205; const LEVELS = 5;
+      const LW = 400; const LH = 250; const GY = 205; const LEVELS = 8; // 8 niveles, cada vez más largos y rápidos (pedido de Cote)
       let lv = 0; let alive = true; let raf = 0; let cv = null; let st = null;
       const start = () => {
         if (!alive) return;
         document.body.dataset.kzLevel = String(lv + 1);
         if (lv >= LEVELS) { finale(stage, () => { lv = 0; start(); }); return; }
-        st = { d: 0, goal: 1100 + lv * 300, v: 170 + lv * 30, y: GY, vy: 0, obs: [], next: 260, blink: 0, shake: 0, done: false, t: 0 };
+        st = { d: 0, goal: 1400 + lv * 500, v: 170 + lv * 35, y: GY, vy: 0, obs: [], next: 260, blink: 0, shake: 0, done: false, t: 0 };
         stage.innerHTML = `${bar(lv / LEVELS)}<canvas class="kz-canvas" width="800" height="500"></canvas><div class="kz-pad kz-pad1"><button type="button" class="kz-jump" aria-label="Saltar">⤒</button></div>`;
         cv = stage.querySelector('canvas');
         cv.onpointerdown = (e) => { e.preventDefault(); jump(); };
@@ -516,12 +516,13 @@
           s.t += dt; s.d += s.v * dt;
           s.vy += 1500 * dt; s.y = Math.min(GY, s.y + s.vy * dt); if (s.y >= GY) s.vy = 0;
           s.next -= s.v * dt;
-          if (s.next <= 0) { s.obs.push({ x: LW + 20, kind: Math.random() < 0.65 ? 'log' : 'pool' }); s.next = 190 + Math.random() * 170 - lv * 8; }
+          if (s.next <= 0) { const r = Math.random(); const kind = lv >= 5 && r < 0.2 ? 'tall' : lv >= 3 && r < 0.45 ? 'log2' : r < 0.75 ? 'log' : 'pool'; s.obs.push({ x: LW + 20, kind }); s.next = Math.max(130, 190 + Math.random() * 170 - lv * 10) + (kind === 'log2' ? 40 : 0); }
           s.obs.forEach((o) => { o.x -= s.v * dt; });
           s.obs = s.obs.filter((o) => o.x > -60);
           s.obs.forEach((o) => {
-            const w = o.kind === 'log' ? 24 : 42;
-            if (!o.hit && s.blink <= 0 && o.x < 70 + 22 && o.x + w > 70 + 4 && s.y > GY - 18) { o.hit = true; s.blink = 1; s.shake = 0.4; s.d = Math.max(0, s.d - 150); }
+            const w = o.kind === 'log' || o.kind === 'tall' ? 24 : o.kind === 'log2' ? 78 : 42;
+            const top = o.kind === 'tall' ? GY - 34 : GY - 18;
+            if (!o.hit && s.blink <= 0 && o.x < 70 + 22 && o.x + w > 70 + 4 && s.y > top) { o.hit = true; s.blink = 1; s.shake = 0.4; s.d = Math.max(0, s.d - 150); }
           });
           s.blink = Math.max(0, s.blink - dt); s.shake = Math.max(0, s.shake - dt);
           setBar(stage, (lv + Math.min(1, s.d / s.goal)) / LEVELS);
@@ -535,7 +536,10 @@
         c.fillStyle = '#c98b4f'; c.fillRect(0, GY + 28, LW, LH - GY); c.fillStyle = '#2bb24c'; c.fillRect(0, GY + 26, LW, 8);
         c.fillStyle = 'rgba(255,255,255,.35)'; for (let i = 0; i < 10; i++) { const sx = ((i * 50 - s.d) % 500 + 500) % 500 - 50; c.fillRect(sx, GY + 40, 22, 4); }
         s.obs.forEach((o) => {
-          if (o.kind === 'log') { c.fillStyle = '#8d5524'; c.fillRect(o.x, GY + 8, 24, 20); c.fillStyle = '#c8814a'; c.beginPath(); c.ellipse(o.x + 24, GY + 18, 5, 10, 0, 0, 7); c.fill(); }
+          const log = (x, y, hgt) => { c.fillStyle = '#8d5524'; c.fillRect(x, y, 24, hgt); c.fillStyle = '#c8814a'; c.beginPath(); c.ellipse(x + 24, y + hgt / 2, 5, hgt / 2, 0, 0, 7); c.fill(); };
+          if (o.kind === 'log') log(o.x, GY + 8, 20);
+          else if (o.kind === 'log2') { log(o.x, GY + 8, 20); log(o.x + 54, GY + 8, 20); }
+          else if (o.kind === 'tall') { log(o.x, GY + 8, 20); log(o.x, GY - 8, 16); }
           else { c.fillStyle = '#3a86ff'; c.beginPath(); c.ellipse(o.x + 21, GY + 28, 22, 6, 0, 0, 7); c.fill(); c.fillStyle = '#9fd0ff'; c.beginPath(); c.ellipse(o.x + 16, GY + 27, 8, 2, 0, 0, 7); c.fill(); }
         });
         // El osito corriendo
@@ -622,6 +626,168 @@
       raf = requestAnimationFrame(frame);
       return () => { alive = false; cancelAnimationFrame(raf); document.removeEventListener('keydown', keys); document.removeEventListener('keyup', keys); };
     },
+    // Globos: suben globos de colores y se revientan tocándolos. 5 niveles: más globos, más rápidos y más chicos.
+    globos(stage) {
+      const LW = 300; const LH = 380; const LEVELS = 5;
+      const COLS = ['#e63946', '#1d6fe0', '#ffc400', '#2bb24c', '#ff5fa2', '#8e44ad', '#ff8c1a'];
+      let lv = 0; let alive = true; let raf = 0; let cv = null; let st = null;
+      const start = () => {
+        if (!alive) return;
+        document.body.dataset.kzLevel = String(lv + 1);
+        if (lv >= LEVELS) { finale(stage, () => { lv = 0; start(); }); return; }
+        st = { got: 0, need: 8 + lv * 3, items: [], pops: [], next: 0.2, done: false, v: 45 + lv * 14, r: 30 - lv * 2.5 };
+        stage.innerHTML = `${bar(lv / LEVELS)}<canvas class="kz-canvas kz-tall" width="600" height="760"></canvas>`;
+        cv = stage.querySelector('canvas');
+        cv.onpointerdown = (e) => {
+          e.preventDefault();
+          const r = cv.getBoundingClientRect(); const x = ((e.clientX - r.left) / r.width) * LW; const y = ((e.clientY - r.top) / r.height) * LH;
+          for (let i = st.items.length - 1; i >= 0; i--) {
+            const b = st.items[i];
+            if (Math.hypot(x - b.x, (y - b.y) * 0.85) < b.r + 10) {
+              st.items.splice(i, 1); st.pops.push({ x: b.x, y: b.y, c: b.c, t: 0 });
+              if (!st.done) { st.got++; setBar(stage, (lv + st.got / st.need) / LEVELS); if (st.got >= st.need) { st.done = true; confetti(); lv++; setTimeout(start, 1600); } }
+              return;
+            }
+          }
+        };
+      };
+      let last = 0;
+      const frame = (now) => {
+        if (!alive) return;
+        raf = requestAnimationFrame(frame);
+        const dt = Math.min(0.033, (now - (last || now)) / 1000); last = now;
+        if (!cv || !cv.isConnected || !st) return;
+        const s = st; const c = cv.getContext('2d');
+        s.next -= dt;
+        if (s.next <= 0 && !s.done) { s.items.push({ x: 35 + Math.random() * (LW - 70), y: LH + 40, r: s.r, c: pick(COLS), v: s.v * (0.8 + Math.random() * 0.4), w: Math.random() * 6 }); s.next = 0.75 - lv * 0.08 + Math.random() * 0.4; }
+        s.items.forEach((b) => { b.y -= b.v * dt; b.w += dt; });
+        s.items = s.items.filter((b) => b.y > -60);
+        s.pops.forEach((q) => { q.t += dt; }); s.pops = s.pops.filter((q) => q.t < 0.4);
+        const k = cv.width / LW; c.setTransform(k, 0, 0, k, 0, 0);
+        const sky = c.createLinearGradient(0, 0, 0, LH); sky.addColorStop(0, '#9be7ff'); sky.addColorStop(1, '#e8fbff'); c.fillStyle = sky; c.fillRect(0, 0, LW, LH);
+        c.fillStyle = '#fff'; [[50, 60], [220, 110], [120, 200]].forEach(([x, y]) => { c.beginPath(); c.arc(x, y, 14, 0, 7); c.arc(x + 18, y - 4, 18, 0, 7); c.arc(x + 36, y + 2, 13, 0, 7); c.fill(); });
+        s.items.forEach((b) => {
+          const x = b.x + Math.sin(b.w * 2) * 6;
+          c.strokeStyle = 'rgba(80,60,100,.6)'; c.lineWidth = 1.5; c.beginPath(); c.moveTo(x, b.y + b.r * 1.15); c.quadraticCurveTo(x - 6, b.y + b.r * 1.6, x + 2, b.y + b.r * 2.2); c.stroke();
+          c.fillStyle = b.c; c.beginPath(); c.ellipse(x, b.y, b.r, b.r * 1.18, 0, 0, 7); c.fill();
+          c.beginPath(); c.moveTo(x - 4, b.y + b.r * 1.2); c.lineTo(x + 4, b.y + b.r * 1.2); c.lineTo(x, b.y + b.r * 1.08); c.fill();
+          c.fillStyle = 'rgba(255,255,255,.55)'; c.beginPath(); c.ellipse(x - b.r * 0.35, b.y - b.r * 0.4, b.r * 0.2, b.r * 0.32, -0.4, 0, 7); c.fill();
+        });
+        s.pops.forEach((q) => { c.strokeStyle = q.c; c.lineWidth = 3; for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; const r1 = 8 + q.t * 60; c.beginPath(); c.moveTo(q.x + Math.cos(a) * r1, q.y + Math.sin(a) * r1); c.lineTo(q.x + Math.cos(a) * (r1 + 8), q.y + Math.sin(a) * (r1 + 8)); c.stroke(); } });
+      };
+      start();
+      raf = requestAnimationFrame(frame);
+      return () => { alive = false; cancelAnimationFrame(raf); };
+    },
+    // Laberinto: llevar al ratón hasta el queso con las flechas o deslizando el dedo. 5 niveles, laberintos más grandes.
+    laberinto(stage) {
+      const LEVELS = 5; const SIZES = [4, 5, 6, 7, 8];
+      let lv = 0; let alive = true; let cv = null; let m = null; let unbind = null;
+      const make = (n) => {
+        // Laberinto perfecto (un solo camino entre dos puntos), armado al azar recorriendo celdas
+        const cells = Array.from({ length: n * n }, () => ({ n: true, s: true, e: true, w: true, seen: false }));
+        const stack = [0]; cells[0].seen = true;
+        while (stack.length) {
+          const i = stack.at(-1); const x = i % n; const y = Math.floor(i / n);
+          const opts = [[0, -1, 'n', 's'], [0, 1, 's', 'n'], [1, 0, 'e', 'w'], [-1, 0, 'w', 'e']].filter(([dx, dy]) => { const nx = x + dx; const ny = y + dy; return nx >= 0 && ny >= 0 && nx < n && ny < n && !cells[ny * n + nx].seen; });
+          if (!opts.length) { stack.pop(); continue; }
+          const [dx, dy, a, b] = pick(opts); const j = (y + dy) * n + x + dx;
+          cells[i][a] = false; cells[j][b] = false; cells[j].seen = true; stack.push(j);
+        }
+        return cells;
+      };
+      const draw = () => {
+        if (!cv || !m) return;
+        const c = cv.getContext('2d'); const n = m.n; const S = cv.width; const cs = S / n; const pad = 6;
+        c.setTransform(1, 0, 0, 1, 0, 0);
+        c.fillStyle = '#fff3c4'; c.fillRect(0, 0, S, S);
+        c.strokeStyle = '#4a2c8a'; c.lineWidth = Math.max(6, cs * 0.12); c.lineCap = 'round';
+        m.cells.forEach((cell, i) => {
+          const x = (i % n) * cs; const y = Math.floor(i / n) * cs;
+          c.beginPath();
+          if (cell.n) { c.moveTo(x, y); c.lineTo(x + cs, y); }
+          if (cell.w) { c.moveTo(x, y); c.lineTo(x, y + cs); }
+          if (cell.s && Math.floor(i / n) === n - 1) { c.moveTo(x, y + cs); c.lineTo(x + cs, y + cs); }
+          if (cell.e && i % n === n - 1) { c.moveTo(x + cs, y); c.lineTo(x + cs, y + cs); }
+          if (cell.s && Math.floor(i / n) < n - 1) { c.moveTo(x, y + cs); c.lineTo(x + cs, y + cs); }
+          if (cell.e && i % n < n - 1) { c.moveTo(x + cs, y); c.lineTo(x + cs, y + cs); }
+          c.stroke();
+        });
+        // Camino recorrido
+        c.fillStyle = 'rgba(255,95,162,.25)'; m.trail.forEach((i) => c.fillRect((i % n) * cs + pad, Math.floor(i / n) * cs + pad, cs - pad * 2, cs - pad * 2));
+        c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = `${Math.floor(cs * 0.62)}px sans-serif`;
+        c.fillText('🧀', (n - 0.5) * cs, (n - 0.5) * cs);
+        c.fillText('🐭', (m.p % n + 0.5) * cs, (Math.floor(m.p / n) + 0.5) * cs);
+      };
+      const move = (dx, dy) => {
+        if (!m || m.done) return;
+        const n = m.n; const x = m.p % n; const y = Math.floor(m.p / n); const cell = m.cells[m.p];
+        if ((dx === 1 && cell.e) || (dx === -1 && cell.w) || (dy === 1 && cell.s) || (dy === -1 && cell.n)) { cv.classList.remove('kz-shake'); void cv.offsetWidth; cv.classList.add('kz-shake'); return; }
+        m.p = (y + dy) * n + x + dx; if (m.trail.indexOf(m.p) < 0) m.trail.push(m.p);
+        draw();
+        if (m.p === n * n - 1) { m.done = true; confetti(); setBar(stage, (lv + 1) / LEVELS); lv++; setTimeout(start, 1500); }
+      };
+      const start = () => {
+        if (!alive) return;
+        document.body.dataset.kzLevel = String(lv + 1);
+        if (lv >= LEVELS) { finale(stage, () => { lv = 0; start(); }); return; }
+        const n = SIZES[lv];
+        m = { n, cells: make(n), p: 0, trail: [0], done: false };
+        stage.innerHTML = `${bar(lv / LEVELS)}<canvas class="kz-canvas kz-square" width="640" height="640"></canvas>
+          <div class="kz-pad kz-pad4"><span></span><button type="button" data-d="0,-1" aria-label="Arriba">▲</button><span></span>
+          <button type="button" data-d="-1,0" aria-label="Izquierda">◀</button><button type="button" data-d="0,1" aria-label="Abajo">▼</button><button type="button" data-d="1,0" aria-label="Derecha">▶</button></div>`;
+        cv = stage.querySelector('canvas');
+        stage.querySelectorAll('[data-d]').forEach((b) => { b.onpointerdown = (e) => { e.preventDefault(); const [dx, dy] = b.dataset.d.split(',').map(Number); move(dx, dy); }; });
+        let t0 = null;
+        cv.addEventListener('touchstart', (e) => { t0 = e.touches[0]; }, { passive: true });
+        cv.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
+        cv.addEventListener('touchend', (e) => { if (!t0) return; const t = e.changedTouches[0]; const dx = t.clientX - t0.clientX; const dy = t.clientY - t0.clientY; t0 = null; if (Math.max(Math.abs(dx), Math.abs(dy)) < 20) return; if (Math.abs(dx) > Math.abs(dy)) move(Math.sign(dx), 0); else move(0, Math.sign(dy)); });
+        draw();
+      };
+      const keys = (e) => { const d = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key]; if (d) { e.preventDefault(); move(...d); } };
+      document.addEventListener('keydown', keys);
+      unbind = () => document.removeEventListener('keydown', keys);
+      start();
+      return () => { alive = false; unbind(); };
+    },
+    // Topos: aparecen animalitos en los hoyos y hay que tocarlos antes de que se escondan. 5 niveles: más hoyos y más rápido.
+    topos(stage) {
+      const LEVELS = 5; const ANI = ['🐹', '🐰', '🐻', '🐶', '🐱', '🦊', '🐼', '🐸'];
+      let lv = 0; let alive = true; let timer = null; let got = 0; let need = 0; let done = false;
+      const start = () => {
+        clearTimeout(timer);
+        if (!alive) return;
+        document.body.dataset.kzLevel = String(lv + 1);
+        if (lv >= LEVELS) { finale(stage, () => { lv = 0; start(); }); return; }
+        const holes = lv < 2 ? 4 : lv < 4 ? 6 : 9; const cols = holes === 4 ? 2 : 3;
+        got = 0; need = 6 + lv * 2; done = false;
+        stage.innerHTML = `${bar(lv / LEVELS)}<div class="kz-holes" style="--c:${cols}">${Array.from({ length: holes }, (_, i) => `<button type="button" class="kz-hole" data-i="${i}" aria-label="Hoyo"><span></span></button>`).join('')}</div>`;
+        const els = stage.querySelectorAll('.kz-hole');
+        const up = (ms) => {
+          if (!alive || done || !stage.isConnected) return;
+          const free = Array.from(els).filter((h) => !h.classList.contains('up'));
+          if (free.length) {
+            const h = pick(free); h.querySelector('span').textContent = pick(ANI); h.classList.add('up');
+            h.dataset.t = String(Date.now());
+            const mine = h.dataset.t;
+            setTimeout(() => { if (h.dataset.t === mine) h.classList.remove('up'); }, ms);
+          }
+          timer = setTimeout(() => up(ms), ms * (0.55 + Math.random() * 0.35));
+        };
+        els.forEach((h) => {
+          h.onpointerdown = (e) => {
+            e.preventDefault();
+            if (!h.classList.contains('up') || done) return;
+            h.classList.remove('up'); h.dataset.t = ''; h.classList.add('hit'); setTimeout(() => h.classList.remove('hit'), 300);
+            got++; setBar(stage, (lv + got / need) / LEVELS);
+            if (got >= need) { done = true; confetti(); lv++; setTimeout(start, 1600); }
+          };
+        });
+        timer = setTimeout(() => up(1700 - lv * 230), 600);
+      };
+      start();
+      return () => { alive = false; clearTimeout(timer); };
+    },
   };
   // Fondo del inicio: animales estampados como con timbre, repartidos por toda la pantalla
   const ANIMALS = ['🐶', '🐱', '🦊', '🐰', '🐨', '🐼', '🐻', '🦁', '🐯', '🐮', '🐷', '🐸', '🐵', '🐭', '🐹', '🐔', '🐣', '🐧', '🦄', '🐺', '🐴', '🐲', '🐻‍❄️', '🐙', '🐳', '🐬', '🦉', '🐝', '🐞', '🦋', '🐢', '🦒', '🦓', '🐘', '🦔', '🦦', '🦥', '🦩', '🦜', '🐤'];
@@ -644,6 +810,9 @@
   const shine = (x, y, rx, ry) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="#fff" opacity=".55"/>`;
   const cube = (x, y, s, c, light, dark) => `<path d="M${x} ${y} l${s / 2} ${-s / 4} l${s / 2} ${s / 4} l${-s / 2} ${s / 4}z" fill="${light}"/><path d="M${x} ${y} v${s * 0.6} l${s / 2} ${s / 4} v${-s * 0.6}z" fill="${c}"/><path d="M${x + s} ${y} v${s * 0.6} l${-s / 2} ${s / 4} v${-s * 0.6}z" fill="${dark}"/>`;
   const ICONS = {
+    globos: `<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M34 56 q-4 14 4 30 M62 50 q6 16 -2 34" stroke="#6b5a7a" stroke-width="2.5" fill="none"/><ellipse cx="34" cy="38" rx="17" ry="20" fill="#e63946"/><ellipse cx="62" cy="32" rx="17" ry="20" fill="#1d6fe0"/><ellipse cx="28" cy="31" rx="4" ry="7" fill="#fff" opacity=".6"/><ellipse cx="56" cy="25" rx="4" ry="7" fill="#fff" opacity=".6"/><path d="M78 62 l6 -6 M80 72 h9 M70 70 l-2 8" stroke="#ffc400" stroke-width="4" stroke-linecap="round"/></svg>`,
+    laberinto: `<svg viewBox="0 0 100 100" aria-hidden="true"><rect x="10" y="10" width="80" height="80" rx="10" fill="#fff3c4"/><path d="M14 14 h72 v72 h-72z M34 14 v34 M34 48 h20 M54 30 v38 M14 68 h20 M74 48 v38 M54 68 h20" stroke="#4a2c8a" stroke-width="6" fill="none" stroke-linecap="round"/><circle cx="24" cy="24" r="7" fill="#9a9aa6"/><circle cx="20" cy="18" r="3.5" fill="#9a9aa6"/><circle cx="28" cy="18" r="3.5" fill="#9a9aa6"/><path d="M68 78 l14 -8 v10z" fill="#ffc400"/></svg>`,
+    topos: `<svg viewBox="0 0 100 100" aria-hidden="true"><ellipse cx="50" cy="78" rx="34" ry="11" fill="#5a3d1e"/><path d="M28 78 v-26 a22 22 0 0 1 44 0 v26z" fill="#c8814a"/><circle cx="41" cy="50" r="4" fill="#3b2a4d"/><circle cx="59" cy="50" r="4" fill="#3b2a4d"/><ellipse cx="50" cy="60" rx="9" ry="6" fill="#f2c79b"/><circle cx="50" cy="58" r="3" fill="#e63946"/><ellipse cx="50" cy="80" rx="34" ry="8" fill="#2bb24c" opacity=".9"/></svg>`,
     // Osito KRB saltando con una estrella; zapatilla con líneas de velocidad; canasta con frutas
     salto: `<svg viewBox="0 0 100 100" aria-hidden="true"><rect x="10" y="74" width="80" height="16" rx="4" fill="#8d5524"/><rect x="10" y="74" width="80" height="6" rx="3" fill="#2bb24c"/><path d="M70 14 l4 9 10 1 -7 7 2 10 -9 -5 -9 5 2 -10 -7 -7 10 -1z" fill="#ffc400"/><g transform="translate(40 48)"><circle r="16" fill="#c8814a"/><circle cx="-10" cy="-13" r="6" fill="#c8814a"/><circle cx="10" cy="-13" r="6" fill="#c8814a"/><ellipse cx="4" cy="4" rx="8" ry="6" fill="#f2c79b"/><circle cx="0" cy="-4" r="2.5" fill="#3b2a4d"/><circle cx="9" cy="-4" r="2.5" fill="#3b2a4d"/><circle cx="7" cy="2" r="2.2" fill="#3b2a4d"/><rect x="-16" y="6" width="32" height="5" fill="#ff5fa2"/></g></svg>`,
     carrera: `<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M8 40 h22 M4 52 h20 M10 64 h16" stroke="#ff8c1a" stroke-width="6" stroke-linecap="round"/><path d="M30 70 c0 -16 10 -30 24 -30 c6 0 8 8 14 10 c10 3 22 6 24 16 v6 c0 4 -3 6 -7 6 h-48 c-4 0 -7 -3 -7 -8z" fill="#1d6fe0"/><path d="M30 72 h62 v6 c0 3 -2 5 -5 5 h-52 c-3 0 -5 -2 -5 -5z" fill="#fff"/><path d="M50 46 l6 10 M58 44 l6 10" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/></svg>`,
@@ -654,7 +823,7 @@
     bloques: `<svg viewBox="0 0 100 100" aria-hidden="true">${cube(14, 62, 24, '#e63946', '#ff8a94', '#a4161a')}${cube(38, 62, 24, '#1d6fe0', '#7fb3ff', '#0b3d91')}${cube(62, 62, 24, '#2bb24c', '#8ef0a7', '#147a2e')}${cube(26, 44, 24, '#ffc400', '#ffe38a', '#b58900')}${cube(50, 44, 24, '#e63946', '#ff8a94', '#a4161a')}${cube(38, 26, 24, '#1d6fe0', '#7fb3ff', '#0b3d91')}</svg>`,
     vibora: `<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M18 78 C18 62 40 62 46 70 S70 84 74 66 S60 44 44 46 S26 34 36 24 S60 16 66 26" fill="none" stroke="#1f8a3a" stroke-width="15" stroke-linecap="round"/><path d="M18 78 C18 62 40 62 46 70 S70 84 74 66 S60 44 44 46 S26 34 36 24 S60 16 66 26" fill="none" stroke="#4cd964" stroke-width="10" stroke-linecap="round" stroke-dasharray="1 9"/><circle cx="68" cy="27" r="11" fill="#2bb24c"/><circle cx="71" cy="23" r="3.2" fill="#fff"/><circle cx="72" cy="23" r="1.6" fill="#3b2a4d"/><path d="M79 30 l7 2 m-7 -2 l6 5" stroke="#e63946" stroke-width="2" stroke-linecap="round"/><circle cx="84" cy="78" r="9" fill="#e63946"/><path d="M84 69 q2 -6 7 -7" stroke="#2bb24c" stroke-width="3" fill="none"/>${shine(81, 75, 2.5, 2)}</svg>`,
   };
-  const MENU = [['salto'], ['carrera'], ['fruta'], ['pintar'], ['memoria'], ['puzzle'], ['bloques'], ['vibora']];
+  const MENU = [['salto'], ['carrera'], ['fruta'], ['globos'], ['laberinto'], ['topos'], ['pintar'], ['memoria'], ['puzzle'], ['bloques'], ['vibora']];
 
   // Se recuerda desde qué pantalla se entró, para volver ahí con «Volver a la sala»
   document.addEventListener('click', (e) => {

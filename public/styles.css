@@ -2355,3 +2355,15 @@ body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "So
 .kz-pad1 { grid-template-columns: 1fr; width: min(100%, 300px); }
 .kz-pad .kz-jump { background: #ffc400; color: #4a2c8a; font-size: 2.4rem; }
 .kz-canvas.kz-tall { width: auto; height: min(56vh, 532px); max-width: 100%; }
+
+/* KRB Kids: Laberinto (cuadrado) y Topos (hoyos) */
+.kz-canvas.kz-square { width: auto; height: min(52vh, 560px); max-width: 100%; aspect-ratio: 1; background: #fff3c4; }
+.kz-holes { display: grid; grid-template-columns: repeat(var(--c), 1fr); gap: 14px; width: min(100%, 420px); }
+.kz-hole { position: relative; aspect-ratio: 1; border: 0; border-radius: 50%; background: radial-gradient(ellipse at 50% 70%, #5a3d1e 0 45%, #2bb24c 46%); overflow: hidden; box-shadow: 0 5px 0 rgba(74, 44, 138, .25); touch-action: manipulation; padding: 0; }
+.kz-hole span { position: absolute; left: 0; right: 0; bottom: -70%; font-size: clamp(2.6rem, 14vw, 4.4rem); line-height: 1; transition: bottom .18s ease-out; }
+.kz-hole.up span { bottom: 18%; }
+.kz-hole.hit { background: radial-gradient(ellipse at 50% 70%, #ffc400 0 45%, #2bb24c 46%); }
+/* KRB Kids: fondos de los niveles 6 a 8 (Carrera tiene 8 niveles) */
+body.kids[data-kz-level="6"] { background: linear-gradient(160deg, #ffadad 0%, #e63946 100%) fixed; }
+body.kids[data-kz-level="7"] { background: linear-gradient(160deg, #a0c4ff 0%, #1d3557 100%) fixed; }
+body.kids[data-kz-level="8"] { background: linear-gradient(160deg, #fdffb6 0%, #ff8c1a 100%) fixed; }
