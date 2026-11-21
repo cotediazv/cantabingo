@@ -569,6 +569,13 @@ app.get('/api/sessions/:sid', (req, res) => {
   res.json({ id: s.id, name: s.name, locked: !!s.password, cardsPerPlayer: s.cardsPerPlayer, places: karaoke.placesFor(s.theme || 'frida') });
 });
 
+// Estado público del bingo (lo mismo que reciben los celulares), para la pantalla liviana de los navegadores antiguos (pv.html)
+app.get('/api/sessions/:sid/state', (req, res) => {
+  const s = db.sessions[req.params.sid];
+  if (!s) return fail(res, 404, 'La sesión no existe o ya terminó');
+  res.json(publicState(s));
+});
+
 // Un participante se une (o recupera sus cartones con su token)
 app.post('/api/sessions/:sid/join', (req, res) => {
   const s = db.sessions[req.params.sid];

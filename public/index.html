@@ -21,6 +21,19 @@
   <div id="toast" role="status"></div>
   <img class="krb-mark" src="krb-stage.svg" alt="" aria-hidden="true">
   <script>
+    // Pantallas de los locales en navegadores antiguos (pedido de Cote, 21 nov: el Chrome del decodificador de Kennedy y el
+    // iPad viejo no ejecutan esta página y quedaba solo el logo): pasan solas a la versión liviana (pv.html), con las mismas
+    // reglas. Escrito en JavaScript antiguo para que corra en cualquier navegador.
+    (function () {
+      var m = /^#\/(vertical|vertical-in|pantalla)\/([a-z-]+)/.exec(location.hash || '');
+      if (!m) return;
+      var old = false;
+      try { new Function('try{}catch{}; var o = { ...{} }; var f = async function () {}; return [1].at(-1);')(); } catch (e) { old = true; }
+      if (!old && (!Object.fromEntries || !(window.CSS && CSS.supports && CSS.supports('inset', '0')))) old = true;
+      if (!old) return;
+      var q = location.search.replace(/^\?/, '');
+      location.replace('/pv.html?p=' + m[2] + (m[1] === 'vertical' ? '&girar=1' : '') + (q ? '&' + q : ''));
+    })();
     // Con ?diag=1: navegador y errores de carga, aunque el resto de la página no funcione (escrito para navegadores antiguos)
     (function () {
       if (location.search.indexOf('diag') < 0) return;

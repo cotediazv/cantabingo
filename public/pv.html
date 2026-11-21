@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>KRB Stage · Pantalla</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap">
+<!--
+  Pantalla de los locales, versión liviana (pedido de Cote, 21 nov): la misma pantalla vertical, escrita para navegadores
+  antiguos (el Chrome del decodificador de Kennedy y el iPad viejo con iOS 9.3.5). JavaScript antiguo (ES5, sin flechas,
+  sin let/const, sin plantillas `...`), XMLHttpRequest y CSS sin grid ni flex, sin «inset» ni «aspect-ratio».
+  Sigue las mismas reglas que la pantalla completa (vertical.js): el video de la cartelera, la información del local
+  (sala light), el karaoke o los juegos de la sala completa del local.
+  Dirección: /pv.html?p=<pantalla>&girar=1 (girar: la pantalla de pie recibe la imagen horizontal y se entrega girada 90°
+  a la derecha; solo se gira si la ventana está horizontal, así en el iPad de pie se ve derecha).
+  Las pantallas antiguas llegan solas aquí desde #/vertical/<pantalla> (ver el aviso al comienzo de index.html).
+-->
+<style>
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; color: #fff; font-family: 'Fredoka', 'Trebuchet MS', Arial, sans-serif; -webkit-text-size-adjust: 100%; }
+  * { box-sizing: border-box; -webkit-box-sizing: border-box; }
+  #cv { position: absolute; left: 0; top: 0; overflow: hidden; background: #0b0a18; }
+  #cv.rot { -webkit-transform-origin: 0 0; transform-origin: 0 0; -webkit-transform: rotate(90deg) translateY(-100%); transform: rotate(90deg) translateY(-100%); }
+  #cv.th-kennedy { background: #062a5e; background: -webkit-linear-gradient(290deg, #041a3e, #0b5ea8 55%, #062a5e); background: linear-gradient(160deg, #041a3e, #0b5ea8 55%, #062a5e); }
+  #cv.th-frida { background: #3a0b3f; background: -webkit-linear-gradient(290deg, #2a0a3a, #8a1f6b 55%, #2a0a3a); background: linear-gradient(160deg, #2a0a3a, #8a1f6b 55%, #2a0a3a); }
+  #cv.th-tobalaba { background: #3b0508; background: -webkit-linear-gradient(290deg, #2a0406, #8f1d1d 55%, #2a0406); background: linear-gradient(160deg, #2a0406, #8f1d1d 55%, #2a0406); }
+  .hide { display: none !important; }
+  #vid { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: #000; object-fit: cover; }
+  #tap { position: absolute; left: 4rem; right: 4rem; bottom: 10rem; padding: 2rem; border-radius: 2rem; background: rgba(0, 0, 0, .7); text-align: center; font-size: 3rem; font-weight: 700; }
+  #view { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+  #cv.wide #view { left: 50%; width: 56.25rem; margin-left: -28.125rem; }
+  #marks { position: absolute; left: 0; right: 0; bottom: 1.2rem; height: 3.2rem; text-align: center; }
+  #marks img { height: 3.2rem; vertical-align: middle; margin: 0 1rem; }
+  #marks i { display: inline-block; width: .2rem; height: 3rem; background: rgba(255, 255, 255, .6); vertical-align: middle; }
+  .abs { position: absolute; left: 3rem; right: 3rem; text-align: center; }
+  .fit { white-space: nowrap; overflow: hidden; }
+  .gold { color: #ffc400; }
+  .card { background: rgba(8, 6, 26, .78); border: .5rem solid #ffc400; border-radius: 3rem; }
+  .qrw { display: inline-block; background: #fff; border-radius: 2rem; padding: 1.2rem; }
+  .qrw img { display: block; width: 100%; height: auto; }
+  .qrp { color: #c4175e; font-weight: 700; text-transform: uppercase; text-align: center; line-height: 1.15; }
+  .logo-big { position: absolute; left: 50%; top: 50%; width: 36rem; margin: -10rem 0 0 -18rem; }
+  /* Información del local (fondo de la sala light) */
+  .lv-top small { display: block; font-size: 2.6rem; font-weight: 700; letter-spacing: .3rem; text-transform: uppercase; color: #ffc400; }
+  .lv-top b { display: block; font-size: 7.4rem; line-height: 1.05; font-weight: 700; }
+  .lv-top span { display: block; margin-top: .8rem; font-size: 2.9rem; font-weight: 600; }
+  .lv-card { position: absolute; left: 3rem; right: 3rem; top: 25rem; bottom: 33rem; padding: 2.6rem 2.8rem 3.6rem; overflow: hidden; }
+  .lv-slide { height: 100%; overflow: hidden; font-size: 1rem; }
+  .lv-slide h2 { margin: 0 0 1.6em; font-size: 3.6em; color: #ffc400; text-align: center; font-weight: 700; }
+  .lv-now { margin: 0 0 1.6em; text-align: center; }
+  .lv-now small { display: block; font-size: 2.4em; color: #ffd76a; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; }
+  .lv-now b { display: block; font-size: 5em; line-height: 1.1; font-weight: 700; }
+  .lv-now span { display: block; font-size: 2.8em; margin-top: .2em; }
+  .lv-list, .lv-hours, .lv-week { margin: 0; padding: 0; list-style: none; }
+  .lv-list li, .lv-hours li, .lv-week li { margin: 0 0 1em; font-size: 2.9em; line-height: 1.2; }
+  .lv-list li b, .lv-hours li b, .lv-week li b { font-weight: 700; }
+  .lv-list li span { display: block; font-size: .8em; color: #d8d3ff; }
+  .lv-hours li em, .lv-week li em { display: inline-block; min-width: 4.2em; font-style: normal; color: #ffd76a; font-weight: 700; margin-right: .5em; }
+  .lv-hours li.on, .lv-week li.on { color: #ffc400; }
+  .lv-sh { display: block; }
+  .lv-by { display: block; font-size: .85em; color: #ffd76a; }
+  .lv-by small { font-size: .7em; color: #fff; }
+  .lv-dots { position: absolute; left: 0; right: 0; bottom: 1.4rem; text-align: center; }
+  .lv-dots i { display: inline-block; width: 1.4rem; height: 1.4rem; margin: 0 .5rem; border-radius: 50%; background: rgba(255, 255, 255, .3); }
+  .lv-dots i.on { background: #ffc400; }
+  .lv-qr { position: absolute; left: 3rem; right: 3rem; bottom: 6rem; height: 24rem; text-align: center; white-space: nowrap; }
+  .lv-qr .qrw { width: 22rem; vertical-align: middle; }
+  .lv-qrtext { display: inline-block; vertical-align: middle; width: 25rem; margin-left: 2.4rem; text-align: left; white-space: normal; }
+  .lv-qrtext b { display: block; font-size: 3.2rem; line-height: 1.15; font-weight: 700; }
+  .lv-qrtext span { display: block; margin-top: 1rem; font-size: 2.4rem; color: #ffd76a; }
+  .lv-bigqr .qrw { width: 34rem; }
+  /* Karaoke a pantalla completa */
+  .kf-now { position: absolute; left: 3rem; right: 3rem; top: 16rem; height: 31rem; padding: 3rem 2.4rem; text-align: center; }
+  .kf-now small { display: block; font-size: 3.2rem; color: #ffc400; font-weight: 700; }
+  .kf-now b { display: block; margin-top: 1.4rem; font-size: 7rem; line-height: 1.1; font-weight: 700; }
+  .kf-now span { display: block; margin-top: 1.2rem; font-size: 3.8rem; }
+  .kf-now i { display: block; margin-top: .6rem; font-size: 3rem; color: #d8d3ff; }
+  .kf-bottom { position: absolute; left: 3rem; right: 3rem; top: 50rem; bottom: 6rem; white-space: nowrap; }
+  .kf-next { display: inline-block; vertical-align: top; width: 27rem; white-space: normal; }
+  .kf-next small { display: block; font-size: 2.8rem; color: #ffc400; font-weight: 700; margin-bottom: 1.6rem; }
+  .kf-next p { margin: 0 0 2rem; font-size: 3rem; line-height: 1.15; }
+  .kf-next p em { font-style: normal; color: #ffc400; font-weight: 700; margin-right: .6rem; }
+  .kf-next p span { display: block; font-size: 2.3rem; color: #d8d3ff; }
+  .kf-qr { display: inline-block; vertical-align: top; width: 22rem; margin-left: 1.25rem; text-align: center; white-space: normal; }
+  .kf-qr .qrw { width: 22rem; }
+  .kf-qr .qrp { margin-top: 1.2rem; color: #fff; font-size: 2.2rem; }
+  /* Juegos de la sala completa */
+  .g-title { top: 4rem; font-size: 5.2rem; font-weight: 700; }
+  .g-sub { font-size: 2.8rem; color: #ffd76a; font-weight: 600; }
+  .ball { position: absolute; left: 50%; top: 15rem; width: 32rem; height: 32rem; margin-left: -16rem; border-radius: 50%; background: #fff; color: #1a1a1a; text-align: center; border: 1.4rem solid #ffc400; }
+  .ball small { display: block; margin-top: 3.4rem; font-size: 5rem; font-weight: 700; color: #c4175e; }
+  .ball b { display: block; font-size: 13rem; line-height: 1; font-weight: 700; }
+  .prev { top: 49rem; }
+  .prev span { display: inline-block; width: 7rem; height: 7rem; margin: 0 .6rem; border-radius: 50%; background: rgba(255, 255, 255, .9); color: #1a1a1a; font-size: 2.6rem; line-height: 7rem; font-weight: 700; }
+  .rows { margin: 0; padding: 0; list-style: none; text-align: left; }
+  .rows li { margin: 0 0 1.2rem; padding: 1.2rem 2rem; border-radius: 1.6rem; background: rgba(8, 6, 26, .72); font-size: 3.2rem; line-height: 1.15; white-space: nowrap; overflow: hidden; }
+  .rows li em { display: inline-block; width: 4.6rem; font-style: normal; color: #ffc400; font-weight: 700; }
+  .rows li i { float: right; font-style: normal; color: #ffc400; font-weight: 700; margin-left: 1.4rem; }
+  .rows li.top { font-size: 3.8rem; }
+  .bar { position: relative; overflow: hidden; }
+  .bar u { position: absolute; left: 0; top: 0; bottom: 0; opacity: .5; text-decoration: none; }
+  .bar span, .bar i { position: relative; }
+  .big { font-size: 7rem; font-weight: 700; line-height: 1.1; }
+  .mid { font-size: 4rem; font-weight: 600; line-height: 1.2; }
+  .clock { font-size: 5rem; font-weight: 700; color: #ffc400; }
+  .qr-foot { bottom: 6rem; }
+  .qr-foot .qrw { width: 20rem; }
+  .qr-foot .qrp { margin-top: 1rem; color: #fff; font-size: 2.2rem; }
+  #diag { position: fixed; left: 0; right: 0; bottom: 0; z-index: 99; margin: 0; padding: 8px; font: 12px/1.35 monospace; background: #fff; color: #000; white-space: pre-wrap; word-wrap: break-word; max-height: 45%; overflow: auto; }
+</style>
+</head>
+<body>
+<div id="cv">
+  <video id="vid" class="hide" muted loop autoplay playsinline webkit-playsinline preload="auto"></video>
+  <div id="tap" class="hide">▶ Toca la pantalla para iniciar el video</div>
+  <div id="view"></div>
+  <div id="marks"></div>
+</div>
+<script>
+(function () {
+  'use strict';
+  // ---------- Utilidades (ES5) ----------
+  function $(id) { return document.getElementById(id); }
+  function h(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function query() { var o = {}; var q = location.search.replace(/^\?/, '').split('&'); for (var i = 0; i < q.length; i++) { if (!q[i]) continue; var kv = q[i].split('='); o[decodeURIComponent(kv[0])] = decodeURIComponent((kv[1] || '').replace(/\+/g, ' ')); } return o; }
+  var Q = query();
+  var errs = [];
+  window.onerror = function (m, f, l) { errs.push(String(m) + (f ? ' · ' + String(f).split('/').pop() + ':' + l : '')); };
+  var SCREENS = { kennedy: ['kennedy', true], 'kennedy-h': ['kennedy', false], frida: ['frida', true], 'frida-h': ['frida', false], 'tobalaba-v': ['tobalaba', true], tobalaba: ['tobalaba', false] };
+  var P = SCREENS[Q.p] ? Q.p : 'kennedy';
+  var VENUE = SCREENS[P][0];
+  var NAMES = { kennedy: 'Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' };
+  var SHORT = { kennedy: 'Kennedy', frida: 'Frida', tobalaba: 'Tobalaba' };
+  var FIG = { linea: 'Línea (cualquiera)', horizontal: 'Línea horizontal', vertical: 'Línea vertical', diagonal: 'Diagonal', 'dos-lineas': 'Dos líneas', esquinas: 'Cuatro esquinas', sello: 'Sello (2×2 en una esquina)', cruz: 'Cruz', marco: 'Marco', cuadro: 'Cuadro central', diamante: 'Diamante', piramide: 'Pirámide', 'piramide-inv': 'Pirámide invertida', reloj: 'Reloj de arena', corazon: 'Corazón', estrella: 'Estrella', lleno: 'Cartón lleno' };
+  var GAMES = { bingo: ['🎱', 'Bingo'], rosco: ['🎡', 'El Rosco'], festival: ['🎤', 'El Festival de ' + SHORT[VENUE]], objeto: ['🗳️', 'El objeto más extraño'] };
+  var GVC = { bingo: '#ff2e93', rosco: '#9b6bff', festival: '#ffc400', objeto: '#19d6b0' };
+  var offset = 0;
+  var cv = $('cv'); var view = $('view'); var vid = $('vid'); var tap = $('tap');
+  function now() { return new Date().getTime() + offset; }
+  function origin() { return location.protocol + '//' + location.host; }
+  function qrImg(url) { return '<img alt="Código QR" src="/api/qr?text=' + encodeURIComponent(url) + '">'; }
+  function clock(ms) { var s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
+  function cap(t) { return String(t || '').toLowerCase().replace(/(^|[\s:(«"\-])([a-záéíóúñü])/g, function (m, a, b) { return a + b.toUpperCase(); }); }
+  var DAYS = { LUNES: 'Lunes', MARTES: 'Martes', MIERCOLES: 'Miércoles', 'MIÉRCOLES': 'Miércoles', JUEVES: 'Jueves', VIERNES: 'Viernes', SABADO: 'Sábado', 'SÁBADO': 'Sábado', DOMINGO: 'Domingo' };
+  function day(d) { return DAYS[String(d || '').toUpperCase()] || String(d || ''); }
+  function showHtml(t) {
+    var m = String(t || '').match(/^(.*?)\s*\(([^()]+)\)\s*$/);
+    return m ? '<span class="lv-sh">' + h(cap(m[1])) + '</span><span class="lv-by"><small>por</small> ' + h(cap(m[2])) + '</span>' : '<span class="lv-sh">' + h(cap(t)) + '</span>';
+  }
+  function votos(n) { return n + (n === 1 ? ' voto' : ' votos'); }
+  function pct(n, t) { return t ? (n * 100) / t : 0; }
+  function fmtPct(p) { var r = Math.round(p); return (r === 50 && p !== 50 ? p.toFixed(1).replace('.', ',') : r) + '%'; }
+  function dec(x) { return x == null ? '' : String(Number(x).toFixed(1)).replace('.', ','); }
+  function get(url, cb) {
+    var x = new XMLHttpRequest();
+    x.open('GET', url + (url.indexOf('?') < 0 ? '?' : '&') + '_=' + new Date().getTime(), true);
+    x.timeout = 15000;
+    x.onreadystatechange = function () {
+      if (x.readyState !== 4) return;
+      var r = null;
+      try { r = JSON.parse(x.responseText); } catch (e) { r = null; }
+      if (r && r.now) offset = r.now - new Date().getTime();
+      cb(x.status >= 200 && x.status < 300 ? r : null);
+    };
+    x.ontimeout = function () { cb(null); };
+    x.send(null);
+  }
+  // Achica la letra de un texto de una línea hasta que quepa (nunca se corta)
+  function fitLine(el) {
+    if (!el) return;
+    if (el.getAttribute('data-fs') === null) el.setAttribute('data-fs', el.style.fontSize || ''); // tamaño pedido en el diseño
+    el.style.fontSize = el.getAttribute('data-fs');
+    var fs = parseFloat(window.getComputedStyle(el).fontSize) || 20;
+    for (var i = 0; i < 80 && el.scrollWidth > el.clientWidth + 1 && fs > 6; i++) { fs *= 0.95; el.style.fontSize = fs.toFixed(1) + 'px'; }
+  }
+  // Achica todo un recuadro (su tamaño de letra base) hasta que su contenido quepa en el alto
+  function fitBox(el) {
+    if (!el) return;
+    var base = parseFloat(document.documentElement.style.fontSize) || 10;
+    var f = 1;
+    el.style.fontSize = base + 'px';
+    for (var i = 0; i < 40 && el.scrollHeight > el.clientHeight + 1 && f > 0.4; i++) { f -= 0.04; el.style.fontSize = (base * f).toFixed(2) + 'px'; }
+  }
+  function fitAll() {
+    var els = view.querySelectorAll('.fit');
+    for (var i = 0; i < els.length; i++) fitLine(els[i]);
+    var boxes = view.querySelectorAll('.fitbox');
+    for (var j = 0; j < boxes.length; j++) fitBox(boxes[j]);
+  }
+
+  // ---------- Tamaño y giro ----------
+  function layout() {
+    var W = window.innerWidth; var H = window.innerHeight;
+    var rot = Q.girar === '1' && W > H;
+    var cw = rot ? H : W; var ch = rot ? W : H;
+    cv.style.width = cw + 'px'; cv.style.height = ch + 'px';
+    cv.className = (rot ? 'rot ' : '') + 'th-' + VENUE + (cw > ch * 0.75 ? ' wide' : '');
+    document.documentElement.style.fontSize = Math.min(ch / 100, cw / 56.25).toFixed(3) + 'px';
+    fitAll();
+  }
+  window.onresize = layout;
+  layout();
+  $('marks').innerHTML = '<img src="krb-stage.svg" alt="KRB Stage">' + (VENUE === 'kennedy' ? '<i></i><img src="logo-kennedy.png" alt="Mercado Kennedy">' : '');
+
+  // ---------- Temporizadores de cada vista ----------
+  var viewTimers = []; var stageTimers = [];
+  function every(list, ms, f) { list.push(setInterval(f, ms)); }
+  function clearList(list) { while (list.length) clearInterval(list.pop()); }
+
+  // ---------- Video de la cartelera ----------
+  var ver = 0; var playCheck = null;
+  function play() {
+    try { var pr = vid.play(); if (pr && pr['catch']) pr['catch'](function () {}); } catch (e) { /* nada */ }
+    clearTimeout(playCheck);
+    playCheck = setTimeout(function () { if (cur === 'video' && vid.paused) tap.className = ''; }, 3000); // iPad antiguo: hay que tocar
+  }
+  function onTouch() { if (cur === 'video') { tap.className = 'hide'; play(); } }
+  document.addEventListener('click', onTouch, false);
+  document.addEventListener('touchend', onTouch, false);
+  vid.addEventListener('playing', function () { tap.className = 'hide'; }, false);
+
+  // ---------- Vistas ----------
+  var cur = '';
+  function go(want) {
+    cur = want;
+    clearList(viewTimers); clearList(stageTimers);
+    tap.className = 'hide';
+    $('marks').className = want === 'video' || want === 'logo' ? 'hide' : ''; // sobre el video no van los logos
+    if (want === 'video') { view.innerHTML = ''; vid.className = ''; play(); return; }
+    vid.className = 'hide';
+    try { vid.pause(); } catch (e) { /* nada */ }
+    if (want === 'logo') { view.innerHTML = '<img class="logo-big" src="krb-stage.svg" alt="KRB Stage">'; return; }
+    if (want === 'karaoke') { lightJoin(function (url) { if (cur === 'karaoke') viewKaraoke(VENUE, url, viewTimers); }); return; }
+    if (want === 'sala') { viewSala(); return; }
+    viewInfo(want === 'info-qr' ? 'qr' : want === 'info-show' ? 'show' : '');
+  }
+  var lightUrl = '';
+  function lightJoin(cb) {
+    if (lightUrl) { cb(lightUrl); return; }
+    get('/api/light?local=' + VENUE, function (l) { if (l && l.id) lightUrl = origin() + '/#/l/' + l.id; cb(lightUrl || origin() + '/#/jugar'); });
+  }
+
+  // Información del local (como el fondo vertical de la sala light): lo de esta noche, un recuadro que va cambiando y el QR
+  function viewInfo(focus) {
+    var cart = null; var kar = null; var idx = 0;
+    view.innerHTML = '<div class="abs lv-top" style="top:4rem"><small>Esta noche en</small><b class="fit">' + h(NAMES[VENUE]) + '</b><span id="lvshow" class="fit hide"></span></div>' +
+      '<div class="lv-card card"><div class="lv-slide" id="lvslide"></div><div class="lv-dots" id="lvdots"></div></div>' +
+      '<div class="lv-qr" id="lvfoot"><div class="qrw" id="lvqr"></div><div class="lv-qrtext"><b>Escanea el código QR con tu celular</b><span>Pide tu canción de karaoke y espera tu turno</span></div></div>';
+    if (focus === 'qr') { $('lvfoot').className = 'lv-qr hide'; view.querySelector('.lv-card').style.bottom = '6rem'; }
+    lightJoin(function (url) { var b = $('lvqr'); if (b) b.innerHTML = qrImg(url); paint(); });
+    function slides() {
+      var out = []; var i;
+      var list = (kar && kar.list) || [];
+      if (focus === 'qr') {
+        var s = '<h2>📱 Escanea el código QR con tu celular</h2><div class="lv-bigqr" style="text-align:center"><div class="qrw">' + (lightUrl ? qrImg(lightUrl) : '') + '</div></div><p class="lv-now"><span>Pide tu canción de karaoke y espera tu turno</span></p>';
+        if (list.length) { s += '<h2>🎤 Próximos en cantar</h2><ol class="lv-list">'; for (i = 0; i < list.length && i < 4; i++) s += '<li><b>' + h(list[i].name) + '</b><span>' + h(list[i].song) + '</span></li>'; s += '</ol>'; }
+        return [s];
+      }
+      if (list.length) {
+        var a = list[0];
+        var k = '<h2>🎤 Karaoke</h2><div class="lv-now"><small>Ahora canta</small><b>' + h(a.name) + '</b><span>' + h(a.song) + (a.artist ? ' · ' + h(a.artist) : '') + '</span></div>';
+        if (list.length > 1) { k += '<ol class="lv-list" start="2">'; for (i = 1; i < list.length && i < 3; i++) k += '<li><b>' + h(list[i].name) + '</b><span>' + h(list[i].song) + '</span></li>'; k += '</ol>'; }
+        out.push(k);
+      }
+      if (cart && (cart.current || cart.next)) {
+        out.push('<h2>⏱️ Esta noche</h2>' + (cart.current ? '<div class="lv-now"><small>Ahora</small><b>' + h(cap(cart.current.label)) + '</b><span>desde las ' + h(cart.current.time) + '</span></div>' : '') +
+          (cart.next ? '<div class="lv-now"><small>A continuación</small><b>' + h(cap(cart.next.label)) + '</b><span>a las ' + h(cart.next.time) + '</span></div>' : ''));
+      }
+      var blocks = (cart && cart.blocks) || []; var week = (cart && cart.week) || []; var month = (cart && cart.month) || [];
+      if (cart && !blocks.length) {
+        for (i = 0; i < week.length; i++) {
+          var d = week[i];
+          if (d.today || !d.hours || !d.hours.length) continue;
+          var nd = '<h2>🕗 ' + h(day(d.day)) + ' ' + h(d.date) + '</h2>' + (d.show ? '<div class="lv-now"><small>Show</small><b>' + showHtml(d.show) + '</b></div>' : '') + '<ul class="lv-hours">';
+          for (var j = 0; j < d.hours.length; j++) nd += '<li><em>' + h(d.hours[j].time) + '</em><b>' + h(cap(d.hours[j].label)) + '</b></li>';
+          out.push(nd + '</ul>');
+          break;
+        }
+      }
+      if (blocks.length) {
+        var hs = '<h2>🕗 Horarios de hoy</h2><ul class="lv-hours">';
+        for (i = 0; i < blocks.length; i++) hs += '<li class="' + (cart.current && cart.current.time === blocks[i].time ? 'on' : '') + '"><em>' + h(blocks[i].time) + '</em><b>' + h(cap(blocks[i].label)) + '</b></li>';
+        out.push(hs + '</ul>');
+      }
+      if (week.length) {
+        var ws = '<h2>📅 Esta semana</h2><ul class="lv-week">';
+        for (i = 0; i < week.length && i < 5; i++) ws += '<li class="' + (week[i].today ? 'on' : '') + '"><em>' + h(day(week[i].day)) + ' ' + h(week[i].date) + '</em><b>' + (week[i].show ? showHtml(week[i].show) : h(cap(((week[i].hours || [])[0] || {}).label || ''))) + '</b></li>';
+        out.push(ws + '</ul>');
+      }
+      if (month.length) {
+        var ms = '<h2>🗓️ Cartelera del mes</h2><ul class="lv-week">';
+        for (i = 0; i < month.length && i < 6; i++) ms += '<li><em>' + h(cap(month[i].day)) + '</em><b>' + showHtml(month[i].show) + '</b></li>';
+        out.push(ms + '</ul>');
+      }
+      if (focus === 'show') {
+        var keep = [];
+        if (cart && cart.show) keep.push('<h2>⭐ El show de esta noche</h2><div class="lv-now"><b>' + showHtml(cart.show) + '</b></div>');
+        for (i = 0; i < out.length; i++) if (out[i].indexOf('<h2>⏱️') === 0 || out[i].indexOf('<h2>🕗') === 0) keep.push(out[i]);
+        if (keep.length) return keep;
+      }
+      if (!out.length) out.push('<h2>🎶 Bienvenidos</h2><div class="lv-now"><b>KRB Stage</b><span>Música, shows y karaoke</span></div>');
+      return out;
+    }
+    function paint() {
+      var slide = $('lvslide');
+      if (!slide) return;
+      var all = slides();
+      idx = idx % all.length;
+      slide.innerHTML = all[idx];
+      fitBox(slide);
+      var dots = '';
+      if (all.length > 1) for (var i = 0; i < all.length; i++) dots += '<i class="' + (i === idx ? 'on' : '') + '"></i>';
+      $('lvdots').innerHTML = dots;
+      var sh = $('lvshow');
+      if (cart && cart.show) { sh.className = 'fit'; sh.innerHTML = '⭐ ' + h(cap(cart.show)); fitLine(sh); } else sh.className = 'fit hide';
+      fitLine(view.querySelector('.lv-top b'));
+    }
+    function loadCart() { get('/api/light/cartelera?local=' + VENUE, function (c) { if (c) { cart = c; paint(); } }); }
+    function loadKar() { get('/api/karaoke?local=' + VENUE, function (k) { if (k) kar = k; }); }
+    loadCart(); loadKar(); paint();
+    every(viewTimers, 9000, function () { idx++; paint(); });
+    every(viewTimers, 60000, loadCart);
+    every(viewTimers, 5000, loadKar);
+  }
+
+  // Karaoke a pantalla completa: quién canta, los que vienen y el QR para pedir canciones
+  function viewKaraoke(venue, joinUrl, timers) {
+    var last = '';
+    function paint(st) {
+      var list = st.list || []; var a = list[0];
+      var sig = JSON.stringify([list, st.total]);
+      if (sig === last) return;
+      last = sig;
+      var nx = '';
+      for (var i = 1; i < list.length && i < 4; i++) nx += '<p><em>' + (i + 1) + '</em><b>' + h(list[i].name) + '</b><span>' + h(list[i].song) + (list[i].artist ? ' · ' + h(list[i].artist) : '') + '</span></p>';
+      view.innerHTML = '<div class="abs" style="top:4rem"><b class="fit" style="display:block;font-size:5.6rem">Karaoke ' + h(NAMES[venue]) + '</b><span class="g-sub">' + (st.total ? st.total + ' en la lista' : 'Lista abierta') + '</span></div>' +
+        '<div class="kf-now card">' + (a ? '<small>🎤 Ahora canta</small><b class="fit">' + h(a.name) + '</b><span class="fit">' + h(a.song) + '</span>' + (a.artist ? '<i class="fit">' + h(a.artist) + '</i>' : '')
+          : '<small>🎤 Karaoke</small><b>¡Pide tu canción!</b><span>Desde el celular</span>') + '</div>' +
+        '<div class="kf-bottom"><div class="kf-next">' + (nx ? '<small>Luego vienen</small>' + nx : '') + '</div><div class="kf-qr"><div class="qrw">' + qrImg(joinUrl) + '</div><div class="qrp">Escanea el código QR con tu celular</div></div></div>';
+      fitAll();
+    }
+    function load() { get('/api/karaoke?local=' + venue, function (st) { if (st && (timers === viewTimers ? cur === 'karaoke' : true)) paint(st); }); }
+    load();
+    every(timers, 3000, load);
+  }
+
+  // ---------- Juegos de la sala completa del local ----------
+  function viewSala() {
+    var stage = '';
+    view.innerHTML = '';
+    function loop() {
+      get('/api/stage', function (r) {
+        if (!r || cur !== 'sala') return;
+        if (r.show === stage) return;
+        stage = r.show;
+        clearList(stageTimers);
+        view.innerHTML = '';
+        if (stage === 'bingo') sBingo();
+        else if (stage === 'rueda') sRosco();
+        else if (stage === 'sorteo') sRaffle();
+        else if (stage === 'voto') sVote();
+        else if (stage === 'juego') sDraw();
+        else if (stage === 'votojuego') sGameVote();
+        else if (stage === 'karaoke') viewKaraoke(VENUE, origin() + '/#/jugar', stageTimers);
+        else if (stage === 'qr') sQr();
+        else if (stage === 'show') sShow();
+        else if (stage === 'insta') sInsta();
+        else sQr();
+      });
+    }
+    loop();
+    every(viewTimers, 2500, loop);
+  }
+  var JOIN = function () { return origin() + '/#/jugar'; };
+  function qrFoot(text) { return '<div class="abs qr-foot"><div class="qrw">' + qrImg(JOIN()) + '</div><div class="qrp">' + h(text || 'Escanea el código QR con tu celular') + '</div></div>'; }
+  function sQr() {
+    view.innerHTML = '<div class="abs" style="top:8rem"><b class="big" style="display:block">📱</b><b class="mid fit" style="display:block">Escanea el código QR con tu celular</b></div>' +
+      '<div class="abs" style="top:30rem"><div class="qrw" style="width:40rem">' + qrImg(JOIN()) + '</div></div>' +
+      '<div class="abs mid" style="top:78rem">pon tu nombre, apellido y participa</div>';
+    fitAll();
+  }
+  function letra(st, v) { var hs = String(st.headers || 'BINGO'); for (var c = 0; c < 5; c++) if (v <= Math.floor(((c + 1) * (st.values || 75)) / 5)) return hs.charAt(c); return hs.charAt(4); }
+  function sBingo() {
+    var sid = ''; var last = '';
+    function paint(st) {
+      var sig = JSON.stringify([st.drawn, st.bigQr, st.celebrate, st.results, st.patterns, st.round]);
+      if (sig === last) return;
+      last = sig;
+      var title = String(st.name || '').replace(/^Los Juegos de /, 'El Bingo de ');
+      var pid = (st.patterns || [])[0] || '';
+      var fig = FIG[pid] || (pid.length === 1 ? 'Figura ' + pid.toUpperCase() : pid);
+      var drawn = st.drawn || [];
+      var o = '<div class="abs g-title fit">' + h(title) + '</div>';
+      if (st.celebrate) {
+        var names = []; var seen = {};
+        for (var i = 0; i < (st.results || []).length; i++) { var r = st.results[i]; if (r.name && !seen[r.name]) { seen[r.name] = 1; names.push(r.name); } }
+        o += '<div class="abs" style="top:16rem"><b class="big gold" style="font-size:12rem">¡BINGO!</b></div><div class="abs" style="top:34rem">';
+        for (var n = 0; n < names.length && n < 6; n++) o += '<b class="mid fit" style="display:block;font-size:5rem">' + h(names[n]) + '</b>';
+        o += '</div><div class="abs g-sub" style="top:74rem">' + h(fig) + '</div>' + qrFoot();
+      } else if (st.bigQr && !drawn.length) {
+        o += '<div class="abs" style="top:14rem"><b class="mid fit" style="display:block">Escanea el código QR con tu celular</b></div><div class="abs" style="top:22rem"><div class="qrw" style="width:44rem">' + qrImg(JOIN()) + '</div></div>' +
+          '<div class="abs mid" style="top:74rem">pon tu nombre, apellido y participa</div>';
+      } else {
+        var v = drawn.length ? drawn[drawn.length - 1] : null;
+        o += '<div class="ball">' + (v != null ? '<small>' + (st.format === 'numbers' ? letra(st, v) : '') + '</small><b>' + h(v) + '</b>' : '<small>&nbsp;</small><b style="font-size:6rem;margin-top:4rem">¡Ya comienza!</b>') + '</div>';
+        if (drawn.length > 1) { o += '<div class="abs prev">'; for (var k = drawn.length - 2; k >= 0 && k >= drawn.length - 7; k--) o += '<span>' + h(drawn[k]) + '</span>'; o += '</div>'; }
+        o += '<div class="abs" style="top:58.5rem"><div class="mid fit">Figura: ' + h(fig) + '</div><div class="g-sub">' + drawn.length + ' de ' + (st.values || 75) + '</div></div>' + qrFoot();
+      }
+      view.innerHTML = o;
+      fitAll();
+    }
+    function load() {
+      if (!sid) { get('/api/current', function (r) { var s = r && r.sessions && r.sessions[0]; if (s) { sid = s.id; load(); } }); return; }
+      get('/api/sessions/' + sid + '/state', function (st) { if (st && cur === 'sala') paint(st); else if (!st) sid = ''; });
+    }
+    load();
+    every(stageTimers, 2000, load);
+  }
+  function sRosco() {
+    var wid = ''; var last = '';
+    function paint(r) {
+      var sig = JSON.stringify([r.list, r.players]);
+      if (sig === last) return;
+      last = sig;
+      var list = r.list || [];
+      var o = '<div class="abs g-title" style="font-size:3.4rem;color:#ffc400">Resultados</div><div class="abs fit" style="top:9rem;font-size:5.4rem;font-weight:700">La Trivia del Rosco</div><div class="abs" style="top:19rem;bottom:32rem"><ol class="rows">';
+      if (!list.length) o += '<li style="text-align:center">Responde desde tu celular</li>';
+      for (var i = 0; i < list.length && i < 10; i++) o += '<li class="' + (i < 3 ? 'top' : '') + '"><em>' + (i + 1) + '.º</em>' + h(list[i].name) + '<i>' + h(list[i].score) + '</i></li>';
+      o += '</ol></div>' + qrFoot();
+      view.innerHTML = o;
+    }
+    function load() {
+      if (!wid) { get('/api/wheels', function (l) { if (l && l.length) { wid = l[0].id; load(); } }); return; }
+      get('/api/wheels/' + wid + '/ranking', function (r) { if (r && cur === 'sala') paint(r); });
+    }
+    load();
+    every(stageTimers, 5000, load);
+  }
+  function sRaffle() {
+    var last = '';
+    function paint(r) {
+      var rolling = r.roll && now() < r.roll.at + (r.rollMs || 6000);
+      var sig = JSON.stringify([r.picked, rolling, r.mode, r.roll && r.roll.winner]);
+      if (sig === last) return;
+      last = sig;
+      var o = '<div class="abs g-title fit">' + (r.mode === 'tie' ? 'Desempate del bingo' : '🎲 Sorteo de concursantes') + '</div>';
+      if (rolling) o += '<div class="abs big gold" style="top:30rem">🎲 Sorteando…</div>';
+      else if (r.mode === 'tie' && r.roll && r.roll.winner) o += '<div class="abs" style="top:28rem"><div class="g-sub">Ganó</div><b class="big fit" style="display:block">' + h(r.roll.winner) + '</b></div>';
+      var picked = r.picked || [];
+      if (picked.length) { o += '<div class="abs" style="top:' + (rolling ? 44 : 22) + 'rem"><ol class="rows">'; for (var i = 0; i < picked.length; i++) o += '<li class="top"><em>' + (i + 1) + '.º</em>' + h(picked[i]) + '</li>'; o += '</ol></div>'; }
+      o += qrFoot();
+      view.innerHTML = o;
+    }
+    function load() { get('/api/raffle', function (r) { if (r && cur === 'sala') paint(r); }); }
+    load();
+    every(stageTimers, 1500, load);
+  }
+  function sVote() {
+    var last = ''; var st = null;
+    function paint() {
+      var s = st;
+      var sig = JSON.stringify([s.rev, s.phase, Math.floor(now() / 1000)]);
+      if (sig === last) return;
+      last = sig;
+      var left = s.clockUntil ? clock(s.clockUntil - now()) : '';
+      var o = '<div class="abs g-title fit">' + h(s.title) + '</div><div class="abs" style="top:16rem">';
+      var thing = function (p) { return p && p.thing ? '<div class="mid fit" style="color:#ffd76a">' + h(p.thing) + '</div>' : ''; };
+      if (s.phase === 'winner' && s.winner) o += '<div class="big gold">🏆 ¡Ganó!</div><b class="big fit" style="display:block">' + h(s.winner.name) + '</b>' + thing(s.winner) + (s.winner.score != null ? '<div class="mid">Nota ' + dec(s.winner.score) + '</div>' : '');
+      else if (s.phase === 'final' && s.final && s.final.drum) o += '<div class="big gold">🥁</div><div class="mid">¡Redoble de tambores!</div>';
+      else if (s.phase === 'final' && s.final) { o += '<div class="mid gold">Gran final</div>'; for (var f = 0; f < (s.final.players || []).length; f++) o += '<b class="big fit" style="display:block;font-size:5.4rem">' + h(s.final.players[f].name) + '</b>'; if (left && s.final.open) o += '<div class="clock">' + left + '</div>'; }
+      else if (s.phase === 'results') { o += '<div class="mid gold">🏆 Resultados</div><ol class="rows" style="margin-top:2rem">'; var pl = s.places || []; for (var i = pl.length - 1; i >= 0; i--) o += '<li><em>' + pl[i].place + '.º</em>' + h(pl[i].name) + (pl[i].score != null ? '<i>' + dec(pl[i].score) + '</i>' : '') + '</li>'; o += '</ol>'; }
+      else if (s.open) o += '<div class="mid gold">🗳️ Vota desde tu celular</div><b class="big fit" style="display:block">' + h(s.open.name) + '</b>' + thing(s.open) + (left ? '<div class="clock">' + left + '</div>' : '');
+      else if (s.onstage) o += '<div class="mid gold">🎤 En el escenario</div><b class="big fit" style="display:block">' + h(s.onstage.name) + '</b>' + thing(s.onstage);
+      else if (s.signup) { o += '<div class="mid gold">📝 Inscripciones abiertas</div>' + (left ? '<div class="clock">' + left + '</div>' : '') + '<ol class="rows" style="margin-top:2rem">'; var ps = s.players || []; for (var k = 0; k < ps.length && k < 8; k++) o += '<li>' + h(ps[k].name) + (ps[k].thing ? ' · ' + h(ps[k].thing) : '') + '</li>'; o += '</ol>'; }
+      else if (s.last) o += '<div class="mid">Ya viene el siguiente participante</div>';
+      else { o += '<div class="mid gold">Participantes</div><ol class="rows" style="margin-top:2rem">'; var pp = s.players || []; for (var m = 0; m < pp.length && m < 8; m++) o += '<li>' + h(pp[m].name) + (pp[m].thing ? ' · ' + h(pp[m].thing) : '') + '</li>'; o += '</ol>'; }
+      o += '</div>' + qrFoot();
+      view.innerHTML = o;
+      fitAll();
+    }
+    function load() { get('/api/vote', function (r) { if (r && cur === 'sala') { st = r; paint(); } }); }
+    load();
+    every(stageTimers, 2000, load);
+    every(stageTimers, 1000, function () { if (st) paint(); });
+  }
+  function sDraw() {
+    var last = '';
+    function paint(g) {
+      var ready = g.ready && (!g.last || g.ready.at > g.last.at);
+      var rolling = !ready && g.last && !g.last.direct && now() < g.last.at + 4500;
+      var sig = JSON.stringify([g.list, g.total, ready, rolling, g.last && g.last.at]);
+      if (sig === last) return;
+      last = sig;
+      var o = '';
+      var n = ready ? g.list.length + 1 : g.list.length;
+      if (ready) { o += '<div class="abs g-title fit">🎲 Sorteo del ' + n + '.º juego</div><div class="abs" style="top:16rem"><ol class="rows">'; for (var i = 0; i < g.ready.pool.length; i++) o += '<li class="top">' + GAMES[g.ready.pool[i]][0] + ' ' + h(GAMES[g.ready.pool[i]][1]) + '</li>'; o += '</ol></div>'; }
+      else if (rolling) o += '<div class="abs g-title fit">🎲 Sorteo del ' + n + '.º juego</div><div class="abs big gold" style="top:30rem">🎲 Sorteando…</div>';
+      else if (g.last) o += '<div class="abs g-title fit">🎲 El ' + n + '.º juego es</div><div class="abs" style="top:22rem"><b class="big fit gold" style="display:block">' + GAMES[g.last.game][0] + ' ' + h(GAMES[g.last.game][1]) + '</b></div>';
+      o += '<div class="abs" style="top:52rem"><ol class="rows">';
+      for (var k = 0; k < g.total; k++) o += '<li><em>' + (k + 1) + '.º</em>' + (g.list[k] ? GAMES[g.list[k]][0] + ' ' + h(GAMES[g.list[k]][1]) : '🔒') + '</li>';
+      o += '</ol></div>';
+      view.innerHTML = o;
+      fitAll();
+    }
+    function load() { get('/api/gamedraw', function (g) { if (g && cur === 'sala') paint(g); }); }
+    load();
+    every(stageTimers, 1000, load);
+  }
+  function sGameVote() {
+    var g = null;
+    function paint() {
+      if (!g) return;
+      var opts = g.options && g.options.length ? g.options : ['bingo', 'rosco', 'festival', 'objeto'];
+      var top = g.phase === 'voting' ? (g.round === 2 ? '🗳️ Segunda vuelta' : '🗳️ Votación') : '🗳️ Resultado de la votación';
+      var big = g.phase === 'done' && g.winner ? '🏆 ¡Ganó ' + GAMES[g.winner][0] + ' ' + h(GAMES[g.winner][1]) + '!' : g.phase === 'result' && g.empty ? 'Nadie votó' : g.phase === 'result' && g.runoff ? 'Nadie superó el 50%' : '¿Qué juego quieren jugar?';
+      var line = g.phase === 'voting' ? 'Quedan <b class="gold">' + clock(g.until - now()) + '</b>' : g.phase === 'result' && g.runoff ? 'Segunda vuelta: ' + GAMES[g.runoff[0]][0] + ' ' + h(GAMES[g.runoff[0]][1]) + ' y ' + GAMES[g.runoff[1]][0] + ' ' + h(GAMES[g.runoff[1]][1]) : g.tie ? 'Empate en la segunda vuelta: se decidió por sorteo' : '';
+      var o = '<div class="abs" style="top:4rem"><div class="g-sub" style="color:#ffc400;text-transform:uppercase">' + top + '</div><b class="big fit" style="display:block;font-size:5.4rem">' + big + '</b>' + (line ? '<div class="mid fit">' + line + '</div>' : '') + '</div><div class="abs" style="top:24rem"><ol class="rows">';
+      for (var i = 0; i < opts.length; i++) {
+        var k = opts[i]; var n = (g.counts || {})[k] || 0; var p = pct(n, g.total);
+        var dim = (g.phase === 'done' && k !== g.winner) || (g.phase === 'result' && g.runoff && g.runoff.indexOf(k) < 0);
+        o += '<li class="bar top" style="' + (dim ? 'opacity:.45' : '') + '"><u style="width:' + p.toFixed(1) + '%;background:' + GVC[k] + '"></u><span>' + GAMES[k][0] + ' ' + h(GAMES[k][1]) + '</span><i>' + fmtPct(p) + ' · ' + votos(n) + '</i></li>';
+      }
+      o += '</ol><div class="g-sub">' + (g.total ? votos(g.total) + ' en total' : '') + '</div></div>' + qrFoot();
+      view.innerHTML = o;
+      fitAll();
+    }
+    function load() { get('/api/gamevote', function (r) { if (r && cur === 'sala') { g = r; paint(); } }); }
+    load();
+    every(stageTimers, 1000, load);
+  }
+  function sShow() {
+    get('/api/light/cartelera?local=' + VENUE, function (c) {
+      if (cur !== 'sala') return;
+      view.innerHTML = '<div class="abs g-title">⭐ El show de esta noche</div><div class="abs" style="top:30rem"><b class="big" style="display:block">' + (c && c.show ? showHtml(c.show) : 'KRB Stage') + '</b></div>' + qrFoot();
+      fitAll();
+    });
+  }
+  function sInsta() {
+    get('/api/insta', function (r) {
+      if (cur !== 'sala') return;
+      view.innerHTML = '<div class="abs g-title">📸 Síguenos en Instagram</div><div class="abs" style="top:34rem"><b class="big fit gold" style="display:block">@' + h((r && r.handle) || 'krbstage') + '</b></div>' + qrFoot();
+      fitAll();
+    });
+  }
+
+  // ---------- Qué mostrar (las mismas reglas que la pantalla completa) ----------
+  function tick() {
+    get('/api/vertical/' + P, function (st) {
+      if (!st) return;
+      if (st.video !== ver) {
+        ver = st.video;
+        if (ver) { vid.src = Q.liviano && Q.lver === String(ver) ? Q.liviano : '/vertical/' + P + '.mp4?v=' + ver; if (cur === 'video') play(); } else vid.removeAttribute('src');
+      }
+      var show = st.show;
+      if (show === 'light') show = { karaoke: st.karaokeNow ? 'karaoke' : 'light', qr: 'light-qr', show: 'light-show' }[st.lightStage] || 'light';
+      var want = show === 'video' ? (ver ? 'video' : 'logo') : show === 'light' ? 'info' : show === 'light-qr' ? 'info-qr' : show === 'light-show' ? 'info-show' : show === 'karaoke' ? 'karaoke' : !st.activity ? (ver ? 'video' : 'logo') : 'sala';
+      if (want !== cur) go(want);
+    });
+  }
+  tick();
+  setInterval(tick, 3000);
+  // Cada 6 horas se recarga sola (versión nueva y memoria limpia), salvo en medio de los juegos
+  setTimeout(function () { setInterval(function () { if (cur !== 'sala') location.reload(); }, 60000); }, 6 * 3600 * 1000);
+  // Revisión: con ?diag=1, el navegador y los errores
+  if (Q.diag) {
+    var d = document.createElement('pre'); d.id = 'diag'; document.body.appendChild(d);
+    setInterval(function () { d.textContent = navigator.userAgent + '\nventana ' + window.innerWidth + 'x' + window.innerHeight + ' · pantalla ' + P + ' · vista ' + cur + ' · video ' + ver + (vid.paused ? ' (detenido)' : ' (andando)') + '\nerrores: ' + (errs.length ? errs.join(' | ') : 'ninguno'); }, 1500);
+  }
+})();
+</script>
+</body>
+</html>
