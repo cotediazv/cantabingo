@@ -223,6 +223,44 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
     }
   });
 
+  // Seguidores de las cuentas de Instagram de KRB Stage (pedido de Cote: bajo «Redes sociales» de la página web).
+  // Se leen con la clave del portafolio (la de Kennedy), cada 1 hora y en segundo plano; si una falla, queda el último dato bueno
+  const CUENTAS = ['krbstage', 'krbstage1', 'krbstage2', 'krbstage3', 'krbstage4'];
+  const SEG_MS = 3600e3;
+  const seg = { cuentas: CUENTAS.map((handle) => ({ handle, seguidores: null })), at: 0, cargando: false, error: '' };
+  async function calcularSeguidores() {
+    const token = tokenOf('kennedy');
+    if (!token) throw new Error('Falta la clave');
+    const tk = (db.webIg.kennedy || {}).token || token;
+    if (!igIds.kennedy) await mediaFacebook('kennedy', tk);
+    const base = igIds.kennedy || Object.values(igIds)[0];
+    if (!base) throw new Error('No se encontró la cuenta del portafolio');
+    const errores = [];
+    for (const c of seg.cuentas) {
+      try {
+        const r = await getJson(`${FB}/${base}?fields=business_discovery.username(${c.handle}){username,followers_count}&access_token=${encodeURIComponent(tk)}`);
+        const n = r.business_discovery && r.business_discovery.followers_count;
+        if (typeof n === 'number') c.seguidores = n;
+      } catch (e) { errores.push(`@${c.handle}: ${e.message}`); }
+    }
+    return errores.join(' | ').slice(0, 300);
+  }
+  function seguidores() {
+    if (!seg.cargando && Date.now() - seg.at > SEG_MS) {
+      seg.cargando = true;
+      calcularSeguidores()
+        .then((error) => { seg.at = Date.now() - (error ? SEG_MS - 10 * 60e3 : 0); seg.error = error; })
+        .catch((e) => { seg.at = Date.now() - SEG_MS + 10 * 60e3; seg.error = String(e.message || e).slice(0, 200); }) // reintenta en 10 minutos
+        .finally(() => { seg.cargando = false; });
+    }
+    return seg;
+  }
+  app.get('/api/web/seguidores', (req, res) => {
+    res.set('Access-Control-Allow-Origin', '*');
+    const s = seguidores();
+    res.json({ cuentas: s.cuentas, error: s.error || '' });
+  });
+
   // Pública (solo lectura): la usa la página web
   // ?ligero=1: solo lo que la página muestra primero (los 20 más populares y los 6 últimos videos de cada lugar);
   // el resto se pide con /api/web/instagram/lugar?local=… cuando alguien pasa de página o abre la pantalla completa
