@@ -157,7 +157,7 @@ function nav(current, inGame) {
     var full = g.list.length >= g.total;
     var ready = !full && g.ready && (!g.last || g.ready.at > g.last.at);
     if (!g.list.length && !ready) {
-      o += '<div class="plan"><div class="slots"><span class="done">Inicial · 🎱 Bingo</span>';
+      o += '<div class="plan"><div class="slots">';
       for (var i = 0; i < g.total; i++) o += '<span>' + (i + 1) + '.º · 🔒</span>';
       o += '</div><div class="count">¿Cuántos juegos vamos a sortear?<b>' + g.total + '</b>' + btn('−', 'total', d('n', g.total - 1), '', g.total <= 1) + btn('+', 'total', d('n', g.total + 1), '', g.total >= 10) + '</div></div>';
     }
@@ -178,7 +178,7 @@ function nav(current, inGame) {
 }
 var goTimer = null;
 function toGame(k) {
-  if (k === 'bingo') { var s = sala(); if (!s) { go('#/'); return; } api('GET', '/api/sessions/' + s.id + '/host/state', null, function (err, st) { if (!err && st && st.winConfirmed) go('#/ronda'); else { api('POST', '/api/stage', { show: 'bingo' }); go('#/bingo'); } }); return; }
+  if (k === 'bingo') { var s = sala(); if (!s) { go('#/'); return; } api('GET', '/api/sessions/' + s.id + '/host/state', null, function (err, st) { if (!err && st && st.winConfirmed) go('#/ronda'); else if (!err && st && !st.drawn.length) go('#/figura'); else { api('POST', '/api/stage', { show: 'bingo' }); go('#/bingo'); } }); return; }
   if (k === 'rosco') { go('#/sorteoctl'); return; }
   go('#/' + k);
 }
@@ -197,7 +197,7 @@ views.home = function () {
     S.sala = r ? r.sessions : null;
     var s = sala();
     render(topBar() + '<div class="home"><h1>KRB Stage · Sala de juegos</h1>' +
-      (s ? '<a class="create open" href="#/bingo">▶<br>Continuar: ' + h(s.name) + '</a><p class="muted">Hay una sala abierta. Para crear otra, primero ciérrala en el Centro de control.</p>'
+      (s ? '<a class="create open" href="#/juegos">▶<br>Continuar: ' + h(s.name) + '</a><p class="muted">Hay una sala abierta. Para crear otra, primero ciérrala en el Centro de control.</p>'
         : '<a class="create" href="#/nuevo">🎮<br>Crear sala de juegos</a>') +
       '<p><a class="btn" href="#/control">🎛️ Centro de control</a></p><p style="margin-top:26px">' + btn('Cerrar sesión de moderador', 'logout') + '</p></div>');
   });
@@ -277,6 +277,36 @@ views.bingo = function () {
   load(); poll = setInterval(function () { if (!document.activeElement || document.activeElement.tagName !== 'SELECT') load(); }, 3000);
 };
 
+// Juegos: la sala parte aquí (sin bingo): arriba la sala y el QR de entrada; abajo el menú con las pestañas
+views.juegos = function () {
+  var load = function () {
+    api('GET', '/api/current', null, function (err, r) {
+      S.sala = r ? r.sessions : null; var s = sala();
+      if (!s) { go('#/'); return; }
+      api('GET', '/api/gamedraw', null, function (e1, g) {
+        S.draw = g;
+        api('GET', '/api/sessions/' + s.id + '/host/state', null, function (e2, st) {
+          if (!st) return;
+          render(topBar(['#/', 'Inicio']) + '<div class="panel"><h1>' + h(s.name) + '</h1><p class="muted">' + st.players + ' participantes · Escanea el código QR con tu celular, pon tu nombre, apellido y participa</p><div class="center">' +
+            btn(st.bigQr ? '📱 QR grande en pantalla: quitar' : '📱 Mostrar QR grande en pantalla', 'bigqr', d('on', st.bigQr ? '' : '1')) + '</div></div>' + nav('', false) + foot());
+        });
+      });
+    });
+  };
+  load(); poll = setInterval(load, 4000);
+};
+// Figura del bingo cuando el bingo sale en el sorteo o se elige (antes del primer número)
+views.figura = function () {
+  api('GET', '/api/current', null, function (err, r) {
+    S.sala = r ? r.sessions : null; var s = sala();
+    if (!s) { go('#/'); return; }
+    api('GET', '/api/sessions/' + s.id + '/host/state', null, function (e2, st) {
+      if (!st) return;
+      if (st.drawn.length || st.winConfirmed) { go('#/bingo'); return; }
+      render(topBar(['#/juegos', 'Juegos']) + '<h1>' + h(bingoName(st.name)) + '</h1><div class="panel"><h2>¿Qué figura se juega?</h2>' + figPicker(st.patterns[0]) + btn('Empezar el bingo', 'figura', '', 'big primary') + '</div>');
+    });
+  });
+};
 views.ronda = function () {
   api('GET', '/api/current', null, function (err, r) {
     S.sala = r ? r.sessions : null; var s = sala();
@@ -438,6 +468,8 @@ views.control = function () {
       api('GET', '/api/stage', null, function (e1, stg) {
         var show = stg ? stg.show : '';
         var o = topBar(['#/', 'Inicio']) + '<h1>Centro de control</h1><div class="panel"><h2>Sala de juegos abierta</h2>';
+        // Ir directo a la sala en juego o crear una (pedido de Cote, 21 nov)
+        o += S.sala && S.sala.length ? '<a class="create open" href="#/juegos">▶<br>Ir a la sala en juego: ' + h(S.sala[0].name) + '</a>' : '<a class="create" href="#/nuevo">🎮<br>Crear sala de juegos</a>';
         if (S.sala && S.sala.length) for (var i = 0; i < S.sala.length; i++) o += '<div class="item"><span class="r">' + btn('Cerrar', 'closeSala', d('sid', S.sala[i].id), 'bad') + '</span><b>' + h(S.sala[i].name) + '</b><br><span class="muted">Ronda ' + S.sala[i].round + '</span></div>';
         else o += '<p class="muted">No hay ninguna sala abierta.</p>';
         o += '</div><div class="panel"><h2>En pantalla</h2><p class="muted">La pantalla cambia sola al activar un bingo, lanzar un sorteo o cargar un rosco. Aquí puedes cambiarla a mano.</p><div class="row">';
@@ -464,7 +496,11 @@ A.logout = function () { token = ''; try { window.localStorage.removeItem('admin
 A.crear = function (el) {
   var v = el.getAttribute('data-v'); var name = 'Los Juegos de ' + V[v];
   toast('Creando los cartones…');
-  api('POST', '/api/projects', { name: name, theme: v, count: $('count').value, format: 'numbers', values: 75, headers: 'BINGO', freeCenter: false, startNumber: 1 }, function (err, p) { if (err) { toast(err); return; } toast(''); go('#/activar/' + p.id); });
+  api('POST', '/api/projects', { name: name, theme: v, count: $('count').value, format: 'numbers', values: 75, headers: 'BINGO', freeCenter: false, startNumber: 1 }, function (err, p) {
+    if (err) { toast(err); return; }
+    // La sala ya no parte con el bingo (pedido de Cote, 21 nov): se abre de inmediato y se va a Juegos
+    api('POST', '/api/projects/' + p.id + '/session', { name: name, theme: v, password: '', cardsPerPlayer: 1, isPublic: true, showName: true, patterns: ['linea'] }, function (e2) { if (e2) { toast(e2); return; } toast(''); go('#/juegos'); });
+  });
 };
 A.activar = function (el) {
   api('POST', '/api/projects/' + el.getAttribute('data-pid') + '/session', { name: el.getAttribute('data-name'), theme: el.getAttribute('data-theme'), password: '', cardsPerPlayer: 1, isPublic: true, showName: true, patterns: [$('fig').value] }, function (err) { if (err) { toast(err); return; } go('#/bingo'); });
@@ -474,6 +510,10 @@ A.bigqr = function (el) { var s = sala(); if (s) act('POST', '/api/sessions/' + 
 A.manual = function () { manual = !manual; refresh(); };
 A.pickNum = function (el) { var s = sala(); if (s) act('POST', '/api/sessions/' + s.id + '/host/draw', { value: Number(el.getAttribute('data-v')) }); };
 A.tieBingo = function () { var s = sala(); if (s) act('POST', '/api/raffle/tiebreak', { sid: s.id }); };
+A.figura = function () {
+  var s = sala(); if (!s) return;
+  api('POST', '/api/sessions/' + s.id + '/host/patterns', { patterns: [$('fig').value] }, function (err) { if (err) { toast(err); return; } api('POST', '/api/stage', { show: 'bingo' }); go('#/bingo'); });
+};
 A.ronda = function () { var s = sala(); if (s) api('POST', '/api/sessions/' + s.id + '/host/restart', { patterns: [$('fig').value] }, function (err) { if (err) toast(err); else go('#/bingo'); }); };
 A.drawMode = function (el) {
   var free = !!el.getAttribute('data-free');

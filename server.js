@@ -495,6 +495,12 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
       s.tieWinner = null;
       break;
     case 'bigqr': s.bigQr = b.on !== false; break; // cartel con el QR en grande, para antes de empezar
+    // Figura del bingo antes de sacar el primer número (pedido de Cote, 21 nov: la sala ya no parte con el bingo; cuando
+    // el bingo sale en el sorteo o se elige, primero se elige la figura)
+    case 'patterns':
+      if (s.drawn.length || roundOver(s)) return fail(res, 400, 'El bingo ya empezó: la figura se cambia en la ronda siguiente');
+      s.patterns = cleanPatterns(b.patterns);
+      break;
     case 'hidewin': s.hideWin = b.hide !== false; break; // quitar o volver a mostrar la celebración en pantalla
     case 'gc':
       // Textos de las franjas de la gráfica de OBS; quedan como predeterminados para las próximas sesiones
@@ -521,7 +527,7 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
 app.get('/api/sessions/:sid/host/state', (req, res) => { const s = hostSession(req, res); if (s) res.json(publicState(s, true)); });
 app.get('/api/sessions/:sid/host', (req, res) => {
   const s = hostSession(req, res);
-  if (s) res.json({ password: s.password, isPublic: s.isPublic, round: s.round, patterns: s.patterns, gc: s.gc || gcDefaults(), roundOver: roundOver(s) });
+  if (s) res.json({ password: s.password, isPublic: s.isPublic, round: s.round, patterns: s.patterns, gc: s.gc || gcDefaults(), roundOver: roundOver(s), drawn: s.drawn.length });
 });
 
 // Sesiones activas: a ellas llevan el enlace y el QR fijos
