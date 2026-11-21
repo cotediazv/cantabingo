@@ -868,6 +868,16 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
 .esp-mont.crece .esp-media{transform:scale(1.25);z-index:6;box-shadow:0 22px 50px -10px rgba(0,0,0,.9)}
 @media (max-width:900px){.esp-mont .esp-media{transform-origin:center center}.esp-mont:nth-child(3n+1) .esp-media{transform-origin:left center}.esp-mont:nth-child(3n) .esp-media{transform-origin:right center}}
 @media (max-width:560px){.esp-mont:nth-child(n) .esp-media{transform-origin:right center}.esp-mont:nth-child(odd) .esp-media{transform-origin:left center}}
+/* ===== Switch «Repeticiones Twitch» (pedido de Cote): a la izquierda de la fila «Pantallas del local» ===== */
+.rep-sw{display:inline-flex;align-items:center;gap:8px;margin-right:6px;padding:4px 12px 4px 4px;border:1px solid var(--linea);border-radius:999px;background:var(--tarima);cursor:pointer;user-select:none;white-space:nowrap;flex:none;color:var(--tenue);text-transform:none;letter-spacing:.04em}
+.rep-sw input{position:absolute;opacity:0;width:1px;height:1px}
+.rep-sw .sw-pista{width:40px;height:22px;flex:none}.rep-sw .sw-bola{width:16px;height:16px}
+.rep-sw input:checked+.sw-pista{background:#9146ff}
+.rep-sw input:checked+.sw-pista .sw-bola{transform:translateX(18px)}
+.rep-sw input:focus-visible+.sw-pista{outline:2px solid var(--foco);outline-offset:2px}
+.rep-sw input:checked~.rep-sw-txt{color:#c9a8ff}
+.rep-sw:hover{border-color:#9146ff;color:var(--texto)}
+@media (min-width:901px){#tulocal .ptl-col:not(:first-child) .rep-sw{display:none}} /* en el computador, uno solo: a la izquierda de toda la fila */
 /* ===== Reproductor sobre la página (pedido de Cote): de fondo la página de KRB Stage; flechas sin fin y cruz para volver ===== */
 .pc{background:rgba(12,11,18,.72);-webkit-backdrop-filter:blur(14px) saturate(1.15);backdrop-filter:blur(14px) saturate(1.15)}
 .pc-pista>*{background:transparent;box-sizing:border-box;padding:clamp(64px,9vh,88px) clamp(80px,9vw,140px)}
@@ -1675,6 +1685,14 @@ elegirLocal('kennedy');
   // (con la pantalla del local al lado) o, si no está transmitiendo, sus últimas transmisiones guardadas.
   // Se prende solo cuando algún local está en vivo (salvo que la persona lo haya movido a mano).
   const sw={checked:true},punto={}; // sin switch (pedido de Cote): Instagram y el en vivo se ven siempre, uno debajo del otro
+  let repes=false; // «Repeticiones Twitch» (pedido de Cote): apagado al abrir la página
+  const segs=d=>{const m=String(d||'').match(/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/)||[];return (+m[1]||0)*3600+(+m[2]||0)*60+(+m[3]||0)};
+  const vodsDe=c=>{const todos=(c&&c.videos||[]),limpios=todos.filter(v=>!v.muted);return limpios.length?limpios:todos};
+  const LARGO=30*60; // «video largo»: desde 30 minutos
+  function swRepes(){const l=document.createElement('label');l.className='rep-sw';l.title='Repeticiones de Twitch en los 3 locales';
+    l.innerHTML=`<input type="checkbox" ${repes?'checked':''} aria-label="Repeticiones de Twitch en los 3 locales"><span class="sw-pista"><span class="sw-bola"></span></span><span class="rep-sw-txt">Repeticiones Twitch</span>`;
+    l.querySelector('input').addEventListener('change',e=>{repes=e.target.checked;document.querySelectorAll('.rep-sw input').forEach(x=>x.checked=repes);pintar()});
+    ['click','pointerdown'].forEach(t=>l.addEventListener(t,e=>e.stopPropagation()));return l}
   let datosTw=[],aMano=false,clave='',canalSonando=null,visor=null;const ultimoVivo={},packs={};
   // las pantallas del local se dibujan a su tamaño real (1920x1080 o 1080x1920) y se achican para caber
   const escalar=()=>document.querySelectorAll('.vivo-fila .pant').forEach(d=>{const f=d.firstElementChild;if(!f||!f.width)return;f.style.transform=`scale(${d.clientWidth/f.width})`});
@@ -1706,20 +1724,20 @@ elegirLocal('kennedy');
   function packVivo(canal,L,c){
     // Sin transmisión en vivo: las pantallas del local (el tablero horizontal y, al lado, la vertical), del mismo porte que
     // el conjunto del en vivo. Livianas, sin video (pedido de Cote; reemplaza las repeticiones)
-    if(MODO_OBS||!(c&&c.vivo)){const d=document.createElement('div');d.className='ptl-vivo vivo-item con-vertical pantallas';
+    if(MODO_OBS||(!(c&&c.vivo)&&!(repes&&vodsDe(c).length))){const d=document.createElement('div');d.className='ptl-vivo vivo-item con-vertical pantallas';
       d.innerHTML=`<div class="vivo-etq"><span class="rep-icono">▣</span><span style="white-space:nowrap">Pantallas del local</span></div>
         <div class="vivo-fila">${MODO_OBS?`<div class="pant pant-h obs-hueco"><iframe src="${SALA}#/escena" width="1920" height="1080" title="GC de la sala de juegos" tabindex="-1"></iframe></div>`:pant('pant-h',rutaH(L),1920,1080,'Tablero del local',L.livH?{liviano:L.livH,lver:L.lverH}:null)}${pant('pant-v',rutaV(L),1080,1920,'Pantalla vertical del local',L)}</div>
         <div class="vivo-botones"><button type="button" class="vivo-pc vivo-full">⛶ Pantalla completa</button></div>`;
-      d.querySelectorAll('.pant').forEach(x=>obsPant.observe(x));
+      d.querySelectorAll('.pant').forEach(x=>obsPant.observe(x));if(!MODO_OBS)d.querySelector('.vivo-etq').prepend(swRepes());
       d.querySelector('.vivo-full').onclick=()=>abrirVisor(L.local);return d}
-    const vivo=!!(c&&c.vivo),todos=(c&&c.videos||[]),limpios=todos.filter(v=>!v.muted),vods=limpios.length?limpios:todos;let i=0;
+    const vivo=!!(c&&c.vivo),todos=(c&&c.videos||[]),limpios=todos.filter(v=>!v.muted),vods=limpios.length?limpios:todos;let i=Math.max(0,vods.findIndex(v=>segs(v.duration)>=LARGO));
     if(!vivo&&!vods.length){const d=document.createElement('div');d.className='ptl-tw';d.innerHTML='<p class="tw-nada">Todavía no hay transmisiones guardadas de este local.</p>';return d}
     // sonido: un local a la vez (botón «Escuchar»); en la repetición se sigue desde el mismo punto al cambiar el sonido
     let t0=Date.now(),base=0;
     const desde=()=>{const s=Math.floor(base);return s>5?`&time=${Math.floor(s/3600)}h${Math.floor(s%3600/60)}m${s%60}s`:''};
     const fuente=()=>{const m=canalSonando===canal?'false':'true';
       return vivo?`https://player.twitch.tv/?channel=${canal}${padres}&muted=${m}&autoplay=true&controls=false`
-        :`https://player.twitch.tv/?video=v${vods[i].id}${padres}${desde()}&muted=${m}&autoplay=true&controls=false`};
+        :`https://player.twitch.tv/?video=v${vods[i].id}${padres}${desde()}&muted=${m}&autoplay=true&controls=true`};
     // nada encima del reproductor de Twitch (si algo lo tapa, Twitch lo pausa): la pantalla del local va al lado
     const caja=document.createElement('div');caja.className='ptl-vivo vivo-item'+(L.vertical?' con-vertical':' con-horizontal')+(vivo?'':' repeticion');
     const etiqueta=()=>vivo?`<span class="punto-vivo"></span><span style="white-space:nowrap">En vivo</span>${c.vivo.title?`<span class="vivo-tit">· ${esc(c.vivo.title)}</span>`:''}`
@@ -1729,7 +1747,7 @@ elegirLocal('kennedy');
       ${L.vertical?pant('pant-v',rutaV(L),1080,1920,'Pantalla vertical del local',L):pant('pant-h',L.horizontal,1920,1080,'Pantalla horizontal del local')}</div>
       <div class="vivo-botones"><button type="button" class="vivo-pc vivo-son">🔇 Escuchar</button>${vivo?'<button type="button" class="vivo-pc vivo-ref">⟳ Refrescar</button>':''}<button type="button" class="vivo-pc vivo-full">⛶ Pantalla completa</button></div>`;
     const etq=caja.querySelector('.vivo-etq');
-    const conectar=()=>etq.querySelectorAll('.rep-flecha').forEach(b=>b.onclick=()=>{i=(i+ +b.dataset.d+vods.length)%vods.length;base=0;t0=Date.now();caja.querySelector('.vivo-marco>iframe').src=fuente();etq.innerHTML=etiqueta();conectar()});
+    const conectar=()=>{etq.prepend(swRepes());etq.querySelectorAll('.rep-flecha').forEach(b=>b.onclick=()=>{i=(i+ +b.dataset.d+vods.length)%vods.length;base=0;t0=Date.now();caja.querySelector('.vivo-marco>iframe').src=fuente();etq.innerHTML=etiqueta();conectar()})};
     conectar();
     caja.querySelectorAll('.pant').forEach(d=>obsPant.observe(d));
     caja.querySelector('.vivo-full').onclick=()=>abrirVisor(L.local);
@@ -1800,7 +1818,7 @@ elegirLocal('kennedy');
     for(const [canal,L] of Object.entries(LOC)){
       const col=document.querySelector(`.ptl-col[data-local="${L.local}"]`);if(!col)continue;
       const c=datosTw.find(v=>v.canal===canal);const vivo=!!(c&&c.vivo);
-      const k=modo?(vivo?'vivo':'pant'):'ig';if(col.dataset.modo===k)continue;col.dataset.modo=k;
+      const k=modo?(vivo?'vivo':(repes&&vodsDe(c).length?'rep':'pant')):'ig';if(col.dataset.modo===k)continue;col.dataset.modo=k;
       const viejo=packs[L.local];
       if(!(visor&&modo&&viejo&&visor.contains(viejo)))col.querySelectorAll('.ptl-vivo,.ptl-tw').forEach(x=>x.remove());
       col.classList.toggle('modo-tw',modo);
