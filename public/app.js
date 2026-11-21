@@ -1065,6 +1065,9 @@ views.jugar = async (sid) => {
     // Pedido de Cote (21 nov): desaparece a los 2 segundos, o antes si la persona toca el mensaje o cualquier parte de la
     // pantalla (el aviso cubre toda la pantalla: ese toque solo lo cierra, no aprieta lo que está debajo)
     const close = () => { if (el.isConnected) el.remove(); };
+    // Con el dedo se cierra apenas toca (también al empezar a deslizar), y se anula el clic: así, aunque el dedo se levante
+    // justo cuando el aviso ya se fue, el toque no cae en la casilla, la votación o la Trivia de abajo
+    el.addEventListener('touchstart', (e) => { e.preventDefault(); close(); }, { passive: false });
     el.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); close(); });
     setTimeout(close, 2000);
   };

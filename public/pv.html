@@ -106,6 +106,8 @@
   .qr-foot { bottom: 6rem; }
   .qr-foot .qrw { width: 20rem; }
   .qr-foot .qrp { margin-top: 1rem; color: #fff; font-size: 2.2rem; }
+  /* Botón «Pantalla completa» (pedido de Cote, 21 nov): aparece al tocar la pantalla y se esconde solo a los 8 s */
+  #fs { position: absolute; right: 2rem; top: 2rem; z-index: 50; margin: 0; padding: 1.4rem 2.4rem; border: .3rem solid #ffc400; border-radius: 1.6rem; background: #000; background: rgba(0, 0, 0, .78); color: #fff; font-family: 'Fredoka', 'Trebuchet MS', Arial, sans-serif; font-size: 2.8rem; font-weight: 700; line-height: 1.1; -webkit-appearance: none; cursor: pointer; }
   #diag { position: fixed; left: 0; right: 0; bottom: 0; z-index: 99; margin: 0; padding: 8px; font: 12px/1.35 monospace; background: #fff; color: #000; white-space: pre-wrap; word-wrap: break-word; max-height: 45%; overflow: auto; }
 </style>
 </head>
@@ -113,6 +115,7 @@
 <div id="cv">
   <video id="vid" class="hide" muted loop autoplay playsinline webkit-playsinline preload="auto"></video>
   <div id="tap" class="hide">▶ Toca la pantalla para iniciar el video</div>
+  <button id="fs" class="hide" type="button">📺 Pantalla completa</button>
   <div id="view"></div>
   <div id="marks"></div>
 </div>
@@ -220,12 +223,50 @@
   document.addEventListener('touchend', onTouch, false);
   vid.addEventListener('playing', function () { tap.className = 'hide'; }, false);
 
+  // ---------- Pantalla completa (pedido de Cote, 21 nov) ----------
+  // Donde el navegador lo permite (decodificador, iPad nuevos), toda la página pasa a pantalla completa. En el iPad viejo
+  // (iOS 9) eso no existe: el botón abre el video en la pantalla completa del iPad. El botón aparece al tocar la pantalla
+  // (o mover el mouse o apretar una tecla del control) y se esconde solo a los 8 segundos, para no quedar a la vista del público.
+  var fsBtn = $('fs'); var fsHide = null; var fsFirst = true;
+  var IOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  function fsEl() { return document.fullscreenElement || document.webkitFullscreenElement || document.webkitCurrentFullScreenElement || document.mozFullScreenElement || document.msFullscreenElement || null; }
+  function fsReq() { var el = document.documentElement; return el.requestFullscreen || el.webkitRequestFullscreen || el.webkitRequestFullScreen || el.mozRequestFullScreen || el.msRequestFullscreen || null; }
+  function pageFsOk() {
+    var en = document.fullscreenEnabled || document.webkitFullscreenEnabled || document.mozFullScreenEnabled || document.msFullscreenEnabled;
+    return !!fsReq() && (en === true || (en === undefined && !IOS));
+  }
+  function videoFsOk() { return cur === 'video' && !!vid.webkitEnterFullscreen; }
+  function fsCan() { return !fsEl() && (pageFsOk() || videoFsOk()); }
+  function fsShow() {
+    clearTimeout(fsHide);
+    if (!fsCan()) { fsBtn.className = 'hide'; return; }
+    fsBtn.className = '';
+    fsHide = setTimeout(function () { fsBtn.className = 'hide'; }, 8000);
+  }
+  fsBtn.onclick = function (e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    clearTimeout(fsHide); fsBtn.className = 'hide';
+    if (pageFsOk()) { try { fsReq().call(document.documentElement); return; } catch (x) { /* sigue con el video */ } }
+    if (vid.webkitEnterFullscreen && cur === 'video') {
+      try { if (vid.paused) play(); vid.webkitEnterFullscreen(); } catch (x2) { tap.className = ''; } // si el video aún no carga: tocar y volver a intentar
+    }
+  };
+  document.addEventListener('touchstart', fsShow, false);
+  document.addEventListener('mousemove', fsShow, false);
+  document.addEventListener('keydown', function () { fsShow(); if (!fsBtn.className) { try { fsBtn.focus(); } catch (x) { /* nada */ } } }, false);
+  var fsEv = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
+  for (var fe = 0; fe < fsEv.length; fe++) document.addEventListener(fsEv[fe], fsShow, false);
+  vid.addEventListener('webkitendfullscreen', function () { if (cur === 'video') play(); }, false); // al volver de la pantalla completa del iPad, el video sigue
+
   // ---------- Vistas ----------
   var cur = '';
   function go(want) {
     cur = want;
     clearList(viewTimers); clearList(stageTimers);
     tap.className = 'hide';
+    if (want !== 'video') { try { if (vid.webkitDisplayingFullscreen && vid.webkitExitFullscreen) vid.webkitExitFullscreen(); } catch (e) { /* nada */ } } // empieza un juego: sale de la pantalla completa del video
+    if (!fsBtn.className && !fsCan()) fsBtn.className = 'hide';
+    if (fsFirst) { fsFirst = false; fsShow(); } // al abrir la página, el botón se ve unos segundos
     $('marks').className = want === 'video' || want === 'logo' ? 'hide' : ''; // sobre el video no van los logos
     if (want === 'video') { view.innerHTML = ''; vid.className = ''; play(); return; }
     vid.className = 'hide';
@@ -580,8 +621,9 @@
   }
   tick();
   setInterval(tick, 3000);
-  // Cada 6 horas se recarga sola (versión nueva y memoria limpia), salvo en medio de los juegos
-  setTimeout(function () { setInterval(function () { if (cur !== 'sala') location.reload(); }, 60000); }, 6 * 3600 * 1000);
+  // Cada 6 horas se recarga sola (versión nueva y memoria limpia), salvo en medio de los juegos o en pantalla completa
+  // (al recargar se saldría de la pantalla completa y habría que volver a apretar el botón)
+  setTimeout(function () { setInterval(function () { if (cur !== 'sala' && !fsEl() && !vid.webkitDisplayingFullscreen) location.reload(); }, 60000); }, 6 * 3600 * 1000);
   // Revisión: con ?diag=1, el navegador y los errores
   if (Q.diag) {
     var d = document.createElement('pre'); d.id = 'diag'; document.body.appendChild(d);
