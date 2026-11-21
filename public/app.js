@@ -801,7 +801,7 @@ views.jugar = async (sid) => {
     <div class="panel" style="margin-top:20px"><h2 id="title" style="margin:0"></h2><span class="muted small" id="meta"></span><div id="pats" style="margin-top:8px"></div></div></div>
     <div class="live" id="live"><div id="live-player"></div>
       <div class="live-bar"><button type="button" id="live-audio">🔇 Activar audio</button><button type="button" id="live-full">⛶ Pantalla completa</button><button type="button" id="live-sync" class="wide">↻ Poner al día el video</button></div></div>
-    ${window.krbKidsButton ? window.krbKidsButton() : '<a class="btn kids-entry" href="#/kids">🧸 <b>KRB Kids</b><span>Zona de niños</span></a>'}`;
+    <div id="kids-slot">${window.krbKidsButton ? window.krbKidsButton() : '<a class="btn kids-entry" href="#/kids">🧸 <b>KRB Kids</b><span>Zona de niños</span></a>'}</div>`;
   // Durante El Rosco: se guarda el cartón y quedan el video y, debajo, la pregunta en juego
   let roscoEs = null;
   let roscoId = null;
@@ -1058,8 +1058,17 @@ views.jugar = async (sid) => {
     } else if (key.startsWith('rosco')) phoneHowto('El Rosco', window.ROSCO_HOWTO);
     else phoneHowto(bingoName(st.name), BINGO_HOWTO);
   };
+  // Pedido de Cote (21 nov): el botón de KRB Kids no aparece durante los juegos, solo en los intermedios (sala abierta
+  // esperando, QR, show, karaoke, sorteo o votación del próximo juego, y cuando un juego ya terminó)
+  const syncKids = () => {
+    const s = st.stage || 'bingo';
+    const inGame = (s === 'bingo' && st.started && !st.winConfirmed) || s === 'sorteo' || (s === 'rueda' && !!st.roscoId && !st.stageDone) || (s === 'voto' && !st.stageDone);
+    const slot = $('#kids-slot');
+    if (slot) slot.hidden = inGame;
+  };
   const syncStage = () => {
     syncHowto();
+    syncKids();
     const kar = syncKar() | syncVote() | syncInsta() | syncGvote() | syncAct();
     const on = (st.stage === 'rueda' && !!st.roscoId) || kar;
     $('#bingo-top').hidden = on;
