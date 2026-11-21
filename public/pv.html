@@ -681,6 +681,28 @@
   }
   tick();
   setInterval(tick, 3000);
+  // Versión nueva publicada (pedido de Cote, 21 nov: que la pantalla se actualice sin tener que apretar nada): cada minuto
+  // se mira la marca de esta página en el servidor; si cambió, la pantalla se recarga sola. No lo hace en pantalla completa
+  // (se perdería), en medio de los juegos, con el servidor sin responder, ni con el video puesto donde el video necesita
+  // un toque para partir (iPad viejo: espera a que la pantalla pase a otra vista).
+  var myTag = null; var newVersion = false;
+  function checkVersion() {
+    var x = new XMLHttpRequest();
+    x.open('HEAD', 'pv.html?_=' + new Date().getTime(), true);
+    x.timeout = 15000;
+    x.onreadystatechange = function () {
+      if (x.readyState !== 4 || x.status !== 200) return;
+      var tag = x.getResponseHeader('ETag') || x.getResponseHeader('Last-Modified') || '';
+      if (!tag) return;
+      if (myTag === null) myTag = tag; else if (tag !== myTag) newVersion = true;
+    };
+    try { x.send(null); } catch (e) { /* nada */ }
+  }
+  checkVersion();
+  setInterval(function () {
+    if (newVersion && serverOk() && cur !== 'sala' && !fsEl() && !vid.webkitDisplayingFullscreen && (autoOk || cur !== 'video')) { location.reload(); return; }
+    if (!newVersion) checkVersion();
+  }, Q.vtest ? 5000 : 60000);
   // Cada 6 horas se recarga sola (versión nueva y memoria limpia), salvo en medio de los juegos o en pantalla completa
   // (al recargar se saldría de la pantalla completa y habría que volver a apretar el botón)
   // (y nunca donde el video necesita un toque para partir, como el iPad viejo: después de recargar volvería a pedirlo)
