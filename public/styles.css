@@ -2618,3 +2618,11 @@ body.kids[data-kz-level="8"] { background: linear-gradient(160deg, #fdffb6 0%, #
 .lm-web { margin: 18px 4px 8px; text-align: center; font-size: 1.05rem; font-weight: 700; line-height: 1.35; opacity: .92; }
 .lm-web a { color: #ffc400; text-decoration: none; }
 .lm-web a b { font-weight: 900; }
+
+/* GC del karaoke (pedido de Cote, 21 nov): el QR va a la izquierda, sobre el GC, más chico y en un recuadro cuadrado;
+   el texto no pasa del ancho del QR: «Escanea el código QR» y, abajo, «con tu celular» */
+.kg-qr { right: auto; left: 3vw; bottom: 26.5vh; box-sizing: border-box; width: 19vh; height: 19vh; align-content: center; gap: .5vh; padding: 0; border-radius: 2vh; }
+.kg-qr .qr { width: 13vh; height: 13vh; }
+.kg-qr b { display: grid; justify-items: center; width: 13vh; font-size: 1.2vh; line-height: 1.25; letter-spacing: 0; text-align: center; }
+.kg-qr b span { display: block; white-space: nowrap; }
+.next-up.kg-up { left: 50%; }

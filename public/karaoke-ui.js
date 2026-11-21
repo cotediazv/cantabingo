@@ -36,7 +36,7 @@
       if (!box) return;
       const [a, b] = st.list;
       const html = `
-        <div class="kg-qr">${qr(o.join || joinUrl())}<b>Escanea el código QR con tu celular</b></div>
+        <div class="kg-qr">${qr(o.join || joinUrl())}<b><span>Escanea el código QR</span><span>con tu celular</span></b></div>
         ${o.nextUp != null ? o.nextUp : nextUpHTML('kg-up')}
         <div class="kg-bar">
           <div class="kg-tag"><img class="kg-logo" src="krb-stage.svg" alt="KRB Stage"><div><small>${esc(st.name)}</small><b>🎤 Karaoke</b></div></div>
