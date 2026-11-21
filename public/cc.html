@@ -61,6 +61,9 @@
   .plan .count { float: right; width: 38%; text-align: center; color: #ffc400; font-weight: bold; }
   .plan .count b { display: block; font-size: 34px; color: #fff; margin: 4px 0; }
   .plan .count button { padding: 6px 14px; }
+  .tabs2 { overflow: hidden; border: 2px solid #5a54a0; border-radius: 14px; margin: 4px 0 10px; }
+  .tabs2 button { float: left; width: 50%; margin: 0; border: 0; border-radius: 0; padding: 14px 4px; background: #1d1838; color: #a9a3cf; }
+  .tabs2 button.on { background: #ffc400; color: #1a1a1a; }
   .sec { text-align: center; color: #a9a3cf; font-size: 13px; font-weight: bold; letter-spacing: 1px; margin: 14px 0 4px; }
   .game { float: left; width: 48%; margin: 4px 1%; border-radius: 16px; padding: 14px 6px; min-height: 76px; }
   .game { height: 96px; overflow: hidden; }
@@ -147,7 +150,10 @@ function nav(current, inGame) {
   var folded = inGame && !S.foldOpen;
   if (folded) return '<button type="button" class="big" data-a="unfold">▸ Ver otros juegos y actividades</button>';
   var o = '';
-  if (g) {
+  // Pestañas «Sortear juegos» / «Elegir libremente» (pedido de Cote, 21 nov), igual que en la plataforma completa
+  if (g) o += '<div class="tabs2">' + btn('🎲 Sortear juegos', 'drawMode', d('free', ''), g.free ? '' : 'on') + btn('👆 Elegir libremente', 'drawMode', d('free', '1'), g.free ? 'on' : '') + '</div>';
+  if (g && g.free) o += '<p class="center" style="color:#ffc400;font-weight:bold;margin:4px 0">👆 Toca el siguiente juego</p>';
+  if (g && !g.free) {
     var full = g.list.length >= g.total;
     var ready = !full && g.ready && (!g.last || g.ready.at > g.last.at);
     if (!g.list.length && !ready) {
@@ -162,7 +168,7 @@ function nav(current, inGame) {
   o += '<div class="sec">JUEGOS</div><div class="row">';
   for (var k = 0; k < GAMES.length; k++) {
     var gk = GAMES[k][0];
-    var played = g && g.played && g.played.indexOf(gk) >= 0;
+    var played = g && !g.free && g.played && g.played.indexOf(gk) >= 0;
     o += btn(GAMES[k][1] + '<br>' + h(gameName(gk)) + (played ? '<br><small style="color:#3fe08f">fuera del próximo sorteo</small>' : ''), 'game', d('g', gk), 'game' + (gk === current ? ' cur' : '') + (played ? ' played' : ''));
   }
   o += '</div><div class="sec">OTRAS ACTIVIDADES</div><div class="row">' +
@@ -469,6 +475,7 @@ A.manual = function () { manual = !manual; refresh(); };
 A.pickNum = function (el) { var s = sala(); if (s) act('POST', '/api/sessions/' + s.id + '/host/draw', { value: Number(el.getAttribute('data-v')) }); };
 A.tieBingo = function () { var s = sala(); if (s) act('POST', '/api/raffle/tiebreak', { sid: s.id }); };
 A.ronda = function () { var s = sala(); if (s) api('POST', '/api/sessions/' + s.id + '/host/restart', { patterns: [$('fig').value] }, function (err) { if (err) toast(err); else go('#/bingo'); }); };
+A.drawMode = function (el) { clearTimeout(goTimer); act('POST', '/api/gamedraw/mode', { free: !!el.getAttribute('data-free') }); };
 A.unfold = function () { S.foldOpen = true; refresh(); };
 A.total = function (el) { act('POST', '/api/gamedraw/total', { total: Number(el.getAttribute('data-n')) }); };
 A.undo = function () { clearTimeout(goTimer); act('POST', '/api/gamedraw/undo', null, '↩️ Sorteo de juegos: se volvió al paso anterior'); };
@@ -485,7 +492,7 @@ A.draw = function () {
 };
 A.game = function (el) {
   var k = el.getAttribute('data-g'); var g = S.draw;
-  var ready = g && g.list.length < g.total && g.ready && (!g.last || g.ready.at > g.last.at);
+  var ready = g && !g.free && g.list.length < g.total && g.ready && (!g.last || g.ready.at > g.last.at);
   if (ready) { api('POST', '/api/gamedraw/pick', { game: k }, function (err) { if (err) { toast(err); return; } toast('Siguiente juego: ' + gameName(k)); toGame(k); }); return; }
   toGame(k);
 };

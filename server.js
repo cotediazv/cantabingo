@@ -228,7 +228,7 @@ function closeSession(s) {
 // Se hace al cerrarse la sala (a mano o a las 8 horas) y al crear una nueva.
 function resetEvent() {
   db.people = {};
-  db.gameDraw = { played: [], last: null, rule2: true, total: (db.gameDraw || {}).total || 3, list: [], ready: null }; // sorteo del siguiente juego: parte de cero en cada sala
+  db.gameDraw = { played: [], last: null, rule2: true, total: (db.gameDraw || {}).total || 3, list: [], ready: null, free: !!(db.gameDraw || {}).free }; // sorteo del siguiente juego: parte de cero en cada sala
   db.raffle = { picked: [], roll: null };
   wheel.clear();
   vote.clear();
@@ -716,6 +716,14 @@ app.get('/api/gamedraw', (_req, res) => res.json({ ...db.gameDraw, undo: undefin
 // Cuántos juegos se sortean esa noche (pedido de Cote): juego inicial (bingo) + 1.º, 2.º, 3.º… sorteados
 db.gameDraw.list ||= [];
 db.gameDraw.total ||= 3;
+// Pestañas «Sortear juegos» / «Elegir libremente» (pedido de Cote, 21 nov): con «Elegir libremente» no hay sorteo;
+// el animador elige el siguiente juego tocándolo. La elección queda guardada para las noches siguientes.
+app.post('/api/gamedraw/mode', requireAdmin, (req, res) => {
+  db.gameDraw.free = !!(req.body || {}).free;
+  if (db.gameDraw.free) db.gameDraw.ready = null; // un sorteo a medio empezar se cancela
+  save();
+  res.json(db.gameDraw);
+});
 app.post('/api/gamedraw/total', requireAdmin, (req, res) => {
   const n = Math.round(Number((req.body || {}).total));
   if (!(n >= 1 && n <= 10)) return fail(res, 400, 'Elige entre 1 y 10 juegos');
