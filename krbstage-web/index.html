@@ -997,7 +997,9 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
 .int-panel{margin:0}
 .int-panel img{display:block;width:100%;height:auto;border-radius:12px;border:1px solid var(--linea);background:var(--noche)}
 .int-panel figcaption,.int-pantallas figcaption{margin-top:8px;font-family:var(--f-dato);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--tenue)}
-.int-pantallas{display:grid;grid-template-columns:minmax(0,3.16fr) minmax(0,1fr);gap:14px;margin-top:24px}
+.int-pantallas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:24px}
+.int-pantallas .int-cam{aspect-ratio:16/9}
+@media (max-width:700px){.int-pantallas{grid-template-columns:1fr}}
 .int-pantallas figure{margin:0;min-width:0}
 .int-cam{border-radius:12px;overflow:hidden;border:1px solid var(--linea);background:var(--noche)}
 .int-cam img{display:block;width:100%;height:100%;object-fit:cover}
@@ -1139,9 +1141,10 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
         </div>
         <figure class="int-panel"><img src="interactivo/panel-rosco.webp" alt="Panel del animador de El Rosco, con los botones paso a paso" loading="lazy" width="1280" height="900"><figcaption>Panel del animador · El Rosco</figcaption></figure>
       </div>
-      <div class="int-pantallas">
-        <figure class="int-gc"><div class="int-cam"><img src="interactivo/escena-bingo.webp" alt="El bingo sobre la cámara en la transmisión en vivo" loading="lazy" width="1280" height="720"></div><figcaption>Transmisión en vivo</figcaption></figure>
-        <figure class="int-vert"><div class="int-cam"><img src="interactivo/trivia-vertical.webp" alt="Ranking de la Trivia del Rosco en la pantalla vertical del local" loading="lazy" width="540" height="960"></div><figcaption>Pantalla vertical</figcaption></figure>
+      <div class="int-pantallas"><!-- (pedido de Cote) imágenes reales de nuestras transmisiones, no armadas -->
+        <figure><div class="int-cam"><img src="interactivo/vivo-rosco.webp" alt="El Rosco en la transmisión en vivo desde Mercado Kennedy" loading="lazy" width="1280" height="720"></div><figcaption>El Rosco en vivo · Mercado Kennedy</figcaption></figure>
+        <figure><div class="int-cam"><img src="interactivo/vivo-bingo.webp" alt="El Bingo de Frida en la transmisión en vivo" loading="lazy" width="1280" height="720"></div><figcaption>El Bingo en vivo · Frida Kahlo</figcaption></figure>
+        <figure><div class="int-cam"><img src="interactivo/vivo-karaoke.webp" alt="Karaoke en la transmisión en vivo desde Frida Kahlo" loading="lazy" width="1280" height="720"></div><figcaption>Karaoke en vivo · Frida Kahlo</figcaption></figure>
       </div>
     </div>
   </section>
