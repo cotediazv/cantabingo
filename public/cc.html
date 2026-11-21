@@ -368,7 +368,7 @@ views.ronda = function () {
 };
 
 views.sorteoctl = function () {
-  api('POST', '/api/raffle/open', null);
+  if (S.fx !== location.hash) { S.fx = location.hash; api('POST', '/api/raffle/open', null); } // solo al entrar (no al refrescar)
   var load = function () {
     api('GET', '/api/gamedraw', null, function (e0, g) { S.draw = g; });
     api('GET', '/api/raffle', null, function (e1, r) {
@@ -437,7 +437,7 @@ views.rosco = function () {
 
 function votoView(want) {
   var mode = want === 'festival' ? 'karaoke' : 'objeto';
-  if (S.votoStaged !== location.hash) { S.votoStaged = location.hash; api('POST', '/api/stage', { show: 'voto' }); } // solo al entrar (no al refrescar: no pisa un sorteo en pantalla)
+  if (S.fx !== location.hash) { S.fx = location.hash; api('POST', '/api/stage', { show: 'voto' }); } // solo al entrar (no al refrescar: no pisa un sorteo en pantalla)
   var checked = false;
   var load = function () {
     api('GET', '/api/current', null, function (e0, r0) { S.sala = r0 ? r0.sessions : null; });
@@ -489,7 +489,7 @@ views.festival = function () { votoView('festival'); };
 views.objeto = function () { votoView('objeto'); };
 
 views.karaoke = function () {
-  api('POST', '/api/stage', { show: 'karaoke' });
+  if (S.fx !== location.hash) { S.fx = location.hash; api('POST', '/api/stage', { show: 'karaoke' }); } // solo al entrar (no al refrescar)
   var load = function () {
     api('GET', '/api/gamedraw', null, function (e0, g) { S.draw = g; });
     api('GET', '/api/karaoke/cola', null, function (err, k) {
@@ -665,9 +665,9 @@ function route() {
   var parts = (location.hash || '#/').replace(/^#\/?/, '').split('/');
   var name = parts[0] || 'home';
   if (!token && name !== 'login') { go('#/login'); return; }
-  if (name !== 'bingo' && name !== 'rosco' && name !== 'festival' && name !== 'objeto' && name !== 'sorteoctl') S.foldOpen = false;
+  S.foldOpen = false; // como en la plataforma completa: al cambiar de vista, el menú vuelve a plegarse si hay un juego en curso
   S.navMode = null; // al entrar a otra vista, el menú parte con los tres botones
-  S.votoStaged = '';
+  S.fx = ''; // acciones que cada vista hace una sola vez al entrar
   var v = views[name] || views.home;
   refresh = function () { clearInterval(poll); clearInterval(tick); v(parts[1]); };
   window.scrollTo(0, 0);

@@ -162,7 +162,7 @@ const currentGame = (s) => {
     const w = Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0];
     return w && !w.winAccepted ? { game: 'rosco', wheel: w.id } : null;
   }
-  if (st === 'sorteo') return { game: 'rosco' };
+  if (st === 'sorteo') return (db.raffle || {}).mode === 'tie' ? { game: 'bingo' } : { game: 'rosco' }; // el desempate del bingo usa el mismo sorteo
   if (st === 'voto') { const v = db.vote || {}; return v.winner ? null : { game: v.mode === 'karaoke' ? 'festival' : 'objeto' }; }
   if (st === 'bingo') return bingoStarted(s) && !roundOver(s) ? { game: 'bingo' } : null;
   return null;
@@ -181,7 +181,6 @@ function publicState(s, full = false) {
     stage: db.stage || 'bingo', roscoId: db.stage === 'rueda' ? (Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).id || null : null,
     celebrateAt: s.celebrateAt || 0,
     voteRev: (db.vote || {}).rev || 0, // los celulares vuelven a leer la votación cuando cambia
-    gameSeq: (db.gameDraw || {}).seq || 0, // sube con cada juego que empieza (sorteado o elegido)
     voteGen: (db.vote || {}).gen || 0, // cambia con cada concurso nuevo (El Festival u objeto): los celulares muestran sus instrucciones
     gameVoteRev: (db.gameVote || {}).rev || 0, // votación del juego: cambia al abrir o cerrar cada vuelta (no con cada voto)
     // El juego en pantalla ya terminó (concurso con ganador o rosco con ganador aceptado): los celulares no muestran sus instrucciones
