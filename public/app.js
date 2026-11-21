@@ -463,7 +463,8 @@ views.juegos = async () => {
   app.innerHTML = `<p class="back"><a href="#/">← Inicio</a></p><div id="jg-cur"></div>${activitiesNav('', { lobby: true })}`;
   const venue = open.theme || 'frida';
   const paint = async () => {
-    const st = await api('GET', `/api/sessions/${open.id}/host/state`).catch(() => null);
+    const st = await api('GET', `/api/sessions/${open.id}/host/state`).catch((err) => (err.status === 404 ? 'cerrada' : null));
+    if (st === 'cerrada' && $('#jg-cur')) { location.hash = '#/'; return; } // la sala se cerró (a mano o sola a la hora de término)
     if (!st || !$('#jg-cur')) return;
     // Si hay un juego en curso, se vuelve a él con un botón grande y el menú queda plegado (para no sortear otro por error)
     const cur = st.current;
@@ -483,8 +484,8 @@ views.figura = async (pid) => {
   const p = await api('GET', `/api/projects/${pid}`);
   if (!p.sessionId) { location.hash = '#/'; return undefined; }
   const info = await api('GET', `/api/sessions/${p.sessionId}/host`);
-  if (info.roundOver) { location.hash = `#/ronda/${pid}`; return undefined; }
-  if (info.started) { location.hash = `#/anfitrion/${pid}`; return undefined; }
+  if (info.roundOver) { location.replace(`#/ronda/${pid}`); return undefined; }
+  if (info.started) { location.replace(`#/anfitrion/${pid}`); return undefined; }
   app.innerHTML = `<p class="back"><a href="#/juegos">← Juegos</a></p><h1>${esc(bingoName(p.name))}</h1>
     <form class="panel" id="f"><h2>¿Qué figura se juega?</h2>${patternPicker(info.patterns)}
       <button class="primary big">Empezar el bingo</button></form>`;
@@ -508,7 +509,7 @@ views.anfitrion = async (pid) => {
   if (!p.sessionId) return hostSetup(p);
   // El panel del bingo se abre cuando el bingo empezó (figura elegida); antes se elige la figura
   const info = await api('GET', `/api/sessions/${p.sessionId}/host`).catch(() => null);
-  if (info && !info.started && !info.roundOver) { location.hash = `#/figura/${pid}`; return undefined; }
+  if (info && !info.started && !info.roundOver) { location.replace(`#/figura/${pid}`); return undefined; } // sin quedar en el historial
   return hostConsole(p);
 };
 
@@ -950,7 +951,7 @@ views.jugar = async (sid) => {
   };
   const syncHowto = async () => {
     const s = st.stage || 'bingo';
-    const key = s === 'rueda' && st.roscoId ? `rosco:${st.roscoId}` : s === 'voto' ? `voto:${st.voteGen}` : s === 'bingo' && st.started && !st.winConfirmed ? `bingo:${st.round}` : null;
+    const key = st.stageDone ? null : s === 'rueda' && st.roscoId ? `rosco:${st.roscoId}` : s === 'voto' ? `voto:${st.voteGen}` : s === 'bingo' && st.started && !st.winConfirmed ? `bingo:${st.round}` : null;
     if (!key || howtoShown.has(key)) return;
     howtoShown.add(key); howtoKey = key;
     if (key.startsWith('voto')) {

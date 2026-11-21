@@ -173,6 +173,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       if (s.phase !== 'voting' || s.players.length) return 'El tipo de concurso se elige antes de anotar participantes';
       const m = b.mode === 'karaoke' ? 'karaoke' : 'objeto';
       s.mode = m; s.title = ''; s.max = m === 'karaoke' ? K_MAX : MAX_PLAYERS;
+      s.gen = (s.gen || 0) + 1; // otro tipo de concurso: los celulares muestran sus instrucciones
       return null;
     },
     // Cupos: cuántos participantes como máximo

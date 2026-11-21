@@ -89,7 +89,7 @@
   .grid75 .l { float: left; width: 100%; font-weight: bold; color: #ffc400; margin-top: 6px; }
   .grid75 button { float: left; width: 12.5%; padding: 8px 0; margin: 1px 0; border-radius: 8px; font-size: 15px; }
   .home { text-align: center; padding-top: 20px; }
-  .create { display: block; padding: 28px 10px; border-radius: 24px; font-size: 26px; font-weight: bold; color: #fff; text-decoration: none; background: #ff7a1a; margin: 18px 0 10px; }
+  .create { display: block; padding: 28px 10px; border-radius: 24px; font-size: 26px; font-weight: bold; color: #fff; text-decoration: none; background: #ff7a1a; margin: 18px 0 10px; text-align: center; }
   .create.open { background: #1f9d55; }
   .center { text-align: center; }
   #msg { position: fixed; left: 10px; right: 10px; bottom: 10px; background: #000; color: #ffc400; padding: 12px; border-radius: 12px; font-size: 16px; display: none; text-align: center; z-index: 9; }
@@ -437,7 +437,7 @@ views.rosco = function () {
 
 function votoView(want) {
   var mode = want === 'festival' ? 'karaoke' : 'objeto';
-  api('POST', '/api/stage', { show: 'voto' });
+  if (S.votoStaged !== location.hash) { S.votoStaged = location.hash; api('POST', '/api/stage', { show: 'voto' }); } // solo al entrar (no al refrescar: no pisa un sorteo en pantalla)
   var checked = false;
   var load = function () {
     api('GET', '/api/current', null, function (e0, r0) { S.sala = r0 ? r0.sessions : null; });
@@ -667,6 +667,7 @@ function route() {
   if (!token && name !== 'login') { go('#/login'); return; }
   if (name !== 'bingo' && name !== 'rosco' && name !== 'festival' && name !== 'objeto' && name !== 'sorteoctl') S.foldOpen = false;
   S.navMode = null; // al entrar a otra vista, el menú parte con los tres botones
+  S.votoStaged = '';
   var v = views[name] || views.home;
   refresh = function () { clearInterval(poll); clearInterval(tick); v(parts[1]); };
   window.scrollTo(0, 0);

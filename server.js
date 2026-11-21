@@ -184,6 +184,8 @@ function publicState(s, full = false) {
     gameSeq: (db.gameDraw || {}).seq || 0, // sube con cada juego que empieza (sorteado o elegido)
     voteGen: (db.vote || {}).gen || 0, // cambia con cada concurso nuevo (El Festival u objeto): los celulares muestran sus instrucciones
     gameVoteRev: (db.gameVote || {}).rev || 0, // votación del juego: cambia al abrir o cerrar cada vuelta (no con cada voto)
+    // El juego en pantalla ya terminó (concurso con ganador o rosco con ganador aceptado): los celulares no muestran sus instrucciones
+    stageDone: db.stage === 'voto' ? !!(db.vote || {}).winner : db.stage === 'rueda' ? !!(Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).winAccepted : false,
     winConfirmed: roundOver(s), winConfirmedAt: s.confirmedAt || 0, now: Date.now(),
     started: bingoStarted(s), // el bingo de esta ronda empezó (figura elegida o ya hay números); antes, la sala espera el primer juego
     patterns: s.patterns, drawn: s.drawn, results, finalists: s.finalists || null,
@@ -728,7 +730,7 @@ app.get('/api/consola', requireAdmin, async (_req, res) => {
     const c = await lightApi.carteleraOf(v).catch(() => null);
     return {
       venue: v,
-      main: isMain ? { name: main.name, stage: db.stage || 'bingo', stageName: STAGE_NAMES[db.stage || 'bingo'] || db.stage, players: Object.keys(main.players || {}).length } : null,
+      main: isMain ? { name: main.name, stage: db.stage || 'bingo', stageName: (db.stage || 'bingo') === 'bingo' && !bingoStarted(main) ? 'Sala abierta (QR para entrar)' : STAGE_NAMES[db.stage || 'bingo'] || db.stage, players: Object.keys(main.players || {}).length } : null,
       light: light.open ? { ...light, stageName: STAGE_NAMES[light.stage] || light.stage } : null,
       block: c ? { current: c.current, next: c.next, show: c.show } : null,
       karaoke: karaoke.nowOf(v),
@@ -763,15 +765,23 @@ app.post('/api/gamedraw/mode', requireAdmin, (req, res) => {
   db.gameDraw.free = how === 'manual';
   if (how !== 'sorteo') {
     db.gameDraw.ready = null; // un sorteo a medio empezar se cancela
-    if (db.stage === 'juego' && !roscoLock('bingo')) setStage('bingo'); // y las pantallas no quedan con el sorteo vacío
+    if (db.stage === 'juego' && !roscoLock('qr')) setStage('qr'); // y las pantallas quedan con el QR para entrar (no vuelve un bingo viejo)
   }
   if (how !== 'votacion') {
     if (['voting', 'result'].includes(db.gameVote.phase)) gvCancel(); // una votación a medio hacer se cancela
-    if (db.stage === 'votojuego' && !roscoLock('bingo')) setStage('bingo');
+    if (db.stage === 'votojuego' && !roscoLock('qr')) setStage('qr');
   }
   save();
   res.json(drawPub());
 });
+// El Festival o El objeto más extraño elegidos (a mano, por sorteo o por votación): si ya hay un concurso de ese tipo sin
+// ganador, sigue el mismo (con sus inscritos, cupos y título); si no, empieza uno nuevo
+const startContest = (game) => {
+  const mode = game === 'festival' ? 'karaoke' : 'objeto';
+  const v = db.vote || {};
+  if ((v.mode || 'objeto') === mode && !v.winner) return;
+  vote.start(mode);
+};
 // Cada pestaña permite solo su forma de elegir
 const notFree = (res) => {
   const h = howOf();
@@ -785,12 +795,7 @@ app.post('/api/gamedraw/free', requireAdmin, (req, res) => {
   const game = String((req.body || {}).game);
   if (!DRAW_GAMES.includes(game)) return fail(res, 400, 'Juego no válido');
   if (game === 'festival' || game === 'objeto') {
-    const mode = game === 'festival' ? 'karaoke' : 'objeto';
-    const v = db.vote || {};
-    // Un concurso del mismo tipo que sigue en curso (con inscritos o inscripciones abiertas y sin ganador) no se borra:
-    // tocarlo en el menú solo vuelve a su panel
-    const enCurso = (v.mode || 'objeto') === mode && !v.winner && ((v.players || []).length || v.signup);
-    if (!enCurso) vote.start(mode);
+    startContest(game); // un concurso del mismo tipo sin ganador no se borra: tocarlo en el menú solo vuelve a su panel
     setStage('voto'); // las pantallas y los celulares pasan de inmediato al juego elegido
   }
   db.gameDraw.seq = (db.gameDraw.seq || 0) + 1;
@@ -838,7 +843,7 @@ app.post('/api/gamedraw/pick', requireAdmin, (req, res) => {
   drawSnap(g);
   g.played = [game]; g.list.push(game); g.ready = null; g.seq = (g.seq || 0) + 1;
   g.last = { game, pool: [game], at: Date.now(), direct: true };
-  if (game === 'festival' || game === 'objeto') vote.start(game === 'festival' ? 'karaoke' : 'objeto');
+  if (game === 'festival' || game === 'objeto') startContest(game);
   save();
   setStage('juego');
   res.json(db.gameDraw);
@@ -854,7 +859,7 @@ app.post('/api/gamedraw', requireAdmin, (_req, res) => {
   g.list.push(game); // queda en su número (1.º, 2.º…) en la pantalla
   g.ready = null; g.seq = (g.seq || 0) + 1;
   g.last = { game, pool, at: Date.now() };
-  if (game === 'festival' || game === 'objeto') vote.start(game === 'festival' ? 'karaoke' : 'objeto'); // la votación queda lista con su título
+  if (game === 'festival' || game === 'objeto') startContest(game); // la votación queda lista con su título
   save();
   if (setStage('juego') === false) return fail(res, 409, 'El Rosco está en juego: el sorteo se verá cuando termine la partida');
   res.json(db.gameDraw);
@@ -902,7 +907,7 @@ function gvClose() {
       g.phase = 'result'; g.runoff = [a, b]; g.tie2 = c !== undefined && counts[b] === counts[c];
     } else {
       g.phase = 'done'; g.winner = a; g.tie = g.round === 2 && counts[a] === counts[b]; g.decidedAt = Date.now();
-      if (a === 'festival' || a === 'objeto') vote.start(a === 'festival' ? 'karaoke' : 'objeto'); // el concurso queda listo
+      if (a === 'festival' || a === 'objeto') startContest(a); // el concurso queda listo
     }
   }
   g.rev++;
@@ -966,7 +971,7 @@ app.post('/api/gamevote/vote', (req, res) => {
 app.post('/api/gamevote/reset', requireAdmin, (_req, res) => {
   gvCancel();
   save();
-  if (db.stage === 'votojuego' && !roscoLock('bingo')) setStage('bingo');
+  if (db.stage === 'votojuego' && !roscoLock('qr')) setStage('qr'); // las pantallas quedan con el QR para entrar
   res.json(gvPub());
 });
 
