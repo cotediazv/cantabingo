@@ -15,8 +15,9 @@ const API = process.env.IG_TEST_URL || 'https://graph.instagram.com'; // IG_TEST
 const FB = process.env.FB_TEST_URL || 'https://graph.facebook.com/v21.0';
 const CACHE_MS = 30 * 60e3;
 const REFRESH_MS = 30 * 24 * 3600e3;
-const PER_VENUE = 66; // hasta 66 videos por local: los 6 más populares van aparte y quedan ~60 más para mostrar variedad
-const PAGES = 5; // páginas de 100 publicaciones que se revisan como máximo
+const PER_VENUE = 200; // hasta 200 videos por lugar, del último hacia atrás (la página los muestra de a 6)
+const PAGES = 8; // páginas de 100 publicaciones que se revisan como máximo
+const CACHE_HIST_MS = 24 * 3600e3; // los lugares históricos ya no publican: se revisan una vez al día
 
 module.exports = function instagramWeb({ app, db, save, insta }) {
   db.webIg ||= {}; // local -> { token, at } (clave renovada)
@@ -109,7 +110,7 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
     const ini = HISTORICOS[v].desde ? new Date(`${HISTORICOS[v].desde}T00:00:00Z`).getTime() : 0;
     let url = `${FB}/${igIds[v]}/media?fields=${FIELDS}&limit=100&access_token=${encodeURIComponent(tk)}`;
     const data = [];
-    for (let n = 0; url && n < 15 && data.filter((m) => m.media_type === 'VIDEO').length < PER_VENUE; n++) {
+    for (let n = 0; url && n < 25 && data.filter((m) => m.media_type === 'VIDEO').length < PER_VENUE; n++) {
       const r = await getJson(url);
       const lote = r.data || [];
       lote.forEach((m) => { const f = new Date(m.timestamp).getTime(); if (f <= lim && f >= ini) data.push(m); });
@@ -121,7 +122,8 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
 
   async function videosOf(v) {
     const c = cache[v];
-    if (c && Date.now() - c.at < CACHE_MS) return c;
+    const ttl = HISTORICOS[v] ? CACHE_HIST_MS : CACHE_MS;
+    if (c && Date.now() - c.at < ttl) return c;
     const token = tokenOf(v);
     if (!token) return { videos: [], flyers: [], error: 'Falta la clave' };
     await refresh(v);
@@ -141,47 +143,9 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
       cache[v] = { videos, flyers, error: '', at: Date.now() };
     } else {
       // Si falla, se sigue mostrando lo último bueno y se reintenta en 2 minutos
-      cache[v] = { videos: (c || {}).videos || [], flyers: (c || {}).flyers || [], error: errores.join(' | '), at: Date.now() - CACHE_MS + 2 * 60e3 };
+      cache[v] = { videos: (c || {}).videos || [], flyers: (c || {}).flyers || [], error: errores.join(' | '), at: Date.now() - ttl + 2 * 60e3 };
     }
     return cache[v];
-  }
-
-  // Los 20 videos más populares de cada lugar (más «me gusta» y comentarios), revisando todas sus publicaciones.
-  // Se calculan aparte, en segundo plano y cada 6 horas, para no demorar la página.
-  const POP_MS = 6 * 3600e3, POP_PAGES = 20;
-  const pop = {}; // local -> { videos, at, cargando, error }
-  async function calcularPopulares(v) {
-    const token = tokenOf(v);
-    if (!token) throw new Error('Falta la clave');
-    const tk = (db.webIg[v] || {}).token || token;
-    if (!igIds[v]) await mediaFacebook(v, tk);
-    if (!igIds[v]) throw new Error('No se encontró la cuenta del lugar');
-    const h = HISTORICOS[v];
-    const ini = h && h.desde ? new Date(`${h.desde}T00:00:00Z`).getTime() : 0;
-    const fin = h && h.hasta ? new Date(`${h.hasta}T23:59:59Z`).getTime() : Infinity;
-    let url = `${FB}/${igIds[v]}/media?fields=${FIELDS},like_count,comments_count&limit=100&access_token=${encodeURIComponent(tk)}`;
-    const vids = [];
-    for (let n = 0; url && n < POP_PAGES; n++) {
-      const r = await getJson(url);
-      const lote = r.data || [];
-      lote.forEach((m) => { const f = new Date(m.timestamp).getTime(); if (m.media_type === 'VIDEO' && m.media_url && f >= ini && f <= fin) vids.push(m); });
-      if (!lote.length || new Date(lote[lote.length - 1].timestamp).getTime() < ini) break;
-      url = r.paging && r.paging.next;
-    }
-    const puntaje = (m) => (m.like_count || 0) + 2 * (m.comments_count || 0);
-    // los 20 más populares: la página elige 6 al azar entre ellos, para que se vea variado (pedido de Cote)
-    return vids.sort((a, b) => puntaje(b) - puntaje(a)).slice(0, 20)
-      .map((m) => ({ url: m.media_url, poster: m.thumbnail_url || '', link: m.permalink || '', date: m.timestamp || '', likes: m.like_count || 0, comentarios: m.comments_count || 0 }));
-  }
-  function populares(v) {
-    const p = (pop[v] ||= { videos: [], at: 0 });
-    if (!p.cargando && Date.now() - p.at > POP_MS) {
-      p.cargando = true;
-      calcularPopulares(v)
-        .then((videos) => { pop[v] = { videos, at: Date.now(), error: '' }; })
-        .catch((e) => { pop[v] = { videos: p.videos, at: Date.now() - POP_MS + 10 * 60e3, error: String(e.message || e).slice(0, 200) }; }); // reintenta en 10 minutos
-    }
-    return pop[v];
   }
 
   // Búsqueda por fechas en las publicaciones antiguas de un local (ej. la fiesta de los 80, noviembre de 2025)
@@ -275,7 +239,7 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
   });
 
   // Pública (solo lectura): la usa la página web
-  // ?ligero=1: solo lo que la página muestra primero (los 20 más populares y los 6 últimos videos de cada lugar);
+  // ?ligero=1: solo lo que la página muestra primero (los 6 últimos videos de cada lugar);
   // el resto se pide con /api/web/instagram/lugar?local=… cuando alguien pasa de página o abre la pantalla completa
   app.get('/api/web/instagram', async (req, res) => {
     res.set('Access-Control-Allow-Origin', '*');
@@ -284,8 +248,7 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
     await Promise.all(TODOS.map(async (v) => {
       const r = await videosOf(v);
       // «error» ayuda a revisar la conexión; nunca incluye la clave
-      const p = populares(v);
-      out[v] = { handle: handleDe(v), videos: ligero ? r.videos.slice(0, 6) : r.videos, total: r.videos.length, populares: p.videos || [], flyers: r.flyers || [], error: r.error || '', errorPopulares: p.error || '' };
+      out[v] = { handle: handleDe(v), videos: ligero ? r.videos.slice(0, 6) : r.videos, total: r.videos.length, flyers: r.flyers || [], error: r.error || '' };
     }));
     res.json(out);
   });
@@ -294,6 +257,6 @@ module.exports = function instagramWeb({ app, db, save, insta }) {
     const v = String(req.query.local || '');
     if (!TODOS.includes(v)) return res.status(400).json({ error: 'Lugar no válido' });
     const r = await videosOf(v);
-    res.json({ videos: r.videos, populares: populares(v).videos || [] });
+    res.json({ videos: r.videos });
   });
 };

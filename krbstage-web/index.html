@@ -857,11 +857,96 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
   .ptl-grilla button:hover{transform:scale(1.6);z-index:6;box-shadow:0 22px 50px -10px rgba(0,0,0,.9)}
   .esp-mont:hover .esp-media{transform:scale(1.3);z-index:6;box-shadow:0 22px 50px -10px rgba(0,0,0,.9)}
 }
+/* parlantito en la esquina (solo con mouse): aparece al poner el mouse encima del video */
+.ig-son{position:absolute;right:6px;bottom:6px;z-index:3;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;background:rgba(12,11,18,.8);border:1px solid rgba(243,238,230,.4);color:#fff;cursor:pointer;opacity:0;transition:opacity .2s,background .2s,color .2s}
+.ig-son svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.ptl-grilla button:hover .ig-son,.esp-mont:hover .ig-son{opacity:1}
+.ig-son:hover,.ig-son.on{background:var(--foco);border-color:var(--foco);color:var(--noche)}
+.esp-media .ig-son{right:8px;bottom:8px;width:30px;height:30px}.esp-media .ig-son svg{width:16px;height:16px}
 /* celular: crece con el toque */
 .ptl-grilla button.crece{transform:scale(1.8);z-index:6;box-shadow:0 22px 50px -10px rgba(0,0,0,.9)}
 .esp-mont.crece .esp-media{transform:scale(1.25);z-index:6;box-shadow:0 22px 50px -10px rgba(0,0,0,.9)}
 @media (max-width:900px){.esp-mont .esp-media{transform-origin:center center}.esp-mont:nth-child(3n+1) .esp-media{transform-origin:left center}.esp-mont:nth-child(3n) .esp-media{transform-origin:right center}}
 @media (max-width:560px){.esp-mont:nth-child(n) .esp-media{transform-origin:right center}.esp-mont:nth-child(odd) .esp-media{transform-origin:left center}}
+/* ===== Videos de Instagram (pedido de Cote): fecha arriba a la izquierda y flechas a los costados para pasar de a 6 ===== */
+.ptl-grilla{position:relative}
+.ig-fecha{position:absolute;left:4px;top:4px;z-index:2;font-family:var(--f-dato);font-size:10px;line-height:1.2;letter-spacing:.03em;color:var(--texto);background:rgba(12,11,18,.78);border-radius:4px;padding:2px 5px;pointer-events:none;white-space:nowrap}
+.ptl-grilla.con-pag{padding-left:42px!important;padding-right:42px!important}
+.ig-pag{position:absolute;top:50%;transform:translateY(-50%);z-index:7;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--c,var(--foco));background:rgba(12,11,18,.85);color:var(--c,var(--foco));font-size:22px;line-height:1;padding-bottom:3px;box-sizing:border-box;cursor:pointer;user-select:none;transition:background .2s,color .2s,opacity .2s}
+.ig-pag-ant{left:5px}.ig-pag-sig{right:5px}
+.ig-pag:hover,.ig-pag:focus-visible{background:var(--c,var(--foco));color:var(--noche);outline:none}
+.ig-pag.off{opacity:.25;cursor:default;pointer-events:none}
+@media (max-width:900px){.ptl-grilla.con-pag{padding-left:38px!important;padding-right:38px!important}.ig-pag{width:30px;height:30px;font-size:20px}}
+/* ===== Switch «Repeticiones Twitch» (pedido de Cote): a la izquierda de la fila «Pantallas del local» ===== */
+.rep-sw{display:inline-flex;align-items:center;gap:8px;margin-right:6px;padding:4px 12px 4px 4px;border:1px solid var(--linea);border-radius:999px;background:var(--tarima);cursor:pointer;user-select:none;white-space:nowrap;flex:none;color:var(--tenue);text-transform:none;letter-spacing:.04em}
+.rep-sw input{position:absolute;opacity:0;width:1px;height:1px}
+.rep-sw .sw-pista{width:40px;height:22px;flex:none}.rep-sw .sw-bola{width:16px;height:16px}
+.rep-sw input:checked+.sw-pista{background:#9146ff}
+.rep-sw input:checked+.sw-pista .sw-bola{transform:translateX(18px)}
+.rep-sw input:focus-visible+.sw-pista{outline:2px solid var(--foco);outline-offset:2px}
+.rep-sw input:checked~.rep-sw-txt{color:#c9a8ff}
+.rep-sw:hover{border-color:#9146ff;color:var(--texto)}
+@media (min-width:901px){#tulocal .ptl-col:not(:first-child) .rep-sw{display:none}} /* en el computador, uno solo: a la izquierda de toda la fila */
+/* ===== Reproductor sobre la página (pedido de Cote): de fondo la página de KRB Stage; flechas sin fin y cruz para volver ===== */
+.pc{background:rgba(12,11,18,.72);-webkit-backdrop-filter:blur(14px) saturate(1.15);backdrop-filter:blur(14px) saturate(1.15)}
+.pc-pista>*{background:transparent;box-sizing:border-box;padding:clamp(64px,9vh,88px) clamp(80px,9vw,140px)}
+.pc-x,.pc-flecha{position:absolute;z-index:3;display:grid;place-items:center;border-radius:50%;border:1px solid rgba(243,238,230,.35);background:rgba(12,11,18,.72);color:#fff;cursor:pointer;line-height:1;padding:0;transition:background .2s,color .2s,border-color .2s}
+.pc-x{top:max(16px,env(safe-area-inset-top));right:max(16px,env(safe-area-inset-right));width:50px;height:50px;font-size:22px}
+.pc-flecha{top:50%;transform:translateY(-50%);width:56px;height:56px;font-size:34px;padding-bottom:4px}
+.pc-ant{left:max(18px,env(safe-area-inset-left))}.pc-sig{right:max(18px,env(safe-area-inset-right))}
+.pc-x:hover,.pc-flecha:hover,.pc-x:focus-visible,.pc-flecha:focus-visible{background:var(--foco);border-color:var(--foco);color:var(--noche)}
+@media (max-width:700px){
+  .pc-pista>*{padding:max(72px,calc(env(safe-area-inset-top) + 64px)) 12px max(86px,calc(env(safe-area-inset-bottom) + 78px))}
+  .pc-x{width:46px;height:46px}
+  .pc-flecha{top:auto;bottom:max(18px,calc(env(safe-area-inset-bottom) + 12px));transform:none;width:50px;height:50px;font-size:30px}
+  .pc-ant{left:calc(50% - 62px)}.pc-sig{right:calc(50% - 62px)}
+}
+/* ===== ¿Quiénes somos? (pedido de Cote): mejor disposición de los textos, el logo más bonito y más interactivo ===== */
+.quienes{position:relative;overflow:hidden}
+.quienes .envoltura{display:block}
+.qs-cabeza{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:clamp(28px,5vw,72px);align-items:center}
+.qs-cabeza h2{font-size:clamp(46px,6.6vw,96px)}
+.qs-brilla{background:linear-gradient(100deg,var(--foco) 0%,var(--foco) 35%,#fff1cf 50%,var(--foco) 65%,#e6a93c 100%);background-size:260% 100%;background-position:100% 0;-webkit-background-clip:text;background-clip:text;color:transparent;animation:qsBrillo 7s ease-in-out infinite}
+@keyframes qsBrillo{0%,100%{background-position:100% 0}50%{background-position:0 0}}
+.qs-logo{justify-self:center;width:min(100%,330px);perspective:900px}
+.qs-emblema{all:unset;position:relative;display:grid;place-items:center;width:100%;aspect-ratio:1;border-radius:50%;cursor:pointer;transform-style:preserve-3d;transition:transform .2s ease-out;animation:qsFlota 6s ease-in-out infinite}
+.qs-emblema:focus-visible{outline:2px solid var(--foco);outline-offset:6px}
+.qs-aro{position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--kennedy),var(--frida),var(--tobalaba),var(--foco),var(--kennedy));-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3px));mask:radial-gradient(farthest-side,transparent calc(100% - 4px),#000 calc(100% - 3px));animation:qsGira 14s linear infinite}
+.qs-halo{position:absolute;inset:10%;border-radius:50%;background:radial-gradient(circle,rgba(244,191,90,.25),rgba(224,51,143,.12) 45%,transparent 70%);animation:qsLatido 3.4s ease-in-out infinite}
+.qs-emblema img{position:relative;width:54%;height:auto;transform:translateZ(46px);filter:drop-shadow(0 10px 26px rgba(0,0,0,.7))}
+.qs-emblema.pulso .qs-aro{animation-duration:1.2s}
+.qs-emblema.pulso .qs-halo{animation:qsDestello .9s ease-out}
+@keyframes qsGira{to{transform:rotate(1turn)}}
+@keyframes qsFlota{0%,100%{translate:0 0}50%{translate:0 -10px}}
+@keyframes qsLatido{0%,100%{opacity:.55;scale:1}50%{opacity:1;scale:1.08}}
+@keyframes qsDestello{0%{opacity:1;scale:1}40%{opacity:1;scale:1.35}100%{opacity:.55;scale:1}}
+.quienes .qs-cree{margin:clamp(40px,6vw,72px) 0 0;max-width:30em;font-size:clamp(24px,2.7vw,38px);line-height:1.35;font-weight:500;color:var(--texto);text-wrap:pretty}
+.qs-cree .pq{color:rgba(243,238,230,.2);transition:color .4s ease}
+.qs-cree .pq.on{color:var(--texto)}
+.qs-cree .pq.oro.on{color:var(--foco)}
+.qs-momentos{margin-top:clamp(40px,6vw,64px)}
+.qs-momentos h3{margin:0 0 16px;font-family:var(--f-dato);font-weight:400;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:var(--foco)}
+.qs-momentos ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.qs-momentos li{position:relative;overflow:hidden;display:grid;gap:16px;align-content:start;border:1px solid var(--linea);border-radius:14px;background:var(--tarima);padding:22px 20px 26px;transition:transform .3s ease,border-color .3s ease,box-shadow .3s ease}
+.qs-momentos li::before{content:"";position:absolute;right:-40px;bottom:-60px;width:170px;height:170px;border-radius:50%;background:radial-gradient(circle,var(--c) 0%,transparent 65%);opacity:.16;transition:opacity .3s ease,transform .3s ease}
+.qs-momentos li:hover{transform:translateY(-6px);border-color:var(--c);box-shadow:0 18px 40px -20px var(--c)}
+.qs-momentos li:hover::before{opacity:.38;transform:scale(1.2)}
+.qs-momentos svg{width:40px;height:40px;fill:none;stroke:var(--c);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;transition:transform .3s ease}
+.qs-momentos li:hover svg{transform:rotate(-8deg) scale(1.14)}
+.qs-momentos span{position:relative;font-size:18px;line-height:1.4;color:var(--texto)}
+.qs-anima .qs-momentos li{opacity:0;translate:0 26px}
+.qs-anima .qs-momentos li.ok{animation:qsSube .7s ease forwards;animation-delay:var(--d,0s)}
+@keyframes qsSube{to{opacity:1;translate:0 0}}
+.quienes .qs-equipo{margin:clamp(40px,6vw,64px) 0 0;max-width:46ch;padding-left:20px;border-left:3px solid var(--foco);font-size:clamp(20px,2.2vw,26px)!important;line-height:1.45}
+@media (max-width:900px){
+  .qs-cabeza{grid-template-columns:1fr}
+  .qs-logo{width:min(56%,210px);justify-self:center}
+  .qs-momentos ul{grid-template-columns:1fr 1fr;gap:10px}
+  .qs-momentos li{padding:16px 14px 18px;gap:12px}
+  .qs-momentos svg{width:32px;height:32px}
+  .qs-momentos span{font-size:15px}
+}
+@media (prefers-reduced-motion:reduce){.qs-anima .qs-momentos li{opacity:1;translate:none}}
 /* ===== KRB Interactivo (pedido de Cote): juegos interactivos para mucha gente, mezclados con la animación en vivo ===== */
 .interactivo{position:relative;overflow:hidden;border-block:1px solid var(--linea);background:
   radial-gradient(circle at 8% 12%,color-mix(in srgb,var(--kennedy) 16%,transparent),transparent 42%),
@@ -928,8 +1013,8 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
     <a class="marca" href="#inicio" aria-label="KRB Stage, inicio"><img src="krb-stage.svg" alt="KRB Stage" width="64" height="40"></a>
     <button class="hamb" id="hamb" aria-expanded="false" aria-controls="menu">Menú</button>
     <ul class="menu" id="menu">
-      <li><a href="#quienes">Quiénes somos</a></li>
       <li><a href="#tulocal">Producciones actuales</a></li>
+      <li><a href="#quienes">Quiénes somos</a></li>
       <li><a href="#interactivo">KRB Interactivo</a></li>
       <li><a href="#hacemos">Qué hacemos</a></li>
       <li><a href="#medida">A la medida</a></li>
@@ -941,7 +1026,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
 </header>
 
 <canvas id="red-fondo" aria-hidden="true"></canvas>
-<div class="pc" id="pc" hidden role="dialog" aria-label="Pantalla completa"><div class="pc-pista" id="pc-pista"></div></div>
+<div class="pc" id="pc" hidden role="dialog" aria-label="Videos"><div class="pc-pista" id="pc-pista"></div><button type="button" class="pc-x" id="pc-x" aria-label="Cerrar y volver a la página">✕</button><button type="button" class="pc-flecha pc-ant" id="pc-ant" aria-label="Anterior">‹</button><button type="button" class="pc-flecha pc-sig" id="pc-sig" aria-label="Siguiente">›</button></div>
 <main>
   <section class="portada" id="inicio">
     <video id="video-portada" class="video-portada" muted loop playsinline preload="none" poster="portada.jpg" aria-hidden="true"></video>
@@ -968,21 +1053,6 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
     </div>
   </section>
 
-
-  <section class="banda quienes" id="quienes">
-    <div class="envoltura">
-      <div>
-        <div class="etiqueta">¿Quiénes somos?</div>
-        <h2>Somos una productora de <span style="color:var(--foco)">emociones en vivo</span>.</h2>
-      </div>
-      <div>
-        <p>Creemos que una noche cualquiera puede convertirse en un recuerdo para siempre. Que una canción puede unir a dos desconocidos, a un abuelo con su nieto, a una mesa con todo el salón.</p>
-        <p>Por eso creamos momentos: la piel de gallina cuando suena la banda tributo, la sorpresa de ver en escena al artista que admiras, las risas compartidas con el humor y la emoción de jugar todos juntos.</p>
-        <p class="esmero">KRB Stage se conforma de un equipo especialista, multidisciplinario, capaz de conformar varios grupos simultáneos para las más distintas actividades y necesidades.</p>
-        <div class="ficha ficha-logo"><img src="krb-stage.svg" alt="KRB Stage" width="160" height="100"></div>
-      </div>
-    </div>
-  </section>
 
   <section class="banda tulocal" id="tulocal">
     <div class="envoltura">
@@ -1012,6 +1082,34 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
     </div>
   </section>
 
+
+  <section class="banda quienes" id="quienes">
+    <div class="envoltura">
+      <div class="qs-cabeza">
+        <div class="qs-tit">
+          <div class="etiqueta">¿Quiénes somos?</div>
+          <h2>Somos una productora de <span class="qs-brilla">emociones en vivo</span>.</h2>
+        </div>
+        <div class="qs-logo">
+          <button type="button" class="qs-emblema" aria-label="KRB Stage">
+            <span class="qs-aro" aria-hidden="true"></span><span class="qs-halo" aria-hidden="true"></span>
+            <img src="krb-stage.svg" alt="KRB Stage" width="160" height="100">
+          </button>
+        </div>
+      </div>
+      <p class="qs-cree">Creemos que una noche cualquiera puede convertirse en un recuerdo para siempre. Que una canción puede unir a dos desconocidos, a un abuelo con su nieto, a una mesa con todo el salón.</p>
+      <div class="qs-momentos">
+        <h3>Por eso creamos momentos:</h3>
+        <ul>
+          <li style="--c:var(--kennedy)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m18 3 3 3-7 7"/><path d="M14 10a3 3 0 0 0-4.2 0l-.9.9a3.4 3.4 0 0 1-2.2 1 3.3 3.3 0 0 0-2.1 5.7l.8.8a3.3 3.3 0 0 0 5.7-2.1 3.4 3.4 0 0 1 1-2.2l.9-.9A3 3 0 0 0 14 10Z"/><circle cx="10" cy="14" r="1"/></svg><span>La piel de gallina cuando suena la banda tributo</span></li>
+          <li style="--c:var(--frida)"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9Z"/></svg><span>La sorpresa de ver en escena al artista que admiras</span></li>
+          <li style="--c:var(--tobalaba)"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 14a4.5 4.5 0 0 0 8 0"/><path d="M9 9.5h.01M15 9.5h.01"/></svg><span>Las risas compartidas con el humor</span></li>
+          <li style="--c:var(--foco)"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 11v3M5.5 12.5h3"/><path d="M15.5 11.5h.01M17.5 13.5h.01"/></svg><span>La emoción de jugar todos juntos</span></li>
+        </ul>
+      </div>
+      <p class="esmero qs-equipo">KRB Stage se conforma de un equipo especialista, multidisciplinario, capaz de conformar varios grupos simultáneos para las más distintas actividades y necesidades.</p>
+    </div>
+  </section>
 
   <section class="banda interactivo" id="interactivo">
     <div class="envoltura">
@@ -1319,6 +1417,19 @@ let creciendo=null;
 function achicar(){if(!creciendo)return;const v=creciendo.querySelector('video');creciendo.classList.remove('crece');if(v)v.muted=true;creciendo=null}
 function crecer(el,v){if(creciendo&&creciendo!==el)achicar();creciendo=el;el.classList.add('crece');if(v)sonar(v)}
 addEventListener('pointerdown',e=>{if(creciendo&&!creciendo.contains(e.target))achicar()},true);
+// Parlantito en la esquina del video (pedido de Cote): en el computador aparece al poner el mouse encima; al apretarlo
+// el video suena (ese clic es el que el navegador pide para dejar sonar) y otro clic lo silencia
+const ICO_MUDO='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z" fill="currentColor"/><path d="m23 9-6 6M17 9l6 6"/></svg>';
+const ICO_SUENA='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H2v6h4l5 4V5z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></svg>';
+function ponerParlante(caja,v){
+  if(!conMouse||!v||caja.querySelector('.ig-son'))return;
+  const b=document.createElement('span');b.className='ig-son';b.setAttribute('role','button');
+  const pinta=()=>{const on=!v.muted&&!v.paused;b.classList.toggle('on',on);b.innerHTML=on?ICO_SUENA:ICO_MUDO;b.setAttribute('aria-label',on?'Silenciar':'Activar sonido');b.title=on?'Silenciar':'Activar sonido'};
+  ['volumechange','play','pause','emptied'].forEach(t=>v.addEventListener(t,pinta));pinta();
+  b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();
+    if(v.muted||v.paused)sonar(v);else v.muted=true;pinta()});
+  caja.appendChild(b);
+}
 function sonarAlPasar(caja,v){
   if(!conMouse)return;
   caja.addEventListener('mouseenter',()=>{videoEncima=v;
@@ -1328,8 +1439,8 @@ function sonarAlPasar(caja,v){
 }
 // el primer clic, toque o tecla en cualquier parte deja la página con sonido
 let sonidoActivo=false;
-function activarSonido(){if(sonidoActivo)return;sonidoActivo=true;
-  if(videoEncima)sonar(videoEncima);
+function activarSonido(e){if(sonidoActivo)return;sonidoActivo=true;
+  if(videoEncima&&!(e&&e.target&&e.target.closest&&e.target.closest('.ig-son')))sonar(videoEncima); // el parlantito decide solo
   // las transmisiones de Twitch no: suenan de a una, con su botón «Escuchar»
   ['pointerdown','keydown','touchend'].forEach(t=>removeEventListener(t,activarSonido,true))}
 ['pointerdown','keydown','touchend'].forEach(t=>addEventListener(t,activarSonido,true));
@@ -1365,27 +1476,33 @@ pintarCarteleras();setInterval(()=>{['kennedy','tobalaba','frida'].forEach(v=>de
 // Ya activo, tocar un video lo abre en pantalla completa. Las páginas se cambian con las flechas.
 let bloqueActivo=null;
 function activarBloque(caja){if(bloqueActivo&&bloqueActivo!==caja)bloqueActivo._apagar();bloqueActivo=caja;caja._prender()}
+// fecha corta del video (hora de Chile): «15 nov» este año, «3 mar 2024» los anteriores
+const MESES_IG=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function fechaIG(iso){const d=new Date(iso);if(!iso||isNaN(d))return '';
+  const p=new Intl.DateTimeFormat('es-CL',{timeZone:'America/Santiago',day:'numeric',month:'numeric',year:'numeric'}).formatToParts(d),g=t=>+((p.find(x=>x.type===t)||{}).value||0);
+  const a=g('year'),hoy=+new Intl.DateTimeFormat('es-CL',{timeZone:'America/Santiago',year:'numeric'}).format(new Date());
+  return `${g('day')} ${MESES_IG[g('month')-1]}${a&&a!==hoy?' '+a:''}`}
 function pintarColumnas(){
   document.querySelectorAll('.ptl-col').forEach(col=>{
     const dl=(igDatos||{})[col.dataset.local]||{};
-    // 6 elegidos al azar entre los 20 más populares (cambian cada vez que se abre la página)
-    const populares=(dl.populares||[]).filter(x=>x&&x.url).map(x=>[Math.random(),x]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]).slice(0,6);
-    const enPop=new Set(populares.map(x=>x.link||x.url));
+    // (pedido de Cote) todos los videos de la cuenta, del último hacia atrás, de a 6 por página (sin «Más populares»)
     let paginas=[];
-    const armarPaginas=()=>{const resto=(dl.videos||[]).filter(x=>x&&x.url&&!enPop.has(x.link||x.url)).slice(0,60);
-      paginas=[];if(populares.length)paginas.push({vids:populares});
-      for(let i=0;i<resto.length;i+=6)paginas.push({vids:resto.slice(i,i+6)});
+    const armarPaginas=()=>{const vids=(dl.videos||[]).filter(x=>x&&x.url);
+      paginas=[];for(let i=0;i<vids.length;i+=6)paginas.push({vids:vids.slice(i,i+6)});
       // mientras no llega la lista completa, el total se estima con lo que informa la Sala
-      const total=dl._completo?paginas.length:Math.max(paginas.length,(populares.length?1:0)+Math.ceil(Math.max(0,Math.min(60,(dl.total||0)-populares.length))/6));
-      paginas.forEach((p,i)=>p.nombre=i===0&&populares.length?'Más populares':`${i+1} de ${total}`);
-      paginas.total=total};
+      paginas.total=dl._completo?paginas.length:Math.max(paginas.length,Math.ceil((dl.total||vids.length)/6))};
     armarPaginas();
     if(!paginas.length)return;
     // la lista completa de videos del lugar se pide recién cuando alguien pasa de página o abre la pantalla completa
     const completar=async()=>{if(dl._completo)return;try{const j=await fetch('https://cantabingo.onrender.com/api/web/instagram/lugar?local='+col.dataset.local,{signal:AbortSignal.timeout(15000)}).then(r=>r.json());if(Array.isArray(j.videos)&&j.videos.length){dl.videos=j.videos;dl._completo=true;armarPaginas()}}catch(_){}};
     const caja=col.querySelector('.ptl-grilla');caja.hidden=false;
-    let nav=col.querySelector('.ptl-pag');if(nav)nav.remove();nav=null;
-    if(paginas.total>1){nav=document.createElement('div');nav.className='ptl-pag';nav.innerHTML='<button class="ptl-pag-ant" aria-label="Página anterior">‹</button><span></span><button class="ptl-pag-sig" aria-label="Página siguiente">›</button>';caja.after(nav)}
+    col.querySelectorAll('.ptl-pag').forEach(x=>x.remove());
+    // flechas a los costados de los 6 videos (pedido de Cote): › los 6 anteriores, ‹ los más nuevos
+    const fl=[['ant','‹','Videos más nuevos',-1],['sig','›','Videos anteriores',1]].map(([k,t,l,d])=>{const b=document.createElement('span');
+      b.className='ig-pag ig-pag-'+k;b.textContent=t;b.setAttribute('role','button');b.tabIndex=0;b.setAttribute('aria-label',l);b.title=l;
+      const ve=e=>{e.preventDefault();e.stopPropagation();if(!b.classList.contains('off'))ir(d)};b.addEventListener('click',ve);b.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')ve(e)});
+      b.addEventListener('pointerdown',e=>e.stopPropagation());return b});
+    caja.classList.toggle('con-pag',paginas.total>1);
     let pag=0,vs=[],activo=false;
     // prendido: los 6 se mueven (sin sonido; con el mouse encima, suena ese). Apagado: quedan quietos en su imagen
     caja._prender=()=>{activo=true;caja.classList.add('activo');if(quieto)return;vs.forEach(v=>{if(!v.getAttribute('src'))v.src=v.dataset.src;v.play().catch(()=>{})})};
@@ -1393,9 +1510,9 @@ function pintarColumnas(){
     function pintar(){
       vs.forEach(v=>{v.pause();v.removeAttribute('src');v.load()});
       const vids=paginas[pag].vids;
-      caja.innerHTML=vids.map((x,i)=>`<button data-i="${i}" aria-label="Ver video"><video muted playsinline preload="none" ${x.poster?(caja._cerca?`poster="${esc(x.poster)}"`:`data-poster="${esc(x.poster)}"`):''} data-src="${esc(x.url)}"></video></button>`).join('')+'<span class="ptl-vacio"></span>'.repeat(6-vids.length); // la página guarda el mismo alto
+      caja.innerHTML=vids.map((x,i)=>`<button data-i="${i}" aria-label="Ver video${x.date?' del '+fechaIG(x.date):''}"><video muted playsinline preload="none" ${x.poster?(caja._cerca?`poster="${esc(x.poster)}"`:`data-poster="${esc(x.poster)}"`):''} data-src="${esc(x.url)}"></video>${x.date?`<span class="ig-fecha">${fechaIG(x.date)}</span>`:''}</button>`).join('')+'<span class="ptl-vacio"></span>'.repeat(6-vids.length); // la página guarda el mismo alto
       vs=[...caja.querySelectorAll('video')];
-      caja.querySelectorAll('button').forEach(b=>{sonarAlPasar(b,b.querySelector('video'));b.onclick=e=>{
+      caja.querySelectorAll('button').forEach(b=>{sonarAlPasar(b,b.querySelector('video'));ponerParlante(b,b.querySelector('video'));b.onclick=e=>{
         // celular: el primer toque en un video lo agranda y suena (y activa el bloque); el segundo, pantalla completa
         if(!conMouse&&!b.classList.contains('crece')){if(!activo)activarBloque(caja);crecer(b,b.querySelector('video'));return}
         if(!activo){activarBloque(caja);return}
@@ -1403,12 +1520,11 @@ function pintarColumnas(){
         achicar();caja._apagar();const i=+b.dataset.i;
         completar().then(()=>{const todos=paginas.flatMap(p=>p.vids),antes=paginas.slice(0,pag).reduce((n,p)=>n+p.vids.length,0);
           abrirPC(todos.map(x=>({video:x.url,poster:x.poster})),antes+i,()=>activarBloque(caja))})}});
-      if(nav)nav.querySelector('span').textContent=paginas[pag].nombre;
+      if(paginas.total>1){fl.forEach(b=>caja.appendChild(b));fl[0].classList.toggle('off',pag<=0);fl[1].classList.toggle('off',pag>=paginas.total-1)}
       if(activo)caja._prender();
     }
     const portadas=i=>Promise.all(paginas[i].vids.map(x=>x.poster?new Promise(ok=>{const im=new Image();im.onload=im.onerror=ok;im.src=x.poster;setTimeout(ok,4000)}):0));
-    const ir=async d=>{await completar();const n=(pag+d+paginas.length)%paginas.length;portadas(n).then(()=>{pag=n;pintar();portadas((n+1)%paginas.length)})};
-    if(nav){nav.querySelector('.ptl-pag-ant').onclick=()=>ir(-1);nav.querySelector('.ptl-pag-sig').onclick=()=>ir(1)}
+    const ir=async d=>{await completar();const n=pag+d;if(n<0||n>=paginas.length)return;portadas(n).then(()=>{pag=n;pintar();if(n+1<paginas.length)portadas(n+1)})};
     if(conMouse){col.onmouseenter=()=>activarBloque(caja);col.onmouseleave=()=>{if(bloqueActivo===caja){caja._apagar();bloqueActivo=null}}}
     pintar();
     // las fotos de los videos se bajan recién cuando el bloque se acerca a la pantalla (la página abre más rápido)
@@ -1421,14 +1537,17 @@ function pintarColumnas(){
 const pc=$('#pc'),pcPista=$('#pc-pista');let pcItems=[],pcI=0,pcSonido=true,pcAlCerrar=null;
 function pcMedio(x){if(x.img){const im=document.createElement('img');im.src=x.img;im.alt='';im.draggable=false;return im}
   if(x.yt||x.tw){const d=document.createElement('div');d.className='pc-emb';if(x.thumb)d.style.backgroundImage=`url("${x.thumb}")`;d._x=x;return d}
-  const v=document.createElement('video');v.playsInline=true;v.preload='auto';if(x.poster)v.poster=x.poster;v.dataset.src=x.video;return v}
+  const v=document.createElement('video');v.playsInline=true;v.loop=true;v.preload='auto';if(x.poster)v.poster=x.poster;v.dataset.src=x.video;return v}
 function pcMostrar(i,animar){
-  pcI=Math.max(0,Math.min(pcItems.length-1,i));
-  pcPista.style.transition=animar?'transform .3s ease':'none';
+  const n=Math.max(1,pcItems.length),antes=pcI;pcI=((i%n)+n)%n;
+  const vuelta=n>2&&Math.abs(pcI-antes)>1; // del último al primero (o al revés): sin recorrer todos
+  pcPista.style.transition=animar&&!vuelta?'transform .3s ease':'none';
+  pc.querySelectorAll('.pc-flecha').forEach(b=>b.hidden=n<2);
   pcPista.style.transform=`translateX(${-pcI*100}%)`;
   [...pcPista.children].forEach((el,j)=>{if(el.classList.contains('pc-emb')){j===pcI?embEncender(el):embApagar(el);return}
     if(el.tagName!=='VIDEO')return;
-    if(Math.abs(j-pcI)<=1){if(!el.getAttribute('src'))el.src=el.dataset.src}else if(el.getAttribute('src')){el.pause();el.removeAttribute('src');el.load()}
+    const dist=Math.min(Math.abs(j-pcI),n-Math.abs(j-pcI));
+    if(dist<=1){if(!el.getAttribute('src'))el.src=el.dataset.src}else if(el.getAttribute('src')){el.pause();el.removeAttribute('src');el.load()}
     if(j===pcI){el.muted=!pcSonido;el.volume=1;el.play().then(pcAviso,e=>{if(e&&e.name==='NotAllowedError'){el.muted=true;pcSonido=false;el.play().catch(()=>{})}pcAviso()})}else el.pause()});
   pcAviso();
 }
@@ -1467,6 +1586,15 @@ function cerrarPC(desdeAtras){
   if(pcAlCerrar)pcAlCerrar();
 }
 addEventListener('popstate',()=>cerrarPC(true));
+// ¿el toque cayó fuera de la imagen del video? (el video se ve entero dentro de su recuadro)
+function pcFuera(el,x,y){const r=el.getBoundingClientRect(),cs=getComputedStyle(el);
+  const pl=parseFloat(cs.paddingLeft)||0,pr=parseFloat(cs.paddingRight)||0,pt=parseFloat(cs.paddingTop)||0,pb=parseFloat(cs.paddingBottom)||0;
+  const cw=r.width-pl-pr,ch=r.height-pt-pb,iw=el.videoWidth||el.naturalWidth,ih=el.videoHeight||el.naturalHeight;
+  let w=cw,h=ch;if(iw&&ih){const k=Math.min(cw/iw,ch/ih);w=iw*k;h=ih*k}
+  const l=r.left+pl+(cw-w)/2,t=r.top+pt+(ch-h)/2;return x<l||x>l+w||y<t||y>t+h}
+// la cruz y las flechas (no deben iniciar el arrastre del reproductor)
+[['pc-x',()=>cerrarPC()],['pc-ant',()=>pcMostrar(pcI-1,true)],['pc-sig',()=>pcMostrar(pcI+1,true)]].forEach(([id,f])=>{const b=document.getElementById(id);
+  b.addEventListener('pointerdown',e=>e.stopPropagation());b.addEventListener('click',e=>{e.stopPropagation();f()})});
 // arrastre con el dedo o el mouse: la imagen sigue al dedo
 let pcX=null,pcY=null,pcT=0,pcMovio=false;
 pc.addEventListener('pointerdown',e=>{try{pc.setPointerCapture(e.pointerId)}catch(_){}pcX=e.clientX;pcY=e.clientY;pcT=Date.now();pcMovio=false;pcPista.style.transition='none'});
@@ -1479,7 +1607,7 @@ const pcSoltar=e=>{if(pcX==null)return;const dx=e.clientX-pcX,dy=e.clientY-pcY;p
   if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)){pcMostrar(pcI+(dx<0?1:-1),true);return}
   pcMostrar(pcI,true);
   // un toque sin arrastrar: activa el sonido si estaba en silencio, o pausa/sigue el video
-  if(!pcMovio&&Date.now()-pcT<400){const el=pcPista.children[pcI];if(el&&el._toggle){el._toggle();return}if(el&&el.tagName==='VIDEO'){if(el.muted){el.muted=false;el.volume=1;pcSonido=true;el.play().catch(()=>{})}else el.paused?el.play().catch(()=>{}):el.pause();pcAviso()}}};
+  if(!pcMovio&&Date.now()-pcT<400){const el=pcPista.children[pcI];if(el&&!el._toggle&&pcFuera(el,e.clientX,e.clientY)){cerrarPC();return}if(el&&el._toggle){el._toggle();return}if(el&&el.tagName==='VIDEO'){if(el.muted){el.muted=false;el.volume=1;pcSonido=true;el.play().catch(()=>{})}else el.paused?el.play().catch(()=>{}):el.pause();pcAviso()}}};
 pc.addEventListener('pointerup',pcSoltar);pc.addEventListener('pointercancel',pcSoltar);
 let pcRueda=0;pc.addEventListener('wheel',e=>{e.preventDefault();const d=Math.abs(e.deltaX)>Math.abs(e.deltaY)?e.deltaX:e.deltaY;const t=Date.now();if(t-pcRueda<450||Math.abs(d)<20)return;pcRueda=t;pcMostrar(pcI+(d>0?1:-1),true)},{passive:false});
 addEventListener('keydown',e=>{if(pc.hidden)return;if(e.key==='Escape')cerrarPC();if(e.key==='ArrowRight')pcMostrar(pcI+1,true);if(e.key==='ArrowLeft')pcMostrar(pcI-1,true)});
@@ -1571,6 +1699,14 @@ elegirLocal('kennedy');
   // (con la pantalla del local al lado) o, si no está transmitiendo, sus últimas transmisiones guardadas.
   // Se prende solo cuando algún local está en vivo (salvo que la persona lo haya movido a mano).
   const sw={checked:true},punto={}; // sin switch (pedido de Cote): Instagram y el en vivo se ven siempre, uno debajo del otro
+  let repes=false; // «Repeticiones Twitch» (pedido de Cote): apagado al abrir la página
+  const segs=d=>{const m=String(d||'').match(/(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/)||[];return (+m[1]||0)*3600+(+m[2]||0)*60+(+m[3]||0)};
+  const vodsDe=c=>{const todos=(c&&c.videos||[]),limpios=todos.filter(v=>!v.muted);return limpios.length?limpios:todos};
+  const LARGO=30*60; // «video largo»: desde 30 minutos
+  function swRepes(){const l=document.createElement('label');l.className='rep-sw';l.title='Repeticiones de Twitch en los 3 locales';
+    l.innerHTML=`<input type="checkbox" ${repes?'checked':''} aria-label="Repeticiones de Twitch en los 3 locales"><span class="sw-pista"><span class="sw-bola"></span></span><span class="rep-sw-txt">Repeticiones Twitch</span>`;
+    l.querySelector('input').addEventListener('change',e=>{repes=e.target.checked;document.querySelectorAll('.rep-sw input').forEach(x=>x.checked=repes);pintar()});
+    ['click','pointerdown'].forEach(t=>l.addEventListener(t,e=>e.stopPropagation()));return l}
   let datosTw=[],aMano=false,clave='',canalSonando=null,visor=null;const ultimoVivo={},packs={};
   // las pantallas del local se dibujan a su tamaño real (1920x1080 o 1080x1920) y se achican para caber
   const escalar=()=>document.querySelectorAll('.vivo-fila .pant').forEach(d=>{const f=d.firstElementChild;if(!f||!f.width)return;f.style.transform=`scale(${d.clientWidth/f.width})`});
@@ -1602,20 +1738,20 @@ elegirLocal('kennedy');
   function packVivo(canal,L,c){
     // Sin transmisión en vivo: las pantallas del local (el tablero horizontal y, al lado, la vertical), del mismo porte que
     // el conjunto del en vivo. Livianas, sin video (pedido de Cote; reemplaza las repeticiones)
-    if(MODO_OBS||!(c&&c.vivo)){const d=document.createElement('div');d.className='ptl-vivo vivo-item con-vertical pantallas';
+    if(MODO_OBS||(!(c&&c.vivo)&&!(repes&&vodsDe(c).length))){const d=document.createElement('div');d.className='ptl-vivo vivo-item con-vertical pantallas';
       d.innerHTML=`<div class="vivo-etq"><span class="rep-icono">▣</span><span style="white-space:nowrap">Pantallas del local</span></div>
         <div class="vivo-fila">${MODO_OBS?`<div class="pant pant-h obs-hueco"><iframe src="${SALA}#/escena" width="1920" height="1080" title="GC de la sala de juegos" tabindex="-1"></iframe></div>`:pant('pant-h',rutaH(L),1920,1080,'Tablero del local',L.livH?{liviano:L.livH,lver:L.lverH}:null)}${pant('pant-v',rutaV(L),1080,1920,'Pantalla vertical del local',L)}</div>
         <div class="vivo-botones"><button type="button" class="vivo-pc vivo-full">⛶ Pantalla completa</button></div>`;
-      d.querySelectorAll('.pant').forEach(x=>obsPant.observe(x));
+      d.querySelectorAll('.pant').forEach(x=>obsPant.observe(x));if(!MODO_OBS)d.querySelector('.vivo-etq').prepend(swRepes());
       d.querySelector('.vivo-full').onclick=()=>abrirVisor(L.local);return d}
-    const vivo=!!(c&&c.vivo),todos=(c&&c.videos||[]),limpios=todos.filter(v=>!v.muted),vods=limpios.length?limpios:todos;let i=0;
+    const vivo=!!(c&&c.vivo),todos=(c&&c.videos||[]),limpios=todos.filter(v=>!v.muted),vods=limpios.length?limpios:todos;let i=Math.max(0,vods.findIndex(v=>segs(v.duration)>=LARGO));
     if(!vivo&&!vods.length){const d=document.createElement('div');d.className='ptl-tw';d.innerHTML='<p class="tw-nada">Todavía no hay transmisiones guardadas de este local.</p>';return d}
     // sonido: un local a la vez (botón «Escuchar»); en la repetición se sigue desde el mismo punto al cambiar el sonido
     let t0=Date.now(),base=0;
     const desde=()=>{const s=Math.floor(base);return s>5?`&time=${Math.floor(s/3600)}h${Math.floor(s%3600/60)}m${s%60}s`:''};
     const fuente=()=>{const m=canalSonando===canal?'false':'true';
       return vivo?`https://player.twitch.tv/?channel=${canal}${padres}&muted=${m}&autoplay=true&controls=false`
-        :`https://player.twitch.tv/?video=v${vods[i].id}${padres}${desde()}&muted=${m}&autoplay=true&controls=false`};
+        :`https://player.twitch.tv/?video=v${vods[i].id}${padres}${desde()}&muted=${m}&autoplay=true&controls=true`};
     // nada encima del reproductor de Twitch (si algo lo tapa, Twitch lo pausa): la pantalla del local va al lado
     const caja=document.createElement('div');caja.className='ptl-vivo vivo-item'+(L.vertical?' con-vertical':' con-horizontal')+(vivo?'':' repeticion');
     const etiqueta=()=>vivo?`<span class="punto-vivo"></span><span style="white-space:nowrap">En vivo</span>${c.vivo.title?`<span class="vivo-tit">· ${esc(c.vivo.title)}</span>`:''}`
@@ -1625,7 +1761,7 @@ elegirLocal('kennedy');
       ${L.vertical?pant('pant-v',rutaV(L),1080,1920,'Pantalla vertical del local',L):pant('pant-h',L.horizontal,1920,1080,'Pantalla horizontal del local')}</div>
       <div class="vivo-botones"><button type="button" class="vivo-pc vivo-son">🔇 Escuchar</button>${vivo?'<button type="button" class="vivo-pc vivo-ref">⟳ Refrescar</button>':''}<button type="button" class="vivo-pc vivo-full">⛶ Pantalla completa</button></div>`;
     const etq=caja.querySelector('.vivo-etq');
-    const conectar=()=>etq.querySelectorAll('.rep-flecha').forEach(b=>b.onclick=()=>{i=(i+ +b.dataset.d+vods.length)%vods.length;base=0;t0=Date.now();caja.querySelector('.vivo-marco>iframe').src=fuente();etq.innerHTML=etiqueta();conectar()});
+    const conectar=()=>{etq.prepend(swRepes());etq.querySelectorAll('.rep-flecha').forEach(b=>b.onclick=()=>{i=(i+ +b.dataset.d+vods.length)%vods.length;base=0;t0=Date.now();caja.querySelector('.vivo-marco>iframe').src=fuente();etq.innerHTML=etiqueta();conectar()})};
     conectar();
     caja.querySelectorAll('.pant').forEach(d=>obsPant.observe(d));
     caja.querySelector('.vivo-full').onclick=()=>abrirVisor(L.local);
@@ -1696,7 +1832,7 @@ elegirLocal('kennedy');
     for(const [canal,L] of Object.entries(LOC)){
       const col=document.querySelector(`.ptl-col[data-local="${L.local}"]`);if(!col)continue;
       const c=datosTw.find(v=>v.canal===canal);const vivo=!!(c&&c.vivo);
-      const k=modo?(vivo?'vivo':'pant'):'ig';if(col.dataset.modo===k)continue;col.dataset.modo=k;
+      const k=modo?(vivo?'vivo':(repes&&vodsDe(c).length?'rep':'pant')):'ig';if(col.dataset.modo===k)continue;col.dataset.modo=k;
       const viejo=packs[L.local];
       if(!(visor&&modo&&viejo&&visor.contains(viejo)))col.querySelectorAll('.ptl-vivo,.ptl-tw').forEach(x=>x.remove());
       col.classList.toggle('modo-tw',modo);
@@ -1959,7 +2095,7 @@ document.querySelectorAll('.esp-montados').forEach(g=>{const PRIMEROS=['DF4JT1kg
   // de a uno (y con un reintento) para no saturar la conexión con Instagram
   function poner(code,x){
     vids[code]=x;const card=cards.find(c=>c.dataset.code===code);if(!card)return;
-    const m=card.querySelector('.esp-media');const v=document.createElement('video');v.muted=true;v.playsInline=true;v.preload='metadata';if(x.poster)v.poster=x.poster;v.dataset.src=x.url;m.prepend(v);vistos.observe(v);sonarAlPasar(card,v);
+    const m=card.querySelector('.esp-media');const v=document.createElement('video');v.muted=true;v.playsInline=true;v.preload='metadata';if(x.poster)v.poster=x.poster;v.dataset.src=x.url;m.prepend(v);vistos.observe(v);sonarAlPasar(card,v);ponerParlante(m,v);
     card.querySelector('.esp-ver').textContent='▶ Pantalla completa';
     card.onclick=e=>{e.preventDefault();
       if(!conMouse&&!card.classList.contains('crece')){crecer(card,v);return} // celular: primer toque, crece y suena
@@ -2124,6 +2260,36 @@ function lineas(x,pts,dist,alfa){ // agrupa las líneas en 4 tonos: pocas órden
 </script>
 
 <script>
+// ¿Quiénes somos? (pedido de Cote): las palabras se encienden al bajar, el logo se inclina con el mouse y destella
+// al tocarlo, y los momentos aparecen de a uno
+(function(){
+  const sec=document.getElementById('quienes');if(!sec)return;
+  const lento=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const p=sec.querySelector('.qs-cree'),em=sec.querySelector('.qs-emblema');
+  if(p&&!lento){
+    const ws=p.textContent.trim().split(/\s+/);p.textContent='';
+    const oro=['un','recuerdo','para','siempre.'];let k=ws.findIndex((w,i)=>oro.every((o,j)=>ws[i+j]===o));
+    const spans=ws.map((w,i)=>{const sp=document.createElement('span');sp.className='pq'+(k>=0&&i>=k&&i<k+oro.length?' oro':'');sp.textContent=w;p.append(sp,' ');return sp});
+    let pend=false;
+    const pinta=()=>{pend=false;const r=p.getBoundingClientRect(),vh=innerHeight;const t=Math.max(0,Math.min(1,(vh*.88-r.top)/(r.height+vh*.38)));const n=Math.round(t*spans.length);spans.forEach((sp,i)=>sp.classList.toggle('on',i<n))};
+    addEventListener('scroll',()=>{if(!pend){pend=true;requestAnimationFrame(pinta)}},{passive:true});addEventListener('resize',pinta);pinta();
+  }
+  if(em){
+    const cab=sec.querySelector('.qs-cabeza');
+    if(!lento&&matchMedia('(hover: hover) and (pointer: fine)').matches){
+      cab.addEventListener('mousemove',e=>{const r=em.getBoundingClientRect(),x=(e.clientX-(r.left+r.width/2))/r.width,y=(e.clientY-(r.top+r.height/2))/r.height;
+        em.style.transform=`rotateY(${Math.max(-1,Math.min(1,x))*16}deg) rotateX(${Math.max(-1,Math.min(1,-y))*16}deg)`});
+      cab.addEventListener('mouseleave',()=>{em.style.transform=''});
+    }
+    em.addEventListener('click',()=>{em.classList.remove('pulso');void em.offsetWidth;em.classList.add('pulso');setTimeout(()=>em.classList.remove('pulso'),1300)});
+  }
+  if(!lento&&'IntersectionObserver' in window){
+    sec.classList.add('qs-anima');
+    const lis=[...sec.querySelectorAll('.qs-momentos li')];lis.forEach((li,i)=>li.style.setProperty('--d',(i*.12)+'s'));
+    const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){lis.forEach(li=>li.classList.add('ok'));io.disconnect()}}),{threshold:.25});
+    io.observe(sec.querySelector('.qs-momentos'));
+  }
+})();
 // KRB Interactivo: un juego por pestaña, con la pantalla del local y el celular reales (capturas de la Sala de juegos)
 (function(){
   const J=[
