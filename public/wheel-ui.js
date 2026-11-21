@@ -156,6 +156,7 @@
     app.innerHTML = `<div id="rosco-ctl">${window.readAloud ? window.readAloud('El Rosco', HOWTO) : ''}<div class="cols">
         <div class="panel">
           <div class="row between"><div><h1 id="w-name" style="margin:0"></h1><span class="muted" id="w-turn"></span></div><div class="w-topright"><div class="w-who" id="w-who" hidden><small>Es el turno de</small><b></b></div><div class="w-letter" id="w-letter"></div></div></div>
+          <div id="w-rankann"></div>
           <div class="w-question" id="w-question"></div>
           <button class="primary big w-accept" id="w-tie" hidden>🎲 Desempatar por sorteo</button>
           <button class="primary big w-accept" id="w-accept" data-do="acceptwin" hidden>✔ Aceptar ganador</button>
@@ -236,8 +237,10 @@
       $('#w-rank').classList.toggle('on', !!st.rank);
       $('#w-rank').classList.toggle('due', !!st.rankDue); // paso obligatorio cada 2 rondas (pedido de Cote, 21 nov)
       if (st.rankDue && !st.runningSince) $('#w-question').innerHTML = `<b>📊 Terminaron ${st.rankEvery || 2} rondas.</b> Antes de la próxima pregunta, despliega el ranking de la Trivia del Rosco en pantalla (botón de abajo).`;
-      $('#w-ranklist').hidden = !st.rank;
-      if (st.rank) $('#w-ranklist').innerHTML = rankHTML(st, 'w-rk');
+      $('#w-ranklist').hidden = true; // el ranking desplegado va arriba, grande (pedido de Cote, 21 nov)
+      const rk = $('#w-rankann');
+      const rkKey = st.rank ? JSON.stringify([st.rank, st.rankPlayers, !!(st.crowdWinner || st.winner)]) : '';
+      if (rk.dataset.k !== rkKey) { rk.dataset.k = rkKey; rk.innerHTML = st.rank ? window.rankAnnHtml(st.rank, st.rankPlayers, !!(st.crowdWinner || st.winner)) : ''; }
       $('#w-clock').disabled = step !== 2 || !!st.rankDue;
       $('#w-undo').disabled = !st.canUndo;
       $('#w-swap').hidden = st.players.length < 2;

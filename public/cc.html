@@ -71,6 +71,11 @@
   .tabs2 button.on { background: #ffc400; color: #1a1a1a; }
   .tabs2.t3 button { width: 33.333%; font-size: 15px; }
   .modes { overflow: hidden; margin: 6px 0 10px; }
+  .ann .rk { margin: 10px 0 4px; text-align: left; }
+  .ann .rk p { margin: 0 0 6px; padding: 8px 12px; border-radius: 10px; background: #1d1838; font-size: 22px; font-weight: bold; overflow: hidden; }
+  .ann .rk p.top { font-size: 26px; background: #3a2f08; }
+  .ann .rk em { font-style: normal; color: #ffc400; margin-right: 8px; }
+  .ann .rk i { float: right; font-style: normal; color: #ffc400; margin-left: 10px; }
   .who { float: right; max-width: 58%; margin: 0 0 8px 12px; padding: 8px 14px; border-radius: 14px; border: 3px solid #4fd1ff; background: #0d2633; text-align: right; }
   .who small { display: block; font-size: 14px; color: #a9d8ea; }
   .who b { display: block; font-size: 32px; line-height: 1.1; color: #4fd1ff; word-wrap: break-word; }
@@ -213,6 +218,13 @@ function ann(title, names, lines) {
   for (var i = 0; i < names.length; i++) o += '<b class="ann-n">' + h(names[i]) + '</b>';
   for (var j = 0; j < (lines || []).length; j++) if (lines[j]) o += '<span class="ann-l">' + h(lines[j]) + '</span>';
   return o + '</div>';
+}
+// El ranking de la Trivia del Rosco desplegado en pantalla, también grande en el iPad (pedido de Cote, 21 nov)
+function rankAnn(rank, players, final) {
+  var o = '<div class="panel ann"><small>📣 EN PANTALLA AHORA</small><span class="ann-t">🏅 Ranking de la Trivia del Rosco · ' + (final ? 'resultados finales' : 'resultados parciales') + '</span>';
+  if (!rank.length) o += '<span class="ann-l">Todavía nadie suma puntos</span>';
+  else { o += '<div class="rk">'; for (var i = 0; i < rank.length; i++) o += '<p' + (i < 3 ? ' class="top"' : '') + '><em>' + (i + 1) + '.º</em><i>' + rank[i].score + ' pts</i><b>' + h(rank[i].name) + '</b></p>'; o += '</div>'; }
+  return o + '<span class="ann-l">' + players + (players === 1 ? ' persona jugando' : ' personas jugando') + '</span></div>';
 }
 function noteOf(x, d) { return Number(x).toFixed(d === 2 ? 2 : 1).replace('.', ','); }
 // Cómo se elige el juego (pedido de Cote, 21 nov): «Manual», «Por sorteo» o «Por votación»
@@ -484,6 +496,7 @@ function renderRosco(w) {
     S.lastTurn = w.turn;
     if (c.active && !w.winner && !w.tie) o += '<div class="who' + (turnFlash ? ' flash' : '') + '"><small>Es el turno de</small><b>' + h(c.name) + '</b></div>';
     o += '<h1>' + h(w.name) + '</h1><div class="muted">' + (w.winner ? '🏆 Gana ' + h(w.winner.name) + ' (' + w.winner.hits + ' ✔ · ' + w.winner.misses + ' ✘)' : w.tie ? 'Empate' : '') + '</div><div style="clear:both"></div>';
+    if (w.rank) o += rankAnn(w.rank, w.rankPlayers || 0, !!(w.crowdWinner || w.winner)); // el ranking que está en pantalla, grande
     o += '<div class="now"><small>Letra · reloj</small><b style="font-size:30px">' + h(c.active ? w.letters[c.current] : '—') + '</b> · <b id="rclock">' + clock(roscoLeft(w)) + '</b> <span class="muted">' + c.hits + ' ✔ · ' + c.misses + ' ✘</span></div>';
     var q = ((w.questions || [])[w.turn] || [])[c.current] || {};
     o += '<div class="q' + (w.runningSince && c.active ? ' live' : '') + '">' + (!c.active ? (w.tie ? (w.tie.rolling ? '<b>Sorteando el desempate…</b> Mira la pantalla.' : '<b>Hay un empate</b> entre ' + h(w.tie.names.join(' y ')) + '. Primero desempata por sorteo.') : 'Juego terminado.') :
@@ -501,7 +514,7 @@ function renderRosco(w) {
     else o += w.crowdWinner.none ? ann('🏅 Trivia del Rosco', ['Nadie sumó puntos'], ['Jugaron ' + w.crowdWinner.players + ' personas']) : ann('🏅 Premio especial · Ganó la Trivia del Rosco', [w.crowdWinner.name], [w.crowdWinner.score + ' puntos · ' + w.crowdWinner.hits + ' aciertos']);
   }
   o += btn(w.rank ? '🏅 Recoger ranking (está en pantalla)' : '🏅 Desplegar ranking de la Trivia (top 10)', 'roscoRank', '', 'big' + (w.rank ? ' on' : ''));
-  if (w.rank) { o += '<ol>'; for (var r = 0; r < w.rank.length; r++) o += '<li><b>' + h(w.rank[r].name) + '</b> · ' + w.rank[r].score + ' pts</li>'; o += '</ol>'; }
+  if (w.rank && w.winAccepted) o += rankAnn(w.rank, w.rankPlayers || 0, true); // con el ganador aceptado, también al final
   // Pedido de Cote (21 nov): al final, sí o sí se muestra el ganador de la Trivia antes de seguir (sin menú hasta eso)
   o += '</div>' + (w.winAccepted && !w.crowdWinner ? '' : nav('rosco', started && !w.winAccepted)) + foot();
   render(o);

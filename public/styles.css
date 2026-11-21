@@ -2573,3 +2573,10 @@ body.kids[data-kz-level="8"] { background: linear-gradient(160deg, #fdffb6 0%, #
 .w-who.flash b { animation: whoFlashTxt 1.8s ease-out 1; }
 @keyframes whoFlash { 0% { background: #4fd1ff; transform: scale(1.08); } 100% { background: rgba(79, 209, 255, .12); transform: scale(1); } }
 @keyframes whoFlashTxt { 0% { color: #0d2633; } 100% { color: #4fd1ff; } }
+/* Ranking de la Trivia desplegado: también grande en el panel (pedido de Cote, 21 nov) */
+.rank-ann .rank-ann-list { margin: 10px 0 4px; padding: 0; list-style: none; text-align: left; }
+.rank-ann .rank-ann-list li { display: flex; gap: 10px; align-items: baseline; margin: 0 0 6px; padding: 8px 12px; border-radius: 10px; background: rgba(0, 0, 0, .25); font-size: 1.25rem; font-weight: 800; }
+.rank-ann .rank-ann-list li.top { font-size: 1.5rem; background: rgba(255, 196, 0, .18); }
+.rank-ann .rank-ann-list em { font-style: normal; color: #ffc400; min-width: 2.4em; }
+.rank-ann .rank-ann-list b { flex: 1; overflow-wrap: anywhere; }
+.rank-ann .rank-ann-list i { font-style: normal; color: #ffc400; white-space: nowrap; }

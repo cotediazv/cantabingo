@@ -5,6 +5,10 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':
 const app = $('#app');
 // Pedido de Cote (21 nov): al dar a conocer un ganador, un premio o una información, el animador también lo ve en su
 // panel, grande, para leerlo en voz alta (lo mismo que está en la pantalla del local)
+// El ranking de la Trivia del Rosco desplegado en pantalla, también grande en el panel (pedido de Cote, 21 nov)
+window.rankAnnHtml = (rank, players, final) => `<div class="panel ann rank-ann"><small>📣 En pantalla ahora</small><span class="ann-t">🏅 Ranking de la Trivia del Rosco · ${final ? 'resultados finales' : 'resultados parciales'}</span>
+  ${rank.length ? `<ol class="rank-ann-list">${rank.map((t, i) => `<li class="${i < 3 ? 'top' : ''}"><em>${i + 1}.º</em><b>${esc(t.name)}</b><i>${t.score} pts</i></li>`).join('')}</ol>` : '<span class="ann-l">Todavía nadie suma puntos</span>'}
+  <span class="ann-l">${players} ${players === 1 ? 'persona jugando' : 'personas jugando'}</span></div>`;
 window.annHtml = (title, names, lines = []) => `<div class="panel ann"><small>📣 Para anunciar</small><span class="ann-t">${esc(title)}</span>${names.map((n) => `<b class="ann-n">${esc(n)}</b>`).join('')}${lines.filter(Boolean).map((l) => `<span class="ann-l">${esc(l)}</span>`).join('')}</div>`;
 const store = {
   get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
