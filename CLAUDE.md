@@ -7,7 +7,7 @@ Sitio: https://cantabingo.onrender.com · Render (plan Starter, disco de 1 GB) �
 
 - Responder **siempre en español**, simple y paso a paso, sin distracciones.
 - No agregar nada que Cote no haya autorizado, no interpretar más allá de lo que dice y no cambiar sus palabras. Se puede opinar, pero se implementa lo pedido.
-- **Publicar** (subir a `main`): cuando Cote da una instrucción y no hay ninguna duda que preguntarle, se prueba y se publica de una, sin esperar el «publica» (pedido de Cote, 19 nov). Si hay dudas, se le pregunta antes y se publica después de su respuesta. El trabajo se prueba en la rama aparte antes de subirlo.
+- **Publicar** (subir a `main`): cuando Cote da una instrucción y no hay ninguna duda que preguntarle, se prueba y se publica de una, sin esperar el «publica» (pedido de Cote, 19 nov; confirmado el 21 nov: «Publica cuando te pida algo»). Si hay dudas, se le pregunta antes y se publica después de su respuesta. El trabajo se prueba en la rama aparte antes de subirlo.
 - No publicar durante un evento en vivo salvo que él lo pida. No repetir el aviso de que cada publicación reinicia el servicio.
 - Cuida el consumo: si pide conversar primero, conversar antes de hacer trabajo pesado.
 - El juego se llama **"El Rosco"**. Nunca usar el nombre del programa de TV (marca registrada).
