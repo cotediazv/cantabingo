@@ -2491,3 +2491,43 @@ body.kids[data-kz-level="8"] { background: linear-gradient(160deg, #fdffb6 0%, #
 .games-nav.g-free .g-games, .games-nav.g-smode.g-ready .g-games { display: grid; }
 .games-nav .g-games > * { display: grid; justify-items: center; align-content: center; gap: 4px; min-height: 84px; padding: 12px 8px; border-radius: 16px; font-size: 1.05rem; font-weight: 700; text-align: center; text-decoration: none; line-height: 1.2; margin: 0; width: auto; }
 .games-nav:not(.g-smode) .g-plan, .games-nav:not(.g-smode) [data-game-draw], .games-nav:not(.g-smode) [data-game-undo], .games-nav:not(.g-smode) .g-direct { display: none !important; }
+
+/* Presentación antes de votar (pedido de Cote, 21 nov): reglas para el público y cada juego con un dibujo de cómo funciona */
+#gv .gv-intro .gv-main { min-width: 60vw; }
+#gv .gv-introbody { display: grid; grid-template-columns: minmax(0, 42%) minmax(0, 1fr); align-items: center; grid-gap: 3vw; gap: 3vw; width: 100%; text-align: left; }
+#gv .gv-art svg { display: block; width: 100%; height: auto; }
+#gv .gv-lines { margin: 0; padding: 0 0 0 1.1em; font-size: 3.4vh; font-weight: 700; line-height: 1.3; }
+#gv .gv-lines li { margin: 0 0 1.4vh; }
+#gv .gv-dots { margin-top: .6vh; }
+#gv .gv-dots i { display: inline-block; width: 1.5vh; height: 1.5vh; margin: 0 .5vh; border-radius: 50%; background: rgba(255, 255, 255, .3); }
+#gv .gv-dots i.on { background: #ffc400; }
+#gv.gv-gc .gv-intro .gv-main { min-width: 0; }
+#gv.gv-gc .gv-introbody { grid-template-columns: 26vh minmax(0, 1fr); }
+#gv.gv-gc .gv-lines { font-size: 2.3vh; }
+@media (orientation: portrait) {
+  #gv .gv-intro .gv-main { min-width: 0; }
+  #gv .gv-introbody { grid-template-columns: 1fr; justify-items: center; }
+  #gv .gv-art { width: 66vw; }
+  #gv .gv-lines { font-size: 2.4vh; }
+}
+@keyframes giPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.14); } }
+@keyframes giRing { 0% { opacity: .9; transform: scale(.7); } 100% { opacity: 0; transform: scale(1.6); } }
+@keyframes giFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes giUp { 0% { transform: translateY(12px); opacity: 0; } 25% { opacity: 1; } 100% { transform: translateY(-16px); opacity: 0; } }
+@keyframes giBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes giBar { from { transform: scaleY(.15); } to { transform: scaleY(1); } }
+@keyframes giGrow { from { stroke-dasharray: 0 252; } to { stroke-dasharray: 151 252; } }
+.gi .gi-pulse, .gi .gi-ring, .gi .gi-up, .gi .gi-bounce, .gi .gi-bar { transform-box: fill-box; transform-origin: center; }
+.gi .gi-pulse { animation: giPulse 1.2s ease-in-out infinite; }
+.gi .gi-ring { animation: giRing 1.4s ease-out infinite; }
+.gi .gi-mark { opacity: 0; animation: giFade .35s ease forwards; }
+.gi .gi-up { animation: giUp 2.2s ease-in infinite; }
+.gi .gi-bounce { animation: giBounce 1.4s ease-in-out infinite; }
+.gi .gi-bar { transform-origin: bottom; animation: giBar 1.4s ease-out infinite alternate; }
+.gi .gi-grow { animation: giGrow 1.6s ease-out forwards; }
+.pgvote .pgv-step { margin: 8px 0 4px; text-align: center; font-weight: 700; color: #ffd76a; }
+.pgvote .pgv-intro { text-align: center; }
+.pgvote .pgv-intro > b { display: block; font-size: 1.5rem; margin: 4px 0 8px; }
+.pgvote .pgv-intro .gi svg { display: block; width: 100%; max-width: 320px; height: auto; margin: 0 auto; }
+.pgvote .pgv-intro ul { text-align: left; margin: 10px 0; padding-left: 20px; font-size: 1.05rem; line-height: 1.35; }
+.g-vote .gvp-help { font-size: .95rem; }

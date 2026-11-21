@@ -116,6 +116,7 @@
   <div id="view"></div>
   <div id="marks"></div>
 </div>
+<script src="gameintro.js"></script>
 <script>
 (function () {
   'use strict';
@@ -507,9 +508,26 @@
     every(stageTimers, 1000, load);
   }
   function sGameVote() {
-    var g = null;
+    var g = null; var introShown = -1;
+    function paintIntro() {
+      var GI = window.GAME_INTRO;
+      if (!GI) return;
+      var k = GI.stepOf(g.intro, now());
+      if (k === introShown) return;
+      introShown = k;
+      var sl = GI.slides(SHORT[VENUE])[k];
+      var o = '<div class="abs" style="top:4rem"><div class="g-sub" style="color:#ffc400;text-transform:uppercase">📢 Antes de votar · ' + (k + 1) + ' de 6</div><b class="big fit" style="display:block;font-size:5.4rem">' + sl.icon + ' ' + h(sl.title) + '</b></div>' +
+        '<div class="abs" style="top:16rem"><div style="width:36rem;margin:0 auto">' + GI.art(sl.key) + '</div></div><div class="abs" id="pvlines" style="top:41rem;bottom:32rem;text-align:left;overflow:hidden"><ul class="rows">';
+      for (var i = 0; i < sl.lines.length; i++) o += '<li style="white-space:normal;font-size:3em">' + h(sl.lines[i]) + '</li>'; // en «em»: se achica junto con el recuadro si no cabe
+      o += '</ul></div>' + qrFoot();
+      view.innerHTML = o;
+      fitAll();
+      fitBox($('pvlines'));
+    }
     function paint() {
       if (!g) return;
+      if (g.phase === 'intro') { paintIntro(); return; }
+      introShown = -1;
       var opts = g.options && g.options.length ? g.options : ['bingo', 'rosco', 'festival', 'objeto'];
       var top = g.phase === 'voting' ? (g.round === 2 ? '🗳️ Segunda vuelta' : '🗳️ Votación') : '🗳️ Resultado de la votación';
       var big = g.phase === 'done' && g.winner ? '🏆 ¡Ganó ' + GAMES[g.winner][0] + ' ' + h(GAMES[g.winner][1]) + '!' : g.phase === 'result' && g.empty ? 'Nadie votó' : g.phase === 'result' && g.runoff ? 'Nadie superó el 50%' : '¿Qué juego quieren jugar?';

@@ -98,6 +98,7 @@
 <body>
 <div id="app"></div>
 <div id="msg"></div>
+<script src="gameintro.js"></script>
 <script>
 var token = '';
 try { token = window.localStorage.getItem('adminToken') || ''; } catch (e) { token = ''; }
@@ -179,11 +180,19 @@ function gvHtml() {
     rows += '<div class="gvrow ' + cls + '"><div class="bar" style="width:' + p.toFixed(1) + '%;background:' + GVC[k] + '"></div><b>' + gvFmt(p) + ' · ' + votos(n) + '</b><span>' + gameIcon(k) + ' ' + h(gameName(k)) + '</span></div>';
   }
   var cancel = '<div class="center">' + btn('✖ Cancelar votación', 'gvReset', '', '') + '</div>';
+  var introBtn = '<div class="center">' + btn('📢 Presentar los juegos en pantalla', 'gvIntro', '', '') + '</div>';
+  if (g.phase === 'intro') {
+    // Presentación antes de votar (pedido de Cote): las reglas y cada juego pasan solos cada 10 s en la pantalla
+    var k = window.GAME_INTRO && g.intro ? window.GAME_INTRO.stepOf(g.intro, new Date().getTime() + offset) : 0;
+    var sl = window.GAME_INTRO ? window.GAME_INTRO.slides(V[(sala() || {}).theme] || 'Frida')[k] : null;
+    return '<p class="gvnow">📢 En pantalla: ' + (sl ? sl.icon + ' ' + h(sl.title) : '') + ' (' + (k + 1) + ' de 6)</p><p class="gvhelp">Las reglas y cada juego pasan solos cada 10 segundos. Cuando quieras, inicia la votación.</p>' +
+      btn('🗳️ Iniciar votación (30 s)', 'gvStart', '', 'big primary') + '<div class="center">' + btn('⏭ Siguiente', 'gvNext', '', '', k >= 5) + '</div>' + cancel;
+  }
   if (g.phase === 'voting') return '<p class="gvnow">🗳️ ' + (g.round === 2 ? 'Segunda vuelta' : 'Votación abierta') + ' · quedan ' + clock(g.until - (new Date().getTime() + offset)) + ' · ' + votos(g.total) + '</p>' + rows + btn('🗳️ Votando…', 'none', '', 'big primary', true) + cancel;
   if (g.phase === 'result' && g.empty) return '<p class="gvnow">Nadie votó.</p>' + btn('🗳️ Repetir votación (30 s)', 'gvStart', '', 'big primary') + cancel;
   if (g.phase === 'result' && g.runoff) return '<p class="gvnow">Nadie superó el 50%. Segunda vuelta: ' + gameIcon(g.runoff[0]) + ' ' + h(gameName(g.runoff[0])) + ' y ' + gameIcon(g.runoff[1]) + ' ' + h(gameName(g.runoff[1])) + (g.tie2 ? ' (empate en el 2.º lugar: se sorteó)' : '') + '.</p>' + rows + btn('🗳️ Iniciar segunda vuelta (30 s)', 'gvStart', '', 'big primary') + cancel;
-  if (g.phase === 'done' && g.winner) return '<p class="gvwin">🏆 Ganó ' + gameIcon(g.winner) + ' ' + h(gameName(g.winner)) + (g.tie ? ' (empate: se decidió por sorteo)' : '') + '</p>' + rows + btn('▶ Ir a ' + gameIcon(g.winner) + ' ' + h(gameName(g.winner)), 'gvGo', d('g', g.winner), 'big primary') + '<div class="center">' + btn('🗳️ Nueva votación (30 s)', 'gvStart', '', '') + '</div>';
-  return '<p class="gvhelp">El público elige el próximo juego desde su celular, en 30 segundos. Gana el juego con más de la mitad de los votos; si ninguno lo logra, hay segunda vuelta entre los 2 primeros.</p>' + btn('🗳️ Iniciar votación (30 s)', 'gvStart', '', 'big primary');
+  if (g.phase === 'done' && g.winner) return '<p class="gvwin">🏆 Ganó ' + gameIcon(g.winner) + ' ' + h(gameName(g.winner)) + (g.tie ? ' (empate: se decidió por sorteo)' : '') + '</p>' + rows + btn('▶ Ir a ' + gameIcon(g.winner) + ' ' + h(gameName(g.winner)), 'gvGo', d('g', g.winner), 'big primary') + introBtn + '<div class="center">' + btn('🗳️ Nueva votación (30 s)', 'gvStart', '', '') + '</div>';
+  return '<p class="gvhelp">El público elige el próximo juego desde su celular, en 30 segundos. Gana el juego con más de la mitad de los votos; si ninguno lo logra, hay segunda vuelta entre los 2 primeros.</p>' + btn('🗳️ Iniciar votación (30 s)', 'gvStart', '', 'big primary') + introBtn;
 }
 // Menú de juegos (pedido de Cote, 21 nov): tres botones grandes, «Manual», «Por sorteo» y «Por votación», y nada más;
 // al tocar uno se despliega lo de esa modalidad en su momento. En el lobby (lobby = true) no van las otras actividades.
@@ -568,14 +577,23 @@ A.drawMode = function (el) {
   clearTimeout(goTimer);
   if (S.navMode === how) { S.navMode = null; refresh(); return; } // tocar la desplegada la vuelve a plegar
   S.navMode = how;
-  if (howOf(S.draw) === how) { refresh(); return; }
+  if (howOf(S.draw) === how) { refresh(); if (how === 'votacion') gvAutoIntro(); return; }
   if (S.draw) { S.draw.how = how; S.draw.free = how === 'manual'; S.draw.ready = null; } // se despliega al instante
   refresh();
-  act('POST', '/api/gamedraw/mode', { how: how });
+  api('POST', '/api/gamedraw/mode', { how: how }, function (err) { if (err) toast(err); if (how === 'votacion') gvAutoIntro(); else refresh(); });
 };
 A.gvStart = function () { clearTimeout(goTimer); api('POST', '/api/gamevote/start', null, function (err, r) { if (err) { toast(err); return; } S.gv = r; toast('🗳️ Votación abierta: 30 segundos para votar desde el celular'); refresh(); }); };
 A.gvReset = function () { clearTimeout(goTimer); api('POST', '/api/gamevote/reset', null, function (err, r) { if (err) { toast(err); return; } S.gv = r; toast('Votación cancelada'); refresh(); }); };
 A.gvGo = function (el) { clearTimeout(goTimer); toGame(el.getAttribute('data-g')); };
+A.gvIntro = function () { act('POST', '/api/gamevote/intro', null, '📢 En pantalla: las reglas y cada juego, antes de votar'); };
+A.gvNext = function () { act('POST', '/api/gamevote/next', null, ''); };
+// Al entrar en «Por votación», primero la presentación (salvo que haya una votación abierta o una segunda vuelta pendiente)
+function gvAutoIntro() {
+  api('GET', '/api/gamevote', null, function (err, g) {
+    if (!g || g.phase === 'voting' || g.phase === 'intro' || (g.phase === 'result' && g.runoff)) return;
+    api('POST', '/api/gamevote/intro', null, function (e2, r) { if (e2) { toast(e2); return; } S.gv = r; toast('📢 En pantalla: las reglas y cada juego, antes de votar'); refresh(); });
+  });
+}
 A.unfold = function () { S.foldOpen = true; refresh(); };
 A.total = function (el) { act('POST', '/api/gamedraw/total', { total: Number(el.getAttribute('data-n')) }); };
 A.undo = function () { clearTimeout(goTimer); act('POST', '/api/gamedraw/undo', null, '↩️ Sorteo de juegos: se volvió al paso anterior'); };
@@ -653,7 +671,7 @@ function gvPoll() {
         goTimer = setTimeout(function () { toGame(r.winner); }, 8000);
       }
     }
-    gvT = setTimeout(gvPoll, r && r.phase === 'voting' ? 1000 : 2500);
+    gvT = setTimeout(gvPoll, r && (r.phase === 'voting' || r.phase === 'intro') ? 1000 : 2500);
   });
 }
 gvPoll();

@@ -1610,6 +1610,7 @@ document.addEventListener('click', async (e) => {
   applyNavOpen(false); // se despliega al instante, sin esperar al servidor
   const g = await api('GET', '/api/gamedraw').catch(() => null);
   if (!g || (g.how || (g.free ? 'manual' : 'sorteo')) !== how) { try { await api('POST', '/api/gamedraw/mode', { how }); } catch (err) { fail(err); } }
+  if (how === 'votacion' && window.startGvIntro) await window.startGvIntro(); // primero, en pantalla, las reglas y cada juego (pedido de Cote)
   paintGameNav();
 });
 // Deshacer (pedido de Cote): vuelve el sorteo de juegos al paso anterior (antes de «Iniciar sorteo», de la tómbola

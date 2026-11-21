@@ -767,7 +767,7 @@ app.post('/api/gamedraw/mode', requireAdmin, (req, res) => {
     if (db.stage === 'juego' && !roscoLock('qr')) setStage('qr'); // y las pantallas quedan con el QR para entrar (no vuelve un bingo viejo)
   }
   if (how !== 'votacion') {
-    if (['voting', 'result'].includes(db.gameVote.phase)) gvCancel(); // una votación a medio hacer se cancela
+    if (['voting', 'result', 'intro'].includes(db.gameVote.phase)) gvCancel(); // una votación (o su presentación) a medio hacer se cancela
     if (db.stage === 'votojuego' && !roscoLock('qr')) setStage('qr');
   }
   save();
@@ -872,6 +872,10 @@ app.post('/api/gamedraw', requireAdmin, (_req, res) => {
 // cada vuelta (se puede cambiar mientras está abierta). Los celulares no reciben un aviso por cada voto: solo al
 // abrir y al cerrar cada vuelta (gameVoteRev); las pantallas y el panel leen los votos cada segundo.
 const GV_MS = 30000;
+// Presentación antes de votar (pedido de Cote, 21 nov): las reglas para el público y cada juego con su dibujo, una lámina
+// cada 10 s (public/gameintro.js); el animador puede adelantar («Siguiente») o iniciar la votación cuando quiera
+const INTRO_MS = 10000; const INTRO_LAST = 5;
+const introStep = (g) => (g.intro ? Math.min(INTRO_LAST, (g.intro.step || 0) + Math.floor(Math.max(0, Date.now() - g.intro.at) / INTRO_MS)) : 0);
 function gvBlank() {
   const old = db.gameVote || {};
   return { id: old.id || 0, rev: (old.rev || 0) + 1, phase: 'idle', round: 0, options: [], votes: {}, until: 0, counts: null, total: 0, runoff: null, tie2: false, winner: null, tie: false, empty: false, decidedAt: 0 };
@@ -925,6 +929,7 @@ const gvPub = () => {
   if (g.phase === 'voting' && Date.now() >= g.until + 250) gvClose();
   const counts = g.phase === 'voting' ? gvCounts(g) : g.counts || Object.fromEntries(g.options.map((k) => [k, 0]));
   return { id: g.id, rev: g.rev, phase: g.phase, round: g.round, options: g.options, until: g.until, ms: GV_MS, now: Date.now(),
+    intro: g.phase === 'intro' && g.intro ? { at: g.intro.at, step: g.intro.step || 0, ms: INTRO_MS, current: introStep(g) } : null,
     counts, total: Object.values(counts).reduce((a, b) => a + b, 0), runoff: g.runoff, tie2: !!g.tie2, winner: g.winner, tie: !!g.tie,
     empty: !!g.empty, decidedAt: g.decidedAt || 0, how: howOf(), venue: (Object.values(db.sessions)[0] || {}).theme || 'frida' };
 };
@@ -951,6 +956,30 @@ app.post('/api/gamevote/start', requireAdmin, (_req, res) => {
   gvTimer = setTimeout(gvClose, GV_MS + 250);
   save();
   if (db.stage === 'votojuego') gvAll(); else setStage('votojuego'); // las pantallas y los celulares pasan a la votación
+  res.json(gvPub());
+});
+// Presentar los juegos en pantalla (al entrar en «Por votación» o con el botón): reglas y juego por juego
+app.post('/api/gamevote/intro', requireAdmin, (_req, res) => {
+  if (howOf() !== 'votacion') return fail(res, 409, 'Elige primero «Por votación»');
+  if (!Object.keys(db.sessions).length) return fail(res, 409, 'Primero crea la sala de juegos');
+  const g = db.gameVote;
+  if (g.phase === 'voting' && Date.now() < g.until) return fail(res, 409, 'Hay una votación abierta');
+  if (roscoLock('votojuego')) return fail(res, 409, 'El Rosco está en juego: la presentación se hace cuando termine la partida');
+  gvStopTimer();
+  Object.assign(g, { phase: 'intro', intro: { at: Date.now(), step: 0 }, round: 0, options: DRAW_GAMES.slice(), votes: {}, until: 0, counts: null, total: 0, runoff: null, tie2: false, winner: null, tie: false, empty: false, decidedAt: 0 });
+  g.rev++;
+  save();
+  if (db.stage === 'votojuego') gvAll(); else setStage('votojuego');
+  res.json(gvPub());
+});
+// «Siguiente»: adelanta a la lámina que sigue
+app.post('/api/gamevote/next', requireAdmin, (_req, res) => {
+  const g = db.gameVote;
+  if (g.phase !== 'intro' || !g.intro) return fail(res, 409, 'No hay una presentación en pantalla');
+  g.intro = { at: Date.now(), step: Math.min(INTRO_LAST, introStep(g) + 1) };
+  g.rev++;
+  save();
+  gvAll();
   res.json(gvPub());
 });
 // Voto desde el celular de quien está en la sala; mientras la vuelta está abierta, se puede cambiar
