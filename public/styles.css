@@ -2875,3 +2875,18 @@ body.gm-on main { max-width: none; padding: 10px 14px 40px; }
   .gm-one .gm-head > b, .gm-one .gm-live, .gm-one .gm-listen { flex: none; white-space: nowrap; }
   .gm-one .gm-sala { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
+/* GC Master, versión horizontal de cada local: la pantalla vertical SIEMPRE PEGADA a la 1 (pedido de Cote, 22 nov). La
+   señal 1 y, pegada a su derecha y del mismo alto, la pantalla vertical forman un solo bloque, lo más grande que cabe;
+   a la derecha queda una columna angosta (--r) con el tablero arriba y los botones debajo (2 columnas de 5) */
+@media (min-width: 900px) {
+  .gm-one .gm-venue { --r: max(200px, calc(var(--W) * .14));
+    --h1: max(236px, min(var(--H), calc((var(--W) - 10px - var(--r)) / 2.3403)));
+    --w1: calc(var(--h1) * 1.7778); --w3: calc(var(--h1) * .5625); --h2: calc(var(--r) * .5625);
+    --h3: calc(max(var(--H), var(--h1)) - var(--h2) - 10px); --kw: calc((var(--r) - 6px) / 2); --kh: calc((var(--h3) - 22px - 24px) / 5);
+    grid-template-columns: var(--w1) var(--w3) calc(var(--r) + 10px); grid-template-rows: auto var(--h2) var(--h3);
+    grid-template-areas: "head txt txt" "p1 p3 p2" "p1 p3 keys"; gap: 10px 0; }
+  .gm-one .gm-text, .gm-one .gm-left > .gm-scr:last-child, .gm-one .gm-keys { margin-left: 10px; }
+  .gm-one .gm-left > .gm-scr:first-child .gm-box { border-radius: 8px 0 0 8px; border-right-width: 1px; }
+  .gm-one .gm-screens > .gm-tall .gm-box { border-radius: 0 8px 8px 0; border-left-width: 1px; }
+  .gm-one .gm-screens > .gm-tall > small { border-radius: 0 0 8px 0; }
+}
