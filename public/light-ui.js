@@ -119,7 +119,7 @@
         const q = (k) => card.querySelector(`[data-k="${k}"]`);
         const src = l.light ? `#/light-gc/${l.venue}` : l.main ? '#/escena' : '';
         const frame = q('frame');
-        if ((frame.dataset.src || '') !== src) { frame.dataset.src = src; frame.src = src ? `${location.pathname}?mudo=1${src}` : 'about:blank'; }
+        if ((frame.dataset.src || '') !== src) { frame.dataset.src = src; frame.src = src ? `${location.pathname}?mudo=1${window.__mon || ''}${src}` : 'about:blank'; }
         frame.hidden = !src; q('off').hidden = !!src;
         q('badge').textContent = l.light && l.main ? 'Sala principal + light' : l.light ? 'Sala light' : l.main ? 'Sala principal' : 'Cerrado';
         q('badge').className = `cs-badge ${l.light || l.main ? 'on' : ''}`;
@@ -151,16 +151,18 @@
     let sub = null; // la vista del karaoke, cuando está en pantalla
     let alive = true;
     const stopSub = () => { if (typeof sub === 'function') sub(); sub = null; };
+    let seq = 0; // si dos lecturas se cruzan (la de cada 2,5 s y la del aviso inmediato), vale solo la última
     const tick = async () => {
+      const n = ++seq;
       // Con local (#/light-gc/kennedy) muestra esa sala; sin local, la primera abierta
       const st = await api('GET', `/api/light${VENUES[venue] ? `?local=${venue}` : ''}`).catch(() => null);
-      if (!alive || !st) return;
+      if (!alive || !st || n !== seq) return;
       const stage = st.open ? st.stage : 'none';
       let c = null;
       if (stage === 'show' || stage === 'cartelera' || stage === 'info') c = await api('GET', `/api/light/cartelera?local=${st.venue}`).catch(() => null);
       let k = null;
       if (stage === 'qr') k = await api('GET', `/api/karaoke?local=${st.venue}`).catch(() => null);
-      if (!alive) return;
+      if (!alive || n !== seq) return;
       const sig = JSON.stringify([stage, st.id, st.venue, stage === 'custom' ? st.text : '', c && [c.show, c.current, c.next, c.week, c.blocks, c.month], k && k.list.map((p) => [p.name, p.song]), stage === 'info' ? Math.floor(Date.now() / 9000) : 0, t2on()]); // t2on: al cambiar de diseño se vuelve a dibujar
       if (sig === shown) return;
       const wasKaraoke = shown.startsWith('["karaoke"');
@@ -213,7 +215,8 @@
     };
     await tick();
     const timer = setInterval(tick, 2500);
-    return () => { alive = false; clearInterval(timer); stopSub(); document.body.classList.remove('obs', 'gc-screen'); };
+    const offAviso = window.onAviso(tick); // el cambio de GC llega al instante
+    return () => { alive = false; clearInterval(timer); offAviso(); stopSub(); document.body.classList.remove('obs', 'gc-screen'); };
   };
 
   // ---------- Celular del público ----------

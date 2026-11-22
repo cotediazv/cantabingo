@@ -27,6 +27,22 @@ async function api(method, url, body) {
   if (!res.ok) throw Object.assign(new Error(data.error || 'Error inesperado'), { status: res.status });
   return data;
 }
+// Aviso inmediato del servidor (pedido de Cote, 22 nov: que el GC y los efectos respondan fluido): las pantallas siguen
+// preguntando cada pocos segundos qué mostrar, pero además escuchan /api/live y, apenas algo cambia (escenario, GC de la
+// sala light, un efecto), vuelven a preguntar en el acto. window.onAviso(fn) anota una función y devuelve cómo quitarla.
+// Los monitores del GC Master (?mon=1) no abren su propia conexión (son varios en una misma página): la página que los
+// contiene les pasa el aviso, y cada una lo pasa a las que tenga dentro.
+window.onAviso = (() => {
+  const fns = new Set(); let es = null; let t = null;
+  const relay = () => { for (const f of document.querySelectorAll('iframe')) { try { f.contentWindow.postMessage('krb-aviso', location.origin); } catch (e) { /* marco de otro sitio */ } } };
+  const fire = () => { clearTimeout(t); t = setTimeout(() => { fns.forEach((f) => { try { f(); } catch (e) { /* cada pantalla se cuida sola */ } }); relay(); }, 20); };
+  if (window.__mon) window.addEventListener('message', (e) => { if (e.origin === location.origin && e.data === 'krb-aviso') fire(); });
+  const sync = () => {
+    if (fns.size && !es && window.EventSource && !window.__mon) { try { es = new EventSource('/api/live'); es.onmessage = fire; } catch (e) { es = null; } }
+    else if (!fns.size && es) { es.close(); es = null; }
+  };
+  return (fn) => { fns.add(fn); sync(); return () => { fns.delete(fn); sync(); }; };
+})();
 let toastTimer;
 function toast(msg) {
   const t = $('#toast');
@@ -1372,8 +1388,9 @@ views.tablero = async () => {
   document.addEventListener('keydown', enableSound);
   if (!mute) sfx.unlock(); // donde el navegador lo permite sin tocar (pantallas en modo quiosco), queda activo de inmediato
   setTimeout(paintSound, 300);
+  let again = false; // llegó un aviso mientras se armaba la pantalla: se vuelve a mirar al terminar
   const apply = async () => {
-    if (busy) return;
+    if (busy) { again = true; return; }
     busy = true;
     try {
       const show = (await api('GET', '/api/stage').catch(() => ({}))).show || current || 'none';
@@ -1395,11 +1412,12 @@ views.tablero = async () => {
         joinQr({ sorteo: 'tr', rueda: 'tr', show: 'br' }[show]);
       }
       mark();
-    } finally { busy = false; }
+    } finally { busy = false; if (again) { again = false; apply(); } }
   };
   await apply();
   const timer = setInterval(apply, 2000);
-  return () => { clearInterval(timer); if (typeof stop === 'function') stop(); joinQr(); document.body.classList.remove('full'); soundBtn.remove(); document.removeEventListener('pointerdown', enableSound); document.removeEventListener('keydown', enableSound); };
+  const offAviso = window.onAviso(apply);
+  return () => { clearInterval(timer); offAviso(); if (typeof stop === 'function') stop(); joinQr(); document.body.classList.remove('full'); soundBtn.remove(); document.removeEventListener('pointerdown', enableSound); document.removeEventListener('keydown', enableSound); };
 };
 
 // Tablero para una pantalla puesta de pie (girada 90° a la izquierda) que recibe la señal horizontal de siempre:
@@ -1407,7 +1425,7 @@ views.tablero = async () => {
 // igual que se hace con los videos para esa pantalla. Va sin sonido.
 views['tablero-v'] = async () => {
   document.body.classList.add('rot-screen');
-  app.innerHTML = `<iframe class="rot-frame" title="Tablero vertical" src="${location.pathname}?mudo=1#/tablero"></iframe>`;
+  app.innerHTML = `<iframe class="rot-frame" title="Tablero vertical" src="${location.pathname}?mudo=1${window.__mon || ''}#/tablero"></iframe>`;
   return () => document.body.classList.remove('rot-screen');
 };
 
@@ -1900,8 +1918,9 @@ views.escena = async () => {
   let stop = null;
   let busy = false;
   document.body.classList.add('obs');
+  let again = false; // llegó un aviso mientras se armaba la pantalla: se vuelve a mirar al terminar
   const apply = async () => {
-    if (busy) return;
+    if (busy) { again = true; return; }
     busy = true;
     try {
       const show = (await api('GET', '/api/stage').catch(() => ({}))).show || current || 'none';
@@ -1923,11 +1942,12 @@ views.escena = async () => {
         joinQr({ sorteo: 'br', rueda: 'bl', show: 'above', votojuego: 'br' }[show]);
         document.body.classList.add('obs');
       }
-    } finally { busy = false; }
+    } finally { busy = false; if (again) { again = false; apply(); } }
   };
   await apply();
   const timer = setInterval(apply, 2000);
-  return () => { clearInterval(timer); if (typeof stop === 'function') stop(); joinQr(); document.body.classList.remove('obs'); };
+  const offAviso = window.onAviso(apply);
+  return () => { clearInterval(timer); offAviso(); if (typeof stop === 'function') stop(); joinQr(); document.body.classList.remove('obs'); };
 };
 
 // Red de seguridad para los nombres en pantalla: el CSS ya calcula la letra según el largo, pero si un
@@ -2094,9 +2114,13 @@ const neuralBg = (() => {
   const weak = (navigator.deviceMemory && navigator.deviceMemory <= 2) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2);
   let c = null; let x = null; let mode = ''; let W = 0; let H = 0; let k = 1; let pts = []; let pulses = []; let raf = 0; let last = 0;
   let colors = PALETTES.frida; let boxes = []; let holes = []; let boxesAt = 0;
+  // Para que las pantallas vayan fluidas en cualquier equipo (pedido de Cote, 22 nov): si no hay nada que dibujar no se
+  // toca el lienzo (así el navegador no trabaja de más); en los monitores del GC Master (?mon=1) el fondo animado no va;
+  // y si el equipo no da abasto (menos de 22 cuadros por segundo de forma sostenida) se apaga solo y el fondo queda quieto
+  const MON = document.documentElement.classList.contains('mon');
+  let blank = true; let slow = false; let fT = 0; let fN = 0; let fPrev = 0; let bad = 0; let retry = 5;
   const build = () => {
-    const dpr = Math.min(2, devicePixelRatio || 1);
-    W = innerWidth; H = innerHeight; c.width = W * dpr; c.height = H * dpr; x.setTransform(dpr, 0, 0, dpr, 0, 0);
+    W = innerWidth; H = innerHeight; cw = -1; frameTo(0, 0, W, H); // en los GC se ajusta después a la zona de los recuadros
     k = Math.max(1, Math.min(W, H) / 700); // más grande que antes (pedido de Cote)
     // Pocos destellos a la vez, repartidos (pedido de Cote: uno acá, otro abajo, otro arriba; no cientos, que se ve sucio)
     let n = Math.round(Math.min(18, (W * H) / (60000 * k * k)));
@@ -2113,38 +2137,74 @@ const neuralBg = (() => {
     return { x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - 0.5) * 0.5 * k, vy: (Math.random() - 0.5) * 0.5 * k, c: Math.floor(Math.random() * 5), life, age: anyAge ? Math.random() * life : 0 };
   };
   const alphaOf = (a) => { const f = a.age / a.life; return f < 0.2 ? f / 0.2 : f > 0.75 ? Math.max(0, (1 - f) / 0.25) : 1; };
+  // El lienzo ocupa toda la pantalla en los tableros; en los GC, solo la zona donde están los recuadros (así el navegador
+  // recompone un pedazo y no la pantalla entera en cada cuadro). Se dibuja siempre en las coordenadas de la página.
+  let ox = 0; let oy = 0; let cw = -1; let ch = -1;
+  const frameTo = (l, t, w, h) => {
+    if (l === ox && t === oy && w === cw && h === ch) return;
+    const dpr = Math.min(2, devicePixelRatio || 1);
+    ox = l; oy = t; cw = w; ch = h;
+    c.width = Math.max(1, Math.round(w * dpr)); c.height = Math.max(1, Math.round(h * dpr));
+    if (mode === 'gc') Object.assign(c.style, { left: `${l}px`, top: `${t}px`, right: 'auto', bottom: 'auto', width: `${w}px`, height: `${h}px` });
+    x.setTransform(dpr, 0, 0, dpr, -l * dpr, -t * dpr); blank = true;
+  };
+  const inside = (o, b) => o.left <= b.left && o.top <= b.top && o.right >= b.right && o.bottom >= b.bottom;
   const readBoxes = () => {
-    boxes = Array.from(document.querySelectorAll(BOXES)).map((e) => ({ r: e.getBoundingClientRect(), rad: parseFloat(getComputedStyle(e).borderRadius) || 0 })).filter((b) => b.r.width > 0 && b.r.height > 0);
+    const shown = c && getComputedStyle(c).display !== 'none';
+    boxes = !shown ? [] : Array.from(document.querySelectorAll(BOXES)).map((e) => ({ r: e.getBoundingClientRect(), rad: parseFloat(getComputedStyle(e).borderRadius) || 0 })).filter((b) => b.r.width > 0 && b.r.height > 0);
+    // un recuadro que está entero dentro de otro no se dibuja aparte (quedaría con doble brillo)
+    boxes = boxes.filter((b, i) => !boxes.some((o, n) => n !== i && inside(o.r, b.r) && !(inside(b.r, o.r) && n > i)));
     holes = Array.from(document.querySelectorAll(NO_FX)).map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0);
     boxesAt = Date.now();
+    if (boxes.length) {
+      // la zona que abarcan los recuadros, en pasos de 16 px para no rehacer el lienzo por cambios mínimos
+      const l = Math.max(0, Math.floor(Math.min(...boxes.map((b) => b.r.left)) / 16) * 16); const t = Math.max(0, Math.floor(Math.min(...boxes.map((b) => b.r.top)) / 16) * 16);
+      const r = Math.min(W, Math.ceil(Math.max(...boxes.map((b) => b.r.right)) / 16) * 16); const bt = Math.min(H, Math.ceil(Math.max(...boxes.map((b) => b.r.bottom)) / 16) * 16);
+      if (r > l && bt > t) frameTo(l, t, r - l, bt - t); else boxes = [];
+    }
   };
   const path = (r, rad) => { if (x.roundRect) x.roundRect(r.left, r.top, r.width, r.height, Math.min(rad, r.height / 2)); else x.rect(r.left, r.top, r.width, r.height); };
   const draw = () => {
     const R = 200 * k;
-    x.clearRect(0, 0, W, H);
     if (mode === 'gc') {
       if (Date.now() - boxesAt > 600) readBoxes();
-      if (!boxes.length) return;
-      x.save(); x.beginPath(); for (const b of boxes) path(b.r, b.rad); x.clip();
+      if (!boxes.length) { if (!blank) { x.clearRect(ox, oy, cw, ch); blank = true; } return; } // nada que dibujar: el lienzo queda quieto
     }
-    x.lineWidth = 2.2 * k;
+    blank = false;
+    x.clearRect(ox, oy, cw, ch);
+    // los tramos entre neuronas cercanas se calculan una vez por cuadro
+    const segs = [];
     for (let i = 0; i < pts.length; i++) {
       const a = pts[i];
       for (let j = i + 1; j < pts.length; j++) {
         const b = pts[j]; const d = Math.hypot(a.x - b.x, a.y - b.y);
-        if (d < R) { x.strokeStyle = `rgba(243,238,230,${(1 - d / R) * (mode === 'gc' ? 0.45 : 0.38) * Math.min(alphaOf(a), alphaOf(b))})`; x.beginPath(); x.moveTo(a.x, a.y); x.lineTo(b.x, b.y); x.stroke(); }
+        if (d < R) segs.push([a.x, a.y, b.x, b.y, (1 - d / R) * (mode === 'gc' ? 0.45 : 0.38) * Math.min(alphaOf(a), alphaOf(b))]);
       }
     }
-    for (const p of pulses) {
-      const px = p.a.x + (p.b.x - p.a.x) * p.t; const py = p.a.y + (p.b.y - p.a.y) * p.t;
-      x.globalAlpha = Math.min(alphaOf(p.a), alphaOf(p.b));
-      x.strokeStyle = `${colors[p.a.c]}aa`; x.lineWidth = 3 * k; x.beginPath(); x.moveTo(p.a.x, p.a.y); x.lineTo(px, py); x.stroke();
-      x.fillStyle = colors[p.a.c]; x.beginPath(); x.arc(px, py, 6.5 * k, 0, 7); x.fill();
+    // dibuja lo que toca la zona (l, t, r, b); lo que queda fuera ni se intenta
+    const m = 8 * k;
+    const net = (l, t, r, b) => {
+      x.lineWidth = 2.2 * k;
+      for (const s of segs) {
+        if (Math.max(s[0], s[2]) < l - m || Math.min(s[0], s[2]) > r + m || Math.max(s[1], s[3]) < t - m || Math.min(s[1], s[3]) > b + m) continue;
+        x.strokeStyle = `rgba(243,238,230,${s[4]})`; x.beginPath(); x.moveTo(s[0], s[1]); x.lineTo(s[2], s[3]); x.stroke();
+      }
+      for (const p of pulses) {
+        const px = p.a.x + (p.b.x - p.a.x) * p.t; const py = p.a.y + (p.b.y - p.a.y) * p.t;
+        if (Math.max(p.a.x, px) < l - m || Math.min(p.a.x, px) > r + m || Math.max(p.a.y, py) < t - m || Math.min(p.a.y, py) > b + m) continue;
+        x.globalAlpha = Math.min(alphaOf(p.a), alphaOf(p.b));
+        x.strokeStyle = `${colors[p.a.c]}aa`; x.lineWidth = 3 * k; x.beginPath(); x.moveTo(p.a.x, p.a.y); x.lineTo(px, py); x.stroke();
+        x.fillStyle = colors[p.a.c]; x.beginPath(); x.arc(px, py, 6.5 * k, 0, 7); x.fill();
+        x.globalAlpha = 1;
+      }
+      for (const a of pts) { if (a.x < l - m || a.x > r + m || a.y < t - m || a.y > b + m) continue; x.globalAlpha = 0.9 * alphaOf(a); x.fillStyle = colors[a.c]; x.beginPath(); x.arc(a.x, a.y, 5.5 * k, 0, 7); x.fill(); }
       x.globalAlpha = 1;
-    }
-    for (const a of pts) { x.globalAlpha = 0.9 * alphaOf(a); x.fillStyle = colors[a.c]; x.beginPath(); x.arc(a.x, a.y, 5.5 * k, 0, 7); x.fill(); }
-    x.globalAlpha = 1;
-    if (mode === 'gc') { x.restore(); for (const h of holes) x.clearRect(h.left - 2, h.top - 2, h.width + 4, h.height + 4); }
+    };
+    if (mode !== 'gc') { net(-1e9, -1e9, 1e9, 1e9); return; }
+    // En los GC: recuadro por recuadro, con un recorte simple cada uno (recortar todo junto con una sola forma compuesta
+    // era carísimo: más de un núcleo y medio de trabajo permanente en el GC de El Rosco)
+    for (const bx of boxes) { x.save(); x.beginPath(); path(bx.r, bx.rad); x.clip(); net(bx.r.left, bx.r.top, bx.r.right, bx.r.bottom); x.restore(); }
+    for (const h of holes) x.clearRect(h.left - 2, h.top - 2, h.width + 4, h.height + 4);
   };
   const newPulse = () => {
     if (!pts.length) return;
@@ -2156,7 +2216,11 @@ const neuralBg = (() => {
     raf = 0;
     if (!c || document.hidden) return;
     raf = requestAnimationFrame(step);
-    if (now - last < 33) return; // 30 cuadros por segundo como máximo
+    // Vigilante: cuenta los cuadros que el equipo logra dar; con 3 tramos seguidos de 3 s bajo 22 por segundo, se apaga
+    const gap = now - fPrev; fPrev = now;
+    if (gap > 0 && gap < 400) { fT += gap; fN++; } else { fT = 0; fN = 0; } // un salto largo es una pausa (pantalla oculta), no lentitud
+    if (fT >= 3000) { bad = fT / fN > 45 && now > 15000 ? bad + 1 : 0; fT = 0; fN = 0; if (bad >= 3) { goSlow(); return; } }
+    if (now - last < 29) return; // 30 cuadros por segundo como máximo
     last = now;
     for (let i = 0; i < pts.length; i++) {
       const a = pts[i];
@@ -2170,9 +2234,16 @@ const neuralBg = (() => {
     draw();
   };
   const stop = () => { cancelAnimationFrame(raf); raf = 0; if (c) c.remove(); c = null; mode = ''; };
+  // Equipo lento: sin fondo animado (clase «lento»: el fondo de las pantallas también queda quieto). Se vuelve a probar
+  // a los 5 min, después a los 20 y de ahí cada hora, por si la lentitud fue pasajera
+  const goSlow = () => {
+    slow = true; document.documentElement.classList.add('lento'); stop();
+    setTimeout(() => { slow = false; document.documentElement.classList.remove('lento'); sync(); }, retry * 60000);
+    retry = retry < 20 ? 20 : 60;
+  };
   const sync = () => {
     const cl = document.body.classList;
-    const want = cl.contains('full') ? 'full' : cl.contains('obs') ? 'gc' : '';
+    const want = MON || slow ? '' : cl.contains('full') ? 'full' : cl.contains('obs') ? 'gc' : '';
     colors = PALETTES[document.body.dataset.venue] || PALETTES.frida;
     if (want === mode) return;
     stop();
@@ -2181,7 +2252,7 @@ const neuralBg = (() => {
     c = document.createElement('canvas'); c.id = 'neural-bg'; c.setAttribute('aria-hidden', 'true');
     if (mode === 'gc') c.className = 'neural-gc';
     document.body.insertBefore(c, document.body.firstChild);
-    x = c.getContext('2d'); build();
+    x = c.getContext('2d'); build(); blank = true; fT = 0; fN = 0; bad = 0;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) { for (let i = 0; i < 10; i++) newPulse(); pulses.forEach((p, i) => { p.t = 0.3 + (i % 5) * 0.12; }); draw(); } else raf = requestAnimationFrame(step);
   };
   addEventListener('resize', () => { if (c) { build(); boxesAt = 0; draw(); } });

@@ -105,7 +105,7 @@
     const tick = () => {
       if (g && g.phase === 'intro') { paint(); return; } // la lámina avanza sola
       const el = $('#gv .gv-clock');
-      if (el && g && g.phase === 'voting') { const left = g.until - (Date.now() + off); el.textContent = left > 0 ? clock(left) : 'contando votos…'; }
+      if (el && g && g.phase === 'voting') { const left = g.until - (Date.now() + off); const t = left > 0 ? clock(left) : 'contando votos…'; if (el.textContent !== t) el.textContent = t; }
     };
     const load = async () => {
       const r = await api('GET', '/api/gamevote').catch(() => null);

@@ -22,7 +22,8 @@
   // Capa gráfica sobre la cámara (pedido de Cote, 21 nov): piezas que se disparan sobre el GC de OBS del local y salen solas
   const CAPA = [['cortina', '🎬', 'Cortina', 'Cortina'], ['texto3d', '🧊', 'Texto 3D', 'Texto 3D'], ['celebracion', '🎉', 'Celebración', 'Celebración'], ['fuegos', '🎆', 'Fuegos', 'Fuegos artificiales'],
     ['confeti', '🎊', 'Confeti', 'Lluvia de confeti'], ['luces', '🔦', 'Luces', 'Luces de escenario'], ['corazones', '❤️', 'Corazones', 'Corazones'], ['off', '✖', 'Quitar', 'Quitar lo que está en pantalla']];
-  const page = (hash) => `${location.pathname}?mudo=1${hash}`;
+  // los monitores van en modo liviano (?mon=1): la misma pantalla, sin fondo animado, para no cargar el computador
+  const page = (hash) => `${location.pathname}?mudo=1&mon=1${hash}`;
 
   const venueHTML = (v) => `<section class="gm-venue th-${v}" data-v="${v}">
       <header class="gm-head"><b>${esc(VENUES[v])}</b><span class="gm-live" data-k="live">Sin transmisión en vivo</span><span class="gm-sala" data-k="sala"></span><button type="button" class="gm-listen" data-audio="${v}">🔇 Escuchar</button></header>
@@ -70,7 +71,7 @@
       if (dead) return;
       const mode = own ? 'own' : live ? 'twitch' : 'gc';
       label(mode === 'own' ? 'Transmisión nuestra' : mode === 'twitch' ? 'Twitch' : 'GC · sin transmisión');
-      const next = mode === 'own' ? 'own' : mode === 'twitch' ? `https://player.twitch.tv/?channel=${TWITCH[v]}&parent=${location.hostname}&muted=true&autoplay=true` : '/?mudo=1#/escena';
+      const next = mode === 'own' ? 'own' : mode === 'twitch' ? `https://player.twitch.tv/?channel=${TWITCH[v]}&parent=${location.hostname}&muted=true&autoplay=true` : '/?mudo=1&mon=1#/escena';
       if (next === src) return;
       src = next;
       vid.hidden = mode !== 'own'; inner.hidden = mode === 'own';
@@ -166,7 +167,7 @@
       ro.disconnect();
       root.querySelector('[data-k="mtitle"]').textContent = venue ? VENUES[venue] : 'Sala de juegos';
       if (sigStop) { sigStop(); sigStop = null; }
-      mon.innerHTML = venue ? `<div class="gm-scr th-${venue}"><small data-k="p1name">GC</small><div class="gm-box" data-w="1280" data-k="p1box"></div></div>${[['Tablero', '#/tablero', 1280, ''], ['De pie', '#/tablero', 720, 'gm-tall']].map(([t, h, w, tall]) => `<div class="gm-scr ${tall} th-${venue}"><small>${t}</small><div class="gm-box" data-w="${w}"><iframe title="${t}" tabindex="-1" src="/?mudo=1${h}"></iframe></div></div>`).join('')}`
+      mon.innerHTML = venue ? `<div class="gm-scr th-${venue}"><small data-k="p1name">GC</small><div class="gm-box" data-w="1280" data-k="p1box"></div></div>${[['Tablero', '#/tablero', 1280, ''], ['De pie', '#/tablero', 720, 'gm-tall']].map(([t, h, w, tall]) => `<div class="gm-scr ${tall} th-${venue}"><small>${t}</small><div class="gm-box" data-w="${w}"><iframe title="${t}" tabindex="-1" src="/?mudo=1&mon=1${h}"></iframe></div></div>`).join('')}`
         : '<p class="gmm-none">No hay sala de juegos abierta. Créala aquí abajo, con «Crear sala de juegos».</p>';
       if (venue) sigStop = signal1(mon.querySelector('[data-k="p1box"]'), venue, { fit, label: (t) => { const el = mon.querySelector('[data-k="p1name"]'); if (el) el.textContent = t; } });
       gc.innerHTML = venue ? `<div class="gm-venue th-${venue}" data-v="${venue}">
@@ -213,8 +214,9 @@
     await load();
     const t3 = startClock(root);
     const t1 = setInterval(load, 3000);
+    const offAviso = window.onAviso(load); // el botón encendido y los monitores cambian al instante (aviso del servidor)
     const t4 = setInterval(fitPanel, 400);
-    return () => { alive = false; if (sigStop) sigStop(); clearInterval(t1); clearInterval(t3); clearInterval(t4); window.removeEventListener('resize', fitPanel); ro.disconnect(); document.body.classList.remove('gm-on', 'gmm-on'); };
+    return () => { alive = false; offAviso(); if (sigStop) sigStop(); clearInterval(t1); clearInterval(t3); clearInterval(t4); window.removeEventListener('resize', fitPanel); ro.disconnect(); document.body.classList.remove('gm-on', 'gmm-on'); };
   };
 
   // «Sala de juegos» (pedido de Cote, 22 nov: «que tengamos Mercado Kennedy, Frida, Tobalaba y luego sala de juegos, para
@@ -294,8 +296,9 @@
     await load();
     const t3 = startClock(root);
     const t1 = setInterval(load, 3000);
+    const offAviso = window.onAviso(load); // el botón encendido y los monitores cambian al instante (aviso del servidor)
     const t4 = setInterval(fitPanel, 400);
-    return () => { alive = false; if (sigStop) sigStop(); clearInterval(t1); clearInterval(t3); clearInterval(t4); window.removeEventListener('resize', fitPanel); ro.disconnect(); document.body.classList.remove('gm-on'); };
+    return () => { alive = false; offAviso(); if (sigStop) sigStop(); clearInterval(t1); clearInterval(t3); clearInterval(t4); window.removeEventListener('resize', fitPanel); ro.disconnect(); document.body.classList.remove('gm-on'); };
   };
 
   // Una página del GC Master: uno o los tres locales
@@ -487,8 +490,9 @@
     fit();
     const t3 = startClock(root);
     const t1 = setInterval(load, 3000);
+    const offAviso = window.onAviso(load); // el botón encendido y los monitores cambian al instante (aviso del servidor)
     const t2 = setInterval(loadLive, 20000);
-    return () => { alive = false; clearInterval(t1); clearInterval(t2); clearInterval(t3); ro.disconnect(); document.removeEventListener('visibilitychange', onVisible); list.forEach((v) => { clearInterval(fades[v]); ownStop(v); }); document.body.classList.remove('gm-on'); };
+    return () => { alive = false; offAviso(); clearInterval(t1); clearInterval(t2); clearInterval(t3); ro.disconnect(); document.removeEventListener('visibilitychange', onVisible); list.forEach((v) => { clearInterval(fades[v]); ownStop(v); }); document.body.classList.remove('gm-on'); };
   };
 
   // #/master: los 3 locales juntos · #/master/<local>: la página de un local · #/master/juegos: la sala de juegos ·

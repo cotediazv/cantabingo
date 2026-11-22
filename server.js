@@ -703,13 +703,28 @@ const STAGES = ['bingo', 'rueda', 'sorteo', 'qr', 'karaoke', 'show', 'voto', 'in
 // El Rosco aunque se apriete otra cosa (un botón del bingo, el escenario a mano o el karaoke automático); al terminar
 // el rosco (ganador, empate o se acabó), todo vuelve a funcionar como siempre. Devuelve false si no se cambió.
 let roscoRef = null; // El Rosco (wheel.js), una vez cargado
+// Aviso inmediato a las pantallas (pedido de Cote, 22 nov: que el GC y los efectos respondan fluido). Las pantallas (GC de
+// OBS, tableros, pantallas de los locales y la capa gráfica) preguntaban cada 1 a 3 segundos qué mostrar; ahora además
+// quedan escuchando aquí y, cuando cambia el escenario, el GC de una sala light o se dispara un efecto, vuelven a
+// preguntar al instante. Si esta conexión falla, siguen preguntando cada pocos segundos como siempre.
+const avisoClients = new Set();
+const aviso = () => { for (const res of avisoClients) res.write('data: cambio\n\n'); };
+app.get('/api/live', (req, res) => {
+  res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
+  res.flushHeaders();
+  res.write('data: hola\n\n');
+  avisoClients.add(res);
+  const ping = setInterval(() => res.write(': ping\n\n'), 25000);
+  req.on('close', () => { clearInterval(ping); avisoClients.delete(res); });
+});
 const roscoLock = (show) => show !== 'rueda' && !!roscoRef && roscoRef.inPlay();
 const setStage = (show) => {
-  if (roscoLock(show)) { if (db.stage !== 'rueda') { db.stage = 'rueda'; save(); for (const s of Object.values(db.sessions)) broadcast(s); } return false; }
+  if (roscoLock(show)) { if (db.stage !== 'rueda') { db.stage = 'rueda'; save(); for (const s of Object.values(db.sessions)) broadcast(s); aviso(); } return false; }
   const changed = db.stage !== show;
   db.stage = show;
   save();
   if (changed) for (const s of Object.values(db.sessions)) broadcast(s); // los celulares se enteran del cambio de juego
+  if (changed) aviso(); // y las pantallas, al instante
 };
 const wheel = require('./wheel.js')({ app, db, save, requireAdmin, fail, setStage, findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null });
 roscoRef = wheel;
@@ -740,8 +755,8 @@ const vote = require('./vote.js')({ app, db, save, requireAdmin, fail, setStage,
 // «Síguenos en Instagram»: la cuenta del local de la sala abierta
 const insta = require('./insta.js')({ app, db, save, requireAdmin, fail, venue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
 // Sala light: karaoke, show y cartelera en otro local, al mismo tiempo que la sala principal
-lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta });
-require('./capa.js')({ app, requireLocal, fail }); // capa gráfica sobre la cámara (botones del GC Master)
+lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta, aviso });
+require('./capa.js')({ app, requireLocal, fail, aviso }); // capa gráfica sobre la cámara (botones del GC Master)
 require('./vertical.js')({ app, db, save, requireAdmin, fail, karaoke, dir: path.dirname(DATA_FILE) }); // pantalla vertical: video del mes y actividades
 require('./youtube.js')({ app }); // últimos videos del canal, para la página web
 require('./twitch.js')({ app }); // videos y transmisiones en vivo de Twitch, para la página web

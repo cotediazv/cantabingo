@@ -27,9 +27,13 @@ html.t2 body.full { background: transparent; color: var(--t-texto); }
 html.t2 body.full::before { top: -25%; right: -25%; bottom: -25%; left: -25%;
   background: radial-gradient(circle at 26% 22%, color-mix(in srgb, var(--t-c) 46%, transparent) 0, transparent 40%), radial-gradient(circle at 78% 82%, rgba(244, 191, 90, .22) 0, transparent 38%),
     repeating-linear-gradient(115deg, rgba(255, 255, 255, .028) 0 1px, transparent 1px 3.2vh), linear-gradient(160deg, #15131e, #0c0b12 55%, #07060c);
-  animation: t2foco 18s ease-in-out infinite alternate; }
+  animation: t2foco 18s steps(108) infinite alternate; } /* se mueve tan lento que basta con 6 pasos por segundo: se ve igual y el navegador trabaja la décima parte */
 @keyframes t2foco { from { transform: translate(0, 0) scale(1); } to { transform: translate(3%, 2%) scale(1.08); } }
 @media (prefers-reduced-motion: reduce) { html.t2 body.full::before { animation: none; } }
+
+/* Las «neuronas» de los GC: sobre los recuadros oscuros del diseño nuevo se ven igual sin la mezcla «screen», que obligaba
+   al navegador a recomponer toda la pantalla en cada cuadro (pesado para el computador de OBS) */
+html.t2 #neural-bg.neural-gc { mix-blend-mode: normal; }
 
 /* Logos del local (KRB Stage | local): un poco más grandes y sin sombra pesada */
 html.t2 .venue-mark { filter: none; }

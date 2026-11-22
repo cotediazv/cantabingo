@@ -25,7 +25,7 @@
   views.vertical = async (local) => {
     const v = pick(local);
     document.body.classList.add('rot-screen');
-    app.innerHTML = `<iframe class="rot-frame" title="Pantalla vertical" src="${location.pathname}?mudo=1#/vertical-in/${v}"></iframe>`;
+    app.innerHTML = `<iframe class="rot-frame" title="Pantalla vertical" src="${location.pathname}?mudo=1${window.__mon || ''}#/vertical-in/${v}"></iframe>`;
     return () => document.body.classList.remove('rot-screen');
   };
 
@@ -43,9 +43,11 @@
     let ver = 0;
     let alive = true;
     let lightId = '';
+    let seq = 0; // si dos lecturas se cruzan (la de cada 3 s y la del aviso inmediato), vale solo la última
     const apply = async () => {
+      const n = ++seq;
       const st = await api('GET', `/api/vertical/${v}`).catch(() => null);
-      if (!alive || !st) return;
+      if (!alive || !st || n !== seq) return;
       if (st.video !== ver) {
         ver = st.video;
         // La página web (krbstage.cl) puede pasar una copia liviana del mismo video (?liviano=<dirección>&lver=<versión>),
@@ -70,11 +72,12 @@
       video.hidden = !isVideo || !ver;
       empty.hidden = !isVideo || !!ver;
       frame.hidden = isVideo;
-      if (isVideo) { frame.src = 'about:blank'; if (ver) video.play().catch(() => {}); } else { video.pause(); frame.src = `${location.pathname}?mudo=1${want}`; }
+      if (isVideo) { frame.src = 'about:blank'; if (ver) video.play().catch(() => {}); } else { video.pause(); frame.src = `${location.pathname}?mudo=1${window.__mon || ''}${want}`; }
     };
     await apply();
     const timer = setInterval(apply, 3000);
-    return () => { alive = false; clearInterval(timer); document.body.classList.remove('vert-in'); };
+    const offAviso = window.onAviso(apply);
+    return () => { alive = false; clearInterval(timer); offAviso(); document.body.classList.remove('vert-in'); };
   };
 
   // Karaoke de la sala light de un local a pantalla completa (lo usa la pantalla vertical)

@@ -17,7 +17,7 @@
   const setClock = (st) => { if (st.clockUntil !== clockKey) { clockKey = st.clockUntil; if (st.clockUntil) clockEnd = Date.now() + (st.clockUntil - st.now); } }; // al cerrarse se conserva la hora de término, para saber si fue antes de tiempo
   const clockLeft = () => Math.max(0, clockEnd - Date.now());
   const clockText = () => { const s = Math.ceil(clockLeft() / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
-  setInterval(() => { if (clockKey) for (const el of document.querySelectorAll('.v-clock')) el.textContent = clockText(); }, 200);
+  setInterval(() => { if (clockKey) { const t = clockText(); for (const el of document.querySelectorAll('.v-clock')) if (el.textContent !== t) el.textContent = t; } }, 200);
   const thing = (p) => (p.thing ? `<i class="v-thing">${esc(p.thing)}</i>` : '');
   const withThing = (p) => (p.thing ? `${p.name} · ${p.thing}` : p.name);
   const isK = (st) => st.mode === 'karaoke';

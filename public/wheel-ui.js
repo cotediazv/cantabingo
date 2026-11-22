@@ -57,7 +57,8 @@
         const i = Number(el.dataset.timer);
         const c = st.players[i];
         const live = st.runningSince && i === st.turn ? Math.max(0, c.remainingMs - (Date.now() + st.offset - st.runningSince)) : c.remainingMs;
-        el.textContent = clock(live);
+        const t = clock(live);
+        if (el.textContent !== t) el.textContent = t; // solo cuando cambia: escribir lo mismo 5 veces por segundo hacía redibujar
       });
     }, 200);
     return () => clearInterval(timer);

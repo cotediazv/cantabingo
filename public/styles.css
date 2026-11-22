@@ -3028,3 +3028,12 @@ body.gmm-on .krb-mark { display: none; }
 .gmm-mon > .gm-tall { justify-self: center; width: calc(var(--h3) * .5625); }
 .gmm-mon > .gmm-none { grid-row: auto; }
 .gmm-mon > .gm-scr:not(:first-child) > small { padding: 1px 3px; font-size: .42rem; letter-spacing: 0; }
+
+/* Pantallas fluidas en cualquier equipo (pedido de Cote, 22 nov). En los monitores del GC Master (html.mon, ?mon=1) y en
+   los equipos que no dan abasto (html.lento, lo pone solo el vigilante de app.js) el fondo de las pantallas queda quieto:
+   se ve igual, pero el navegador deja de redibujar toda la pantalla sin parar. */
+html.mon body.full::before, html.lento body.full::before { animation: none !important; }
+/* y los rayos que giran detrás del sorteo de concursantes y de los ganadores (son capas enormes: pesan mucho en un equipo
+   modesto) quedan quietos en esos mismos dos casos; en un equipo normal siguen girando como siempre */
+html.mon body.full #rf .rf-rays, html.lento body.full #rf .rf-rays, html.mon #fb .bwin::before, html.lento #fb .bwin::before,
+html.mon body.full .win-screen::before, html.lento body.full .win-screen::before { animation: none !important; }
