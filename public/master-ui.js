@@ -7,6 +7,12 @@
   const VENUES = { kennedy: 'Mercado Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' };
   const ORDER = ['kennedy', 'frida', 'tobalaba'];
   const TWITCH = { kennedy: 'krbstagekennedy', frida: 'krbstage', tobalaba: 'krbstage3' }; // canal de la transmisión de cada local
+  // Transmisión nuestra (señal propia de baja latencia, la misma que usa la página web krbstage.cl) de cada local
+  const OWN = {
+    kennedy: 'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/c24ccde66ad7d935841dd934d9b3e1cf/webRTC/play',
+    frida: 'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/2c9c627707b0fbc53e20c611f84235a0/webRTC/play',
+    tobalaba: 'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/9c4d261a1b6c2fb79842b6d3821b9018/webRTC/play',
+  };
   const BOARD = { kennedy: 'kennedy-h', frida: 'frida-h', tobalaba: 'tobalaba' }; // pantalla horizontal (tablero) de cada local
   const VERT = { kennedy: 'kennedy', frida: 'frida', tobalaba: 'tobalaba-v' }; // pantalla vertical de cada local
   // Opciones del GC de la sala light (las mismas del panel de la sala light)
@@ -20,7 +26,7 @@
       <div class="gm-screens">
         <div class="gm-left">
           <div class="gm-scr"><small>1 · <span data-k="p1name">Vivo o GC</span></small>
-            <div class="gm-box" data-k="p1" data-w="1280"></div></div>
+            <div class="gm-box" data-w="1280"><video class="gm-own" data-k="own" muted autoplay playsinline hidden></video><div class="gm-p1in" data-k="p1"></div></div></div>
           <div class="gm-scr"><small>2 · Tablero</small>
             <div class="gm-box" data-w="1280"><iframe title="Tablero de ${esc(VENUES[v])}" tabindex="-1" src="${page(`#/pantalla/${BOARD[v]}`)}"></iframe></div></div>
         </div>
@@ -42,7 +48,7 @@
     const root = $('#gm');
     const el = (v, k) => root.querySelector(`.gm-venue[data-v="${v}"] [data-k="${k}"]`);
     const state = {}; // por local: lo que eligió el operador para la pantalla 1 y lo último dibujado
-    list.forEach((v) => { state[v] = { p1: 'auto', p1src: '', keys: '', live: false, main: null, light: null }; });
+    list.forEach((v) => { state[v] = { p1: 'auto', p1src: '', keys: '', live: false, viewers: 0, own: false, pc: null, ownTimer: null, main: null, light: null }; });
     let alive = true;
 
     // Las pantallas son las páginas reales, achicadas al ancho de su cuadro
@@ -53,23 +59,58 @@
     const ro = new ResizeObserver(fit);
     root.querySelectorAll('.gm-box').forEach((b) => ro.observe(b));
 
-    // Pantalla 1: video en vivo o GC con un fondo. En «Automático»: el video en vivo y, si no hay transmisión, el GC
+    // Señal 1, en este orden de prioridad (pedido de Cote, 22 nov): 1.º la transmisión nuestra (señal propia), 2.º la
+    // transmisión de Twitch y 3.º el GC con un fondo. «Pantalla 1: vivo» la deja en la transmisión (nuestra o Twitch) y
+    // «Pantalla 1: GC» en el GC
     const paintP1 = (v) => {
       const s = state[v];
-      const mode = s.p1 === 'auto' ? (s.live ? 'vivo' : 'gc') : s.p1;
+      const liveMode = s.own ? 'own' : 'twitch';
+      const mode = s.p1 === 'gc' ? 'gc' : s.p1 === 'vivo' ? liveMode : (s.own ? 'own' : s.live ? 'twitch' : 'gc');
       const gc = s.main ? '#/escena' : `#/light-gc/${v}`;
-      const src = mode === 'vivo' ? `https://player.twitch.tv/?channel=${TWITCH[v]}&parent=${location.hostname}&muted=true&autoplay=true` : page(gc);
+      const src = mode === 'own' ? 'own' : mode === 'twitch' ? `https://player.twitch.tv/?channel=${TWITCH[v]}&parent=${location.hostname}&muted=true&autoplay=true` : page(gc);
       // Etiqueta corta (cabe dentro de la pantalla también en el teléfono)
-      el(v, 'p1name').textContent = `${mode === 'vivo' ? (s.live ? 'Video en vivo' : 'Vivo · sin transmisión') : (s.p1 === 'auto' ? 'GC · sin vivo' : 'GC')}${s.p1 === 'auto' ? '' : ' · fijo'}`;
+      el(v, 'p1name').textContent = `${mode === 'own' ? 'Transmisión nuestra' : mode === 'twitch' ? (s.live ? 'Twitch' : 'Twitch · sin transmisión') : (s.p1 === 'auto' ? 'GC · sin transmisión' : 'GC')}${s.p1 === 'auto' ? '' : ' · fijo'}`;
       root.querySelectorAll(`.gm-venue[data-v="${v}"] [data-p1]`).forEach((b) => b.classList.toggle('on', b.dataset.p1 === s.p1));
+      const b = el(v, 'live');
+      b.classList.toggle('on', s.own || s.live);
+      b.textContent = s.own ? '🔴 EN VIVO · transmisión nuestra' : s.live ? `🔴 EN VIVO · Twitch · ${s.viewers} ${s.viewers === 1 ? 'persona' : 'personas'}` : 'Sin transmisión en vivo';
       if (src === s.p1src) return;
       s.p1src = src;
       const box = el(v, 'p1');
-      box.classList.toggle('gm-bg', mode === 'gc'); // el GC es transparente: se ve sobre un fondo con el color del local
-      box.innerHTML = mode === 'vivo' ? `<iframe data-full="1" title="Video en vivo de ${esc(VENUES[v])}" allow="autoplay; fullscreen" src="${esc(src)}"></iframe>`
+      el(v, 'own').hidden = mode !== 'own';
+      box.hidden = mode === 'own';
+      box.parentElement.classList.toggle('gm-bg', mode === 'gc'); // el GC es transparente: se ve sobre un fondo con el color del local
+      box.innerHTML = mode === 'own' ? '' : mode === 'twitch' ? `<iframe data-full="1" title="Twitch de ${esc(VENUES[v])}" allow="autoplay; fullscreen" src="${esc(src)}"></iframe>`
         : `<iframe title="GC de ${esc(VENUES[v])}" tabindex="-1" src="${esc(src)}"></iframe>`;
       fit();
     };
+
+    // Transmisión nuestra: se intenta conectar siempre; si no hay señal (o se corta), se reintenta sola y mientras tanto
+    // la pantalla 1 sigue con Twitch o con el GC. Con la pestaña oculta no se conecta (cada minuto visto se paga).
+    const ownStop = (v) => { const s = state[v]; clearTimeout(s.ownTimer); if (s.pc) { try { s.pc.close(); } catch { /* nada */ } s.pc = null; } if (s.own) { s.own = false; paintP1(v); } };
+    const ownStart = (v) => {
+      const s = state[v];
+      clearTimeout(s.ownTimer);
+      if (!alive || document.hidden || !window.RTCPeerConnection) return;
+      if (s.pc) { try { s.pc.close(); } catch { /* nada */ } }
+      const pc = s.pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.cloudflare.com:3478' }], bundlePolicy: 'max-bundle' });
+      const ms = new MediaStream();
+      const vid = el(v, 'own');
+      const again = (ms2) => { if (s.pc !== pc) return; try { pc.close(); } catch { /* nada */ } s.pc = null; if (s.own) { s.own = false; paintP1(v); } s.ownTimer = setTimeout(() => ownStart(v), ms2); };
+      pc.addTransceiver('video', { direction: 'recvonly' }); pc.addTransceiver('audio', { direction: 'recvonly' });
+      pc.ontrack = (e) => { ms.addTrack(e.track); vid.srcObject = ms; vid.play().catch(() => {}); };
+      pc.onconnectionstatechange = () => { if (s.pc === pc && ['failed', 'disconnected', 'closed'].includes(pc.connectionState)) again(5000); };
+      const limit = setTimeout(() => { if (s.pc === pc && !s.own) again(20000); }, 12000); // sin señal: se reintenta cada tanto
+      pc.createOffer().then((o) => pc.setLocalDescription(o))
+        .then(() => new Promise((r) => { if (pc.iceGatheringState === 'complete') return r(); const t = setTimeout(r, 1500); pc.addEventListener('icegatheringstatechange', () => { if (pc.iceGatheringState === 'complete') { clearTimeout(t); r(); } }); return undefined; }))
+        .then(() => fetch(OWN[v], { method: 'POST', headers: { 'content-type': 'application/sdp' }, body: pc.localDescription.sdp }))
+        .then((r) => { if (!r.ok) throw new Error(`WHEP ${r.status}`); return r.text(); })
+        .then((sdp) => pc.setRemoteDescription({ type: 'answer', sdp }))
+        .catch(() => { clearTimeout(limit); again(20000); });
+    };
+    list.forEach((v) => { el(v, 'own').addEventListener('playing', () => { if (!state[v].own) { state[v].own = true; paintP1(v); } }); });
+    const onVisible = () => list.forEach((v) => (document.hidden ? ownStop(v) : (state[v].pc || ownStart(v))));
+    document.addEventListener('visibilitychange', onVisible);
 
     // Botones tipo TV, cuadrados y en filas de 5 debajo de las pantallas (dibujo de Cote): el que está al aire queda encendido
     const key = (attr, k, icon, text, on) => `<button type="button" class="gm-key ${on ? 'on' : ''}" ${attr}="${k}"><i></i><span>${icon}</span><b>${text}</b></button>`;
@@ -107,9 +148,7 @@
         const c = (r.canales || []).find((x) => x.canal === TWITCH[v]);
         const s = state[v];
         s.live = !!(c && c.vivo);
-        const b = el(v, 'live');
-        b.classList.toggle('on', s.live);
-        b.textContent = s.live ? `🔴 EN VIVO · ${c.vivo.viewers} ${c.vivo.viewers === 1 ? 'persona' : 'personas'}` : 'Sin transmisión en vivo';
+        s.viewers = s.live ? c.vivo.viewers || 0 : 0;
         paintP1(v);
       }
     };
@@ -141,11 +180,12 @@
     };
 
     list.forEach(paintP1);
+    list.forEach(ownStart);
     await Promise.all([load(), loadLive()]);
     fit();
     const t1 = setInterval(load, 3000);
     const t2 = setInterval(loadLive, 20000);
-    return () => { alive = false; clearInterval(t1); clearInterval(t2); ro.disconnect(); document.body.classList.remove('gm-on'); };
+    return () => { alive = false; clearInterval(t1); clearInterval(t2); ro.disconnect(); document.removeEventListener('visibilitychange', onVisible); list.forEach(ownStop); document.body.classList.remove('gm-on'); };
   };
 
   // #/master: los 3 locales juntos · #/master/<local>: la página de un local

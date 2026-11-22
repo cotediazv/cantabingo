@@ -2765,3 +2765,7 @@ body.gm-on main { max-width: none; padding: 10px 14px 40px; }
   .gm-nav > a.gm-back { width: auto; padding: 0 6px; display: flex; align-items: center; }
   .gm-key.gm-long b { font-size: .5rem; letter-spacing: -.01em; }
 }
+/* GC Master, señal 1: la transmisión nuestra (video propio) llena la pantalla 1; debajo, Twitch o el GC */
+.gm-own { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: #000; object-fit: contain; }
+.gm-p1in { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+.gm-own[hidden], .gm-p1in[hidden] { display: none; }
