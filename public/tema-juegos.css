@@ -379,3 +379,9 @@ html.t2 #kids-ad small { font: 700 1.8vh/1.25 var(--t-txt); color: var(--t-tenue
   html.t2 #vg *, html.t2 #vg *::after, html.t2 #vf *, html.t2 #vf *::before, html.t2 #vg-win *, html.t2 #jd *, html.t2 #gv * { animation: none !important; }
   html.t2 #vg .vg-tag, html.t2 #vg .vg-main, html.t2 #vg .vg-side, html.t2 #vg .vg-qr, html.t2 #vg .vg-list, html.t2 #vg .vk-card { transition: none; }
 }
+
+/* QR del Festival y del objeto con la frase definida por Cote (22 nov): en el GC, en dos líneas que no pasan del ancho
+   del QR; en el tablero, grande junto al QR */
+html.t2 #vg .vg-qr b { text-wrap: balance; }
+html.t2 #vf .vf-qr b { font: 900 3.6vh/1 var(--t-disp); text-transform: uppercase; }
+html.t2 #vf:has(.vf-list > div:nth-child(8)) .vf-qr b { font-size: 3vh; }
