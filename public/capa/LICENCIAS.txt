@@ -1,0 +1,7 @@
+Piezas de terceros usadas en la capa gráfica (todas de uso libre):
+
+- lottie.min.js: lottie-web 5.13.0 (versión liviana), licencia MIT. https://github.com/airbnb/lottie-web
+- capa3d.js: incluye three.js 0.187.0, licencia MIT. https://threejs.org
+- fuente-3d.json: tipografía Source Sans 3 Black (Adobe), licencia SIL Open Font License 1.1, convertida al formato de three.js.
+
+Lo demás (anim-prueba.json, prueba-*.webm, prueba.webp) es propio, hecho para la prueba.
