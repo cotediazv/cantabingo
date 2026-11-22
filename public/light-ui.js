@@ -179,9 +179,7 @@
       if (stage === 'custom') {
         // GC personalizable: el texto escrito en el panel, en la franja de abajo (corto: grande; largo: en líneas)
         const t = String(st.text || '');
-        box.innerHTML = `<div class="lg-card lg-bottom lg-info lg-custom">
-          <div class="lg-tag"><small>${esc(VENUES[st.venue] || '')}</small><b>KRB Stage</b></div>
-          <div class="lg-main">${t.length <= 30 ? `<b style="--n:${Math.max(10, t.length)}">${esc(t)}</b>` : `<span class="lg-line">${esc(t)}</span>`}</div></div>`;
+        box.innerHTML = window.gcPer.card(st.venue, t); // lo que va entre comillas sale destacado (pedido de Cote, 22 nov)
       } else if (stage === 'show') {
         box.innerHTML = `<div class="lg-card lg-bottom">
           <div class="lg-tag"><small>${esc(c ? c.name : '')}</small><b>${c && c.show ? se('⭐ Show de hoy') : 'Esta noche'}</b></div>

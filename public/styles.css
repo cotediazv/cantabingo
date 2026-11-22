@@ -3037,3 +3037,27 @@ html.mon body.full::before, html.lento body.full::before { animation: none !impo
    modesto) quedan quietos en esos mismos dos casos; en un equipo normal siguen girando como siempre */
 html.mon body.full #rf .rf-rays, html.lento body.full #rf .rf-rays, html.mon #fb .bwin::before, html.lento #fb .bwin::before,
 html.mon body.full .win-screen::before, html.lento body.full .win-screen::before { animation: none !important; }
+
+/* «GC PER» (pedido de Cote, 22 nov): el texto escrito en el GC Master. Lo que va entre comillas sale destacado en amarillo
+   y el resto en blanco (sin nada destacado, se ve como siempre). En las pantallas del local (tablero, de pie, verticales)
+   la misma franja se agrega abajo, encima de lo que estén mostrando (#gcper, lo pone window.gcPer.over en app.js). */
+#lg .lg-custom mark { background: none; color: var(--gc-yellow); font: inherit; }
+#lg .lg-custom.has-hl .lg-main b { color: #fff; }
+#gcper { position: fixed; left: 0; top: 0; right: 0; bottom: 0; z-index: 60; pointer-events: none; }
+/* en las pantallas del local la franja va más baja y pegada abajo, con fondo opaco… */
+#gcper .lg-bottom { left: 2vw; right: 2vw; bottom: 1.2vh; height: auto; min-height: 9vh; background: var(--gc-dots, none), rgb(14, 12, 30); }
+#gcper .lg-tag { padding: 0 2vh; gap: .3vh; } #gcper .lg-tag small { font-size: 1.5vh; } #gcper .lg-tag b { font-size: 2.6vh; }
+#gcper .lg-main { padding: .8vh 2.4vh; }
+#gcper .lg-main b { font-size: min(4.8vh, calc(64vw / (var(--n, 10) * .6))); }
+#gcper .lg-custom .lg-main .lg-line { font-size: 2.9vh; }
+/* …y lo que la pantalla muestra se achica hacia arriba lo justo para que la franja no tape nada (--per-k lo calcula
+   window.gcPer con el alto real de la franja). En las pantallas del local, solo la actividad (el video no se achica). */
+body.full.per-on #app { position: fixed; left: 0; top: 0; right: 0; bottom: 0; transform: scale(var(--per-k, .88)); transform-origin: 50% 0; }
+body.vert-in.per-on .vt-act { transform: scale(var(--per-k, .9)); transform-origin: 50% 0; }
+@media (orientation: portrait) {
+  #gcper .lg-bottom { left: 3vw; right: 3vw; bottom: 1vh; min-height: 5.4vh; }
+  #gcper .lg-tag { display: none; }
+  #gcper .lg-main { border-left: 0; padding: .8vh 3vw; }
+  #gcper .lg-main b { font-size: min(3.6vh, calc(86vw / (var(--n, 10) * .6))); }
+  #gcper .lg-custom .lg-main .lg-line { font-size: 2.1vh; }
+}

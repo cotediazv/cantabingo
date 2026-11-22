@@ -43,6 +43,38 @@ window.onAviso = (() => {
   };
   return (fn) => { fns.add(fn); sync(); return () => { fns.delete(fn); sync(); }; };
 })();
+// «GC PER» (pedido de Cote, 22 nov): el texto escrito en el GC Master. Lo que va entre comillas ("…", “…” o «…») sale
+// destacado en dorado y las comillas no se ven. `card` arma la misma franja del GC de la sala light; `over` la agrega
+// encima de una pantalla del local (tablero, de pie, verticales) sin quitar lo que muestra.
+window.gcPer = (() => {
+  const RE = /"([^"]+)"|“([^”]+)”|«([^»]+)»/g;
+  const NAMES = { kennedy: 'Mercado Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' };
+  const html = (text) => { const s = String(text || ''); let out = ''; let i = 0; let m; RE.lastIndex = 0; while ((m = RE.exec(s))) { out += `${esc(s.slice(i, m.index))}<mark>${esc(m[1] || m[2] || m[3])}</mark>`; i = RE.lastIndex; } return out + esc(s.slice(i)); };
+  const plain = (text) => String(text || '').replace(RE, (m, a, b, c) => a || b || c);
+  const card = (venue, text) => { const n = plain(text).length; const h = html(text);
+    return `<div class="lg-card lg-bottom lg-info lg-custom${h.includes('<mark>') ? ' has-hl' : ''}"><div class="lg-tag"><small>${esc(NAMES[venue] || '')}</small><b>KRB Stage</b></div>
+      <div class="lg-main">${n <= 30 ? `<b style="--n:${Math.max(10, n)}">${h}</b>` : `<span class="lg-line">${h}</span>`}</div></div>`; };
+  let shown = '';
+  // Para que la franja no tape nada (QR, últimas filas del bingo), lo que la pantalla muestra se achica un poco hacia
+  // arriba mientras la franja está puesta: se mide el alto de la franja y se deja en --per-k (clase per-on del body)
+  const room = () => {
+    const c = document.querySelector('#gcper .lg-card'); if (!c) return;
+    const top = c.getBoundingClientRect().top; if (!(top > 0)) return;
+    document.body.style.setProperty('--per-k', String(Math.max(0.7, Math.min(1, (top - innerHeight * 0.012) / innerHeight)).toFixed(4)));
+    document.body.classList.add('per-on');
+  };
+  window.addEventListener('resize', room);
+  const over = (text, venue) => {
+    const key = text ? `${venue}|${text}|${window.t2 && window.t2() ? 1 : 0}` : '';
+    let el = document.getElementById('gcper');
+    if (!text) { if (el) { el.remove(); document.body.classList.remove('per-on'); document.body.style.removeProperty('--per-k'); } shown = ''; return; }
+    if (el && key === shown) return;
+    if (!el) { el = document.createElement('div'); el.id = 'gcper'; document.body.appendChild(el); }
+    shown = key; el.className = `gcper-over th-${venue || 'kennedy'}`; el.innerHTML = `<div id="lg" class="th-${venue || 'kennedy'}">${card(venue, text)}</div>`;
+    room(); setTimeout(room, 400); setTimeout(room, 1500); // otra vez cuando terminan de cargar las letras
+  };
+  return { html, plain, card, over };
+})();
 let toastTimer;
 function toast(msg) {
   const t = $('#toast');
@@ -1393,7 +1425,10 @@ views.tablero = async () => {
     if (busy) { again = true; return; }
     busy = true;
     try {
-      const show = (await api('GET', '/api/stage').catch(() => ({}))).show || current || 'none';
+      const sr = await api('GET', '/api/stage').catch(() => null);
+      const show = (sr && sr.show) || current || 'none';
+      // GC PER: en el tablero se agrega como una franja abajo, sin quitar lo que se muestra
+      if (sr) window.gcPer.over(sr.per && sr.per.on ? sr.per.text : '', document.body.dataset.venue || '');
       if (show !== current) {
         current = show;
         if (typeof stop === 'function') stop();
@@ -1417,7 +1452,7 @@ views.tablero = async () => {
   await apply();
   const timer = setInterval(apply, 2000);
   const offAviso = window.onAviso(apply);
-  return () => { clearInterval(timer); offAviso(); if (typeof stop === 'function') stop(); joinQr(); document.body.classList.remove('full'); soundBtn.remove(); document.removeEventListener('pointerdown', enableSound); document.removeEventListener('keydown', enableSound); };
+  return () => { clearInterval(timer); offAviso(); window.gcPer.over(''); if (typeof stop === 'function') stop(); joinQr(); document.body.classList.remove('full'); soundBtn.remove(); document.removeEventListener('pointerdown', enableSound); document.removeEventListener('keydown', enableSound); };
 };
 
 // Tablero para una pantalla puesta de pie (girada 90° a la izquierda) que recibe la señal horizontal de siempre:
@@ -1923,13 +1958,21 @@ views.escena = async () => {
     if (busy) { again = true; return; }
     busy = true;
     try {
-      const show = (await api('GET', '/api/stage').catch(() => ({}))).show || current || 'none';
+      const sr = await api('GET', '/api/stage').catch(() => null);
+      // GC PER: en el GC de OBS el texto va en la franja de abajo, en lugar del GC, hasta que se toque otro botón
+      const per = sr && sr.per && sr.per.on ? sr.per.text : '';
+      const show = !sr ? (current || 'none') : per ? `per:${document.body.dataset.venue || ''}:${per}` : sr.show || current || 'none';
       if (show !== current) {
         current = show;
         if (typeof stop === 'function') stop();
         stop = null;
         app.innerHTML = '';
-        if (show === 'bingo') stop = await views.gc();
+        if (per) {
+          const v = document.body.dataset.venue || 'kennedy';
+          document.body.classList.add('gc-screen');
+          app.innerHTML = `<div id="lg" class="th-${v}">${window.gcPer.card(v, per)}</div>`;
+          stop = () => document.body.classList.remove('gc-screen');
+        } else if (show === 'bingo') stop = await views.gc();
         else if (show === 'rueda') stop = await views.obs();
         else if (show === 'sorteo') stop = await views.sorteo();
         else if (show === 'qr') stop = await views.qrBig();

@@ -268,6 +268,7 @@ function resetEvent() {
   wheel.clear();
   vote.clear();
   db.stage = 'bingo';
+  if (db.gcper) db.gcper.on = false;
 }
 setInterval(() => {
   for (const s of Object.values(db.sessions)) if (Date.now() > s.expires) closeSession(s);
@@ -718,10 +719,28 @@ app.get('/api/live', (req, res) => {
   req.on('close', () => { clearInterval(ping); avisoClients.delete(res); });
 });
 const roscoLock = (show) => show !== 'rueda' && !!roscoRef && roscoRef.inPlay();
+// «GC PER» de la sala de juegos (pedido de Cote, 22 nov: «que vuelva al panel de control la opción de GC personalizado…
+// «GC PER»… puesto en el lugar donde normalmente va el GC»): un texto escrito en el GC Master que sale en la franja de
+// abajo del GC de OBS, en lugar del GC, y que en el tablero, la pantalla de pie y las pantallas del local se agrega como
+// una franja sin quitar lo que muestran. Lo que va entre comillas sale destacado (las comillas no se ven). No es un
+// escenario: `db.stage` no cambia (celulares y juegos siguen igual); se apaga al tocar cualquier botón del GC o cuando
+// un juego cambia el escenario. En las salas light es el escenario `custom` de siempre (light.js).
+const perClean = (s) => String(s == null ? '' : s).replace(/[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
+const perMain = () => { const g = db.gcper || {}; return { on: !!(g.on && g.text), text: g.text || '' }; };
+const perOff = () => { if (db.gcper && db.gcper.on) { db.gcper.on = false; save(); return true; } return false; };
+// El texto que les toca a las pantallas de un local: el de la sala de juegos si la sala abierta es de ese local; si no,
+// el GC PER de su sala light
+const perOf = (venue) => {
+  const main = Object.values(db.sessions)[0]; const m = perMain();
+  if (m.on && main && (main.theme || 'frida') === venue) return { text: m.text, from: 'main' };
+  const l = (db.lights || {})[venue];
+  return l && l.stage === 'custom' && l.text ? { text: l.text, from: 'light' } : null;
+};
 const setStage = (show) => {
   if (roscoLock(show)) { if (db.stage !== 'rueda') { db.stage = 'rueda'; save(); for (const s of Object.values(db.sessions)) broadcast(s); aviso(); } return false; }
   const changed = db.stage !== show;
   db.stage = show;
+  if (changed) perOff(); // un juego tomó la pantalla: el GC PER sale
   save();
   if (changed) for (const s of Object.values(db.sessions)) broadcast(s); // los celulares se enteran del cambio de juego
   if (changed) aviso(); // y las pantallas, al instante
@@ -757,7 +776,7 @@ const insta = require('./insta.js')({ app, db, save, requireAdmin, fail, venue: 
 // Sala light: karaoke, show y cartelera en otro local, al mismo tiempo que la sala principal
 lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta, aviso });
 require('./capa.js')({ app, requireLocal, fail, aviso }); // capa gráfica sobre la cámara (botones del GC Master)
-require('./vertical.js')({ app, db, save, requireAdmin, fail, karaoke, dir: path.dirname(DATA_FILE) }); // pantalla vertical: video del mes y actividades
+require('./vertical.js')({ app, db, save, requireAdmin, fail, karaoke, perOf, dir: path.dirname(DATA_FILE) }); // pantalla vertical: video del mes y actividades
 require('./youtube.js')({ app }); // últimos videos del canal, para la página web
 require('./twitch.js')({ app }); // videos y transmisiones en vivo de Twitch, para la página web
 require('./instagram-web.js')({ app, db, save, insta }); // últimos videos de Instagram de cada local, para la página web
@@ -778,6 +797,8 @@ app.get('/api/consola', requireAdmin, async (_req, res) => {
       karaoke: karaoke.nowOf(v),
     };
   }));
+  // con el GC PER puesto, el botón encendido en el GC Master es ese (el escenario de la sala no cambia)
+  for (const o of out) if (o.main) { const m = perMain(); o.main.perText = m.text; if (m.on) { o.main.stage = 'per'; o.main.stageName = 'GC PER'; } }
   res.json({ locales: out, at: Date.now() });
 });
 // Programación del local del día: el de la sala abierta o, si no hay, el elegido en la sección Karaoke
@@ -1053,11 +1074,20 @@ app.post('/api/gamevote/reset', requireAdmin, (_req, res) => {
 // Diseño nuevo de las pantallas (pedido de Cote, 22 nov): encendido salvo que se apague en el Centro de control
 app.get('/api/tema', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json({ on: db.tema !== false }); });
 app.post('/api/tema', requireAdmin, (req, res) => { db.tema = (req.body || {}).on !== false; save(); res.json({ on: db.tema }); });
-app.get('/api/stage', (_req, res) => res.json({ show: roscoLock(db.stage) ? 'rueda' : STAGES.includes(db.stage) ? db.stage : 'bingo' }));
+app.get('/api/stage', (_req, res) => res.json({ show: roscoLock(db.stage) ? 'rueda' : STAGES.includes(db.stage) ? db.stage : 'bingo', per: perMain() }));
+app.post('/api/gcper', requireAdmin, (req, res) => {
+  const b = req.body || {};
+  const text = b.text != null ? perClean(b.text) : perMain().text;
+  if (b.on !== false && !text) return fail(res, 400, 'Escribe el texto del GC PER');
+  db.gcper = { on: b.on !== false, text };
+  save(); aviso();
+  res.json(perMain());
+});
 app.post('/api/stage', requireAdmin, (req, res) => {
   const show = String((req.body || {}).show);
   if (!STAGES.includes(show)) return fail(res, 400, 'Opción no válida');
   if (setStage(show) === false) return fail(res, 409, 'El Rosko está en juego: la pantalla sigue en El Rosko hasta que termine la partida');
+  if (perOff()) aviso(); // tocar un botón del GC saca el GC PER, aunque el escenario sea el mismo
   if (show === 'karaoke') karaoke.refresh(); // primera lectura inmediata, sin esperar al siguiente ciclo
   res.json({ show });
 });

@@ -18,7 +18,7 @@
   // Opciones del GC de la sala light (las mismas del panel de la sala light)
   const LIGHT = [['info', '🔄', 'Información'], ['karaoke', '🎤', 'Karaoke'], ['show', '⭐', 'Show'], ['cartelera', '📅', 'Cartelera'], ['qr', '📱', 'QR grande'], ['none', '⛔', 'Nada']];
   // Opciones del GC de la sala de juegos (cuando la sala abierta es la de este local)
-  const MAIN = [['bingo', '🎱', 'Bingo'], ['rueda', '🎡', 'El Rosko'], ['sorteo', '🎲', 'Sorteo'], ['voto', '🗳️', 'Votación'], ['karaoke', '🎤', 'Karaoke'], ['show', '⭐', 'Show'], ['insta', '📸', 'Instagram'], ['qr', '📱', 'QR'], ['none', '⛔', 'Nada']];
+  const MAIN = [['bingo', '🎱', 'Bingo'], ['rueda', '🎡', 'El Rosko'], ['sorteo', '🎲', 'Sorteo'], ['voto', '🗳️', 'Votación'], ['karaoke', '🎤', 'Karaoke'], ['show', '⭐', 'Show'], ['insta', '📸', 'Instagram'], ['qr', '📱', 'QR'], ['none', '⛔', 'Nada'], ['per', '✏️', 'GC PER']]; // «GC PER»: el texto escrito, en la franja del GC (no es un escenario: /api/gcper)
   // Capa gráfica sobre la cámara (pedido de Cote, 21 nov): piezas que se disparan sobre el GC de OBS del local y salen solas
   const CAPA = [['cortina', '🎬', 'Cortina', 'Cortina'], ['texto3d', '🧊', 'Texto 3D', 'Texto 3D'], ['celebracion', '🎉', 'Celebración', 'Celebración'], ['fuegos', '🎆', 'Fuegos', 'Fuegos artificiales'],
     ['confeti', '🎊', 'Confeti', 'Lluvia de confeti'], ['luces', '🔦', 'Luces', 'Luces de escenario'], ['corazones', '❤️', 'Corazones', 'Corazones'], ['off', '✖', 'Quitar', 'Quitar lo que está en pantalla']];
@@ -173,7 +173,7 @@
       gc.innerHTML = venue ? `<div class="gm-venue th-${venue}" data-v="${venue}">
           <div class="gm-row"><small>GC de la sala de juegos</small><div class="gm-keyrow" data-k="keys"></div></div>
           <div class="gm-row"><small>Efectos sobre la cámara</small>
-            <input class="gm-text" data-k="text" type="text" maxlength="60" autocomplete="off" placeholder="Texto para el texto 3D">
+            <input class="gm-text" data-k="text" type="text" maxlength="120" autocomplete="off" placeholder='Texto para el GC PER y el texto 3D · "entre comillas" sale destacado'>
             <div class="gm-capa">${CAPA.map(([k, i, t, full]) => `<button type="button" class="gm-ckey" data-capa="${k}" title="${full}" aria-label="${full}"><span>${i}</span><b>${t}</b></button>`).join('')}</div></div></div>`
         : '<p class="gmm-none">Cuando haya una sala de juegos abierta, aquí aparecen los botones del GC y los efectos.</p>';
       root.querySelectorAll('.gm-box').forEach((b) => ro.observe(b));
@@ -186,6 +186,7 @@
       const v = loc ? loc.venue : null; const st = loc ? loc.main.stage : '';
       if (v !== venue) { venue = v; stage = st; paint(); } else if (st !== stage) { stage = st; paintKeys(); }
       root.querySelector('[data-k="msala"]').textContent = loc ? loc.main.stageName : '';
+      const ti = gc.querySelector('[data-k="text"]'); if (ti && loc && loc.main.perText && !ti.value && document.activeElement !== ti) ti.value = loc.main.perText; // el último texto del GC PER queda a mano
     };
     const pf = root.querySelector('.gm-panel iframe');
     const { fitPanel, applyK, reset } = panelFit(pf, { max: 0.85, min: 0.6, alive: () => alive });
@@ -199,7 +200,11 @@
       }
       if (!venue) return;
       try {
-        if (b.dataset.main) { await api('POST', '/api/stage', { show: b.dataset.main }); load(); } else if (b.dataset.capa) {
+        if (b.dataset.main === 'per') {
+          const ti = gc.querySelector('[data-k="text"]'); const text = ti.value.trim();
+          if (!text) { toast('Escribe el texto del GC PER'); ti.focus(); return; }
+          ti.blur(); await api('POST', '/api/gcper', { on: true, text }); toast('GC PER en pantalla'); load();
+        } else if (b.dataset.main) { await api('POST', '/api/stage', { show: b.dataset.main }); load(); } else if (b.dataset.capa) {
           const ti = gc.querySelector('[data-k="text"]'); const text = ti.value.trim();
           if (b.dataset.capa === 'texto3d' && !text) { toast('Escribe el texto para el 3D'); ti.focus(); return; }
           await api('POST', '/api/capa', { local: venue, kind: b.dataset.capa, text });
@@ -251,7 +256,7 @@
           </div>
           <div class="gm-keys" data-k="keys"></div>
           <div class="gm-txtrow">
-            <input class="gm-text" data-k="text" type="text" maxlength="60" autocomplete="off" placeholder="Texto para el texto 3D">
+            <input class="gm-text" data-k="text" type="text" maxlength="120" autocomplete="off" placeholder='Texto para el GC PER y el texto 3D · "entre comillas" sale destacado'>
             <div class="gm-capa" title="Capa gráfica sobre la cámara">${CAPA.map(([k, i, t, full]) => `<button type="button" class="gm-ckey" data-capa="${k}" title="${full}" aria-label="${full}"><span>${i}</span><b>${t}</b></button>`).join('')}</div>
           </div></section>`
         : `<section class="gm-venue gm-none"><header class="gm-head"><b>Sala de juegos</b></header>
@@ -269,13 +274,18 @@
       if (v !== venue) { venue = v; stage = st; paintLeft(); } else if (st !== stage) { stage = st; paintKeys(); }
       const sala = left.querySelector('[data-k="sala"]');
       if (sala && loc) sala.textContent = `En pantalla: ${loc.main.stageName}`;
+      const ti = left.querySelector('[data-k="text"]'); if (ti && loc && loc.main.perText && !ti.value && document.activeElement !== ti) ti.value = loc.main.perText; // el último texto del GC PER queda a mano
     };
     root.onclick = async (e) => {
       const b = e.target.closest('button');
       if (!b || !venue || !left.contains(b)) return;
       e.preventDefault();
       try {
-        if (b.dataset.main) { await api('POST', '/api/stage', { show: b.dataset.main }); load(); } else if (b.dataset.capa) {
+        if (b.dataset.main === 'per') {
+          const ti = left.querySelector('[data-k="text"]'); const text = ti.value.trim();
+          if (!text) { toast('Escribe el texto del GC PER'); ti.focus(); return; }
+          ti.blur(); await api('POST', '/api/gcper', { on: true, text }); toast('GC PER en pantalla'); load();
+        } else if (b.dataset.main) { await api('POST', '/api/stage', { show: b.dataset.main }); load(); } else if (b.dataset.capa) {
           const ti = left.querySelector('[data-k="text"]'); const text = ti.value.trim();
           if (b.dataset.capa === 'texto3d' && !text) { toast('Escribe el texto para el 3D'); ti.focus(); return; }
           await api('POST', '/api/capa', { local: venue, kind: b.dataset.capa, text });
@@ -417,7 +427,7 @@
       box.innerHTML = `${s.main ? `<div class="gm-row"><small>GC de la sala de juegos</small><div class="gm-keyrow">${MAIN.map(([k, i, t]) => key('data-main', k, i, t, s.main.stage === k)).join('')}</div></div>` : ''}
         ${l ? `<form class="gm-row gm-custom" id="gmf-${v}"><small>GC de la sala light</small><div class="gm-keyrow">${LIGHT.map(([k, i, t]) => key('data-light', k, i, t, l.stage === k)).join('')}
             ${key('data-video', l.video ? '0' : '1', '🎬', 'Video cartelera', !!l.video)}
-            <button class="gm-key gm-long ${l.stage === 'custom' ? 'on' : ''}"><i></i><span>✏️</span><b>GC personalizable</b></button>
+            <button class="gm-key ${l.stage === 'custom' ? 'on' : ''}"><i></i><span>✏️</span><b>GC PER</b></button>
             ${key('data-p1', 'vivo', '🔴', 'Pantalla 1: vivo', s.p1 === 'vivo')}${key('data-p1', 'gc', '🖼️', 'Pantalla 1: GC', s.p1 === 'gc')}</div></form>` : ''}`;
     };
 
@@ -467,7 +477,11 @@
       }
       try {
         if (b.dataset.light) await api('POST', '/api/light/stage', { local: v, show: b.dataset.light });
-        else if (b.dataset.main) await api('POST', '/api/stage', { show: b.dataset.main });
+        else if (b.dataset.main === 'per') { // GC PER de la sala de juegos: el texto del mismo espacio de texto del local
+          const ti = el(v, 'text'); const text = ti.value.trim();
+          if (!text) { toast('Escribe el texto del GC PER'); ti.focus(); return; }
+          ti.blur(); await api('POST', '/api/gcper', { on: true, text }); toast(`GC PER en la sala de juegos de ${VENUES[v]}`);
+        } else if (b.dataset.main) await api('POST', '/api/stage', { show: b.dataset.main });
         else if (b.dataset.video) await api('POST', '/api/light/video', { local: v, on: b.dataset.video === '1' });
         else return;
         load();
@@ -481,7 +495,7 @@
       const ti = el(v, 'text');
       const text = ti.value.trim();
       if (!text) { toast('Escribe el texto del GC'); ti.focus(); return; }
-      try { ti.blur(); await api('POST', '/api/light/stage', { local: v, show: 'custom', text }); toast(`GC personalizable en ${VENUES[v]}`); load(); } catch (err) { fail(err); }
+      try { ti.blur(); await api('POST', '/api/light/stage', { local: v, show: 'custom', text }); toast(`GC PER en ${VENUES[v]}`); load(); } catch (err) { fail(err); }
     };
 
     list.forEach(paintP1);

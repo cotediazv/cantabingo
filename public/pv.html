@@ -25,6 +25,11 @@
   #cv.th-frida { background: #3a0b3f; background: -webkit-linear-gradient(290deg, #2a0a3a, #8a1f6b 55%, #2a0a3a); background: linear-gradient(160deg, #2a0a3a, #8a1f6b 55%, #2a0a3a); }
   #cv.th-tobalaba { background: #3b0508; background: -webkit-linear-gradient(290deg, #2a0406, #8f1d1d 55%, #2a0406); background: linear-gradient(160deg, #2a0406, #8f1d1d 55%, #2a0406); }
   .hide { display: none !important; }
+  /* «GC PER» (pedido de Cote, 22 nov): el texto escrito en el GC Master, como una franja abajo, sobre lo que se esté mostrando; lo que va entre comillas sale en amarillo */
+  #per { position: absolute; left: 2.5rem; right: 2.5rem; bottom: 2.2rem; z-index: 40; padding: 1.3rem 2.2rem 1.1rem; border-top: .45rem solid #f4bf5a; background: #0c0b12; background: rgba(12, 11, 18, .96); color: #fff; font-size: 2.6rem; font-weight: 900; line-height: 1.2; text-align: center; }
+  #per b { color: #f4bf5a; font-weight: 900; }
+  /* con la franja puesta, lo que se muestra se achica hacia arriba para que no tape nada (el video no) */
+  #cv.per #view { -webkit-transform: scale(.87); transform: scale(.87); -webkit-transform-origin: 50% 0; transform-origin: 50% 0; }
   #vid { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: #000; object-fit: cover; }
   #tap { position: absolute; left: 4rem; right: 4rem; bottom: 10rem; padding: 2rem; border-radius: 2rem; background: rgba(0, 0, 0, .7); text-align: center; font-size: 3rem; font-weight: 700; }
   #view { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
@@ -126,6 +131,7 @@
   <div id="tap" class="hide">▶ Toca la pantalla para iniciar el video</div>
   <button id="fs" class="hide" type="button">📺 Pantalla completa</button>
   <div id="view"></div>
+  <div id="per" class="hide"></div>
   <div id="marks"></div>
 </div>
 <script src="gameintro.js"></script>
@@ -148,7 +154,7 @@
   var GAMES = { bingo: ['🎱', 'Bingo'], rosco: ['🎡', 'El Rosko'], festival: ['🎤', 'El Festival de ' + SHORT[VENUE]], objeto: ['🗳️', 'El objeto más extraño'] };
   var GVC = { bingo: '#ff2e93', rosco: '#9b6bff', festival: '#ffc400', objeto: '#19d6b0' };
   var offset = 0;
-  var cv = $('cv'); var view = $('view'); var vid = $('vid'); var tap = $('tap');
+  var cv = $('cv'); var view = $('view'); var vid = $('vid'); var tap = $('tap'); var perShown = ''; // texto del GC PER que está puesto
   function now() { return new Date().getTime() + offset; }
   function origin() { return location.protocol + '//' + location.host; }
   function qrImg(url) { return '<img alt="Código QR" src="/api/qr?text=' + encodeURIComponent(url) + '">'; }
@@ -218,7 +224,7 @@
     var rot = Q.girar === '1' && W > H;
     var cw = rot ? H : W; var ch = rot ? W : H;
     cv.style.width = cw + 'px'; cv.style.height = ch + 'px';
-    cv.className = (rot ? 'rot ' : '') + 'th-' + VENUE + (cw > ch * 0.75 ? ' wide' : '');
+    cv.className = (rot ? 'rot ' : '') + 'th-' + VENUE + (cw > ch * 0.75 ? ' wide' : '') + (perShown ? ' per' : '');
     document.documentElement.style.fontSize = Math.min(ch / 100, cw / 56.25).toFixed(3) + 'px';
     fitAll();
   }
@@ -691,10 +697,19 @@
   }
 
   // ---------- Qué mostrar (las mismas reglas que la pantalla completa) ----------
+  // «GC PER»: lo que va entre comillas ("…", “…” o «…») sale destacado y las comillas no se ven
+  var perEl = document.getElementById('per'); perShown = '';
+  function perHtml(t) {
+    var re = /"([^"]+)"|\u201c([^\u201d]+)\u201d|\u00ab([^\u00bb]+)\u00bb/g; var out = ''; var i = 0; var m;
+    while ((m = re.exec(t))) { out += h(t.slice(i, m.index)) + '<b>' + h(m[1] || m[2] || m[3]) + '</b>'; i = re.lastIndex; }
+    return out + h(t.slice(i));
+  }
   function tick() {
     get('/api/vertical/' + P, function (st) {
       if (!st) return;
       lastOk = new Date().getTime();
+      var pt = st.per && st.per.text ? String(st.per.text) : '';
+      if (pt !== perShown) { perShown = pt; perEl.className = pt ? '' : 'hide'; perEl.innerHTML = perHtml(pt); cv.className = cv.className.replace(/ per\b/, '') + (pt ? ' per' : ''); }
       if (st.video !== ver) {
         ver = st.video;
         if (ver) { vid.src = Q.liviano && Q.lver === String(ver) ? Q.liviano : '/vertical/' + P + '.mp4?v=' + ver; if (cur === 'video') play(); } else vid.removeAttribute('src');

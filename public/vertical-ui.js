@@ -66,6 +66,9 @@
       // Fondo de la sala light cuando toca; sin video subido y sin actividad en este local: el logo (no el tablero de la
       // sala abierta, que puede ser de otro local)
       const want = st.show === 'video' ? 'video' : st.show === 'light' ? `#/light-v/${venue}` : st.show === 'light-qr' ? `#/light-v/${venue}/qr` : st.show === 'light-show' ? `#/light-v/${venue}/show` : st.show === 'light-kar' ? `#/light-v/${venue}/karaoke` : st.show === 'karaoke' ? `#/karaoke-v/${venue}/${lightId}` : !st.activity ? 'video' : '#/tablero';
+      // GC PER: se agrega como una franja abajo, sobre lo que la pantalla esté mostrando (si adentro va el tablero de la
+      // sala de juegos, la franja de la sala la pone el mismo tablero)
+      window.gcPer.over(st.per && !(st.per.from === 'main' && /^#\/tablero/.test(want)) ? st.per.text : '', venue);
       if (want === shown) return;
       shown = want;
       const isVideo = want === 'video';
@@ -77,7 +80,7 @@
     await apply();
     const timer = setInterval(apply, 3000);
     const offAviso = window.onAviso(apply);
-    return () => { alive = false; clearInterval(timer); offAviso(); document.body.classList.remove('vert-in'); };
+    return () => { alive = false; clearInterval(timer); offAviso(); window.gcPer.over(''); document.body.classList.remove('vert-in'); };
   };
 
   // Karaoke de la sala light de un local a pantalla completa (lo usa la pantalla vertical)
