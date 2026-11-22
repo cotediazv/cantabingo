@@ -1143,7 +1143,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
           <h3>El juego y el show, en una sola experiencia</h3>
           <p>El animador conduce cada juego paso a paso desde su panel: lo que lee en voz alta aparece grande y destacado, y solo se activa el botón del paso que toca. Mientras tanto, el público responde, vota y canta desde su celular.</p>
         </div>
-        <figure class="int-panel"><img src="interactivo/panel-rosco.webp" alt="Panel del animador de El Rosco, con los botones paso a paso" loading="lazy" width="1280" height="900"><figcaption>Panel del animador · El Rosco</figcaption></figure>
+        <figure class="int-panel"><img src="interactivo/panel-rosco.webp?v=2" alt="Panel del animador de El Rosco, con los botones paso a paso" loading="lazy" width="1280" height="900"><figcaption>Panel del animador · El Rosco</figcaption></figure>
       </div>
       <div class="int-pantallas"><!-- (pedido de Cote) imágenes reales de nuestras transmisiones, no armadas -->
         <figure><div class="int-cam"><img src="interactivo/vivo-rosco.webp" alt="El Rosco en la transmisión en vivo desde Mercado Kennedy" loading="lazy" width="1280" height="720"></div><figcaption>El Rosco en vivo · Mercado Kennedy</figcaption></figure>
@@ -2334,7 +2334,7 @@ function lineas(x,pts,dist,alfa){ // agrupa las líneas en 4 tonos: pocas órden
      li:['Tómbola en pantalla','Cada noche distinta'],local:'sorteo-local'}
   ];
   const tabs=document.getElementById('int-tabs'),caja=document.getElementById('int-juego');if(!tabs||!caja)return;
-  const img=(f,alt,cls)=>`<figure class="${cls}"><img src="interactivo/${f}.webp" alt="${alt}" loading="lazy"></figure>`;
+  const img=(f,alt,cls)=>`<figure class="${cls}"><img src="interactivo/${f}.webp?v=2" alt="${alt}" loading="lazy"></figure>`;
   function ver(i){
     const g=J[i];caja.style.setProperty('--c',g.c);
     tabs.querySelectorAll('.int-tab').forEach((b,k)=>{b.setAttribute('aria-selected',k===i);b.tabIndex=k===i?0:-1});
