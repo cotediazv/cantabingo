@@ -33,6 +33,10 @@
       try { ok = !!(window.CSS && CSS.supports && CSS.supports('color', 'color-mix(in srgb, red 50%, blue)') && CSS.supports('selector(:has(a))')); } catch (e) { ok = false; }
       window.__t2ok = ok;
       if (ok && (q ? q[1] === '1' : v !== '0')) document.documentElement.className += ' t2';
+      // juegos.krbstage.cl es la dirección del público (pedido de Cote, 22 nov: «juegos.krbstage.cl lleva a KRB Kids sin
+      // registro»): quien la abre a secas llega a KRB Kids, sin pedir nombre ni clave. Los QR siguen llevando a la sala
+      // (#/jugar) y el moderador entra por cantabingo.onrender.com.
+      if (location.hostname === 'juegos.krbstage.cl' && /^#?\/?$/.test(location.hash) && location.pathname === '/') location.replace('/#/kids');
       // Dirección a la que apuntan los QR que ve el público (se elige en el Centro de control; vacía = esta misma)
       try { window.__pub = localStorage.getItem('pub') || ''; } catch (e) { window.__pub = ''; }
       window.pubBase = function () { return window.__pub ? window.__pub + '/' : location.origin + location.pathname; };
