@@ -279,6 +279,7 @@ views.control = async () => {
     </div>
     <a class="btn lp-open" href="#/light">💡 Sala light · karaoke, show y cartelera en otro local</a>
     <a class="btn lp-open" href="#/consola">🖥️ Consola general · los 3 locales en una pantalla</a>
+    <a class="btn lp-open" href="#/master">🎛️ GC Master · centro de control de transmisión</a>
     <div class="panel"><h2>Karaoke</h2>
       <p class="muted small">Muestra en pantalla la lista de pedidos del sistema de karaoke (formulario y app del equipo).</p>
       <div class="venue-tabs" id="kar-venue" role="tablist"></div>
