@@ -2642,3 +2642,58 @@ body.kids[data-kz-level="8"] { background: linear-gradient(160deg, #fdffb6 0%, #
 /* Flyers del Instagram del local en la pantalla vertical (pedido de Cote, 21 nov): dentro del mismo recuadro, un poco más chicos */
 .lv-flyer { display: grid; place-items: center; min-height: 0; }
 .lv-flyer img { display: block; max-width: 90%; border-radius: 2vh; border: .5vh solid var(--lv-gold); box-shadow: 0 1vh 3vh rgba(0, 0, 0, .4); }
+
+/* GC Master (pedido de Cote, 21 nov): centro de control de transmisión. Una página por local con 3 pantallas (video en vivo
+   o GC, tablero y vertical) y botones tipo TV; y una página con los 3 locales juntos */
+body.gm-on main { max-width: none; padding: 10px 14px 40px; }
+.gm-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+.gm-nav > b { font-size: 1.3rem; margin: 0 10px 0 6px; }
+.gm-tab { padding: 8px 14px; border-radius: 10px; border: 2px solid #3a3360; background: #1c1836; color: #fff; text-decoration: none; font-weight: 800; }
+.gm-tab.on { background: #ffc400; border-color: #ffc400; color: #1a1a1a; }
+.gm-grid { display: grid; gap: 14px; }
+.gm-all .gm-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.gm-venue { --gm: #1487cf; min-width: 0; padding: 12px; border-radius: 16px; background: #100e22; border: 3px solid var(--gm); }
+.gm-venue.th-frida { --gm: #c4175e; } .gm-venue.th-kennedy { --gm: #1487cf; } .gm-venue.th-tobalaba { --gm: #c81e1e; }
+.gm-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 10px; }
+.gm-head > b { font-size: 1.4rem; }
+.gm-live { padding: 3px 10px; border-radius: 99px; background: #2a2744; font-size: .85rem; font-weight: 800; color: #b9b4d8; }
+.gm-live.on { background: #d21f2b; color: #fff; }
+.gm-sala { font-size: .85rem; opacity: .8; }
+/* Las tres pantallas a la misma altura: dos horizontales (16:9) y la vertical (9:16) */
+.gm-screens { display: grid; grid-template-columns: minmax(0, 256fr) minmax(0, 256fr) minmax(0, 81fr); gap: 10px; align-items: start; }
+.gm-scr { min-width: 0; display: grid; gap: 6px; }
+.gm-scr > small { font-weight: 800; text-transform: uppercase; letter-spacing: .04em; font-size: .78rem; color: #ffd76a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gm-box { position: relative; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 10px; background: #000; border: 2px solid #2c2850; }
+.gm-tall .gm-box { aspect-ratio: 9 / 16; }
+.gm-box.gm-check { background: repeating-conic-gradient(#1b1930 0 25%, #222038 0 50%) 0 0 / 24px 24px; }
+.gm-box iframe { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; border: 0; transform-origin: 0 0; pointer-events: none; }
+.gm-tall .gm-box iframe { width: 720px; height: 1280px; }
+.gm-box iframe[data-full] { width: 100%; height: 100%; transform: none; pointer-events: auto; }
+.gm-p1 { display: flex; flex-wrap: wrap; gap: 6px; }
+.gm-p1 button { padding: 5px 10px; font-size: .82rem; font-weight: 800; border-radius: 8px; }
+.gm-p1 button.on { background: #ffc400; color: #1a1a1a; border-color: #ffc400; }
+/* Botones tipo TV: teclas cuadradas con su luz; la que está al aire queda encendida en rojo */
+.gm-keys { display: grid; gap: 10px; margin-top: 12px; }
+.gm-row > small { display: block; margin-bottom: 6px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; font-size: .78rem; color: #b9b4d8; }
+.gm-keyrow { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+.gm-key { position: relative; display: grid; justify-items: center; align-content: center; gap: 2px; min-height: 74px; padding: 10px 6px 8px; border-radius: 10px; border: 2px solid #3d3966; background: linear-gradient(#2c2850, #1b1836); color: #fff; box-shadow: 0 4px 0 #0a0818; cursor: pointer; }
+.gm-key:active { transform: translateY(3px); box-shadow: 0 1px 0 #0a0818; }
+.gm-key i { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: #4a4670; }
+.gm-key span { font-size: 1.5rem; line-height: 1; }
+.gm-key b { font-size: .8rem; line-height: 1.1; text-align: center; }
+.gm-key.on { background: linear-gradient(#e0252f, #a3121b); border-color: #ff6b73; box-shadow: 0 4px 0 #5c0a10, 0 0 16px rgba(224, 37, 47, .6); }
+.gm-key.on i { background: #fff; box-shadow: 0 0 8px #fff; }
+.gm-custom { display: flex; gap: 8px; margin-top: 8px; }
+.gm-custom input { flex: 1; min-width: 0; padding: 10px 12px; font-size: 1rem; }
+.gm-key.gm-wide { min-height: 0; padding: 10px 14px; flex: none; }
+.gm-all .gm-head > b { font-size: 1.15rem; }
+.gm-all .gm-keyrow { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 6px; }
+.gm-all .gm-key { min-height: 60px; padding: 8px 4px 6px; }
+.gm-all .gm-key span { font-size: 1.2rem; } .gm-all .gm-key b { font-size: .7rem; }
+.gm-all .gm-custom { flex-direction: column; }
+@media (max-width: 1100px) { .gm-all .gm-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 700px) { .gm-screens { grid-template-columns: minmax(0, 1fr); } .gm-tall .gm-box { max-width: 300px; } }
+/* GC Master, los 3 locales juntos: la pantalla 1 arriba a todo el ancho; abajo el tablero y la vertical a la misma altura */
+.gm-all .gm-screens { grid-template-columns: minmax(0, 256fr) minmax(0, 81fr); }
+.gm-all .gm-screens > .gm-scr:first-child { grid-column: 1 / -1; }
+.gm-scr > small { white-space: normal; overflow: visible; text-overflow: clip; }
