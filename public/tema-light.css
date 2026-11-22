@@ -262,7 +262,7 @@ html.t2 #lv .lv-qrtext { gap: .8vh; }
 html.t2 #lv .lv-qrtext b { font: 900 3.4vh/.95 var(--t-disp); text-transform: uppercase; color: #0c0b12; }
 html.t2 #lv .lv-qrtext span { font: 800 1.5vh/1.25 var(--t-txt); color: #4b4656; }
 /* «QR grande y lista»: la frase grande, el QR al centro y los próximos en cantar */
-html.t2 #lv.lv-qrmode .lv-slide h2:first-child { justify-self: center; padding: 0; background: none; color: var(--t-texto); font: 900 4.8vh/.98 var(--t-disp); letter-spacing: .005em; text-align: center; clip-path: none; text-wrap: balance; }
+html.t2 #lv.lv-qrmode .lv-slide h2:first-child { justify-self: center; padding: .12em 0 0; background: none; color: var(--t-texto); font: 900 4.8vh/.98 var(--t-disp); letter-spacing: .005em; text-align: center; clip-path: none; text-wrap: balance; }
 html.t2 #lv .lv-bigqr { padding: 1.6vh; border: 0; border-radius: 0; background: #fff; }
 html.t2 #lv .lv-bigqr-text { font: 800 2vh/1.25 var(--t-txt); color: var(--t-tenue); }
 /* En una pantalla horizontal (Tobalaba): el local arriba a la izquierda, las piezas más grandes y el QR al lado */
