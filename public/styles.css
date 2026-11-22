@@ -3061,3 +3061,47 @@ body.vert-in.per-on .vt-act { transform: scale(var(--per-k, .9)); transform-orig
   #gcper .lg-main b { font-size: min(3.6vh, calc(86vw / (var(--n, 10) * .6))); }
   #gcper .lg-custom .lg-main .lg-line { font-size: 2.1vh; }
 }
+
+/* «Conectados» del GC Master (pedido de Cote, 22 nov): números en vivo por local, gráfico de línea de las últimas 3 horas y
+   registros por jornada. Los 4 colores de las series (--s1 a --s4) están validados para daltonismo sobre este fondo; el
+   texto nunca lleva el color de la serie (lo lleva la rayita de al lado). */
+.gm-con { --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --cx-ink: #f0efec; --cx-ink2: #c3c2b7; --cx-line: #2b2840; position: relative; }
+.cx-sub { display: flex; gap: 8px; margin: 10px 0 12px; }
+.cx-sub button { width: auto; margin: 0; padding: 9px 16px; border: 2px solid var(--cx-line); border-radius: 12px; background: #100e22; color: var(--cx-ink); font: 800 .95rem/1.2 inherit; font-family: inherit; box-shadow: none; cursor: pointer; }
+.cx-sub button.on { background: #ffc400; border-color: #ffc400; color: #1a1407; }
+.cx-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.cx-card { --gm: #1487cf; min-width: 0; display: grid; gap: 10px; padding: 14px; border-radius: 16px; background: #100e22; border: 3px solid var(--gm); }
+.cx-card.th-frida { --gm: #c4175e; } .cx-card.th-tobalaba { --gm: #c81e1e; }
+.cx-head { display: grid; gap: 2px; } .cx-head b { font-size: 1.25rem; font-weight: 900; } .cx-head small { color: var(--cx-ink2); font-size: .78rem; line-height: 1.3; }
+.cx-hero { display: flex; align-items: baseline; gap: 10px; } .cx-hero b { font-size: 3.2rem; font-weight: 900; line-height: 1; color: var(--cx-ink); font-variant-numeric: tabular-nums; } .cx-hero span { color: var(--cx-ink2); font-weight: 700; }
+.cx-leg { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; }
+.cx-leg li { display: grid; grid-template-columns: auto 1fr auto; align-items: center; column-gap: 8px; min-width: 0; }
+.cx-leg i, .cx-tip i { width: 14px; height: 3px; border-radius: 2px; }
+.cx-leg span { color: var(--cx-ink2); font-size: .86rem; font-weight: 700; line-height: 1.15; }
+.cx-leg b { color: var(--cx-ink); font-size: 1.2rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+.cx-leg small { grid-column: 2 / 4; color: var(--cx-ink2); font-size: .72rem; opacity: .85; }
+.cx-chart { position: relative; min-width: 0; } .cx-chart svg { display: block; max-width: 100%; }
+.cx-g { stroke: var(--cx-line); stroke-width: 1; } .cx-ax { fill: var(--cx-ink2); font-size: 10.5px; font-family: inherit; }
+.cx-l { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.cx-x { stroke: var(--cx-ink2); stroke-width: 1; opacity: .7; } .cx-d { stroke: #100e22; stroke-width: 2; }
+.cx-hit { fill: transparent; cursor: crosshair; outline: none; } .cx-hit:focus-visible { stroke: var(--cx-ink2); stroke-width: 1; stroke-dasharray: none; }
+.cx-tip { position: absolute; z-index: 5; display: grid; gap: 4px; padding: 9px 12px; border: 1px solid var(--cx-line); border-radius: 10px; background: #1b1830; color: var(--cx-ink); pointer-events: none; box-shadow: 0 8px 22px rgba(0, 0, 0, .45); white-space: nowrap; }
+.cx-tip[hidden] { display: none; }
+.cx-tip b { font-size: .82rem; color: var(--cx-ink2); } .cx-tip span { display: grid; grid-template-columns: auto auto 1fr; align-items: center; column-gap: 8px; }
+.cx-tip strong { font-size: 1.05rem; font-weight: 900; font-variant-numeric: tabular-nums; min-width: 2ch; text-align: right; } .cx-tip em { font-style: normal; color: var(--cx-ink2); font-size: .84rem; }
+.cx-empty { margin: 6px 0 0; color: var(--cx-ink2); font-size: .86rem; }
+.cx-tabla summary { cursor: pointer; color: var(--cx-ink2); font-size: .84rem; font-weight: 700; }
+.gm-con table { width: 100%; border-collapse: collapse; font-size: .84rem; font-variant-numeric: tabular-nums; }
+.gm-con th, .gm-con td { padding: 6px 8px; border-bottom: 1px solid var(--cx-line); text-align: right; white-space: nowrap; color: var(--cx-ink); }
+.gm-con th { color: var(--cx-ink2); font-weight: 700; } .gm-con th:first-child, .gm-con td:first-child, .cx-reg th:nth-child(2), .cx-reg td:nth-child(2) { text-align: left; }
+.cx-reg tbody tr td:nth-child(2) { border-left: 4px solid var(--gm, #1487cf); font-weight: 800; }
+.cx-reghead { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 10px; } .cx-reghead p { margin: 0; color: var(--cx-ink2); font-size: .86rem; line-height: 1.4; } .cx-reghead .btn { flex: none; }
+.cx-scroll { overflow-x: auto; }
+@media (max-width: 1000px) { .cx-grid { grid-template-columns: 1fr; } .cx-reghead { flex-direction: column; align-items: flex-start; } }
+.cx-reg tr.th-frida { --gm: #c4175e; } .cx-reg tr.th-kennedy { --gm: #1487cf; } .cx-reg tr.th-tobalaba { --gm: #c81e1e; }
+/* con la pestaña «Conectados» son 6: en el teléfono cada pestaña ocupa lo que pide su nombre (así ninguno se corta) */
+@media (max-width: 700px) { .gm-nav .gm-tab { flex: 1 1 0; min-width: min-content; padding-left: 2px; padding-right: 2px; font-size: min(.72rem, 2.9vw); } .gm-nav { gap: 3px; } }
+/* y entre el teléfono y el computador (tabletas de pie), la hora baja a su propia línea para que quepan las 6 */
+@media (min-width: 701px) and (max-width: 980px) { .gm-nav { flex-wrap: wrap; } .gm-nav .gm-clock { flex: 1 0 100%; flex-direction: row; justify-content: center; align-items: baseline; gap: 8px; margin: 0; } }
+@media (max-width: 520px) { .cx-leg { grid-template-columns: 1fr; } .cx-sub button { padding: 8px 12px; font-size: .88rem; } }
+.cx-reg th { white-space: normal; vertical-align: bottom; line-height: 1.15; }

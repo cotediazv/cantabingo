@@ -221,6 +221,11 @@
   views.l = async (id) => {
     const info = await api('GET', `/api/light/${encodeURIComponent(id || '')}`).catch(() => null);
     if (!info) { app.innerHTML = '<div class="panel"><h1>Esta sala ya terminó</h1><p class="muted">Pide al equipo el código QR de la sala de hoy.</p></div>'; return undefined; }
+    // «Conectados» (pedido de Cote, 22 nov): mientras la sala light está abierta en el celular, avisa cada 45 s para
+    // contarla (una marca al azar del navegador, sin datos personales; se corta sola al salir de esta pantalla)
+    { const here = location.hash; let vid = store.get('vid'); if (!vid) { vid = rnd(8); store.set('vid', vid); }
+      const ping = () => { if (location.hash !== here) return clearInterval(tPing); if (!document.hidden) fetch(`/api/web/viendo?que=light&local=${info.venue}&id=${vid}`).catch(() => {}); return undefined; };
+      const tPing = setInterval(ping, 45000); setTimeout(ping, 1500); }
     const key = `light-${id}`;
     let me = null;
     try { me = JSON.parse(store.get(key) || 'null'); } catch { me = null; }

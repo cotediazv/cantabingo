@@ -777,6 +777,15 @@ const insta = require('./insta.js')({ app, db, save, requireAdmin, fail, venue: 
 lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta, aviso });
 require('./capa.js')({ app, requireLocal, fail, aviso }); // capa gráfica sobre la cámara (botones del GC Master)
 require('./vertical.js')({ app, db, save, requireAdmin, fail, karaoke, perOf, dir: path.dirname(DATA_FILE) }); // pantalla vertical: video del mes y actividades
+// Conectados (pedido de Cote, 22 nov): números en vivo por local, gráfico de las últimas 3 horas y registro por jornada
+require('./conectados.js')({ app, db, save, requireAdmin, port: process.env.PORT || 3000,
+  // personas de la sala de juegos de ese local: conectadas ahora (con la sala abierta en el celular) e inscritas en total
+  salaOf: (venue) => {
+    const s = Object.values(db.sessions)[0];
+    if (!s || (s.theme || 'frida') !== venue) return { now: 0, total: 0 };
+    const on = new Set([...(clients[s.id] || [])].map((r) => r.playerToken).filter((t) => t && s.players[t]));
+    return { now: on.size, total: Object.keys(s.players || {}).length };
+  } });
 require('./youtube.js')({ app }); // últimos videos del canal, para la página web
 require('./twitch.js')({ app }); // videos y transmisiones en vivo de Twitch, para la página web
 require('./instagram-web.js')({ app, db, save, insta }); // últimos videos de Instagram de cada local, para la página web

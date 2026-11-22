@@ -49,6 +49,7 @@
         ${ORDER.map((v) => `<a class="gm-tab ${on === v ? 'on' : ''}" href="#/master/${v}">${esc(VENUES[v])}</a>`).join('')}
         <a class="gm-tab ${on === 'todos' ? 'on' : ''}" href="#/master">Los 3 locales</a>
         <a class="gm-tab ${on === 'juegos' ? 'on' : ''}" href="#/master/juegos">Sala de juegos</a>
+        <a class="gm-tab ${on === 'conectados' ? 'on' : ''}" href="#/master/conectados">Conectados</a>
         <span class="gm-clock" data-k="clock"><b></b><i></i></span></nav>`;
   // Arriba, la fecha con el año y la hora local de los locales (hora de Chile), al segundo (pedido de Cote, 22 nov)
   const startClock = (root) => {
@@ -511,5 +512,104 @@
 
   // #/master: los 3 locales juntos · #/master/<local>: la página de un local · #/master/juegos: la sala de juegos ·
   // #/master/movil: la sala de juegos en el teléfono (se abre con /sala)
-  views.master = (v) => (v === 'movil' ? movil() : v === 'juegos' ? juegos() : VENUES[v] ? master([v], true) : master(ORDER, false));
+  // «Conectados» (pedido de Cote, 22 nov, por el Registro: «ver cuánta gente está conectada, con algún gráfico en vivo…
+  // y una pestaña "Registros de conectados"»): por local, cuántas personas hay ahora en la sala de juegos, en la sala
+  // light, viendo Twitch y viendo la transmisión nuestra; un gráfico de línea de las últimas 3 horas (un punto por
+  // minuto) y, en «Registros de conectados», una fila por jornada (solo en los horarios con actividad real). Servidor:
+  // conectados.js (/api/conectados). Colores de las 4 series validados para daltonismo sobre el fondo del GC Master.
+  const CON = [['sala', 'Sala de juegos'], ['light', 'Sala light'], ['twitch', 'Twitch'], ['propia', 'Transmisión nuestra']];
+  const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+  const conectados = async () => {
+    if (!(await isAdmin())) return viewLogin();
+    document.body.classList.add('gm-on');
+    app.innerHTML = `<div id="gm" class="gm-con">${navHTML('conectados')}
+      <div class="cx-sub"><button type="button" class="on" data-sub="vivo">En vivo</button><button type="button" data-sub="reg">Registros de conectados</button></div>
+      <div class="cx-grid" data-k="vivo"></div><div class="cx-reg" data-k="reg" hidden></div>
+      <div class="cx-tip" data-k="tip" hidden></div></div>`;
+    const root = $('#gm'); const vivo = root.querySelector('[data-k="vivo"]'); const reg = root.querySelector('[data-k="reg"]'); const tip = root.querySelector('[data-k="tip"]');
+    let alive = true; let data = null;
+    const hm = new Intl.DateTimeFormat('es-CL', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+    const dia = new Intl.DateTimeFormat('es-CL', { timeZone: 'America/Santiago', weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    const total = (p) => p[1] + p[2] + p[3] + p[4];
+    const nice = (m) => { const steps = [4, 8, 12, 20, 40, 80, 120, 200, 400, 800, 1200, 2000, 4000]; return steps.find((x) => x >= m) || Math.ceil(m / 1000) * 1000; };
+    // El gráfico: 4 líneas sobre un solo eje que parte en 0; las 3 horas completas siempre a la vista (las líneas crecen hacia la derecha)
+    const chart = (box, l) => {
+      const W = Math.max(260, box.clientWidth); const H = 190; const L = 30; const R = 10; const T = 8; const B = 20;
+      const t1 = data.at; const t0 = t1 - 180 * 60e3; const pts = l.serie.filter((p) => p[0] >= t0);
+      const top = nice(Math.max(4, ...pts.map((p) => Math.max(p[1], p[2], p[3], p[4]))));
+      const x = (t) => L + ((t - t0) / (t1 - t0)) * (W - L - R); const y = (v) => T + (1 - v / top) * (H - T - B);
+      const grid = [0, 0.5, 1].map((f) => `<line class="cx-g" x1="${L}" x2="${W - R}" y1="${y(top * f)}" y2="${y(top * f)}"/><text class="cx-ax" x="${L - 5}" y="${y(top * f) + 3.5}" text-anchor="end">${Math.round(top * f)}</text>`).join('');
+      // marcas de tiempo cada 30 minutos, en punto y a la media
+      let ticks = ''; const first = Math.ceil(t0 / 1800e3) * 1800e3;
+      for (let t = first; t <= t1; t += 1800e3) ticks += `<line class="cx-g" x1="${x(t)}" x2="${x(t)}" y1="${H - B}" y2="${H - B + 4}"/>${(t / 1800e3) % 2 === 0 ? `<text class="cx-ax" x="${x(t)}" y="${H - 5}" text-anchor="middle">${hm.format(t)}</text>` : ''}`;
+      const lines = pts.length ? CON.map(([, name], i) => `<polyline class="cx-l" style="stroke:var(--s${i + 1})" points="${pts.map((p) => `${x(p[0]).toFixed(1)},${y(p[i + 1]).toFixed(1)}`).join(' ')}"><title>${esc(name)}</title></polyline>`).join('') : '';
+      box.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Conectados en ${esc(l.name)}, últimas 3 horas">${grid}${ticks}${lines}
+        <line class="cx-x" data-x y1="${T}" y2="${H - B}" hidden/><g data-dots></g><rect class="cx-hit" x="${L}" y="${T}" width="${W - L - R}" height="${H - T - B}" tabindex="0"/></svg>
+        ${pts.length ? '' : '<p class="cx-empty">El gráfico se va armando solo, con un punto por minuto.</p>'}`;
+      const svg = box.querySelector('svg'); const hit = svg.querySelector('.cx-hit'); const xl = svg.querySelector('[data-x]'); const dots = svg.querySelector('[data-dots]');
+      const show = (i) => {
+        const p = pts[i]; if (!p) return;
+        xl.hidden = false; xl.setAttribute('x1', x(p[0])); xl.setAttribute('x2', x(p[0]));
+        dots.innerHTML = CON.map((c, k) => `<circle class="cx-d" cx="${x(p[0])}" cy="${y(p[k + 1])}" r="4" style="fill:var(--s${k + 1})"/>`).join('');
+        // un solo recuadro con todas las series: el valor manda y el nombre acompaña
+        tip.textContent = ''; const h = document.createElement('b'); h.textContent = `${hm.format(p[0])} · ${total(p)} en total`; tip.appendChild(h);
+        CON.forEach(([, name], k) => { const row = document.createElement('span'); const key = document.createElement('i'); key.style.background = `var(--s${k + 1})`; const v = document.createElement('strong'); v.textContent = p[k + 1]; const n = document.createElement('em'); n.textContent = name; row.append(key, v, n); tip.appendChild(row); });
+        tip.hidden = false; const r = svg.getBoundingClientRect(); const gr = root.getBoundingClientRect(); const px = r.left - gr.left + x(p[0]);
+        tip.style.top = `${r.top - gr.top + T}px`; tip.style.left = `${Math.max(4, Math.min(gr.width - tip.offsetWidth - 4, px + (px > gr.width / 2 ? -tip.offsetWidth - 12 : 12)))}px`;
+      };
+      const hide = () => { xl.hidden = true; dots.innerHTML = ''; tip.hidden = true; };
+      let cur = -1;
+      const near = (cx) => { if (!pts.length) return -1; const r = svg.getBoundingClientRect(); const t = t0 + ((cx - r.left - L) / (W - L - R)) * (t1 - t0); let best = 0; for (let i = 1; i < pts.length; i++) if (Math.abs(pts[i][0] - t) < Math.abs(pts[best][0] - t)) best = i; return best; };
+      hit.addEventListener('pointermove', (e) => { cur = near(e.clientX); show(cur); });
+      hit.addEventListener('pointerleave', hide); hit.addEventListener('blur', hide);
+      hit.addEventListener('focus', () => { cur = pts.length - 1; show(cur); });
+      hit.addEventListener('keydown', (e) => { if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { e.preventDefault(); cur = Math.max(0, Math.min(pts.length - 1, cur + (e.key === 'ArrowLeft' ? -1 : 1))); show(cur); } });
+    };
+    const horario = (l) => (l.jornada ? `En horario · ${l.jornada.from} a ${l.jornada.to} · se está registrando` : `Fuera de horario · no se registra (${l.horarios.map(([d, f, t]) => `${DIAS[d]} ${f} a ${t}`).join(' · ')})`);
+    const paintVivo = () => {
+      if (!vivo.children.length) vivo.innerHTML = data.locales.map((l) => `<section class="cx-card th-${l.venue}" data-v="${l.venue}">
+          <div class="cx-head"><b>${esc(l.name)}</b><small data-k="hor"></small></div>
+          <div class="cx-hero"><b data-k="tot">0</b><span>conectados ahora</span></div>
+          <ul class="cx-leg">${CON.map(([k, name], i) => `<li><i style="background:var(--s${i + 1})"></i><span>${name}</span><b data-k="n-${k}">0</b><small data-k="x-${k}"></small></li>`).join('')}</ul>
+          <div class="cx-chart" data-k="chart"></div>
+          <details class="cx-tabla"><summary>Ver como tabla</summary><div data-k="tabla"></div></details></section>`).join('');
+      for (const l of data.locales) {
+        const c = vivo.querySelector(`[data-v="${l.venue}"]`); const q = (k) => c.querySelector(`[data-k="${k}"]`); const n = l.now;
+        q('hor').textContent = horario(l); q('tot').textContent = n.sala + n.light + n.twitch + n.propia;
+        for (const [k] of CON) q(`n-${k}`).textContent = n[k];
+        q('x-sala').textContent = n.salaTotal ? `de ${n.salaTotal} ${n.salaTotal === 1 ? 'inscrito' : 'inscritos'}` : '';
+        if (tip.hidden) chart(q('chart'), l); // con el cursor encima no se redibuja
+        const rows = l.serie.filter((p, i, a) => i === a.length - 1 || Math.floor(p[0] / 900e3) !== Math.floor(a[i + 1][0] / 900e3)).slice(-12).reverse(); // un valor cada 15 min
+        q('tabla').innerHTML = rows.length ? `<table><thead><tr><th>Hora</th>${CON.map(([, name]) => `<th>${name}</th>`).join('')}<th>Total</th></tr></thead><tbody>${rows.map((p) => `<tr><td>${hm.format(p[0])}</td><td>${p[1]}</td><td>${p[2]}</td><td>${p[3]}</td><td>${p[4]}</td><td>${total(p)}</td></tr>`).join('')}</tbody></table>` : '<p class="cx-empty">Aún no hay datos.</p>';
+      }
+    };
+    const COLS = [['Fecha', (j) => dia.format(j.first)], ['Local', (j) => j.name], ['Desde', (j) => hm.format(j.first)], ['Hasta', (j) => hm.format(j.last)], ['Máximo de conectados', (j) => j.max], ['Hora del máximo', (j) => hm.format(j.maxAt)], ['Promedio', (j) => String(j.avg).replace('.', ',')],
+      ['Sala de juegos (máx.)', (j) => j.salaMax], ['Inscritos en la sala', (j) => j.salaTotal], ['Sala light (máx.)', (j) => j.lightMax], ['Twitch (máx.)', (j) => j.twitchMax], ['Transmisión nuestra (máx.)', (j) => j.propiaMax]];
+    const paintReg = () => {
+      const js = data.jornadas;
+      reg.innerHTML = `<div class="cx-reghead"><p>Una fila por jornada. Solo se registra en los horarios con actividad: ${data.locales.map((l) => `<b>${esc(l.name)}</b> ${l.horarios.map(([d, f, t]) => `${DIAS[d]} ${f} a ${t}`).join(', ')}`).join(' · ')}.</p>
+          <button type="button" class="btn" data-csv ${js.length ? '' : 'disabled'}>⬇ Bajar a Excel</button></div>
+        ${js.length ? `<div class="cx-scroll"><table><thead><tr>${COLS.map(([h]) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${js.map((j) => `<tr class="th-${j.venue}">${COLS.map(([, f]) => `<td>${esc(f(j))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>` : '<p class="cx-empty">Todavía no hay jornadas registradas. La primera fila aparece cuando haya gente conectada dentro de un horario con actividad.</p>'}`;
+    };
+    const load = async () => {
+      const r = await api('GET', '/api/conectados').catch(() => null);
+      if (!alive || !r) return;
+      data = r; paintVivo(); if (!reg.hidden) paintReg();
+    };
+    root.onclick = (e) => {
+      const b = e.target.closest('button'); if (!b || !data) return;
+      if (b.dataset.sub) { root.querySelectorAll('[data-sub]').forEach((x) => x.classList.toggle('on', x === b)); vivo.hidden = b.dataset.sub !== 'vivo'; reg.hidden = b.dataset.sub !== 'reg'; tip.hidden = true; if (!reg.hidden) paintReg(); else paintVivo(); }
+      if (b.dataset.csv !== undefined) { // punto y coma y marca de inicio: así Excel lo abre con tildes y en columnas
+        const csv = [COLS.map(([h]) => h), ...data.jornadas.map((j) => COLS.map(([, f]) => f(j)))].map((row) => row.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\r\n');
+        const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' })); a.download = 'registros-de-conectados.csv'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+      }
+    };
+    const onResize = () => { if (data && !vivo.hidden) paintVivo(); };
+    window.addEventListener('resize', onResize);
+    await load();
+    const t3 = startClock(root); const t1 = setInterval(load, 15000);
+    return () => { alive = false; clearInterval(t1); clearInterval(t3); window.removeEventListener('resize', onResize); document.body.classList.remove('gm-on'); };
+  };
+
+  views.master = (v) => (v === 'movil' ? movil() : v === 'conectados' ? conectados() : v === 'juegos' ? juegos() : VENUES[v] ? master([v], true) : master(ORDER, false));
 })();
