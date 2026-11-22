@@ -2984,3 +2984,39 @@ body.gm-on main { max-width: none; padding: 10px 14px 40px; }
 
 /* GC Master · «Sala de juegos»: el panel de la derecha va achicado (lo calcula master-ui.js) para que todo quepa */
 .gm-panel iframe { transform-origin: 0 0; }
+
+/* «Sala KRB»: la sala de juegos en el teléfono (pedido de Cote, 22 nov). Pantalla completa y sin bajar la página: fila de
+   arriba, 3 monitores chicos, la zona del medio (panel del juego o botones del GC y efectos) y las 2 teclas de abajo.
+   Respeta la muesca y la barra de inicio del iPhone (safe-area) */
+.gm-movil { display: none; }
+@media (max-width: 900px) { .gm-movil { display: block; margin: 0 0 8px; padding: 10px 12px; border-radius: 10px; background: #ffc400; color: #1a1a1a; font-weight: 800; text-align: center; text-decoration: none; } }
+body.gmm-on { overflow: hidden; overscroll-behavior: none; }
+body.gmm-on main { padding: 0; max-width: none; }
+body.gmm-on .krb-mark { display: none; }
+.gm-m { position: fixed; left: 0; top: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 6px; padding: calc(env(safe-area-inset-top, 0px) + 6px) calc(env(safe-area-inset-right, 0px) + 8px) 0 calc(env(safe-area-inset-left, 0px) + 8px); background: #12101f; }
+.gmm-top { flex: none; display: flex; align-items: baseline; gap: 8px; min-height: 24px; }
+.gmm-top > b { flex: none; font-size: 1.05rem; white-space: nowrap; }
+.gmm-top > span:not(.gm-clock) { flex: 1; min-width: 0; font-size: .74rem; opacity: .8; white-space: nowrap; overflow: hidden; }
+.gm-m .gm-clock { flex: none; margin: 0; } .gm-m .gm-clock i { display: none; } .gm-m .gm-clock b { font-size: 1rem; }
+.gmm-mon { flex: none; display: grid; grid-template-columns: 16fr 16fr 5.0625fr; gap: 4px; align-items: start; }
+.gmm-mon .gm-scr > small { padding: 1px 4px; font-size: .52rem; }
+.gmm-mon .gm-tall .gm-box { max-width: none; }
+.gmm-none { grid-column: 1 / -1; margin: 0; padding: 10px 12px; border: 1px dashed #3a3360; border-radius: 8px; font-size: .85rem; line-height: 1.35; color: #b9b4d8; }
+.gmm-body { flex: 1; min-height: 0; position: relative; }
+.gmm-pane { position: absolute; left: 0; top: 0; right: 0; bottom: 0; overflow: hidden; }
+.gmm-pane[hidden] { display: none; }
+.gm-m .gm-panel { position: absolute; height: auto; min-height: 0; border-width: 1px; border-radius: 8px; }
+.gmm-gc { overflow-y: auto; }
+.gmm-gc .gm-venue { padding: 2px 0 0; border: 0; border-radius: 0; background: none; }
+.gmm-gc .gm-row + .gm-row { margin-top: 12px; }
+.gm-m .gm-keyrow { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.gm-m .gm-key { height: 70px; padding: 4px 2px; }
+.gm-m .gm-key span { font-size: 1.5rem; } .gm-m .gm-key b { font-size: .66rem; line-height: 1.05; }
+.gm-m .gm-text { display: block; width: 100%; max-width: none; margin: 0 0 8px; padding: 10px 12px; font-size: 16px; }
+.gm-m .gm-capa { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0; }
+.gm-m .gm-ckey { height: 58px; flex-direction: column; gap: 2px; padding: 2px; white-space: normal; }
+.gm-m .gm-ckey span { font-size: 1.3rem; } .gm-m .gm-ckey b { font-size: .64rem; line-height: 1.05; }
+.gmm-tabs { flex: none; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 0 0 calc(env(safe-area-inset-bottom, 0px) + 6px); }
+.gmm-tabs button { display: flex; align-items: center; justify-content: center; gap: 8px; height: 46px; padding: 0 6px; border-radius: 10px; font-weight: 800; font-size: 1rem; }
+.gmm-tabs button span { font-size: 1.2rem; line-height: 1; }
+.gmm-tabs button.on { background: #ffc400; border-color: #ffc400; color: #1a1a1a; }

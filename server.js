@@ -300,6 +300,19 @@ app.get('/:short', (req, res, next) => {
   res.redirect(302, `/${i >= 0 ? req.originalUrl.slice(i) : ''}${to}`);
 });
 
+// Sala de juegos en el teléfono (pedido de Cote, 22 nov): /sala abre la versión móvil del GC Master («Sala KRB») con su
+// propio nombre e inicio, para guardarla en la pantalla de inicio del iPhone aparte del Centro de control («Control KRB»)
+app.get('/sala', (_req, res) => {
+  require('fs').readFile(path.join(__dirname, 'public', 'index.html'), 'utf8', (err, html) => {
+    if (err) return res.status(500).send('No se pudo abrir la página');
+    return res.set('Cache-Control', 'no-cache').type('html').send(html
+      .replace('href="manifest.webmanifest"', 'href="manifest-sala.webmanifest"')
+      .replace('content="Control KRB"', 'content="Sala KRB"')
+      .replace('<title>KRB Stage · Sala de juegos</title>', '<title>Sala KRB</title>')
+      .replace('<body>', '<body>\n  <script>if (!location.hash || location.hash === "#/") location.replace(location.pathname + location.search + "#/master/movil");</script>'));
+  });
+});
+
 const fail = (res, code, error) => res.status(code).json({ error });
 const summary = (p) => ({
   id: p.id, name: p.name, theme: p.theme || 'frida', format: p.format, count: p.cards.length, values: p.values,

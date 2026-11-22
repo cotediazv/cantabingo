@@ -59,6 +59,109 @@
     return setInterval(tick, 1000);
   };
 
+  // El panel de la sala va dentro de un recuadro y se achica solo, lo justo para que todo quepa sin subir ni bajar: parte en
+  // «max» y baja hasta «min» según lo que realmente ocupa el contenido. Con «wide», solo se achica desde ese ancho de ventana.
+  const panelFit = (pf, { max, min, wide = 0, alive }) => {
+    const pbox = pf.parentElement;
+    let k = max; let cap = max; let lastHash = ''; let grewAt = 0;
+    const on = () => window.innerWidth > wide;
+    const applyK = () => { const kk = on() ? k : 1; pf.style.width = `${100 / kk}%`; pf.style.height = `${100 / kk}%`; pf.style.transform = kk === 1 ? '' : `scale(${kk})`; };
+    const fitPanel = () => {
+      if (!alive()) return;
+      if (!on()) { applyK(); return; }
+      if (pbox.clientHeight < 60) return; // oculto
+      let doc = null; try { doc = pf.contentDocument; } catch { doc = null; }
+      const a = doc && doc.getElementById('app');
+      if (!a || !a.lastElementChild) return;
+      if (!doc.getElementById('gm-in')) { const st = doc.createElement('style'); st.id = 'gm-in'; st.textContent = 'main{padding:10px 14px 8px !important;max-width:none !important}.panel{padding:12px 16px !important;margin-bottom:10px !important}h1{margin-bottom:.15em !important}.cols{gap:10px !important}.back{margin:0 0 6px !important}'; doc.head.appendChild(st); }
+      const hash = pf.contentWindow.location.hash;
+      if (hash !== lastHash) { lastHash = hash; cap = max; }
+      // alto que ocupa el contenido (en píxeles del panel sin achicar) y el tamaño que lo haría caber
+      let bottom = 0; for (const c of a.children) { const r = c.getBoundingClientRect(); if (r.height) bottom = Math.max(bottom, r.bottom); }
+      const need = bottom + (pf.contentWindow.scrollY || 0) + 14;
+      const next = Math.max(min, Math.min(cap, (pbox.clientHeight / need) * 0.985)); // cabe si need <= alto del panel / k
+      if (next < k - 0.008) { if (Date.now() - grewAt < 2500) cap = next; k = next; applyK(); } // si al agrandar dejó de caber, no se vuelve a agrandar en esta vista
+      else if (next > k * 1.12) { k = next; grewAt = Date.now(); applyK(); }
+    };
+    return { fitPanel, applyK, reset: () => { k = max; cap = max; applyK(); } };
+  };
+
+  // «Sala KRB»: la sala de juegos en el teléfono (pedido de Cote, 22 nov: «una versión móvil… guardarlo en el inicio, que no
+  // se vea la barra de direcciones y pueda en una plana operar todos los botones… distribuido para un iPhone»). Se abre
+  // en /sala (#/master/movil), a pantalla completa y sin bajar la página: arriba los 3 monitores chicos (GC, tablero y de
+  // pie); al medio, lo que se elige con las 2 teclas de abajo: «Juego» (el panel real de la sala, achicado para que quepa)
+  // o «GC y efectos» (los 9 botones del GC, el texto y los 8 efectos).
+  const movil = async () => {
+    if (!(await isAdmin())) return viewLogin();
+    document.body.classList.add('gm-on', 'gmm-on');
+    app.innerHTML = `<div id="gm" class="gm-m">
+      <header class="gmm-top"><b data-k="mtitle">Sala de juegos</b><span data-k="msala"></span><span class="gm-clock" data-k="clock"><b></b><i></i></span></header>
+      <div class="gmm-mon" data-k="mon"></div>
+      <div class="gmm-body">
+        <div class="gm-panel gmm-pane" data-pane="juego"><iframe title="Panel de la sala de juegos" src="/#/juegos"></iframe></div>
+        <div class="gmm-pane gmm-gc" data-pane="gc" hidden></div>
+      </div>
+      <nav class="gmm-tabs"><button type="button" class="on" data-tab="juego"><span>🎮</span><b>Juego</b></button><button type="button" data-tab="gc"><span>🎛️</span><b>GC y efectos</b></button></nav></div>`;
+    const root = $('#gm');
+    const mon = root.querySelector('[data-k="mon"]'); const gc = root.querySelector('[data-pane="gc"]');
+    let alive = true; let venue = null; let stage = '';
+    const fit = () => root.querySelectorAll('.gm-box').forEach((box) => { const f = box.querySelector('iframe'); if (f) f.style.transform = `scale(${box.clientWidth / Number(box.dataset.w || 1280)})`; });
+    const ro = new ResizeObserver(fit);
+    const key = (k, icon, text, on) => `<button type="button" class="gm-key ${on ? 'on' : ''}" data-main="${k}"><i></i><span>${icon}</span><b>${text}</b></button>`;
+    const paintKeys = () => { const box = gc.querySelector('[data-k="keys"]'); if (box) box.innerHTML = MAIN.map(([k, i, t]) => key(k, i, t, stage === k)).join(''); };
+    const paint = () => {
+      ro.disconnect();
+      root.querySelector('[data-k="mtitle"]').textContent = venue ? VENUES[venue] : 'Sala de juegos';
+      mon.innerHTML = venue ? [['GC', '#/escena', 1280, 'gm-bg', ''], ['Tablero', '#/tablero', 1280, '', ''], ['De pie', '#/tablero', 720, '', 'gm-tall']].map(([t, h, w, bg, tall]) => `<div class="gm-scr ${tall} th-${venue}"><small>${t}</small><div class="gm-box ${bg}" data-w="${w}"><iframe title="${t}" tabindex="-1" src="/?mudo=1${h}"></iframe></div></div>`).join('')
+        : '<p class="gmm-none">No hay sala de juegos abierta. Créala aquí abajo, con «Crear sala de juegos».</p>';
+      gc.innerHTML = venue ? `<div class="gm-venue th-${venue}" data-v="${venue}">
+          <div class="gm-row"><small>GC de la sala de juegos</small><div class="gm-keyrow" data-k="keys"></div></div>
+          <div class="gm-row"><small>Efectos sobre la cámara</small>
+            <input class="gm-text" data-k="text" type="text" maxlength="60" autocomplete="off" placeholder="Texto para el texto 3D">
+            <div class="gm-capa">${CAPA.map(([k, i, t, full]) => `<button type="button" class="gm-ckey" data-capa="${k}" title="${full}" aria-label="${full}"><span>${i}</span><b>${t}</b></button>`).join('')}</div></div></div>`
+        : '<p class="gmm-none">Cuando haya una sala de juegos abierta, aquí aparecen los botones del GC y los efectos.</p>';
+      root.querySelectorAll('.gm-box').forEach((b) => ro.observe(b));
+      paintKeys(); fit();
+    };
+    const load = async () => {
+      const r = await api('GET', '/api/consola').catch(() => null);
+      if (!alive || !r) return;
+      const loc = (r.locales || []).find((x) => x.main);
+      const v = loc ? loc.venue : null; const st = loc ? loc.main.stage : '';
+      if (v !== venue) { venue = v; stage = st; paint(); } else if (st !== stage) { stage = st; paintKeys(); }
+      root.querySelector('[data-k="msala"]').textContent = loc ? loc.main.stageName : '';
+    };
+    const pf = root.querySelector('.gm-panel iframe');
+    const { fitPanel, applyK, reset } = panelFit(pf, { max: 0.85, min: 0.6, alive: () => alive });
+    root.onclick = async (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      if (b.dataset.tab) {
+        root.querySelectorAll('[data-tab]').forEach((x) => x.classList.toggle('on', x === b));
+        root.querySelectorAll('[data-pane]').forEach((x) => { x.hidden = x.dataset.pane !== b.dataset.tab; });
+        fitPanel(); return;
+      }
+      if (!venue) return;
+      try {
+        if (b.dataset.main) { await api('POST', '/api/stage', { show: b.dataset.main }); load(); } else if (b.dataset.capa) {
+          const ti = gc.querySelector('[data-k="text"]'); const text = ti.value.trim();
+          if (b.dataset.capa === 'texto3d' && !text) { toast('Escribe el texto para el 3D'); ti.focus(); return; }
+          await api('POST', '/api/capa', { local: venue, kind: b.dataset.capa, text });
+          b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 1500);
+        }
+      } catch (err) { fail(err); }
+    };
+    applyK();
+    pf.addEventListener('load', reset);
+    window.addEventListener('resize', fitPanel);
+    paint();
+    await load();
+    const t3 = startClock(root);
+    const t1 = setInterval(load, 3000);
+    const t4 = setInterval(fitPanel, 400);
+    return () => { alive = false; clearInterval(t1); clearInterval(t3); clearInterval(t4); window.removeEventListener('resize', fitPanel); ro.disconnect(); document.body.classList.remove('gm-on', 'gmm-on'); };
+  };
+
   // «Sala de juegos» (pedido de Cote, 22 nov: «que tengamos Mercado Kennedy, Frida, Tobalaba y luego sala de juegos, para
   // poder tener todos los botones y todas las interacciones»): a la izquierda, las 3 pantallas de la sala de juegos abierta
   // (1 GC de OBS, 2 tablero, 3 pantalla de pie), los botones del GC y los de la capa gráfica; a la derecha, el panel real
@@ -67,6 +170,7 @@
     if (!(await isAdmin())) return viewLogin();
     document.body.classList.add('gm-on');
     app.innerHTML = `<div id="gm" class="gm-all gm-jg">${navHTML('juegos')}
+      <a class="gm-movil" href="/sala">📱 Abrir la versión para el teléfono</a>
       <div class="gm-grid"><div class="gm-jgleft" data-k="left"></div>
         <div class="gm-panel"><iframe title="Panel de la sala de juegos" src="${location.pathname}#/juegos"></iframe></div></div></div>`;
     const root = $('#gm');
@@ -124,31 +228,10 @@
     // El panel de la derecha se achica solo, lo justo para que todo quepa sin subir ni bajar (pedido de Cote, 22 nov:
     // «se ven todo un poco grandes… para poder tener siempre todo en pantalla»). Parte al 80 % y baja hasta el 50 % si lo
     // que hay en el panel es más alto; se mide lo que realmente ocupa el contenido. En el teléfono va a tamaño normal.
-    const pf = root.querySelector('.gm-panel iframe'); const pbox = pf.parentElement;
-    const K_MAX = 0.8; const K_MIN = 0.5;
-    let k = K_MAX; let cap = K_MAX; let lastHash = ''; let grewAt = 0;
-    const applyK = () => {
-      const kk = window.innerWidth > 900 ? k : 1;
-      pf.style.width = `${100 / kk}%`; pf.style.height = `${100 / kk}%`; pf.style.transform = kk === 1 ? '' : `scale(${kk})`;
-    };
-    const fitPanel = () => {
-      if (!alive) return;
-      if (window.innerWidth <= 900) { applyK(); return; }
-      let doc = null; try { doc = pf.contentDocument; } catch { doc = null; }
-      const a = doc && doc.getElementById('app');
-      if (!a || !a.lastElementChild) return;
-      if (!doc.getElementById('gm-in')) { const st = doc.createElement('style'); st.id = 'gm-in'; st.textContent = 'main{padding:10px 14px 8px !important;max-width:none !important}.panel{padding:12px 16px !important;margin-bottom:10px !important}h1{margin-bottom:.15em !important}.cols{gap:10px !important}.back{margin:0 0 6px !important}'; doc.head.appendChild(st); }
-      const hash = pf.contentWindow.location.hash;
-      if (hash !== lastHash) { lastHash = hash; cap = K_MAX; }
-      // alto que ocupa el contenido (en píxeles del panel sin achicar) y el tamaño que lo haría caber
-      let bottom = 0; for (const c of a.children) { const r = c.getBoundingClientRect(); if (r.height) bottom = Math.max(bottom, r.bottom); }
-      const need = bottom + (pf.contentWindow.scrollY || 0) + 14;
-      const next = Math.max(K_MIN, Math.min(cap, (pbox.clientHeight / need) * 0.985)); // cabe si need <= alto del panel / k
-      if (next < k - 0.008) { if (Date.now() - grewAt < 2500) cap = next; k = next; applyK(); } // si al agrandar dejó de caber, no se vuelve a agrandar en esta vista
-      else if (next > k * 1.12) { k = next; grewAt = Date.now(); applyK(); }
-    };
+    const pf = root.querySelector('.gm-panel iframe');
+    const { fitPanel, applyK, reset } = panelFit(pf, { max: 0.8, min: 0.5, wide: 900, alive: () => alive });
     applyK();
-    pf.addEventListener('load', () => { k = K_MAX; cap = K_MAX; applyK(); });
+    pf.addEventListener('load', reset);
     window.addEventListener('resize', fitPanel);
     paintLeft();
     await load();
@@ -351,6 +434,7 @@
     return () => { alive = false; clearInterval(t1); clearInterval(t2); clearInterval(t3); ro.disconnect(); document.removeEventListener('visibilitychange', onVisible); list.forEach((v) => { clearInterval(fades[v]); ownStop(v); }); document.body.classList.remove('gm-on'); };
   };
 
-  // #/master: los 3 locales juntos · #/master/<local>: la página de un local · #/master/juegos: la sala de juegos
-  views.master = (v) => (v === 'juegos' ? juegos() : VENUES[v] ? master([v], true) : master(ORDER, false));
+  // #/master: los 3 locales juntos · #/master/<local>: la página de un local · #/master/juegos: la sala de juegos ·
+  // #/master/movil: la sala de juegos en el teléfono (se abre con /sala)
+  views.master = (v) => (v === 'movil' ? movil() : v === 'juegos' ? juegos() : VENUES[v] ? master([v], true) : master(ORDER, false));
 })();

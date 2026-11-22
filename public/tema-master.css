@@ -32,3 +32,11 @@ html.t2 .gm-ckey.on { background: var(--t-foco); border-color: #fff1b0; color: v
 /* «Sala de juegos»: el panel de la derecha */
 html.t2 .gm-panel { border-radius: 0; border: 1px solid var(--t-linea); background: #0c0b12; }
 html.t2 .gm-none p { color: var(--t-tenue); }
+/* «Sala KRB» (la sala de juegos en el teléfono) */
+html.t2 .gm-m { background: #0c0b12; }
+html.t2 .gmm-top > b { font: 900 1.25rem/1 var(--t-disp); text-transform: uppercase; letter-spacing: .01em; }
+html.t2 .gmm-top > span:not(.gm-clock) { font-family: var(--t-mono); font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; color: var(--t-foco); opacity: 1; }
+html.t2 .gmm-none { border-radius: 0; border-color: var(--t-linea); color: var(--t-tenue); }
+html.t2 .gmm-tabs button { border-radius: 0; border: 1px solid var(--t-linea); background: var(--t-tarima); color: var(--t-texto); font-family: var(--t-txt); }
+html.t2 .gmm-tabs button.on { background: var(--t-foco); border-color: var(--t-foco); color: var(--t-foco-tinta); }
+html.t2 .gm-movil { border-radius: 0; background: var(--t-foco); color: var(--t-foco-tinta); }
