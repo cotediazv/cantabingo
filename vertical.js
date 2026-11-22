@@ -96,7 +96,7 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
   for (const v of Object.keys(SCREENS)) { const c = db.vertical[v]; if (c && c.opt && (c.opt.state === 'procesando' || c.opt.state === 'esperando')) { c.opt = { ...c.opt, state: 'error' }; save(); } try { fs.rmSync(`${file(v)}.optimizando.mp4`, { force: true }); } catch { /* nada */ } }
 
   // Qué actividad hay ahora en el local: la sala de juegos completa de ese local abierta y con algo en juego
-  // (pedido de Cote: si la sala está abierta pero sin bingo, El Rosco ni otro juego en curso, se ve la información
+  // (pedido de Cote: si la sala está abierta pero sin bingo, El Rosko ni otro juego en curso, se ve la información
   // del local con los shows que vienen). En el bingo cuenta como «en juego» si ya salieron números, si está el QR
   // grande para entrar o si hay ganador en pantalla.
   const activityOf = (v) => {

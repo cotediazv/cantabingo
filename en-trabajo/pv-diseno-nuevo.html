@@ -366,7 +366,7 @@
   var NAMES = { kennedy: 'Mercado Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' }; // nombre del local (pedido de Cote, 21 nov)
   var SHORT = { kennedy: 'Mercado Kennedy', frida: 'Frida', tobalaba: 'Tobalaba' }; // en los juegos también «Mercado Kennedy» (pedido de Cote, 21 nov)
   var FIG = { linea: 'Línea (cualquiera)', horizontal: 'Línea horizontal', vertical: 'Línea vertical', diagonal: 'Diagonal', 'dos-lineas': 'Dos líneas', esquinas: 'Cuatro esquinas', sello: 'Sello (2×2 en una esquina)', cruz: 'Cruz', marco: 'Marco', cuadro: 'Cuadro central', diamante: 'Diamante', piramide: 'Pirámide', 'piramide-inv': 'Pirámide invertida', reloj: 'Reloj de arena', corazon: 'Corazón', estrella: 'Estrella', lleno: 'Cartón lleno' };
-  var GAMES = { bingo: ['🎱', 'Bingo'], rosco: ['🎡', 'El Rosco'], festival: ['🎤', 'El Festival de ' + SHORT[VENUE]], objeto: ['🗳️', 'El objeto más extraño'] };
+  var GAMES = { bingo: ['🎱', 'Bingo'], rosco: ['🎡', 'El Rosko'], festival: ['🎤', 'El Festival de ' + SHORT[VENUE]], objeto: ['🗳️', 'El objeto más extraño'] };
   var GVC = { bingo: '#ff2e93', rosco: '#9b6bff', festival: '#ffc400', objeto: '#19d6b0' };
   var offset = 0;
   var cv = $('cv'); var view = $('view'); var vid = $('vid'); var tap = $('tap');
@@ -788,7 +788,7 @@
       if (sig === last) return;
       last = sig;
       var list = r.list || [];
-      var o = '<div class="abs g-title g-over" style="font-size:3.4rem;color:#ffc400">Resultados</div><div class="abs fit g-main" style="top:9rem;font-size:' + tv('5.4', '6.6') + 'rem;font-weight:700">La Trivia del Rosco</div><div class="abs g-box' + tv('', ' fitbox') + '" style="top:19rem;bottom:32rem"><ol class="rows rk sc">';
+      var o = '<div class="abs g-title g-over" style="font-size:3.4rem;color:#ffc400">Resultados</div><div class="abs fit g-main" style="top:9rem;font-size:' + tv('5.4', '6.6') + 'rem;font-weight:700">La Trivia del Rosko</div><div class="abs g-box' + tv('', ' fitbox') + '" style="top:19rem;bottom:32rem"><ol class="rows rk sc">';
       if (!list.length) o += '<li style="text-align:center">Responde desde tu celular</li>';
       for (var i = 0; i < list.length && i < 10; i++) o += '<li class="' + (i < 3 ? 'top' : '') + '"><em>' + (i + 1) + '.º</em>' + h(list[i].name) + '<i>' + h(list[i].score) + '</i></li>';
       o += '</ol></div>' + qrFoot();
@@ -810,8 +810,8 @@
       var sig = JSON.stringify([r.picked, rolling, r.mode, r.roll && r.roll.winner]);
       if (sig === last) return;
       last = sig;
-      var isRosco = r.mode === 'tie' && r.roll && r.roll.game === 'rosco'; // El Rosco usa el mismo sorteo para su desempate
-      var o = '<div class="abs g-title fit">' + se(isRosco ? '🏆 ¡Ganador de El Rosco!' : r.mode === 'tie' ? 'Desempate del bingo' : '🎲 Sorteo de concursantes') + '</div>';
+      var isRosco = r.mode === 'tie' && r.roll && r.roll.game === 'rosco'; // El Rosko usa el mismo sorteo para su desempate
+      var o = '<div class="abs g-title fit">' + se(isRosco ? '🏆 ¡Ganador de El Rosko!' : r.mode === 'tie' ? 'Desempate del bingo' : '🎲 Sorteo de concursantes') + '</div>';
       if (rolling) o += '<div class="abs big gold r-roll' + tv('', ' fit') + '" style="top:30rem">' + se('🎲 Sorteando…') + '</div>';
       else if (r.mode === 'tie' && r.roll && r.roll.winner) o += '<div class="abs r-win" style="top:28rem"><div class="g-sub">Ganó</div><b class="big fit" style="display:block">' + h(r.roll.winner) + '</b></div>';
       var picked = [];

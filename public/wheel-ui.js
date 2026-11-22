@@ -41,7 +41,7 @@
       <text x="50" y="44" font-size="17" text-anchor="middle" dominant-baseline="central" fill="currentColor" font-weight="700" data-timer="${pi}">${clock(c.remainingMs)}</text>
       <text x="50" y="58" font-size="${Math.min(5, 62 / (Math.max(1, c.name.length) * 0.62)).toFixed(2)}" text-anchor="middle" fill="currentColor" font-weight="600">${esc(c.name)}</text>
       <text x="50" y="66" font-size="4.6" text-anchor="middle" fill="currentColor"><tspan fill="#35c97a">✔ ${c.hits}</tspan>  <tspan fill="#f07a7a">✘ ${c.misses}</tspan></text>`;
-    return `<svg viewBox="0 0 100 100" class="wheel ${mine ? 'turn' : ''}" role="img" aria-label="Rosco de ${esc(c.name)}">${DEFS}
+    return `<svg viewBox="0 0 100 100" class="wheel ${mine ? 'turn' : ''}" role="img" aria-label="Rosko de ${esc(c.name)}">${DEFS}
       <circle cx="50" cy="50" r="${R}" fill="none" stroke="url(#wg-ring)" stroke-width="${(r * 1.5).toFixed(2)}" opacity=".9"/>
       <circle cx="50" cy="50" r="${(R + r * 0.75).toFixed(2)}" fill="none" stroke="#fff" stroke-width=".35" opacity=".8"/>
       <circle cx="50" cy="50" r="${(R - r * 0.75).toFixed(2)}" fill="none" stroke="#fff" stroke-width=".35" opacity=".8"/>
@@ -81,8 +81,8 @@
     if (!(await isAdmin())) return viewLogin();
     const list = await api('GET', '/api/wheels');
     app.innerHTML = `<p class="back"><a href="#/">← Inicio</a></p>
-      <div class="row between" style="margin-bottom:16px"><h1>El Rosco</h1><a class="btn primary" href="#/ruedanueva">⊕ Nuevo rosco</a></div>
-      <div class="panel scroll-x">${list.length ? `<table class="list"><tr><th>Rosco</th><th>Concursantes</th><th>Reloj</th><th></th></tr>
+      <div class="row between" style="margin-bottom:16px"><h1>El Rosko</h1><a class="btn primary" href="#/ruedanueva">⊕ Nuevo rosco</a></div>
+      <div class="panel scroll-x">${list.length ? `<table class="list"><tr><th>Rosko</th><th>Concursantes</th><th>Reloj</th><th></th></tr>
         ${list.map((w) => `<tr><td><b>${esc(w.name)}</b><br><span class="muted small">${w.letters} letras</span></td><td>${w.players.map(esc).join(', ')}</td><td>${w.seconds} s</td>
           <td><div class="row"><a class="btn primary" href="#/ruedactl/${w.id}">Dirigir</a><button class="danger" data-del="${w.id}">Eliminar</button></div></td></tr>`).join('')}</table>`
     : '<p>Aún no hay roscos. Crea el primero.</p>'}</div>`;
@@ -95,12 +95,12 @@
 
   views.ruedanueva = async () => {
     if (!(await isAdmin())) return viewLogin();
-    app.innerHTML = `<p class="back"><a href="#/ruedas">← Roscos</a></p><h1>Nuevo rosco</h1>
+    app.innerHTML = `<p class="back"><a href="#/ruedas">← Roskos</a></p><h1>Nuevo rosco</h1>
       <form class="panel fields" id="wf">
-        <label class="f">Nombre<input type="text" name="name" maxlength="50" placeholder="Rosco del viernes"></label>
+        <label class="f">Nombre<input type="text" name="name" maxlength="50" placeholder="Rosko del viernes"></label>
         <label class="f">Segundos por concursante <span class="hint">20 a 900</span><input type="number" name="seconds" min="20" max="900" value="120"></label>
-        <label class="f wide">Letras del rosco <span class="hint">en el orden en que giran</span><input type="text" name="letters" maxlength="40" value="${DEFAULT_LETTERS}"></label>
-        <label class="f wide">Concursantes <span class="hint">uno por línea, de 1 a 4; cada uno tiene su rosco y su reloj</span><textarea name="players" style="min-height:90px">Concursante 1</textarea></label>
+        <label class="f wide">Letras del rosko <span class="hint">en el orden en que giran</span><input type="text" name="letters" maxlength="40" value="${DEFAULT_LETTERS}"></label>
+        <label class="f wide">Concursantes <span class="hint">uno por línea, de 1 a 4; cada uno tiene su rosko y su reloj</span><textarea name="players" style="min-height:90px">Concursante 1</textarea></label>
         <label class="f">Preguntas<select name="source"><option value="bank">Automáticas, del banco de preguntas</option><option value="own">Las escribo yo</option></select></label>
         <div class="wide" id="bank-opts">
           <div class="row"><b class="small">Temas:</b>
@@ -110,11 +110,11 @@
           <div class="row" style="margin-top:8px"><b class="small">Nivel:</b>
             <label class="check"><input type="checkbox" name="level" value="f" checked> Fácil</label>
             <label class="check"><input type="checkbox" name="level" value="m" checked> Medio</label></div>
-          <p class="muted small" style="margin-top:8px">Cada rosco nuevo toma las preguntas que menos se han usado, así van rotando solas. Solo las ves tú.</p>
+          <p class="muted small" style="margin-top:8px">Cada rosko nuevo toma las preguntas que menos se han usado, así van rotando solas. Solo las ves tú.</p>
         </div>
         <label class="f wide" id="own-opts" hidden>Tus preguntas <span class="hint">una por línea: <b>Letra; definición; respuesta</b>. Separa las de cada concursante con una línea <b>---</b></span>
           <textarea name="questions" placeholder="A; Con la A: fruto del manzano; manzana\nB; Con la B: embarcación pequeña; bote"></textarea></label>
-        <div class="wide"><button class="primary big">Crear el rosco</button></div>
+        <div class="wide"><button class="primary big">Crear el rosko</button></div>
       </form>`;
     $('#wf').source.onchange = (e) => { $('#bank-opts').hidden = e.target.value !== 'bank'; $('#own-opts').hidden = e.target.value !== 'own'; };
     $('#wf').onsubmit = async (e) => {
@@ -138,9 +138,9 @@
   };
 
   // ---------- Moderador: panel de control ----------
-  // Top 10 de la Trivia del Rosco (lo usan el panel, la pantalla del local y el GC)
+  // Top 10 de la Trivia del Rosko (lo usan el panel, la pantalla del local y el GC)
   // «Resultados finales» cuando ya se mostró al ganador (pedido de Cote); antes, «Resultados parciales»
-  const rankHTML = (st, cls) => `<div class="${cls}"><div class="${cls}-head"><small>Trivia del Rosco · Top 10</small><b>${window.sinEmoji(`🏅 ${st.crowdWinner || st.winner ? 'Resultados finales' : 'Resultados parciales'}`)}</b><span>${st.rankPlayers} ${st.rankPlayers === 1 ? 'persona jugando' : 'personas jugando'}</span></div>
+  const rankHTML = (st, cls) => `<div class="${cls}"><div class="${cls}-head"><small>Trivia del Rosko · Top 10</small><b>${window.sinEmoji(`🏅 ${st.crowdWinner || st.winner ? 'Resultados finales' : 'Resultados parciales'}`)}</b><span>${st.rankPlayers} ${st.rankPlayers === 1 ? 'persona jugando' : 'personas jugando'}</span></div>
     ${st.rank.length ? `<ol>${st.rank.map((t) => `<li><b>${esc(t.name)}</b><em>${t.score} pts</em></li>`).join('')}</ol>` : '<p>Todavía nadie suma puntos</p>'}</div>`;
   // En qué paso de la pregunta está el panel: 0 sin juego, 1 poner rosco, 2 iniciar pregunta, 3 responder
   // Clase según el largo de la pregunta: solo la usa el diseño nuevo (tema-rosco.css), para agrandar las cortas y achicar las muy largas
@@ -156,7 +156,7 @@
     const act = (action, extra) => api('POST', `/api/wheels/${id}/act`, { action, ...extra }).catch(fail);
     // Para leer al partir (pedido de Cote)
     const HOWTO = window.ROSCO_HOWTO; // en app.js: lo usan también los celulares
-    app.innerHTML = `<div id="rosco-ctl">${window.readAloud ? window.readAloud('El Rosco', HOWTO) : ''}<div class="cols">
+    app.innerHTML = `<div id="rosco-ctl">${window.readAloud ? window.readAloud('El Rosko', HOWTO) : ''}<div class="cols">
         <div class="panel">
           <div class="row between"><div><h1 id="w-name" style="margin:0"></h1><span class="muted" id="w-turn"></span></div><div class="w-topright"><div class="w-who" id="w-who" hidden><small>Es el turno de</small><b></b></div><div class="w-letter" id="w-letter"></div></div></div>
           <div id="w-rankann"></div>
@@ -164,7 +164,7 @@
           <button class="primary big w-accept" id="w-tie" hidden>🎲 Desempatar por sorteo</button>
           <button class="primary big w-accept" id="w-accept" data-do="acceptwin" hidden>✔ Aceptar ganador</button>
           <div id="w-accepted" hidden><div class="w-accepted">✔ Ganador aceptado</div>
-            <button class="primary big w-accept" id="w-crowd" data-do="crowdwin">🏅 Mostrar ganador de la Trivia del Rosco</button>
+            <button class="primary big w-accept" id="w-crowd" data-do="crowdwin">🏅 Mostrar ganador de la Trivia del Rosko</button>
             <div class="w-ann" id="w-crowd-res" hidden></div><div id="w-after" hidden>${BACK_BINGO}</div></div>
           <div class="w-flow">
             <button class="w-show" id="w-show"></button>
@@ -181,7 +181,7 @@
             <button class="danger" id="w-reset">Reiniciar</button>
             ${fromBank ? '<button id="w-newq">↻ Preguntas nuevas</button>' : ''}
           </div>
-          <p class="muted small" style="margin-top:12px">Paso a paso: 1) Poner rosco en pantalla, 2) Iniciar pregunta, 3) Correcta, Incorrecta o Pasa. Solo se puede apretar el botón del paso que toca. Teclado: Espacio inicia la pregunta; A correcta, F incorrecta, P pasa. Con «Incorrecta» o «Pasa» el rosco sale del GC (queda el marcador). Toca una letra del rosco para saltar a ella o reabrirla.</p>
+          <p class="muted small" style="margin-top:12px">Paso a paso: 1) Poner rosko en pantalla, 2) Iniciar pregunta, 3) Correcta, Incorrecta o Pasa. Solo se puede apretar el botón del paso que toca. Teclado: Espacio inicia la pregunta; A correcta, F incorrecta, P pasa. Con «Incorrecta» o «Pasa» el rosko sale del GC (queda el marcador). Toca una letra del rosko para saltar a ella o reabrirla.</p>
           <button class="w-rankbtn" id="w-rank"></button>
           <div class="w-ranklist" id="w-ranklist" hidden></div>
         </div>
@@ -190,12 +190,12 @@
       <div class="panel"><h2>Pantalla del público</h2>
         <div class="row between"><div class="small"><b>Enlace para celulares o TV:</b> <a class="link" href="${publicUrl()}" target="_blank">${esc(publicUrl())}</a><br>
           <b>Fuente de navegador para OBS</b> (fondo transparente): <a class="link" href="${obsUrl()}" target="_blank">${esc(obsUrl())}</a><br>
-          <span class="muted">El público ve el rosco, el reloj y el marcador. La pregunta aparece solo mientras el reloj corre; la respuesta, nunca.</span></div>${qr(publicUrl())}</div></div>${BACK_BINGO}<p class="small" style="margin-top:12px"><a href="#/ruedas">Ver todos los roscos</a></p></div>`;
+          <span class="muted">El público ve el rosko, el reloj y el marcador. La pregunta aparece solo mientras el reloj corre; la respuesta, nunca.</span></div>${qr(publicUrl())}</div></div>${BACK_BINGO}<p class="small" style="margin-top:12px"><a href="#/ruedas">Ver todos los roskos</a></p></div>`;
     if (typeof paintGameNav === 'function') paintGameNav(); // el menú de juegos (BACK_BINGO) se completa al entrar
     const render = () => {
       const c = st.players[st.turn];
       $('#w-name').textContent = st.name;
-      $('#w-turn').textContent = st.winner ? (st.winner.full ? `🏆 ${st.winner.name} completó el rosco` : `🏆 Gana ${st.winner.name} (${st.winner.hits} ✔ · ${st.winner.misses} ✘)${st.winner.byDraw ? ', por sorteo' : ''}`) : st.tie ? `Empate: ${st.tie.names.join(' y ')}` : st.finished ? 'Juego terminado' : '';
+      $('#w-turn').textContent = st.winner ? (st.winner.full ? `🏆 ${st.winner.name} completó el rosko` : `🏆 Gana ${st.winner.name} (${st.winner.hits} ✔ · ${st.winner.misses} ✘)${st.winner.byDraw ? ', por sorteo' : ''}`) : st.tie ? `Empate: ${st.tie.names.join(' y ')}` : st.finished ? 'Juego terminado' : '';
       // Pedido de Cote (21 nov): arriba a la derecha, «Es el turno de» chico y el nombre grande y en color; al cambiar el
       // turno (Pasa, Incorrecta o se acabó el tiempo) se destaca unos segundos, como guía para el animador
       const who = $('#w-who');
@@ -209,7 +209,7 @@
       $('#w-letter').textContent = c.active ? st.letters[c.current] : '—';
       const q = (questions[st.turn] || [])[c.current] || {};
       // La pregunta y su respuesta se muestran al moderador solo con el reloj en marcha
-      $('#w-question').innerHTML = !c.active ? (st.tie ? (st.tie.rolling ? '<b>Sorteando el desempate…</b> Mira la pantalla.' : `<b>Hay un empate</b> entre ${st.tie.names.map(esc).join(' y ')}: mismos aciertos y fallos. Primero desempata por sorteo.`) : st.winner ? (st.winAccepted ? `<b>${st.winner.full ? '¡Rosco completo!' : '¡Tenemos ganador!'}</b> El nombre del ganador queda abajo al centro de la pantalla.` : `<b>${st.winner.full ? '¡Rosco completo!' : `¡Gana ${esc(st.winner.name)}!`}</b> ${st.winner.byDraw ? 'Salió elegido en el desempate.' : 'La partida se detuvo y en pantalla se muestra la felicitación.'} Pulsa «Aceptar ganador», o Deshacer si fue un error.`) : '<span class="muted">Este concursante ya terminó su rosco.</span>')
+      $('#w-question').innerHTML = !c.active ? (st.tie ? (st.tie.rolling ? '<b>Sorteando el desempate…</b> Mira la pantalla.' : `<b>Hay un empate</b> entre ${st.tie.names.map(esc).join(' y ')}: mismos aciertos y fallos. Primero desempata por sorteo.`) : st.winner ? (st.winAccepted ? `<b>${st.winner.full ? '¡Rosko completo!' : '¡Tenemos ganador!'}</b> El nombre del ganador queda abajo al centro de la pantalla.` : `<b>${st.winner.full ? '¡Rosko completo!' : `¡Gana ${esc(st.winner.name)}!`}</b> ${st.winner.byDraw ? 'Salió elegido en el desempate.' : 'La partida se detuvo y en pantalla se muestra la felicitación.'} Pulsa «Aceptar ganador», o Deshacer si fue un error.`) : '<span class="muted">Este concursante ya terminó su rosco.</span>')
         : !st.runningSince ? '<span class="muted">Pulsa «Iniciar pregunta» para ver la pregunta de esta letra.</span>'
         : q.q ? `${q.cat ? `<div class="small muted" style="margin-bottom:6px">${TAGS[q.cat]} · ${q.level === 'f' ? 'Fácil' : 'Medio'}</div>` : ''}<div class="w-qtext">${esc(q.q)}</div>${q.a ? `<div class="w-answer"><small>Respuesta</small><b>${esc(q.a)}</b></div>` : ''}` : '<span class="muted">Sin pregunta cargada para esta letra: léela de tu guion.</span>';
       $('#w-accept').hidden = !st.winner || st.winAccepted;
@@ -218,29 +218,29 @@
       $('#w-crowd').hidden = !!st.crowdWinner;
       $('#w-crowd-res').hidden = !st.crowdWinner;
       const many = (n, one, more) => `${n} ${n === 1 ? one : more}`; // «1 acierto», «2 aciertos»
-      if (st.crowdWinner) $('#w-crowd-res').innerHTML = st.crowdWinner.none ? window.annHtml('🏅 Trivia del Rosco', ['Nadie sumó puntos'], [`Jugaron ${many(st.crowdWinner.players, 'persona', 'personas')}`])
-        : window.annHtml('🏅 Premio especial · Ganó la Trivia del Rosco', [st.crowdWinner.name], [`${many(st.crowdWinner.score, 'punto', 'puntos')} · ${many(st.crowdWinner.hits, 'acierto', 'aciertos')}`, `Jugaron ${many(st.crowdWinner.players, 'persona', 'personas')}`]);
+      if (st.crowdWinner) $('#w-crowd-res').innerHTML = st.crowdWinner.none ? window.annHtml('🏅 Trivia del Rosko', ['Nadie sumó puntos'], [`Jugaron ${many(st.crowdWinner.players, 'persona', 'personas')}`])
+        : window.annHtml('🏅 Premio especial · Ganó la Trivia del Rosko', [st.crowdWinner.name], [`${many(st.crowdWinner.score, 'punto', 'puntos')} · ${many(st.crowdWinner.hits, 'acierto', 'aciertos')}`, `Jugaron ${many(st.crowdWinner.players, 'persona', 'personas')}`]);
       // Pedido de Cote (21 nov): al final, sí o sí se muestra el ganador de la Trivia antes de seguir con lo que viene
       $('#w-after').hidden = !st.crowdWinner;
       // Pedido de Cote (21 nov): con el ganador aceptado, su nombre y su premio grandes para anunciarlo
       const wa = $('#w-accepted .w-accepted');
       const waKey = st.winAccepted && st.winner ? `${st.winner.name}|${st.winner.hits}|${st.winner.misses}` : '';
-      if (wa && wa.dataset.k !== waKey) { wa.dataset.k = waKey; wa.classList.toggle('w-ann', !!waKey); wa.innerHTML = waKey ? window.annHtml(`🏆 Premio mayor · ${st.winner.full ? '¡Completó el rosco!' : 'Ganó El Rosco'}`, [st.winner.name], [`${st.winner.hits} ${st.winner.hits === 1 ? 'acierto' : 'aciertos'} · ${st.winner.misses} ${st.winner.misses === 1 ? 'fallo' : 'fallos'}${st.winner.byDraw ? ' · salió en el desempate' : ''}`]) : '✔ Ganador aceptado'; }
+      if (wa && wa.dataset.k !== waKey) { wa.dataset.k = waKey; wa.classList.toggle('w-ann', !!waKey); wa.innerHTML = waKey ? window.annHtml(`🏆 Premio mayor · ${st.winner.full ? '¡Completó el rosko!' : 'Ganó El Rosko'}`, [st.winner.name], [`${st.winner.hits} ${st.winner.hits === 1 ? 'acierto' : 'aciertos'} · ${st.winner.misses} ${st.winner.misses === 1 ? 'fallo' : 'fallos'}${st.winner.byDraw ? ' · salió en el desempate' : ''}`]) : '✔ Ganador aceptado'; }
       // Pregunta paso a paso (pedido de Cote): solo se puede apretar el botón del paso que toca; los demás quedan
-      // bloqueados en blanco y negro. 1) Poner rosco en pantalla → 2) Iniciar pregunta → 3) Correcta / Incorrecta / Pasa
-      // (con Correcta se sigue en el paso 3; con Incorrecta o Pasa el rosco sale y se vuelve al paso 1)
+      // bloqueados en blanco y negro. 1) Poner rosko en pantalla → 2) Iniciar pregunta → 3) Correcta / Incorrecta / Pasa
+      // (con Correcta se sigue en el paso 3; con Incorrecta o Pasa el rosko sale y se vuelve al paso 1)
       const step = stepOf(st);
       $$('.w-keys button').forEach((b) => { b.disabled = step !== 3; });
       $('#w-clock').textContent = st.runningSince ? '⏱ Pregunta en curso' : '▶ Iniciar pregunta';
       $('#w-clock').classList.toggle('on', !!st.runningSince);
-      $('#w-show').textContent = st.onScreen ? '📺 Rosco en pantalla ✓' : '📺 Poner rosco en pantalla';
+      $('#w-show').textContent = st.onScreen ? '📺 Rosko en pantalla ✓' : '📺 Poner rosko en pantalla';
       $('#w-show').classList.toggle('on', !!st.onScreen);
       $('#w-show').disabled = step !== 1 || !!st.rankDue;
-      // Ranking de la Trivia del Rosco (pedido de Cote): se despliega en la pantalla del local y a un costado del GC
+      // Ranking de la Trivia del Rosko (pedido de Cote): se despliega en la pantalla del local y a un costado del GC
       $('#w-rank').textContent = st.rank ? '🏅 Recoger ranking (está en pantalla)' : st.rankDue ? `📊 Terminaron ${st.rankEvery || 2} rondas: despliega el ranking de la Trivia (obligatorio)` : '🏅 Desplegar ranking de la Trivia (top 10)';
       $('#w-rank').classList.toggle('on', !!st.rank);
       $('#w-rank').classList.toggle('due', !!st.rankDue); // paso obligatorio cada 2 rondas (pedido de Cote, 21 nov)
-      if (st.rankDue && !st.runningSince) $('#w-question').innerHTML = `<b>📊 Terminaron ${st.rankEvery || 2} rondas.</b> Antes de la próxima pregunta, despliega el ranking de la Trivia del Rosco en pantalla (botón de abajo).`;
+      if (st.rankDue && !st.runningSince) $('#w-question').innerHTML = `<b>📊 Terminaron ${st.rankEvery || 2} rondas.</b> Antes de la próxima pregunta, despliega el ranking de la Trivia del Rosko en pantalla (botón de abajo).`;
       $('#w-ranklist').hidden = true; // el ranking desplegado va arriba, grande (pedido de Cote, 21 nov)
       const rk = $('#w-rankann');
       const rkKey = st.rank ? JSON.stringify([st.rank, st.rankPlayers, !!(st.crowdWinner || st.winner)]) : '';
@@ -267,9 +267,9 @@
     $('#w-show').onclick = () => { if (stepOf(st) === 1) act('show', { on: true }); };
     $('#w-rank').onclick = () => act('rank', { on: !st.rank });
     $('#w-tie').onclick = async () => { try { await api('POST', `/api/wheels/${id}/tiebreak`); } catch (err) { fail(err); } };
-    $('#w-reset').onclick = () => { if (confirm('¿Reiniciar el rosco? Se borran aciertos, fallos y relojes.')) act('reset'); };
+    $('#w-reset').onclick = () => { if (confirm('¿Reiniciar el rosko? Se borran aciertos, fallos y relojes.')) act('reset'); };
     if (fromBank) $('#w-newq').onclick = async () => {
-      if (!confirm('¿Cambiar todas las preguntas por otras del banco? El rosco se reinicia.')) return;
+      if (!confirm('¿Cambiar todas las preguntas por otras del banco? El rosko se reinicia.')) return;
       try { await api('POST', `/api/wheels/${id}/newquestions`); route(); } catch (err) { fail(err); }
     };
     const onKey = (e) => {
@@ -290,7 +290,7 @@
       const list = await openWheels();
       const quiet = kind === 'obs' || document.body.classList.contains('full');
       if (!list.length && quiet) {
-        // En OBS no se muestra ningún cartel de espera: queda transparente hasta que exista un rosco
+        // En OBS no se muestra ningún cartel de espera: queda transparente hasta que exista un rosko
         if (kind === 'obs') document.body.classList.add('obs');
         app.innerHTML = '';
         const timer = setInterval(async () => { if ((await openWheels()).length) route(); }, 4000);
@@ -457,7 +457,7 @@
       const html = (from, chunk, pages) => {
         const top = data.list.slice(0, 5);
         // Sin QR en la pantalla vertical (pedido de Cote). Si todavía nadie juega: «¡Pronto! Ya comenzamos»
-        return `<div class="rv-rank"><header class="rv-head"><div class="rv-title"><b>Resultados</b><span>La Trivia del Rosco</span>${top.length ? `<small>${data.players} ${data.players === 1 ? 'persona jugando' : 'personas jugando'}</small>` : ''}</div></header>
+        return `<div class="rv-rank"><header class="rv-head"><div class="rv-title"><b>Resultados</b><span>La Trivia del Rosko</span>${top.length ? `<small>${data.players} ${data.players === 1 ? 'persona jugando' : 'personas jugando'}</small>` : ''}</div></header>
           ${top.length ? `<ol class="rv-top">${top.map((t, i) => `<li><em>${i + 1}</em><b>${esc(t.name)}</b><i>${t.score} pts</i></li>`).join('')}</ol>
           <div class="rv-rest" style="--cols:${cols()}">${colsOf(chunk, from)}</div>
           <footer class="rv-pages">${pages > 1 ? `Puestos ${from + 6} al ${from + 5 + chunk.length} · página ${page + 1} de ${pages}` : ''}</footer>`
@@ -515,7 +515,7 @@
           : `<div class="pw-rankwrap">${rankHTML(st, 'pw-rank')}</div>`;
         return;
       }
-      // Ganador del Rosco en línea (el público): 15 segundos en pantalla y después se retira
+      // Ganador del Rosko en línea (el público): 15 segundos en pantalla y después se retira
       if (st.crowdWinner) {
         const full = document.body.classList.contains('full');
         const cw = st.crowdWinner;
@@ -532,15 +532,15 @@
         if (wonBy === key) return;
         wonBy = key;
         if (full) sfx.play('win');
-        $('#pw').innerHTML = cw.none ? (full ? '<div class="win-screen"><div class="win-card"><span class="win-trophy">🏅</span><span class="win-name" style="--n:17">Trivia del Rosco</span><span class="win-text">Esta vez nadie sumó puntos</span><span class="win-sub">¡En la próxima!</span></div></div>'
-            : `<div class="rosco-winlow"><span class="rosco-winlow-tag">${window.sinEmoji('🏅 Trivia del Rosco')}</span><b style="--n:17">Nadie sumó puntos</b><small>¡En la próxima!</small></div>`)
+        $('#pw').innerHTML = cw.none ? (full ? '<div class="win-screen"><div class="win-card"><span class="win-trophy">🏅</span><span class="win-name" style="--n:17">Trivia del Rosko</span><span class="win-text">Esta vez nadie sumó puntos</span><span class="win-sub">¡En la próxima!</span></div></div>'
+            : `<div class="rosco-winlow"><span class="rosco-winlow-tag">${window.sinEmoji('🏅 Trivia del Rosko')}</span><b style="--n:17">Nadie sumó puntos</b><small>¡En la próxima!</small></div>`)
           : full ? `<div class="win-screen"><div class="win-card"><span class="win-trophy">🏅</span><span class="win-name" style="--n:${cw.name.length}">${esc(cw.name)}</span>
-              <span class="win-text">¡Ganó la Trivia del Rosco! ${cw.score} puntos</span><span class="win-sub">¡Felicitaciones!</span></div></div>`
-          : `<div class="rosco-winlow"><span class="rosco-winlow-tag">${window.sinEmoji('🏅 Ganó la Trivia del Rosco')}</span><b style="--n:${cw.name.length}">${esc(cw.name)}</b><small>${cw.score} puntos · ¡Felicitaciones!</small></div>`;
+              <span class="win-text">¡Ganó la Trivia del Rosko! ${cw.score} puntos</span><span class="win-sub">¡Felicitaciones!</span></div></div>`
+          : `<div class="rosco-winlow"><span class="rosco-winlow-tag">${window.sinEmoji('🏅 Ganó la Trivia del Rosko')}</span><b style="--n:${cw.name.length}">${esc(cw.name)}</b><small>${cw.score} puntos · ¡Felicitaciones!</small></div>`;
         return;
       }
       if (st.winner) {
-        // Rosco completo: se retira todo y queda solo la felicitación, en grande
+        // Rosko completo: se retira todo y queda solo la felicitación, en grande
         // Ganador aceptado, en OBS: la felicitación baja a un cartel al centro para dejar ver a la persona
         const full = document.body.classList.contains('full');
         // En OBS la pantalla completa dura 6 s; después baja sola al cartel, aunque el animador no haya aceptado aún
@@ -561,22 +561,22 @@
         const key = st.winner.name + (low ? (st.winAccepted ? '|ok' : '|low') : '');
         if (low && wonBy !== key) {
           wonBy = key;
-          $('#pw').innerHTML = `<div class="rosco-winlow ${st.winAccepted ? '' : 'hold'}"><span class="rosco-winlow-tag">${window.sinEmoji(`🏆 ${st.winner.full ? 'Completó el rosco' : 'Ganó El Rosco'}`)}</span><b style="--n:${st.winner.name.length}">${esc(st.winner.name)}</b><small>¡Felicitaciones!</small></div>`;
+          $('#pw').innerHTML = `<div class="rosco-winlow ${st.winAccepted ? '' : 'hold'}"><span class="rosco-winlow-tag">${window.sinEmoji(`🏆 ${st.winner.full ? 'Completó el rosko' : 'Ganó El Rosko'}`)}</span><b style="--n:${st.winner.name.length}">${esc(st.winner.name)}</b><small>¡Felicitaciones!</small></div>`;
         } else if (wonBy !== key) {
           wonBy = key;
           const colors = ['#ff4fa3', '#ff9a3d', '#ffe14d', '#3fe08f', '#35c6ff', '#9b5cff'];
           const confetti = Array.from({ length: 60 }, (_, i) => `<i style="left:${(Math.random() * 100).toFixed(1)}%;background:${colors[i % colors.length]};animation-delay:${(Math.random() * 3).toFixed(2)}s;animation-duration:${(3 + Math.random() * 3).toFixed(2)}s"></i>`).join('');
           $('#pw').innerHTML = `<div class="win-screen"><div class="confetti">${confetti}</div>
             <div class="win-card"><span class="win-trophy">🏆</span><span class="win-name" style="--n:${st.winner.name.length}">${esc(st.winner.name)}</span>
-              <span class="win-text">${st.winner.full ? '¡Completaste el rosco!' : `¡Ganaste El Rosco! ${st.winner.hits} aciertos`}</span><span class="win-sub">¡Felicitaciones!</span></div></div>`;
+              <span class="win-text">${st.winner.full ? '¡Completaste el rosko!' : `¡Ganaste El Rosko! ${st.winner.hits} aciertos`}</span><span class="win-sub">¡Felicitaciones!</span></div></div>`;
         }
         return;
       }
       wonBy = null; clearTimeout(winTimer); clearTimeout(shrinkTimer);
       if (kind === 'obs') {
         // En OBS: solo la rueda del concursante en turno, con el centro libre para su cámara,
-        // y el reloj con el marcador en una esquina. Pedido de Cote: el rosco y la pregunta se ven desde «Iniciar pregunta»
-        // (o con el botón «Rosco en pantalla»); con un fallo o un paso salen al instante y queda solo el marcador.
+        // y el reloj con el marcador en una esquina. Pedido de Cote: el rosko y la pregunta se ven desde «Iniciar pregunta»
+        // (o con el botón «Rosko en pantalla»); con un fallo o un paso salen al instante y queda solo el marcador.
         $('#pw').innerHTML = `<div class="obs-corner">${st.players.map((c, i) => `<div class="obs-player ${i === st.turn && !st.finished ? 'on' : ''}">
             <span class="obs-clock" data-timer="${i}">${clock(c.remainingMs)}</span>
             <span class="obs-name">${esc(c.name)}</span>
@@ -589,7 +589,7 @@
         scheduleFlash(st);
         return;
       }
-      // Pantalla vertical (pedido de Cote): en vez de los roscos, el ranking completo de la Trivia del Rosco
+      // Pantalla vertical (pedido de Cote): en vez de los roskos, el ranking completo de la Trivia del Rosko
       if (kind === 'rueda' && document.body.classList.contains('full') && innerHeight > innerWidth) { rankV.show(st.id); return; }
       rankV.hide();
       // Sin pregunta ni respuesta en pantalla (pedido de Cote): el título crece y ocupa el espacio de arriba, con letras de

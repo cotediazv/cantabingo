@@ -1,5 +1,5 @@
 /* global views, app, $, esc, api, fail, toast, isAdmin, viewLogin, BACK_BINGO */
-// Sorteo de concursantes para El Rosco: panel del moderador y animación para la pantalla de OBS.
+// Sorteo de concursantes para El Rosko: panel del moderador y animación para la pantalla de OBS.
 (() => {
   // ---------- Moderador ----------
   views.sorteoctl = async () => {
@@ -12,7 +12,7 @@
           <h2>Concursantes elegidos</h2>
           <div id="rf-picked" style="margin:10px 0"></div>
           <div class="row">
-            <button class="primary" id="rf-create" hidden>✔ Aceptar y cargar El Rosco</button>
+            <button class="primary" id="rf-create" hidden>✔ Aceptar y cargar El Rosko</button>
             <button id="rf-reset">Empezar de nuevo</button>
           </div>
         </div>
@@ -45,19 +45,19 @@
       if ($('#rf-ann').dataset.k !== annKey) {
         $('#rf-ann').dataset.k = annKey;
         $('#rf-ann').innerHTML = rolling ? '<div class="panel ann"><small>📣 Para anunciar</small><span class="ann-t">🎲 Sorteando en pantalla…</span></div>'
-          : picked.length ? window.annHtml(`🎲 Salió sorteado · ${picked.length}.º de 3 para El Rosco`, [lastP], [cf[lastP] === 'ok' ? '✅ ¡Confirmó! Que se acerque a nuestro escenario' : '⏳ Esperando que confirme en su celular si quiere jugar'])
+          : picked.length ? window.annHtml(`🎲 Salió sorteado · ${picked.length}.º de 3 para El Rosko`, [lastP], [cf[lastP] === 'ok' ? '✅ ¡Confirmó! Que se acerque a nuestro escenario' : '⏳ Esperando que confirme en su celular si quiere jugar'])
           : '';
         if (!rolling && dec.length) $('#rf-ann').insertAdjacentHTML('beforeend', `<p class="rf-dec">🙅 Prefirieron jugar online (no entran al sorteo): ${dec.map(esc).join(', ')}</p>`);
         if (rolling) setTimeout(load, r.roll.at + (r.rollMs || 6000) - (Date.now() + off) + 300);
       }
-      // Pedido de Cote (20 nov): un solo botón que avanza: sortear a los 3 concursantes y, con los 3, cargar El Rosco
+      // Pedido de Cote (20 nov): un solo botón que avanza: sortear a los 3 concursantes y, con los 3, cargar El Rosko
       const full = picked.length >= 3;
-      // Con los 3 elegidos, El Rosco se carga cuando los 3 confirmaron (pedido de Cote, 21 nov)
-      $('#rf-draw').textContent = full ? (allOk ? '✔ Cargar El Rosco con los 3' : '⏳ Esperando que confirmen en su celular') : `🎲 Sortear concursante (${picked.length + 1}.º de 3)`;
+      // Con los 3 elegidos, El Rosko se carga cuando los 3 confirmaron (pedido de Cote, 21 nov)
+      $('#rf-draw').textContent = full ? (allOk ? '✔ Cargar El Rosko con los 3' : '⏳ Esperando que confirmen en su celular') : `🎲 Sortear concursante (${picked.length + 1}.º de 3)`;
       $('#rf-draw').dataset.load = full ? '1' : '';
       $('#rf-draw').disabled = full ? !allOk : p.connected.filter((n) => !picked.includes(n) && !dec.includes(n)).length === 0;
       $('#rf-create').hidden = full || !picked.length;
-      $('#rf-create').textContent = `✔ Cargar El Rosco con ${picked.length}`;
+      $('#rf-create').textContent = `✔ Cargar El Rosko con ${picked.length}`;
       $('#rf-create').disabled = !allOk;
     };
     $('#rf-draw').onclick = async () => {
@@ -90,7 +90,7 @@
     };
     $('#rf-create').onclick = async () => {
       try {
-        const w = await api('POST', '/api/wheels', { name: 'El Rosco', players: picked });
+        const w = await api('POST', '/api/wheels', { name: 'El Rosko', players: picked });
         location.hash = `#/ruedactl/${w.id}`;
       } catch (err) { fail(err); }
     };
@@ -112,7 +112,7 @@
     };
     const list = (names) => { $('#rf-list').innerHTML = names.map((n, i) => `<span><b>${i + 1}</b>${esc(n)}</span>`).join(''); };
     const reveal = (st, celebrate) => {
-      $('#rf-stage').innerHTML = `${celebrate ? confetti() : ''}<div class="rf-card win ${celebrate ? 'pop' : ''}"><span class="rf-kicker">${window.sinEmoji(st.mode === 'tie' ? (st.roll.game === 'rosco' ? '🏆 ¡Ganador de El Rosco!' : '🏆 ¡Ganador del bingo!') : '🎉 ¡A jugar El Rosco!')}</span><span class="rf-name" style="--n:${st.roll.winner.length}">${esc(st.roll.winner)}</span></div>`;
+      $('#rf-stage').innerHTML = `${celebrate ? confetti() : ''}<div class="rf-card win ${celebrate ? 'pop' : ''}"><span class="rf-kicker">${window.sinEmoji(st.mode === 'tie' ? (st.roll.game === 'rosco' ? '🏆 ¡Ganador de El Rosko!' : '🏆 ¡Ganador del bingo!') : '🎉 ¡A jugar El Rosko!')}</span><span class="rf-name" style="--n:${st.roll.winner.length}">${esc(st.roll.winner)}</span></div>`;
       list(st.picked);
     };
     const poll = async () => {
@@ -121,7 +121,7 @@
       $('#rf-title').textContent = st.mode === 'tie' ? 'Desempate' : 'Sorteo de concursantes';
       if (!st.roll) {
         clearTimeout(spin); spin = null; shownRoll = 0;
-        $('#rf-stage').innerHTML = `<div class="rf-card"><span class="rf-dice">🎲</span><span class="rf-kicker">${st.pool} participantes</span><span class="rf-name small">¿Quién jugará El Rosco?</span></div>`;
+        $('#rf-stage').innerHTML = `<div class="rf-card"><span class="rf-dice">🎲</span><span class="rf-kicker">${st.pool} participantes</span><span class="rf-name small">¿Quién jugará El Rosko?</span></div>`;
         list(st.picked);
         return;
       }

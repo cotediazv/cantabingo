@@ -825,9 +825,10 @@
   };
   const MENU = [['salto'], ['carrera'], ['fruta'], ['globos'], ['laberinto'], ['topos'], ['pintar'], ['memoria'], ['puzzle'], ['bloques'], ['vibora']];
   // «Agustín, el pirata»: juego aparte (public/agustin.html), con su propio botón al final del menú
-  // Por ahora NO se muestra (pedido de Cote por el Registro, 22 nov: «todavía no debe estar disponible en KRB Kids»; lo
-  // quiere modificar antes). El juego y su página quedan intactos: para volver a mostrarlo, AGUSTIN_ON = true.
-  const AGUSTIN_ON = false;
+  // Interruptor del botón (Registro, 22 nov): Claude 1 anotó que Cote no lo quería disponible todavía; se preparó sacarlo y
+  // Cote respondió «espera», así que SIGUE A LA VISTA. Para sacarlo cuando Cote lo pida: AGUSTIN_ON = false (el juego y
+  // su página no se tocan).
+  const AGUSTIN_ON = true;
   const AGUSTIN = `<a class="kz-game" href="/agustin.html" aria-label="Agustín, el pirata"><svg viewBox="0 0 100 100" aria-hidden="true"><ellipse cx="34" cy="62" rx="11" ry="13" fill="#3b2314"/><circle cx="52" cy="62" r="25" fill="#f0c08a" stroke="#1c1724" stroke-width="3"/><circle cx="31" cy="66" r="6" fill="#f0c08a" stroke="#1c1724" stroke-width="2.5"/><circle cx="31" cy="76" r="4" fill="none" stroke="#f2c14e" stroke-width="3"/><path d="M30 52 L66 60" stroke="#1c1724" stroke-width="3"/><ellipse cx="57" cy="62" rx="7" ry="8" fill="#16131c"/><ellipse cx="70" cy="61" rx="5" ry="6" fill="#fff" stroke="#1c1724" stroke-width="2"/><circle cx="72" cy="62" r="3" fill="#1c1724"/><path d="M60 72 q8 7 15 0" fill="none" stroke="#1c1724" stroke-width="3" stroke-linecap="round"/><path d="M10 50 Q24 42 28 30 Q48 0 70 30 Q78 40 94 40 Q56 58 10 50z" fill="#1d1b26" stroke="#1c1724" stroke-width="3"/><path d="M15 49 Q52 54 89 41" fill="none" stroke="#e9b44c" stroke-width="3.5"/><circle cx="50" cy="28" r="6.5" fill="#fff"/><rect x="46" y="31" width="8" height="5" fill="#fff"/><circle cx="47.5" cy="27" r="1.8" fill="#1d1b26"/><circle cx="52.5" cy="27" r="1.8" fill="#1d1b26"/><path d="M42 38 L58 45 M58 38 L42 45" stroke="#fff" stroke-width="2.5"/></svg></a>`;
 
   // Se recuerda desde qué pantalla se entró, para volver ahí con «Volver a la sala»

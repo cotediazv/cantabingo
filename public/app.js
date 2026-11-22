@@ -5,8 +5,8 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':
 const app = $('#app');
 // Pedido de Cote (21 nov): al dar a conocer un ganador, un premio o una información, el animador también lo ve en su
 // panel, grande, para leerlo en voz alta (lo mismo que está en la pantalla del local)
-// El ranking de la Trivia del Rosco desplegado en pantalla, también grande en el panel (pedido de Cote, 21 nov)
-window.rankAnnHtml = (rank, players, final) => `<div class="panel ann rank-ann"><small>📣 En pantalla ahora</small><span class="ann-t">🏅 Ranking de la Trivia del Rosco · ${final ? 'resultados finales' : 'resultados parciales'}</span>
+// El ranking de la Trivia del Rosko desplegado en pantalla, también grande en el panel (pedido de Cote, 21 nov)
+window.rankAnnHtml = (rank, players, final) => `<div class="panel ann rank-ann"><small>📣 En pantalla ahora</small><span class="ann-t">🏅 Ranking de la Trivia del Rosko · ${final ? 'resultados finales' : 'resultados parciales'}</span>
   ${rank.length ? `<ol class="rank-ann-list">${rank.map((t, i) => `<li class="${i < 3 ? 'top' : ''}"><em>${i + 1}.º</em><b>${esc(t.name)}</b><i>${t.score} pts</i></li>`).join('')}</ol>` : '<span class="ann-l">Todavía nadie suma puntos</span>'}
   <span class="ann-l">${players} ${players === 1 ? 'persona jugando' : 'personas jugando'}</span></div>`;
 window.annHtml = (title, names, lines = []) => `<div class="panel ann"><small>📣 Para anunciar</small><span class="ann-t">${esc(title)}</span>${names.map((n) => `<b class="ann-n">${esc(n)}</b>`).join('')}${lines.filter(Boolean).map((l) => `<span class="ann-l">${esc(l)}</span>`).join('')}</div>`;
@@ -242,9 +242,9 @@ const isAdmin = async () => Boolean(store.get('adminToken')) && (await api('GET'
 
 // Catálogo de juegos de la plataforma. Para sumar uno: agregar aquí su entrada y sus vistas.
 const GAMES = [
-  { id: 'bingo', icon: '🎮', name: 'Crea sala de juegos', desc: 'Bingo, El Rosco, El Festival y El objeto más extraño.', href: '#/nuevo' },
-  { id: 'rueda', hidden: true, icon: '🎡', name: 'El Rosco', desc: 'Un rosco de letras por concursante, con reloj. Tú marcas acierto, fallo o paso; el público ve el rosco y la pregunta.', href: '#/ruedas' },
-  { id: 'sorteo', hidden: true, icon: '🎲', name: 'Sorteo de concursantes', desc: 'Elige al azar, entre quienes jugaron el bingo, a los concursantes de El Rosco. Se ve en pantalla.', href: '#/sorteoctl' },
+  { id: 'bingo', icon: '🎮', name: 'Crea sala de juegos', desc: 'Bingo, El Rosko, El Festival y El objeto más extraño.', href: '#/nuevo' },
+  { id: 'rueda', hidden: true, icon: '🎡', name: 'El Rosko', desc: 'Un rosko de letras por concursante, con reloj. Tú marcas acierto, fallo o paso; el público ve el rosko y la pregunta.', href: '#/ruedas' },
+  { id: 'sorteo', hidden: true, icon: '🎲', name: 'Sorteo de concursantes', desc: 'Elige al azar, entre quienes jugaron el bingo, a los concursantes de El Rosko. Se ve en pantalla.', href: '#/sorteoctl' },
 ];
 
 views.home = async () => {
@@ -282,7 +282,7 @@ views.control = async () => {
       <p class="muted small">La pantalla cambia sola al activar un bingo, lanzar un sorteo o cargar un rosco. Aquí puedes cambiarla a mano.</p>
       <div class="control-grid" id="stage">
         <button data-show="bingo"><span>🎱</span>Bingo</button><button data-show="sorteo"><span>🎲</span>Sorteo</button>
-        <button data-show="rueda"><span>🎡</span>El Rosco</button><button data-show="qr"><span>📱</span>QR en pantalla completa</button>
+        <button data-show="rueda"><span>🎡</span>El Rosko</button><button data-show="qr"><span>📱</span>QR en pantalla completa</button>
         <button data-show="karaoke"><span>🎤</span>Karaoke</button><button data-show="show"><span>⭐</span>Show</button>
         <button data-show="voto"><span>🗳️</span>Votación</button><button data-show="insta"><span>📸</span>Instagram</button>
         <button data-show="none" class="wide"><span>⬛</span>Nada</button>
@@ -568,12 +568,12 @@ window.fitOneLine = (el, min = 9) => {
   let fs = parseFloat(getComputedStyle(el).fontSize) || 20;
   while (el.scrollWidth > el.clientWidth + 1 && fs > min) { fs -= 1; el.style.fontSize = `${fs}px`; }
 };
-// Instrucciones de El Rosco: las usan el panel (wheel-ui.js) y los celulares
+// Instrucciones de El Rosko: las usan el panel (wheel-ui.js) y los celulares
 window.ROSCO_HOWTO = [
   '3 participantes.',
   'Todos juegan desde las mesas.',
-  '<b>Premio mayor</b> para el que gana El Rosco.',
-  '<b>Premio especial</b> para el ganador del público que juega la Trivia del Rosco.',
+  '<b>Premio mayor</b> para el que gana El Rosko.',
+  '<b>Premio especial</b> para el ganador del público que juega la Trivia del Rosko.',
 ];
 const BINGO_HOWTO = [
   'Todos juegan desde las mesas, con su cartón en el celular.',
@@ -582,7 +582,7 @@ const BINGO_HOWTO = [
 ]
 async function hostConsole(p) {
   const sid = p.sessionId;
-  store.set('lastBingo', p.id); // para el botón «Volver al bingo» del sorteo y del rosco
+  store.set('lastBingo', p.id); // para el botón «Volver al bingo» del sorteo y del rosko
   const act = (action, body) => api('POST', `/api/sessions/${sid}/host/${action}`, body || {}).catch(fail);
   let st = null;
   let manual = false;
@@ -825,7 +825,7 @@ views.jugar = async (sid) => {
     <div class="live" id="live"><div id="live-player"></div>
       <div class="live-bar"><button type="button" id="live-audio">🔇 Activar audio</button><button type="button" id="live-full">⛶ Pantalla completa</button><button type="button" id="live-sync" class="wide">↻ Poner al día el video</button></div></div>
     <div id="kids-slot">${window.krbKidsButton ? window.krbKidsButton() : '<a class="btn kids-entry" href="#/kids">🧸 <b>KRB Kids</b><span>Zona de niños</span></a>'}</div>`;
-  // Durante El Rosco: se guarda el cartón y quedan el video y, debajo, la pregunta en juego
+  // Durante El Rosko: se guarda el cartón y quedan el video y, debajo, la pregunta en juego
   let roscoEs = null;
   let roscoId = null;
   let rosco = null;
@@ -835,7 +835,7 @@ views.jugar = async (sid) => {
     const c = rosco.players[rosco.turn];
     return rosco.runningSince ? c.remainingMs - (Date.now() - rosco.gotAt + rosco.now - rosco.runningSince) : c.remainingMs;
   };
-  // Rosco en línea: lo que esta persona respondió (pregunta → alternativa), en orden, y su puntaje
+  // Rosko en línea: lo que esta persona respondió (pregunta → alternativa), en orden, y su puntaje
   let crowdMine = {};
   let crowdOrder = [];
   let crowdInfo = null;
@@ -862,14 +862,14 @@ views.jugar = async (sid) => {
     return play;
   };
   const drawRosco = () => {
-    if (!rosco) { $('#prosco').innerHTML = '<p class="muted">Cargando El Rosco…</p>'; return; }
+    if (!rosco) { $('#prosco').innerHTML = '<p class="muted">Cargando El Rosko…</p>'; return; }
     const c = rosco.players[rosco.turn];
     const reveal = ''; // en el celular no se muestra la respuesta correcta: solo si la propia alternativa fue verde o roja
-    // Pedido de Cote (21 nov): el ganador de la Trivia del Rosco también en los celulares (y si es esta persona, ¡ganaste!)
+    // Pedido de Cote (21 nov): el ganador de la Trivia del Rosko también en los celulares (y si es esta persona, ¡ganaste!)
     const cw = rosco.crowdWinner;
-    const crowdWin = cw ? (cw.none ? '<div class="prosco-win">🏅 Trivia del Rosco<small>Esta vez nadie sumó puntos</small></div>'
-      : `<div class="prosco-win">🏅 ${esc(cw.name)}<small>${String(cw.name).toLowerCase() === String(me.name || '').toLowerCase() ? '¡Ganaste la Trivia del Rosco!' : '¡Ganó la Trivia del Rosco!'} ${cw.score} puntos</small></div>`) : '';
-    const body = crowdWin + (rosco.winner ? `<div class="prosco-win">🏆 ${esc(rosco.winner.name)}<small>${rosco.winner.full ? '¡Completó el rosco!' : '¡Ganó El Rosco!'}</small></div>`
+    const crowdWin = cw ? (cw.none ? '<div class="prosco-win">🏅 Trivia del Rosko<small>Esta vez nadie sumó puntos</small></div>'
+      : `<div class="prosco-win">🏅 ${esc(cw.name)}<small>${String(cw.name).toLowerCase() === String(me.name || '').toLowerCase() ? '¡Ganaste la Trivia del Rosko!' : '¡Ganó la Trivia del Rosko!'} ${cw.score} puntos</small></div>`) : '';
+    const body = crowdWin + (rosco.winner ? `<div class="prosco-win">🏆 ${esc(rosco.winner.name)}<small>${rosco.winner.full ? '¡Completó el rosko!' : '¡Ganó El Rosko!'}</small></div>`
       : rosco.tie ? `<div class="prosco-wait">Empate entre ${rosco.tie.names.map(esc).join(' y ')}. Se define por sorteo.</div>`
       : rosco.finished ? '<div class="prosco-wait">Juego terminado</div>'
       : `<div class="prosco-q"><span class="prosco-letter">${esc(rosco.letters[c.current])}</span>
@@ -881,10 +881,10 @@ views.jugar = async (sid) => {
       ${mine && !inTop ? `<div class="you"><em>${mine.rank}.º</em><span>${esc(me.name)}</span><b>${mine.score}</b></div>` : ''}</div>` : '';
     // Pedido de Cote (21 nov): al desplegar el ranking de la Trivia (botón del animador), también sale en todos los celulares
     const meName = String(me.name || '').toLowerCase();
-    const rankBox = rosco.rank ? `<div class="pcrowd-rank"><small>🏅 Trivia del Rosco · Top 10</small><b>${rosco.crowdWinner || rosco.winner ? 'Resultados finales' : 'Resultados parciales'}</b>
+    const rankBox = rosco.rank ? `<div class="pcrowd-rank"><small>🏅 Trivia del Rosko · Top 10</small><b>${rosco.crowdWinner || rosco.winner ? 'Resultados finales' : 'Resultados parciales'}</b>
       ${rosco.rank.length ? rosco.rank.map((t, i) => `<div class="${String(t.name).toLowerCase() === meName ? 'me' : ''}"><em>${i + 1}.º</em><span>${esc(t.name)}</span><b>${t.score}</b></div>`).join('') : '<p class="muted">Todavía nadie suma puntos</p>'}
       ${mine && mine.rank > 10 && mine.score > 0 ? `<div class="you"><em>${mine.rank}.º</em><span>${esc(me.name)}</span><b>${mine.score}</b></div>` : ''}</div>` : '';
-    $('#prosco').innerHTML = `<div class="prosco-head big"><b>Trivia del Rosco</b><span></span><span class="prosco-clock" id="prosco-clock">${rosco.winner || rosco.finished ? '' : fmtClock(roscoLeft())}</span></div>
+    $('#prosco').innerHTML = `<div class="prosco-head big"><b>Trivia del Rosko</b><span></span><span class="prosco-clock" id="prosco-clock">${rosco.winner || rosco.finished ? '' : fmtClock(roscoLeft())}</span></div>
       ${rankBox}${body}${reveal}${crowdHTML()}
       ${top}`;
   };
@@ -991,9 +991,9 @@ views.jugar = async (sid) => {
       clearTimeout(actSoon);
       if (rolling) actSoon = setTimeout(drawAct, Math.max(0, r.roll.at + (r.rollMs || 6000) + 500 - (r.now || Date.now())) + 100 + Math.random() * 900);
       if (r.mode === 'tie') {
-        const isRosco = r.roll && r.roll.game === 'rosco'; // El Rosco usa el mismo sorteo para su desempate
-        head = isRosco ? '🎡 El Rosco · Desempate' : '🎲 Desempate del bingo';
-        body = `<p class="pvote-wait">${rolling ? '🎲 Sorteando en pantalla…' : r.roll && r.roll.winner ? `${isRosco ? 'Ganó El Rosco' : 'Ganó el desempate'}:<br><b>${esc(r.roll.winner)}</b>` : isRosco ? 'Se sortea el ganador entre los concursantes empatados.' : 'Se sortea el ganador entre los cartones empatados.'}</p>`;
+        const isRosco = r.roll && r.roll.game === 'rosco'; // El Rosko usa el mismo sorteo para su desempate
+        head = isRosco ? '🎡 El Rosko · Desempate' : '🎲 Desempate del bingo';
+        body = `<p class="pvote-wait">${rolling ? '🎲 Sorteando en pantalla…' : r.roll && r.roll.winner ? `${isRosco ? 'Ganó El Rosko' : 'Ganó el desempate'}:<br><b>${esc(r.roll.winner)}</b>` : isRosco ? 'Se sortea el ganador entre los concursantes empatados.' : 'Se sortea el ganador entre los cartones empatados.'}</p>`;
       } else {
         const picked = r.picked || [];
         const same = (n) => String(n).toLowerCase() === String(me.name || '').toLowerCase();
@@ -1001,16 +1001,16 @@ views.jugar = async (sid) => {
         const seen = rolling ? picked.filter((n) => n !== r.roll.winner) : picked; // mientras gira la tómbola no se adelanta el nombre
         const myState = myName ? (r.confirm || {})[myName] : null;
         const iDeclined = (r.declined || []).some(same);
-        head = '🎲 Sorteo de concursantes · El Rosco';
+        head = '🎲 Sorteo de concursantes · El Rosko';
         // Pedido de Cote (21 nov): quien sale sorteado confirma si quiere jugar en el escenario o prefiere jugar online
-        body = (myName && myState !== 'ok' ? `<div class="pvote-win">🎉 ¡Saliste sorteado!<small>Para jugar El Rosco en nuestro escenario</small></div>
+        body = (myName && myState !== 'ok' ? `<div class="pvote-win">🎉 ¡Saliste sorteado!<small>Para jugar El Rosko en nuestro escenario</small></div>
             <p class="pvote-ask">¿Quieres jugar?</p><div class="pact-yesno"><button type="button" class="primary big" data-raffle="1">✅ Sí, quiero jugar</button><button type="button" class="big" data-raffle="0">🙅 No, gracias, prefiero jugar online</button></div>`
-          : myName ? '<div class="pvote-win">✅ ¡Confirmado!<small>Acércate a nuestro escenario para jugar El Rosco</small></div>'
-            : iDeclined ? '<p class="pvote-ask">👍 Elegiste jugar online<b>Juega la Trivia del Rosco desde tu celular</b></p>'
+          : myName ? '<div class="pvote-win">✅ ¡Confirmado!<small>Acércate a nuestro escenario para jugar El Rosko</small></div>'
+            : iDeclined ? '<p class="pvote-ask">👍 Elegiste jugar online<b>Juega la Trivia del Rosko desde tu celular</b></p>'
               : '<p class="pvote-ask">¡Prepárate!<b>Puedes salir elegido para participar en nuestro escenario</b></p>') +
           (rolling ? '<p class="pvote-wait">🎲 Sorteando en pantalla…</p>' : '') +
           (seen.length ? `<div class="pact-list"><small>Ya salieron</small>${seen.map((n, i) => `<p><em>${i + 1}.º</em><span>${esc(n)}</span><i>${(r.confirm || {})[n] === 'ok' ? '✅' : '⏳'}</i></p>`).join('')}</div>` : '') +
-          '<p class="pact-next">Después: <b>🎡 El Rosco</b> · y tú juegas la Trivia del Rosco desde el celular</p>';
+          '<p class="pact-next">Después: <b>🎡 El Rosko</b> · y tú juegas la Trivia del Rosko desde el celular</p>';
       }
     } else if (k === 'juego') {
       const g = await api('GET', '/api/gamedraw').catch(() => null);
@@ -1035,11 +1035,11 @@ views.jugar = async (sid) => {
         : `<p class="pvote-ask">¡Tenemos ganador!${names.map((n) => `<b>${esc(n)}</b>`).join('')}</p>`) +
         '<p class="pact-next">Ya viene el próximo juego</p>';
     } else if (k === 'rueda') {
-      head = '🎡 El Rosco';
+      head = '🎡 El Rosko';
       body = '<p class="pvote-wait">Ya viene el sorteo de concursantes: ¡puedes salir elegido para participar en nuestro escenario!</p>';
     } else {
       head = `🎮 Los Juegos de ${venueShort()}`;
-      body = '<p class="pvote-ask">¡Ya estás en la sala!<b>Mira la pantalla: ya viene el próximo juego</b></p><p class="pact-next">Bingo, El Rosco, El Festival o El objeto más extraño</p>';
+      body = '<p class="pvote-ask">¡Ya estás en la sala!<b>Mira la pantalla: ya viene el próximo juego</b></p><p class="pact-next">Bingo, El Rosko, El Festival o El objeto más extraño</p>';
     }
     const html = `<div class="pvote-head"><b>${esc(head)}</b></div>${body}`;
     if (html !== actShown) { actShown = html; box.innerHTML = html; }
@@ -1069,8 +1069,8 @@ views.jugar = async (sid) => {
     return on;
   };
   // Instrucciones en el celular (pedido de Cote, 20 nov): al empezar cada juego (y al entrar a la sala) aparecen
-  // 2 segundos las instrucciones del juego en curso: Bingo (cada ronda), El Rosco, El Festival o El objeto más extraño
-  // Cada juego tiene su propia clave: bingo por ronda (desde que se elige la figura), El Rosco por rosco cargado y la votación
+  // 2 segundos las instrucciones del juego en curso: Bingo (cada ronda), El Rosko, El Festival o El objeto más extraño
+  // Cada juego tiene su propia clave: bingo por ronda (desde que se elige la figura), El Rosko por rosco cargado y la votación
   // por concurso (voteGen); cada clave se muestra una sola vez (volver a un juego que sigue no las repite)
   let howtoKey = null;
   const howtoShown = new Set();
@@ -1098,7 +1098,7 @@ views.jugar = async (sid) => {
       const v = await api('GET', '/api/vote').catch(() => null);
       if (!v || !window.voteHowto || howtoKey !== key) return;
       const h = window.voteHowto(v); phoneHowto(h.title, h.lines);
-    } else if (key.startsWith('rosco')) phoneHowto('El Rosco', window.ROSCO_HOWTO);
+    } else if (key.startsWith('rosco')) phoneHowto('El Rosko', window.ROSCO_HOWTO);
     else phoneHowto(bingoName(st.name), BINGO_HOWTO);
   };
   // Pedido de Cote (21 nov): el botón de KRB Kids no aparece durante los juegos, solo en los intermedios (sala abierta
@@ -1367,7 +1367,7 @@ const sfx = (() => {
 })();
 
 // Tablero del DJ: pantalla completa (no transparente) que sigue sola lo que está pasando,
-// igual que la gráfica de OBS: bingo, sorteo o desempate, El Rosco.
+// igual que la gráfica de OBS: bingo, sorteo o desempate, El Rosko.
 views.tablero = async () => {
   let current = null;
   let stop = null;
@@ -1639,7 +1639,7 @@ views.karaokectl = async (local) => {
 // más abajo, las demás actividades
 const GAME_INFO = (venue) => ({
   bingo: { icon: '🎱', name: 'Bingo', href: '' },
-  rosco: { icon: '🎡', name: 'El Rosco', href: '#/sorteoctl' },
+  rosco: { icon: '🎡', name: 'El Rosko', href: '#/sorteoctl' },
   festival: { icon: '🎤', name: `El Festival de ${{ frida: 'Frida', kennedy: 'Mercado Kennedy', tobalaba: 'Tobalaba' }[venue] || 'Frida'}`, href: '#/votoctl/festival' },
   objeto: { icon: '🗳️', name: 'El objeto más extraño', href: '#/votoctl/objeto' },
 });
@@ -1650,7 +1650,7 @@ const GAME_INFO = (venue) => ({
 function activitiesNav(current, opts = {}) {
   const games = [
     ['bingo', '<button type="button" data-back-bingo data-game="bingo"><span>🎱</span>Bingo</button>'],
-    ['rosco', '<a class="btn" data-game="rosco" href="#/sorteoctl"><span>🎡</span>El Rosco</a>'],
+    ['rosco', '<a class="btn" data-game="rosco" href="#/sorteoctl"><span>🎡</span>El Rosko</a>'],
     ['festival', '<a class="btn" data-game="festival" href="#/votoctl/festival"><span>🎤</span><b class="g-fest">El Festival</b></a>'],
     ['objeto', '<a class="btn" data-game="objeto" href="#/votoctl/objeto"><span>🗳️</span>El objeto más extraño</a>'],
   ];
@@ -2202,7 +2202,7 @@ const neuralBg = (() => {
     };
     if (mode !== 'gc') { net(-1e9, -1e9, 1e9, 1e9); return; }
     // En los GC: recuadro por recuadro, con un recorte simple cada uno (recortar todo junto con una sola forma compuesta
-    // era carísimo: más de un núcleo y medio de trabajo permanente en el GC de El Rosco)
+    // era carísimo: más de un núcleo y medio de trabajo permanente en el GC de El Rosko)
     for (const bx of boxes) { x.save(); x.beginPath(); path(bx.r, bx.rad); x.clip(); net(bx.r.left, bx.r.top, bx.r.right, bx.r.bottom); x.restore(); }
     for (const h of holes) x.clearRect(h.left - 2, h.top - 2, h.width + 4, h.height + 4);
   };

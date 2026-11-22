@@ -170,12 +170,12 @@ const currentGame = (s) => {
     // Termina con el ganador aceptado y el de la Trivia ya mostrado (pedido de Cote: el ganador de la Trivia sale sí o sí)
     return w && !(w.winAccepted && (w.crowd || {}).winner) ? { game: 'rosco', wheel: w.id } : null;
   }
-  if (st === 'sorteo') { // el desempate (del bingo o de El Rosco) usa el mismo sorteo
+  if (st === 'sorteo') { // el desempate (del bingo o de El Rosko) usa el mismo sorteo
     const r = db.raffle || {};
     if (r.mode !== 'tie') return { game: 'rosco' };
     if ((r.tie || {}).game !== 'rosco') return { game: 'bingo' };
     const w = Object.values(db.wheels || {}).sort((x, y) => y.created - x.created)[0];
-    return w ? { game: 'rosco', wheel: w.id } : { game: 'rosco' }; // vuelve al panel de El Rosco, donde se acepta al ganador
+    return w ? { game: 'rosco', wheel: w.id } : { game: 'rosco' }; // vuelve al panel de El Rosko, donde se acepta al ganador
   }
   if (st === 'voto') { const v = db.vote || {}; return v.winner ? null : { game: v.mode === 'karaoke' ? 'festival' : 'objeto' }; }
   if (st === 'bingo') return bingoStarted(s) && !roundOver(s) ? { game: 'bingo' } : null;
@@ -191,7 +191,7 @@ function publicState(s, full = false) {
     // Celebración a pantalla completa mientras haya ganadores y el moderador no la haya quitado
     bigQr: !!s.bigQr, tieWinner: s.tieWinner || null, rollMs: 6500,
     celebrate: !s.hideWin && s.results.some((r) => r.validated && !r.dismissed),
-    // Durante El Rosco los celulares cambian el cartón por las preguntas del rosco en curso
+    // Durante El Rosko los celulares cambian el cartón por las preguntas del rosko en curso
     stage: db.stage || 'bingo', roscoId: db.stage === 'rueda' ? (Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).id || null : null,
     celebrateAt: s.celebrateAt || 0,
     voteRev: (db.vote || {}).rev || 0, // los celulares vuelven a leer la votación cuando cambia
@@ -271,7 +271,7 @@ function resetEvent() {
 }
 setInterval(() => {
   for (const s of Object.values(db.sessions)) if (Date.now() > s.expires) closeSession(s);
-  // Roscos sueltos (creados sin sala abierta) también vencen a las 8 horas
+  // Roskos sueltos (creados sin sala abierta) también vencen a las 8 horas
   if (wheel.clear(Date.now() - SESSION_HOURS * 3600e3)) save();
   // Sin sala abierta no debe quedar gente en la lista del sorteo (por ejemplo, de una jornada anterior)
   if (!Object.keys(db.sessions).length && (Object.keys(db.people || {}).length || ((db.raffle || {}).picked || []).length)) {
@@ -629,7 +629,7 @@ app.post('/api/sessions/:sid/join', (req, res) => {
     if (!cards.length) return fail(res, 409, 'Ya no quedan cartones disponibles en esta sesión');
     token = id(12);
     pl = s.players[token] = { name: `${first} ${last}`, first, cards, place };
-    // Lista de participantes para el sorteo de concursantes del rosco (sin repetir nombres)
+    // Lista de participantes para el sorteo de concursantes del rosko (sin repetir nombres)
     (db.people ||= {})[pl.name.toLowerCase().replace(/\s+/g, ' ')] = { name: pl.name, at: Date.now() };
     evaluate(s);
     broadcast(s);
@@ -697,12 +697,12 @@ app.get('/api/sessions/:sid/events', (req, res) => {
 
 // Segundo juego de la plataforma
 // Pantalla única de OBS: qué gráfica se muestra ahora. Cambia sola al activar un bingo,
-// crear un rosco o lanzar un sorteo; el moderador también puede cambiarla a mano.
+// crear un rosko o lanzar un sorteo; el moderador también puede cambiarla a mano.
 const STAGES = ['bingo', 'rueda', 'sorteo', 'qr', 'karaoke', 'show', 'voto', 'insta', 'juego', 'votojuego', 'none'];
-// Pedido de Cote: el juego que está en actividad tiene prioridad. Mientras haya un rosco en juego, la pantalla queda en
-// El Rosco aunque se apriete otra cosa (un botón del bingo, el escenario a mano o el karaoke automático); al terminar
-// el rosco (ganador, empate o se acabó), todo vuelve a funcionar como siempre. Devuelve false si no se cambió.
-let roscoRef = null; // El Rosco (wheel.js), una vez cargado
+// Pedido de Cote: el juego que está en actividad tiene prioridad. Mientras haya un rosko en juego, la pantalla queda en
+// El Rosko aunque se apriete otra cosa (un botón del bingo, el escenario a mano o el karaoke automático); al terminar
+// el rosko (ganador, empate o se acabó), todo vuelve a funcionar como siempre. Devuelve false si no se cambió.
+let roscoRef = null; // El Rosko (wheel.js), una vez cargado
 // Aviso inmediato a las pantallas (pedido de Cote, 22 nov: que el GC y los efectos respondan fluido). Las pantallas (GC de
 // OBS, tableros, pantallas de los locales y la capa gráfica) preguntaban cada 1 a 3 segundos qué mostrar; ahora además
 // quedan escuchando aquí y, cuando cambia el escenario, el GC de una sala light o se dispara un efecto, vuelven a
@@ -763,7 +763,7 @@ require('./twitch.js')({ app }); // videos y transmisiones en vivo de Twitch, pa
 require('./instagram-web.js')({ app, db, save, insta }); // últimos videos de Instagram de cada local, para la página web
 
 // Consola general: en qué está cada local (sala principal o sala light), su bloque del horario y su karaoke
-const STAGE_NAMES = { bingo: 'Bingo', rueda: 'El Rosco', sorteo: 'Sorteo', qr: 'QR grande', karaoke: 'Karaoke', show: 'Show', voto: 'Votación', insta: 'Instagram', juego: 'Sorteo de juegos', votojuego: 'Votación del juego', none: 'Nada', cartelera: 'Cartelera de la semana', custom: 'GC personalizable', info: 'Información que va cambiando' };
+const STAGE_NAMES = { bingo: 'Bingo', rueda: 'El Rosko', sorteo: 'Sorteo', qr: 'QR grande', karaoke: 'Karaoke', show: 'Show', voto: 'Votación', insta: 'Instagram', juego: 'Sorteo de juegos', votojuego: 'Votación del juego', none: 'Nada', cartelera: 'Cartelera de la semana', custom: 'GC personalizable', info: 'Información que va cambiando' };
 app.get('/api/consola', requireAdmin, async (_req, res) => {
   const main = Object.values(db.sessions)[0] || null;
   const out = await Promise.all(['kennedy', 'frida', 'tobalaba'].map(async (v) => {
@@ -784,7 +784,7 @@ app.get('/api/consola', requireAdmin, async (_req, res) => {
 require('./agenda.js')({ app, db, save, requireAdmin, fail, currentVenue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
 
 // Sorteo del siguiente juego (pedido de Cote): la sala parte en Juegos, sin bingo (21 nov), y se sortea entre todos los juegos
-// (Bingo, El Rosco, El Festival y El objeto más extraño; el karaoke no es un juego), el bingo incluido desde el primer
+// (Bingo, El Rosko, El Festival y El objeto más extraño; el karaoke no es un juego), el bingo incluido desde el primer
 // sorteo. El juego que sale queda bloqueado solo para el sorteo siguiente y después vuelve a estar disponible.
 // El sorteo se ve en el tablero y en el GC (escenario «juego»).
 const DRAW_GAMES = ['bingo', 'rosco', 'festival', 'objeto'];
@@ -875,7 +875,7 @@ app.post('/api/gamedraw/ready', requireAdmin, (_req, res) => {
   drawSnap(g);
   g.ready = { at: Date.now(), pool: DRAW_GAMES.filter((x) => !(g.last && g.last.game === x)) };
   save();
-  if (setStage('juego') === false) return fail(res, 409, 'El Rosco está en juego: el sorteo se verá cuando termine la partida');
+  if (setStage('juego') === false) return fail(res, 409, 'El Rosko está en juego: el sorteo se verá cuando termine la partida');
   res.json(db.gameDraw);
 });
 app.post('/api/gamedraw/pick', requireAdmin, (req, res) => {
@@ -905,12 +905,12 @@ app.post('/api/gamedraw', requireAdmin, (_req, res) => {
   g.last = { game, pool, at: Date.now() };
   if (game === 'festival' || game === 'objeto') startContest(game); // la votación queda lista con su título
   save();
-  if (setStage('juego') === false) return fail(res, 409, 'El Rosco está en juego: el sorteo se verá cuando termine la partida');
+  if (setStage('juego') === false) return fail(res, 409, 'El Rosko está en juego: el sorteo se verá cuando termine la partida');
   res.json(db.gameDraw);
 });
 
 // Elegir el juego por votación del público (pedido de Cote, 21 nov): 30 segundos para votar desde el celular entre
-// los juegos (Bingo, El Rosco, El Festival y El objeto más extraño). Gana el que tiene más de la mitad de los votos
+// los juegos (Bingo, El Rosko, El Festival y El objeto más extraño). Gana el que tiene más de la mitad de los votos
 // (50 % + 1, mayoría simple); si ninguno lo logra, hay segunda vuelta de 30 segundos entre los 2 primeros. Los empates
 // (para pasar a la segunda vuelta o en la segunda vuelta) se deciden por sorteo. Se ve en el tablero y en el GC
 // (escenario «votojuego») con un gráfico en círculo por juego, con sus votos y su porcentaje. Un voto por celular en
@@ -992,7 +992,7 @@ app.post('/api/gamevote/start', requireAdmin, (_req, res) => {
   const g = db.gameVote;
   if (g.phase === 'voting' && Date.now() >= g.until) gvClose(); // la vuelta ya terminó: primero se cuentan sus votos
   if (g.phase === 'voting' && Date.now() < g.until) return fail(res, 409, 'Ya hay una votación abierta');
-  if (roscoLock('votojuego')) return fail(res, 409, 'El Rosco está en juego: la votación se hace cuando termine la partida');
+  if (roscoLock('votojuego')) return fail(res, 409, 'El Rosko está en juego: la votación se hace cuando termine la partida');
   const second = g.phase === 'result' && Array.isArray(g.runoff) && g.runoff.length === 2;
   Object.assign(g, { phase: 'voting', round: second ? 2 : 1, options: second ? g.runoff.slice() : DRAW_GAMES.slice(), votes: {}, until: Date.now() + GV_MS,
     counts: null, total: 0, winner: null, tie: false, empty: false, decidedAt: 0 });
@@ -1010,7 +1010,7 @@ app.post('/api/gamevote/intro', requireAdmin, (_req, res) => {
   if (!Object.keys(db.sessions).length) return fail(res, 409, 'Primero crea la sala de juegos');
   const g = db.gameVote;
   if (g.phase === 'voting' && Date.now() < g.until) return fail(res, 409, 'Hay una votación abierta');
-  if (roscoLock('votojuego')) return fail(res, 409, 'El Rosco está en juego: la presentación se hace cuando termine la partida');
+  if (roscoLock('votojuego')) return fail(res, 409, 'El Rosko está en juego: la presentación se hace cuando termine la partida');
   gvStopTimer();
   Object.assign(g, { phase: 'intro', intro: { at: Date.now(), step: 0 }, round: 0, options: DRAW_GAMES.slice(), votes: {}, until: 0, counts: null, total: 0, runoff: null, tie2: false, winner: null, tie: false, empty: false, decidedAt: 0 });
   g.rev++;
@@ -1057,7 +1057,7 @@ app.get('/api/stage', (_req, res) => res.json({ show: roscoLock(db.stage) ? 'rue
 app.post('/api/stage', requireAdmin, (req, res) => {
   const show = String((req.body || {}).show);
   if (!STAGES.includes(show)) return fail(res, 400, 'Opción no válida');
-  if (setStage(show) === false) return fail(res, 409, 'El Rosco está en juego: la pantalla sigue en El Rosco hasta que termine la partida');
+  if (setStage(show) === false) return fail(res, 409, 'El Rosko está en juego: la pantalla sigue en El Rosko hasta que termine la partida');
   if (show === 'karaoke') karaoke.refresh(); // primera lectura inmediata, sin esperar al siguiente ciclo
   res.json({ show });
 });
@@ -1074,7 +1074,7 @@ setInterval(() => {
   if (p.weekday !== AUTO_KARAOKE.dow || min < AUTO_KARAOKE.from || min >= AUTO_KARAOKE.until || db.autoKaraoke === day) return;
   const s = Object.values(db.sessions)[0];
   if (!s || s.theme !== AUTO_KARAOKE.venue) return;
-  if (roscoLock('karaoke')) return; // con El Rosco en juego se espera a que termine (hasta las 22:00)
+  if (roscoLock('karaoke')) return; // con El Rosko en juego se espera a que termine (hasta las 22:00)
   db.autoKaraoke = day;
   if (db.stage !== 'karaoke') { setStage('karaoke'); karaoke.refresh(); console.log('Escenario a Karaoke automático (jueves 21:45, Mercado Kennedy)'); }
   save();
@@ -1093,7 +1093,7 @@ const AUTO_SALAS = [
 ];
 // Fin de los juegos (pedido de Cote, 20 nov): Tobalaba a las 22:45 y Frida (domingo) a las 17:00 la sala del local se
 // cierra sola, aunque se haya creado a mano. Kennedy (21:30) no se cierra: los jueves a las 21:45 pasa sola a Karaoke
-// para que el público siga pidiendo canciones. Si a esa hora hay un rosco en juego, se espera a que termine.
+// para que el público siga pidiendo canciones. Si a esa hora hay un rosko en juego, se espera a que termine.
 function autoSala() {
   const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
     .formatToParts(new Date()).map((x) => [x.type, x.value]));

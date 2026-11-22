@@ -1,4 +1,4 @@
-// Alternativas falsas del Rosco en línea: dos por cada respuesta del banco.
+// Alternativas falsas del Rosko en línea: dos por cada respuesta del banco.
 // Son del mismo tipo que la respuesta correcta (animal con animal, país con país, pintor con pintor)
 // y, siempre que existe una palabra creíble, empiezan con la misma letra (o la contienen, en la Ñ y la X),
 // para que no se puedan descartar a simple vista.

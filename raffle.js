@@ -1,9 +1,9 @@
 // Sorteo de concursantes: elige al azar, entre las personas que se han unido al bingo,
-// a quienes pasarán a jugar El Rosco. El sorteo se ve en la pantalla de OBS.
+// a quienes pasarán a jugar El Rosko. El sorteo se ve en la pantalla de OBS.
 const crypto = require('crypto');
 
 const ROLL_MS = 6500; // cuánto dura la animación antes de revelar el nombre
-const MAX_PICKS = 4; // un rosco admite hasta 4 concursantes
+const MAX_PICKS = 4; // un rosko admite hasta 4 concursantes
 
 module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, refreshAll, connectedNames }) {
   const key = (name) => String(name).trim().toLowerCase().replace(/\s+/g, ' ');
@@ -40,7 +40,7 @@ module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, 
   });
 
   // Corregir un nombre mal escrito: se cambia en la lista, entre los elegidos del sorteo,
-  // en las sesiones de bingo abiertas (ganadores incluidos) y en los roscos ya creados.
+  // en las sesiones de bingo abiertas (ganadores incluidos) y en los roskos ya creados.
   app.post('/api/people/rename', requireAdmin, (req, res) => {
     const from = String((req.body || {}).from || '');
     const to = String((req.body || {}).to || '').trim().replace(/\s+/g, ' ').slice(0, 50).toLocaleUpperCase('es');
@@ -99,7 +99,7 @@ module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, 
     res.json({ winner, picked: r.picked });
   });
 
-  // El panel del sorteo de El Rosco pone la tómbola en pantalla al abrirse
+  // El panel del sorteo de El Rosko pone la tómbola en pantalla al abrirse
   app.post('/api/raffle/open', requireAdmin, (_req, res) => {
     db.raffle.mode = 'rosco';
     setStage('sorteo');

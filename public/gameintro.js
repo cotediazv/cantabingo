@@ -10,7 +10,7 @@
     return [
       { key: 'reglas', icon: '🗳️', title: '¡Tú eliges el próximo juego!', lines: ['Entra a la sala escaneando el código QR', 'Cuando parta la votación, toca en tu celular el juego que quieres', 'Tienes 30 segundos y puedes cambiar tu voto', 'Gana el que tenga más de la mitad de los votos; si ninguno, segunda vuelta entre los 2 más votados'] },
       { key: 'bingo', icon: '🎱', title: 'Bingo', lines: ['Cada uno tiene su cartón en el celular', 'Marca los números que van saliendo', 'Gana quien completa primero la figura: línea, cruz, corazón…'] },
-      { key: 'rosco', icon: '🎡', title: 'El Rosco', lines: ['Sorteamos 3 concursantes entre los conectados', 'Una pregunta por cada letra, contra el reloj: 2 minutos cada uno', 'Gana quien acierta más letras. Tú juegas la Trivia del Rosco desde el celular'] },
+      { key: 'rosco', icon: '🎡', title: 'El Rosko', lines: ['Sorteamos 3 concursantes entre los conectados', 'Una pregunta por cada letra, contra el reloj: 2 minutos cada uno', 'Gana quien acierta más letras. Tú juegas la Trivia del Rosko desde el celular'] },
       { key: 'festival', icon: '🎤', title: 'El Festival de ' + (venueShort || 'Frida'), lines: ['Concurso de karaoke: te inscribes desde el celular con tu canción', 'Cantas una canción corta y el público pone nota del 1 al 10', 'Gana el mejor promedio'] },
       { key: 'objeto', icon: '🗳️', title: 'El objeto más extraño', lines: ['Te inscribes desde el celular con el objeto más raro que tengas a mano', 'Lo muestras en el escenario y el público pone nota del 1 al 10', 'Los 2 mejores van a la gran final y el público elige al ganador'] },
       { key: 'votar', icon: '🗳️', title: '¡A votar!', lines: ['La votación dura 30 segundos', 'Toca en tu celular el juego que quieres jugar'] },
