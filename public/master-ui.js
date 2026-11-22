@@ -13,7 +13,6 @@
   const LIGHT = [['info', '🔄', 'Información'], ['karaoke', '🎤', 'Karaoke'], ['show', '⭐', 'Show'], ['cartelera', '📅', 'Cartelera'], ['qr', '📱', 'QR grande'], ['none', '⛔', 'Nada']];
   // Opciones del GC de la sala de juegos (cuando la sala abierta es la de este local)
   const MAIN = [['bingo', '🎱', 'Bingo'], ['rueda', '🎡', 'El Rosco'], ['sorteo', '🎲', 'Sorteo'], ['voto', '🗳️', 'Votación'], ['karaoke', '🎤', 'Karaoke'], ['show', '⭐', 'Show'], ['insta', '📸', 'Instagram'], ['qr', '📱', 'QR'], ['none', '⛔', 'Nada']];
-  const P1 = [['auto', 'Automático'], ['vivo', '🔴 Video en vivo'], ['gc', 'GC']];
   const page = (hash) => `${location.pathname}?mudo=1${hash}`;
 
   const venueHTML = (v) => `<section class="gm-venue th-${v}" data-v="${v}">
@@ -21,8 +20,7 @@
       <div class="gm-screens">
         <div class="gm-left">
           <div class="gm-scr"><small>1 · <span data-k="p1name">Vivo o GC</span></small>
-            <div class="gm-box" data-k="p1" data-w="1280"></div>
-            <div class="gm-p1">${P1.map(([k, t]) => `<button type="button" data-p1="${k}">${t}</button>`).join('')}</div></div>
+            <div class="gm-box" data-k="p1" data-w="1280"></div></div>
           <div class="gm-scr"><small>2 · Tablero</small>
             <div class="gm-box" data-w="1280"><iframe title="Tablero de ${esc(VENUES[v])}" tabindex="-1" src="${page(`#/pantalla/${BOARD[v]}`)}"></iframe></div></div>
         </div>
@@ -61,7 +59,7 @@
       const mode = s.p1 === 'auto' ? (s.live ? 'vivo' : 'gc') : s.p1;
       const gc = s.main ? '#/escena' : `#/light-gc/${v}`;
       const src = mode === 'vivo' ? `https://player.twitch.tv/?channel=${TWITCH[v]}&parent=${location.hostname}&muted=true&autoplay=true` : page(gc);
-      el(v, 'p1name').textContent = mode === 'vivo' ? (s.live ? 'Video en vivo' : 'Video en vivo (ahora no hay transmisión)') : (s.p1 === 'auto' ? 'GC (no hay transmisión en vivo)' : 'GC');
+      el(v, 'p1name').textContent = `${mode === 'vivo' ? (s.live ? 'Video en vivo' : 'Video en vivo (ahora no hay transmisión)') : (s.p1 === 'auto' ? 'GC (no hay transmisión en vivo)' : 'GC')}${s.p1 === 'auto' ? ' · automático' : ' · fijo'}`;
       root.querySelectorAll(`.gm-venue[data-v="${v}"] [data-p1]`).forEach((b) => b.classList.toggle('on', b.dataset.p1 === s.p1));
       if (src === s.p1src) return;
       s.p1src = src;
@@ -72,20 +70,22 @@
       fit();
     };
 
-    // Botones tipo TV: el que está al aire queda encendido
+    // Botones tipo TV, cuadrados y en filas de 5 debajo de las pantallas (dibujo de Cote): el que está al aire queda encendido
     const key = (attr, k, icon, text, on) => `<button type="button" class="gm-key ${on ? 'on' : ''}" ${attr}="${k}"><i></i><span>${icon}</span><b>${text}</b></button>`;
     const paintKeys = (v) => {
       const s = state[v];
-      const sig = JSON.stringify([s.main && s.main.stage, s.light && [s.light.stage, s.light.text, s.light.video]]);
+      const sig = JSON.stringify([s.main && s.main.stage, s.light && [s.light.stage, s.light.text, s.light.video], s.p1]);
       const box = el(v, 'keys');
       // Mientras se escribe el texto del GC personalizable no se redibuja (se perdería lo escrito)
       if (sig === s.keys || (document.activeElement && document.activeElement.name === 'text' && box.contains(document.activeElement))) return;
       s.keys = sig;
       const l = s.light;
       box.innerHTML = `${s.main ? `<div class="gm-row"><small>GC de la sala de juegos</small><div class="gm-keyrow">${MAIN.map(([k, i, t]) => key('data-main', k, i, t, s.main.stage === k)).join('')}</div></div>` : ''}
-        ${l ? `<div class="gm-row"><small>GC de la sala light</small><div class="gm-keyrow">${LIGHT.map(([k, i, t]) => key('data-light', k, i, t, l.stage === k)).join('')}
-            ${key('data-video', l.video ? '0' : '1', '🎬', 'Video cartelera', !!l.video)}</div>
-          <form class="gm-custom"><input type="text" name="text" maxlength="120" autocomplete="off" placeholder="Texto del GC personalizable" value="${esc(l.text || '')}"><button class="gm-key gm-wide ${l.stage === 'custom' ? 'on' : ''}"><i></i><b>✏️ GC personalizable</b></button></form></div>` : ''}`;
+        ${l ? `<form class="gm-row gm-custom"><small>GC de la sala light</small><div class="gm-keyrow">${LIGHT.map(([k, i, t]) => key('data-light', k, i, t, l.stage === k)).join('')}
+            ${key('data-video', l.video ? '0' : '1', '🎬', 'Video cartelera', !!l.video)}
+            <button class="gm-key ${l.stage === 'custom' ? 'on' : ''}"><i></i><span>✏️</span><b>GC personalizable</b></button>
+            ${key('data-p1', 'vivo', '🔴', 'Pantalla 1: vivo', s.p1 === 'vivo')}${key('data-p1', 'gc', '🖼️', 'Pantalla 1: GC', s.p1 === 'gc')}</div>
+          <input type="text" name="text" maxlength="120" autocomplete="off" placeholder="Texto del GC personalizable: escríbelo aquí y toca «GC personalizable»" value="${esc(l.text || '')}"></form>` : ''}`;
     };
 
     const load = async () => {
@@ -118,7 +118,9 @@
       const box = e.target.closest('.gm-venue');
       if (!b || !box) return;
       const v = box.dataset.v;
-      if (b.dataset.p1) { state[v].p1 = b.dataset.p1; paintP1(v); return; }
+      // Pantalla 1: tocar «vivo» o «GC» la deja fija; tocar de nuevo la tecla encendida la devuelve a automático
+      if (b.dataset.p1) { e.preventDefault(); state[v].p1 = state[v].p1 === b.dataset.p1 ? 'auto' : b.dataset.p1; paintP1(v); paintKeys(v); return; }
+      if (b.type !== 'submit') e.preventDefault();
       try {
         if (b.dataset.light) await api('POST', '/api/light/stage', { local: v, show: b.dataset.light });
         else if (b.dataset.main) await api('POST', '/api/stage', { show: b.dataset.main });

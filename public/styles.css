@@ -2705,3 +2705,13 @@ body.gm-on main { max-width: none; padding: 10px 14px 40px; }
 .gm-left { min-width: 0; display: grid; gap: 10px; align-content: start; }
 .gm-box.gm-bg { background: radial-gradient(circle at 50% 35%, var(--gm), #0b0a18 120%); }
 @media (max-width: 700px) { .gm-screens, .gm-all .gm-screens { grid-template-columns: minmax(0, 1fr); } }
+/* GC Master: botones cuadrados en filas de 5, debajo de las pantallas y a todo su ancho (dibujo de Cote, 22 nov) */
+.gm-screens, .gm-keys { max-width: max(520px, calc((100vh - 500px) * 1.38)); margin-left: auto; margin-right: auto; }
+.gm-all .gm-screens, .gm-all .gm-keys { max-width: none; }
+.gm-keyrow, .gm-all .gm-keyrow { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.gm-key, .gm-all .gm-key { min-height: 0; height: 96px; padding: 8px 6px; }
+.gm-all .gm-key { height: 78px; }
+.gm-key span { font-size: 1.9rem; } .gm-key b { font-size: .9rem; }
+.gm-custom { display: block; margin-top: 0; }
+.gm-custom input { display: block; width: 100%; margin-top: 10px; padding: 10px 12px; font-size: 1rem; }
+.gm-row + .gm-row { margin-top: 4px; }
