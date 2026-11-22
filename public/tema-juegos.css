@@ -150,9 +150,12 @@ html.t2 #vf .vf-list:has(> div:nth-child(10)) { grid-template-columns: 1fr 1fr; 
 html.t2 #vf .vf-list:has(> div:nth-child(10)) > small { grid-column: 1 / -1; }
 html.t2 #vf .vf-list:has(> div:nth-child(10)) > div { gap: .8vh; padding: .4vh .9vh; }
 html.t2 #vf .vf-list:has(> div:nth-child(10)) p b { font-size: 2.3vh; } html.t2 #vf .vf-list:has(> div:nth-child(10)) p span { display: none; }
-html.t2 #vf .vf-list:has(> div:nth-child(22)) { grid-template-columns: 1fr 1fr 1fr; }
-html.t2 #vf .vf-list:has(> div:nth-child(22)) p b { font-size: 1.9vh; }
-html.t2 #vf .vf-list:has(> div:nth-child(22)) em { display: none; }
+html.t2 #vf .vf-list:has(> div:nth-child(18)) { gap: .4vh; }
+html.t2 #vf .vf-list:has(> div:nth-child(18)) > div { padding: .3vh .8vh; }
+html.t2 #vf .vf-list:has(> div:nth-child(18)) p b { font-size: 2vh; }
+html.t2 #vf .vf-list:has(> div:nth-child(18)) em { display: none; }
+html.t2 #vf .vf-list:has(> div:nth-child(30)) { grid-template-columns: 1fr 1fr 1fr; }
+html.t2 #vf .vf-list:has(> div:nth-child(30)) p b { font-size: 1.7vh; }
 /* Instagram: la cuenta grande; el QR, grande y centrado a la derecha (sin repetir «Síguenos en Instagram») */
 html.t2 #vf:has(.vf-qr.insta) .vf-main > small { display: none; }
 html.t2 #vf .vf-qr.insta { align-self: center; justify-self: center; flex-direction: column; gap: 1.8vh; padding: 2.4vh 2.4vh 2.2vh; border-left: .2vh solid var(--t-linea); border-top: .6vh solid var(--t-foco); }
@@ -201,7 +204,8 @@ html.t2 #vf.t2in .vf-main:has(> .vf-clock) > small { animation-delay: 0s; }
   html.t2 #vf .vf-list:has(> div:nth-child(6)) p b { font-size: 3.2vw; } html.t2 #vf .vf-list:has(> div:nth-child(6)) p span { font-size: 2vw; }
   html.t2 #vf .vf-list:has(> div:nth-child(8)) p b { font-size: 3.1vw; } html.t2 #vf .vf-list:has(> div:nth-child(8)) p span { font-size: 1.9vw; }
   html.t2 #vf .vf-list:has(> div:nth-child(10)) p b { font-size: 2.6vw; }
-  html.t2 #vf .vf-list:has(> div:nth-child(22)) p b { font-size: 2.1vw; }
+  html.t2 #vf .vf-list:has(> div:nth-child(18)) p b { font-size: 2.3vw; }
+  html.t2 #vf .vf-list:has(> div:nth-child(30)) p b { font-size: 1.9vw; }
   html.t2 #vf .vf-qr, html.t2 #vf:has(.vf-list > div:nth-child(8)) .vf-qr { align-self: center; flex-direction: column; box-sizing: border-box; width: 27vw; gap: 1.4vw; padding: 2vw; border-radius: 0; border-left: .2vh solid var(--t-linea); border-top: .6vh solid var(--t-foco); }
   html.t2 #vf .vf-qr .qr, html.t2 #vf:has(.vf-list > div:nth-child(8)) .vf-qr .qr { width: 100%; height: auto; aspect-ratio: 1; padding: 1vw; }
   html.t2 #vf .vf-qr b, html.t2 #vf:has(.vf-list > div:nth-child(8)) .vf-qr b { max-width: none; font-size: 1.9vw; text-align: center; }

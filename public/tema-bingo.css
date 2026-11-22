@@ -136,8 +136,8 @@ html.t2 #fb .bwin.many .bwin-names span, html.t2 #gc .bwin.many .bwin-names span
 html.t2 #fb .bwin.many .bwin-names small, html.t2 #gc .bwin.many .bwin-names small { font-size: 2vh; }
 /* En el tablero: sin recuadro, sobre los rayos que giran lento */
 html.t2 #fb .bwin { background: none; }
-html.t2 #fb .bwin::before { content: ""; position: absolute; left: 50%; top: 50%; width: 240vmax; height: 240vmax; margin: -120vmax 0 0 -120vmax; pointer-events: none;
-  background: repeating-conic-gradient(color-mix(in srgb, var(--t-foco) 22%, transparent) 0 6deg, transparent 6deg 15deg); -webkit-mask: radial-gradient(circle, #000 0, transparent 34%); mask: radial-gradient(circle, #000 0, transparent 34%); animation: t2b-gira 40s linear infinite; }
+html.t2 #fb .bwin::before { content: ""; position: absolute; left: 50%; top: 50%; width: 120vmax; height: 120vmax; margin: -60vmax 0 0 -60vmax; pointer-events: none;
+  background: repeating-conic-gradient(color-mix(in srgb, var(--t-foco) 22%, transparent) 0 6deg, transparent 6deg 15deg); -webkit-mask: radial-gradient(circle, #000 0, transparent 68%); mask: radial-gradient(circle, #000 0, transparent 68%); animation: t2b-gira 40s linear infinite; }
 html.t2 #fb .bwin-card { max-width: 94vw; padding: 0; background: none; }
 /* En el GC (sobre la cámara, 6 s): un recuadro oscuro con cortes en diagonal y los rayos quietos adentro */
 html.t2 #gc .bwin-card { max-width: 92vw; padding: 4.6vh 9vh 5vh; overflow: hidden; background: rgba(12, 11, 18, .96); clip-path: polygon(3.4vh 0, 100% 0, calc(100% - 3.4vh) 100%, 0 100%); }
@@ -154,7 +154,7 @@ html.t2 #gc .bwin.many .bwin-names b { font-size: min(5.4vh, calc(36vw / (var(--
 html.t2 #gc .bwin.many .bwin-names span { max-width: 38vw; }
 
 /* ---------- Cartel con el QR grande (al abrir la sala, y «QR en pantalla»): QR blanco y recto a la izquierda, texto a la derecha ---------- */
-html.t2 #gc .gc-big, html.t2 #fb .gc-big { box-sizing: border-box; display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "qr title" "qr text" "qr count"; align-content: center; justify-items: start; gap: 2.6vh 5.5vh;
+html.t2 #gc .gc-big, html.t2 #fb .gc-big { box-sizing: border-box; display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: 1fr auto auto auto 1fr; grid-template-areas: "qr ." "qr title" "qr text" "qr count" "qr ."; align-content: center; justify-items: start; gap: 2.6vh 5.5vh;
   max-width: min(164vh, 92vw); padding: 4vh 7vh 4vh 4vh; text-align: left; font-family: var(--t-txt); color: var(--t-texto); background: rgba(12, 11, 18, .96); border: 0; border-left: .8vh solid var(--t-foco); border-radius: 0; box-shadow: none;
   animation: t2sube .6s cubic-bezier(.2, .9, .2, 1) both; }
 html.t2 #fb .gc-big { background: rgba(21, 19, 30, .92); outline: .2vh solid var(--t-linea); outline-offset: -.2vh; }
@@ -219,7 +219,7 @@ html.t2 #fb.t2-entra .fb-figure, html.t2 #fb.t2-entra .fb-qr { animation: t2sube
 html.t2 #fb.t2-entra::before { transform-origin: 0 50%; animation: t2abre .7s cubic-bezier(.2, .9, .2, 1) both; }
 
 /* Sin nada en juego, y «QR en pantalla»: el QR grande a la izquierda y el texto a la derecha */
-html.t2 #fb .fb-idle { grid-template-columns: auto minmax(0, auto); grid-template-areas: "qr b" "qr s" "qr z"; place-content: center; justify-items: start; gap: 2.6vh 6vh; padding: 0 5vh; text-align: left; }
+html.t2 #fb .fb-idle { grid-template-columns: auto minmax(0, auto); grid-template-rows: 1fr auto auto auto 1fr; grid-template-areas: "qr ." "qr b" "qr s" "qr z" "qr ."; place-content: center; justify-items: start; gap: 2.6vh 6vh; padding: 0 5vh; text-align: left; }
 html.t2 #fb .fb-idle-qr { grid-area: qr; align-self: center; padding: 2.2vh; background: #fff; border: 0; border-radius: 0; box-shadow: none; animation: none; }
 html.t2 #fb .fb-idle-qr .qr { width: 52vh; height: 52vh; }
 html.t2 #fb .fb-idle b { grid-area: b; align-self: end; max-width: 84vh; padding-bottom: 2.2vh; white-space: normal; font: 900 12vh/.92 var(--t-disp); text-transform: uppercase; color: var(--t-texto); text-shadow: none;
@@ -261,14 +261,14 @@ html.t2 #fb .fb-idle > * { animation: t2sube .6s cubic-bezier(.2, .9, .2, 1) bot
   html.t2 #fb .fb-row > span { height: 2.16vh; border-width: .1vh; font-size: 2vh; }
   html.t2 #fb .fb-row > span.last { animation: none; }
   /* Portada con el QR y cartel del QR grande: en una columna, medidos según el ancho */
-  html.t2 #fb .fb-idle { grid-template-columns: minmax(0, auto); grid-template-areas: "b" "qr" "s" "z"; justify-items: center; gap: 4vw; padding: 0 6vw; text-align: center; }
+  html.t2 #fb .fb-idle { grid-template-columns: minmax(0, auto); grid-template-rows: none; grid-template-areas: "b" "qr" "s" "z"; justify-items: center; gap: 4vw; padding: 0 6vw; text-align: center; }
   html.t2 #fb .fb-idle b { max-width: 86vw; padding-bottom: 3vw; font-size: 15vw; white-space: normal; }
   html.t2 #fb .fb-idle b i { margin-bottom: 2.4vw; font-size: 3.2vw; }
   html.t2 #fb .fb-idle-qr { padding: 3.4vw; }
   html.t2 #fb .fb-idle-qr .qr { width: 62vw; height: 62vw; }
   html.t2 #fb .fb-idle small:not(.soon) { max-width: 84vw; font-size: 5.2vw; white-space: normal; }
   html.t2 #fb .fb-idle small.soon { padding: 1.4vw 4.6vw 1.4vw 3vw; font-size: 3vw; white-space: nowrap; }
-  html.t2 #fb .fb-bigqr { width: 90vw; max-width: 90vw; grid-template-columns: minmax(0, 1fr); grid-template-areas: "title" "qr" "text" "count"; justify-items: center; gap: 4vw; padding: 6vw 5vw; border-left: 0; border-top: 1.2vw solid var(--t-foco); border-radius: 0; text-align: center; }
+  html.t2 #fb .fb-bigqr { width: 90vw; max-width: 90vw; grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-template-areas: "title" "qr" "text" "count"; justify-items: center; gap: 4vw; padding: 6vw 5vw; border-left: 0; border-top: 1.2vw solid var(--t-foco); border-radius: 0; text-align: center; }
   html.t2 #fb .fb-bigqr .gc-big-title { max-width: 80vw; padding-bottom: 3vw; font-size: 13vw; white-space: normal; border-image: linear-gradient(90deg, transparent, var(--t-c), var(--t-foco), transparent) 1; }
   html.t2 #fb .fb-bigqr .gc-big-qr .qr { width: 66vw; height: 66vw; padding: 3.4vw; border-radius: 0; }
   html.t2 #fb .fb-bigqr .gc-big-text { max-width: 80vw; font-size: 5vw; }

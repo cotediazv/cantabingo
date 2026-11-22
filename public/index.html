@@ -25,9 +25,13 @@
   <script>
     // La clase del diseño nuevo se pone antes de dibujar, para que no parpadee (tema.js la mantiene al día con el servidor)
     (function () {
-      var q = /[?&]tema=([01])/.exec(location.search), v = null;
+      var q = /[?&]tema=([01])/.exec(location.search), v = null, ok = false;
       try { v = localStorage.getItem('tema'); } catch (e) { v = null; }
-      if (q ? q[1] === '1' : v !== '0') document.documentElement.className += ' t2';
+      // El diseño nuevo necesita un navegador reciente (color-mix y :has, Chrome 111 o superior); en uno más antiguo se
+      // desarmaría, así que ahí queda siempre el diseño anterior
+      try { ok = !!(window.CSS && CSS.supports && CSS.supports('color', 'color-mix(in srgb, red 50%, blue)') && CSS.supports('selector(:has(a))')); } catch (e) { ok = false; }
+      window.__t2ok = ok;
+      if (ok && (q ? q[1] === '1' : v !== '0')) document.documentElement.className += ' t2';
     })();
   </script>
 </head>

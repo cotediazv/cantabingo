@@ -301,15 +301,17 @@
   .t2 .d-list { top: 57rem !important; }
   /* El Festival y El objeto más extraño */
   .t2 .v-body { top: 19.5rem !important; bottom: 23rem !important; overflow: hidden; }
-  .t2 .v-body .mid.gold { margin-top: .4rem; font-size: 2rem; }
+  /* los tamaños van en «em»: si el contenido no cabe en el alto, se achica todo junto (fitbox) */
+  .t2 .v-body .mid.gold { margin-top: .2em; font-size: 2em; }
   .t2 .v-hero { top: 26rem !important; } /* sin lista (un nombre, un aviso): el bloque va más al centro */
-  .t2 .v-body .big { margin-top: 1.4rem; font-size: 6.8rem; white-space: normal; }
-  .t2 .v-body b.big + b.big { margin-top: 1.8rem; padding-top: 2rem; border-top: .12rem solid #2a2636; }
-  .t2 .v-body .big.gold { margin-top: 0; font-size: 12rem; line-height: .95; }
-  .t2 .v-thing { margin-top: .5rem; color: #a59fb0 !important; font-size: 2.7rem; font-weight: 700; }
-  .t2 .v-note { margin-top: 1.2rem; font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 3.6rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #f4bf5a; }
+  .t2 .v-body .big { margin-top: .2em; font-size: 6.8em; white-space: normal; } /* el nombre entero y grande, en las líneas que necesite */
+  .t2 .v-body b.big + b.big { margin-top: .3em; padding-top: .34em; border-top: .12rem solid #2a2636; }
+  .t2 .v-body .clock { font-size: 6.4em; }
+  .t2 .v-body .big.gold { margin-top: 0; font-size: 12em; line-height: .95; }
+  .t2 .v-body .v-thing { margin-top: .2em; color: #a59fb0 !important; font-size: 2.7em; font-weight: 700; }
+  .t2 .v-body .v-note { margin-top: .33em; font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 3.6em; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #f4bf5a; }
   .t2 .v-drum { color: #f4bf5a; }
-  .t2 .v-msg { font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 7.4rem; font-weight: 900; line-height: 1; letter-spacing: .005em; text-transform: uppercase; }
+  .t2 .v-body .v-msg { font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 7.4em; font-weight: 900; line-height: 1; letter-spacing: .005em; text-transform: uppercase; }
   .t2 .v-body .rows { margin-top: 1.6rem !important; }
   .t2 .v-body .rows li { font-size: 3.1em; }
   .t2 .v-dot { display: none; }
@@ -454,8 +456,10 @@
   window.onresize = layout;
   layout();
   // Las letras del diseño nuevo pueden terminar de cargar después de dibujar: se vuelve a ajustar el tamaño de los textos
-  window.addEventListener('load', fitAll, false);
-  try { if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', fitAll, false); } catch (e) { /* nada */ }
+  // (solo con el diseño nuevo puesto: el anterior queda tal como estaba)
+  function refit() { if (T2) fitAll(); }
+  window.addEventListener('load', refit, false);
+  try { if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', refit, false); } catch (e) { /* nada */ }
   $('marks').innerHTML = '<img src="krb-stage.svg" alt="KRB Stage">' + (VENUE === 'kennedy' ? '<i></i><img src="logo-kennedy.png" alt="Mercado Kennedy">' : '');
 
   // ---------- Temporizadores de cada vista ----------
@@ -834,7 +838,7 @@
       var row = function (p) { return h(p.name) + (p.thing ? '<span class="v-dot"> · </span><span class="v-th">' + h(p.thing) + '</span>' : ''); }; // nombre · canción u objeto
       if (s.phase === 'winner' && s.winner) o += '<div class="big gold">' + se('🏆 ¡Ganó!') + '</div><b class="big fit" style="display:block">' + h(s.winner.name) + '</b>' + thing(s.winner) + (s.winner.score != null ? '<div class="mid v-note">Nota ' + dec(s.winner.score) + '</div>' : '');
       else if (s.phase === 'final' && s.final && s.final.drum) o += '<div class="big gold">' + se('🥁') + '</div><div class="mid v-msg v-drum">¡Redoble de tambores!</div>';
-      else if (s.phase === 'final' && s.final) { o += '<div class="mid gold">Gran final</div>'; for (var f = 0; f < (s.final.players || []).length; f++) o += '<b class="big fit" style="display:block;font-size:' + tv('5.4', '5.8') + 'rem">' + h(s.final.players[f].name) + '</b>'; if (left && s.final.open) o += '<div class="clock">' + left + '</div>'; }
+      else if (s.phase === 'final' && s.final) { o += '<div class="mid gold">Gran final</div>'; for (var f = 0; f < (s.final.players || []).length; f++) o += '<b class="big fit" style="display:block;font-size:' + tv('5.4rem', '5.8em') + '">' + h(s.final.players[f].name) + '</b>'; if (left && s.final.open) o += '<div class="clock">' + left + '</div>'; }
       else if (s.phase === 'results') { o += '<div class="mid gold">' + se('🏆 Resultados') + '</div><ol class="rows rk sc" style="margin-top:2rem">'; var pl = s.places || []; for (var i = pl.length - 1; i >= 0; i--) o += '<li><em>' + pl[i].place + '.º</em>' + h(pl[i].name) + (pl[i].score != null ? '<i>' + dec(pl[i].score) + '</i>' : '') + '</li>'; o += '</ol>'; }
       else if (s.open) o += '<div class="mid gold">' + se('🗳️ Vota desde tu celular') + '</div><b class="big fit" style="display:block">' + h(s.open.name) + '</b>' + thing(s.open) + (left ? '<div class="clock">' + left + '</div>' : '');
       else if (s.onstage) o += '<div class="mid gold">' + se('🎤 En el escenario') + '</div><b class="big fit" style="display:block">' + h(s.onstage.name) + '</b>' + thing(s.onstage);

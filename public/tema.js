@@ -10,6 +10,7 @@
   window.sinEmoji = (s) => (window.t2() ? String(s).replace(/(?:\p{Extended_Pictographic}|\p{Emoji_Presentation})[\u{FE0F}\u{200D}\u{1F3FB}-\u{1F3FF}]*/gu, '').replace(/\s{2,}/g, ' ').trim() : s);
   const set = (on) => {
     if (forced) return;
+    if (window.__t2ok === false) on = false; // navegador antiguo: siempre el diseño anterior
     root.classList.toggle('t2', on);
     try { localStorage.setItem('tema', on ? '1' : '0'); } catch (e) { /* sin almacenamiento: se usa lo que diga el servidor */ }
     window.dispatchEvent(new CustomEvent('tema', { detail: { on } }));

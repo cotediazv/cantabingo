@@ -27,7 +27,9 @@
     };
 
     const fitTitle = () => { if (window.fitOneLine) window.fitOneLine($('#fb .fb-title'), 14); };
-    window.addEventListener('tema', fitTitle); // al cambiar de diseño sin recargar, el título se vuelve a ajustar
+    // Al cambiar de diseño sin recargar, el título se vuelve a ajustar (y otra vez cuando cargan las letras de ese diseño)
+    const onTema = () => { fitTitle(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTitle); };
+    window.addEventListener('tema', onTema);
 
     const draw = (st) => {
       $('#fb').className = `th-${st.theme}`;
@@ -98,6 +100,6 @@
     idle();
     await follow();
     const poll = setInterval(follow, 5000);
-    return () => { clearInterval(poll); leave(); window.removeEventListener('tema', fitTitle); };
+    return () => { clearInterval(poll); leave(); window.removeEventListener('tema', onTema); };
   };
 })();

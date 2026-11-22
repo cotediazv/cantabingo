@@ -48,7 +48,9 @@
       const msg = $('.gc-msg');
       if (msg) { msg.style.fontSize = ''; if (t2) { const box = msg.parentElement; let f = parseFloat(getComputedStyle(msg).fontSize); for (let i = 0; i < 30 && f > 9 && (box.scrollHeight > box.clientHeight + 1 || msg.scrollWidth > msg.clientWidth + 1); i++) { f *= 0.94; msg.style.fontSize = `${f.toFixed(1)}px`; } } }
     };
-    window.addEventListener('tema', fitTop); // al cambiar de diseño sin recargar, la letra se vuelve a ajustar
+    // Al cambiar de diseño sin recargar, la letra se vuelve a ajustar (y otra vez cuando cargan las letras de ese diseño)
+    const onTema = () => { fitTop(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTop); };
+    window.addEventListener('tema', onTema);
 
     const draw = (st) => {
       const current = st.drawn.at(-1);
@@ -146,6 +148,6 @@
     idle();
     await follow();
     poll = setInterval(follow, 5000);
-    return () => { clearInterval(poll); leave(); window.removeEventListener('tema', fitTop); document.body.classList.remove('obs', 'gc-screen'); };
+    return () => { clearInterval(poll); leave(); window.removeEventListener('tema', onTema); document.body.classList.remove('obs', 'gc-screen'); };
   };
 })();

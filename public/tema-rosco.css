@@ -53,7 +53,10 @@ html.t2 .obs-score .ko { color: #ff8078; }
 
 /* Columna de la derecha: la pregunta y, debajo, la respuesta acertada (o el ranking de la Trivia) */
 @media (min-aspect-ratio: 3/2) {
-  html.t2 .obs-side { right: 5vh; width: calc((100vw - 94vh) / 2 - 6vh); gap: 1.6vh; }
+  /* centrada en el alto libre; si es muy alta parte desde arriba (nunca se sale por arriba) y, con los logos del local
+     arriba a la derecha (Mercado Kennedy), empieza debajo de ellos */
+  html.t2 .obs-side { right: 5vh; top: 4vh; bottom: 4vh; transform: none; align-content: safe center; width: calc((100vw - 94vh) / 2 - 6vh); gap: 1.6vh; }
+  html.t2 body.has-vm .obs-side { top: 16vh; }
   html.t2 .obs-rankside.wide { width: min(46vw, 82vh); }
 }
 html.t2 .obs-question { grid-template-columns: auto minmax(0, 1fr); align-items: center; justify-items: start; gap: 1.6vh 1.6vh; padding: 0 2.2vh 2.6vh 0; border: 0; border-radius: 0; box-shadow: none;

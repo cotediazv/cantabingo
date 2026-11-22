@@ -1873,7 +1873,10 @@ function joinQr(spot) {
   // centradas («Escanea el código QR» / «con tu celular»), con la letra justa para caber
   if (!el) { el = document.createElement('div'); el.id = 'join-qr'; el.innerHTML = `${qr(joinUrl())}<b><span>Escanea el código QR</span><span>con tu celular</span></b>`; document.body.appendChild(el); }
   el.className = `join-qr ${spot}`;
-  fitJoinQr();
+  // La frase se mide ahora, otra vez cuando cargan las letras, y al cambiar de diseño sin recargar (cada diseño tiene su letra)
+  const refit = () => { fitJoinQr(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitJoinQr); };
+  refit();
+  if (!joinQr.onTema) { joinQr.onTema = refit; addEventListener('tema', refit); }
 }
 function fitJoinQr() {
   const el = document.getElementById('join-qr');
