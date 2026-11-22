@@ -2791,3 +2791,28 @@ body.gm-on main { max-width: none; padding: 10px 14px 40px; }
   .gm-listen { padding: 3px 8px; font-size: .68rem; }
   .gm-audiorow { gap: 6px; } .gm-audio .gm-key { height: 52px; gap: 4px; } .gm-audio .gm-key b { font-size: .62rem; } .gm-audio .gm-key span { font-size: 1.1rem; }
 }
+
+/* GC Master, versión horizontal de cada local (pedido de Cote, 22 nov): la señal 1 más grande; el tablero a 3/5 de su
+   tamaño; la pantalla vertical también a 3/5; y los botones debajo del tablero, para aprovechar el ancho de la pantalla.
+   --w1 es el ancho de la pantalla 1: lo más grande que cabe a lo ancho y a lo alto sin bajar la página */
+@media (min-width: 900px) {
+  .gm-one .gm-venue { --w1: max(360px, min(calc((100vw - 102px) / 1.9375), calc((100vh - 400px) * 2.963), calc((100vh - 160px) * 1.7778)));
+    display: grid; grid-template-columns: var(--w1) calc(var(--w1) * .6) calc(var(--w1) * .3375); grid-template-rows: auto auto auto;
+    grid-template-areas: "head head head" "p1 p2 p3" "p1 keys p3"; gap: 12px 13px; justify-content: center; align-items: start; }
+  .gm-one .gm-head { grid-area: head; margin-bottom: 0; }
+  .gm-one .gm-screens, .gm-one .gm-left { display: contents; }
+  .gm-one .gm-left > .gm-scr:first-child { grid-area: p1; }
+  .gm-one .gm-left > .gm-scr:last-child { grid-area: p2; }
+  .gm-one .gm-screens > .gm-tall { grid-area: p3; }
+  .gm-one .gm-box { border-radius: 8px; border: 2px solid #2c2850; }
+  .gm-one .gm-scr > small { border-radius: 6px 0 8px 0; }
+  .gm-one .gm-keys { grid-area: keys; max-width: none; margin: 0; gap: 8px; }
+  .gm-one .gm-row > small { margin-bottom: 6px; }
+  .gm-one .gm-keyrow { gap: 8px; }
+  .gm-one .gm-key { height: 62px; padding: 4px 3px; }
+  /* el texto de los botones se achica con la pantalla, para que siempre quepa entero */
+  .gm-one .gm-key span { font-size: min(1.35rem, calc(var(--w1) * .033)); } .gm-one .gm-key b { font-size: min(.7rem, calc(var(--w1) * .0148)); line-height: 1.05; }
+  .gm-one .gm-key.gm-long b { font-size: min(.6rem, calc(var(--w1) * .0118)); }
+  .gm-one .gm-key { padding: 4px 1px; }
+  .gm-one .gm-custom input { margin-top: 8px; padding: 8px 10px; }
+}
