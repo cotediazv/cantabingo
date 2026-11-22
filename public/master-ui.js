@@ -35,7 +35,7 @@
     if (!(await isAdmin())) return viewLogin();
     document.body.classList.add('gm-on');
     app.innerHTML = `<div id="gm" class="${single ? 'gm-one' : 'gm-all'}">
-      <nav class="gm-nav"><a href="#/control">← Centro de control</a><b>🎛️ GC Master</b>
+      <nav class="gm-nav"><a class="gm-back" href="#/control">←<span> Centro de control</span></a><b>🎛️ GC Master</b>
         ${ORDER.map((v) => `<a class="gm-tab ${single && list[0] === v ? 'on' : ''}" href="#/master/${v}">${esc(VENUES[v])}</a>`).join('')}
         <a class="gm-tab ${single ? '' : 'on'}" href="#/master">Los 3 locales</a></nav>
       <div class="gm-grid">${list.map(venueHTML).join('')}</div></div>`;
@@ -59,7 +59,8 @@
       const mode = s.p1 === 'auto' ? (s.live ? 'vivo' : 'gc') : s.p1;
       const gc = s.main ? '#/escena' : `#/light-gc/${v}`;
       const src = mode === 'vivo' ? `https://player.twitch.tv/?channel=${TWITCH[v]}&parent=${location.hostname}&muted=true&autoplay=true` : page(gc);
-      el(v, 'p1name').textContent = `${mode === 'vivo' ? (s.live ? 'Video en vivo' : 'Video en vivo (ahora no hay transmisión)') : (s.p1 === 'auto' ? 'GC (no hay transmisión en vivo)' : 'GC')}${s.p1 === 'auto' ? ' · automático' : ' · fijo'}`;
+      // Etiqueta corta (cabe dentro de la pantalla también en el teléfono)
+      el(v, 'p1name').textContent = `${mode === 'vivo' ? (s.live ? 'Video en vivo' : 'Vivo · sin transmisión') : (s.p1 === 'auto' ? 'GC · sin vivo' : 'GC')}${s.p1 === 'auto' ? '' : ' · fijo'}`;
       root.querySelectorAll(`.gm-venue[data-v="${v}"] [data-p1]`).forEach((b) => b.classList.toggle('on', b.dataset.p1 === s.p1));
       if (src === s.p1src) return;
       s.p1src = src;
@@ -83,9 +84,9 @@
       box.innerHTML = `${s.main ? `<div class="gm-row"><small>GC de la sala de juegos</small><div class="gm-keyrow">${MAIN.map(([k, i, t]) => key('data-main', k, i, t, s.main.stage === k)).join('')}</div></div>` : ''}
         ${l ? `<form class="gm-row gm-custom"><small>GC de la sala light</small><div class="gm-keyrow">${LIGHT.map(([k, i, t]) => key('data-light', k, i, t, l.stage === k)).join('')}
             ${key('data-video', l.video ? '0' : '1', '🎬', 'Video cartelera', !!l.video)}
-            <button class="gm-key ${l.stage === 'custom' ? 'on' : ''}"><i></i><span>✏️</span><b>GC personalizable</b></button>
+            <button class="gm-key gm-long ${l.stage === 'custom' ? 'on' : ''}"><i></i><span>✏️</span><b>GC personalizable</b></button>
             ${key('data-p1', 'vivo', '🔴', 'Pantalla 1: vivo', s.p1 === 'vivo')}${key('data-p1', 'gc', '🖼️', 'Pantalla 1: GC', s.p1 === 'gc')}</div>
-          <input type="text" name="text" maxlength="120" autocomplete="off" placeholder="Texto del GC personalizable: escríbelo aquí y toca «GC personalizable»" value="${esc(l.text || '')}"></form>` : ''}`;
+          <input type="text" name="text" maxlength="120" autocomplete="off" placeholder="Texto del GC personalizable" value="${esc(l.text || '')}"></form>` : ''}`;
     };
 
     const load = async () => {

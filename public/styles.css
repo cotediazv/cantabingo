@@ -2725,3 +2725,43 @@ body.gm-on main { max-width: none; padding: 10px 14px 40px; }
 .gm-scr > small { position: absolute; left: 0; top: 0; z-index: 2; padding: 3px 8px; border-radius: 0 0 8px 0; background: rgba(0, 0, 0, .72); color: #ffd76a; font-size: .72rem; white-space: nowrap; pointer-events: none; }
 .gm-box { border-radius: 0; border: 1px solid #000; }
 .gm-keys { margin-top: 14px; }
+/* GC Master en el teléfono (pedido de Cote, 22 nov): de pie y todo en una sola plana, sin bajar la página: arriba los
+   locales, el bloque de las 3 pantallas pegadas, los botones en 2 filas de 5 y el texto del GC personalizable */
+@media (max-width: 700px) {
+  body.gm-on main { padding: 6px 6px 8px; }
+  .gm-nav { flex-wrap: nowrap; gap: 4px; margin-bottom: 6px; }
+  .gm-nav > a:first-child { flex: none; width: 30px; overflow: hidden; white-space: nowrap; text-decoration: none; font-size: 1.2rem; line-height: 1.6; }
+  .gm-nav > b { display: none; }
+  .gm-tab { flex: 1; min-width: 0; padding: 7px 2px; border-width: 1px; border-radius: 8px; font-size: .72rem; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: clip; }
+  .gm-venue { padding: 6px; border-width: 2px; border-radius: 12px; }
+  .gm-head { flex-wrap: nowrap; gap: 6px; margin-bottom: 6px; }
+  .gm-head > b, .gm-all .gm-head > b { font-size: 1rem; white-space: nowrap; }
+  .gm-live { flex: none; padding: 2px 8px; font-size: .68rem; white-space: nowrap; }
+  .gm-sala { font-size: .66rem; min-width: 0; white-space: nowrap; overflow: hidden; }
+  .gm-screens, .gm-all .gm-screens { grid-template-columns: minmax(0, 1fr) minmax(0, .6328fr); }
+  .gm-one .gm-screens, .gm-one .gm-keys { max-width: min(100%, calc((100vh - 318px) * 1.45)); max-width: min(100%, calc((100dvh - 318px) * 1.45)); }
+  .gm-one .gm-keys { max-width: 100%; }
+  .gm-tall .gm-box { max-width: none; }
+  .gm-scr > small { padding: 2px 5px; font-size: .56rem; }
+  .gm-keys { margin-top: 8px; gap: 6px; }
+  .gm-row > small { margin-bottom: 4px; font-size: .62rem; }
+  .gm-keyrow, .gm-all .gm-keyrow { gap: 5px; }
+  .gm-key, .gm-all .gm-key { height: 58px; padding: 4px 2px; border-radius: 8px; border-width: 1px; box-shadow: 0 3px 0 #0a0818; }
+  .gm-key i { top: 4px; right: 4px; width: 6px; height: 6px; }
+  .gm-key span { font-size: 1.25rem; } .gm-key b { font-size: .58rem; line-height: 1.05; }
+  .gm-custom input { margin-top: 6px; padding: 8px 10px; font-size: 16px; }
+}
+@media (max-width: 700px) {
+  /* nombres de los locales enteros (en dos líneas si hace falta) y botones más altos, que caben igual en una plana */
+  .gm-tab { display: flex; align-items: center; justify-content: center; white-space: normal; overflow: visible; line-height: 1.1; padding: 5px 3px; min-height: 36px; }
+  .gm-nav { align-items: stretch; }
+  .gm-key, .gm-all .gm-key { height: 66px; }
+  .gm-key span { font-size: 1.4rem; } .gm-key b { font-size: .62rem; }
+}
+.gm-scr > small { max-width: 100%; overflow: hidden; }
+.gm-key b { max-width: 100%; }
+@media (max-width: 700px) {
+  .gm-back span, .gm-sala { display: none; }
+  .gm-nav > a.gm-back { width: auto; padding: 0 6px; display: flex; align-items: center; }
+  .gm-key.gm-long b { font-size: .5rem; letter-spacing: -.01em; }
+}
