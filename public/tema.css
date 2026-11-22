@@ -20,7 +20,8 @@ html.t2 body[data-venue="tobalaba"], html.t2 .th-tobalaba { --t-c: #e5413a; --t-
 
 /* Fondo de las pantallas del local (tablero y de pie): noche, con el foco del color del local arriba y el dorado abajo,
    y una trama fina en diagonal. Se mueve lento (solo transform). */
-html.t2 { background-color: #0c0b12 !important; }
+/* solo en las pantallas del local: en los GC de OBS el fondo de la página sigue TRANSPARENTE (va sobre la cámara) */
+html.t2:has(body.full) { background-color: #0c0b12 !important; }
 html.t2 body.full { background: #0c0b12; color: var(--t-texto); }
 html.t2 body.full::before { top: -25%; right: -25%; bottom: -25%; left: -25%;
   background: radial-gradient(circle at 26% 22%, color-mix(in srgb, var(--t-c) 46%, transparent) 0, transparent 40%), radial-gradient(circle at 78% 82%, rgba(244, 191, 90, .22) 0, transparent 38%),
