@@ -121,11 +121,41 @@
         }
       } catch (err) { fail(err); }
     };
+    // El panel de la derecha se achica solo, lo justo para que todo quepa sin subir ni bajar (pedido de Cote, 22 nov:
+    // «se ven todo un poco grandes… para poder tener siempre todo en pantalla»). Parte al 80 % y baja hasta el 50 % si lo
+    // que hay en el panel es más alto; se mide lo que realmente ocupa el contenido. En el teléfono va a tamaño normal.
+    const pf = root.querySelector('.gm-panel iframe'); const pbox = pf.parentElement;
+    const K_MAX = 0.8; const K_MIN = 0.5;
+    let k = K_MAX; let cap = K_MAX; let lastHash = ''; let grewAt = 0;
+    const applyK = () => {
+      const kk = window.innerWidth > 900 ? k : 1;
+      pf.style.width = `${100 / kk}%`; pf.style.height = `${100 / kk}%`; pf.style.transform = kk === 1 ? '' : `scale(${kk})`;
+    };
+    const fitPanel = () => {
+      if (!alive) return;
+      if (window.innerWidth <= 900) { applyK(); return; }
+      let doc = null; try { doc = pf.contentDocument; } catch { doc = null; }
+      const a = doc && doc.getElementById('app');
+      if (!a || !a.lastElementChild) return;
+      if (!doc.getElementById('gm-in')) { const st = doc.createElement('style'); st.id = 'gm-in'; st.textContent = 'main{padding:10px 14px 8px !important;max-width:none !important}.panel{padding:12px 16px !important;margin-bottom:10px !important}h1{margin-bottom:.15em !important}.cols{gap:10px !important}.back{margin:0 0 6px !important}'; doc.head.appendChild(st); }
+      const hash = pf.contentWindow.location.hash;
+      if (hash !== lastHash) { lastHash = hash; cap = K_MAX; }
+      // alto que ocupa el contenido (en píxeles del panel sin achicar) y el tamaño que lo haría caber
+      let bottom = 0; for (const c of a.children) { const r = c.getBoundingClientRect(); if (r.height) bottom = Math.max(bottom, r.bottom); }
+      const need = bottom + (pf.contentWindow.scrollY || 0) + 14;
+      const next = Math.max(K_MIN, Math.min(cap, (pbox.clientHeight / need) * 0.985)); // cabe si need <= alto del panel / k
+      if (next < k - 0.008) { if (Date.now() - grewAt < 2500) cap = next; k = next; applyK(); } // si al agrandar dejó de caber, no se vuelve a agrandar en esta vista
+      else if (next > k * 1.12) { k = next; grewAt = Date.now(); applyK(); }
+    };
+    applyK();
+    pf.addEventListener('load', () => { k = K_MAX; cap = K_MAX; applyK(); });
+    window.addEventListener('resize', fitPanel);
     paintLeft();
     await load();
     const t3 = startClock(root);
     const t1 = setInterval(load, 3000);
-    return () => { alive = false; clearInterval(t1); clearInterval(t3); ro.disconnect(); document.body.classList.remove('gm-on'); };
+    const t4 = setInterval(fitPanel, 400);
+    return () => { alive = false; clearInterval(t1); clearInterval(t3); clearInterval(t4); window.removeEventListener('resize', fitPanel); ro.disconnect(); document.body.classList.remove('gm-on'); };
   };
 
   // Una página del GC Master: uno o los tres locales

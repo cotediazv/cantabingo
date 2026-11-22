@@ -2959,7 +2959,7 @@ body.gm-on main { max-width: none; padding: 10px 14px 40px; }
 /* GC Master · «Sala de juegos» (pedido de Cote, 22 nov): a la izquierda las pantallas y botones de la sala abierta; a la
    derecha, el panel real de la sala (crear sala, elegir y manejar cada juego), que queda a la vista al bajar */
 .gm-jg .gm-grid { grid-template-columns: minmax(340px, 36%) minmax(0, 1fr); align-items: start; }
-.gm-panel { position: sticky; top: 8px; height: calc(100vh - 84px); min-height: 420px; border: 2px solid #2c2850; border-radius: 12px; overflow: hidden; background: #12101f; }
+.gm-panel { position: sticky; top: 8px; height: calc(100vh - 74px); min-height: 420px; border: 2px solid #2c2850; border-radius: 12px; overflow: hidden; background: #12101f; }
 .gm-panel iframe { display: block; width: 100%; height: 100%; border: 0; }
 .gm-none p { margin: 0; color: #b9b4d8; line-height: 1.45; }
 .gm-jg .gm-head > b { white-space: nowrap; }
@@ -2981,3 +2981,6 @@ body.gm-on main { max-width: none; padding: 10px 14px 40px; }
 .vk-tie span { display: block; font-size: 2.7vh; font-weight: 800; line-height: 1.25; color: #fff; }
 #vf .vf-main > .vf-tie { max-width: 100%; margin-top: 1.6vh; text-align: center; white-space: normal; font-size: 2.8vh; font-weight: 800; line-height: 1.25; color: #fff; }
 .vf-tie .t { margin-bottom: .4vh; color: #ffc400; }
+
+/* GC Master · «Sala de juegos»: el panel de la derecha va achicado (lo calcula master-ui.js) para que todo quepa */
+.gm-panel iframe { transform-origin: 0 0; }
