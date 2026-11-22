@@ -22,7 +22,7 @@
   const page = (hash) => `${location.pathname}?mudo=1${hash}`;
 
   const venueHTML = (v) => `<section class="gm-venue th-${v}" data-v="${v}">
-      <header class="gm-head"><b>${esc(VENUES[v])}</b><span class="gm-live" data-k="live">Sin transmisión en vivo</span><span class="gm-sala" data-k="sala"></span></header>
+      <header class="gm-head"><b>${esc(VENUES[v])}</b><span class="gm-live" data-k="live">Sin transmisión en vivo</span><span class="gm-sala" data-k="sala"></span><button type="button" class="gm-listen" data-audio="${v}">🔇 Escuchar</button></header>
       <div class="gm-screens">
         <div class="gm-left">
           <div class="gm-scr"><small>1 · <span data-k="p1name">Vivo o GC</span></small>
@@ -44,12 +44,15 @@
       <nav class="gm-nav"><a class="gm-back" href="#/control">←<span> Centro de control</span></a><b>🎛️ GC Master</b>
         ${ORDER.map((v) => `<a class="gm-tab ${single && list[0] === v ? 'on' : ''}" href="#/master/${v}">${esc(VENUES[v])}</a>`).join('')}
         <a class="gm-tab ${single ? '' : 'on'}" href="#/master">Los 3 locales</a></nav>
-      <div class="gm-grid">${list.map(venueHTML).join('')}</div></div>`;
+      <div class="gm-grid">${list.map(venueHTML).join('')}</div>
+      ${single ? '' : `<div class="gm-audio"><small>Audio · escuchar la señal 1 de un local (los otros se apagan)</small><div class="gm-audiorow">${list.map((v, i) => `<button type="button" class="gm-key" data-audio="${v}"><i></i><span>🔇</span><b>${i + 1} · ${esc(VENUES[v])}</b></button>`).join('')}</div></div>`}</div>`;
     const root = $('#gm');
     const el = (v, k) => root.querySelector(`.gm-venue[data-v="${v}"] [data-k="${k}"]`);
     const state = {}; // por local: lo que eligió el operador para la pantalla 1 y lo último dibujado
     list.forEach((v) => { state[v] = { p1: 'auto', p1src: '', keys: '', live: false, viewers: 0, own: false, pc: null, ownTimer: null, main: null, light: null }; });
     let alive = true;
+    // Audio (pedido de Cote, 22 nov): se escucha la señal 1 de un solo local a la vez; al elegir otro, el anterior se apaga
+    let audio = null;
 
     // Las pantallas son las páginas reales, achicadas al ancho de su cuadro
     const fit = () => root.querySelectorAll('.gm-box').forEach((box) => {
@@ -67,7 +70,7 @@
       const liveMode = s.own ? 'own' : 'twitch';
       const mode = s.p1 === 'gc' ? 'gc' : s.p1 === 'vivo' ? liveMode : (s.own ? 'own' : s.live ? 'twitch' : 'gc');
       const gc = s.main ? '#/escena' : `#/light-gc/${v}`;
-      const src = mode === 'own' ? 'own' : mode === 'twitch' ? `https://player.twitch.tv/?channel=${TWITCH[v]}&parent=${location.hostname}&muted=true&autoplay=true` : page(gc);
+      const src = mode === 'own' ? 'own' : mode === 'twitch' ? `https://player.twitch.tv/?channel=${TWITCH[v]}&parent=${location.hostname}&muted=${audio === v ? 'false' : 'true'}&autoplay=true` : page(gc);
       // Etiqueta corta (cabe dentro de la pantalla también en el teléfono)
       el(v, 'p1name').textContent = `${mode === 'own' ? 'Transmisión nuestra' : mode === 'twitch' ? (s.live ? 'Twitch' : 'Twitch · sin transmisión') : (s.p1 === 'auto' ? 'GC · sin transmisión' : 'GC')}${s.p1 === 'auto' ? '' : ' · fijo'}`;
       root.querySelectorAll(`.gm-venue[data-v="${v}"] [data-p1]`).forEach((b) => b.classList.toggle('on', b.dataset.p1 === s.p1));
@@ -109,6 +112,29 @@
         .catch(() => { clearTimeout(limit); again(20000); });
     };
     list.forEach((v) => { el(v, 'own').addEventListener('playing', () => { if (!state[v].own) { state[v].own = true; paintP1(v); } }); });
+    // El audio de la transmisión nuestra sube o baja de a poco (el que se deja de escuchar «se va apagando»)
+    const fades = {};
+    const fade = (v, on) => {
+      const vid = el(v, 'own');
+      clearInterval(fades[v]);
+      if (on) { vid.volume = 0; vid.muted = false; vid.play().catch(() => {}); } else if (vid.muted) return;
+      fades[v] = setInterval(() => {
+        const next = Math.max(0, Math.min(1, vid.volume + (on ? 0.1 : -0.1)));
+        vid.volume = next;
+        if (next >= 1 || next <= 0) { clearInterval(fades[v]); if (!on) { vid.muted = true; vid.volume = 1; } }
+      }, 40);
+    };
+    const paintAudio = () => root.querySelectorAll('[data-audio]').forEach((b) => {
+      const on = audio === b.dataset.audio;
+      b.classList.toggle('on', on);
+      if (b.classList.contains('gm-listen')) b.textContent = on ? '🔊 Escuchando' : '🔇 Escuchar';
+      else b.querySelector('span').textContent = on ? '🔊' : '🔇';
+    });
+    const setAudio = (v) => {
+      audio = audio === v ? null : v; // tocar de nuevo el que suena lo apaga
+      list.forEach((x) => { fade(x, audio === x); paintP1(x); }); // Twitch se vuelve a cargar con o sin sonido
+      paintAudio();
+    };
     const onVisible = () => list.forEach((v) => (document.hidden ? ownStop(v) : (state[v].pc || ownStart(v))));
     document.addEventListener('visibilitychange', onVisible);
 
@@ -155,6 +181,7 @@
 
     root.onclick = async (e) => {
       const b = e.target.closest('button');
+      if (b && b.dataset.audio) { e.preventDefault(); setAudio(b.dataset.audio); return; }
       const box = e.target.closest('.gm-venue');
       if (!b || !box) return;
       const v = box.dataset.v;
@@ -185,7 +212,7 @@
     fit();
     const t1 = setInterval(load, 3000);
     const t2 = setInterval(loadLive, 20000);
-    return () => { alive = false; clearInterval(t1); clearInterval(t2); ro.disconnect(); document.removeEventListener('visibilitychange', onVisible); list.forEach(ownStop); document.body.classList.remove('gm-on'); };
+    return () => { alive = false; clearInterval(t1); clearInterval(t2); ro.disconnect(); document.removeEventListener('visibilitychange', onVisible); list.forEach((v) => { clearInterval(fades[v]); ownStop(v); }); document.body.classList.remove('gm-on'); };
   };
 
   // #/master: los 3 locales juntos · #/master/<local>: la página de un local

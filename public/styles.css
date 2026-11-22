@@ -2776,3 +2776,18 @@ body.gm-on main { max-width: none; padding: 10px 14px 40px; }
 .venue-mark.vm-obs-bingo { left: 5vh; }
 /* Logos del GC de OBS: más adentro y más abajo (pedido de Cote, 21 nov) */
 .venue-mark.vm-obs { right: 10vh; top: 10vh; }
+/* GC Master, audio (pedido de Cote, 22 nov): en «Los 3 locales», abajo, 3 botones para elegir qué local se escucha (uno
+   a la vez); en la página de un local, un botón «Escuchar» junto al nombre */
+.gm-listen { margin-left: auto; padding: 5px 12px; border-radius: 99px; font-size: .85rem; font-weight: 800; white-space: nowrap; }
+.gm-listen.on { background: #1fa45a; border-color: #1fa45a; color: #fff; }
+.gm-all .gm-listen { display: none; }
+.gm-audio { margin-top: 14px; }
+.gm-audio > small { display: block; margin-bottom: 6px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; font-size: .78rem; color: #b9b4d8; }
+.gm-audiorow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.gm-audio .gm-key { height: 64px; grid-auto-flow: column; justify-content: center; align-items: center; gap: 10px; }
+.gm-audio .gm-key span { font-size: 1.6rem; } .gm-audio .gm-key b { font-size: 1rem; }
+.gm-audio .gm-key.on { background: linear-gradient(#27b866, #15803f); border-color: #7be3a6; box-shadow: 0 4px 0 #0a4a22, 0 0 16px rgba(39, 184, 102, .6); }
+@media (max-width: 700px) {
+  .gm-listen { padding: 3px 8px; font-size: .68rem; }
+  .gm-audiorow { gap: 6px; } .gm-audio .gm-key { height: 52px; gap: 4px; } .gm-audio .gm-key b { font-size: .62rem; } .gm-audio .gm-key span { font-size: 1.1rem; }
+}
