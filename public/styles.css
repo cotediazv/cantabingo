@@ -2715,3 +2715,13 @@ body.gm-on main { max-width: none; padding: 10px 14px 40px; }
 .gm-custom { display: block; margin-top: 0; }
 .gm-custom input { display: block; width: 100%; margin-top: 10px; padding: 10px 12px; font-size: 1rem; }
 .gm-row + .gm-row { margin-top: 4px; }
+/* GC Master: las 3 pantallas pegadas, formando un solo bloque (pedido de Cote, 22 nov): sin separación entre ellas; la
+   vertical mide justo el alto de las dos horizontales; el nombre de cada pantalla va dentro, en su esquina */
+.gm-screens, .gm-all .gm-screens { grid-template-columns: minmax(0, 1fr) minmax(0, .6328fr); gap: 0; align-items: start; }
+.gm-screens, .gm-keys { max-width: max(520px, calc((100vh - 470px) * 1.45)); }
+.gm-all .gm-screens, .gm-all .gm-keys { max-width: none; }
+.gm-left { gap: 0; }
+.gm-scr { position: relative; display: block; }
+.gm-scr > small { position: absolute; left: 0; top: 0; z-index: 2; padding: 3px 8px; border-radius: 0 0 8px 0; background: rgba(0, 0, 0, .72); color: #ffd76a; font-size: .72rem; white-space: nowrap; pointer-events: none; }
+.gm-box { border-radius: 0; border: 1px solid #000; }
+.gm-keys { margin-top: 14px; }
