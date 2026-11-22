@@ -300,6 +300,19 @@ app.get('/:short', (req, res, next) => {
   res.redirect(302, `/${i >= 0 ? req.originalUrl.slice(i) : ''}${to}`);
 });
 
+// Sala de juegos en el teléfono (pedido de Cote, 22 nov): /sala abre la versión móvil del GC Master («Sala KRB») con su
+// propio nombre e inicio, para guardarla en la pantalla de inicio del iPhone aparte del Centro de control («Control KRB»)
+app.get('/sala', (_req, res) => {
+  require('fs').readFile(path.join(__dirname, 'public', 'index.html'), 'utf8', (err, html) => {
+    if (err) return res.status(500).send('No se pudo abrir la página');
+    return res.set('Cache-Control', 'no-cache').type('html').send(html
+      .replace('href="manifest.webmanifest"', 'href="manifest-sala.webmanifest"')
+      .replace('content="Control KRB"', 'content="Sala KRB"')
+      .replace('<title>KRB Stage · Sala de juegos</title>', '<title>Sala KRB</title>')
+      .replace('<body>', '<body>\n  <script>if (!location.hash || location.hash === "#/") location.replace(location.pathname + location.search + "#/master/movil");</script>'));
+  });
+});
+
 const fail = (res, code, error) => res.status(code).json({ error });
 const summary = (p) => ({
   id: p.id, name: p.name, theme: p.theme || 'frida', format: p.format, count: p.cards.length, values: p.values,
@@ -728,6 +741,7 @@ const vote = require('./vote.js')({ app, db, save, requireAdmin, fail, setStage,
 const insta = require('./insta.js')({ app, db, save, requireAdmin, fail, venue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
 // Sala light: karaoke, show y cartelera en otro local, al mismo tiempo que la sala principal
 lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta });
+require('./capa.js')({ app, requireLocal, fail }); // capa gráfica sobre la cámara (botones del GC Master)
 require('./vertical.js')({ app, db, save, requireAdmin, fail, karaoke, dir: path.dirname(DATA_FILE) }); // pantalla vertical: video del mes y actividades
 require('./youtube.js')({ app }); // últimos videos del canal, para la página web
 require('./twitch.js')({ app }); // videos y transmisiones en vivo de Twitch, para la página web
@@ -1021,6 +1035,9 @@ app.post('/api/gamevote/reset', requireAdmin, (_req, res) => {
 });
 
 // Leer la pantalla actual es público, para que la fuente de OBS no necesite iniciar sesión; cambiarla es del moderador.
+// Diseño nuevo de las pantallas (pedido de Cote, 22 nov): encendido salvo que se apague en el Centro de control
+app.get('/api/tema', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json({ on: db.tema !== false }); });
+app.post('/api/tema', requireAdmin, (req, res) => { db.tema = (req.body || {}).on !== false; save(); res.json({ on: db.tema }); });
 app.get('/api/stage', (_req, res) => res.json({ show: roscoLock(db.stage) ? 'rueda' : STAGES.includes(db.stage) ? db.stage : 'bingo' }));
 app.post('/api/stage', requireAdmin, (req, res) => {
   const show = String((req.body || {}).show);

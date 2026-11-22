@@ -595,7 +595,7 @@
       var left = s.clockUntil ? clock(s.clockUntil - now()) : '';
       var o = '<div class="abs g-title fit">' + h(s.title) + '</div><div class="abs" style="top:16rem">';
       var thing = function (p) { return p && p.thing ? '<div class="mid fit" style="color:#ffd76a">' + h(p.thing) + '</div>' : ''; };
-      if (s.phase === 'winner' && s.winner) o += '<div class="big gold">🏆 ¡Ganó!</div><b class="big fit" style="display:block">' + h(s.winner.name) + '</b>' + thing(s.winner) + (s.winner.score != null ? '<div class="mid">Nota ' + dec(s.winner.score) + '</div>' : '');
+      if (s.phase === 'winner' && s.winner) o += '<div class="big gold">🏆 ¡Ganó!</div><b class="big fit" style="display:block">' + h(s.winner.name) + '</b>' + thing(s.winner) + (s.winner.score != null ? '<div class="mid">Nota ' + dec(s.winner.score) + '</div>' : '') + (s.tie ? '<div class="mid">' + h(s.tie.title + '. ' + s.tie.why) + '</div>' : '');
       else if (s.phase === 'final' && s.final && s.final.drum) o += '<div class="big gold">🥁</div><div class="mid">¡Redoble de tambores!</div>';
       else if (s.phase === 'final' && s.final) { o += '<div class="mid gold">Gran final</div>'; for (var f = 0; f < (s.final.players || []).length; f++) o += '<b class="big fit" style="display:block;font-size:5.4rem">' + h(s.final.players[f].name) + '</b>'; if (left && s.final.open) o += '<div class="clock">' + left + '</div>'; }
       else if (s.phase === 'results') { o += '<div class="mid gold">🏆 Resultados</div><ol class="rows" style="margin-top:2rem">'; var pl = s.places || []; for (var i = pl.length - 1; i >= 0; i--) o += '<li><em>' + pl[i].place + '.º</em>' + h(pl[i].name) + (pl[i].score != null ? '<i>' + dec(pl[i].score) + '</i>' : '') + '</li>'; o += '</ol>'; }

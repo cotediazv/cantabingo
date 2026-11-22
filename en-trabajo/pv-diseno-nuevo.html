@@ -1,0 +1,998 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>KRB Stage · Pantalla</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap">
+<!-- Letras del diseño nuevo (pedido de Cote, 22 nov): solo se usan con la clase «t2» puesta en <html> -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Manrope:wght@500;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<!--
+  Pantalla de los locales, versión liviana (pedido de Cote, 21 nov): la misma pantalla vertical, escrita para navegadores
+  antiguos (el Chrome del decodificador de Kennedy y el iPad viejo con iOS 9.3.5). JavaScript antiguo (ES5, sin flechas,
+  sin let/const, sin plantillas `...`), XMLHttpRequest y CSS sin grid ni flex, sin «inset» ni «aspect-ratio».
+  Sigue las mismas reglas que la pantalla completa (vertical.js): el video de la cartelera, la información del local
+  (sala light), el karaoke o los juegos de la sala completa del local.
+  Dirección: /pv.html?p=<pantalla>&girar=1 (girar: la pantalla de pie recibe la imagen horizontal y se entrega girada 90°
+  a la derecha; solo se gira si la ventana está horizontal, así en el iPad de pie se ve derecha).
+  Las pantallas antiguas llegan solas aquí desde #/vertical/<pantalla> (ver el aviso al comienzo de index.html).
+-->
+<style>
+  html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #000; color: #fff; font-family: 'Fredoka', 'Trebuchet MS', Arial, sans-serif; -webkit-text-size-adjust: 100%; }
+  * { box-sizing: border-box; -webkit-box-sizing: border-box; }
+  #cv { position: absolute; left: 0; top: 0; overflow: hidden; background: #0b0a18; }
+  #cv.rot { -webkit-transform-origin: 0 0; transform-origin: 0 0; -webkit-transform: rotate(90deg) translateY(-100%); transform: rotate(90deg) translateY(-100%); }
+  #cv.th-kennedy { background: #062a5e; background: -webkit-linear-gradient(290deg, #041a3e, #0b5ea8 55%, #062a5e); background: linear-gradient(160deg, #041a3e, #0b5ea8 55%, #062a5e); }
+  #cv.th-frida { background: #3a0b3f; background: -webkit-linear-gradient(290deg, #2a0a3a, #8a1f6b 55%, #2a0a3a); background: linear-gradient(160deg, #2a0a3a, #8a1f6b 55%, #2a0a3a); }
+  #cv.th-tobalaba { background: #3b0508; background: -webkit-linear-gradient(290deg, #2a0406, #8f1d1d 55%, #2a0406); background: linear-gradient(160deg, #2a0406, #8f1d1d 55%, #2a0406); }
+  .hide { display: none !important; }
+  #vid { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: #000; object-fit: cover; }
+  #tap { position: absolute; left: 4rem; right: 4rem; bottom: 10rem; padding: 2rem; border-radius: 2rem; background: rgba(0, 0, 0, .7); text-align: center; font-size: 3rem; font-weight: 700; }
+  #view { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+  #cv.wide #view { left: 50%; width: 56.25rem; margin-left: -28.125rem; }
+  #marks { position: absolute; left: 0; right: 0; bottom: 1.2rem; height: 3.2rem; text-align: center; }
+  #marks img { height: 3.2rem; vertical-align: middle; margin: 0 1rem; }
+  #marks i { display: inline-block; width: .2rem; height: 3rem; background: rgba(255, 255, 255, .6); vertical-align: middle; }
+  .abs { position: absolute; left: 3rem; right: 3rem; text-align: center; }
+  .fit { white-space: nowrap; overflow: hidden; }
+  .gold { color: #ffc400; }
+  .card { background: rgba(8, 6, 26, .78); border: .5rem solid #ffc400; border-radius: 3rem; }
+  .qrw { display: inline-block; background: #fff; border-radius: 2rem; padding: 1.2rem; }
+  .qrw img { display: block; width: 100%; height: auto; }
+  .qrp { color: #c4175e; font-weight: 700; text-transform: uppercase; text-align: center; line-height: 1.15; }
+  .logo-big { position: absolute; left: 50%; top: 50%; width: 36rem; margin: -10rem 0 0 -18rem; }
+  /* Información del local (fondo de la sala light) */
+  .lv-top small { display: block; font-size: 2.6rem; font-weight: 700; letter-spacing: .3rem; text-transform: uppercase; color: #ffc400; }
+  .lv-top b { display: block; font-size: 7.4rem; line-height: 1.05; font-weight: 700; }
+  .lv-top span { display: block; margin-top: .8rem; font-size: 2.9rem; font-weight: 600; }
+  .lv-card { position: absolute; left: 3rem; right: 3rem; top: 25rem; bottom: 33rem; padding: 2.6rem 2.8rem 3.6rem; overflow: hidden; }
+  .lv-slide { height: 100%; overflow: hidden; font-size: 1rem; }
+  .lv-slide h2 { margin: 0 0 1.6em; font-size: 3.6em; color: #ffc400; text-align: center; font-weight: 700; }
+  .lv-now { margin: 0 0 1.6em; text-align: center; }
+  .lv-now small { display: block; font-size: 2.4em; color: #ffd76a; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; }
+  .lv-now b { display: block; font-size: 5em; line-height: 1.1; font-weight: 700; }
+  .lv-now span { display: block; font-size: 2.8em; margin-top: .2em; }
+  .lv-list, .lv-hours, .lv-week { margin: 0; padding: 0; list-style: none; }
+  .lv-list li, .lv-hours li, .lv-week li { margin: 0 0 1em; font-size: 2.9em; line-height: 1.2; }
+  .lv-list li b, .lv-hours li b, .lv-week li b { font-weight: 700; }
+  .lv-list li span { display: block; font-size: .8em; color: #d8d3ff; }
+  .lv-hours li em, .lv-week li em { display: inline-block; min-width: 4.2em; font-style: normal; color: #ffd76a; font-weight: 700; margin-right: .5em; }
+  .lv-hours li.on, .lv-week li.on { color: #ffc400; }
+  .lv-sh { display: block; }
+  .lv-by { display: block; font-size: .85em; color: #ffd76a; }
+  .lv-by small { font-size: .7em; color: #fff; }
+  /* El nombre del show dentro del título: del tamaño del título (la regla «.lv-now span» de arriba lo agrandaba casi 3 veces
+     y salía gigante y cortado en «El show de esta noche») */
+  .lv-now b span, .lv-now b .lv-sh { font-size: 1em; margin-top: 0; }
+  .lv-now b .lv-by { font-size: .85em; }
+  .lv-now b .lv-by small { display: inline; font-size: .7em; letter-spacing: 0; text-transform: none; color: #fff; }
+  .lv-slide b, .lv-slide span, .lv-slide li, .lv-slide h2 { word-wrap: break-word; overflow-wrap: break-word; }
+  /* Flyers del Instagram del local (pedido de Cote, 21 nov): pasan dentro del mismo recuadro, un poco más chicos */
+  .lv-flyer { text-align: center; }
+  .lv-flyer img { max-width: 88%; border-radius: 1.6rem; border: .4rem solid #ffc400; }
+  .lv-dots { position: absolute; left: 0; right: 0; bottom: 1.4rem; text-align: center; }
+  .lv-dots i { display: inline-block; width: 1.4rem; height: 1.4rem; margin: 0 .5rem; border-radius: 50%; background: rgba(255, 255, 255, .3); }
+  .lv-dots i.on { background: #ffc400; }
+  .lv-qr { position: absolute; left: 3rem; right: 3rem; bottom: 6rem; height: 24rem; text-align: center; white-space: nowrap; }
+  .lv-qr .qrw { width: 22rem; vertical-align: middle; }
+  .lv-qrtext { display: inline-block; vertical-align: middle; width: 25rem; margin-left: 2.4rem; text-align: left; white-space: normal; }
+  .lv-qrtext b { display: block; font-size: 3.2rem; line-height: 1.15; font-weight: 700; }
+  .lv-qrtext span { display: block; margin-top: 1rem; font-size: 2.4rem; color: #ffd76a; }
+  .lv-bigqr .qrw { width: 34rem; }
+  /* Karaoke a pantalla completa */
+  .kf-now { position: absolute; left: 3rem; right: 3rem; top: 16rem; height: 31rem; padding: 3rem 2.4rem; text-align: center; }
+  .kf-now small { display: block; font-size: 3.2rem; color: #ffc400; font-weight: 700; }
+  .kf-now b { display: block; margin-top: 1.4rem; font-size: 7rem; line-height: 1.1; font-weight: 700; }
+  .kf-now span { display: block; margin-top: 1.2rem; font-size: 3.8rem; }
+  .kf-now i { display: block; margin-top: .6rem; font-size: 3rem; color: #d8d3ff; }
+  .kf-bottom { position: absolute; left: 3rem; right: 3rem; top: 50rem; bottom: 6rem; white-space: nowrap; }
+  .kf-next { display: inline-block; vertical-align: top; width: 27rem; white-space: normal; }
+  .kf-next small { display: block; font-size: 2.8rem; color: #ffc400; font-weight: 700; margin-bottom: 1.6rem; }
+  .kf-next p { margin: 0 0 2rem; font-size: 3rem; line-height: 1.15; }
+  .kf-next p em { font-style: normal; color: #ffc400; font-weight: 700; margin-right: .6rem; }
+  .kf-next p span { display: block; font-size: 2.3rem; color: #d8d3ff; }
+  .kf-qr { display: inline-block; vertical-align: top; width: 22rem; margin-left: 1.25rem; text-align: center; white-space: normal; }
+  .kf-qr .qrw { width: 22rem; }
+  .kf-qr .qrp { margin-top: 1.2rem; color: #fff; font-size: 2.2rem; }
+  /* Juegos de la sala completa */
+  .g-title { top: 4rem; font-size: 5.2rem; font-weight: 700; }
+  .g-sub { font-size: 2.8rem; color: #ffd76a; font-weight: 600; }
+  .ball { position: absolute; left: 50%; top: 15rem; width: 32rem; height: 32rem; margin-left: -16rem; border-radius: 50%; background: #fff; color: #1a1a1a; text-align: center; border: 1.4rem solid #ffc400; }
+  .ball small { display: block; margin-top: 3.4rem; font-size: 5rem; font-weight: 700; color: #c4175e; }
+  .ball b { display: block; font-size: 13rem; line-height: 1; font-weight: 700; }
+  .prev { top: 49rem; }
+  .prev span { display: inline-block; width: 7rem; height: 7rem; margin: 0 .6rem; border-radius: 50%; background: rgba(255, 255, 255, .9); color: #1a1a1a; font-size: 2.6rem; line-height: 7rem; font-weight: 700; }
+  .rows { margin: 0; padding: 0; list-style: none; text-align: left; }
+  .rows li { margin: 0 0 1.2rem; padding: 1.2rem 2rem; border-radius: 1.6rem; background: rgba(8, 6, 26, .72); font-size: 3.2rem; line-height: 1.15; white-space: nowrap; overflow: hidden; }
+  .rows li em { display: inline-block; width: 4.6rem; font-style: normal; color: #ffc400; font-weight: 700; }
+  .rows li i { float: right; font-style: normal; color: #ffc400; font-weight: 700; margin-left: 1.4rem; }
+  .rows li.top { font-size: 3.8rem; }
+  .bar { position: relative; overflow: hidden; }
+  .bar u { position: absolute; left: 0; top: 0; bottom: 0; opacity: .5; text-decoration: none; }
+  .bar span, .bar i { position: relative; }
+  .big { font-size: 7rem; font-weight: 700; line-height: 1.1; }
+  .mid { font-size: 4rem; font-weight: 600; line-height: 1.2; }
+  .clock { font-size: 5rem; font-weight: 700; color: #ffc400; }
+  .qr-foot { bottom: 6rem; }
+  .qr-foot .qrw { width: 20rem; }
+  .qr-foot .qrp { margin-top: 1rem; color: #fff; font-size: 2.2rem; }
+  /* Botón «Pantalla completa» (pedido de Cote, 21 nov): aparece al tocar la pantalla y se esconde solo a los 8 s */
+  #fs { position: absolute; right: 2rem; top: 2rem; z-index: 50; margin: 0; padding: 1.4rem 2.4rem; border: .3rem solid #ffc400; border-radius: 1.6rem; background: #000; background: rgba(0, 0, 0, .78); color: #fff; font-family: 'Fredoka', 'Trebuchet MS', Arial, sans-serif; font-size: 2.8rem; font-weight: 700; line-height: 1.1; -webkit-appearance: none; cursor: pointer; }
+  #diag { position: fixed; left: 0; right: 0; bottom: 0; z-index: 99; margin: 0; padding: 8px; font: 12px/1.35 monospace; background: #fff; color: #000; white-space: pre-wrap; word-wrap: break-word; max-height: 45%; overflow: auto; }
+
+  /* ================= Diseño nuevo (pedido de Cote, 22 nov: «Me gusta, aplícalo a todo») =================
+     La línea gráfica de public/propuesta.html (pantalla vertical): fondo de noche, foco dorado, el color de cada local,
+     letras Big Shoulders Display (títulos y nombres), Manrope (textos) y JetBrains Mono (horas y etiquetas), formas rectas.
+     TODO va bajo «.t2» (clase de <html>): con el interruptor del Centro de control apagado (/api/tema) o con ?tema=0 se
+     quita la clase y la página queda exactamente como antes. Escrito para navegadores antiguos: sin flex, grid, inset,
+     aspect-ratio, min(), clamp(), variables, color-mix ni clip-path (los cortes en diagonal son triángulos hechos con
+     bordes); los colores van escritos directo y los del local se repiten por local (.th-kennedy, .th-frida, .th-tobalaba).
+     Colores: noche #0c0b12, tarima #15131e, líneas #2a2636, texto #f3eee6, tenue #a59fb0, foco #f4bf5a;
+     Kennedy #47b8e6 (texto encima #06131a), Frida #e0338f y Tobalaba #e5413a (texto encima blanco). */
+  #t2pre { position: absolute; left: 0; top: 0; width: 0; height: 0; overflow: hidden; opacity: 0; } /* hace cargar las letras nuevas al abrir la página */
+  .t2 #t2pre b { font-family: "Big Shoulders Display", sans-serif; font-weight: 900; }
+  .t2 #t2pre s { font-family: "Big Shoulders Display", sans-serif; font-weight: 800; }
+  .t2 #t2pre i { font-family: "Manrope", sans-serif; font-weight: 700; }
+  .t2 #t2pre u { font-family: "Manrope", sans-serif; font-weight: 800; }
+  .t2 #t2pre em { font-family: "JetBrains Mono", monospace; font-weight: 700; }
+  @-webkit-keyframes pv2entra { from { opacity: 0; -webkit-transform: translateX(-2.4rem); } to { opacity: 1; -webkit-transform: none; } }
+  @keyframes pv2entra { from { opacity: 0; transform: translateX(-2.4rem); } to { opacity: 1; transform: none; } }
+  @-webkit-keyframes pv2bola { from { opacity: 0; -webkit-transform: scale(.72); } to { opacity: 1; -webkit-transform: none; } }
+  @keyframes pv2bola { from { opacity: 0; transform: scale(.72); } to { opacity: 1; transform: none; } }
+  @-webkit-keyframes pv2pulso { 50% { opacity: .3; } }
+  @keyframes pv2pulso { 50% { opacity: .3; } }
+
+  /* ----- base: fondo, logos y piezas compartidas ----- */
+  .t2, .t2 body { background: #07060c; color: #f3eee6; font-family: "Manrope", "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  .t2 #cv { background: #0c0b12; color: #f3eee6; }
+  .t2 #cv.th-kennedy { background: #0c0b12; background: radial-gradient(circle at 20% 10%, rgba(71, 184, 230, .46) 0, rgba(71, 184, 230, 0) 48%), radial-gradient(circle at 86% 94%, rgba(244, 191, 90, .22) 0, rgba(244, 191, 90, 0) 42%), repeating-linear-gradient(115deg, rgba(255, 255, 255, .03) 0, rgba(255, 255, 255, .03) 1px, rgba(255, 255, 255, 0) 1px, rgba(255, 255, 255, 0) 3.2rem), linear-gradient(160deg, #15131e, #0c0b12 55%, #07060c); }
+  .t2 #cv.th-frida { background: #0c0b12; background: radial-gradient(circle at 20% 10%, rgba(224, 51, 143, .46) 0, rgba(224, 51, 143, 0) 48%), radial-gradient(circle at 86% 94%, rgba(244, 191, 90, .22) 0, rgba(244, 191, 90, 0) 42%), repeating-linear-gradient(115deg, rgba(255, 255, 255, .03) 0, rgba(255, 255, 255, .03) 1px, rgba(255, 255, 255, 0) 1px, rgba(255, 255, 255, 0) 3.2rem), linear-gradient(160deg, #15131e, #0c0b12 55%, #07060c); }
+  .t2 #cv.th-tobalaba { background: #0c0b12; background: radial-gradient(circle at 20% 10%, rgba(229, 65, 58, .46) 0, rgba(229, 65, 58, 0) 48%), radial-gradient(circle at 86% 94%, rgba(244, 191, 90, .22) 0, rgba(244, 191, 90, 0) 42%), repeating-linear-gradient(115deg, rgba(255, 255, 255, .03) 0, rgba(255, 255, 255, .03) 1px, rgba(255, 255, 255, 0) 1px, rgba(255, 255, 255, 0) 3.2rem), linear-gradient(160deg, #15131e, #0c0b12 55%, #07060c); }
+  /* los logos van arriba, al centro (como en la propuesta); todo lo demás parte más abajo */
+  .t2 #marks { top: 2.6rem; bottom: auto; height: 3rem; }
+  .t2 #marks img { height: 3rem; margin: 0 .9rem; }
+  .t2 #marks i { width: .2rem; height: 2.6rem; background: rgba(255, 255, 255, .5); }
+  .t2 .gold { color: #f4bf5a; }
+  .t2 .card { background: #15131e; background: rgba(21, 19, 30, .88); border: .12rem solid #2a2636; border-radius: 0; }
+  .t2 .qrw { border-radius: 0; padding: 1rem; }
+  .t2 .fit { padding-top: .1em; padding-bottom: .1em; } /* espacio para las tildes de las mayúsculas y las colas de las letras (la línea recorta lo que sobresale) */
+  .t2 .g-sub { font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 2rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #f4bf5a; }
+  .t2 .mid { font-family: "Manrope", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 3.2rem; font-weight: 800; line-height: 1.15; }
+  .t2 .big { font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 8rem; font-weight: 900; line-height: 1; text-transform: uppercase; letter-spacing: .005em; }
+  .t2 .clock { font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 6.4rem; font-weight: 700; line-height: 1.25; color: #f4bf5a; }
+  /* línea fina con degradado (color del local → foco) bajo cada encabezado */
+  .t2 .lv-top::after, .t2 .kf-top::after, .t2 .g-title::after, .t2 .g-main::after, .t2 .gv-head::after { content: ""; display: block; height: .22rem; margin-top: 1.3rem; background: #f4bf5a; }
+  .t2 .th-kennedy .lv-top::after, .t2 .th-kennedy .kf-top::after, .t2 .th-kennedy .g-title::after, .t2 .th-kennedy .g-main::after, .t2 .th-kennedy .gv-head::after { background: linear-gradient(90deg, rgba(71, 184, 230, 0), #47b8e6 22%, #f4bf5a 78%, rgba(244, 191, 90, 0)); }
+  .t2 .th-frida .lv-top::after, .t2 .th-frida .kf-top::after, .t2 .th-frida .g-title::after, .t2 .th-frida .g-main::after, .t2 .th-frida .gv-head::after { background: linear-gradient(90deg, rgba(224, 51, 143, 0), #e0338f 22%, #f4bf5a 78%, rgba(244, 191, 90, 0)); }
+  .t2 .th-tobalaba .lv-top::after, .t2 .th-tobalaba .kf-top::after, .t2 .th-tobalaba .g-title::after, .t2 .th-tobalaba .g-main::after, .t2 .th-tobalaba .gv-head::after { background: linear-gradient(90deg, rgba(229, 65, 58, 0), #e5413a 22%, #f4bf5a 78%, rgba(244, 191, 90, 0)); }
+  /* etiquetas tipo «pestaña»: recuadro dorado (o del color del local) con el corte en diagonal hecho con un triángulo de bordes */
+  .t2 .lv-slide h2, .t2 .kf-now small, .t2 .v-body .mid.gold, .t2 .r-win .g-sub, .t2 .g-tagw span { display: inline-block; position: relative; margin: 0 1.1em 0 0; padding: .45em .5em .45em .9em; background: #f4bf5a; color: #1a1407; font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 1.8rem; font-weight: 700; line-height: 1.2; letter-spacing: .16em; text-transform: uppercase; text-align: left; white-space: nowrap; }
+  .t2 .lv-slide h2::after, .t2 .kf-now small::after, .t2 .v-body .mid.gold::after, .t2 .r-win .g-sub::after, .t2 .g-tagw span::after { content: ""; position: absolute; left: 100%; top: 0; width: 0; height: 0; margin-left: -1px; border-top: 2.1em solid #f4bf5a; border-right: 1.1em solid transparent; }
+  .t2 .th-kennedy .kf-now small { background: #47b8e6; color: #06131a; } .t2 .th-kennedy .kf-now small::after { border-top-color: #47b8e6; }
+  .t2 .th-frida .kf-now small { background: #e0338f; color: #fff; } .t2 .th-frida .kf-now small::after { border-top-color: #e0338f; }
+  .t2 .th-tobalaba .kf-now small { background: #e5413a; color: #fff; } .t2 .th-tobalaba .kf-now small::after { border-top-color: #e5413a; }
+  /* el QR: recuadro blanco a todo el ancho, con la frase al lado */
+  .t2 .lv-qr, .t2 .qr-foot, .t2 .kf-qr { height: auto; padding: 1.6rem; background: #fff; text-align: left; white-space: nowrap; }
+  .t2 .lv-qr { bottom: 3rem; } .t2 .qr-foot { bottom: 3rem; }
+  .t2 .lv-qr .qrw, .t2 .qr-foot .qrw, .t2 .kf-qr .qrw { width: 15rem; padding: 0; vertical-align: middle; }
+  .t2 .lv-qrtext, .t2 .qr-foot .qrp, .t2 .kf-qr .qrp { display: inline-block; vertical-align: middle; width: 30rem; margin: 0 0 0 1.8rem; white-space: normal; text-align: left; }
+  .t2 .lv-qrtext b, .t2 .qr-foot .qrp, .t2 .kf-qr .qrp { font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 3.7rem; font-weight: 900; line-height: .98; letter-spacing: .005em; text-transform: uppercase; color: #0c0b12; }
+  .t2 .lv-qrtext span { margin-top: .8rem; font-family: "Manrope", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 1.7rem; font-weight: 800; line-height: 1.25; color: #4b4656; }
+  .t2 #fs { border: .2rem solid #f4bf5a; border-radius: 0; background: #0c0b12; background: rgba(12, 11, 18, .92); color: #f3eee6; font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 2rem; letter-spacing: .12em; text-transform: uppercase; }
+
+  /* ----- información del local ----- */
+  .t2 .lv-top { top: 7.4rem !important; }
+  .t2 .lv-top small { font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 1.7rem; font-weight: 700; line-height: 1.2; letter-spacing: .26em; color: #f4bf5a; }
+  .t2 .lv-top b { margin-top: .3rem; font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 6.8rem; font-weight: 900; line-height: 1; letter-spacing: .005em; text-transform: uppercase; }
+  .t2 .lv-top span { margin-top: .3rem; font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 3.3rem; font-weight: 800; line-height: 1.05; letter-spacing: .02em; text-transform: uppercase; color: #f4bf5a; }
+  .t2 .lv-card { top: 24.4rem; bottom: 23.4rem; padding: 0 0 3rem; background: none; border: 0; }
+  .t2 .lv-card.noqr { bottom: 3rem !important; }
+  .t2 .lv-card.noqr #lvin { font-size: 1.15em; } /* sin QR hay más alto: todo un poco más grande (si no cabe, se achica igual) */
+  .t2 .lv-slide { text-align: left; }
+  .t2 #lvin { -webkit-animation: pv2entra .5s ease-out both; animation: pv2entra .5s ease-out both; }
+  .t2 .lv-slide h2 { margin-bottom: .9em; font-size: 1.8em; }
+  .t2 .lv-now { margin: 0 0 1.2em; padding: 1.5em 1.7em 1.7em; text-align: left; background: #15131e; background: rgba(21, 19, 30, .88); border-left: .5em solid #2a2636; }
+  .t2 .th-kennedy h2 + .lv-now { border-left-color: #47b8e6; background: #1b3340; background: linear-gradient(135deg, rgba(71, 184, 230, .36), rgba(21, 19, 30, .9) 72%); }
+  .t2 .th-frida h2 + .lv-now { border-left-color: #e0338f; background: #3a1730; background: linear-gradient(135deg, rgba(224, 51, 143, .36), rgba(21, 19, 30, .9) 72%); }
+  .t2 .th-tobalaba h2 + .lv-now { border-left-color: #e5413a; background: #3a1a1c; background: linear-gradient(135deg, rgba(229, 65, 58, .36), rgba(21, 19, 30, .9) 72%); }
+  .t2 .lv-now small { font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 1.6em; font-weight: 700; letter-spacing: .18em; color: #f4bf5a; }
+  .t2 .lv-now b { margin-top: .12em; font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 6em; font-weight: 900; line-height: 1; letter-spacing: .005em; text-transform: uppercase; }
+  .t2 .lv-now > span { margin-top: .35em; font-family: "Manrope", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 2.3em; font-weight: 700; line-height: 1.2; color: #a59fb0; }
+  .t2 .lv-by { margin-top: .3em; font-family: "Manrope", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: .46em; font-weight: 800; line-height: 1.2; letter-spacing: 0; text-transform: none; color: #f4bf5a; }
+  .t2 .lv-now b .lv-by { font-size: .42em; }
+  .t2 .lv-by small, .t2 .lv-now b .lv-by small { display: inline; font-family: inherit; font-size: 1em; font-weight: 700; letter-spacing: 0; text-transform: none; color: #a59fb0; }
+  .t2 p.lv-now { margin: 1em 0 1.3em; padding: 0; background: none; border: 0; text-align: center; }
+  .t2 p.lv-now > span { margin: 0; color: #f3eee6; }
+  .t2 .lv-slide h2.lv-qh { display: block; margin: 0 0 .32em; padding: 0; background: none; color: #f3eee6; font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 5.6em; font-weight: 900; line-height: 1; letter-spacing: .005em; text-align: center; white-space: normal; }
+  .t2 .lv-slide h2.lv-qh::after { display: none; }
+  .t2 .lv-bigqr .qrw { width: 34em; padding: 1.2em; } /* en «em»: se achica con el recuadro si además va la lista */
+  .t2 .lv-bigqr .qrw img { height: 31.6em; } /* el alto queda reservado antes de que cargue la imagen (el centrado se calcula al dibujar) */
+  .t2 .lv-list li, .t2 .lv-hours li, .t2 .lv-week li { margin: 0 0 .7em; padding: 1em 1.4em; font-size: 1em; line-height: 1.1; color: #f3eee6; background: #15131e; background: rgba(21, 19, 30, .88); border-left: .5em solid #2a2636; }
+  .t2 .lv-list li b, .t2 .lv-hours li b, .t2 .lv-week li b { font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 3.3em; font-weight: 900; line-height: 1; letter-spacing: .005em; text-transform: uppercase; }
+  .t2 .lv-list li b, .t2 .lv-week li b { display: block; }
+  .t2 .lv-list li span { margin-top: .25em; font-family: "Manrope", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 1.7em; font-weight: 700; color: #a59fb0; }
+  .t2 .lv-hours li { display: table; width: 100%; }
+  .t2 .lv-hours li em { display: table-cell; min-width: 0; margin: 0; padding-right: .8em; vertical-align: middle; white-space: nowrap; font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 2em; font-weight: 700; color: #f4bf5a; }
+  .t2 .lv-hours li b { display: table-cell; width: 100%; vertical-align: middle; }
+  .t2 .lv-week li em { display: block; min-width: 0; margin: 0 0 .3em; font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 1.5em; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: #f4bf5a; }
+  .t2 .th-kennedy .lv-hours li.on, .t2 .th-kennedy .lv-week li.on { border-left-color: #47b8e6; background: #1b3340; background: linear-gradient(90deg, rgba(71, 184, 230, .34), rgba(21, 19, 30, .88) 72%); }
+  .t2 .th-frida .lv-hours li.on, .t2 .th-frida .lv-week li.on { border-left-color: #e0338f; background: #3a1730; background: linear-gradient(90deg, rgba(224, 51, 143, .34), rgba(21, 19, 30, .88) 72%); }
+  .t2 .th-tobalaba .lv-hours li.on, .t2 .th-tobalaba .lv-week li.on { border-left-color: #e5413a; background: #3a1a1c; background: linear-gradient(90deg, rgba(229, 65, 58, .34), rgba(21, 19, 30, .88) 72%); }
+  .t2 .lv-flyer img { border-radius: 0; border: .12rem solid #2a2636; }
+  .t2 .lv-dots { bottom: 0; }
+  .t2 .lv-dots i { width: 2.4rem; height: .36rem; margin: 0 .3rem; border-radius: 0; background: rgba(255, 255, 255, .2); }
+  .t2 .lv-dots i.on { background: #f4bf5a; }
+
+  /* ----- karaoke a pantalla completa ----- */
+  .t2 .kf-top { top: 7.4rem !important; }
+  .t2 .kf-top b { font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-weight: 900; line-height: 1; letter-spacing: .005em; text-transform: uppercase; }
+  .t2 .kf-top .g-sub { display: block; margin-top: .5rem; font-size: 1.7rem; letter-spacing: .24em; }
+  .t2 .kf-now { top: 21rem; height: auto; padding: 1.8rem 2rem 2rem; text-align: left; border: 0; border-left: .5rem solid #2a2636; }
+  .t2 .th-kennedy .kf-now { border-left-color: #47b8e6; background: #1b3340; background: linear-gradient(135deg, rgba(71, 184, 230, .4), rgba(21, 19, 30, .92) 72%); }
+  .t2 .th-frida .kf-now { border-left-color: #e0338f; background: #3a1730; background: linear-gradient(135deg, rgba(224, 51, 143, .4), rgba(21, 19, 30, .92) 72%); }
+  .t2 .th-tobalaba .kf-now { border-left-color: #e5413a; background: #3a1a1c; background: linear-gradient(135deg, rgba(229, 65, 58, .4), rgba(21, 19, 30, .92) 72%); }
+  .t2 .kf-now small { font-size: 1.7rem; }
+  .t2 .kf-now b { margin-top: 1rem; font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 7.4rem; font-weight: 900; line-height: 1; letter-spacing: .005em; text-transform: uppercase; }
+  .t2 .kf-now span { margin-top: .5rem; font-family: "Manrope", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 2.8rem; font-weight: 700; line-height: 1.2; color: #f3eee6; }
+  .t2 .kf-now i { margin-top: .2rem; font-family: "Manrope", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 2.2rem; font-style: normal; font-weight: 700; line-height: 1.2; color: #a59fb0; }
+  .t2 .kf-bottom { top: 45.5rem; bottom: 3rem; white-space: normal; }
+  .t2 .kf-next { display: block; width: auto; }
+  .t2 .kf-next small { margin-bottom: 1rem; font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 1.7rem; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: #f4bf5a; }
+  .t2 .kf-next p { position: relative; margin: 0 0 .7rem; padding: 1rem 1.4rem 1rem 5.2rem; font-size: 1rem; line-height: 1.1; background: #15131e; background: rgba(21, 19, 30, .88); border: .12rem solid #2a2636; }
+  .t2 .kf-next p em { position: absolute; left: 1.6rem; top: 50%; margin: -1.3rem 0 0; font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 2.3rem; line-height: 2.6rem; color: #f4bf5a; }
+  .t2 .kf-next p b { display: block; font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 3.2rem; font-weight: 900; line-height: 1; letter-spacing: .005em; text-transform: uppercase; }
+  .t2 .kf-next p span { margin-top: .3rem; font-family: "Manrope", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 1.7rem; font-weight: 700; color: #a59fb0; }
+  .t2 .kf-qr { position: absolute; left: 0; right: 0; bottom: 0; width: auto; margin: 0; }
+  .t2 .kf-now { -webkit-animation: pv2entra .5s ease-out both; animation: pv2entra .5s ease-out both; }
+
+  /* ----- juegos de la sala completa ----- */
+  .t2 .g-title { top: 7.4rem; font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 6.6rem; font-weight: 900; line-height: 1; letter-spacing: .005em; text-transform: uppercase; }
+  .t2 .g-over { top: 7.4rem !important; color: #f4bf5a !important; font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 1.7rem !important; font-weight: 700; line-height: 1.2; letter-spacing: .26em; }
+  .t2 .g-over::after { display: none; }
+  .t2 .g-main { top: 10rem !important; font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-weight: 900 !important; line-height: 1; letter-spacing: .005em; text-transform: uppercase; }
+  .t2 .g-tagw { font-size: 1rem; line-height: 1; letter-spacing: 0; }
+  .t2 .g-tagw::after { display: none; }
+  .t2 .g-tagw span { font-size: 2rem; }
+  /* filas (ranking, listas, casilleros) */
+  .t2 .rows li { position: relative; margin: 0 0 .2em; padding: .3em .42em; border-radius: 0; background: #15131e; background: rgba(21, 19, 30, .88); border: .12rem solid #2a2636; border-left: .5rem solid #2a2636; font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 3.4rem; font-weight: 800; line-height: 1.05; letter-spacing: .01em; text-transform: uppercase; white-space: normal; overflow: visible; }
+  .t2 .rows li.top { font-size: 3.9rem; }
+  .t2 .th-kennedy .rows li.top { border-left-color: #47b8e6; } .t2 .th-frida .rows li.top { border-left-color: #e0338f; } .t2 .th-tobalaba .rows li.top { border-left-color: #e5413a; }
+  .t2 .rows li em { width: 3.4em; font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: .62em; color: #f4bf5a; text-indent: 0; vertical-align: .14em; }
+  .t2 .rows li i { font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: .8em; color: #f4bf5a; text-indent: 0; }
+  .t2 .rk li { padding-left: 2.56em; text-indent: -2.108em; } /* el nombre que no cabe sigue en otra línea, alineado con el nombre (nunca se corta) */
+  .t2 .sc li { padding-right: 4.4em; }
+  .t2 .sc li i { position: absolute; right: .5em; top: 50%; float: none; margin: -.6em 0 0; line-height: 1.2; }
+  .t2 .rows li.off { opacity: .6; }
+  .t2 .g-box { top: 19.5rem !important; bottom: 23rem !important; overflow: hidden; }
+  .t2 .g-box .rows li, .t2 .g-box .rows li.top { font-size: 3em; }
+  /* bingo */
+  .t2 .ball { top: 21rem; width: 28rem; height: 28rem; margin-left: -14rem; border: 0; color: #0c0b12; background: #efeae0; background: radial-gradient(circle at 34% 28%, #fff, #e9e4da 58%, #b9b2a4); -webkit-animation: pv2bola .45s ease-out both; animation: pv2bola .45s ease-out both; }
+  .t2 .th-kennedy .ball { box-shadow: 0 0 0 1.5rem #47b8e6, 0 2rem 4rem 1rem rgba(0, 0, 0, .5); }
+  .t2 .th-frida .ball { box-shadow: 0 0 0 1.5rem #e0338f, 0 2rem 4rem 1rem rgba(0, 0, 0, .5); }
+  .t2 .th-tobalaba .ball { box-shadow: 0 0 0 1.5rem #e5413a, 0 2rem 4rem 1rem rgba(0, 0, 0, .5); }
+  .t2 .ball small { height: 3.6rem; margin-top: 2.4rem; font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 3.4rem; line-height: 3.6rem; color: #55505f; }
+  .t2 .ball b { font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 17rem; font-weight: 900; line-height: 1; }
+  .t2 .ball b.soon { padding: .1em 2.4rem; line-height: 1.12; text-transform: uppercase; white-space: normal; }
+  .t2 .prev { top: 54rem; }
+  .t2 .prev span { width: 6.2rem; height: 6.2rem; margin: 0 .5rem; background: #1c1828; color: #f3eee6; box-shadow: 0 0 0 .25rem #2a2636; font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 3.4rem; font-weight: 900; line-height: 6.2rem; }
+  .t2 .b-fig { top: 63.5rem !important; }
+  .t2 .b-fig .mid { font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 4.8rem; font-weight: 900; line-height: 1; letter-spacing: .005em; text-transform: uppercase; }
+  .t2 .b-fig .g-sub { margin-top: .7rem; }
+  .t2 .b-win { top: 18rem !important; }
+  .t2 .b-win b { display: block; }
+  .t2 .b-figw { top: 38.5rem !important; }
+  .t2 .b-names { top: 43.5rem !important; }
+  .t2 .b-one b { white-space: normal; } /* un solo ganador: el nombre grande, en las líneas que necesite */
+  .t2 .b-names b { font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-weight: 900; line-height: 1.05; letter-spacing: .005em; text-transform: uppercase; }
+  /* QR grande (para entrar a la sala) */
+  .t2 .q-head b.mid, .t2 .bq-head b.mid { white-space: normal; font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 5.8rem; font-weight: 900; line-height: 1; letter-spacing: .005em; text-transform: uppercase; }
+  .t2 .q-head { top: 15rem !important; } .t2 .q-qr { top: 30rem !important; } .t2 .q-qr .qrw { width: 44rem !important; padding: 1.2rem; } .t2 .q-sub { top: 80rem !important; }
+  .t2 .bq-head { top: 18.5rem !important; } .t2 .bq-qr { top: 32.5rem !important; } .t2 .bq-qr .qrw { width: 40rem !important; padding: 1.2rem; } .t2 .bq-sub { top: 76.5rem !important; }
+  .t2 .q-sub, .t2 .bq-sub { font-size: 3rem; color: #f3eee6; }
+  /* sorteos */
+  .t2 .r-roll { top: 30rem !important; font-size: 9rem; -webkit-animation: pv2pulso 1.2s ease-in-out infinite; animation: pv2pulso 1.2s ease-in-out infinite; }
+  .t2 .r-win { top: 25rem !important; }
+  .t2 .r-win .g-sub { font-size: 2rem; }
+  .t2 .r-win .big { margin-top: 1.6rem; font-size: 7.2rem; white-space: normal; } /* el nombre entero y grande, en las líneas que necesite */
+  .t2 .r-list { top: 20rem !important; } .t2 .r-list.r-low { top: 46rem !important; }
+  .t2 .d-pool { top: 19.5rem !important; } .t2 .d-pool .rows li { font-size: 4.3rem; }
+  .t2 .d-pool .rows li, .t2 .d-list .rows li { white-space: nowrap; overflow: hidden; } /* una línea: si no cabe, se achica la letra */
+  .t2 .d-win { top: 25rem !important; } .t2 .d-win .big { font-size: 8.6rem; white-space: normal; }
+  .t2 .d-list { top: 57rem !important; }
+  /* El Festival y El objeto más extraño */
+  .t2 .v-body { top: 19.5rem !important; bottom: 23rem !important; overflow: hidden; }
+  /* los tamaños van en «em»: si el contenido no cabe en el alto, se achica todo junto (fitbox) */
+  .t2 .v-body .mid.gold { margin-top: .2em; font-size: 2em; }
+  .t2 .v-hero { top: 26rem !important; } /* sin lista (un nombre, un aviso): el bloque va más al centro */
+  .t2 .v-body .big { margin-top: .2em; font-size: 6.8em; white-space: normal; } /* el nombre entero y grande, en las líneas que necesite */
+  .t2 .v-body b.big + b.big { margin-top: .3em; padding-top: .34em; border-top: .12rem solid #2a2636; }
+  .t2 .v-body .clock { font-size: 6.4em; }
+  .t2 .v-body .big.gold { margin-top: 0; font-size: 12em; line-height: .95; }
+  .t2 .v-body .v-thing { margin-top: .2em; color: #a59fb0 !important; font-size: 2.7em; font-weight: 700; }
+  .t2 .v-body .v-note { margin-top: .33em; font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 3.6em; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #f4bf5a; }
+  .t2 .v-drum { color: #f4bf5a; }
+  .t2 .v-body .v-msg { font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 7.4em; font-weight: 900; line-height: 1; letter-spacing: .005em; text-transform: uppercase; }
+  .t2 .v-body .rows { margin-top: 1.6rem !important; }
+  .t2 .v-body .rows li { font-size: 3.1em; }
+  .t2 .v-th { display: block; margin-top: .15em; font-family: "Manrope", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: .52em; font-weight: 700; letter-spacing: 0; text-transform: none; color: #a59fb0; }
+  /* votación del juego y su presentación */
+  .t2 .gv-head { top: 7.4rem !important; }
+  .t2 .gv-head .g-sub { color: #f4bf5a !important; font-size: 1.7rem; line-height: 1.2; letter-spacing: .24em; }
+  .t2 .gv-head .big { margin-top: .3rem; }
+  .t2 .gv-head .mid { margin-top: .5rem; font-size: 2.6rem; font-weight: 700; color: #a59fb0; }
+  .t2 .gv-head .mid b { font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; }
+  .t2 .gv-bars { top: 26rem !important; }
+  .t2 .gv-bars .g-sub { margin-top: 1.4rem; color: #a59fb0; }
+  .t2 .rows li.bar, .t2 .rows li.bar.top { margin-bottom: .32em; padding: .5em .5em; font-size: 3.1rem; white-space: nowrap; overflow: hidden; }
+  .t2 .rows li.bar i { font-size: .62em; line-height: 1.7; }
+  .t2 .bar u { opacity: .6; }
+  .t2 .th-kennedy .bar u { background: #47b8e6 !important; } .t2 .th-frida .bar u { background: #e0338f !important; } .t2 .th-tobalaba .bar u { background: #e5413a !important; }
+  .t2 .gi-art { top: 23.5rem !important; }
+  .t2 .gi-art div { width: 33rem !important; }
+  .t2 #pvlines { top: 46.5rem !important; bottom: 23rem !important; }
+  .t2 #pvlines .rows li { padding: .5em .7em; font-family: "Manrope", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 2.5em !important; font-weight: 700; line-height: 1.25; letter-spacing: 0; text-transform: none; }
+  /* show e Instagram */
+  .t2 .s-tag { top: 25rem !important; } .t2 .s-hero { top: 31rem !important; }
+  .t2 .s-hero .big { font-size: 10.5rem; line-height: .96; white-space: normal; }
+  .t2 .s-hero .lv-by { margin-top: 1.4rem; font-size: 3.4rem; }
+  .t2 .i-tag { top: 30rem !important; } .t2 .i-hero { top: 36rem !important; }
+  .t2 .i-hero .big { font-size: 9rem; text-transform: none; }
+</style>
+</head>
+<body>
+<div id="cv">
+  <video id="vid" class="hide" muted loop autoplay playsinline webkit-playsinline preload="auto"></video>
+  <div id="tap" class="hide">▶ Toca la pantalla para iniciar el video</div>
+  <button id="fs" class="hide" type="button">📺 Pantalla completa</button>
+  <div id="view"></div>
+  <div id="marks"></div>
+</div>
+<div id="t2pre"><b>.</b><s>.</s><i>.</i><u>.</u><em>.</em></div>
+<script src="gameintro.js"></script>
+<script>
+(function () {
+  'use strict';
+  // ---------- Utilidades (ES5) ----------
+  function $(id) { return document.getElementById(id); }
+  function h(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function query() { var o = {}; var q = location.search.replace(/^\?/, '').split('&'); for (var i = 0; i < q.length; i++) { if (!q[i]) continue; var kv = q[i].split('='); o[decodeURIComponent(kv[0])] = decodeURIComponent((kv[1] || '').replace(/\+/g, ' ')); } return o; }
+  var Q = query();
+  var errs = [];
+  window.onerror = function (m, f, l) { errs.push(String(m) + (f ? ' · ' + String(f).split('/').pop() + ':' + l : '')); };
+  var SCREENS = { kennedy: ['kennedy', true], 'kennedy-h': ['kennedy', false], frida: ['frida', true], 'frida-h': ['frida', false], 'tobalaba-v': ['tobalaba', true], tobalaba: ['tobalaba', false] };
+  var P = SCREENS[Q.p] ? Q.p : 'kennedy';
+  var VENUE = SCREENS[P][0];
+  var NAMES = { kennedy: 'Mercado Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' }; // nombre del local (pedido de Cote, 21 nov)
+  var SHORT = { kennedy: 'Mercado Kennedy', frida: 'Frida', tobalaba: 'Tobalaba' }; // en los juegos también «Mercado Kennedy» (pedido de Cote, 21 nov)
+  var FIG = { linea: 'Línea (cualquiera)', horizontal: 'Línea horizontal', vertical: 'Línea vertical', diagonal: 'Diagonal', 'dos-lineas': 'Dos líneas', esquinas: 'Cuatro esquinas', sello: 'Sello (2×2 en una esquina)', cruz: 'Cruz', marco: 'Marco', cuadro: 'Cuadro central', diamante: 'Diamante', piramide: 'Pirámide', 'piramide-inv': 'Pirámide invertida', reloj: 'Reloj de arena', corazon: 'Corazón', estrella: 'Estrella', lleno: 'Cartón lleno' };
+  var GAMES = { bingo: ['🎱', 'Bingo'], rosco: ['🎡', 'El Rosco'], festival: ['🎤', 'El Festival de ' + SHORT[VENUE]], objeto: ['🗳️', 'El objeto más extraño'] };
+  var GVC = { bingo: '#ff2e93', rosco: '#9b6bff', festival: '#ffc400', objeto: '#19d6b0' };
+  var offset = 0;
+  var cv = $('cv'); var view = $('view'); var vid = $('vid'); var tap = $('tap');
+  // ---------- Diseño nuevo (pedido de Cote, 22 nov) ----------
+  // Va con la clase «t2» en <html> (todo su CSS está bajo «.t2»). Se apaga y se enciende en el Centro de control
+  // (/api/tema; se pregunta al cargar y cada minuto; si no responde, queda como estaba) y ?tema=0 o ?tema=1 en la
+  // dirección lo deja fijo. Al cargar, antes de tener respuesta, parte encendido.
+  var T2 = Q.tema !== '0';
+  document.documentElement.className = T2 ? 't2' : '';
+  function tv(a, b) { return T2 ? b : a; } // valor del diseño anterior o del nuevo
+  // En el diseño nuevo las etiquetas van sin emojis
+  function se(s) { return T2 ? String(s).replace(/(?:[\uD83C-\uDBFF][\uDC00-\uDFFF]|[\u2300-\u23FF\u2600-\u27BF\u2B00-\u2BFF])[\uFE0F\u200D]*/g, '').replace(/\s{2,}/g, ' ').replace(/^\s+|\s+$/g, '') : s; }
+  function gname(k) { return (T2 ? '' : GAMES[k][0] + ' ') + h(GAMES[k][1]); } // nombre del juego (con su ícono en el diseño anterior)
+  function now() { return new Date().getTime() + offset; }
+  function origin() { return location.protocol + '//' + location.host; }
+  function qrImg(url) { return '<img alt="Código QR" src="/api/qr?text=' + encodeURIComponent(url) + '">'; }
+  function clock(ms) { var s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
+  function cap(t) { return String(t || '').toLowerCase().replace(/(^|[\s:(«"\-])([a-záéíóúñü])/g, function (m, a, b) { return a + b.toUpperCase(); }); }
+  var DAYS = { LUNES: 'Lunes', MARTES: 'Martes', MIERCOLES: 'Miércoles', 'MIÉRCOLES': 'Miércoles', JUEVES: 'Jueves', VIERNES: 'Viernes', SABADO: 'Sábado', 'SÁBADO': 'Sábado', DOMINGO: 'Domingo' };
+  function day(d) { return DAYS[String(d || '').toUpperCase()] || String(d || ''); }
+  function showHtml(t) {
+    var m = String(t || '').match(/^(.*?)\s*\(([^()]+)\)\s*$/);
+    return m ? '<span class="lv-sh">' + h(cap(m[1])) + '</span><span class="lv-by"><small>por</small> ' + h(cap(m[2])) + '</span>' : '<span class="lv-sh">' + h(cap(t)) + '</span>';
+  }
+  function votos(n) { return n + (n === 1 ? ' voto' : ' votos'); }
+  function pct(n, t) { return t ? (n * 100) / t : 0; }
+  function fmtPct(p) { var r = Math.round(p); return (r === 50 && p !== 50 ? p.toFixed(1).replace('.', ',') : r) + '%'; }
+  function dec(x) { return x == null ? '' : String(Number(x).toFixed(1)).replace('.', ','); }
+  function get(url, cb) {
+    var x = new XMLHttpRequest();
+    x.open('GET', url + (url.indexOf('?') < 0 ? '?' : '&') + '_=' + new Date().getTime(), true);
+    x.timeout = 15000;
+    x.onreadystatechange = function () {
+      if (x.readyState !== 4) return;
+      var r = null;
+      try { r = JSON.parse(x.responseText); } catch (e) { r = null; }
+      if (r && r.now) offset = r.now - new Date().getTime();
+      cb(x.status >= 200 && x.status < 300 ? r : null);
+    };
+    x.ontimeout = function () { cb(null); };
+    x.send(null);
+  }
+  // Achica la letra de un texto de una línea hasta que quepa (nunca se corta)
+  function fitLine(el) {
+    if (!el) return;
+    if (el.getAttribute('data-fs') === null) el.setAttribute('data-fs', el.style.fontSize || ''); // tamaño pedido en el diseño
+    el.style.fontSize = el.getAttribute('data-fs');
+    var fs = parseFloat(window.getComputedStyle(el).fontSize) || 20;
+    for (var i = 0; i < 80 && el.scrollWidth > el.clientWidth + 1 && fs > 6; i++) { fs *= 0.95; el.style.fontSize = fs.toFixed(1) + 'px'; }
+  }
+  // Achica todo un recuadro (su tamaño de letra base) hasta que su contenido quepa en el alto
+  function fitBox(el) {
+    if (!el) return;
+    var base = parseFloat(document.documentElement.style.fontSize) || 10;
+    var f = 1;
+    el.style.fontSize = base + 'px';
+    // Se achica mientras el contenido no quepa en el alto o en el ancho del recuadro (nunca queda cortado)
+    for (var i = 0; i < 60 && (el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1) && f > 0.2; i++) { f -= 0.03; el.style.fontSize = (base * f).toFixed(2) + 'px'; }
+  }
+  function fitAll() {
+    var els = view.querySelectorAll('.fit');
+    for (var i = 0; i < els.length; i++) fitLine(els[i]);
+    var boxes = view.querySelectorAll('.fitbox');
+    for (var j = 0; j < boxes.length; j++) fitBox(boxes[j]);
+    // Barras (votación): nombre a la izquierda y porcentaje a la derecha en una sola línea; si no caben, se achica la letra
+    var rows = view.querySelectorAll('li.bar');
+    for (var r = 0; r < rows.length; r++) {
+      var li = rows[r]; var sp = li.querySelector('span'); var ri = li.querySelector('i');
+      if (!sp || !ri) continue;
+      li.style.fontSize = '';
+      var cs = window.getComputedStyle(li); var fs = parseFloat(cs.fontSize) || 20;
+      var pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+      for (var k = 0; k < 60 && sp.offsetWidth + ri.offsetWidth + pad + fs > li.clientWidth && fs > 6; k++) { fs *= 0.95; li.style.fontSize = fs.toFixed(1) + 'px'; }
+    }
+  }
+
+  // ---------- Tamaño y giro ----------
+  function layout() {
+    var W = window.innerWidth; var H = window.innerHeight;
+    var rot = Q.girar === '1' && W > H;
+    var cw = rot ? H : W; var ch = rot ? W : H;
+    cv.style.width = cw + 'px'; cv.style.height = ch + 'px';
+    cv.className = (rot ? 'rot ' : '') + 'th-' + VENUE + (cw > ch * 0.75 ? ' wide' : '');
+    document.documentElement.style.fontSize = Math.min(ch / 100, cw / 56.25).toFixed(3) + 'px';
+    fitAll();
+  }
+  window.onresize = layout;
+  layout();
+  // Las letras del diseño nuevo pueden terminar de cargar después de dibujar: se vuelve a ajustar el tamaño de los textos
+  // (solo con el diseño nuevo puesto: el anterior queda tal como estaba)
+  function refit() { if (T2) fitAll(); }
+  window.addEventListener('load', refit, false);
+  try { if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', refit, false); } catch (e) { /* nada */ }
+  $('marks').innerHTML = '<img src="krb-stage.svg" alt="KRB Stage">' + (VENUE === 'kennedy' ? '<i></i><img src="logo-kennedy.png" alt="Mercado Kennedy">' : '');
+
+  // ---------- Temporizadores de cada vista ----------
+  var viewTimers = []; var stageTimers = [];
+  function every(list, ms, f) { list.push(setInterval(f, ms)); }
+  function clearList(list) { while (list.length) clearInterval(list.pop()); }
+
+  // ---------- Video de la cartelera ----------
+  var ver = 0; var playCheck = null;
+  var vTicks = 0; var vStuck = 0; var vFixes = 0; var lastGesture = 0; var autoOk = false; var lastOk = 0; // vigilante del video (más abajo)
+  function play() {
+    var clean = !lastGesture; // todavía nadie tocó ni apretó nada: si parte, es que aquí el video parte solo
+    try { var pr = vid.play(); if (pr && pr.then) pr.then(function () { if (clean) autoOk = true; }, function () {}); } catch (e) { /* nada */ }
+    clearTimeout(playCheck);
+    playCheck = setTimeout(function () { if (cur === 'video' && vid.paused) tap.className = ''; }, 3000); // iPad antiguo: hay que tocar
+  }
+  function onTouch() { if (cur === 'video') { tap.className = 'hide'; play(); } }
+  document.addEventListener('click', onTouch, false);
+  document.addEventListener('touchend', onTouch, false);
+  vid.addEventListener('playing', function () { tap.className = 'hide'; }, false);
+
+  // ---------- Pantalla completa (pedido de Cote, 21 nov) ----------
+  // Donde el navegador lo permite (decodificador, iPad nuevos), toda la página pasa a pantalla completa. En el iPad viejo
+  // (iOS 9) eso no existe: el botón abre el video en la pantalla completa del iPad. El botón aparece al tocar la pantalla
+  // (o mover el mouse o apretar una tecla del control) y se esconde solo a los 8 segundos, para no quedar a la vista del público.
+  var fsBtn = $('fs'); var fsHide = null; var fsFirst = true;
+  var FS_TXT = fsBtn.innerHTML;
+  fsBtn.innerHTML = se(FS_TXT);
+  var IOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  function fsEl() { return document.fullscreenElement || document.webkitFullscreenElement || document.webkitCurrentFullScreenElement || document.mozFullScreenElement || document.msFullscreenElement || null; }
+  function fsReq() { var el = document.documentElement; return el.requestFullscreen || el.webkitRequestFullscreen || el.webkitRequestFullScreen || el.mozRequestFullScreen || el.msRequestFullscreen || null; }
+  function pageFsOk() {
+    var en = document.fullscreenEnabled || document.webkitFullscreenEnabled || document.mozFullScreenEnabled || document.msFullscreenEnabled;
+    return !!fsReq() && (en === true || (en === undefined && !IOS));
+  }
+  // La pantalla completa del video de Apple (iPad viejo) muestra el video sin girar: con la página girada no sirve
+  // (pedido de Cote: el video tiene que verse girado). La de página (decodificador) sí mantiene el giro.
+  function videoFsOk() { return cur === 'video' && !!vid.webkitEnterFullscreen && !/(^| )rot( |$)/.test(cv.className); }
+  var embedded = false; // dentro de otra página (ej. las pantallas incrustadas en krbstage.cl) el botón no va
+  try { embedded = window.self !== window.top; } catch (e) { embedded = true; }
+  function fsCan() { return !embedded && !fsEl() && (pageFsOk() || videoFsOk()); }
+  function fsShow() {
+    clearTimeout(fsHide);
+    if (!fsCan()) { fsBtn.className = 'hide'; return; }
+    fsBtn.className = '';
+    fsHide = setTimeout(function () { fsBtn.className = 'hide'; }, 8000);
+  }
+  fsBtn.onclick = function (e) {
+    if (e && e.stopPropagation) e.stopPropagation();
+    clearTimeout(fsHide); fsBtn.className = 'hide';
+    if (cur === 'video' && vid.paused) onTouch(); // si el navegador pedía tocar para partir, este toque lo parte
+    if (pageFsOk()) { try { fsReq().call(document.documentElement); return; } catch (x) { /* sigue con el video */ } }
+    if (videoFsOk()) {
+      try { if (vid.paused) play(); vid.webkitEnterFullscreen(); } catch (x2) { tap.className = ''; } // si el video aún no carga: tocar y volver a intentar
+    }
+  };
+  document.addEventListener('touchstart', fsShow, false);
+  document.addEventListener('mousemove', fsShow, false);
+  document.addEventListener('keydown', function () { onTouch(); fsShow(); if (!fsBtn.className) { try { fsBtn.focus(); } catch (x) { /* nada */ } } }, false); // una tecla del control también parte el video
+  window.addEventListener('resize', function () { if (!fsBtn.className && !fsCan()) fsBtn.className = 'hide'; }, false); // si se gira el iPad con el botón a la vista
+  var fsEv = ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'];
+  for (var fe = 0; fe < fsEv.length; fe++) document.addEventListener(fsEv[fe], fsShow, false);
+  vid.addEventListener('webkitendfullscreen', function () { if (cur === 'video') play(); }, false); // al volver de la pantalla completa del iPad, el video sigue
+
+  // ---------- Vigilante del video (pedido de Cote, 21 nov) ----------
+  // Cada 10 s revisa que el video esté avanzando. Si se detuvo, lo vuelve a partir; si lleva 20 s congelado (sin avanzar),
+  // lo vuelve a cargar; si aun así no se recupera, recarga la página, pero solo donde el video parte solo (en el iPad viejo
+  // una recarga volvería a pedir el toque). Si todo anda bien no hace nada: sin parpadeos ni descargas de más.
+  vid.addEventListener('timeupdate', function () { if (vid.currentTime > 0) vTicks++; }, false); // solo avances reales (volver a cargar avisa en 0)
+  vid.addEventListener('playing', function () { if (!lastGesture) autoOk = true; }, false); // partió sin que nadie tocara: aquí el video parte solo
+  function wasTouched() { lastGesture = new Date().getTime(); }
+  document.addEventListener('touchstart', wasTouched, false);
+  document.addEventListener('mousedown', wasTouched, false);
+  document.addEventListener('keydown', wasTouched, false);
+  setInterval(function () {
+    var moved = vTicks > 0; vTicks = 0;
+    if (cur !== 'video' || !vid.getAttribute('src')) { vStuck = 0; vFixes = 0; return; }
+    var broken = !!vid.error; // el video quedó con error (se cortó la red o el servidor): se trata como congelado
+    if (vid.paused && !broken) { vStuck = 0; play(); return; } // se detuvo: a seguir (si el navegador pide un toque, queda el aviso para tocar)
+    if (moved && !broken) { vStuck = 0; vFixes = 0; return; }
+    if (++vStuck < 2) return;
+    vStuck = 0; vFixes++;
+    try {
+      if (vFixes === 1) vid.load(); // 1.º: volver a cargar el mismo video (sin descargarlo de nuevo)
+      else if (vFixes === 2) { var clean = vid.src.replace(/[?&]r=\d+$/, ''); vid.src = clean + (clean.indexOf('?') < 0 ? '?' : '&') + 'r=' + new Date().getTime(); } // 2.º: bajarlo de nuevo, una vez
+      else if (autoOk && !fsEl() && reloadOk() && serverOk()) { reloadMark(); location.reload(); return; } // 3.º: recargar la página (como máximo cada 30 min y solo si el servidor acaba de responder)
+      else if (vFixes % 6 === 0) vid.load(); // y después, de vez en cuando, sin descargar de más
+    } catch (e) { /* nada */ }
+    play();
+  }, 10000);
+  // Solo se recarga la página si el servidor respondió hace menos de 10 s: recargar con el servidor o internet caídos
+  // dejaría la pantalla en una página de error, sin nada que la recupere
+  function serverOk() { return new Date().getTime() - lastOk < 10000; }
+  function reloadOk() { try { return new Date().getTime() - (+window.localStorage.getItem('pvReloadAt') || 0) > 30 * 60 * 1000; } catch (e) { return true; } }
+  function reloadMark() { try { window.localStorage.setItem('pvReloadAt', String(new Date().getTime())); } catch (e) { /* nada */ } }
+
+  // ---------- Vistas ----------
+  var cur = ''; var viewSeq = 0;
+  function go(want) {
+    cur = want; viewSeq++;
+    clearList(viewTimers); clearList(stageTimers);
+    tap.className = 'hide';
+    if (want !== 'video') { try { if (vid.webkitDisplayingFullscreen && vid.webkitExitFullscreen) vid.webkitExitFullscreen(); } catch (e) { /* nada */ } } // empieza un juego: sale de la pantalla completa del video
+    if (!fsBtn.className && !fsCan()) fsBtn.className = 'hide';
+    if (fsFirst) { fsFirst = false; fsShow(); } // al abrir la página, el botón se ve unos segundos
+    $('marks').className = want === 'video' || want === 'logo' ? 'hide' : ''; // sobre el video no van los logos
+    if (want === 'video') { view.innerHTML = ''; vid.className = ''; play(); return; }
+    vid.className = 'hide';
+    try { vid.pause(); } catch (e) { /* nada */ }
+    if (want === 'logo') { view.innerHTML = '<img class="logo-big" src="krb-stage.svg" alt="KRB Stage">'; return; }
+    if (want === 'karaoke') { lightJoin(function (url) { if (cur === 'karaoke') viewKaraoke(VENUE, url, viewTimers); }); return; }
+    if (want === 'sala') { viewSala(); return; }
+    viewInfo(want === 'info-qr' ? 'qr' : want === 'info-show' ? 'show' : want === 'info-kar' ? 'kar' : '');
+  }
+  // Pedido de Cote (21 nov): en la pantalla vertical de Kennedy el QR es solo para pedir canciones: se ve solo con los botones
+  // del karaoke de la sala light (Karaoke y QR grande y lista); con los demás, sin QR
+  var QR_ONLY_KAR = { kennedy: true };
+  var lightUrl = '';
+  function lightJoin(cb) {
+    if (lightUrl) { cb(lightUrl); return; }
+    get('/api/light?local=' + VENUE, function (l) { if (l && l.id) lightUrl = origin() + '/#/l/' + l.id; cb(lightUrl || origin() + '/#/jugar'); });
+  }
+
+  // Información del local (como el fondo vertical de la sala light): lo de esta noche, un recuadro que va cambiando y el QR
+  function viewInfo(focus) {
+    var cart = null; var kar = null; var idx = 0; var mySeq = viewSeq; var flyers = [];
+    var karOnly = !!QR_ONLY_KAR[VENUE];
+    var withQr = !karOnly || focus === 'kar' || focus === 'qr';
+    view.innerHTML = '<div class="abs lv-top" style="top:4rem"><small>Esta noche en</small><b class="fit">' + h(NAMES[VENUE]) + '</b><span id="lvshow" class="fit hide"></span></div>' +
+      '<div class="lv-card card"><div class="lv-slide" id="lvslide"></div><div class="lv-dots" id="lvdots"></div></div>' +
+      '<div class="lv-qr" id="lvfoot"><div class="qrw" id="lvqr"></div><div class="lv-qrtext"><b>Escanea el código QR con tu celular</b><span>Pide tu canción de karaoke y espera tu turno</span></div></div>';
+    if (focus === 'qr' || !withQr) { $('lvfoot').className = 'lv-qr hide'; view.querySelector('.lv-card').style.bottom = '6rem'; view.querySelector('.lv-card').className += ' noqr'; }
+    lightJoin(function (url) { var b = $('lvqr'); if (b && withQr) b.innerHTML = qrImg(url); paint(); });
+    function slides() {
+      var out = []; var i;
+      var list = (kar && kar.list) || [];
+      if (focus === 'qr') {
+        var s = '<h2 class="lv-qh">📱 Escanea el código QR con tu celular</h2><div class="lv-bigqr" style="text-align:center"><div class="qrw">' + (lightUrl ? qrImg(lightUrl) : '') + '</div></div><p class="lv-now"><span>Pide tu canción de karaoke y espera tu turno</span></p>';
+        if (list.length) { s += '<h2>🎤 Próximos en cantar</h2><ol class="lv-list">'; for (i = 0; i < list.length && i < 4; i++) s += '<li><b>' + h(list[i].name) + '</b><span>' + h(list[i].song) + '</span></li>'; s += '</ol>'; }
+        return [s];
+      }
+      if (list.length) {
+        var a = list[0];
+        var k = '<h2>🎤 Karaoke</h2><div class="lv-now"><small>Ahora canta</small><b>' + h(a.name) + '</b><span>' + h(a.song) + (a.artist ? ' · ' + h(a.artist) : '') + '</span></div>';
+        if (list.length > 1) { k += '<ol class="lv-list" start="2">'; for (i = 1; i < list.length && i < 3; i++) k += '<li><b>' + h(list[i].name) + '</b><span>' + h(list[i].song) + '</span></li>'; k += '</ol>'; }
+        out.push(k);
+      }
+      if (cart && (cart.current || cart.next)) {
+        out.push('<h2>⏱️ Esta noche</h2>' + (cart.current ? '<div class="lv-now"><small>Ahora</small><b>' + h(cap(cart.current.label)) + '</b><span>desde las ' + h(cart.current.time) + '</span></div>' : '') +
+          (cart.next ? '<div class="lv-now"><small>A continuación</small><b>' + h(cap(cart.next.label)) + '</b><span>a las ' + h(cart.next.time) + '</span></div>' : ''));
+      }
+      var blocks = (cart && cart.blocks) || []; var week = (cart && cart.week) || []; var month = (cart && cart.month) || [];
+      if (cart && !blocks.length) {
+        for (i = 0; i < week.length; i++) {
+          var d = week[i];
+          if (d.today || !d.hours || !d.hours.length) continue;
+          var nd = '<h2>🕗 ' + h(day(d.day)) + ' ' + h(d.date) + '</h2>' + (d.show ? '<div class="lv-now"><small>Show</small><b>' + showHtml(d.show) + '</b></div>' : '') + '<ul class="lv-hours">';
+          for (var j = 0; j < d.hours.length; j++) nd += '<li><em>' + h(d.hours[j].time) + '</em><b>' + h(cap(d.hours[j].label)) + '</b></li>';
+          out.push(nd + '</ul>');
+          break;
+        }
+      }
+      if (blocks.length) {
+        var hs = '<h2>🕗 Horarios de hoy</h2><ul class="lv-hours">';
+        for (i = 0; i < blocks.length; i++) hs += '<li class="' + (cart.current && cart.current.time === blocks[i].time ? 'on' : '') + '"><em>' + h(blocks[i].time) + '</em><b>' + h(cap(blocks[i].label)) + '</b></li>';
+        out.push(hs + '</ul>');
+      }
+      if (week.length) {
+        var ws = '<h2>📅 Esta semana</h2><ul class="lv-week">';
+        for (i = 0; i < week.length && i < 5; i++) ws += '<li class="' + (week[i].today ? 'on' : '') + '"><em>' + h(day(week[i].day)) + ' ' + h(week[i].date) + '</em><b>' + (week[i].show ? showHtml(week[i].show) : h(cap(((week[i].hours || [])[0] || {}).label || ''))) + '</b></li>';
+        out.push(ws + '</ul>');
+      }
+      if (month.length) {
+        var ms = '<h2>🗓️ Cartelera del mes</h2><ul class="lv-week">';
+        for (i = 0; i < month.length && i < 6; i++) ms += '<li><em>' + h(cap(month[i].day)) + '</em><b>' + showHtml(month[i].show) + '</b></li>';
+        out.push(ms + '</ul>');
+      }
+      if (focus === 'show') {
+        var keep = [];
+        if (cart && cart.show) keep.push('<h2>⭐ El show de esta noche</h2><div class="lv-now"><b>' + showHtml(cart.show) + '</b></div>');
+        for (i = 0; i < out.length; i++) if (out[i].indexOf('<h2>⏱️') === 0 || out[i].indexOf('<h2>🕗') === 0) keep.push(out[i]);
+        if (keep.length) return keep;
+      }
+      if (!out.length) out.push('<h2>🎶 Bienvenidos</h2><div class="lv-now"><b>KRB Stage</b><span>Música, shows y karaoke</span></div>');
+      return out;
+    }
+    // Centrado en el recuadro (sin QR el recuadro es más alto: el texto no queda pegado arriba con un hueco abajo)
+    function center() {
+      var slide = $('lvslide'); var inner = $('lvin');
+      if (!slide || !inner) return;
+      slide.style.paddingTop = '0';
+      slide.style.paddingTop = Math.max(0, Math.floor((slide.clientHeight - inner.offsetHeight) / 2)) + 'px';
+    }
+    function paint() {
+      var slide = $('lvslide');
+      if (!slide || mySeq !== viewSeq) return; // una respuesta atrasada de la vista anterior no pinta sobre la nueva
+      var all = slides();
+      // Flyers del Instagram del local (pedido de Cote, 21 nov; solo en la pantalla vertical): al final de cada vuelta pasa
+      // un flyer distinto, dentro del mismo recuadro
+      var turn = Math.floor(idx / (all.length + 1));
+      if (flyers.length && focus !== 'qr' && !/(^| )wide( |$)/.test(cv.className)) all.push('<div class="lv-flyer"><img id="lvfly" alt="" src="' + h(flyers[turn % flyers.length].url) + '"></div>');
+      var at = idx % all.length;
+      slide.style.paddingTop = '0';
+      slide.innerHTML = '<div id="lvin">' + (T2 ? all[at].replace(/(<h2[^>]*>)([^<]*)(<\/h2>)/g, function (m, a, t, z) { return a + se(t) + z; }) : all[at]) + '</div>'; // diseño nuevo: títulos sin emoji
+      var fly = $('lvfly');
+      if (fly) {
+        fly.style.maxHeight = Math.floor(slide.clientHeight * 0.9) + 'px';
+        fly.onload = center;
+        fly.onerror = function () { var bad = fly.getAttribute('src'); var keep = []; for (var f = 0; f < flyers.length; f++) if (flyers[f].url !== bad) keep.push(flyers[f]); flyers = keep; idx++; paint(); }; // un flyer que no carga se salta
+      } else fitBox(slide);
+      center();
+      var dots = '';
+      if (all.length > 1) for (var i = 0; i < all.length; i++) dots += '<i class="' + (i === at ? 'on' : '') + '"></i>';
+      $('lvdots').innerHTML = dots;
+      var sh = $('lvshow');
+      if (cart && cart.show) { sh.className = 'fit'; sh.innerHTML = tv('⭐ ', '') + h(cap(cart.show)); fitLine(sh); } else sh.className = 'fit hide';
+      fitLine(view.querySelector('.lv-top b'));
+    }
+    function loadCart() { get('/api/light/cartelera?local=' + VENUE, function (c) { if (c) { cart = c; paint(); } }); }
+    function loadKar() { get('/api/karaoke?local=' + VENUE, function (k) { if (k) kar = k; }); }
+    function loadFly() { get('/api/web/flyers?local=' + VENUE, function (r) { if (r && r.flyers) flyers = r.flyers; }); }
+    loadCart(); loadKar(); loadFly(); paint();
+    every(viewTimers, 10 * 60000, loadFly);
+    every(viewTimers, Q.vtest ? 1500 : 9000, function () { idx++; paint(); });
+    every(viewTimers, 60000, loadCart);
+    every(viewTimers, 5000, loadKar);
+  }
+
+  // Karaoke a pantalla completa: quién canta, los que vienen y el QR para pedir canciones
+  function viewKaraoke(venue, joinUrl, timers) {
+    var last = '';
+    function paint(st) {
+      var list = st.list || []; var a = list[0];
+      var sig = JSON.stringify([list, st.total]);
+      if (sig === last) return;
+      last = sig;
+      var nx = '';
+      for (var i = 1; i < list.length && i < 4; i++) nx += '<p><em>' + (i + 1) + '</em><b' + tv('', ' class="fit"') + '>' + h(list[i].name) + '</b><span>' + h(list[i].song) + (list[i].artist ? ' · ' + h(list[i].artist) : '') + '</span></p>';
+      view.innerHTML = '<div class="abs kf-top" style="top:4rem"><b class="fit" style="display:block;font-size:' + tv('5.6', '6.6') + 'rem">Karaoke ' + h(NAMES[venue]) + '</b><span class="g-sub">' + (st.total ? st.total + ' en la lista' : 'Lista abierta') + '</span></div>' +
+        '<div class="kf-now card">' + (a ? '<small>' + se('🎤 Ahora canta') + '</small><b class="fit">' + h(a.name) + '</b><span class="fit">' + h(a.song) + '</span>' + (a.artist ? '<i class="fit">' + h(a.artist) + '</i>' : '')
+          : '<small>' + se('🎤 Karaoke') + '</small><b>¡Pide tu canción!</b><span>Desde el celular</span>') + '</div>' +
+        '<div class="kf-bottom"><div class="kf-next">' + (nx ? '<small>Luego vienen</small>' + nx : '') + '</div><div class="kf-qr"><div class="qrw">' + qrImg(joinUrl) + '</div><div class="qrp">Escanea el código QR con tu celular</div></div></div>';
+      fitAll();
+    }
+    function load() { get('/api/karaoke?local=' + venue, function (st) { if (st && (timers === viewTimers ? cur === 'karaoke' : true)) paint(st); }); }
+    load();
+    every(timers, 3000, load);
+  }
+
+  // ---------- Juegos de la sala completa del local ----------
+  function viewSala() {
+    var stage = '';
+    view.innerHTML = '';
+    function loop() {
+      get('/api/stage', function (r) {
+        if (!r || cur !== 'sala') return;
+        if (r.show === stage) return;
+        stage = r.show;
+        clearList(stageTimers);
+        view.innerHTML = '';
+        if (stage === 'bingo') sBingo();
+        else if (stage === 'rueda') sRosco();
+        else if (stage === 'sorteo') sRaffle();
+        else if (stage === 'voto') sVote();
+        else if (stage === 'juego') sDraw();
+        else if (stage === 'votojuego') sGameVote();
+        else if (stage === 'karaoke') viewKaraoke(VENUE, origin() + '/#/jugar', stageTimers);
+        else if (stage === 'qr') sQr();
+        else if (stage === 'show') sShow();
+        else if (stage === 'insta') sInsta();
+        else sQr();
+      });
+    }
+    loop();
+    every(viewTimers, 2500, loop);
+  }
+  var JOIN = function () { return origin() + '/#/jugar'; };
+  function qrFoot(text) { return '<div class="abs qr-foot"><div class="qrw">' + qrImg(JOIN()) + '</div><div class="qrp">' + h(text || 'Escanea el código QR con tu celular') + '</div></div>'; }
+  function sQr() {
+    view.innerHTML = '<div class="abs q-head" style="top:8rem"><b class="big" style="display:block">' + se('📱') + '</b><b class="mid fit" style="display:block">Escanea el código QR con tu celular</b></div>' +
+      '<div class="abs q-qr" style="top:30rem"><div class="qrw" style="width:40rem">' + qrImg(JOIN()) + '</div></div>' +
+      '<div class="abs mid q-sub" style="top:78rem">pon tu nombre, apellido y participa</div>';
+    fitAll();
+  }
+  function letra(st, v) { var hs = String(st.headers || 'BINGO'); for (var c = 0; c < 5; c++) if (v <= Math.floor(((c + 1) * (st.values || 75)) / 5)) return hs.charAt(c); return hs.charAt(4); }
+  function sBingo() {
+    var sid = ''; var last = '';
+    function paint(st) {
+      var sig = JSON.stringify([st.drawn, st.bigQr, st.celebrate, st.results, st.patterns, st.round]);
+      if (sig === last) return;
+      last = sig;
+      var title = String(st.name || '').replace(/^Los Juegos de /, 'El Bingo de ');
+      var pid = (st.patterns || [])[0] || '';
+      var fig = FIG[pid] || (pid.length === 1 ? 'Figura ' + pid.toUpperCase() : pid);
+      var drawn = st.drawn || [];
+      var o = '<div class="abs g-title fit">' + h(title) + '</div>';
+      if (st.celebrate) {
+        var names = []; var seen = {};
+        for (var i = 0; i < (st.results || []).length; i++) { var r = st.results[i]; if (r.name && !seen[r.name]) { seen[r.name] = 1; names.push(r.name); } }
+        o += '<div class="abs b-win" style="top:16rem"><b class="big gold' + tv('', ' fit') + '" style="font-size:' + tv('12', '16') + 'rem">¡BINGO!</b></div><div class="abs b-names' + (names.length === 1 ? ' b-one' : '') + '" style="top:34rem">';
+        for (var n = 0; n < names.length && n < 6; n++) o += '<b class="mid fit" style="display:block;font-size:' + tv('5', names.length === 1 ? '6.8' : '4.8') + 'rem">' + h(names[n]) + '</b>';
+        o += '</div><div class="abs g-sub b-figw" style="top:74rem">' + h(fig) + '</div>' + qrFoot();
+      } else if (st.bigQr && !drawn.length) {
+        o += '<div class="abs bq-head" style="top:14rem"><b class="mid fit" style="display:block">Escanea el código QR con tu celular</b></div><div class="abs bq-qr" style="top:22rem"><div class="qrw" style="width:44rem">' + qrImg(JOIN()) + '</div></div>' +
+          '<div class="abs mid bq-sub" style="top:74rem">pon tu nombre, apellido y participa</div>';
+      } else {
+        var v = drawn.length ? drawn[drawn.length - 1] : null;
+        o += '<div class="ball">' + (v != null ? '<small>' + (st.format === 'numbers' ? letra(st, v) : '') + '</small><b>' + h(v) + '</b>' : '<small>&nbsp;</small><b class="soon' + tv('', ' fit') + '" style="font-size:' + tv('6', '5.6') + 'rem;margin-top:' + tv('4', '2.6') + 'rem">¡Ya comienza!</b>') + '</div>';
+        if (drawn.length > 1) { o += '<div class="abs prev">'; for (var k = drawn.length - 2; k >= 0 && k >= drawn.length - 7; k--) o += '<span>' + h(drawn[k]) + '</span>'; o += '</div>'; }
+        o += '<div class="abs b-fig" style="top:58.5rem"><div class="mid fit">Figura: ' + h(fig) + '</div><div class="g-sub">' + drawn.length + ' de ' + (st.values || 75) + '</div></div>' + qrFoot();
+      }
+      view.innerHTML = o;
+      fitAll();
+    }
+    function load() {
+      if (!sid) { get('/api/current', function (r) { var s = r && r.sessions && r.sessions[0]; if (s) { sid = s.id; load(); } }); return; }
+      get('/api/sessions/' + sid + '/state', function (st) { if (st && cur === 'sala') paint(st); else if (!st) sid = ''; });
+    }
+    load();
+    every(stageTimers, 2000, load);
+  }
+  function sRosco() {
+    var wid = ''; var last = '';
+    function paint(r) {
+      var sig = JSON.stringify([r.list, r.players]);
+      if (sig === last) return;
+      last = sig;
+      var list = r.list || [];
+      var o = '<div class="abs g-title g-over" style="font-size:3.4rem;color:#ffc400">Resultados</div><div class="abs fit g-main" style="top:9rem;font-size:' + tv('5.4', '6.6') + 'rem;font-weight:700">La Trivia del Rosco</div><div class="abs g-box' + tv('', ' fitbox') + '" style="top:19rem;bottom:32rem"><ol class="rows rk sc">';
+      if (!list.length) o += '<li style="text-align:center">Responde desde tu celular</li>';
+      for (var i = 0; i < list.length && i < 10; i++) o += '<li class="' + (i < 3 ? 'top' : '') + '"><em>' + (i + 1) + '.º</em>' + h(list[i].name) + '<i>' + h(list[i].score) + '</i></li>';
+      o += '</ol></div>' + qrFoot();
+      view.innerHTML = o;
+      if (T2) fitAll(); // diseño nuevo: los nombres van enteros (siguen en otra línea) y la lista se achica si no cabe
+    }
+    function load() {
+      // /api/wheel-current es público (la lista /api/wheels es solo del moderador)
+      if (!wid) { get('/api/wheel-current', function (l) { if (l && l.wheels && l.wheels.length && cur === 'sala') { wid = l.wheels[0].id; load(); } }); return; }
+      get('/api/wheels/' + wid + '/ranking', function (r) { if (r && cur === 'sala') paint(r); else if (!r) wid = ''; }); // si se cargó otro rosco, se vuelve a buscar
+    }
+    load();
+    every(stageTimers, 5000, load);
+  }
+  function sRaffle() {
+    var last = '';
+    function paint(r) {
+      var rolling = r.roll && now() < r.roll.at + (r.rollMs || 6000);
+      var sig = JSON.stringify([r.picked, rolling, r.mode, r.roll && r.roll.winner]);
+      if (sig === last) return;
+      last = sig;
+      var isRosco = r.mode === 'tie' && r.roll && r.roll.game === 'rosco'; // El Rosco usa el mismo sorteo para su desempate
+      var o = '<div class="abs g-title fit">' + se(isRosco ? '🏆 ¡Ganador de El Rosco!' : r.mode === 'tie' ? 'Desempate del bingo' : '🎲 Sorteo de concursantes') + '</div>';
+      if (rolling) o += '<div class="abs big gold r-roll' + tv('', ' fit') + '" style="top:30rem">' + se('🎲 Sorteando…') + '</div>';
+      else if (r.mode === 'tie' && r.roll && r.roll.winner) o += '<div class="abs r-win" style="top:28rem"><div class="g-sub">Ganó</div><b class="big fit" style="display:block">' + h(r.roll.winner) + '</b></div>';
+      var picked = [];
+      for (var k = 0; k < (r.picked || []).length; k++) if (!(rolling && r.roll && r.picked[k] === r.roll.winner)) picked.push(r.picked[k]); // mientras gira, sin adelantar el nombre
+      if (picked.length) { o += '<div class="abs r-list' + (rolling ? ' r-low' : '') + '" style="top:' + (rolling ? 44 : 22) + 'rem"><ol class="rows rk">'; for (var i = 0; i < picked.length; i++) o += '<li class="top"><em>' + (i + 1) + '.º</em>' + h(picked[i]) + '</li>'; o += '</ol></div>'; }
+      o += qrFoot();
+      view.innerHTML = o;
+      if (T2) fitAll(); // diseño nuevo: el título y el nombre se achican si no caben
+    }
+    function load() { get('/api/raffle', function (r) { if (r && cur === 'sala') paint(r); }); }
+    load();
+    every(stageTimers, 1500, load);
+  }
+  function sVote() {
+    var last = ''; var st = null;
+    function paint() {
+      var s = st;
+      var sig = JSON.stringify([s.rev, s.phase, Math.floor(now() / 1000)]);
+      if (sig === last) return;
+      last = sig;
+      var left = s.clockUntil ? clock(s.clockUntil - now()) : '';
+      var o = '<div class="abs g-title fit">' + h(s.title) + '</div><div class="abs v-body' + tv('', ' fitbox') + '" style="top:16rem">';
+      var thing = function (p) { return p && p.thing ? '<div class="mid fit v-thing" style="color:#ffd76a">' + h(p.thing) + '</div>' : ''; };
+      var row = function (p) { return h(p.name) + (p.thing ? tv(' · ' + h(p.thing), '<span class="v-th">' + h(p.thing) + '</span>') : ''); }; // nombre · canción u objeto (en el diseño nuevo, en una línea aparte)
+      if (s.phase === 'winner' && s.winner) o += '<div class="big gold' + tv('', ' fit') + '">' + se('🏆 ¡Ganó!') + '</div><b class="big fit" style="display:block">' + h(s.winner.name) + '</b>' + thing(s.winner) + (s.winner.score != null ? '<div class="mid v-note">Nota ' + dec(s.winner.score) + '</div>' : '') + (s.tie ? '<div class="mid">' + h(s.tie.title + '. ' + s.tie.why) + '</div>' : '');
+      else if (s.phase === 'final' && s.final && s.final.drum) o += '<div class="big gold">' + se('🥁') + '</div><div class="mid v-msg v-drum">¡Redoble de tambores!</div>';
+      else if (s.phase === 'final' && s.final) { o += '<div class="mid gold">Gran final</div>'; for (var f = 0; f < (s.final.players || []).length; f++) o += '<b class="big fit" style="display:block;font-size:' + tv('5.4rem', '5.8em') + '">' + h(s.final.players[f].name) + '</b>'; if (left && s.final.open) o += '<div class="clock">' + left + '</div>'; }
+      else if (s.phase === 'results') { o += '<div class="mid gold">' + se('🏆 Resultados') + '</div><ol class="rows rk sc" style="margin-top:2rem">'; var pl = s.places || []; for (var i = pl.length - 1; i >= 0; i--) o += '<li><em>' + pl[i].place + '.º</em>' + h(pl[i].name) + (pl[i].score != null ? '<i>' + dec(pl[i].score) + '</i>' : '') + '</li>'; o += '</ol>'; }
+      else if (s.open) o += '<div class="mid gold">' + se('🗳️ Vota desde tu celular') + '</div><b class="big fit" style="display:block">' + h(s.open.name) + '</b>' + thing(s.open) + (left ? '<div class="clock">' + left + '</div>' : '');
+      else if (s.onstage) o += '<div class="mid gold">' + se('🎤 En el escenario') + '</div><b class="big fit" style="display:block">' + h(s.onstage.name) + '</b>' + thing(s.onstage);
+      else if (s.signup) { o += '<div class="mid gold">' + se('📝 Inscripciones abiertas') + '</div>' + (left ? '<div class="clock">' + left + '</div>' : '') + '<ol class="rows" style="margin-top:2rem">'; var ps = s.players || []; for (var k = 0; k < ps.length && k < 8; k++) o += '<li>' + row(ps[k]) + '</li>'; o += '</ol>'; }
+      else if (s.last) o += '<div class="mid v-msg">Ya viene el siguiente participante</div>';
+      else { o += '<div class="mid gold">Participantes</div><ol class="rows" style="margin-top:2rem">'; var pp = s.players || []; for (var m = 0; m < pp.length && m < 8; m++) o += '<li>' + row(pp[m]) + '</li>'; o += '</ol>'; }
+      o += '</div>' + qrFoot();
+      if (T2 && o.indexOf('<ol') < 0) o = o.replace('abs v-body', 'abs v-body v-hero'); // diseño nuevo: sin lista, el bloque va más al centro
+      view.innerHTML = o;
+      fitAll();
+    }
+    function load() { get('/api/vote', function (r) { if (r && cur === 'sala') { st = r; paint(); } }); }
+    load();
+    every(stageTimers, 2000, load);
+    every(stageTimers, 1000, function () { if (st) paint(); });
+  }
+  function sDraw() {
+    var last = '';
+    function paint(g) {
+      var ready = g.ready && (!g.last || g.ready.at > g.last.at);
+      var rolling = !ready && g.last && !g.last.direct && now() < g.last.at + 4500;
+      var sig = JSON.stringify([g.list, g.total, ready, rolling, g.last && g.last.at]);
+      if (sig === last) return;
+      last = sig;
+      var o = '';
+      var n = ready ? g.list.length + 1 : g.list.length;
+      if (ready) { o += '<div class="abs g-title fit">' + tv('🎲 ', '') + 'Sorteo del ' + n + '.º juego</div><div class="abs d-pool" style="top:16rem"><ol class="rows">'; for (var i = 0; i < g.ready.pool.length; i++) o += '<li class="top fit">' + gname(g.ready.pool[i]) + '</li>'; o += '</ol></div>'; }
+      else if (rolling) o += '<div class="abs g-title fit">' + tv('🎲 ', '') + 'Sorteo del ' + n + '.º juego</div><div class="abs big gold r-roll' + tv('', ' fit') + '" style="top:30rem">' + se('🎲 Sorteando…') + '</div>';
+      else if (g.last) o += '<div class="abs g-title fit">' + tv('🎲 ', '') + 'El ' + n + '.º juego es</div><div class="abs d-win" style="top:22rem"><b class="big fit gold" style="display:block">' + gname(g.last.game) + '</b></div>';
+      o += '<div class="abs d-list" style="top:52rem"><ol class="rows rk">';
+      for (var k = 0; k < g.total; k++) o += '<li class="fit' + (g.list[k] ? '' : ' off') + '"><em>' + (k + 1) + '.º</em>' + (g.list[k] ? gname(g.list[k]) : tv('🔒', '—')) + '</li>';
+      o += '</ol></div>';
+      view.innerHTML = o;
+      fitAll();
+    }
+    function load() { get('/api/gamedraw', function (g) { if (g && cur === 'sala') paint(g); }); }
+    load();
+    every(stageTimers, 1000, load);
+  }
+  function sGameVote() {
+    var g = null; var introShown = -1;
+    function paintIntro() {
+      var GI = window.GAME_INTRO;
+      if (!GI) return;
+      var k = GI.stepOf(g.intro, now());
+      if (k === introShown) return;
+      introShown = k;
+      var sl = GI.slides(SHORT[VENUE])[k];
+      var o = '<div class="abs gv-head" style="top:4rem"><div class="g-sub" style="color:#ffc400;text-transform:uppercase">' + tv('📢 ', '') + 'Antes de votar · ' + (k + 1) + ' de 6</div><b class="big fit" style="display:block;font-size:' + tv('5.4', '6.6') + 'rem">' + tv(sl.icon + ' ', '') + h(sl.title) + '</b></div>' +
+        '<div class="abs gi-art" style="top:16rem"><div style="width:36rem;margin:0 auto">' + GI.art(sl.key) + '</div></div><div class="abs" id="pvlines" style="top:41rem;bottom:32rem;text-align:left;overflow:hidden"><ul class="rows">';
+      for (var i = 0; i < sl.lines.length; i++) o += '<li style="white-space:normal;font-size:3em">' + h(sl.lines[i]) + '</li>'; // en «em»: se achica junto con el recuadro si no cabe
+      o += '</ul></div>' + qrFoot();
+      view.innerHTML = o;
+      fitAll();
+      fitBox($('pvlines'));
+    }
+    function paint() {
+      if (!g) return;
+      if (g.phase === 'intro') { paintIntro(); return; }
+      introShown = -1;
+      var opts = g.options && g.options.length ? g.options : ['bingo', 'rosco', 'festival', 'objeto'];
+      var top = se(g.phase === 'voting' ? (g.round === 2 ? '🗳️ Segunda vuelta' : '🗳️ Votación') : '🗳️ Resultado de la votación');
+      var big = g.phase === 'done' && g.winner ? tv('🏆 ', '') + '¡Ganó ' + gname(g.winner) + '!' : g.phase === 'result' && g.empty ? 'Nadie votó' : g.phase === 'result' && g.runoff ? 'Nadie superó el 50%' : '¿Qué juego quieren jugar?';
+      var line = g.phase === 'voting' ? 'Quedan <b class="gold">' + clock(g.until - now()) + '</b>' : g.phase === 'result' && g.runoff ? 'Segunda vuelta: ' + gname(g.runoff[0]) + ' y ' + gname(g.runoff[1]) : g.tie ? 'Empate en la segunda vuelta: se decidió por sorteo' : '';
+      var o = '<div class="abs gv-head" style="top:4rem"><div class="g-sub" style="color:#ffc400;text-transform:uppercase">' + top + '</div><b class="big fit" style="display:block;font-size:' + tv('5.4', '6.6') + 'rem">' + big + '</b>' + (line ? '<div class="mid fit">' + line + '</div>' : '') + '</div><div class="abs gv-bars" style="top:24rem"><ol class="rows">';
+      for (var i = 0; i < opts.length; i++) {
+        var k = opts[i]; var n = (g.counts || {})[k] || 0; var p = pct(n, g.total);
+        var dim = (g.phase === 'done' && k !== g.winner) || (g.phase === 'result' && g.runoff && g.runoff.indexOf(k) < 0);
+        o += '<li class="bar top" style="' + (dim ? 'opacity:.45' : '') + '"><u style="width:' + p.toFixed(1) + '%;background:' + GVC[k] + '"></u><span>' + gname(k) + '</span><i>' + fmtPct(p) + ' · ' + votos(n) + '</i></li>';
+      }
+      o += '</ol><div class="g-sub">' + (g.total ? votos(g.total) + ' en total' : '') + '</div></div>' + qrFoot();
+      view.innerHTML = o;
+      fitAll();
+    }
+    function load() { get('/api/gamevote', function (r) { if (r && cur === 'sala') { g = r; paint(); } }); }
+    load();
+    every(stageTimers, 1000, load);
+  }
+  function sShow() {
+    get('/api/light/cartelera?local=' + VENUE, function (c) {
+      if (cur !== 'sala') return;
+      view.innerHTML = '<div class="abs g-title g-tagw s-tag"><span>' + se('⭐ El show de esta noche') + '</span></div><div class="abs s-hero" style="top:30rem"><b class="big' + tv('', ' fit') + '" style="display:block">' + (c && c.show ? showHtml(c.show) : 'KRB Stage') + '</b></div>' + qrFoot();
+      fitAll();
+    });
+  }
+  function sInsta() {
+    get('/api/insta', function (r) {
+      if (cur !== 'sala') return;
+      view.innerHTML = '<div class="abs g-title g-tagw i-tag"><span>' + se('📸 Síguenos en Instagram') + '</span></div><div class="abs i-hero" style="top:34rem"><b class="big fit gold" style="display:block">@' + h((r && r.handle) || 'krbstage') + '</b></div>' + qrFoot();
+      fitAll();
+    });
+  }
+
+  // ---------- Diseño nuevo: encendido o apagado desde el Centro de control ----------
+  function temaSet(on) {
+    if (on === T2) return;
+    T2 = on;
+    document.documentElement.className = T2 ? 't2' : '';
+    fsBtn.innerHTML = se(FS_TXT);
+    layout();
+    if (cur && cur !== 'video' && cur !== 'logo') go(cur); // se vuelve a dibujar la vista con el otro diseño
+  }
+  function temaLoad() { get('/api/tema', function (r) { if (r && typeof r.on === 'boolean') temaSet(r.on); }); }
+  if (Q.tema !== '0' && Q.tema !== '1') { temaLoad(); setInterval(temaLoad, 60000); }
+
+  // ---------- Qué mostrar (las mismas reglas que la pantalla completa) ----------
+  function tick() {
+    get('/api/vertical/' + P, function (st) {
+      if (!st) return;
+      lastOk = new Date().getTime();
+      if (st.video !== ver) {
+        ver = st.video;
+        if (ver) { vid.src = Q.liviano && Q.lver === String(ver) ? Q.liviano : '/vertical/' + P + '.mp4?v=' + ver; if (cur === 'video') play(); } else vid.removeAttribute('src');
+      }
+      var show = st.show;
+      if (show === 'light') show = { karaoke: st.karaokeNow ? 'karaoke' : 'light-kar', qr: 'light-qr', show: 'light-show' }[st.lightStage] || 'light';
+      var want = show === 'video' ? (ver ? 'video' : 'logo') : show === 'light' ? 'info' : show === 'light-qr' ? 'info-qr' : show === 'light-show' ? 'info-show' : show === 'light-kar' ? 'info-kar' : show === 'karaoke' ? 'karaoke' : !st.activity ? (ver ? 'video' : 'logo') : 'sala';
+      if (want !== cur) go(want);
+    });
+  }
+  tick();
+  setInterval(tick, 3000);
+  // Versión nueva publicada (pedido de Cote, 21 nov: que la pantalla se actualice sin tener que apretar nada): cada minuto
+  // se mira la marca de esta página en el servidor; si cambió, la pantalla se recarga sola. No lo hace en pantalla completa
+  // (se perdería), en medio de los juegos, con el servidor sin responder, ni con el video puesto donde el video necesita
+  // un toque para partir (iPad viejo: espera a que la pantalla pase a otra vista).
+  var myTag = null; var newVersion = false;
+  function checkVersion() {
+    var x = new XMLHttpRequest();
+    x.open('HEAD', 'pv.html?_=' + new Date().getTime(), true);
+    x.timeout = 15000;
+    x.onreadystatechange = function () {
+      if (x.readyState !== 4 || x.status !== 200) return;
+      var tag = x.getResponseHeader('ETag') || x.getResponseHeader('Last-Modified') || '';
+      if (!tag) return;
+      if (myTag === null) myTag = tag; else if (tag !== myTag) newVersion = true;
+    };
+    try { x.send(null); } catch (e) { /* nada */ }
+  }
+  checkVersion();
+  setInterval(function () {
+    if (newVersion && serverOk() && cur !== 'sala' && !fsEl() && !vid.webkitDisplayingFullscreen && (autoOk || cur !== 'video')) { location.reload(); return; }
+    if (!newVersion) checkVersion();
+  }, Q.vtest ? 5000 : 60000);
+  // Cada 6 horas se recarga sola (versión nueva y memoria limpia), salvo en medio de los juegos o en pantalla completa
+  // (al recargar se saldría de la pantalla completa y habría que volver a apretar el botón)
+  // (y nunca donde el video necesita un toque para partir, como el iPad viejo: después de recargar volvería a pedirlo)
+  setTimeout(function () { setInterval(function () { if (cur !== 'sala' && !fsEl() && !vid.webkitDisplayingFullscreen && (autoOk || !ver) && serverOk()) location.reload(); }, 60000); }, 6 * 3600 * 1000);
+  // Revisión: con ?diag=1, el navegador y los errores
+  if (Q.diag) {
+    var d = document.createElement('pre'); d.id = 'diag'; document.body.appendChild(d);
+    setInterval(function () { d.textContent = navigator.userAgent + '\nventana ' + window.innerWidth + 'x' + window.innerHeight + ' · pantalla ' + P + ' · vista ' + cur + ' · video ' + ver + (vid.paused ? ' (detenido)' : ' (andando)') + '\nerrores: ' + (errs.length ? errs.join(' | ') : 'ninguno'); }, 1500);
+  }
+})();
+</script>
+</body>
+</html>

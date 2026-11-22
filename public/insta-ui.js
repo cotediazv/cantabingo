@@ -60,11 +60,15 @@
       box.className = `th-${st.venue}`;
       box.innerHTML = st.handle ? `<div class="vg-qr">${qr(joinUrl())}<b>Escanea el código QR con tu celular</b></div>
         <div class="vg-bar">
-          <div class="vg-tag"><small>${esc(st.name)}</small><b>📸 Síguenos en Instagram</b></div>
+          <div class="vg-tag"><small>${esc(st.name)}</small><b>${window.sinEmoji('📸 Síguenos en Instagram')}</b></div>
           <div class="vg-main"><b style="text-transform:none;--n:${Math.max(6, st.handle.length + 1)}">@${esc(st.handle)}</b><span ${n('Programación y registros en vivo')}>Programación y registros en vivo</span></div>
           <div class="vg-side"><small ${n('Míralo')}>Míralo</small><b ${n('En tu celular')}>En tu celular</b></div>
         </div>` : '';
       requestAnimationFrame(() => { if ($('#vg')) $('#vg').classList.add('on'); });
+      // Diseño nuevo: la cuenta va entera en su línea; si no cabe, se achica
+      const fit = () => { if ($('#vg') === box && window.t2 && window.t2()) box.querySelectorAll('.vg-main > b, .vg-main > span, .vg-side > b').forEach((el) => window.fitOneLine(el)); };
+      fit();
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
     });
     return () => { stop(); document.body.classList.remove('obs', 'gc-screen'); };
   };
@@ -75,9 +79,13 @@
       const box = $('#vf');
       if (!box) return;
       box.className = `th-${st.venue}`;
-      box.innerHTML = `<header class="vf-top"><b>Síguenos en Instagram</b><span>📸 ${esc(st.name)}</span></header>
+      box.innerHTML = `<header class="vf-top"><b>Síguenos en Instagram</b><span>${esc(window.sinEmoji(`📸 ${st.name}`))}</span></header>
         <section class="vf-main"><small>Síguenos en Instagram</small><b style="text-transform:none;--n:${(st.handle || 'KRB Stage').length + 1}">${st.handle ? `@${esc(st.handle)}` : 'KRB Stage'}</b><span style="--n:32">Programación y registros en vivo</span></section>
         <aside class="vf-side"><div class="vf-qr insta">${qr(joinUrl())}<b>Escanea el código QR con tu celular</b></div></aside>`;
+      // La cuenta va entera en su línea: si no cabe, se achica (también cuando llegan las letras del diseño nuevo)
+      const fit = () => { if ($('#vf') === box && window.t2 && window.t2()) box.querySelectorAll('.vf-top > b, .vf-main > b, .vf-main > span').forEach((el) => window.fitOneLine(el)); };
+      fit();
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
     });
     return () => stop();
   };

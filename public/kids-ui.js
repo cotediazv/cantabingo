@@ -824,6 +824,8 @@
     vibora: `<svg viewBox="0 0 100 100" aria-hidden="true"><path d="M18 78 C18 62 40 62 46 70 S70 84 74 66 S60 44 44 46 S26 34 36 24 S60 16 66 26" fill="none" stroke="#1f8a3a" stroke-width="15" stroke-linecap="round"/><path d="M18 78 C18 62 40 62 46 70 S70 84 74 66 S60 44 44 46 S26 34 36 24 S60 16 66 26" fill="none" stroke="#4cd964" stroke-width="10" stroke-linecap="round" stroke-dasharray="1 9"/><circle cx="68" cy="27" r="11" fill="#2bb24c"/><circle cx="71" cy="23" r="3.2" fill="#fff"/><circle cx="72" cy="23" r="1.6" fill="#3b2a4d"/><path d="M79 30 l7 2 m-7 -2 l6 5" stroke="#e63946" stroke-width="2" stroke-linecap="round"/><circle cx="84" cy="78" r="9" fill="#e63946"/><path d="M84 69 q2 -6 7 -7" stroke="#2bb24c" stroke-width="3" fill="none"/>${shine(81, 75, 2.5, 2)}</svg>`,
   };
   const MENU = [['salto'], ['carrera'], ['fruta'], ['globos'], ['laberinto'], ['topos'], ['pintar'], ['memoria'], ['puzzle'], ['bloques'], ['vibora']];
+  // «Agustín, el pirata»: juego aparte (public/agustin.html), con su propio botón al final del menú
+  const AGUSTIN = `<a class="kz-game" href="/agustin.html" aria-label="Agustín, el pirata"><svg viewBox="0 0 100 100" aria-hidden="true"><ellipse cx="34" cy="62" rx="11" ry="13" fill="#3b2314"/><circle cx="52" cy="62" r="25" fill="#f0c08a" stroke="#1c1724" stroke-width="3"/><circle cx="31" cy="66" r="6" fill="#f0c08a" stroke="#1c1724" stroke-width="2.5"/><circle cx="31" cy="76" r="4" fill="none" stroke="#f2c14e" stroke-width="3"/><path d="M30 52 L66 60" stroke="#1c1724" stroke-width="3"/><ellipse cx="57" cy="62" rx="7" ry="8" fill="#16131c"/><ellipse cx="70" cy="61" rx="5" ry="6" fill="#fff" stroke="#1c1724" stroke-width="2"/><circle cx="72" cy="62" r="3" fill="#1c1724"/><path d="M60 72 q8 7 15 0" fill="none" stroke="#1c1724" stroke-width="3" stroke-linecap="round"/><path d="M10 50 Q24 42 28 30 Q48 0 70 30 Q78 40 94 40 Q56 58 10 50z" fill="#1d1b26" stroke="#1c1724" stroke-width="3"/><path d="M15 49 Q52 54 89 41" fill="none" stroke="#e9b44c" stroke-width="3.5"/><circle cx="50" cy="28" r="6.5" fill="#fff"/><rect x="46" y="31" width="8" height="5" fill="#fff"/><circle cx="47.5" cy="27" r="1.8" fill="#1d1b26"/><circle cx="52.5" cy="27" r="1.8" fill="#1d1b26"/><path d="M42 38 L58 45 M58 38 L42 45" stroke="#fff" stroke-width="2.5"/></svg></a>`;
 
   // Se recuerda desde qué pantalla se entró, para volver ahí con «Volver a la sala»
   document.addEventListener('click', (e) => {
@@ -837,7 +839,7 @@
     if (!games[which]) {
       app.innerHTML = `${stamps()}<div class="kz"><div class="kz-top"><button type="button" class="kz-back" data-exit>← Volver a la sala</button></div>
         <div class="kz-home-body"><h1 class="kz-title">${kidsBalloons()}<span class="kz-name">${kidsName()}</span></h1>
-        <div class="kz-menu">${MENU.map(([k]) => `<a class="kz-game" href="#/kids/${k}" aria-label="${k}">${ICONS[k]}</a>`).join('')}</div></div></div>`;
+        <div class="kz-menu">${MENU.map(([k]) => `<a class="kz-game" href="#/kids/${k}" aria-label="${k}">${ICONS[k]}</a>`).join('')}${AGUSTIN}</div></div></div>`;
       $('[data-exit]').onclick = () => { location.hash = backTo(); };
     } else {
       app.innerHTML = `<div class="kz"><div class="kz-top"><button type="button" class="kz-back" data-back>←</button><span class="kz-icon">${ICONS[which]}</span></div><div id="kz-stage" class="kz-stage"></div></div>`;

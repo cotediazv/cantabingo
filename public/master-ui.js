@@ -19,6 +19,9 @@
   const LIGHT = [['info', '🔄', 'Información'], ['karaoke', '🎤', 'Karaoke'], ['show', '⭐', 'Show'], ['cartelera', '📅', 'Cartelera'], ['qr', '📱', 'QR grande'], ['none', '⛔', 'Nada']];
   // Opciones del GC de la sala de juegos (cuando la sala abierta es la de este local)
   const MAIN = [['bingo', '🎱', 'Bingo'], ['rueda', '🎡', 'El Rosco'], ['sorteo', '🎲', 'Sorteo'], ['voto', '🗳️', 'Votación'], ['karaoke', '🎤', 'Karaoke'], ['show', '⭐', 'Show'], ['insta', '📸', 'Instagram'], ['qr', '📱', 'QR'], ['none', '⛔', 'Nada']];
+  // Capa gráfica sobre la cámara (pedido de Cote, 21 nov): piezas que se disparan sobre el GC de OBS del local y salen solas
+  const CAPA = [['cortina', '🎬', 'Cortina', 'Cortina'], ['texto3d', '🧊', 'Texto 3D', 'Texto 3D'], ['celebracion', '🎉', 'Celebración', 'Celebración'], ['fuegos', '🎆', 'Fuegos', 'Fuegos artificiales'],
+    ['confeti', '🎊', 'Confeti', 'Lluvia de confeti'], ['luces', '🔦', 'Luces', 'Luces de escenario'], ['corazones', '❤️', 'Corazones', 'Corazones'], ['off', '✖', 'Quitar', 'Quitar lo que está en pantalla']];
   const page = (hash) => `${location.pathname}?mudo=1${hash}`;
 
   const venueHTML = (v) => `<section class="gm-venue th-${v}" data-v="${v}">
@@ -30,20 +33,277 @@
           <div class="gm-scr"><small>2 · Tablero</small>
             <div class="gm-box" data-w="1280"><iframe title="Tablero de ${esc(VENUES[v])}" tabindex="-1" src="${page(`#/pantalla/${BOARD[v]}`)}"></iframe></div></div>
         </div>
-        <div class="gm-scr gm-tall"><small>3 · Pantalla vertical</small>
+        <div class="gm-scr gm-tall"><small>3 · Vertical</small>
           <div class="gm-box" data-w="720"><iframe title="Pantalla vertical de ${esc(VENUES[v])}" tabindex="-1" src="${page(`#/vertical-in/${VERT[v]}`)}"></iframe></div></div>
       </div>
       <div class="gm-keys" data-k="keys"></div>
+      <div class="gm-txtrow">
+        <input class="gm-text" data-k="text" type="text" name="text" form="gmf-${v}" maxlength="120" autocomplete="off" placeholder="Texto del GC personalizable o del texto 3D">
+        <div class="gm-capa" title="Capa gráfica sobre la cámara">${CAPA.map(([k, i, t, full]) => `<button type="button" class="gm-ckey" data-capa="${k}" title="${full}" aria-label="${full}"><span>${i}</span><b>${t}</b></button>`).join('')}</div>
+      </div>
     </section>`;
+
+  // Barra de arriba: los 3 locales, «Los 3 locales» y «Sala de juegos» (pedido de Cote, 22 nov), con la hora y la fecha
+  const navHTML = (on) => `<nav class="gm-nav"><a class="gm-back" href="#/control">←<span> Centro de control</span></a><b>🎛️ GC Master</b>
+        ${ORDER.map((v) => `<a class="gm-tab ${on === v ? 'on' : ''}" href="#/master/${v}">${esc(VENUES[v])}</a>`).join('')}
+        <a class="gm-tab ${on === 'todos' ? 'on' : ''}" href="#/master">Los 3 locales</a>
+        <a class="gm-tab ${on === 'juegos' ? 'on' : ''}" href="#/master/juegos">Sala de juegos</a>
+        <span class="gm-clock" data-k="clock"><b></b><i></i></span></nav>`;
+  // Arriba, la fecha con el año y la hora local de los locales (hora de Chile), al segundo (pedido de Cote, 22 nov)
+  const startClock = (root) => {
+    const clockEl = root.querySelector('[data-k="clock"]');
+    const fmtDate = new Intl.DateTimeFormat('es-CL', { timeZone: 'America/Santiago', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const fmtTime = new Intl.DateTimeFormat('es-CL', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' });
+    const tick = () => { const now = new Date(); const d = fmtDate.format(now); clockEl.querySelector('i').textContent = d.charAt(0).toUpperCase() + d.slice(1); clockEl.querySelector('b').textContent = fmtTime.format(now); };
+    tick();
+    return setInterval(tick, 1000);
+  };
+
+  // Señal 1 de la sala de juegos (pedido de Cote, 22 nov: «¿el control por qué no muestra la transmisión?»): el monitor 1
+  // muestra, igual que en la página de cada local, 1.º la transmisión nuestra (señal propia), 2.º la de Twitch y 3.º el GC
+  // sobre un fondo. Va siempre sin sonido. Con la página oculta la señal nuestra se desconecta (cada minuto visto se paga).
+  const signal1 = (box, v, { fit, label }) => {
+    box.innerHTML = '<video class="gm-own" muted autoplay playsinline hidden></video><div class="gm-p1in"></div>';
+    const vid = box.querySelector('video'); const inner = box.querySelector('.gm-p1in');
+    let own = false; let live = false; let pc = null; let timer = null; let dead = false; let src = '';
+    const paint = () => {
+      if (dead) return;
+      const mode = own ? 'own' : live ? 'twitch' : 'gc';
+      label(mode === 'own' ? 'Transmisión nuestra' : mode === 'twitch' ? 'Twitch' : 'GC · sin transmisión');
+      const next = mode === 'own' ? 'own' : mode === 'twitch' ? `https://player.twitch.tv/?channel=${TWITCH[v]}&parent=${location.hostname}&muted=true&autoplay=true` : '/?mudo=1#/escena';
+      if (next === src) return;
+      src = next;
+      vid.hidden = mode !== 'own'; inner.hidden = mode === 'own';
+      box.classList.toggle('gm-bg', mode === 'gc'); // el GC es transparente: se ve sobre un fondo con el color del local
+      inner.innerHTML = mode === 'own' ? '' : mode === 'twitch' ? `<iframe data-full="1" title="Twitch de ${esc(VENUES[v])}" allow="autoplay; fullscreen" src="${esc(next)}"></iframe>` : `<iframe title="GC de la sala de juegos" tabindex="-1" src="${next}"></iframe>`;
+      fit();
+    };
+    const stopOwn = () => { clearTimeout(timer); if (pc) { try { pc.close(); } catch { /* nada */ } pc = null; } if (own) { own = false; paint(); } };
+    const startOwn = () => {
+      clearTimeout(timer);
+      if (dead || document.hidden || !window.RTCPeerConnection || !OWN[v]) return;
+      if (pc) { try { pc.close(); } catch { /* nada */ } }
+      const me = pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.cloudflare.com:3478' }], bundlePolicy: 'max-bundle' });
+      const ms = new MediaStream();
+      const again = (wait) => { if (pc !== me) return; try { me.close(); } catch { /* nada */ } pc = null; if (own) { own = false; paint(); } timer = setTimeout(startOwn, wait); };
+      me.addTransceiver('video', { direction: 'recvonly' }); me.addTransceiver('audio', { direction: 'recvonly' });
+      me.ontrack = (e) => { ms.addTrack(e.track); vid.srcObject = ms; vid.play().catch(() => {}); };
+      me.onconnectionstatechange = () => { if (pc === me && ['failed', 'disconnected', 'closed'].includes(me.connectionState)) again(5000); };
+      const limit = setTimeout(() => { if (pc === me && !own) again(20000); }, 12000); // sin señal: se reintenta cada tanto
+      me.createOffer().then((o) => me.setLocalDescription(o))
+        .then(() => new Promise((r) => { if (me.iceGatheringState === 'complete') return r(); const t = setTimeout(r, 1500); me.addEventListener('icegatheringstatechange', () => { if (me.iceGatheringState === 'complete') { clearTimeout(t); r(); } }); return undefined; }))
+        .then(() => fetch(OWN[v], { method: 'POST', headers: { 'content-type': 'application/sdp' }, body: me.localDescription.sdp }))
+        .then((r) => { if (!r.ok) throw new Error(`WHEP ${r.status}`); return r.text(); })
+        .then((sdp) => me.setRemoteDescription({ type: 'answer', sdp }))
+        .catch(() => { clearTimeout(limit); again(20000); });
+    };
+    vid.addEventListener('playing', () => { if (!own && !dead) { own = true; paint(); } });
+    const loadLive = async () => {
+      const r = await api('GET', '/api/web/twitch').catch(() => null);
+      if (dead || !r) return;
+      const c = (r.canales || []).find((x) => x.canal === TWITCH[v]);
+      const now = !!(c && c.vivo);
+      if (now !== live) { live = now; paint(); }
+    };
+    const onVisible = () => (document.hidden ? stopOwn() : (pc || startOwn()));
+    document.addEventListener('visibilitychange', onVisible);
+    const t = setInterval(loadLive, 20000);
+    paint(); startOwn(); loadLive();
+    return () => { dead = true; clearInterval(t); document.removeEventListener('visibilitychange', onVisible); clearTimeout(timer); if (pc) { try { pc.close(); } catch { /* nada */ } pc = null; } };
+  };
+
+  // El panel de la sala va dentro de un recuadro y se achica solo, lo justo para que todo quepa sin subir ni bajar: parte en
+  // «max» y baja hasta «min» según lo que realmente ocupa el contenido. Con «wide», solo se achica desde ese ancho de ventana.
+  const panelFit = (pf, { max, min, wide = 0, alive }) => {
+    const pbox = pf.parentElement;
+    let k = max; let cap = max; let lastHash = ''; let grewAt = 0;
+    const on = () => window.innerWidth > wide;
+    const applyK = () => { const kk = on() ? k : 1; pf.style.width = `${100 / kk}%`; pf.style.height = `${100 / kk}%`; pf.style.transform = kk === 1 ? '' : `scale(${kk})`; };
+    const fitPanel = () => {
+      if (!alive()) return;
+      if (!on()) { applyK(); return; }
+      if (pbox.clientHeight < 60) return; // oculto
+      let doc = null; try { doc = pf.contentDocument; } catch { doc = null; }
+      const a = doc && doc.getElementById('app');
+      if (!a || !a.lastElementChild) return;
+      if (!doc.getElementById('gm-in')) { const st = doc.createElement('style'); st.id = 'gm-in'; st.textContent = 'main{padding:10px 14px 8px !important;max-width:none !important}.panel{padding:12px 16px !important;margin-bottom:10px !important}h1{margin-bottom:.15em !important}.cols{gap:10px !important}.back{margin:0 0 6px !important}'; doc.head.appendChild(st); }
+      const hash = pf.contentWindow.location.hash;
+      if (hash !== lastHash) { lastHash = hash; cap = max; }
+      // alto que ocupa el contenido (en píxeles del panel sin achicar) y el tamaño que lo haría caber
+      let bottom = 0; for (const c of a.children) { const r = c.getBoundingClientRect(); if (r.height) bottom = Math.max(bottom, r.bottom); }
+      const need = bottom + (pf.contentWindow.scrollY || 0) + 14;
+      const next = Math.max(min, Math.min(cap, (pbox.clientHeight / need) * 0.985)); // cabe si need <= alto del panel / k
+      if (next < k - 0.008) { if (Date.now() - grewAt < 2500) cap = next; k = next; applyK(); } // si al agrandar dejó de caber, no se vuelve a agrandar en esta vista
+      else if (next > k * 1.12) { k = next; grewAt = Date.now(); applyK(); }
+    };
+    return { fitPanel, applyK, reset: () => { k = max; cap = max; applyK(); } };
+  };
+
+  // «Sala KRB»: la sala de juegos en el teléfono (pedido de Cote, 22 nov: «una versión móvil… guardarlo en el inicio, que no
+  // se vea la barra de direcciones y pueda en una plana operar todos los botones… distribuido para un iPhone»). Se abre
+  // en /sala (#/master/movil), a pantalla completa y sin bajar la página: arriba los 3 monitores chicos (GC, tablero y de
+  // pie); al medio, lo que se elige con las 2 teclas de abajo: «Juego» (el panel real de la sala, achicado para que quepa)
+  // o «GC y efectos» (los 9 botones del GC, el texto y los 8 efectos).
+  const movil = async () => {
+    if (!(await isAdmin())) return viewLogin();
+    document.body.classList.add('gm-on', 'gmm-on');
+    app.innerHTML = `<div id="gm" class="gm-m">
+      <header class="gmm-top"><b data-k="mtitle">Sala de juegos</b><span data-k="msala"></span><span class="gm-clock" data-k="clock"><b></b><i></i></span></header>
+      <div class="gmm-mon" data-k="mon"></div>
+      <div class="gmm-body">
+        <div class="gm-panel gmm-pane" data-pane="juego"><iframe title="Panel de la sala de juegos" src="/#/juegos"></iframe></div>
+        <div class="gmm-pane gmm-gc" data-pane="gc" hidden></div>
+      </div>
+      <nav class="gmm-tabs"><button type="button" class="on" data-tab="juego"><span>🎮</span><b>Juego</b></button><button type="button" data-tab="gc"><span>🎛️</span><b>GC y efectos</b></button></nav></div>`;
+    const root = $('#gm');
+    const mon = root.querySelector('[data-k="mon"]'); const gc = root.querySelector('[data-pane="gc"]');
+    let alive = true; let venue = null; let stage = ''; let sigStop = null;
+    const fit = () => root.querySelectorAll('.gm-box').forEach((box) => { const f = box.querySelector('iframe:not([data-full])'); if (f) f.style.transform = `scale(${box.clientWidth / Number(box.dataset.w || 1280)})`; });
+    const ro = new ResizeObserver(fit);
+    const key = (k, icon, text, on) => `<button type="button" class="gm-key ${on ? 'on' : ''}" data-main="${k}"><i></i><span>${icon}</span><b>${text}</b></button>`;
+    const paintKeys = () => { const box = gc.querySelector('[data-k="keys"]'); if (box) box.innerHTML = MAIN.map(([k, i, t]) => key(k, i, t, stage === k)).join(''); };
+    const paint = () => {
+      ro.disconnect();
+      root.querySelector('[data-k="mtitle"]').textContent = venue ? VENUES[venue] : 'Sala de juegos';
+      if (sigStop) { sigStop(); sigStop = null; }
+      mon.innerHTML = venue ? `<div class="gm-scr th-${venue}"><small data-k="p1name">GC</small><div class="gm-box" data-w="1280" data-k="p1box"></div></div>${[['Tablero', '#/tablero', 1280, ''], ['De pie', '#/tablero', 720, 'gm-tall']].map(([t, h, w, tall]) => `<div class="gm-scr ${tall} th-${venue}"><small>${t}</small><div class="gm-box" data-w="${w}"><iframe title="${t}" tabindex="-1" src="/?mudo=1${h}"></iframe></div></div>`).join('')}`
+        : '<p class="gmm-none">No hay sala de juegos abierta. Créala aquí abajo, con «Crear sala de juegos».</p>';
+      if (venue) sigStop = signal1(mon.querySelector('[data-k="p1box"]'), venue, { fit, label: (t) => { const el = mon.querySelector('[data-k="p1name"]'); if (el) el.textContent = t; } });
+      gc.innerHTML = venue ? `<div class="gm-venue th-${venue}" data-v="${venue}">
+          <div class="gm-row"><small>GC de la sala de juegos</small><div class="gm-keyrow" data-k="keys"></div></div>
+          <div class="gm-row"><small>Efectos sobre la cámara</small>
+            <input class="gm-text" data-k="text" type="text" maxlength="60" autocomplete="off" placeholder="Texto para el texto 3D">
+            <div class="gm-capa">${CAPA.map(([k, i, t, full]) => `<button type="button" class="gm-ckey" data-capa="${k}" title="${full}" aria-label="${full}"><span>${i}</span><b>${t}</b></button>`).join('')}</div></div></div>`
+        : '<p class="gmm-none">Cuando haya una sala de juegos abierta, aquí aparecen los botones del GC y los efectos.</p>';
+      root.querySelectorAll('.gm-box').forEach((b) => ro.observe(b));
+      paintKeys(); fit();
+    };
+    const load = async () => {
+      const r = await api('GET', '/api/consola').catch(() => null);
+      if (!alive || !r) return;
+      const loc = (r.locales || []).find((x) => x.main);
+      const v = loc ? loc.venue : null; const st = loc ? loc.main.stage : '';
+      if (v !== venue) { venue = v; stage = st; paint(); } else if (st !== stage) { stage = st; paintKeys(); }
+      root.querySelector('[data-k="msala"]').textContent = loc ? loc.main.stageName : '';
+    };
+    const pf = root.querySelector('.gm-panel iframe');
+    const { fitPanel, applyK, reset } = panelFit(pf, { max: 0.85, min: 0.6, alive: () => alive });
+    root.onclick = async (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      if (b.dataset.tab) {
+        root.querySelectorAll('[data-tab]').forEach((x) => x.classList.toggle('on', x === b));
+        root.querySelectorAll('[data-pane]').forEach((x) => { x.hidden = x.dataset.pane !== b.dataset.tab; });
+        fitPanel(); return;
+      }
+      if (!venue) return;
+      try {
+        if (b.dataset.main) { await api('POST', '/api/stage', { show: b.dataset.main }); load(); } else if (b.dataset.capa) {
+          const ti = gc.querySelector('[data-k="text"]'); const text = ti.value.trim();
+          if (b.dataset.capa === 'texto3d' && !text) { toast('Escribe el texto para el 3D'); ti.focus(); return; }
+          await api('POST', '/api/capa', { local: venue, kind: b.dataset.capa, text });
+          b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 1500);
+        }
+      } catch (err) { fail(err); }
+    };
+    applyK();
+    pf.addEventListener('load', reset);
+    window.addEventListener('resize', fitPanel);
+    paint();
+    await load();
+    const t3 = startClock(root);
+    const t1 = setInterval(load, 3000);
+    const t4 = setInterval(fitPanel, 400);
+    return () => { alive = false; if (sigStop) sigStop(); clearInterval(t1); clearInterval(t3); clearInterval(t4); window.removeEventListener('resize', fitPanel); ro.disconnect(); document.body.classList.remove('gm-on', 'gmm-on'); };
+  };
+
+  // «Sala de juegos» (pedido de Cote, 22 nov: «que tengamos Mercado Kennedy, Frida, Tobalaba y luego sala de juegos, para
+  // poder tener todos los botones y todas las interacciones»): a la izquierda, las 3 pantallas de la sala de juegos abierta
+  // (1 GC de OBS, 2 tablero, 3 pantalla de pie), los botones del GC y los de la capa gráfica; a la derecha, el panel real
+  // de la sala (crear sala, elegir el juego y manejar cada juego), para hacer todo sin salir de esta página.
+  const juegos = async () => {
+    if (!(await isAdmin())) return viewLogin();
+    document.body.classList.add('gm-on');
+    app.innerHTML = `<div id="gm" class="gm-all gm-jg">${navHTML('juegos')}
+      <a class="gm-movil" href="/sala">📱 Abrir la versión para el teléfono</a>
+      <div class="gm-grid"><div class="gm-jgleft" data-k="left"></div>
+        <div class="gm-panel"><iframe title="Panel de la sala de juegos" src="${location.pathname}#/juegos"></iframe></div></div></div>`;
+    const root = $('#gm');
+    const left = root.querySelector('[data-k="left"]');
+    let alive = true; let venue = null; let stage = ''; let sigStop = null;
+    const fit = () => root.querySelectorAll('.gm-box').forEach((box) => { const f = box.querySelector('iframe:not([data-full])'); if (f) f.style.transform = `scale(${box.clientWidth / Number(box.dataset.w || 1280)})`; });
+    const ro = new ResizeObserver(fit);
+    const key = (k, icon, text, on) => `<button type="button" class="gm-key ${on ? 'on' : ''}" data-main="${k}"><i></i><span>${icon}</span><b>${text}</b></button>`;
+    const paintKeys = () => { const box = left.querySelector('[data-k="keys"]'); if (box) box.innerHTML = `<div class="gm-row"><small>GC de la sala de juegos</small><div class="gm-keyrow">${MAIN.map(([k, i, t]) => key(k, i, t, stage === k)).join('')}</div></div>`; };
+    const paintLeft = () => {
+      ro.disconnect();
+      if (sigStop) { sigStop(); sigStop = null; }
+      left.innerHTML = venue ? `<section class="gm-venue th-${venue}" data-v="${venue}">
+          <header class="gm-head"><b>Sala de juegos · ${esc(VENUES[venue])}</b><span class="gm-sala" data-k="sala"></span></header>
+          <div class="gm-screens">
+            <div class="gm-left">
+              <div class="gm-scr"><small>1 · <span data-k="p1name">GC</span></small><div class="gm-box" data-w="1280" data-k="p1box"></div></div>
+              <div class="gm-scr"><small>2 · Tablero</small><div class="gm-box" data-w="1280"><iframe title="Tablero de la sala de juegos" tabindex="-1" src="${page('#/tablero')}"></iframe></div></div>
+            </div>
+            <div class="gm-scr gm-tall"><small>3 · De pie</small><div class="gm-box" data-w="720"><iframe title="Pantalla de pie de la sala de juegos" tabindex="-1" src="${page('#/tablero')}"></iframe></div></div>
+          </div>
+          <div class="gm-keys" data-k="keys"></div>
+          <div class="gm-txtrow">
+            <input class="gm-text" data-k="text" type="text" maxlength="60" autocomplete="off" placeholder="Texto para el texto 3D">
+            <div class="gm-capa" title="Capa gráfica sobre la cámara">${CAPA.map(([k, i, t, full]) => `<button type="button" class="gm-ckey" data-capa="${k}" title="${full}" aria-label="${full}"><span>${i}</span><b>${t}</b></button>`).join('')}</div>
+          </div></section>`
+        : `<section class="gm-venue gm-none"><header class="gm-head"><b>Sala de juegos</b></header>
+          <p>No hay sala de juegos abierta. Créala en el panel de al lado («Crear sala de juegos»); cuando esté abierta, aquí aparecen sus pantallas y sus botones.</p></section>`;
+      if (venue) sigStop = signal1(left.querySelector('[data-k="p1box"]'), venue, { fit, label: (t) => { const el = left.querySelector('[data-k="p1name"]'); if (el) el.textContent = t; } });
+      root.querySelectorAll('.gm-box').forEach((b) => ro.observe(b));
+      paintKeys(); fit();
+    };
+    const load = async () => {
+      const r = await api('GET', '/api/consola').catch(() => null);
+      if (!alive || !r) return;
+      const loc = (r.locales || []).find((x) => x.main);
+      const v = loc ? loc.venue : null;
+      const st = loc ? loc.main.stage : '';
+      if (v !== venue) { venue = v; stage = st; paintLeft(); } else if (st !== stage) { stage = st; paintKeys(); }
+      const sala = left.querySelector('[data-k="sala"]');
+      if (sala && loc) sala.textContent = `En pantalla: ${loc.main.stageName}`;
+    };
+    root.onclick = async (e) => {
+      const b = e.target.closest('button');
+      if (!b || !venue || !left.contains(b)) return;
+      e.preventDefault();
+      try {
+        if (b.dataset.main) { await api('POST', '/api/stage', { show: b.dataset.main }); load(); } else if (b.dataset.capa) {
+          const ti = left.querySelector('[data-k="text"]'); const text = ti.value.trim();
+          if (b.dataset.capa === 'texto3d' && !text) { toast('Escribe el texto para el 3D'); ti.focus(); return; }
+          await api('POST', '/api/capa', { local: venue, kind: b.dataset.capa, text });
+          b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 1500);
+          toast(b.dataset.capa === 'off' ? 'Capa quitada' : `${b.title} en la sala de juegos`);
+        }
+      } catch (err) { fail(err); }
+    };
+    // El panel de la derecha se achica solo, lo justo para que todo quepa sin subir ni bajar (pedido de Cote, 22 nov:
+    // «se ven todo un poco grandes… para poder tener siempre todo en pantalla»). Parte al 80 % y baja hasta el 50 % si lo
+    // que hay en el panel es más alto; se mide lo que realmente ocupa el contenido. En el teléfono va a tamaño normal.
+    const pf = root.querySelector('.gm-panel iframe');
+    const { fitPanel, applyK, reset } = panelFit(pf, { max: 0.8, min: 0.5, wide: 900, alive: () => alive });
+    applyK();
+    pf.addEventListener('load', reset);
+    window.addEventListener('resize', fitPanel);
+    paintLeft();
+    await load();
+    const t3 = startClock(root);
+    const t1 = setInterval(load, 3000);
+    const t4 = setInterval(fitPanel, 400);
+    return () => { alive = false; if (sigStop) sigStop(); clearInterval(t1); clearInterval(t3); clearInterval(t4); window.removeEventListener('resize', fitPanel); ro.disconnect(); document.body.classList.remove('gm-on'); };
+  };
 
   // Una página del GC Master: uno o los tres locales
   const master = async (list, single) => {
     if (!(await isAdmin())) return viewLogin();
     document.body.classList.add('gm-on');
     app.innerHTML = `<div id="gm" class="${single ? 'gm-one' : 'gm-all'}">
-      <nav class="gm-nav"><a class="gm-back" href="#/control">←<span> Centro de control</span></a><b>🎛️ GC Master</b>
-        ${ORDER.map((v) => `<a class="gm-tab ${single && list[0] === v ? 'on' : ''}" href="#/master/${v}">${esc(VENUES[v])}</a>`).join('')}
-        <a class="gm-tab ${single ? '' : 'on'}" href="#/master">Los 3 locales</a></nav>
+      ${navHTML(single ? list[0] : 'todos')}
       <div class="gm-grid">${list.map(venueHTML).join('')}</div>
       ${single ? '' : `<div class="gm-audio"><small>Audio · escuchar la señal 1 de un local (los otros se apagan)</small><div class="gm-audiorow">${list.map((v, i) => `<button type="button" class="gm-key" data-audio="${v}"><i></i><span>🔇</span><b>${i + 1} · ${esc(VENUES[v])}</b></button>`).join('')}</div></div>`}</div>`;
     const root = $('#gm');
@@ -145,15 +405,17 @@
       const sig = JSON.stringify([s.main && s.main.stage, s.light && [s.light.stage, s.light.text, s.light.video], s.p1]);
       const box = el(v, 'keys');
       // Mientras se escribe el texto del GC personalizable no se redibuja (se perdería lo escrito)
-      if (sig === s.keys || (document.activeElement && document.activeElement.name === 'text' && box.contains(document.activeElement))) return;
+      if (sig === s.keys) return;
+      // El texto del GC personalizable va aparte de los botones (no se pierde lo escrito cuando ellos se redibujan)
+      const ti = el(v, 'text');
+      if (document.activeElement !== ti) ti.value = (s.light && s.light.text) || '';
       s.keys = sig;
       const l = s.light;
       box.innerHTML = `${s.main ? `<div class="gm-row"><small>GC de la sala de juegos</small><div class="gm-keyrow">${MAIN.map(([k, i, t]) => key('data-main', k, i, t, s.main.stage === k)).join('')}</div></div>` : ''}
-        ${l ? `<form class="gm-row gm-custom"><small>GC de la sala light</small><div class="gm-keyrow">${LIGHT.map(([k, i, t]) => key('data-light', k, i, t, l.stage === k)).join('')}
+        ${l ? `<form class="gm-row gm-custom" id="gmf-${v}"><small>GC de la sala light</small><div class="gm-keyrow">${LIGHT.map(([k, i, t]) => key('data-light', k, i, t, l.stage === k)).join('')}
             ${key('data-video', l.video ? '0' : '1', '🎬', 'Video cartelera', !!l.video)}
             <button class="gm-key gm-long ${l.stage === 'custom' ? 'on' : ''}"><i></i><span>✏️</span><b>GC personalizable</b></button>
-            ${key('data-p1', 'vivo', '🔴', 'Pantalla 1: vivo', s.p1 === 'vivo')}${key('data-p1', 'gc', '🖼️', 'Pantalla 1: GC', s.p1 === 'gc')}</div>
-          <input type="text" name="text" maxlength="120" autocomplete="off" placeholder="Texto del GC personalizable" value="${esc(l.text || '')}"></form>` : ''}`;
+            ${key('data-p1', 'vivo', '🔴', 'Pantalla 1: vivo', s.p1 === 'vivo')}${key('data-p1', 'gc', '🖼️', 'Pantalla 1: GC', s.p1 === 'gc')}</div></form>` : ''}`;
     };
 
     const load = async () => {
@@ -188,6 +450,18 @@
       // Pantalla 1: tocar «vivo» o «GC» la deja fija; tocar de nuevo la tecla encendida la devuelve a automático
       if (b.dataset.p1) { e.preventDefault(); state[v].p1 = state[v].p1 === b.dataset.p1 ? 'auto' : b.dataset.p1; paintP1(v); paintKeys(v); return; }
       if (b.type !== 'submit') e.preventDefault();
+      if (b.dataset.capa) {
+        // Capa gráfica: se dispara sobre el GC de OBS de este local; el texto 3D usa lo escrito en el espacio de texto
+        const ti = el(v, 'text'); const text = ti.value.trim();
+        if (b.dataset.capa === 'texto3d' && !text) { toast('Escribe el texto para el 3D'); ti.focus(); return; }
+        try {
+          await api('POST', '/api/capa', { local: v, kind: b.dataset.capa, text: text.slice(0, 60) });
+          b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 1500);
+          // en el computador los botones van solo con su dibujo: el aviso dice cuál se disparó
+          toast(b.dataset.capa === 'off' ? `Capa quitada en ${VENUES[v]}` : `${b.title} en ${VENUES[v]}`);
+        } catch (err) { fail(err); }
+        return;
+      }
       try {
         if (b.dataset.light) await api('POST', '/api/light/stage', { local: v, show: b.dataset.light });
         else if (b.dataset.main) await api('POST', '/api/stage', { show: b.dataset.main });
@@ -201,20 +475,23 @@
       if (!f) return;
       e.preventDefault();
       const v = f.closest('.gm-venue').dataset.v;
-      const text = f.text.value.trim();
-      if (!text) { toast('Escribe el texto del GC'); f.text.focus(); return; }
-      try { f.text.blur(); await api('POST', '/api/light/stage', { local: v, show: 'custom', text }); toast(`GC personalizable en ${VENUES[v]}`); load(); } catch (err) { fail(err); }
+      const ti = el(v, 'text');
+      const text = ti.value.trim();
+      if (!text) { toast('Escribe el texto del GC'); ti.focus(); return; }
+      try { ti.blur(); await api('POST', '/api/light/stage', { local: v, show: 'custom', text }); toast(`GC personalizable en ${VENUES[v]}`); load(); } catch (err) { fail(err); }
     };
 
     list.forEach(paintP1);
     list.forEach(ownStart);
     await Promise.all([load(), loadLive()]);
     fit();
+    const t3 = startClock(root);
     const t1 = setInterval(load, 3000);
     const t2 = setInterval(loadLive, 20000);
-    return () => { alive = false; clearInterval(t1); clearInterval(t2); ro.disconnect(); document.removeEventListener('visibilitychange', onVisible); list.forEach((v) => { clearInterval(fades[v]); ownStop(v); }); document.body.classList.remove('gm-on'); };
+    return () => { alive = false; clearInterval(t1); clearInterval(t2); clearInterval(t3); ro.disconnect(); document.removeEventListener('visibilitychange', onVisible); list.forEach((v) => { clearInterval(fades[v]); ownStop(v); }); document.body.classList.remove('gm-on'); };
   };
 
-  // #/master: los 3 locales juntos · #/master/<local>: la página de un local
-  views.master = (v) => (VENUES[v] ? master([v], true) : master(ORDER, false));
+  // #/master: los 3 locales juntos · #/master/<local>: la página de un local · #/master/juegos: la sala de juegos ·
+  // #/master/movil: la sala de juegos en el teléfono (se abre con /sala)
+  views.master = (v) => (v === 'movil' ? movil() : v === 'juegos' ? juegos() : VENUES[v] ? master([v], true) : master(ORDER, false));
 })();

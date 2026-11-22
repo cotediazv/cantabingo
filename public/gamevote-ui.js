@@ -14,7 +14,7 @@
   // Gráfico en círculo de un juego: el anillo se llena según su porcentaje; al centro, el porcentaje y los votos
   const ring = (k, info, cls) => `<div class="gv-opt ${cls}" data-k="${k}" style="--c:${COLORS[k] || '#ffc400'}">
       <div class="gv-ring"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="gv-track" cx="50" cy="50" r="42"/><circle class="gv-arc" cx="50" cy="50" r="42" stroke-dasharray="0 ${C.toFixed(2)}"/></svg>
-      <span class="gv-in"><b>0%</b><small>0 votos</small></span></div><span class="gv-name">${nameOf(info, k)}</span></div>`;
+      <span class="gv-in"><b>0%</b><small>0 votos</small></span></div><span class="gv-name">${window.sinEmoji(nameOf(info, k))}</span></div>`;
   const setRings = (root, g) => {
     root.querySelectorAll('.gv-opt').forEach((o) => {
       const n = (g.counts || {})[o.dataset.k] || 0;
@@ -56,7 +56,7 @@
   const introHtml = (g, i, qrBox) => {
     const sl = introSlide(g, i);
     if (!sl) return '';
-    return `<div class="gv-card gv-intro"><div class="gv-main"><small class="gv-top">📢 Antes de votar · ${i + 1} de 6</small><b class="gv-big">${sl.icon} ${esc(sl.title)}</b>
+    return `<div class="gv-card gv-intro"><div class="gv-main"><small class="gv-top">${window.sinEmoji(`📢 Antes de votar · ${i + 1} de 6`)}</small><b class="gv-big">${esc(window.sinEmoji(`${sl.icon} ${sl.title}`))}</b>
       <div class="gv-introbody"><div class="gi gv-art">${window.GAME_INTRO.art(sl.key)}</div><ul class="gv-lines">${sl.lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ul></div>${introDots(i)}</div>${qrBox}</div>`;
   };
 
@@ -89,6 +89,7 @@
       if (s !== sig) {
         sig = s;
         const t = textsOf(g, info);
+        ['top', 'big', 'line'].forEach((k) => { t[k] = window.sinEmoji(t[k]); }); // diseño nuevo: sin emojis en las pantallas
         box.innerHTML = `<div class="gv-card"><div class="gv-main"><small class="gv-top">${t.top}</small><b class="gv-big">${t.big}</b>${t.line ? `<p class="gv-line">${t.line}</p>` : ''}
           <div class="gv-rings n${optionsOf(g).length}">${optionsOf(g).map((k) => ring(k, info, clsOf(g, k))).join('')}</div><small class="gv-total"></small></div>${qrBox}</div>`;
         const zeros = {}; optionsOf(g).forEach((k) => { zeros[k] = 0; });
@@ -115,6 +116,7 @@
     await load();
     tickT = setInterval(tick, 250);
     addEventListener('resize', fit);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (alive) fit(); });
     return () => { alive = false; clearTimeout(pollT); clearInterval(tickT); removeEventListener('resize', fit); };
   };
 

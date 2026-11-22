@@ -1,0 +1,42 @@
+/* Diseño nuevo · GC Master (pedido de Cote, 22 nov: «ese sí debería estar»). Solo cambia el aspecto (colores, letras,
+   formas rectas); tamaños, lugares y botones quedan igual. Todo bajo «html.t2» (ver tema.css). */
+html.t2 body.gm-on { background: #0c0b12; color: var(--t-texto); font-family: var(--t-txt); }
+html.t2 .gm-nav > b { font: 900 1.7rem/1 var(--t-disp); text-transform: uppercase; letter-spacing: .01em; }
+html.t2 .gm-nav > a { color: var(--t-tenue); }
+html.t2 .gm-tab { border-radius: 0; border-color: var(--t-linea); background: var(--t-tarima); color: var(--t-texto); font-family: var(--t-txt); font-weight: 800; }
+html.t2 .gm-tab.on { background: var(--t-foco); border-color: var(--t-foco); color: var(--t-foco-tinta); }
+html.t2 .gm-clock b { font-family: var(--t-mono); font-weight: 700; color: var(--t-foco); }
+html.t2 .gm-clock i { font-family: var(--t-txt); color: var(--t-tenue); }
+/* cada local: recuadro de noche con la línea de arriba en su color */
+html.t2 .gm-venue { --gm: var(--t-c); border-radius: 0; border: 1px solid var(--t-linea); border-top: 3px solid var(--gm); background: #100f18; }
+html.t2 .gm-head > b { font-family: var(--t-disp); font-weight: 900; text-transform: uppercase; letter-spacing: .01em; line-height: 1; }
+html.t2 .gm-live { border-radius: 0; background: var(--t-tarima2); color: var(--t-tenue); font-family: var(--t-mono); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+html.t2 .gm-live.on { background: #ff4d4d; color: #fff; }
+html.t2 .gm-sala { color: var(--t-tenue); opacity: 1; }
+html.t2 .gm-listen { border-radius: 0; font-family: var(--t-txt); }
+/* pantallas */
+html.t2 body.gm-on .gm-box { border-radius: 0 !important; border-color: var(--t-linea); }
+html.t2 body.gm-on .gm-scr > small { border-radius: 0 !important; background: rgba(12, 11, 18, .88); color: var(--t-foco); font-family: var(--t-mono); font-weight: 700; letter-spacing: .08em; }
+html.t2 .gm-box.gm-bg { background: radial-gradient(circle at 30% 25%, color-mix(in srgb, var(--gm) 55%, transparent), transparent 60%), linear-gradient(160deg, #15131e, #07060c); }
+/* botones tipo TV: rectos; el que está al aire sigue en rojo */
+html.t2 .gm-row > small, html.t2 .gm-audio > small { font-family: var(--t-mono); font-weight: 700; letter-spacing: .1em; color: var(--t-tenue); }
+html.t2 .gm-key { border-radius: 0; border: 1px solid #3a3548; background: linear-gradient(#1c1828, #15131e); box-shadow: 0 3px 0 #050409; color: var(--t-texto); }
+html.t2 .gm-key b { font-family: var(--t-txt); font-weight: 800; }
+html.t2 .gm-key.on { background: linear-gradient(#ff4d4d, #c92f2f); border-color: #ff9a9a; box-shadow: 0 3px 0 #5c0a10, 0 0 14px rgba(255, 77, 77, .5); color: #fff; }
+html.t2 .gm-audio .gm-key.on { background: linear-gradient(#27b866, #15803f); border-color: #7be3a6; box-shadow: 0 3px 0 #0a4a22, 0 0 14px rgba(39, 184, 102, .5); }
+html.t2 .gm-text { border-radius: 0; border: 1px solid var(--t-linea); background: var(--t-tarima); color: var(--t-texto); font-family: var(--t-txt); }
+html.t2 .gm-text:focus { outline: 0; border-color: var(--t-foco); }
+/* botones de la capa gráfica: dorados */
+html.t2 .gm-ckey { border-radius: 0; border: 1px solid #6b5520; background: linear-gradient(#2a2210, #1a1508); color: var(--t-texto); font-family: var(--t-txt); }
+html.t2 .gm-ckey.on { background: var(--t-foco); border-color: #fff1b0; color: var(--t-foco-tinta); }
+/* «Sala de juegos»: el panel de la derecha */
+html.t2 .gm-panel { border-radius: 0; border: 1px solid var(--t-linea); background: #0c0b12; }
+html.t2 .gm-none p { color: var(--t-tenue); }
+/* «Sala KRB» (la sala de juegos en el teléfono) */
+html.t2 .gm-m { background: #0c0b12; }
+html.t2 .gmm-top > b { font: 900 1.25rem/1 var(--t-disp); text-transform: uppercase; letter-spacing: .01em; }
+html.t2 .gmm-top > span:not(.gm-clock) { font-family: var(--t-mono); font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; color: var(--t-foco); opacity: 1; }
+html.t2 .gmm-none { border-radius: 0; border-color: var(--t-linea); color: var(--t-tenue); }
+html.t2 .gmm-tabs button { border-radius: 0; border: 1px solid var(--t-linea); background: var(--t-tarima); color: var(--t-texto); font-family: var(--t-txt); }
+html.t2 .gmm-tabs button.on { background: var(--t-foco); border-color: var(--t-foco); color: var(--t-foco-tinta); }
+html.t2 .gm-movil { border-radius: 0; background: var(--t-foco); color: var(--t-foco-tinta); }

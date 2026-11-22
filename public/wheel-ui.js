@@ -139,9 +139,11 @@
   // ---------- Moderador: panel de control ----------
   // Top 10 de la Trivia del Rosco (lo usan el panel, la pantalla del local y el GC)
   // «Resultados finales» cuando ya se mostró al ganador (pedido de Cote); antes, «Resultados parciales»
-  const rankHTML = (st, cls) => `<div class="${cls}"><div class="${cls}-head"><small>Trivia del Rosco · Top 10</small><b>🏅 ${st.crowdWinner || st.winner ? 'Resultados finales' : 'Resultados parciales'}</b><span>${st.rankPlayers} ${st.rankPlayers === 1 ? 'persona jugando' : 'personas jugando'}</span></div>
+  const rankHTML = (st, cls) => `<div class="${cls}"><div class="${cls}-head"><small>Trivia del Rosco · Top 10</small><b>${window.sinEmoji(`🏅 ${st.crowdWinner || st.winner ? 'Resultados finales' : 'Resultados parciales'}`)}</b><span>${st.rankPlayers} ${st.rankPlayers === 1 ? 'persona jugando' : 'personas jugando'}</span></div>
     ${st.rank.length ? `<ol>${st.rank.map((t) => `<li><b>${esc(t.name)}</b><em>${t.score} pts</em></li>`).join('')}</ol>` : '<p>Todavía nadie suma puntos</p>'}</div>`;
   // En qué paso de la pregunta está el panel: 0 sin juego, 1 poner rosco, 2 iniciar pregunta, 3 responder
+  // Clase según el largo de la pregunta: solo la usa el diseño nuevo (tema-rosco.css), para agrandar las cortas y achicar las muy largas
+  const qLen = (q) => (q.length > 230 ? 'q-xl' : q.length > 150 ? 'q-l' : q.length <= 60 ? 'q-s' : '');
   const stepOf = (st) => { const c = st.players[st.turn]; return !c.active || st.winner || st.tie ? 0 : st.runningSince ? 3 : st.onScreen ? 2 : 1; };
   views.ruedactl = async (id) => {
     if (!(await isAdmin())) return viewLogin();
@@ -311,7 +313,7 @@
       const head = cut > 0 ? state.question.slice(0, cut) : '';
       const body = cut > 0 ? state.question.slice(cut + 2) : state.question;
       const c = state.players[state.turn];
-      return `<aside class="obs-question ${state.question !== lastQuestion ? 'pop' : ''}"><span class="obs-badge">${esc(state.letters[c.current])}</span>
+      return `<aside class="obs-question ${qLen(state.question)} ${state.question !== lastQuestion ? 'pop' : ''}"><span class="obs-badge">${esc(state.letters[c.current])}</span>
         ${head ? `<span class="obs-head">${esc(head)}</span>` : ''}<span class="obs-text">${esc(body)}</span></aside>`;
     };
     // Respuesta acertada: se muestra unos segundos y se retira sola
@@ -530,10 +532,10 @@
         wonBy = key;
         if (full) sfx.play('win');
         $('#pw').innerHTML = cw.none ? (full ? '<div class="win-screen"><div class="win-card"><span class="win-trophy">🏅</span><span class="win-name" style="--n:17">Trivia del Rosco</span><span class="win-text">Esta vez nadie sumó puntos</span><span class="win-sub">¡En la próxima!</span></div></div>'
-            : '<div class="rosco-winlow"><span class="rosco-winlow-tag">🏅 Trivia del Rosco</span><b style="--n:17">Nadie sumó puntos</b><small>¡En la próxima!</small></div>')
+            : `<div class="rosco-winlow"><span class="rosco-winlow-tag">${window.sinEmoji('🏅 Trivia del Rosco')}</span><b style="--n:17">Nadie sumó puntos</b><small>¡En la próxima!</small></div>`)
           : full ? `<div class="win-screen"><div class="win-card"><span class="win-trophy">🏅</span><span class="win-name" style="--n:${cw.name.length}">${esc(cw.name)}</span>
               <span class="win-text">¡Ganó la Trivia del Rosco! ${cw.score} puntos</span><span class="win-sub">¡Felicitaciones!</span></div></div>`
-          : `<div class="rosco-winlow"><span class="rosco-winlow-tag">🏅 Ganó la Trivia del Rosco</span><b style="--n:${cw.name.length}">${esc(cw.name)}</b><small>${cw.score} puntos · ¡Felicitaciones!</small></div>`;
+          : `<div class="rosco-winlow"><span class="rosco-winlow-tag">${window.sinEmoji('🏅 Ganó la Trivia del Rosco')}</span><b style="--n:${cw.name.length}">${esc(cw.name)}</b><small>${cw.score} puntos · ¡Felicitaciones!</small></div>`;
         return;
       }
       if (st.winner) {
@@ -558,7 +560,7 @@
         const key = st.winner.name + (low ? (st.winAccepted ? '|ok' : '|low') : '');
         if (low && wonBy !== key) {
           wonBy = key;
-          $('#pw').innerHTML = `<div class="rosco-winlow ${st.winAccepted ? '' : 'hold'}"><span class="rosco-winlow-tag">🏆 ${st.winner.full ? 'Completó el rosco' : 'Ganó El Rosco'}</span><b style="--n:${st.winner.name.length}">${esc(st.winner.name)}</b><small>¡Felicitaciones!</small></div>`;
+          $('#pw').innerHTML = `<div class="rosco-winlow ${st.winAccepted ? '' : 'hold'}"><span class="rosco-winlow-tag">${window.sinEmoji(`🏆 ${st.winner.full ? 'Completó el rosco' : 'Ganó El Rosco'}`)}</span><b style="--n:${st.winner.name.length}">${esc(st.winner.name)}</b><small>¡Felicitaciones!</small></div>`;
         } else if (wonBy !== key) {
           wonBy = key;
           const colors = ['#ff4fa3', '#ff9a3d', '#ffe14d', '#3fe08f', '#35c6ff', '#9b5cff'];
@@ -598,7 +600,7 @@
       const started = !!st.runningSince || st.players.some((c) => c.status.some((x) => x !== 'pending'));
       $('#pw').classList.toggle('pw-howto-on', idle && !started);
       $('#pw').innerHTML = `<h1 class="pw-title"><span class="pw-plain">${esc(st.name)}</span><span class="pw-fun" aria-hidden="true">${fun}</span>${started ? '' : '<small class="pw-howto">Elegimos 3 participantes al azar entre todos los conectados</small>'}</h1>
-        <div class="pw-text">${revealCard(st, 'pw-reveal')}${st.question ? `<div class="pw-question">${esc(st.question)}</div>` : ''}</div>
+        <div class="pw-text">${revealCard(st, 'pw-reveal')}${st.question ? `<div class="pw-question ${qLen(st.question)}">${esc(st.question)}</div>` : ''}</div>
         <div class="wheels n${st.players.length}">${st.players.map((_, i) => `<div class="wheel-box ${i === st.turn && !st.finished ? 'on' : 'off'}">${wheelSVG(st, i)}</div>`).join('')}</div>
         ${st.rank ? `<div class="pw-rankwrap">${rankHTML(st, 'pw-rank')}</div>` : ''}`;
       window.fitOneLine($('#pw .pw-howto')); // las instrucciones en una línea (pedido de Cote)

@@ -280,6 +280,7 @@ views.control = async () => {
     <a class="btn lp-open" href="#/light">💡 Sala light · karaoke, show y cartelera en otro local</a>
     <a class="btn lp-open" href="#/consola">🖥️ Consola general · los 3 locales en una pantalla</a>
     <a class="btn lp-open" href="#/master">🎛️ GC Master · centro de control de transmisión</a>
+    <a class="btn lp-open" href="/sala">📱 Sala de juegos en el teléfono · para guardar en el inicio</a>
     <div class="panel"><h2>Karaoke</h2>
       <p class="muted small">Muestra en pantalla la lista de pedidos del sistema de karaoke (formulario y app del equipo).</p>
       <div class="venue-tabs" id="kar-venue" role="tablist"></div>
@@ -1797,6 +1798,7 @@ views.juegoDraw = async (kind) => {
     card.querySelectorAll('.jd-slots span').forEach(fitText);
   };
   app.innerHTML = `<div id="jd" class="jd-${kind}"></div>`;
+  const se = (t) => (window.sinEmoji ? window.sinEmoji(t) : t); // diseño nuevo: las etiquetas de pantalla van sin emojis
   let shownAt = 0; let timer = null; let alive = true;
   const paint = (g) => {
     const box = $('#jd');
@@ -1808,17 +1810,17 @@ views.juegoDraw = async (kind) => {
     const listOf = (rolling) => {
       const cells = []; // sin «Juego inicial · Bingo» (pedido de Cote, 21 nov)
       for (let i = 0; i < g.total; i++) {
-        if (ready && i === g.list.length) { cells.push(`<span class="now"><small>${i + 1}.º juego</small>🎲 …</span>`); continue; }
+        if (ready && i === g.list.length) { cells.push(`<span class="now"><small>${i + 1}.º juego</small>${se('🎲 …')}</span>`); continue; }
         const k = g.list[i]; const cur = !ready && i === g.list.length - 1;
-        cells.push(!k ? `<span class="todo"><small>${i + 1}.º juego</small>🔒</span>`
-          : cur ? `<span class="${rolling ? 'now' : 'on'}"><small>${i + 1}.º juego</small>${rolling ? '🎲 …' : `${info[k].icon} ${esc(info[k].name)}`}</span>`
-            : `<span class="done"><small>${i + 1}.º juego</small>${info[k].icon} ${esc(info[k].name)}</span>`);
+        cells.push(!k ? `<span class="todo"><small>${i + 1}.º juego</small>${se('🔒')}</span>`
+          : cur ? `<span class="${rolling ? 'now' : 'on'}"><small>${i + 1}.º juego</small>${se(rolling ? '🎲 …' : `${info[k].icon} ${esc(info[k].name)}`)}</span>`
+            : `<span class="done"><small>${i + 1}.º juego</small>${se(`${info[k].icon} ${esc(info[k].name)}`)}</span>`);
       }
       return `<div class="jd-list jd-slots">${cells.join('')}</div>`;
     };
     if (ready) {
       // paso 1: los juegos que pueden salir
-      box.innerHTML = `<div class="jd-card"><small>🎲 Sorteo del ${g.list.length + 1}.º juego</small><div class="jd-opts">${g.ready.pool.map((k) => `<span>${info[k].icon} ${esc(info[k].name)}</span>`).join('')}</div>${listOf(true)}</div>`;
+      box.innerHTML = `<div class="jd-card"><small>${se(`🎲 Sorteo del ${g.list.length + 1}.º juego`)}</small><div class="jd-opts">${g.ready.pool.map((k) => `<span>${se(`${info[k].icon} ${esc(info[k].name)}`)}</span>`).join('')}</div>${listOf(true)}</div>`;
       fitJd(); // en una sola línea, centrado y dentro del cuadro
       return;
     }
@@ -1828,15 +1830,15 @@ views.juegoDraw = async (kind) => {
     const left = g.last.direct ? 0 : ROLL_MS - (Date.now() + (g.offset || 0) - g.last.at); // elegido directo: sin tómbola
     if (left > 0) {
       // tómbola: pasan los juegos disponibles cada vez más lento
-      box.innerHTML = `<div class="jd-card"><small>🎲 Sorteo del ${nth}</small><b class="jd-roll"></b>${listOf(true)}</div>`;
+      box.innerHTML = `<div class="jd-card"><small>${se(`🎲 Sorteo del ${nth}`)}</small><b class="jd-roll"></b>${listOf(true)}</div>`;
       let i = 0; let wait = 70;
       fitJd();
-      const spin = () => { if (!alive || !$('.jd-roll')) return; const x = pool[i++ % pool.length]; $('.jd-roll').textContent = `${x.icon} ${x.name}`; fitText($('.jd-roll')); wait *= 1.13; if (Date.now() + (g.offset || 0) - g.last.at < ROLL_MS - 200) timer = setTimeout(spin, wait); else paintWin(); };
+      const spin = () => { if (!alive || !$('.jd-roll')) return; const x = pool[i++ % pool.length]; $('.jd-roll').textContent = se(`${x.icon} ${x.name}`); fitText($('.jd-roll')); wait *= 1.13; if (Date.now() + (g.offset || 0) - g.last.at < ROLL_MS - 200) timer = setTimeout(spin, wait); else paintWin(); };
       const paintWin = () => { if (alive) paint({ ...g, last: { ...g.last, at: g.last.at - ROLL_MS } }); };
       spin();
       return;
     }
-    box.innerHTML = `<div class="jd-card won"><small>🎲 El ${nth} es</small><b class="jd-win">${win.icon} ${esc(win.name)}</b>${listOf(false)}</div>`;
+    box.innerHTML = `<div class="jd-card won"><small>${se(`🎲 El ${nth} es`)}</small><b class="jd-win">${se(`${win.icon} ${esc(win.name)}`)}</b>${listOf(false)}</div>`;
     fitJd();
     if (Date.now() - shownAt > 1000) { shownAt = Date.now(); sfx.play('win'); }
   };
@@ -1852,6 +1854,7 @@ views.juegoDraw = async (kind) => {
     paint(g);
   };
   await tick();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (alive) fitJd(); }); // al llegar las letras, se ajusta de nuevo
   const poll = setInterval(tick, 2000);
   return () => { alive = false; clearTimeout(timer); clearInterval(poll); };
 };
@@ -1871,7 +1874,10 @@ function joinQr(spot) {
   // centradas («Escanea el código QR» / «con tu celular»), con la letra justa para caber
   if (!el) { el = document.createElement('div'); el.id = 'join-qr'; el.innerHTML = `${qr(joinUrl())}<b><span>Escanea el código QR</span><span>con tu celular</span></b>`; document.body.appendChild(el); }
   el.className = `join-qr ${spot}`;
-  fitJoinQr();
+  // La frase se mide ahora, otra vez cuando cargan las letras, y al cambiar de diseño sin recargar (cada diseño tiene su letra)
+  const refit = () => { fitJoinQr(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitJoinQr); };
+  refit();
+  if (!joinQr.onTema) { joinQr.onTema = refit; addEventListener('tema', refit); }
 }
 function fitJoinQr() {
   const el = document.getElementById('join-qr');
@@ -1937,6 +1943,9 @@ const fitNames = () => {
 };
 new MutationObserver(() => requestAnimationFrame(fitNames)).observe(document.getElementById('app'), { childList: true, subtree: true, characterData: true });
 window.addEventListener('resize', fitNames);
+// Los nombres se vuelven a medir cuando terminan de cargar las letras y al cambiar de diseño (con otra letra el ancho cambia)
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => requestAnimationFrame(fitNames));
+window.addEventListener('tema', () => requestAnimationFrame(fitNames));
 
 // ---------- Enrutador ----------
 let cleanup = null;

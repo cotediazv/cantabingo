@@ -547,7 +547,7 @@ function votoView(want) {
       var isK = mode === 'karaoke'; var name = isK ? festName() : 'El objeto más extraño';
       var o = topBar(['#/', 'Inicio']);
       if (st.phase === 'winner' && st.mode === mode) { // con ganador: el ganador para anunciarlo y lo que viene
-        o += ann('🏆 Ganó ' + name, [st.winner ? st.winner.name : ''], [st.winner && st.winner.thing ? st.winner.thing : '', isK && st.winner && st.winner.score != null ? 'Nota ' + noteOf(st.winner.score, st.winner.dec) : '', st.second ? '2.º lugar: ' + st.second.name + ' · nota ' + noteOf(st.second.score, st.second.dec) : '']);
+        o += ann('🏆 Ganó ' + name, [st.winner ? st.winner.name : ''], [st.winner && st.winner.thing ? st.winner.thing : '', st.tie ? st.tie.title + '. ' + st.tie.why : '', isK && st.winner && st.winner.score != null ? 'Nota ' + noteOf(st.winner.score, st.winner.dec) : '', st.second ? '2.º lugar: ' + st.second.name + ' · nota ' + noteOf(st.second.score, st.second.dec) : '']);
         o += nav(want, false) + foot(); render(o); return;
       }
       var startedV = st.signup || st.players.length > 0;

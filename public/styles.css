@@ -2816,3 +2816,215 @@ body.gm-on main { max-width: none; padding: 10px 14px 40px; }
   .gm-one .gm-key { padding: 4px 1px; }
   .gm-one .gm-custom input { margin-top: 8px; padding: 8px 10px; }
 }
+/* GC Master: arriba a la derecha, la fecha con el año y la hora local (pedido de Cote, 22 nov) */
+.gm-clock { margin-left: auto; display: flex; align-items: baseline; gap: 12px; white-space: nowrap; }
+.gm-clock b { font-size: 1.5rem; font-weight: 900; font-variant-numeric: tabular-nums; color: #ffc400; }
+.gm-clock i { font-style: normal; font-weight: 700; font-size: .95rem; color: #d8d3ff; }
+@media (max-width: 1100px) { .gm-clock { gap: 8px; } .gm-clock b { font-size: 1.2rem; } .gm-clock i { font-size: .8rem; } }
+@media (max-width: 700px) {
+  /* en el teléfono va en su propia línea, bajo los locales */
+  .gm-nav { flex-wrap: wrap; }
+  .gm-clock { flex: 1 0 100%; margin: 0; justify-content: center; gap: 8px; }
+  .gm-clock b { font-size: 1rem; } .gm-clock i { font-size: .72rem; }
+  .gm-one .gm-screens, .gm-one .gm-keys { max-width: min(100%, calc((100vh - 344px) * 1.45)); max-width: min(100%, calc((100dvh - 344px) * 1.45)); }
+  .gm-one .gm-keys { max-width: 100%; }
+}
+/* la hora grande y la fecha debajo, para que la barra de arriba no pase a dos líneas en pantallas más chicas */
+@media (min-width: 701px) {
+  .gm-nav { flex-wrap: nowrap; }
+  .gm-clock { flex-direction: column; align-items: flex-end; gap: 0; line-height: 1.15; }
+  .gm-clock b { font-size: 1.35rem; } .gm-clock i { font-size: .8rem; }
+}
+@media (min-width: 701px) and (max-width: 1250px) { .gm-back span { display: none; } .gm-tab { padding: 8px 10px; } }
+
+/* GC Master: el texto del GC personalizable va aparte de los botones (debajo de ellos en el teléfono y en «Los 3 locales») */
+.gm-text { display: block; width: 100%; margin: 10px auto 0; padding: 10px 12px; font-size: 1rem; max-width: max(520px, calc((100vh - 470px) * 1.45)); }
+.gm-all .gm-text { max-width: none; }
+@media (max-width: 700px) { .gm-text { max-width: 100%; margin-top: 6px; padding: 8px 10px; font-size: 16px; } }
+
+/* GC Master, versión horizontal de cada local: la señal 1 MÁS GRANDE (pedido de Cote, 22 nov). La señal 1 ocupa todo el
+   alto disponible a la izquierda; a la derecha, una columna angosta (--r) con el tablero arriba y, debajo, la pantalla
+   vertical junto a los botones (en 2 columnas de 5); el texto del GC personalizable va arriba, sobre esa columna */
+@media (min-width: 900px) {
+  body.gm-on main { padding-bottom: 12px; }
+  .gm-one .gm-venue { --H: calc(100vh - 168px); --W: calc(100vw - 76px); --r: max(360px, calc(var(--W) * .3));
+    --w1: max(420px, min(calc(var(--H) * 1.7778), calc(var(--W) - 10px - var(--r)))); --h2: calc(var(--r) * .5625);
+    --h3: max(190px, calc(var(--H) - var(--h2) - 12px)); --w3: calc(var(--h3) * .5625);
+    grid-template-columns: var(--w1) var(--w3) calc(var(--r) - var(--w3) - 10px); grid-template-rows: auto var(--h2) var(--h3);
+    grid-template-areas: "head txt txt" "p1 p2 p2" "p1 p3 keys"; gap: 12px 10px; }
+  .gm-one .gm-text { grid-area: txt; align-self: center; margin: 0; max-width: none; padding: 7px 10px; }
+  .gm-one .gm-keys { display: block; height: var(--h3); overflow-y: auto; }
+  .gm-one .gm-row > small { margin-bottom: 4px; white-space: nowrap; overflow: hidden; }
+  .gm-one .gm-keyrow { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: calc((var(--h3) - 22px - 4 * 6px) / 5); gap: 6px; }
+  .gm-one .gm-key { height: auto; min-height: 0; grid-auto-flow: column; grid-auto-columns: auto; justify-content: start; justify-items: start; align-items: center; gap: 6px; padding: 2px 16px 2px 8px; box-shadow: 0 3px 0 #0a0818; }
+  .gm-one .gm-key span { font-size: min(1.25rem, calc(var(--h3) * .065)); }
+  .gm-one .gm-key b, .gm-one .gm-key.gm-long b { text-align: left; font-size: min(.82rem, calc(var(--r) * .0285), calc(var(--h3) * .05)); line-height: 1.05; }
+  .gm-one .gm-key i { top: 5px; right: 5px; width: 7px; height: 7px; }
+}
+@media (min-width: 900px) {
+  /* botones: ícono arriba y texto abajo, con la letra según el ancho y el alto de cada botón, para que siempre quepa entero */
+  .gm-one .gm-venue { --kw: calc((var(--r) - var(--w3) - 16px) / 2); --kh: calc((var(--h3) - 22px - 24px) / 5); }
+  .gm-one .gm-keyrow { grid-auto-rows: var(--kh); }
+  .gm-one .gm-key { grid-auto-flow: row; justify-content: center; justify-items: center; align-content: center; gap: 1px; padding: 2px; }
+  .gm-one .gm-key span { font-size: min(1.3rem, calc(var(--kh) * .34)); }
+  .gm-one .gm-key b, .gm-one .gm-key.gm-long b { text-align: center; font-size: min(.8rem, calc(var(--kw) * .112), calc(var(--kh) * .225)); line-height: 1.05; }
+}
+@media (min-width: 900px) {
+  /* la fila del nombre siempre en una línea (si no, la página crecía y había que bajar) */
+  .gm-one .gm-head { flex-wrap: nowrap; min-width: 0; }
+  .gm-one .gm-head > b, .gm-one .gm-live, .gm-one .gm-listen { flex: none; white-space: nowrap; }
+  .gm-one .gm-sala { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
+/* GC Master, versión horizontal de cada local: la pantalla vertical SIEMPRE PEGADA a la 1 (pedido de Cote, 22 nov). La
+   señal 1 y, pegada a su derecha y del mismo alto, la pantalla vertical forman un solo bloque, lo más grande que cabe;
+   a la derecha queda una columna angosta (--r) con el tablero arriba y los botones debajo (2 columnas de 5) */
+@media (min-width: 900px) {
+  .gm-one .gm-venue { --r: max(200px, calc(var(--W) * .14));
+    --h1: max(236px, min(var(--H), calc((var(--W) - 10px - var(--r)) / 2.3403)));
+    --w1: calc(var(--h1) * 1.7778); --w3: calc(var(--h1) * .5625); --h2: calc(var(--r) * .5625);
+    --h3: calc(max(var(--H), var(--h1)) - var(--h2) - 10px); --kw: calc((var(--r) - 6px) / 2); --kh: calc((var(--h3) - 22px - 24px) / 5);
+    grid-template-columns: var(--w1) var(--w3) calc(var(--r) + 10px); grid-template-rows: auto var(--h2) var(--h3);
+    grid-template-areas: "head txt txt" "p1 p3 p2" "p1 p3 keys"; gap: 10px 0; }
+  .gm-one .gm-text, .gm-one .gm-left > .gm-scr:last-child, .gm-one .gm-keys { margin-left: 10px; }
+  .gm-one .gm-left > .gm-scr:first-child .gm-box { border-radius: 8px 0 0 8px; border-right-width: 1px; }
+  .gm-one .gm-screens > .gm-tall .gm-box { border-radius: 0 8px 8px 0; border-left-width: 1px; }
+  .gm-one .gm-screens > .gm-tall > small { border-radius: 0 0 8px 0; }
+}
+
+/* Capa gráfica sobre la cámara (pedido de Cote, 21 nov): capa transparente encima del GC de OBS; las piezas entran y
+   salen solas. --cp es el color del local */
+#capa { position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; z-index: 9500; pointer-events: none; overflow: hidden; }
+#capa .cp { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+/* Cortina: franjas que cruzan, el logo al centro y se abre */
+#capa .cp-cur i { position: absolute; left: -30%; width: 160%; height: 21%; transform: translateX(-110%) skewX(-18deg); animation: cpCur 3.4s cubic-bezier(.7, 0, .2, 1) both; }
+#capa .cp-cur i:nth-child(1) { top: -1%; background: #ffc400; } #capa .cp-cur i:nth-child(2) { top: 20%; background: var(--cp); animation-delay: .07s; }
+#capa .cp-cur i:nth-child(3) { top: 40%; background: #100e22; animation-delay: .14s; } #capa .cp-cur i:nth-child(4) { top: 60%; background: var(--cp); animation-delay: .21s; }
+#capa .cp-cur i:nth-child(5) { top: 80%; background: #ffc400; animation-delay: .28s; }
+@keyframes cpCur { 0% { transform: translateX(-110%) skewX(-18deg); } 24%, 66% { transform: translateX(0) skewX(-18deg); } 100% { transform: translateX(110%) skewX(-18deg); } }
+#capa .cp-cur img { position: absolute; left: 50%; top: 50%; width: 46vh; opacity: 0; transform: translate(-50%, -50%) scale(.2); filter: drop-shadow(0 .8vh 2vh rgba(0, 0, 0, .5)); animation: cpLogo 3.4s ease both; }
+@keyframes cpLogo { 0%, 20% { transform: translate(-50%, -50%) scale(.2); opacity: 0; } 32% { transform: translate(-50%, -50%) scale(1.12); opacity: 1; } 38%, 62% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 74%, 100% { transform: translate(-50%, -50%) scale(1.4); opacity: 0; } }
+/* Celebración (video con fondo transparente) y texto en 3D real */
+#capa .cp-vid video { position: absolute; left: 0; top: 0; width: 100%; height: 100%; object-fit: cover; }
+#capa .cp-gl { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+/* si el navegador no tiene 3D, el mismo texto plano */
+#capa .cp-flat { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2vh; text-align: center; animation: cpFlat 9s ease both; }
+#capa .cp-flat b { font: 900 16vh/1 "Source Sans 3", sans-serif; color: #ffc400; text-shadow: .5vh .5vh 0 var(--cp), 1vh 1vh 2vh rgba(0, 0, 0, .5); padding: 0 4vw; }
+#capa .cp-flat b.s { font-size: 8vh; color: #fff; }
+@keyframes cpFlat { 0% { opacity: 0; transform: scale(.6); } 8%, 90% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.1); } }
+
+/* GC Master: junto al espacio de texto, los botones de la capa gráfica (cortina, texto 3D, celebración, quitar) */
+.gm-txtrow { max-width: max(520px, calc((100vh - 470px) * 1.45)); margin: 10px auto 0; }
+.gm-all .gm-txtrow { max-width: none; }
+.gm-txtrow .gm-text { margin: 0; max-width: none; }
+.gm-capa { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1.45fr) minmax(0, 1fr); gap: 6px; margin-top: 6px; }
+.gm-ckey { display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; height: 34px; padding: 0 4px; border-radius: 9px; border: 2px solid #5a4a12; background: linear-gradient(#3a3110, #221c08); color: #fff; font-weight: 800; cursor: pointer; white-space: nowrap; }
+.gm-ckey span { font-size: 1rem; line-height: 1; } .gm-ckey b { font-size: .78rem; overflow: hidden; }
+.gm-ckey.on { background: linear-gradient(#ffc400, #c99700); border-color: #fff1b0; color: #1a1a1a; }
+@media (max-width: 700px) {
+  .gm-txtrow { max-width: 100%; margin-top: 6px; }
+  .gm-capa { gap: 4px; margin-top: 5px; } .gm-ckey { height: 30px; gap: 3px; border-width: 1px; } .gm-ckey span { font-size: .8rem; } .gm-ckey b { font-size: .6rem; }
+}
+@media (min-width: 900px) {
+  /* versión horizontal de un local: el texto sigue arriba a la derecha y los botones de la capa van abajo de la columna
+     derecha, en 2 filas de 2 (a los botones de arriba se les descuenta ese alto, para que todo siga cabiendo) */
+  .gm-one .gm-venue { --h3: calc(max(var(--H), var(--h1)) - var(--h2) - 10px - 72px);
+    grid-template-rows: auto var(--h2) var(--h3) 62px; grid-template-areas: "head txt txt" "p1 p3 p2" "p1 p3 keys" "p1 p3 capa"; }
+  .gm-one .gm-txtrow { display: contents; }
+  .gm-one .gm-txtrow .gm-text { grid-area: txt; align-self: center; margin: 0 0 0 10px; }
+  .gm-one .gm-capa { grid-area: capa; margin: 0 0 0 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .gm-one .gm-ckey { height: 28px; padding: 0 3px; gap: 4px; }
+  .gm-one .gm-ckey span { font-size: .85rem; } .gm-one .gm-ckey b { font-size: min(.74rem, calc(var(--r) * .054)); }
+}
+/* «Los 3 locales»: el texto «GC personalizable» entero dentro de su botón */
+@media (min-width: 701px) { .gm-all .gm-key.gm-long b { font-size: .58rem; letter-spacing: -.01em; } }
+
+/* Capa gráfica: 4 efectos más (pedido de Cote, 22 nov): fuegos artificiales, lluvia de confeti y corazones (dibujados en un
+   lienzo transparente que se estira) y luces de escenario (haces de luz que barren desde arriba), todos en el mismo lienzo */
+#capa .cp-fx { animation: cpFx 7s linear both; }
+#capa .cp-fx canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+@keyframes cpFx { 0%, 90% { opacity: 1; } 100% { opacity: 0; } }
+
+/* GC Master: ahora son 8 botones de la capa (2 filas de 4); en la versión horizontal de un local van solo con su dibujo
+   (el nombre sale al pasar el mouse y en el aviso al apretar), para no quitarle espacio a la señal 1 ni a los botones */
+@media (min-width: 900px) {
+  .gm-one .gm-capa { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .gm-one .gm-ckey b { display: none; }
+  .gm-one .gm-ckey span { font-size: 1.05rem; }
+}
+@media (max-width: 700px) and (max-height: 640px) {
+  /* teléfonos bajos: botones un poco más bajos, para que la segunda fila de la capa quepa en la misma plana */
+  .gm-one .gm-key { height: 54px; } .gm-ckey { height: 26px; }
+}
+
+/* GC Master · «Sala de juegos» (pedido de Cote, 22 nov): a la izquierda las pantallas y botones de la sala abierta; a la
+   derecha, el panel real de la sala (crear sala, elegir y manejar cada juego), que queda a la vista al bajar */
+.gm-jg .gm-grid { grid-template-columns: minmax(340px, 36%) minmax(0, 1fr); align-items: start; }
+.gm-panel { position: sticky; top: 8px; height: calc(100vh - 74px); min-height: 420px; border: 2px solid #2c2850; border-radius: 12px; overflow: hidden; background: #12101f; }
+.gm-panel iframe { display: block; width: 100%; height: 100%; border: 0; }
+.gm-none p { margin: 0; color: #b9b4d8; line-height: 1.45; }
+.gm-jg .gm-head > b { white-space: nowrap; }
+@media (max-width: 900px) {
+  .gm-jg .gm-grid { grid-template-columns: minmax(0, 1fr); }
+  .gm-panel { position: static; height: 86vh; }
+}
+/* la barra de arriba con una pestaña más: en pantallas medianas las pestañas van más justas para que quepa en una línea */
+@media (min-width: 701px) and (max-width: 1500px) { .gm-nav { gap: 6px; } .gm-nav > b { margin: 0 4px 0 2px; font-size: 1.15rem; } .gm-tab { padding: 8px 9px; font-size: .92rem; white-space: nowrap; } .gm-back span { display: none; } }
+@media (min-width: 701px) and (max-width: 1150px) { .gm-nav > b { display: none; } .gm-tab { padding: 7px 7px; font-size: .84rem; } }
+
+/* Empate en la gran final del objeto (pedido de Cote, 22 nov): en la pantalla del ganador se dice por qué ganó */
+.vwin-tie { display: block; max-width: 86vw; margin: 1.6vh auto 0; font-size: 3.2vh; font-weight: 800; line-height: 1.25; text-align: center; color: #fff; }
+.vwin-tie b { display: block; margin-bottom: .4vh; font-size: 3.6vh; color: #ffc400; }
+.vc-tie { margin: 0 0 12px; padding: 10px 12px; border-radius: 10px; background: rgba(255, 196, 0, .12); border: 1px solid #ffc400; }
+.pvote-tie { display: block; margin-top: 8px; opacity: .9; }
+.vk-tie { max-width: 84vw; text-align: center; }
+.vk-tie b { display: block; margin-bottom: .6vh; font-size: 3vh; color: #ffc400; }
+.vk-tie span { display: block; font-size: 2.7vh; font-weight: 800; line-height: 1.25; color: #fff; }
+#vf .vf-main > .vf-tie { max-width: 100%; margin-top: 1.6vh; text-align: center; white-space: normal; font-size: 2.8vh; font-weight: 800; line-height: 1.25; color: #fff; }
+.vf-tie .t { margin-bottom: .4vh; color: #ffc400; }
+
+/* GC Master · «Sala de juegos»: el panel de la derecha va achicado (lo calcula master-ui.js) para que todo quepa */
+.gm-panel iframe { transform-origin: 0 0; }
+
+/* «Sala KRB»: la sala de juegos en el teléfono (pedido de Cote, 22 nov). Pantalla completa y sin bajar la página: fila de
+   arriba, 3 monitores chicos, la zona del medio (panel del juego o botones del GC y efectos) y las 2 teclas de abajo.
+   Respeta la muesca y la barra de inicio del iPhone (safe-area) */
+.gm-movil { display: none; }
+@media (max-width: 900px) { .gm-movil { display: block; margin: 0 0 8px; padding: 10px 12px; border-radius: 10px; background: #ffc400; color: #1a1a1a; font-weight: 800; text-align: center; text-decoration: none; } }
+body.gmm-on { overflow: hidden; overscroll-behavior: none; }
+body.gmm-on main { padding: 0; max-width: none; }
+body.gmm-on .krb-mark { display: none; }
+.gm-m { position: fixed; left: 0; top: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 6px; padding: calc(env(safe-area-inset-top, 0px) + 6px) calc(env(safe-area-inset-right, 0px) + 8px) 0 calc(env(safe-area-inset-left, 0px) + 8px); background: #12101f; }
+.gmm-top { flex: none; display: flex; align-items: baseline; gap: 8px; min-height: 24px; }
+.gmm-top > b { flex: none; font-size: 1.05rem; white-space: nowrap; }
+.gmm-top > span:not(.gm-clock) { flex: 1; min-width: 0; font-size: .74rem; opacity: .8; white-space: nowrap; overflow: hidden; }
+.gm-m .gm-clock { flex: none; margin: 0; } .gm-m .gm-clock i { display: none; } .gm-m .gm-clock b { font-size: 1rem; }
+.gmm-mon { flex: none; display: grid; grid-template-columns: 16fr 16fr 5.0625fr; gap: 4px; align-items: start; }
+.gmm-mon .gm-scr > small { padding: 1px 4px; font-size: .52rem; }
+.gmm-mon .gm-tall .gm-box { max-width: none; }
+.gmm-none { grid-column: 1 / -1; margin: 0; padding: 10px 12px; border: 1px dashed #3a3360; border-radius: 8px; font-size: .85rem; line-height: 1.35; color: #b9b4d8; }
+.gmm-body { flex: 1; min-height: 0; position: relative; }
+.gmm-pane { position: absolute; left: 0; top: 0; right: 0; bottom: 0; overflow: hidden; }
+.gmm-pane[hidden] { display: none; }
+.gm-m .gm-panel { position: absolute; height: auto; min-height: 0; border-width: 1px; border-radius: 8px; }
+.gmm-gc { overflow-y: auto; }
+.gmm-gc .gm-venue { padding: 2px 0 0; border: 0; border-radius: 0; background: none; }
+.gmm-gc .gm-row + .gm-row { margin-top: 12px; }
+.gm-m .gm-keyrow { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.gm-m .gm-key { height: 70px; padding: 4px 2px; }
+.gm-m .gm-key span { font-size: 1.5rem; } .gm-m .gm-key b { font-size: .66rem; line-height: 1.05; }
+.gm-m .gm-text { display: block; width: 100%; max-width: none; margin: 0 0 8px; padding: 10px 12px; font-size: 16px; }
+.gm-m .gm-capa { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0; }
+.gm-m .gm-ckey { height: 58px; flex-direction: column; gap: 2px; padding: 2px; white-space: normal; }
+.gm-m .gm-ckey span { font-size: 1.3rem; } .gm-m .gm-ckey b { font-size: .64rem; line-height: 1.05; }
+.gmm-tabs { flex: none; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 0 0 calc(env(safe-area-inset-bottom, 0px) + 6px); }
+.gmm-tabs button { display: flex; align-items: center; justify-content: center; gap: 8px; height: 46px; padding: 0 6px; border-radius: 10px; font-weight: 800; font-size: 1rem; }
+.gmm-tabs button span { font-size: 1.2rem; line-height: 1; }
+.gmm-tabs button.on { background: #ffc400; border-color: #ffc400; color: #1a1a1a; }
+/* «Sala KRB»: el monitor principal (GC) más grande (pedido de Cote, 22 nov: «que el video principal quede más grande»):
+   ocupa 3/4 del ancho; a su derecha, en una columna, el tablero arriba y la pantalla de pie abajo, del mismo alto total */
+.gmm-mon { grid-template-columns: minmax(0, 1fr) var(--r); grid-template-rows: auto auto; --W: calc(100vw - 16px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)); --r: calc(var(--W) * .25);
+  --h1: calc((var(--W) - var(--r) - 4px) * .5625); --h3: calc(var(--h1) - var(--r) * .5625 - 4px); }
+.gmm-mon > .gm-scr:first-child { grid-row: 1 / 3; }
+.gmm-mon > .gm-tall { justify-self: center; width: calc(var(--h3) * .5625); }
+.gmm-mon > .gmm-none { grid-row: auto; }
+.gmm-mon > .gm-scr:not(:first-child) > small { padding: 1px 3px; font-size: .42rem; letter-spacing: 0; }
