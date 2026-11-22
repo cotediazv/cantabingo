@@ -24,12 +24,15 @@
   :root { --b: min(17vmin, 96px); }
   body.portrait { --b: min(21vw, 104px); }
   body.portrait .zone { bottom: calc(5vh + env(safe-area-inset-bottom)); }
+  #back { display: none; position: fixed; top: calc(10px + env(safe-area-inset-top)); left: calc(10px + env(safe-area-inset-left)); z-index: 3; padding: 8px 14px; border-radius: 20px; background: rgba(18,12,32,.7); border: 2px solid rgba(255,255,255,.6); color: #fff; font-weight: 800; font-size: 16px; text-decoration: none; }
+  body.title #back { display: block; }
   #tip { display: none; position: fixed; left: 0; right: 0; text-align: center; color: #ffe7a8; font-size: 15px; font-weight: 700; }
   body.portrait #tip { display: block; }
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
+<a id="back" href="/#/kids">← KRB Kids</a>
 <div id="tip">Gira el celular para verlo más grande</div>
 <div id="pad">
   <div class="zone" id="lz"><div class="b" id="bl">◀</div><div class="b" id="br">▶</div></div>
@@ -120,7 +123,7 @@
   }
   hold(document.getElementById('jmp'), 'jump');
   hold(document.getElementById('atk'), 'attack');
-  document.addEventListener('pointerdown', (e) => { if (e.target.closest && e.target.closest('#pad')) return; advance(); });
+  document.addEventListener('pointerdown', (e) => { if (e.target.closest && e.target.closest('#pad, #back')) return; advance(); });
   document.addEventListener('contextmenu', (e) => e.preventDefault());
 
   function goFull() {
@@ -233,6 +236,7 @@
   function setState(s) {
     state = s; stT = 0;
     document.body.classList.toggle('playing', TOUCH && (s === 'play' || s === 'intro'));
+    document.body.classList.toggle('title', s === 'title');
     if (s !== 'play') { jumpBuf = 0; atkBuf = 0; }
   }
 
@@ -1574,6 +1578,7 @@
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
+  setState('title');
 
   // Para probar el juego desde la consola (no lo usa el juego)
   window.__ag = {
