@@ -269,11 +269,11 @@
   // Qué decir en cada momento: etiqueta, línea principal, línea secundaria y bloque de la derecha
   // Pedido de Cote (20 nov): en la final, después del redoble, primero se revela solo al gran ganador; el 2.º lugar
   // aparece después, cuando termina la celebración
-  const scene = (st, celebrating = false) => {
+  const sceneRaw = (st, celebrating = false) => {
     const lastPlace = st.places[st.places.length - 1];
     if (st.phase === 'winner' && isK(st)) return { tag: 'Ganó', no: '1.º', main: st.winner.name, sub: st.second && !celebrating ? `2.º lugar: ${st.second.name} · ${note(st.second.score, st.second.dec)}` : (st.winner.thing || title(st)), score: st.winner.score, dec: st.winner.dec };
     if (st.phase === 'winner') return { tag: 'Ganó', no: '1.º', main: st.winner.name, sub: st.winner.thing || '', side: ['🏆', '¡Felicitaciones!'] };
-    if (st.phase === 'final' && st.final.drum) return { tag: 'Los finalistas', duel: true, drum: true, sub: '🥁 ¡Redoble de tambores!', side: ['🥁', '¿Quién ganará?'] };
+    if (st.phase === 'final' && st.final.drum) return { tag: 'Los finalistas', duel: true, drum: true, sub: window.sinEmoji('🥁 ¡Redoble de tambores!'), side: ['🥁', '¿Quién ganará?'] };
     if (st.phase === 'final') {
       return st.final.open ? { tag: 'Gran final', duel: true, sub: 'Elige en tu celular a quién quieres que gane', clock: 'Vota ahora', qr: true }
         : { tag: 'Gran final', duel: true, sub: 'Votación cerrada', side: ['✔', 'Ya viene el resultado'] };
@@ -284,7 +284,7 @@
     }
     if (st.onstage) return { tag: isK(st) ? 'En el escenario' : 'Presenta su objeto', no: st.onstage.no, main: st.onstage.name, featured: !!st.onstage.thing, sub: st.onstage.thing || '', side: isK(st) ? ['🎤', '¡Aplausos!'] : ['🗳️', 'Atentos'] };
     if (st.open) return { tag: 'Votación abierta', no: st.open.no, main: st.open.name, featured: !!st.open.thing, sub: st.open.thing || 'Pon tu nota del 1 al 10 desde tu celular', clock: 'Vota del 1 al 10', qr: true };
-    if (st.drawn) return { tag: 'Sorteo de participantes', main: '🎲 ¡Ellos cantan!', sub: 'Prepárense para subir al escenario', list: st.drawn, side: ['🎤', `${st.drawn.length} cantan`] };
+    if (st.drawn) return { tag: 'Sorteo de participantes', main: window.sinEmoji('🎲 ¡Ellos cantan!'), sub: 'Prepárense para subir al escenario', list: st.drawn, side: ['🎤', `${st.drawn.length} cantan`] };
     if (st.last && st.sample && st.sample.length) return { tag: 'Notas del público', no: st.last.no, main: st.last.name, sub: st.last.thing || '', notes: true };
     if (st.last) {
       const next = st.players.find((p) => !p.done);
@@ -296,6 +296,11 @@
     if (isK(st)) return { tag: 'Cómo se juega', main: `Elegimos ${st.max} personas para cantar`, sub: 'Las canciones serán cortas en pro del tiempo', side: ['🎤', 'Nota del 1 al 10'], qr: true };
     return { tag: 'Votación del público', main: 'Prepárate para votar', sub: 'Pon tu nota del 1 al 10 desde tu celular', side: ['🗳️', '1 al 10'], qr: true };
   };
+  // Diseño nuevo (22 nov): las etiquetas de pantalla van sin emojis (window.sinEmoji no cambia nada con el diseño anterior)
+  const scene = (st, celebrating = false) => { const s = sceneRaw(st, celebrating); if (s.side) s.side = s.side.map((x) => window.sinEmoji(x)); return s; };
+  const tagText = (st, s) => esc(window.sinEmoji(`${icon(st)} ${s.tag}`));
+  // Las letras del diseño nuevo llegan un momento después que la página: al llegar, se ajustan de nuevo los tamaños
+  const whenFonts = (fn) => { if (document.fonts && document.fonts.ready) document.fonts.ready.then(fn); };
 
   // GC de OBS: zócalo abajo, para no tapar a quien está en cámara
   views.votoGC = async () => {
@@ -304,6 +309,8 @@
     let swap = null;
     let sceneKey = '';
     let drumHeard = null;
+    // Diseño nuevo: los nombres van siempre enteros; si con la letra nueva alguno no cabe en su línea, se achica
+    const fitGC = () => { if (window.t2 && window.t2()) document.querySelectorAll('#vg .vg-main > b, #vg .vg-main > span, #vg .vg-side > b').forEach((el) => window.fitOneLine(el)); };
     const stop = follow((st, celebrating) => {
       const box = $('#vg');
       if (!box) return;
@@ -314,7 +321,7 @@
         ? `<div class="vg-list"><small>Inscritos <b>${st.players.length}/${st.max}</b></small>${st.players.map((p) => `<div><p><b>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}</p></div>`).join('')}</div>` : '';
       const html = celebrating ? '' : `${s.notes ? `<div class="vk-card">${notesHTML(st, 'vk-notes')}</div>` : ''}${s.list ? `<div class="vk-card"><ol class="vk-list">${s.list.map((x) => `<li>${esc(x)}</li>`).join('')}</ol></div>` : ''}${roster}${s.qr || true ? `<div class="vg-qr">${qr(joinUrl())}<b>Si no has participado, escanea el código QR con tu celular y únete a la sesión</b></div>` : ''}
         <div class="vg-bar">
-          <div class="vg-tag"><small>${esc(title(st))}</small><b>${icon(st)} ${esc(s.tag)}</b></div>
+          <div class="vg-tag"><small>${esc(title(st))}</small><b>${tagText(st, s)}</b></div>
           <div class="vg-main ${s.featured ? 'featured' : ''}">${s.duel ? `<b class="vg-duel" ${n(st.final.players.map((p) => `${p.name}...`).join(' vs '))}>${versus(st)}</b>` : `<b ${n(s.no ? `${s.main}...` : s.main)}>${badge(s.no)}${esc(s.main)}</b>`}${s.sub ? `<span ${n(s.sub)}>${esc(s.sub)}</span>` : ''}</div>
           ${s.notes ? '<div class="vg-side"><small>Notas</small><b>8 s</b></div>' : s.clock ? `<div class="vg-side score"><small>${esc(s.clock)}</small><b class="v-clock">${clockText()}</b></div>` : s.score != null ? `<div class="vg-side score"><small>Nota</small><b>${note(s.score, s.dec)}</b></div>` : `<div class="vg-side"><small ${n(s.side[0])}>${esc(s.side[0])}</small><b ${n(s.side[1])}>${esc(s.side[1])}</b></div>`}
         </div>`;
@@ -323,10 +330,10 @@
       const key = celebrating ? '' : JSON.stringify([s.tag, s.main, s.sub, !!s.qr, !!s.notes]);
       // Redoble de tambores (concurso de karaoke) también en el GC, para la transmisión
       if (s.drum && drumHeard !== st.rev) { drumHeard = st.rev; sfx.unlock(); sfx.play('drum'); }
-      if (key && key === sceneKey && box.classList.contains('on')) { box.innerHTML = html; return; }
+      if (key && key === sceneKey && box.classList.contains('on')) { box.classList.add('t2q'); box.innerHTML = html; fitGC(); return; } // t2q: en el diseño nuevo, sin repetir la entrada
       sceneKey = key;
       box.className = `th-${st.venue}`;
-      swap = setTimeout(() => { if ($('#vg')) { $('#vg').innerHTML = html; $('#vg').className = `th-${st.venue} ${html ? 'on' : ''}`; } }, box.innerHTML ? 650 : 0);
+      swap = setTimeout(() => { if ($('#vg')) { $('#vg').innerHTML = html; $('#vg').className = `th-${st.venue} ${html ? 'on' : ''}`; fitGC(); whenFonts(fitGC); } }, box.innerHTML ? 650 : 0);
     });
     return () => { stop(); clearTimeout(swap); document.body.classList.remove('obs', 'gc-screen'); };
   };
@@ -335,6 +342,7 @@
   views.votoFull = async () => {
     app.innerHTML = '<div id="vf"></div>';
     let heard = '';
+    let sceneKey = ''; // diseño nuevo: las piezas entran con movimiento solo cuando cambia la escena (clase t2in)
     // Reloj sonoro: tic-tac suave, cada vez más rápido (de 1 a 5 por segundo)
     let tickTimer = null;
     let flip = false;
@@ -363,11 +371,13 @@
       const cue = st.phase === 'winner' ? 'win' : st.phase === 'final' && st.final && st.final.drum ? 'drum' : st.phase === 'results' && st.places.length ? `place${st.places.length}` : '';
       if (!first && cue && cue !== heard) sfx.play(cue === 'win' ? 'win' : cue === 'drum' ? 'drum' : 'hit');
       heard = cue;
-      box.className = `th-${st.venue}`;
-      const side = st.phase === 'voting' ? st.players.map((p) => `<div class="${(st.open && st.open.id === p.id) || (st.onstage && st.onstage.id === p.id) ? 'on' : ''}"><em>${p.done ? '✔' : st.open && st.open.id === p.id ? '🗳️' : st.onstage && st.onstage.id === p.id ? '🎤' : '·'}</em><p><b ${n(p.name)}>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}</p></div>`).join('')
+      const key = JSON.stringify([s.tag, s.main, s.sub, !!s.notes, !!s.list, celebrating]);
+      box.className = `th-${st.venue}${key !== sceneKey ? ' t2in' : ''}`;
+      sceneKey = key;
+      const side = st.phase === 'voting' ? st.players.map((p) => `<div class="${(st.open && st.open.id === p.id) || (st.onstage && st.onstage.id === p.id) ? 'on' : p.done ? 'done' : ''}"><em>${p.done ? '✔' : st.open && st.open.id === p.id ? '🗳️' : st.onstage && st.onstage.id === p.id ? '🎤' : '·'}</em><p><b ${n(p.name)}>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}</p></div>`).join('')
         : [...st.places].reverse().map((p) => `<div><em>${p.place}</em><p><b ${n(p.name)}>${esc(p.name)}</b><span>Nota ${note(p.score, p.dec)}${p.thing ? ` · ${esc(p.thing)}` : ''}</span></p></div>`).join('');
       box.innerHTML = `${celebrating ? winHTML(st) : ''}
-        <header class="vf-top"><b>${esc(title(st))}</b><span>${icon(st)} ${esc(s.tag)}</span></header>
+        <header class="vf-top"><b>${esc(title(st))}</b><span>${tagText(st, s)}</span></header>
         <section class="vf-main ${s.featured ? 'featured' : ''}">${st.signup ? `<small>¿Quieres participar?</small><b class="v-clock vf-clock">${clockText()}</b><span style="--n:28">Inscríbete desde tu celular</span>`
     : `${s.sub ? `<small ${n(s.sub)}>${esc(s.sub)}</small>` : ''}
           ${s.duel ? `<b class="vg-duel" ${n(st.final.players.map((p) => `${p.name}...`).join(' vs '))}>${versus(st)}</b>` : `<b ${n(s.no ? `${s.main}...` : s.main)}>${badge(s.no)}${esc(s.main)}</b>`}
@@ -376,7 +386,9 @@
           <div class="vf-qr">${qr(joinUrl())}<b>Si no has participado, escanea el código QR con tu celular y únete a la sesión</b></div>
           ${side ? `<div class="vf-list"><small>${st.phase === 'voting' ? 'Participantes' : 'Resultados'}</small>${side}</div>` : ''}
         </aside>`;
-      box.querySelectorAll('.vf-top > b, .vf-main > small, .vf-main > b, .vf-main > span, .vf-main > i').forEach((el) => window.fitOneLine(el)); // cada línea en su línea (el título también: «El Festival de Mercado Kennedy»)
+      const fitAll = () => { if ($('#vf') === box) box.querySelectorAll('.vf-top > b, .vf-main > small, .vf-main > b, .vf-main > span, .vf-main > i').forEach((el) => window.fitOneLine(el)); }; // cada línea en su línea (el título también: «El Festival de Mercado Kennedy»)
+      fitAll();
+      whenFonts(fitAll);
     });
     return () => { stop(); ticking = 0; clearTimeout(tickTimer); };
   };

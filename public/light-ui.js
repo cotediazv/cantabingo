@@ -10,6 +10,9 @@
   const staffVenue = async () => (store.get('staffToken') ? (await api('GET', '/api/staff/me').catch(() => ({}))).venue || '' : '');
   const STAGES = [['info', '🔄', 'Información que va cambiando'], ['karaoke', '🎤', 'Karaoke'], ['show', '⭐', 'Show y lo que viene'], ['cartelera', '📅', 'Cartelera de la semana'], ['qr', '📱', 'QR grande y lista'], ['none', '⛔', 'Nada']];
   const dayName = (d) => ({ MIERCOLES: 'Miércoles', SABADO: 'Sábado' }[d] || d.charAt(0) + d.slice(1).toLowerCase());
+  // Diseño nuevo (tema.js): las etiquetas de las pantallas van sin emojis; con el diseño anterior quedan como siempre
+  const se = (s) => (window.sinEmoji ? window.sinEmoji(s) : s);
+  const t2on = () => (window.t2 && window.t2() ? 1 : 0);
 
   // ---------- Panel del moderador: salas light de cada local ----------
   views.light = async () => {
@@ -139,7 +142,7 @@
 
   // ---------- GC para OBS ----------
   const weekHTML = (c) => c.week.map((d) => `<div class="lg-day ${d.today ? 'today' : ''}"><b>${esc(dayName(d.day))} ${d.date}</b>
-      ${d.show ? `<span class="lg-show">⭐ ${esc(d.show)}</span>` : ''}
+      ${d.show ? `<span class="lg-show">${se('⭐')} ${esc(d.show)}</span>` : ''}
       ${d.hours.length ? `<span class="lg-hours">${d.hours.map((h) => `${esc(h.time)} ${esc(h.label)}`).join(' · ')}</span>` : ''}</div>`).join('');
   views['light-gc'] = async (venue) => {
     document.body.classList.add('obs', 'gc-screen');
@@ -158,7 +161,7 @@
       let k = null;
       if (stage === 'qr') k = await api('GET', `/api/karaoke?local=${st.venue}`).catch(() => null);
       if (!alive) return;
-      const sig = JSON.stringify([stage, st.id, st.venue, stage === 'custom' ? st.text : '', c && [c.show, c.current, c.next, c.week, c.blocks, c.month], k && k.list.map((p) => [p.name, p.song]), stage === 'info' ? Math.floor(Date.now() / 9000) : 0]);
+      const sig = JSON.stringify([stage, st.id, st.venue, stage === 'custom' ? st.text : '', c && [c.show, c.current, c.next, c.week, c.blocks, c.month], k && k.list.map((p) => [p.name, p.song]), stage === 'info' ? Math.floor(Date.now() / 9000) : 0, t2on()]); // t2on: al cambiar de diseño se vuelve a dibujar
       if (sig === shown) return;
       const wasKaraoke = shown.startsWith('["karaoke"');
       shown = sig;
@@ -179,7 +182,7 @@
           <div class="lg-main">${t.length <= 30 ? `<b style="--n:${Math.max(10, t.length)}">${esc(t)}</b>` : `<span class="lg-line">${esc(t)}</span>`}</div></div>`;
       } else if (stage === 'show') {
         box.innerHTML = `<div class="lg-card lg-bottom">
-          <div class="lg-tag"><small>${esc(c ? c.name : '')}</small><b>${c && c.show ? '⭐ Show de hoy' : 'Esta noche'}</b></div>
+          <div class="lg-tag"><small>${esc(c ? c.name : '')}</small><b>${c && c.show ? se('⭐ Show de hoy') : 'Esta noche'}</b></div>
           <div class="lg-main">${c && c.show ? `<b style="--n:${c.show.length}">${esc(c.show)}</b>` : `<b style="--n:12">KRB Stage</b>`}
           ${c && c.next ? `<span>A continuación · <em>${esc(c.next.time)}</em> ${esc(c.next.label)}</span>` : ''}</div></div>`;
       } else if (stage === 'info') {
@@ -197,15 +200,15 @@
         if (!slides.length) slides.push(['🎶 Bienvenidos', '<b style="--n:10">KRB Stage</b><span>Música, shows y karaoke</span>']);
         const [title, main] = slides[Math.floor(Date.now() / 9000) % slides.length];
         box.innerHTML = `<div class="lg-card lg-bottom lg-info">
-          <div class="lg-tag"><small>${esc(c ? c.name : VENUES[st.venue] || '')}</small><b>${title}</b></div>
+          <div class="lg-tag"><small>${esc(c ? c.name : VENUES[st.venue] || '')}</small><b>${se(title)}</b></div>
           <div class="lg-main">${main}</div></div>`;
       } else if (stage === 'cartelera') {
-        box.innerHTML = `<div class="lg-card lg-week"><div class="lg-head"><small>${esc(c ? c.name : '')}</small><b>📅 Cartelera de la semana</b></div>
+        box.innerHTML = `<div class="lg-card lg-week"><div class="lg-head"><small>${esc(c ? c.name : '')}</small><b>${se('📅 Cartelera de la semana')}</b></div>
           ${c && c.week.length ? weekHTML(c) : '<p class="lg-empty">Pronto la cartelera de la semana</p>'}</div>`;
       } else if (stage === 'qr') {
         const list = k ? k.list.slice(0, 6) : [];
         box.innerHTML = `<div class="lg-card lg-qr"><div class="lg-qrbox">${qr(lightJoin(st.id))}<b>Escanea el código QR con tu celular</b><span>Pide tu canción de karaoke</span></div>
-          <div class="lg-list"><small>🎤 Próximos en cantar</small>${list.length ? list.map((p, i) => `<div><em>${i + 1}</em><p><b>${esc(p.name)}</b><span>${esc(p.song)}${p.artist ? ` · ${esc(p.artist)}` : ''}</span></p></div>`).join('') : '<p class="lg-empty">¡Sé el primero en pedir tu canción!</p>'}</div></div>`;
+          <div class="lg-list"><small>${se('🎤 Próximos en cantar')}</small>${list.length ? list.map((p, i) => `<div><em>${i + 1}</em><p><b>${esc(p.name)}</b><span>${esc(p.song)}${p.artist ? ` · ${esc(p.artist)}` : ''}</span></p></div>`).join('') : '<p class="lg-empty">¡Sé el primero en pedir tu canción!</p>'}</div></div>`;
       } else box.innerHTML = '';
     };
     await tick();
@@ -328,6 +331,8 @@
   const day = (d) => DAYS[String(d || '').toUpperCase()] || String(d || '');
   const cap = (t) => String(t || '').toLocaleLowerCase('es').replace(/(^|[\s:(«"-])(\p{L})/gu, (m, a, b) => a + b.toLocaleUpperCase('es'));
   const SLIDE_MS = 9000;
+  // Diseño nuevo (tema.js): los títulos de la pantalla van sin emojis; con el diseño anterior quedan como siempre
+  const se = (s) => (window.sinEmoji ? window.sinEmoji(s) : s);
   // Shows con el artista entre paréntesis (ej. «ESPECIAL MÉXICO (VERÓNICA YAÑEZ)»): el título arriba y, abajo, «por» y el
   // nombre del artista en grande y en color (pedido de Cote)
   const showHtml = (t) => {
@@ -419,7 +424,7 @@
       const at = idx % all.length;
       const slide = $('.lv-slide');
       slide.style.zoom = 1;
-      slide.innerHTML = all[at];
+      slide.innerHTML = all[at].replace(/<h2>([^<]*)<\/h2>/g, (m, t) => `<h2>${se(t)}</h2>`);
       const fly = slide.querySelector('.lv-flyer img');
       if (fly) {
         fly.style.maxHeight = `${Math.floor(slide.clientHeight * 0.92)}px`;
@@ -428,7 +433,7 @@
       $('.lv-dots').innerHTML = all.length > 1 ? all.map((_, i) => `<i class="${i === at ? 'on' : ''}"></i>`).join('') : '';
       const show = $('.lv-show');
       show.hidden = !(cart && cart.show);
-      if (cart && cart.show) show.innerHTML = `⭐ ${showHtml(cart.show)}`;
+      if (cart && cart.show) show.innerHTML = `${se('⭐')} ${showHtml(cart.show)}`;
     };
     const loadCart = async () => { const c = await api('GET', `/api/light/cartelera?local=${v}`).catch(() => null); if (c) cart = c; };
     const loadKar = async () => { const k = await api('GET', `/api/karaoke?local=${v}`).catch(() => null); if (k) kar = k; };

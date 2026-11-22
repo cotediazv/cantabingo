@@ -30,7 +30,25 @@
     let shrinkTimer = null;
     const FULL_MS = 6000; // cuánto dura la celebración a pantalla completa
     let bigShown = false;
-    const leave = () => { clearTimeout(winTimer); clearTimeout(shrinkTimer); if (off) off(); off = null; sid = null; lastCount = -1; winShown = null; bigShown = false; };
+    let inPlay = false; // diseño nuevo: las piezas entran con movimiento solo la primera vez que se dibuja el bingo
+    const leave = () => { clearTimeout(winTimer); clearTimeout(shrinkTimer); if (off) off(); off = null; sid = null; lastCount = -1; winShown = null; bigShown = false; inPlay = false; };
+
+    // Diseño nuevo: se parte del tamaño que da su CSS (en el anterior, de 6 y 4 vh como siempre)
+    const fitTop = () => {
+      const t2 = !!(window.t2 && window.t2());
+      const fit = (el, top) => {
+        if (!el) return;
+        el.style.fontSize = '';
+        const from = t2 ? (parseFloat(getComputedStyle(el).fontSize) / innerHeight) * 100 || top : top;
+        for (let f = from; f > from / 2 && el.scrollWidth > el.clientWidth + 1; f -= 0.2) el.style.fontSize = `${f.toFixed(1)}vh`;
+      };
+      fit($('.gc-title'), 6);
+      fit($('.gc-sub'), 4);
+      // El texto libre va en un recuadro de varias líneas: si no cabe, se achica la letra (nunca se corta)
+      const msg = $('.gc-msg');
+      if (msg) { msg.style.fontSize = ''; if (t2) { const box = msg.parentElement; let f = parseFloat(getComputedStyle(msg).fontSize); for (let i = 0; i < 30 && f > 9 && (box.scrollHeight > box.clientHeight + 1 || msg.scrollWidth > msg.clientWidth + 1); i++) { f *= 0.94; msg.style.fontSize = `${f.toFixed(1)}px`; } } }
+    };
+    window.addEventListener('tema', fitTop); // al cambiar de diseño sin recargar, la letra se vuelve a ajustar
 
     const draw = (st) => {
       const current = st.drawn.at(-1);
@@ -41,7 +59,7 @@
       const figure = Array.from({ length: 25 }, (_, i) => `<i class="${mask & (1 << i) ? 'x' : ''}"></i>`).join('');
       // Con ganadores: se retira la gráfica y queda la celebración a pantalla completa
       if (st.celebrate) {
-        bigShown = false;
+        bigShown = false; inPlay = false;
         // Ganador ya confirmado: la celebración se recoge a un cartel abajo al centro, para dejar ver la cámara
         // A los 15 s de confirmado, el cartel se retira y el GC queda limpio
         const left = st.winConfirmed ? 15000 - (st.now - st.winConfirmedAt) : Infinity;
@@ -72,6 +90,7 @@
       $('#gc').className = `th-${st.theme}`; // colores según el local
       // Antes de empezar: cartel con el QR en grande para que la gente entre
       if (st.bigQr) {
+        inPlay = false;
         lastCount = st.drawn.length;
         const count = st.players === 1 ? '1 participante ya está dentro' : `${st.players} participantes ya están dentro`;
         // Se dibuja una sola vez; después solo se actualiza el contador, para que el cartel no salte
@@ -89,23 +108,23 @@
       $('#gc').innerHTML = `
         <header class="gc-top"><b class="gc-title">${esc(bingoName(st.name))}</b>${st.gc.top ? `<span class="gc-sub">${esc(st.gc.top)}</span>` : ''}</header>
         <div class="gc-bunting">${bunting}</div>
-        <div class="gc-people">👥 <b>${st.players}</b> ${st.players === 1 ? 'participante' : 'participantes'}</div>
+        <div class="gc-people"><span class="t2-emo">👥</span> <b>${st.players}</b> ${st.players === 1 ? 'participante' : 'participantes'}</div>
         ${nextUpHTML()}
         <div class="gc-qr">${qr(joinUrl())}</div>
         <footer class="gc-bottom">${st.gc.bottom ? `<span class="gc-msg">${rich(st.gc.bottom)}</span>` : ''}</footer>
         <div class="gc-draw">
           ${st.drawn.length ? `<div class="gc-ballwrap ${fresh ? 'pop' : ''}">${ballHTML(st, current, 'gcball')}</div>` : '<div class="gc-soon">¡Ya comienza<br>el bingo!</div>'}
+          <div class="gc-prev" hidden>${st.drawn.slice(-5, -1).map((v) => ballHTML(st, v, 'gcprev')).join('')}</div>
         </div>
-        <div class="gc-figure">
+        <div class="gc-figure${/^figura\b/i.test(PATTERNS.byId[id].name) ? ' fig-sola' : ''}">
           <div class="gc-grid">${figure}</div>
           <b class="${PATTERNS.byId[id].name.length > 10 ? 'long' : ''}">${esc(PATTERNS.byId[id].name)}</b>
         </div>`;
       // La frase de la franja de arriba se achica hasta caber completa (pedido de Cote: que no se corte con «…»)
       // El título también (ej. «El Bingo de Mercado Kennedy»), antes que la frase, que usa el espacio que él deja
-      const ti = $('.gc-title');
-      if (ti) { ti.style.fontSize = ''; for (let f = 6; f > 3 && ti.scrollWidth > ti.clientWidth + 1; f -= 0.2) ti.style.fontSize = `${f.toFixed(1)}vh`; }
-      const sub = $('.gc-sub');
-      if (sub) { sub.style.fontSize = ''; for (let f = 4; f > 2 && sub.scrollWidth > sub.clientWidth + 1; f -= 0.2) sub.style.fontSize = `${f.toFixed(1)}vh`; }
+      fitTop();
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTop);
+      if (!inPlay) { inPlay = true; $('#gc').classList.add('t2-entra'); }
     };
 
     // Sin sesión activa: queda solo el QR arriba a la derecha, sobre fondo transparente
@@ -127,6 +146,6 @@
     idle();
     await follow();
     poll = setInterval(follow, 5000);
-    return () => { clearInterval(poll); leave(); document.body.classList.remove('obs', 'gc-screen'); };
+    return () => { clearInterval(poll); leave(); window.removeEventListener('tema', fitTop); document.body.classList.remove('obs', 'gc-screen'); };
   };
 })();
