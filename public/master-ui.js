@@ -20,7 +20,8 @@
   // Opciones del GC de la sala de juegos (cuando la sala abierta es la de este local)
   const MAIN = [['bingo', '🎱', 'Bingo'], ['rueda', '🎡', 'El Rosco'], ['sorteo', '🎲', 'Sorteo'], ['voto', '🗳️', 'Votación'], ['karaoke', '🎤', 'Karaoke'], ['show', '⭐', 'Show'], ['insta', '📸', 'Instagram'], ['qr', '📱', 'QR'], ['none', '⛔', 'Nada']];
   // Capa gráfica sobre la cámara (pedido de Cote, 21 nov): piezas que se disparan sobre el GC de OBS del local y salen solas
-  const CAPA = [['cortina', '🎬', 'Cortina'], ['texto3d', '🧊', 'Texto 3D'], ['celebracion', '🎉', 'Celebración'], ['off', '✖', 'Quitar']];
+  const CAPA = [['cortina', '🎬', 'Cortina', 'Cortina'], ['texto3d', '🧊', 'Texto 3D', 'Texto 3D'], ['celebracion', '🎉', 'Celebración', 'Celebración'], ['fuegos', '🎆', 'Fuegos', 'Fuegos artificiales'],
+    ['confeti', '🎊', 'Confeti', 'Lluvia de confeti'], ['luces', '🔦', 'Luces', 'Luces de escenario'], ['corazones', '❤️', 'Corazones', 'Corazones'], ['off', '✖', 'Quitar', 'Quitar lo que está en pantalla']];
   const page = (hash) => `${location.pathname}?mudo=1${hash}`;
 
   const venueHTML = (v) => `<section class="gm-venue th-${v}" data-v="${v}">
@@ -38,7 +39,7 @@
       <div class="gm-keys" data-k="keys"></div>
       <div class="gm-txtrow">
         <input class="gm-text" data-k="text" type="text" name="text" form="gmf-${v}" maxlength="120" autocomplete="off" placeholder="Texto del GC personalizable o del texto 3D">
-        <div class="gm-capa" title="Capa gráfica sobre la cámara">${CAPA.map(([k, i, t]) => `<button type="button" class="gm-ckey" data-capa="${k}"><span>${i}</span><b>${t}</b></button>`).join('')}</div>
+        <div class="gm-capa" title="Capa gráfica sobre la cámara">${CAPA.map(([k, i, t, full]) => `<button type="button" class="gm-ckey" data-capa="${k}" title="${full}" aria-label="${full}"><span>${i}</span><b>${t}</b></button>`).join('')}</div>
       </div>
     </section>`;
 
@@ -204,6 +205,8 @@
         try {
           await api('POST', '/api/capa', { local: v, kind: b.dataset.capa, text: text.slice(0, 60) });
           b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 1500);
+          // en el computador los botones van solo con su dibujo: el aviso dice cuál se disparó
+          toast(b.dataset.capa === 'off' ? `Capa quitada en ${VENUES[v]}` : `${b.title} en ${VENUES[v]}`);
         } catch (err) { fail(err); }
         return;
       }

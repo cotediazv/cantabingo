@@ -1,9 +1,9 @@
 // Capa gráfica sobre la cámara (pedido de Cote, 21 nov): OBS queda fijo con una sola escena y, desde los botones del
 // GC Master, se incrustan piezas en el GC de OBS de cada local (sala light y sala de juegos): cortina, texto en 3D,
-// celebración. Cada toque es un «disparo»: el GC lo lee cada segundo y lo reproduce una vez. No se guarda en los datos
+// celebración, fuegos artificiales, lluvia de confeti, luces y corazones. Cada toque es un «disparo»: el GC lo lee cada segundo y lo reproduce una vez. No se guarda en los datos
 // (es momentáneo); solo queda guardado el último texto.
 const VENUES = ['kennedy', 'frida', 'tobalaba'];
-const KINDS = ['cortina', 'texto3d', 'celebracion', 'off'];
+const KINDS = ['cortina', 'texto3d', 'celebracion', 'fuegos', 'confeti', 'luces', 'corazones', 'off'];
 const clean = (s, n) => String(s == null ? '' : s).replace(/[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);
 
 module.exports = function capa({ app, requireLocal, fail }) {
