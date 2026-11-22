@@ -30,10 +30,11 @@
           <div class="gm-scr"><small>2 · Tablero</small>
             <div class="gm-box" data-w="1280"><iframe title="Tablero de ${esc(VENUES[v])}" tabindex="-1" src="${page(`#/pantalla/${BOARD[v]}`)}"></iframe></div></div>
         </div>
-        <div class="gm-scr gm-tall"><small>3 · Pantalla vertical</small>
+        <div class="gm-scr gm-tall"><small>3 · Vertical</small>
           <div class="gm-box" data-w="720"><iframe title="Pantalla vertical de ${esc(VENUES[v])}" tabindex="-1" src="${page(`#/vertical-in/${VERT[v]}`)}"></iframe></div></div>
       </div>
       <div class="gm-keys" data-k="keys"></div>
+      <input class="gm-text" data-k="text" type="text" name="text" form="gmf-${v}" maxlength="120" autocomplete="off" placeholder="Texto del GC personalizable">
     </section>`;
 
   // Una página del GC Master: uno o los tres locales
@@ -146,15 +147,17 @@
       const sig = JSON.stringify([s.main && s.main.stage, s.light && [s.light.stage, s.light.text, s.light.video], s.p1]);
       const box = el(v, 'keys');
       // Mientras se escribe el texto del GC personalizable no se redibuja (se perdería lo escrito)
-      if (sig === s.keys || (document.activeElement && document.activeElement.name === 'text' && box.contains(document.activeElement))) return;
+      if (sig === s.keys) return;
+      // El texto del GC personalizable va aparte de los botones (no se pierde lo escrito cuando ellos se redibujan)
+      const ti = el(v, 'text');
+      if (document.activeElement !== ti) ti.value = (s.light && s.light.text) || '';
       s.keys = sig;
       const l = s.light;
       box.innerHTML = `${s.main ? `<div class="gm-row"><small>GC de la sala de juegos</small><div class="gm-keyrow">${MAIN.map(([k, i, t]) => key('data-main', k, i, t, s.main.stage === k)).join('')}</div></div>` : ''}
-        ${l ? `<form class="gm-row gm-custom"><small>GC de la sala light</small><div class="gm-keyrow">${LIGHT.map(([k, i, t]) => key('data-light', k, i, t, l.stage === k)).join('')}
+        ${l ? `<form class="gm-row gm-custom" id="gmf-${v}"><small>GC de la sala light</small><div class="gm-keyrow">${LIGHT.map(([k, i, t]) => key('data-light', k, i, t, l.stage === k)).join('')}
             ${key('data-video', l.video ? '0' : '1', '🎬', 'Video cartelera', !!l.video)}
             <button class="gm-key gm-long ${l.stage === 'custom' ? 'on' : ''}"><i></i><span>✏️</span><b>GC personalizable</b></button>
-            ${key('data-p1', 'vivo', '🔴', 'Pantalla 1: vivo', s.p1 === 'vivo')}${key('data-p1', 'gc', '🖼️', 'Pantalla 1: GC', s.p1 === 'gc')}</div>
-          <input type="text" name="text" maxlength="120" autocomplete="off" placeholder="Texto del GC personalizable" value="${esc(l.text || '')}"></form>` : ''}`;
+            ${key('data-p1', 'vivo', '🔴', 'Pantalla 1: vivo', s.p1 === 'vivo')}${key('data-p1', 'gc', '🖼️', 'Pantalla 1: GC', s.p1 === 'gc')}</div></form>` : ''}`;
     };
 
     const load = async () => {
@@ -202,9 +205,10 @@
       if (!f) return;
       e.preventDefault();
       const v = f.closest('.gm-venue').dataset.v;
-      const text = f.text.value.trim();
-      if (!text) { toast('Escribe el texto del GC'); f.text.focus(); return; }
-      try { f.text.blur(); await api('POST', '/api/light/stage', { local: v, show: 'custom', text }); toast(`GC personalizable en ${VENUES[v]}`); load(); } catch (err) { fail(err); }
+      const ti = el(v, 'text');
+      const text = ti.value.trim();
+      if (!text) { toast('Escribe el texto del GC'); ti.focus(); return; }
+      try { ti.blur(); await api('POST', '/api/light/stage', { local: v, show: 'custom', text }); toast(`GC personalizable en ${VENUES[v]}`); load(); } catch (err) { fail(err); }
     };
 
     list.forEach(paintP1);
