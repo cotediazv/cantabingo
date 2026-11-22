@@ -129,6 +129,9 @@ if(/[?&]obs=1/.test(location.search)){document.querySelector('link[rel=manifest]
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
+/* (pedido de Cote) protección: la página nunca se corre hacia el lado en el celular, aunque algo quede más ancho que la pantalla */
+html,body{overflow-x:clip}
+@media (max-width:900px){#tulocal .ptl-pruebas,#producidos .ptl-pruebas{position:relative}}
 body{margin:0;background:var(--noche);color:var(--texto);font-family:var(--f-texto);font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased}
 a{color:inherit}
 button{font:inherit;color:inherit}
@@ -886,7 +889,8 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
 @media (max-width:900px){.ptl-grilla.con-pag{padding-left:38px!important;padding-right:38px!important}.ig-pag{width:30px;height:30px;font-size:20px}}
 /* ===== Switch «Repeticiones Twitch» (pedido de Cote): a la izquierda de la fila «Pantallas del local» ===== */
 .rep-sw{display:inline-flex;align-items:center;gap:8px;margin-right:6px;padding:4px 12px 4px 4px;border:1px solid var(--linea);border-radius:999px;background:var(--tarima);cursor:pointer;user-select:none;white-space:nowrap;flex:none;color:var(--tenue);text-transform:none;letter-spacing:.04em}
-.rep-sw input{position:absolute;opacity:0;width:1px;height:1px}
+.rep-sw input{position:absolute;opacity:0;width:1px;height:1px;left:0;top:0}
+.rep-sw{position:relative} /* la casilla escondida queda dentro del interruptor (antes se salía y ensanchaba la página en el celular) */
 .rep-sw .sw-pista{width:40px;height:22px;flex:none}.rep-sw .sw-bola{width:16px;height:16px}
 .rep-sw input:checked+.sw-pista{background:#9146ff}
 .rep-sw input:checked+.sw-pista .sw-bola{transform:translateX(18px)}
@@ -1139,7 +1143,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
           <h3>El juego y el show, en una sola experiencia</h3>
           <p>El animador conduce cada juego paso a paso desde su panel: lo que lee en voz alta aparece grande y destacado, y solo se activa el botón del paso que toca. Mientras tanto, el público responde, vota y canta desde su celular.</p>
         </div>
-        <figure class="int-panel"><img src="interactivo/panel-rosco.webp" alt="Panel del animador de El Rosco, con los botones paso a paso" loading="lazy" width="1280" height="900"><figcaption>Panel del animador · El Rosco</figcaption></figure>
+        <figure class="int-panel"><img src="interactivo/panel-rosco.webp?v=2" alt="Panel del animador de El Rosco, con los botones paso a paso" loading="lazy" width="1280" height="900"><figcaption>Panel del animador · El Rosco</figcaption></figure>
       </div>
       <div class="int-pantallas"><!-- (pedido de Cote) imágenes reales de nuestras transmisiones, no armadas -->
         <figure><div class="int-cam"><img src="interactivo/vivo-rosco.webp" alt="El Rosco en la transmisión en vivo desde Mercado Kennedy" loading="lazy" width="1280" height="720"></div><figcaption>El Rosco en vivo · Mercado Kennedy</figcaption></figure>
@@ -1721,6 +1725,13 @@ elegirLocal('kennedy');
   // las pantallas del local se dibujan a su tamaño real (1920x1080 o 1080x1920) y se achican para caber
   const escalar=()=>document.querySelectorAll('.vivo-fila .pant').forEach(d=>{const f=d.firstElementChild;if(!f||!f.width)return;f.style.transform=`scale(${d.clientWidth/f.width})`});
   const obsPant=new ResizeObserver(escalar);
+  const tactilP=matchMedia('(hover: none), (pointer: coarse)').matches;
+  const dormirF=f=>{if(!f.dataset.dormida&&f.getAttribute('src')&&f.getAttribute('src')!=='about:blank'){f.dataset.dormida=f.getAttribute('src');f.setAttribute('src','about:blank')}};
+  const despertarF=f=>{if(f.dataset.dormida){f.setAttribute('src',f.dataset.dormida);delete f.dataset.dormida}};
+  const obsVer=tactilP&&'IntersectionObserver' in window?new IntersectionObserver(es=>{if(visor)return;
+    es.forEach(en=>en.target.querySelectorAll('iframe').forEach(f=>en.isIntersecting?despertarF(f):dormirF(f)))},{rootMargin:'200px 0px'}):null;
+  // en el celular las pantallas nacen dormidas y despiertan al acercarse
+  const vigilarPant=el=>{if(!obsVer)return;el.querySelectorAll('.pant iframe').forEach(dormirF);el.querySelectorAll('.pant').forEach(x=>obsVer.observe(x))};
   // Kennedy y Frida: la pantalla vertical de la web es siempre la misma del local, tal cual (pedido de Cote, 19 nov:
   // si el local está en «Siempre el video», aquí también el video). El tablero horizontal sigue con la información.
   const rutaV=L=>L._ruta||L.vertical;
@@ -1752,7 +1763,7 @@ elegirLocal('kennedy');
       d.innerHTML=`<div class="vivo-etq"><span class="rep-icono">▣</span><span style="white-space:nowrap">Pantallas del local</span></div>
         <div class="vivo-fila">${MODO_OBS?`<div class="pant pant-h obs-hueco"><iframe src="${SALA}#/escena" width="1920" height="1080" title="GC de la sala de juegos" tabindex="-1"></iframe></div>`:pant('pant-h',rutaH(L),1920,1080,'Tablero del local',L.livH?{liviano:L.livH,lver:L.lverH}:null)}${pant('pant-v',rutaV(L),1080,1920,'Pantalla vertical del local',L)}</div>
         <div class="vivo-botones"><button type="button" class="vivo-pc vivo-full">⛶ Pantalla completa</button></div>`;
-      d.querySelectorAll('.pant').forEach(x=>obsPant.observe(x));if(!MODO_OBS)d.querySelector('.vivo-etq').prepend(swRepes());
+      d.querySelectorAll('.pant').forEach(x=>obsPant.observe(x));if(!MODO_OBS){d.querySelector('.vivo-etq').prepend(swRepes());vigilarPant(d)}
       d.querySelector('.vivo-full').onclick=()=>abrirVisor(L.local);return d}
     const vivo=!!(c&&c.vivo),todos=(c&&c.videos||[]),limpios=todos.filter(v=>!v.muted),vods=limpios.length?limpios:todos;let i=Math.max(0,vods.findIndex(v=>segs(v.duration)>=LARGO));
     if(!vivo&&!vods.length){const d=document.createElement('div');d.className='ptl-tw';d.innerHTML='<p class="tw-nada">Todavía no hay transmisiones guardadas de este local.</p>';return d}
@@ -1773,7 +1784,7 @@ elegirLocal('kennedy');
     const etq=caja.querySelector('.vivo-etq');
     const conectar=()=>{etq.prepend(swRepes());etq.querySelectorAll('.rep-flecha').forEach(b=>b.onclick=()=>{i=(i+ +b.dataset.d+vods.length)%vods.length;base=0;t0=Date.now();caja.querySelector('.vivo-marco>iframe').src=fuente();etq.innerHTML=etiqueta();conectar()})};
     conectar();
-    caja.querySelectorAll('.pant').forEach(d=>obsPant.observe(d));
+    caja.querySelectorAll('.pant').forEach(d=>obsPant.observe(d));vigilarPant(caja);
     caja.querySelector('.vivo-full').onclick=()=>abrirVisor(L.local);
     const bSon=caja.querySelector('.vivo-son'),marco=caja.querySelector('.vivo-marco>iframe');
     let suena=canalSonando===canal;
@@ -2060,12 +2071,15 @@ elegirLocal('kennedy');
     ORDEN.forEach(L=>{const p=packs[L.local];const col=document.querySelector(`.ptl-col[data-local="${L.local}"]`);
       if(p)p.querySelectorAll('.pant iframe').forEach(despertar);
       if(p){const m=p.querySelector('.vivo-marco'),pv=p.querySelector('.pant-v');if(m){m.style.width='';m.style.height='';m.style.aspectRatio=''}if(pv)pv.style.width=''}
-      if(p&&col){const f=p.querySelector('.vivo-fila');if(f){f.style.gridTemplateColumns='';f.style.gap='';f.style.justifyItems=''}col.querySelector('.ptl-prueba').after(p)}});
+      if(p&&col){const f=p.querySelector('.vivo-fila');if(f){f.style.gridTemplateColumns='';f.style.gap='';f.style.justifyItems=''}const en=col.querySelector('.ptl-enlaces');if(en)en.before(p);else col.querySelector('.ptl-prueba').after(p)}});
+    // (después de que el «atrás» termina) se borra el #pantallas de la dirección, para que una recarga no la vuelva a abrir
+    if(!MODO_OBS)setTimeout(()=>{if(/^#pantallas/.test(location.hash))try{history.replaceState(history.state,'',location.pathname+location.search)}catch(_){}},450);
+    if(obsVer)ORDEN.forEach(L=>{const p=packs[L.local];if(p)p.querySelectorAll('.pant').forEach(x=>{obsVer.unobserve(x);obsVer.observe(x)})});
     v.remove();document.documentElement.classList.remove('con-visor','con-visor-tactil');requestAnimationFrame(escalar);
   }
   addEventListener('popstate',()=>{if(visor)cerrarVisor(true)});
   // tocar cualquier parte de las pantallas o de la transmisión abre la pantalla completa de ese local (pedido de Cote)
-  document.addEventListener('click',e=>{if(visor)return;const t=e.target.closest('.pant-tapa,.vivo-marco');if(!t)return;
+  document.addEventListener('click',e=>{if(visor||tactilP)return;const t=e.target.closest('.pant-tapa,.vivo-marco');if(!t)return;
     const col=t.closest('.ptl-col');if(!col||!ORDEN.some(L=>L.local===col.dataset.local))return;
     e.preventDefault();e.stopPropagation();abrirVisor(col.dataset.local)},true);
   document.addEventListener('fullscreenchange',()=>{if(visor){const b=visor.querySelector('.visor-pc');if(b&&document.fullscreenElement)b.hidden=true}if(visor&&!document.fullscreenElement&&visor._fs)cerrarVisor();if(visor)visor._fs=!!document.fullscreenElement;setTimeout(ajustarVisor,100)});
@@ -2307,8 +2321,8 @@ function lineas(x,pts,dist,alfa){ // agrupa las líneas en 4 tonos: pocas órden
      p:'Cartones digitales en el celular, números con su letra en la pantalla y figuras que cambian en cada ronda. El ganador aparece al instante.',
      li:['Cartones en el celular','Líneas, figuras y letras','Ganador al instante'],local:'bingo-local',cel:'bingo-cel'},
     {k:'rosco',n:'El Rosco y la Trivia',c:'var(--kennedy)',et:'En el escenario y en el celular',t:'El Rosco',
-     p:'Elegimos 3 participantes al azar entre todos los conectados: una pregunta por cada letra y 90 segundos por participante. Mientras ellos juegan, todo el público responde la Trivia del Rosco desde su celular, con 3 alternativas y puntaje por rapidez.',
-     li:['3 participantes al azar','90 segundos','Trivia para todo el público','Ranking en pantalla'],local:'rosco-local',cel:'trivia-cel'},
+     p:'Elegimos 3 participantes al azar entre todos los conectados: una pregunta por cada letra y 2 minutos por participante. Mientras ellos juegan, todo el público responde la Trivia del Rosco desde su celular, con 3 alternativas y puntaje por rapidez.',
+     li:['3 participantes al azar','2 minutos','Trivia para todo el público','Ranking en pantalla'],local:'rosco-local',cel:'trivia-cel'},
     {k:'festival',n:'El Festival',c:'var(--tobalaba)',et:'Concurso de karaoke',t:'El Festival',
      p:'Inscripción desde el celular con canción y artista. Después de cada canción, el público pone nota del 1 al 10, las notas aparecen en pantalla y los finalistas se definen con redoble de tambores.',
      li:['Inscripción desde el celular','Notas del 1 al 10','Finalistas en pantalla'],local:'festival-local',cel:'festival-cel'},
@@ -2320,7 +2334,7 @@ function lineas(x,pts,dist,alfa){ // agrupa las líneas en 4 tonos: pocas órden
      li:['Tómbola en pantalla','Cada noche distinta'],local:'sorteo-local'}
   ];
   const tabs=document.getElementById('int-tabs'),caja=document.getElementById('int-juego');if(!tabs||!caja)return;
-  const img=(f,alt,cls)=>`<figure class="${cls}"><img src="interactivo/${f}.webp" alt="${alt}" loading="lazy"></figure>`;
+  const img=(f,alt,cls)=>`<figure class="${cls}"><img src="interactivo/${f}.webp?v=2" alt="${alt}" loading="lazy"></figure>`;
   function ver(i){
     const g=J[i];caja.style.setProperty('--c',g.c);
     tabs.querySelectorAll('.int-tab').forEach((b,k)=>{b.setAttribute('aria-selected',k===i);b.tabIndex=k===i?0:-1});
