@@ -181,6 +181,10 @@ html.t2 body.full .pw-reveal .rv-answer { min-width: 0; padding: .3vh 0 0; font:
   html.t2 body.full.wheel-screen #pw.pw-idle .pw-howto { order: 3; font: 800 3.4vh/1.25 var(--t-txt); letter-spacing: 0; text-transform: none; text-shadow: none; color: var(--t-texto); }
 }
 
+/* Aviso de KRB Kids (app.js lo ubica una sola vez, donde está libre al aparecer): si en sus 12 s llega la pregunta o la
+   respuesta y el aviso quedó arriba, se achica y pasa a la franja del título, para no tapar la pregunta */
+html.t2 body.full.wheel-screen:has(#pw:not(.pw-idle) .pw-question) #kids-ad.ka-top, html.t2 body.full.wheel-screen:has(#pw:not(.pw-idle) .pw-reveal) #kids-ad.ka-top { left: 36vh !important; top: .7vh !important; --ka-s: .3 !important; }
+
 /* Ranking de la Trivia del Rosco desplegado en el tablero (encima de los roscos) */
 html.t2 .pw-rankwrap { background: rgba(7, 6, 12, .94); }
 html.t2 .pw-rank { position: relative; gap: 2vh; padding: 0 0 3vh; border: 0; border-radius: 0; box-shadow: none; background: rgba(21, 19, 30, .96); color: var(--t-texto); font-family: var(--t-txt); animation: t2r-entra .5s cubic-bezier(.2, .9, .2, 1) both; }
