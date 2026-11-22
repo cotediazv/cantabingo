@@ -3,7 +3,11 @@
 // lluvia de confeti, luces de escenario y corazones. No toca el GC:
 // es una capa aparte, transparente, que aparece y se va sola. Las piezas pesadas (3D) se cargan solo al usarse.
 (() => {
-  const COL = { kennedy: ['#1487cf', 0x1487cf], frida: ['#c4175e', 0xc4175e], tobalaba: ['#c81e1e', 0xc81e1e] };
+  const COL_OLD = { kennedy: ['#1487cf', 0x1487cf], frida: ['#c4175e', 0xc4175e], tobalaba: ['#c81e1e', 0xc81e1e] };
+  // con el diseño nuevo (html.t2), los colores de la marca: los mismos de las pantallas
+  const COL_NEW = { kennedy: ['#47b8e6', 0x47b8e6], frida: ['#e0338f', 0xe0338f], tobalaba: ['#e5413a', 0xe5413a] };
+  const COL = new Proxy({}, { get: (_t, k) => ((window.t2 && window.t2()) ? COL_NEW : COL_OLD)[k] });
+  const oro = () => ((window.t2 && window.t2()) ? 0xf4bf5a : 0xffc400);
   const DUR = { cortina: 3600, texto3d: 9000, celebracion: 3400, fuegos: 7000, confeti: 8000, luces: 8000, corazones: 7000 };
   const PAL = ['#ffc400', '#ffffff', '#ff5aa5', '#3ddc84', '#5ac8ff', '#ff8a2a'];
   let last = null; // id del último disparo visto
@@ -171,7 +175,7 @@
     }
     const el = layer('cp-3d'); el.appendChild(g.canvas);
     const c = (COL[venue] || COL.kennedy)[1];
-    g.api.setText(ls, [{ front: 0xffc400, side: c }, { front: 0xffffff, side: c }]);
+    g.api.setText(ls, [{ front: oro(), side: c }, { front: 0xffffff, side: c }]);
     g.api.play(DUR.texto3d);
     timed(el, DUR.texto3d + 200, () => g.api.stop());
   };

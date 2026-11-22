@@ -1022,6 +1022,9 @@ app.post('/api/gamevote/reset', requireAdmin, (_req, res) => {
 });
 
 // Leer la pantalla actual es público, para que la fuente de OBS no necesite iniciar sesión; cambiarla es del moderador.
+// Diseño nuevo de las pantallas (pedido de Cote, 22 nov): encendido salvo que se apague en el Centro de control
+app.get('/api/tema', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json({ on: db.tema !== false }); });
+app.post('/api/tema', requireAdmin, (req, res) => { db.tema = (req.body || {}).on !== false; save(); res.json({ on: db.tema }); });
 app.get('/api/stage', (_req, res) => res.json({ show: roscoLock(db.stage) ? 'rueda' : STAGES.includes(db.stage) ? db.stage : 'bingo' }));
 app.post('/api/stage', requireAdmin, (req, res) => {
   const show = String((req.body || {}).show);
