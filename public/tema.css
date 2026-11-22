@@ -50,3 +50,6 @@ html.t2 .t-mono { font-family: var(--t-mono); font-weight: 700; text-transform: 
 html.t2 #capa .cp-cur i:nth-child(1), html.t2 #capa .cp-cur i:nth-child(5) { background: #f4bf5a; }
 html.t2 #capa .cp-cur i:nth-child(3) { background: #07060c; }
 html.t2 #capa .cp-flat b { font-family: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif; text-transform: uppercase; color: #f4bf5a; }
+
+/* Botón «Activar sonido» de las pantallas: recto y oscuro, con el dorado de la marca (mismo tamaño y lugar de siempre) */
+html.t2 .sound-btn { border-radius: 0; background: #0c0b12; color: #f4bf5a; border: .3vh solid #f4bf5a; box-shadow: none; font-family: "Manrope", system-ui, sans-serif; }

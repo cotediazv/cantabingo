@@ -1942,6 +1942,9 @@ const fitNames = () => {
 };
 new MutationObserver(() => requestAnimationFrame(fitNames)).observe(document.getElementById('app'), { childList: true, subtree: true, characterData: true });
 window.addEventListener('resize', fitNames);
+// Los nombres se vuelven a medir cuando terminan de cargar las letras y al cambiar de diseño (con otra letra el ancho cambia)
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => requestAnimationFrame(fitNames));
+window.addEventListener('tema', () => requestAnimationFrame(fitNames));
 
 // ---------- Enrutador ----------
 let cleanup = null;
