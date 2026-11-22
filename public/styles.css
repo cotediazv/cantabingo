@@ -2769,3 +2769,8 @@ body.gm-on main { max-width: none; padding: 10px 14px 40px; }
 .gm-own { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: #000; object-fit: contain; }
 .gm-p1in { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
 .gm-own[hidden], .gm-p1in[hidden] { display: none; }
+
+/* Logos del local en el GC de OBS (pedido de Cote, 21 nov: en la transmisión de Mercado Kennedy se veían cortados arriba):
+   van más adentro, con margen de seguridad, para que no los corte el borde de la transmisión ni el de los televisores */
+.venue-mark.vm-obs { right: 6vh; top: 6vh; }
+.venue-mark.vm-obs-bingo { left: 5vh; }
