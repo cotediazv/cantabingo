@@ -1,6 +1,7 @@
 /* global views, app, $, esc, api, isAdmin, viewLogin, fail, toast */
 // GC Master: centro de control de transmisión (pedido de Cote, 21 nov). Una página por local (#/master/<local>) con sus
-// 3 pantallas: 1) video en vivo o GC (sin transmisión en vivo, el tablero), 2) tablero y 3) vertical; abajo, botones tipo
+// 3 pantallas, ordenadas como en el dibujo de Cote: a la izquierda, arriba la 1) video en vivo o GC con un fondo y abajo
+// la 2) tablero; a la derecha, a todo el alto, la 3) pantalla vertical; abajo, botones tipo
 // TV para cambiar las opciones del GC. Y un cuarto salón (#/master) con los 3 locales juntos, para el control total.
 (() => {
   const VENUES = { kennedy: 'Mercado Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' };
@@ -12,18 +13,20 @@
   const LIGHT = [['info', '🔄', 'Información'], ['karaoke', '🎤', 'Karaoke'], ['show', '⭐', 'Show'], ['cartelera', '📅', 'Cartelera'], ['qr', '📱', 'QR grande'], ['none', '⛔', 'Nada']];
   // Opciones del GC de la sala de juegos (cuando la sala abierta es la de este local)
   const MAIN = [['bingo', '🎱', 'Bingo'], ['rueda', '🎡', 'El Rosco'], ['sorteo', '🎲', 'Sorteo'], ['voto', '🗳️', 'Votación'], ['karaoke', '🎤', 'Karaoke'], ['show', '⭐', 'Show'], ['insta', '📸', 'Instagram'], ['qr', '📱', 'QR'], ['none', '⛔', 'Nada']];
-  const P1 = [['auto', 'Automático'], ['vivo', '🔴 Video en vivo'], ['gc', 'GC'], ['tablero', 'Tablero']];
+  const P1 = [['auto', 'Automático'], ['vivo', '🔴 Video en vivo'], ['gc', 'GC']];
   const page = (hash) => `${location.pathname}?mudo=1${hash}`;
 
   const venueHTML = (v) => `<section class="gm-venue th-${v}" data-v="${v}">
       <header class="gm-head"><b>${esc(VENUES[v])}</b><span class="gm-live" data-k="live">Sin transmisión en vivo</span><span class="gm-sala" data-k="sala"></span></header>
       <div class="gm-screens">
-        <div class="gm-scr"><small>Pantalla 1 · <span data-k="p1name">Video en vivo o GC</span></small>
-          <div class="gm-box" data-k="p1" data-w="1280"></div>
-          <div class="gm-p1">${P1.map(([k, t]) => `<button type="button" data-p1="${k}">${t}</button>`).join('')}</div></div>
-        <div class="gm-scr"><small>Pantalla 2 · Tablero</small>
-          <div class="gm-box" data-w="1280"><iframe title="Tablero de ${esc(VENUES[v])}" tabindex="-1" src="${page(`#/pantalla/${BOARD[v]}`)}"></iframe></div></div>
-        <div class="gm-scr gm-tall"><small>Pantalla 3 · Vertical</small>
+        <div class="gm-left">
+          <div class="gm-scr"><small>1 · <span data-k="p1name">Vivo o GC</span></small>
+            <div class="gm-box" data-k="p1" data-w="1280"></div>
+            <div class="gm-p1">${P1.map(([k, t]) => `<button type="button" data-p1="${k}">${t}</button>`).join('')}</div></div>
+          <div class="gm-scr"><small>2 · Tablero</small>
+            <div class="gm-box" data-w="1280"><iframe title="Tablero de ${esc(VENUES[v])}" tabindex="-1" src="${page(`#/pantalla/${BOARD[v]}`)}"></iframe></div></div>
+        </div>
+        <div class="gm-scr gm-tall"><small>3 · Pantalla vertical</small>
           <div class="gm-box" data-w="720"><iframe title="Pantalla vertical de ${esc(VENUES[v])}" tabindex="-1" src="${page(`#/vertical-in/${VERT[v]}`)}"></iframe></div></div>
       </div>
       <div class="gm-keys" data-k="keys"></div>
@@ -52,21 +55,20 @@
     const ro = new ResizeObserver(fit);
     root.querySelectorAll('.gm-box').forEach((b) => ro.observe(b));
 
-    // Pantalla 1: video en vivo o GC. En «Automático»: el video en vivo y, si no hay transmisión, el tablero
+    // Pantalla 1: video en vivo o GC con un fondo. En «Automático»: el video en vivo y, si no hay transmisión, el GC
     const paintP1 = (v) => {
       const s = state[v];
-      const mode = s.p1 === 'auto' ? (s.live ? 'vivo' : 'tablero') : s.p1;
+      const mode = s.p1 === 'auto' ? (s.live ? 'vivo' : 'gc') : s.p1;
       const gc = s.main ? '#/escena' : `#/light-gc/${v}`;
-      const src = mode === 'vivo' ? `https://player.twitch.tv/?channel=${TWITCH[v]}&parent=${location.hostname}&muted=true&autoplay=true`
-        : mode === 'gc' ? page(gc) : page(`#/pantalla/${BOARD[v]}`);
-      el(v, 'p1name').textContent = mode === 'vivo' ? (s.live ? 'Video en vivo' : 'Video en vivo (ahora no hay transmisión)') : mode === 'gc' ? 'GC' : (s.p1 === 'auto' ? 'Tablero (no hay transmisión en vivo)' : 'Tablero');
+      const src = mode === 'vivo' ? `https://player.twitch.tv/?channel=${TWITCH[v]}&parent=${location.hostname}&muted=true&autoplay=true` : page(gc);
+      el(v, 'p1name').textContent = mode === 'vivo' ? (s.live ? 'Video en vivo' : 'Video en vivo (ahora no hay transmisión)') : (s.p1 === 'auto' ? 'GC (no hay transmisión en vivo)' : 'GC');
       root.querySelectorAll(`.gm-venue[data-v="${v}"] [data-p1]`).forEach((b) => b.classList.toggle('on', b.dataset.p1 === s.p1));
       if (src === s.p1src) return;
       s.p1src = src;
       const box = el(v, 'p1');
-      box.classList.toggle('gm-check', mode === 'gc'); // el GC es transparente: se ve sobre un fondo cuadriculado
+      box.classList.toggle('gm-bg', mode === 'gc'); // el GC es transparente: se ve sobre un fondo con el color del local
       box.innerHTML = mode === 'vivo' ? `<iframe data-full="1" title="Video en vivo de ${esc(VENUES[v])}" allow="autoplay; fullscreen" src="${esc(src)}"></iframe>`
-        : `<iframe title="${mode === 'gc' ? 'GC' : 'Tablero'} de ${esc(VENUES[v])}" tabindex="-1" src="${esc(src)}"></iframe>`;
+        : `<iframe title="GC de ${esc(VENUES[v])}" tabindex="-1" src="${esc(src)}"></iframe>`;
       fit();
     };
 

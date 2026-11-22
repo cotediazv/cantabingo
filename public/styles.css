@@ -2697,3 +2697,11 @@ body.gm-on main { max-width: none; padding: 10px 14px 40px; }
 .gm-all .gm-screens { grid-template-columns: minmax(0, 256fr) minmax(0, 81fr); }
 .gm-all .gm-screens > .gm-scr:first-child { grid-column: 1 / -1; }
 .gm-scr > small { white-space: normal; overflow: visible; text-overflow: clip; }
+/* GC Master, orden del dibujo de Cote (22 nov): a la izquierda la 1 (vivo o GC con un fondo) y debajo la 2 (tablero);
+   a la derecha la 3 (pantalla vertical) a todo el alto. Todo cabe en el alto de la ventana */
+.gm-screens, .gm-all .gm-screens { grid-template-columns: minmax(0, 1fr) minmax(0, .7fr); max-width: max(520px, calc((100vh - 330px) * 1.38)); margin: 0 auto; }
+.gm-all .gm-screens { max-width: none; }
+.gm-all .gm-screens > .gm-scr:first-child { grid-column: auto; }
+.gm-left { min-width: 0; display: grid; gap: 10px; align-content: start; }
+.gm-box.gm-bg { background: radial-gradient(circle at 50% 35%, var(--gm), #0b0a18 120%); }
+@media (max-width: 700px) { .gm-screens, .gm-all .gm-screens { grid-template-columns: minmax(0, 1fr); } }
