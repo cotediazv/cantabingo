@@ -19,6 +19,8 @@
   const LIGHT = [['info', '🔄', 'Información'], ['karaoke', '🎤', 'Karaoke'], ['show', '⭐', 'Show'], ['cartelera', '📅', 'Cartelera'], ['qr', '📱', 'QR grande'], ['none', '⛔', 'Nada']];
   // Opciones del GC de la sala de juegos (cuando la sala abierta es la de este local)
   const MAIN = [['bingo', '🎱', 'Bingo'], ['rueda', '🎡', 'El Rosco'], ['sorteo', '🎲', 'Sorteo'], ['voto', '🗳️', 'Votación'], ['karaoke', '🎤', 'Karaoke'], ['show', '⭐', 'Show'], ['insta', '📸', 'Instagram'], ['qr', '📱', 'QR'], ['none', '⛔', 'Nada']];
+  // Capa gráfica sobre la cámara (pedido de Cote, 21 nov): piezas que se disparan sobre el GC de OBS del local y salen solas
+  const CAPA = [['cortina', '🎬', 'Cortina'], ['texto3d', '🧊', 'Texto 3D'], ['celebracion', '🎉', 'Celebración'], ['off', '✖', 'Quitar']];
   const page = (hash) => `${location.pathname}?mudo=1${hash}`;
 
   const venueHTML = (v) => `<section class="gm-venue th-${v}" data-v="${v}">
@@ -34,7 +36,10 @@
           <div class="gm-box" data-w="720"><iframe title="Pantalla vertical de ${esc(VENUES[v])}" tabindex="-1" src="${page(`#/vertical-in/${VERT[v]}`)}"></iframe></div></div>
       </div>
       <div class="gm-keys" data-k="keys"></div>
-      <input class="gm-text" data-k="text" type="text" name="text" form="gmf-${v}" maxlength="120" autocomplete="off" placeholder="Texto del GC personalizable">
+      <div class="gm-txtrow">
+        <input class="gm-text" data-k="text" type="text" name="text" form="gmf-${v}" maxlength="120" autocomplete="off" placeholder="Texto del GC personalizable o del texto 3D">
+        <div class="gm-capa" title="Capa gráfica sobre la cámara">${CAPA.map(([k, i, t]) => `<button type="button" class="gm-ckey" data-capa="${k}"><span>${i}</span><b>${t}</b></button>`).join('')}</div>
+      </div>
     </section>`;
 
   // Una página del GC Master: uno o los tres locales
@@ -192,6 +197,16 @@
       // Pantalla 1: tocar «vivo» o «GC» la deja fija; tocar de nuevo la tecla encendida la devuelve a automático
       if (b.dataset.p1) { e.preventDefault(); state[v].p1 = state[v].p1 === b.dataset.p1 ? 'auto' : b.dataset.p1; paintP1(v); paintKeys(v); return; }
       if (b.type !== 'submit') e.preventDefault();
+      if (b.dataset.capa) {
+        // Capa gráfica: se dispara sobre el GC de OBS de este local; el texto 3D usa lo escrito en el espacio de texto
+        const ti = el(v, 'text'); const text = ti.value.trim();
+        if (b.dataset.capa === 'texto3d' && !text) { toast('Escribe el texto para el 3D'); ti.focus(); return; }
+        try {
+          await api('POST', '/api/capa', { local: v, kind: b.dataset.capa, text: text.slice(0, 60) });
+          b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 1500);
+        } catch (err) { fail(err); }
+        return;
+      }
       try {
         if (b.dataset.light) await api('POST', '/api/light/stage', { local: v, show: b.dataset.light });
         else if (b.dataset.main) await api('POST', '/api/stage', { show: b.dataset.main });

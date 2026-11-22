@@ -2890,3 +2890,50 @@ body.gm-on main { max-width: none; padding: 10px 14px 40px; }
   .gm-one .gm-screens > .gm-tall .gm-box { border-radius: 0 8px 8px 0; border-left-width: 1px; }
   .gm-one .gm-screens > .gm-tall > small { border-radius: 0 0 8px 0; }
 }
+
+/* Capa gráfica sobre la cámara (pedido de Cote, 21 nov): capa transparente encima del GC de OBS; las piezas entran y
+   salen solas. --cp es el color del local */
+#capa { position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; z-index: 9500; pointer-events: none; overflow: hidden; }
+#capa .cp { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+/* Cortina: franjas que cruzan, el logo al centro y se abre */
+#capa .cp-cur i { position: absolute; left: -30%; width: 160%; height: 21%; transform: translateX(-110%) skewX(-18deg); animation: cpCur 3.4s cubic-bezier(.7, 0, .2, 1) both; }
+#capa .cp-cur i:nth-child(1) { top: -1%; background: #ffc400; } #capa .cp-cur i:nth-child(2) { top: 20%; background: var(--cp); animation-delay: .07s; }
+#capa .cp-cur i:nth-child(3) { top: 40%; background: #100e22; animation-delay: .14s; } #capa .cp-cur i:nth-child(4) { top: 60%; background: var(--cp); animation-delay: .21s; }
+#capa .cp-cur i:nth-child(5) { top: 80%; background: #ffc400; animation-delay: .28s; }
+@keyframes cpCur { 0% { transform: translateX(-110%) skewX(-18deg); } 24%, 66% { transform: translateX(0) skewX(-18deg); } 100% { transform: translateX(110%) skewX(-18deg); } }
+#capa .cp-cur img { position: absolute; left: 50%; top: 50%; width: 46vh; opacity: 0; transform: translate(-50%, -50%) scale(.2); filter: drop-shadow(0 .8vh 2vh rgba(0, 0, 0, .5)); animation: cpLogo 3.4s ease both; }
+@keyframes cpLogo { 0%, 20% { transform: translate(-50%, -50%) scale(.2); opacity: 0; } 32% { transform: translate(-50%, -50%) scale(1.12); opacity: 1; } 38%, 62% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 74%, 100% { transform: translate(-50%, -50%) scale(1.4); opacity: 0; } }
+/* Celebración (video con fondo transparente) y texto en 3D real */
+#capa .cp-vid video { position: absolute; left: 0; top: 0; width: 100%; height: 100%; object-fit: cover; }
+#capa .cp-gl { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+/* si el navegador no tiene 3D, el mismo texto plano */
+#capa .cp-flat { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2vh; text-align: center; animation: cpFlat 9s ease both; }
+#capa .cp-flat b { font: 900 16vh/1 "Source Sans 3", sans-serif; color: #ffc400; text-shadow: .5vh .5vh 0 var(--cp), 1vh 1vh 2vh rgba(0, 0, 0, .5); padding: 0 4vw; }
+#capa .cp-flat b.s { font-size: 8vh; color: #fff; }
+@keyframes cpFlat { 0% { opacity: 0; transform: scale(.6); } 8%, 90% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.1); } }
+
+/* GC Master: junto al espacio de texto, los botones de la capa gráfica (cortina, texto 3D, celebración, quitar) */
+.gm-txtrow { max-width: max(520px, calc((100vh - 470px) * 1.45)); margin: 10px auto 0; }
+.gm-all .gm-txtrow { max-width: none; }
+.gm-txtrow .gm-text { margin: 0; max-width: none; }
+.gm-capa { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1.45fr) minmax(0, 1fr); gap: 6px; margin-top: 6px; }
+.gm-ckey { display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; height: 34px; padding: 0 4px; border-radius: 9px; border: 2px solid #5a4a12; background: linear-gradient(#3a3110, #221c08); color: #fff; font-weight: 800; cursor: pointer; white-space: nowrap; }
+.gm-ckey span { font-size: 1rem; line-height: 1; } .gm-ckey b { font-size: .78rem; overflow: hidden; }
+.gm-ckey.on { background: linear-gradient(#ffc400, #c99700); border-color: #fff1b0; color: #1a1a1a; }
+@media (max-width: 700px) {
+  .gm-txtrow { max-width: 100%; margin-top: 6px; }
+  .gm-capa { gap: 4px; margin-top: 5px; } .gm-ckey { height: 30px; gap: 3px; border-width: 1px; } .gm-ckey span { font-size: .8rem; } .gm-ckey b { font-size: .6rem; }
+}
+@media (min-width: 900px) {
+  /* versión horizontal de un local: el texto sigue arriba a la derecha y los botones de la capa van abajo de la columna
+     derecha, en 2 filas de 2 (a los botones de arriba se les descuenta ese alto, para que todo siga cabiendo) */
+  .gm-one .gm-venue { --h3: calc(max(var(--H), var(--h1)) - var(--h2) - 10px - 72px);
+    grid-template-rows: auto var(--h2) var(--h3) 62px; grid-template-areas: "head txt txt" "p1 p3 p2" "p1 p3 keys" "p1 p3 capa"; }
+  .gm-one .gm-txtrow { display: contents; }
+  .gm-one .gm-txtrow .gm-text { grid-area: txt; align-self: center; margin: 0 0 0 10px; }
+  .gm-one .gm-capa { grid-area: capa; margin: 0 0 0 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .gm-one .gm-ckey { height: 28px; padding: 0 3px; gap: 4px; }
+  .gm-one .gm-ckey span { font-size: .85rem; } .gm-one .gm-ckey b { font-size: min(.74rem, calc(var(--r) * .054)); }
+}
+/* «Los 3 locales»: el texto «GC personalizable» entero dentro de su botón */
+@media (min-width: 701px) { .gm-all .gm-key.gm-long b { font-size: .58rem; letter-spacing: -.01em; } }
