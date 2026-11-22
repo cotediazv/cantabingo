@@ -345,6 +345,9 @@ function validToken(token) {
   return Number(exp) > Date.now() && crypto.timingSafeEqual(sha(sig), sha(sign(exp)));
 }
 const requireAdmin = (req, res, next) => (validToken(req.get('x-admin')) ? next() : fail(res, 401, 'Inicia sesión como moderador'));
+// Registro de clientes (pedido de Cote, 22 nov): va antes de las rutas, porque mira pasar lo que el público hace desde el
+// celular (entrar, responder la Trivia, votar, pedir canciones…) y lo anota en la ficha de cada persona (clientes.js)
+require('./clientes.js')({ app, db, requireAdmin, dir: path.dirname(DATA_FILE), port: PORT });
 const attempts = {}; // ip -> { n, until }: frena los intentos de adivinar la contraseña
 
 // ---------- Acceso del equipo de cada local (sala light) ----------

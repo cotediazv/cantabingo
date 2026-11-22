@@ -75,6 +75,9 @@ window.gcPer = (() => {
   };
   return { html, plain, card, over };
 })();
+// Marca al azar de este navegador (sin datos personales): sirve para contar a los conectados sin repetir y para saber,
+// en el registro de clientes, cuántas veces vuelve el mismo celular
+window.vid = () => { let v = store.get('vid'); if (!v) { v = rnd(8); store.set('vid', v); } return v; };
 let toastTimer;
 function toast(msg) {
   const t = $('#toast');
@@ -810,7 +813,7 @@ views.jugar = async (sid) => {
   const key = `tok_${sid}`;
   let me = null;
   const token = store.get(key);
-  if (token) me = await api('POST', `/api/sessions/${sid}/join`, { token }).catch(() => null);
+  if (token) me = await api('POST', `/api/sessions/${sid}/join`, { token, vid: window.vid() }).catch(() => null);
   if (!me) {
     let info;
     try { info = await api('GET', `/api/sessions/${sid}`); } catch { backToStart(); return undefined; }
@@ -826,7 +829,7 @@ views.jugar = async (sid) => {
     $('#f').onsubmit = async (e) => {
       e.preventDefault();
       try {
-        const r = await api('POST', `/api/sessions/${sid}/join`, Object.fromEntries(new FormData(e.target)));
+        const r = await api('POST', `/api/sessions/${sid}/join`, { ...Object.fromEntries(new FormData(e.target)), vid: window.vid() });
         store.set(key, r.token);
         store.set('playerFirst', e.target.name.value.trim());
         store.set('playerLast', e.target.surname.value.trim());

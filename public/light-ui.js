@@ -223,13 +223,13 @@
     if (!info) { app.innerHTML = '<div class="panel"><h1>Esta sala ya terminó</h1><p class="muted">Pide al equipo el código QR de la sala de hoy.</p></div>'; return undefined; }
     // «Conectados» (pedido de Cote, 22 nov): mientras la sala light está abierta en el celular, avisa cada 45 s para
     // contarla (una marca al azar del navegador, sin datos personales; se corta sola al salir de esta pantalla)
-    { const here = location.hash; let vid = store.get('vid'); if (!vid) { vid = rnd(8); store.set('vid', vid); }
+    { const here = location.hash; const vid = window.vid();
       const ping = () => { if (location.hash !== here) return clearInterval(tPing); if (!document.hidden) fetch(`/api/web/viendo?que=light&local=${info.venue}&id=${vid}`).catch(() => {}); return undefined; };
       const tPing = setInterval(ping, 45000); setTimeout(ping, 1500); }
     const key = `light-${id}`;
     let me = null;
     try { me = JSON.parse(store.get(key) || 'null'); } catch { me = null; }
-    if (me && me.token) me = await api('POST', `/api/light/${id}/join`, { token: me.token }).catch(() => null);
+    if (me && me.token) me = await api('POST', `/api/light/${id}/join`, { token: me.token, vid: window.vid() }).catch(() => null);
     const joinForm = () => {
       app.innerHTML = `<div class="panel"><h1 style="margin-top:0">${esc(info.title)}</h1><p class="muted">Entra con tu nombre para pedir canciones de karaoke y ver la cartelera.</p>
         <form id="lj" class="fields" style="grid-template-columns:1fr">
@@ -239,7 +239,7 @@
           <button class="primary big">Entrar</button></form></div><p class="lm-web">Ve los registros en vivo de esta y todas las noches en <a href="https://krbstage.cl" target="_blank" rel="noopener"><b>krbstage.cl</b></a></p>`;
       $('#lj').onsubmit = async (e) => {
         e.preventDefault();
-        try { me = await api('POST', `/api/light/${id}/join`, Object.fromEntries(new FormData(e.target))); store.set(key, JSON.stringify({ token: me.token })); main(); } catch (err) { fail(err); }
+        try { me = await api('POST', `/api/light/${id}/join`, { ...Object.fromEntries(new FormData(e.target)), vid: window.vid() }); store.set(key, JSON.stringify({ token: me.token })); main(); } catch (err) { fail(err); }
       };
     };
     let tab = 'karaoke';
