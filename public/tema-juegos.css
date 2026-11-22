@@ -383,5 +383,18 @@ html.t2 #kids-ad small { font: 700 1.8vh/1.25 var(--t-txt); color: var(--t-tenue
 /* QR del Festival y del objeto con la frase definida por Cote (22 nov): en el GC, en dos líneas que no pasan del ancho
    del QR; en el tablero, grande junto al QR */
 html.t2 #vg .vg-qr b { text-wrap: balance; }
-html.t2 #vf .vf-qr b { font: 900 3.6vh/1 var(--t-disp); text-transform: uppercase; }
-html.t2 #vf:has(.vf-list > div:nth-child(8)) .vf-qr b { font-size: 3vh; }
+@media (orientation: landscape) {
+  html.t2 #vf .vf-qr b { font: 900 3.6vh/1 var(--t-disp); text-transform: uppercase; }
+  html.t2 #vf:has(.vf-list > div:nth-child(8)) .vf-qr b { font-size: 3vh; }
+}
+
+/* Empate en la gran final del objeto: por qué ganó (pedido de Cote, 22 nov) */
+html.t2 #vf .vwin-tie, html.t2 #vg-win .vwin-tie { max-width: 90%; margin-top: 2.2vh; font: 800 3.1vh/1.3 var(--t-txt); color: var(--t-texto); text-wrap: balance; }
+html.t2 #vf .vwin-tie b, html.t2 #vg-win .vwin-tie b { margin-bottom: 1vh; font: 700 2.3vh/1.2 var(--t-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--t-foco); }
+@media (orientation: portrait) { html.t2 #vf .vwin-tie { font-size: 3.6vw; } html.t2 #vf .vwin-tie b { font-size: 2.8vw; } }
+html.t2 #vg .vk-tie { text-align: center; }
+html.t2 #vg .vk-tie b { margin-bottom: .9vh; font: 700 2vh/1.2 var(--t-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--t-foco); }
+html.t2 #vg .vk-tie span { font: 800 2.7vh/1.3 var(--t-txt); color: var(--t-texto); text-wrap: balance; }
+html.t2 #vf .vf-main > .vf-tie { order: 9; margin-top: 2.4vh; padding: 0 3vh; font: 800 2.9vh/1.3 var(--t-txt); color: var(--t-texto); text-wrap: balance; }
+html.t2 #vf .vf-tie .t { margin-bottom: 1vh; font: 700 2.1vh/1.2 var(--t-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--t-foco); }
+@media (orientation: portrait) { html.t2 #vf .vf-main > .vf-tie { font-size: 3.4vw; } html.t2 #vf .vf-tie .t { font-size: 2.6vw; } }

@@ -61,7 +61,7 @@
       const box = $('#vc-body');
       if (!box || !st) return;
       setClock(st);
-      const sig = JSON.stringify([st.mode, st.title, st.max, st.phase, st.signup, st.players, st.open, st.onstage, st.counts, st.places, st.next, st.final, st.tally, st.winner, st.sample, st.overflow]);
+      const sig = JSON.stringify([st.mode, st.title, st.max, st.phase, st.signup, st.players, st.open, st.onstage, st.counts, st.places, st.next, st.final, st.tally, st.winner, st.tie, st.sample, st.overflow]);
       if (sig === last) return;
       last = sig;
       if (document.activeElement !== $('#vc-title')) $('#vc-title').value = st.title;
@@ -123,7 +123,7 @@
           <div class="vc-list">${st.second ? `<div class="vc-row"><p><b>2.º lugar · ${esc(st.second.name)}</b>${thing(st.second)}<small>Nota ${note(st.second.score, st.second.dec)}</small></p></div>` : ''}
           ${[...st.places].reverse().map((p) => `<div class="vc-row"><p><b>${ord(p.place)} · ${esc(p.name)}</b>${thing(p)}<small>Nota ${note(p.score, p.dec)}</small></p></div>`).join('')}</div>`;
       } else {
-        html = `<h2>🏆 Ganó ${esc(st.winner.name)}</h2>
+        html = `<h2>🏆 Ganó ${esc(st.winner.name)}</h2>${st.tie ? `<p class="vc-tie"><b>${esc(st.tie.title)}.</b> ${esc(st.tie.why)}.</p>` : ''}
           <div class="vc-list">${st.final.players.map((p) => `<div class="vc-row"><p><b>${esc(p.name)}</b><small>${st.tally[p.id]} votos en la gran final</small></p></div>`).join('')}
           ${[...st.places].reverse().map((p) => `<div class="vc-row"><p><b>${ord(p.place)} · ${esc(p.name)}</b><small>Nota ${note(p.score, p.dec)}</small></p></div>`).join('')}</div>`;
       }
@@ -136,12 +136,12 @@
       $('#vc-panel').hidden = st.phase === 'winner';
       // Pedido de Cote (21 nov): con el ganador anunciado, su nombre y su nota grandes para anunciarlo
       const vw = $('#vc-win');
-      const vwKey = st.phase === 'winner' && st.winner ? JSON.stringify([st.winner, st.second]) : '';
+      const vwKey = st.phase === 'winner' && st.winner ? JSON.stringify([st.winner, st.second, st.tie]) : '';
       if (vw && vw.dataset.k !== vwKey) {
         vw.dataset.k = vwKey;
         vw.hidden = !vwKey;
         vw.innerHTML = vwKey ? window.annHtml(`🏆 Ganó ${title(st)}`, [st.winner.name], [st.winner.thing || '', isK(st) && st.winner.score != null ? `Nota ${note(st.winner.score, st.winner.dec)}` : '',
-          st.second ? `2.º lugar: ${st.second.name} · nota ${note(st.second.score, st.second.dec)}` : '']) : '';
+          st.second ? `2.º lugar: ${st.second.name} · nota ${note(st.second.score, st.second.dec)}` : '', st.tie ? `${st.tie.title}. ${st.tie.why}` : '']) : '';
       }
       window.setNavFold((st.signup || st.players.length > 0) && st.phase !== 'winner');
       if ($('#vc-name')) { $('#vc-name').value = keep; $('#vc-thing').value = keepThing; if (focus) $(focus).focus(); }
@@ -181,7 +181,7 @@
       shown = sig;
       const head = `<div class="pvote-head"><b>${icon(st)} ${esc(title(st))}</b></div>`;
       let body;
-      if (st.phase === 'winner') body = `<div class="pvote-win">🏆 ${badge('1.º')}${esc(st.winner.name)}${thing(st.winner)}<small>¡Ganó ${esc(title(st))}!</small></div>`;
+      if (st.phase === 'winner') body = `<div class="pvote-win">🏆 ${badge('1.º')}${esc(st.winner.name)}${thing(st.winner)}<small>¡Ganó ${esc(title(st))}!</small>${st.tie ? `<small class="pvote-tie">${esc(st.tie.title)}. ${esc(st.tie.why)}.</small>` : ''}</div>`;
       else if (st.phase === 'final' && st.final.drum) body = '<p class="pvote-wait">🥁 ¡Redoble de tambores!<br>Mira la pantalla para conocer al ganador.</p>';
       else if (st.phase === 'final' && st.final.open) {
         body = `<p class="pvote-ask">Gran final<b>¿Quién quieres que gane?</b></p>
@@ -264,6 +264,7 @@
     <div class="bwin-card"><span class="bwin-sub">${esc(title(st))}</span><span class="vwin-cup">🏆</span>
       <div class="bwin-names"><span><b ${n(`${st.winner.name}...`)}>${badge('1.º')}${esc(st.winner.name)}</b>${st.winner.thing ? `<small>${esc(st.winner.thing)}</small>` : ''}</span></div>
       ${isK(st) && st.winner.score != null ? `<span class="vk-score">Puntaje <b>${note(st.winner.score, st.winner.dec)}</b></span>` : ''}
+      ${st.tie ? `<span class="vwin-tie"><b>${esc(st.tie.title)}</b>${esc(st.tie.why)}</span>` : ''}
       <span class="bwin-sub">¡Felicitaciones!</span></div></div>`;
 
   // Qué decir en cada momento: etiqueta, línea principal, línea secundaria y bloque de la derecha
@@ -272,7 +273,7 @@
   const sceneRaw = (st, celebrating = false) => {
     const lastPlace = st.places[st.places.length - 1];
     if (st.phase === 'winner' && isK(st)) return { tag: 'Ganó', no: '1.º', main: st.winner.name, sub: st.second && !celebrating ? `2.º lugar: ${st.second.name} · ${note(st.second.score, st.second.dec)}` : (st.winner.thing || title(st)), score: st.winner.score, dec: st.winner.dec };
-    if (st.phase === 'winner') return { tag: 'Ganó', no: '1.º', main: st.winner.name, sub: st.winner.thing || '', side: ['🏆', '¡Felicitaciones!'] };
+    if (st.phase === 'winner') return { tag: 'Ganó', no: '1.º', main: st.winner.name, sub: st.winner.thing || '', tie: st.tie || null, side: ['🏆', '¡Felicitaciones!'] };
     if (st.phase === 'final' && st.final.drum) return { tag: 'Los finalistas', duel: true, drum: true, sub: window.sinEmoji('🥁 ¡Redoble de tambores!'), side: ['🥁', '¿Quién ganará?'] };
     if (st.phase === 'final') {
       return st.final.open ? { tag: 'Gran final', duel: true, sub: 'Elige en tu celular a quién quieres que gane', clock: 'Vota ahora', qr: true }
@@ -319,7 +320,7 @@
       // Lista de inscritos: se ve durante el llamado y hasta que empieza la primera votación
       const roster = st.phase === 'voting' && !st.open && !st.onstage && !st.last && !st.drawn && st.players.length
         ? `<div class="vg-list"><small>Inscritos <b>${st.players.length}/${st.max}</b></small>${st.players.map((p) => `<div><p><b>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}</p></div>`).join('')}</div>` : '';
-      const html = celebrating ? '' : `${s.notes ? `<div class="vk-card">${notesHTML(st, 'vk-notes')}</div>` : ''}${s.list ? `<div class="vk-card"><ol class="vk-list">${s.list.map((x) => `<li>${esc(x)}</li>`).join('')}</ol></div>` : ''}${roster}${s.qr || true ? `<div class="vg-qr">${qr(joinUrl())}<b>Escanea el código QR con tu celular</b></div>` : ''}
+      const html = celebrating ? '' : `${s.notes ? `<div class="vk-card">${notesHTML(st, 'vk-notes')}</div>` : ''}${s.list ? `<div class="vk-card"><ol class="vk-list">${s.list.map((x) => `<li>${esc(x)}</li>`).join('')}</ol></div>` : ''}${s.tie ? `<div class="vk-card vk-tie"><b>${esc(s.tie.title)}</b><span>${esc(s.tie.why)}</span></div>` : ''}${roster}${s.qr || true ? `<div class="vg-qr">${qr(joinUrl())}<b>Escanea el código QR con tu celular</b></div>` : ''}
         <div class="vg-bar">
           <div class="vg-tag"><small>${esc(title(st))}</small><b>${tagText(st, s)}</b></div>
           <div class="vg-main ${s.featured ? 'featured' : ''}">${s.duel ? `<b class="vg-duel" ${n(st.final.players.map((p) => `${p.name}...`).join(' vs '))}>${versus(st)}</b>` : `<b ${n(s.no ? `${s.main}...` : s.main)}>${badge(s.no)}${esc(s.main)}</b>`}${s.sub ? `<span ${n(s.sub)}>${esc(s.sub)}</span>` : ''}</div>
@@ -381,7 +382,7 @@
         <section class="vf-main ${s.featured ? 'featured' : ''}">${st.signup ? `<small>¿Quieres participar?</small><b class="v-clock vf-clock">${clockText()}</b><span style="--n:28">Inscríbete desde tu celular</span>`
     : `${s.sub ? `<small ${n(s.sub)}>${esc(s.sub)}</small>` : ''}
           ${s.duel ? `<b class="vg-duel" ${n(st.final.players.map((p) => `${p.name}...`).join(' vs '))}>${versus(st)}</b>` : `<b ${n(s.no ? `${s.main}...` : s.main)}>${badge(s.no)}${esc(s.main)}</b>`}
-          ${s.list ? `<ol class="vk-list">${s.list.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>` : s.notes ? notesHTML(st, 'vk-notes big') : s.clock ? `<i class="v-clock">${clockText()}</i>` : s.score != null ? `<i>${s.tag === 'Ganó' ? 'Puntaje' : 'Nota'} ${note(s.score, s.dec)}</i>` : s.side ? `<span ${n(s.side[1])}>${esc(s.side[1])}</span>` : ''}`}</section>
+          ${s.list ? `<ol class="vk-list">${s.list.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>` : s.notes ? notesHTML(st, 'vk-notes big') : s.clock ? `<i class="v-clock">${clockText()}</i>` : s.score != null ? `<i>${s.tag === 'Ganó' ? 'Puntaje' : 'Nota'} ${note(s.score, s.dec)}</i>` : s.side ? `<span ${n(s.side[1])}>${esc(s.side[1])}</span>` : ''}${s.tie ? `<div class="vf-tie"><div class="t">${esc(s.tie.title)}</div><div class="w">${esc(s.tie.why)}</div></div>` : ''}`}</section>
         <aside class="vf-side">
           <div class="vf-qr">${qr(joinUrl())}<b>Escanea el código QR con tu celular</b></div>
           ${side ? `<div class="vf-list"><small>${st.phase === 'voting' ? 'Participantes' : 'Resultados'}</small>${side}</div>` : ''}

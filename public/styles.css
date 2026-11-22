@@ -2970,3 +2970,14 @@ body.gm-on main { max-width: none; padding: 10px 14px 40px; }
 /* la barra de arriba con una pestaña más: en pantallas medianas las pestañas van más justas para que quepa en una línea */
 @media (min-width: 701px) and (max-width: 1500px) { .gm-nav { gap: 6px; } .gm-nav > b { margin: 0 4px 0 2px; font-size: 1.15rem; } .gm-tab { padding: 8px 9px; font-size: .92rem; white-space: nowrap; } .gm-back span { display: none; } }
 @media (min-width: 701px) and (max-width: 1150px) { .gm-nav > b { display: none; } .gm-tab { padding: 7px 7px; font-size: .84rem; } }
+
+/* Empate en la gran final del objeto (pedido de Cote, 22 nov): en la pantalla del ganador se dice por qué ganó */
+.vwin-tie { display: block; max-width: 86vw; margin: 1.6vh auto 0; font-size: 3.2vh; font-weight: 800; line-height: 1.25; text-align: center; color: #fff; }
+.vwin-tie b { display: block; margin-bottom: .4vh; font-size: 3.6vh; color: #ffc400; }
+.vc-tie { margin: 0 0 12px; padding: 10px 12px; border-radius: 10px; background: rgba(255, 196, 0, .12); border: 1px solid #ffc400; }
+.pvote-tie { display: block; margin-top: 8px; opacity: .9; }
+.vk-tie { max-width: 84vw; text-align: center; }
+.vk-tie b { display: block; margin-bottom: .6vh; font-size: 3vh; color: #ffc400; }
+.vk-tie span { display: block; font-size: 2.7vh; font-weight: 800; line-height: 1.25; color: #fff; }
+#vf .vf-main > .vf-tie { max-width: 100%; margin-top: 1.6vh; text-align: center; white-space: normal; font-size: 2.8vh; font-weight: 800; line-height: 1.25; color: #fff; }
+.vf-tie .t { margin-bottom: .4vh; color: #ffc400; }

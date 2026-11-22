@@ -75,6 +75,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       places: s.phase === 'voting' ? [] : places(),
       toReveal: s.phase === 'results' ? Math.max(0, s.rank.length - 2 - s.revealed) : 0,
       final: s.final ? { players: finalists(), open: !!s.final.open, closed: !!s.final.closed, drum: !!s.final.drum } : null,
+      tie: s.phase === 'winner' && s.tie ? s.tie : null, // empate en la gran final: por qué ganó
       winner: s.phase === 'winner' && s.winner ? { no: no(by(s.winner)), name: by(s.winner).name, thing: by(s.winner).thing || '', ...(karaoke() ? scoreOf(by(s.winner)) : { score: null }) } : null, winAt: s.winAt || 0,
       second: s.phase === 'winner' && karaoke() && s.rank[1] && by(s.rank[1]) ? { no: no(by(s.rank[1])), name: by(s.rank[1]).name, thing: by(s.rank[1]).thing || '', ...scoreOf(by(s.rank[1])) } : null,
     };
@@ -296,6 +297,20 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       // Gana quien reciba más votos; si empatan, quien tuvo mejor nota en la primera votación (el orden de s.rank)
       // (concurso de karaoke: gana el mejor promedio)
       s.winner = s.mode === 'karaoke' ? a : got(b) > got(a) ? b : a;
+      // Pedido de Cote (22 nov): si hay empate en la gran final, se transparenta en pantalla por qué ganó («gana porque
+      // sacó 7,8 contra 6,7 del otro participante»). El criterio es el orden de la primera votación: mejor nota promedio;
+      // si la nota es la misma, quien recibió más notas del público; si siguen iguales, sorteo.
+      s.tie = null;
+      if (s.mode !== 'karaoke' && got(a) === got(b) && by(a) && by(b)) {
+        const A = by(a); const B = by(b); const n = got(a);
+        const title = `Empate en la gran final: ${n} ${n === 1 ? 'voto' : 'votos'} cada uno`;
+        let dec = 1; while (dec < 3 && avg(A).toFixed(dec) === avg(B).toFixed(dec)) dec++;
+        const nota = (p) => avg(p).toFixed(dec).replace('.', ',');
+        const why = avg(A) > avg(B) && nota(A) !== nota(B) ? `Gana por su nota de la primera votación: ${nota(A)} contra ${nota(B)} de ${B.name}`
+          : count(A) > count(B) ? `Tuvieron la misma nota (${avg(A).toFixed(1).replace('.', ',')}). Gana porque recibió más notas del público: ${count(A)} contra ${count(B)} de ${B.name}`
+            : `También empataron en la primera votación (nota ${avg(A).toFixed(1).replace('.', ',')}). El ganador se definió por sorteo`;
+        s.tie = { title, why };
+      }
       s.phase = 'winner';
       s.winAt = Date.now();
       return null;
