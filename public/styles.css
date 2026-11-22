@@ -2816,3 +2816,23 @@ body.gm-on main { max-width: none; padding: 10px 14px 40px; }
   .gm-one .gm-key { padding: 4px 1px; }
   .gm-one .gm-custom input { margin-top: 8px; padding: 8px 10px; }
 }
+/* GC Master: arriba a la derecha, la fecha con el año y la hora local (pedido de Cote, 22 nov) */
+.gm-clock { margin-left: auto; display: flex; align-items: baseline; gap: 12px; white-space: nowrap; }
+.gm-clock b { font-size: 1.5rem; font-weight: 900; font-variant-numeric: tabular-nums; color: #ffc400; }
+.gm-clock i { font-style: normal; font-weight: 700; font-size: .95rem; color: #d8d3ff; }
+@media (max-width: 1100px) { .gm-clock { gap: 8px; } .gm-clock b { font-size: 1.2rem; } .gm-clock i { font-size: .8rem; } }
+@media (max-width: 700px) {
+  /* en el teléfono va en su propia línea, bajo los locales */
+  .gm-nav { flex-wrap: wrap; }
+  .gm-clock { flex: 1 0 100%; margin: 0; justify-content: center; gap: 8px; }
+  .gm-clock b { font-size: 1rem; } .gm-clock i { font-size: .72rem; }
+  .gm-one .gm-screens, .gm-one .gm-keys { max-width: min(100%, calc((100vh - 344px) * 1.45)); max-width: min(100%, calc((100dvh - 344px) * 1.45)); }
+  .gm-one .gm-keys { max-width: 100%; }
+}
+/* la hora grande y la fecha debajo, para que la barra de arriba no pase a dos líneas en pantallas más chicas */
+@media (min-width: 701px) {
+  .gm-nav { flex-wrap: nowrap; }
+  .gm-clock { flex-direction: column; align-items: flex-end; gap: 0; line-height: 1.15; }
+  .gm-clock b { font-size: 1.35rem; } .gm-clock i { font-size: .8rem; }
+}
+@media (min-width: 701px) and (max-width: 1250px) { .gm-back span { display: none; } .gm-tab { padding: 8px 10px; } }

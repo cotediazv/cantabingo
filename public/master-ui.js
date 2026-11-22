@@ -43,7 +43,8 @@
     app.innerHTML = `<div id="gm" class="${single ? 'gm-one' : 'gm-all'}">
       <nav class="gm-nav"><a class="gm-back" href="#/control">←<span> Centro de control</span></a><b>🎛️ GC Master</b>
         ${ORDER.map((v) => `<a class="gm-tab ${single && list[0] === v ? 'on' : ''}" href="#/master/${v}">${esc(VENUES[v])}</a>`).join('')}
-        <a class="gm-tab ${single ? '' : 'on'}" href="#/master">Los 3 locales</a></nav>
+        <a class="gm-tab ${single ? '' : 'on'}" href="#/master">Los 3 locales</a>
+        <span class="gm-clock" data-k="clock"><b></b><i></i></span></nav>
       <div class="gm-grid">${list.map(venueHTML).join('')}</div>
       ${single ? '' : `<div class="gm-audio"><small>Audio · escuchar la señal 1 de un local (los otros se apagan)</small><div class="gm-audiorow">${list.map((v, i) => `<button type="button" class="gm-key" data-audio="${v}"><i></i><span>🔇</span><b>${i + 1} · ${esc(VENUES[v])}</b></button>`).join('')}</div></div>`}</div>`;
     const root = $('#gm');
@@ -210,9 +211,16 @@
     list.forEach(ownStart);
     await Promise.all([load(), loadLive()]);
     fit();
+    // Arriba, la fecha con el año y la hora local de los locales (hora de Chile), al segundo (pedido de Cote, 22 nov)
+    const clockEl = root.querySelector('[data-k="clock"]');
+    const fmtDate = new Intl.DateTimeFormat('es-CL', { timeZone: 'America/Santiago', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const fmtTime = new Intl.DateTimeFormat('es-CL', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' });
+    const tickClock = () => { const now = new Date(); const d = fmtDate.format(now); clockEl.querySelector('i').textContent = d.charAt(0).toUpperCase() + d.slice(1); clockEl.querySelector('b').textContent = fmtTime.format(now); };
+    tickClock();
+    const t3 = setInterval(tickClock, 1000);
     const t1 = setInterval(load, 3000);
     const t2 = setInterval(loadLive, 20000);
-    return () => { alive = false; clearInterval(t1); clearInterval(t2); ro.disconnect(); document.removeEventListener('visibilitychange', onVisible); list.forEach((v) => { clearInterval(fades[v]); ownStop(v); }); document.body.classList.remove('gm-on'); };
+    return () => { alive = false; clearInterval(t1); clearInterval(t2); clearInterval(t3); ro.disconnect(); document.removeEventListener('visibilitychange', onVisible); list.forEach((v) => { clearInterval(fades[v]); ownStop(v); }); document.body.classList.remove('gm-on'); };
   };
 
   // #/master: los 3 locales juntos · #/master/<local>: la página de un local
