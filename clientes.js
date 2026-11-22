@@ -30,7 +30,8 @@ module.exports = function clientes({ app, db, requireAdmin, dir, port }) {
     });
   };
   const save = () => { if (!timer) timer = setTimeout(() => { timer = null; write(); }, 5000); };
-  for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { try { fs.writeFileSync(FILE, JSON.stringify(data)); } catch (e) { /* nada */ } });
+  // Al apagarse o reiniciarse el servicio se guarda antes de salir (va primero: el servidor termina el proceso en su propio aviso)
+  for (const sig of ['SIGTERM', 'SIGINT']) process.prependListener(sig, () => { try { fs.writeFileSync(FILE, JSON.stringify(data)); } catch (e) { /* nada */ } });
 
   // ---------- Fichas ----------
   // Jornada de la sala de juegos: una por sala abierta. Jornada de la sala light: una por local y por noche (el día

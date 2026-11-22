@@ -3105,3 +3105,18 @@ body.vert-in.per-on .vt-act { transform: scale(var(--per-k, .9)); transform-orig
 @media (min-width: 701px) and (max-width: 980px) { .gm-nav { flex-wrap: wrap; } .gm-nav .gm-clock { flex: 1 0 100%; flex-direction: row; justify-content: center; align-items: baseline; gap: 8px; margin: 0; } }
 @media (max-width: 520px) { .cx-leg { grid-template-columns: 1fr; } .cx-sub button { padding: 8px 12px; font-size: .88rem; } }
 .cx-reg th { white-space: normal; vertical-align: bottom; line-height: 1.15; }
+
+/* «Clientes» del GC Master (pedido de Cote, 22 nov): jornadas a la izquierda y la ficha de cada persona a la derecha */
+.cl-top { display: flex; align-items: center; gap: 12px; margin: 10px 0 12px; }
+.cl-top input { flex: 1 1 260px; max-width: 460px; margin: 0; padding: 10px 14px; border: 2px solid var(--cx-line); border-radius: 12px; background: #100e22; color: var(--cx-ink); font: inherit; }
+.cl-top span { flex: 1; color: var(--cx-ink2); font-size: .86rem; } .cl-top .btn { flex: none; }
+.cl-grid { display: grid; grid-template-columns: minmax(210px, 280px) minmax(0, 1fr); gap: 14px; align-items: start; }
+.cl-jor { display: grid; gap: 8px; max-height: calc(100vh - 170px); overflow-y: auto; }
+.cl-j { --gm: #1487cf; width: 100%; margin: 0; display: grid; gap: 2px; padding: 9px 12px; text-align: left; border: 2px solid var(--cx-line); border-left: 5px solid var(--gm); border-radius: 10px; background: #100e22; color: var(--cx-ink); font: inherit; box-shadow: none; cursor: pointer; }
+.cl-j.th-frida { --gm: #c4175e; } .cl-j.th-tobalaba { --gm: #c81e1e; }
+.cl-j.on { border-color: #ffc400; border-left-color: var(--gm); background: #1b1830; }
+.cl-j b { font-size: 1rem; font-weight: 900; } .cl-j span { font-size: .8rem; color: var(--cx-ink2); } .cl-j small { font-size: .74rem; color: var(--cx-ink2); opacity: .85; }
+.cl-per { min-width: 0; } .cl-per td, .cl-per th { text-align: left; } .cl-per td { max-width: 260px; white-space: normal; }
+.cl-per th { white-space: normal; vertical-align: bottom; line-height: 1.15; } .cl-per td:first-child { font-weight: 800; white-space: nowrap; }
+.cl-h { margin: 0 0 8px; color: var(--cx-ink2); font-size: .9rem; }
+@media (max-width: 800px) { .cl-top { flex-wrap: wrap; } .cl-top span { flex: 1 0 100%; order: 3; } .cl-grid { grid-template-columns: 1fr; } .cl-jor { grid-auto-flow: column; grid-auto-columns: minmax(200px, 70%); overflow-x: auto; max-height: none; } }

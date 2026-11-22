@@ -523,7 +523,7 @@
     if (!(await isAdmin())) return viewLogin();
     document.body.classList.add('gm-on');
     app.innerHTML = `<div id="gm" class="gm-con">${navHTML('conectados')}
-      <div class="cx-sub"><button type="button" class="on" data-sub="vivo">En vivo</button><button type="button" data-sub="reg">Registros de conectados</button></div>
+      <div class="cx-sub"><button type="button" class="on" data-sub="vivo">En vivo</button><button type="button" data-sub="reg">Registros de conectados</button><button type="button" data-go="#/master/clientes">Clientes</button></div>
       <div class="cx-grid" data-k="vivo"></div><div class="cx-reg" data-k="reg" hidden></div>
       <div class="cx-tip" data-k="tip" hidden></div></div>`;
     const root = $('#gm'); const vivo = root.querySelector('[data-k="vivo"]'); const reg = root.querySelector('[data-k="reg"]'); const tip = root.querySelector('[data-k="tip"]');
@@ -597,7 +597,9 @@
       data = r; paintVivo(); if (!reg.hidden) paintReg();
     };
     root.onclick = (e) => {
-      const b = e.target.closest('button'); if (!b || !data) return;
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.go) { location.hash = b.dataset.go; return; }
+      if (!data) return;
       if (b.dataset.sub) { root.querySelectorAll('[data-sub]').forEach((x) => x.classList.toggle('on', x === b)); vivo.hidden = b.dataset.sub !== 'vivo'; reg.hidden = b.dataset.sub !== 'reg'; tip.hidden = true; if (!reg.hidden) paintReg(); else paintVivo(); }
       if (b.dataset.csv !== undefined) { // punto y coma y marca de inicio: así Excel lo abre con tildes y en columnas
         const csv = [COLS.map(([h]) => h), ...data.jornadas.map((j) => COLS.map(([, f]) => f(j)))].map((row) => row.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\r\n');
@@ -607,9 +609,65 @@
     const onResize = () => { if (data && !vivo.hidden) paintVivo(); };
     window.addEventListener('resize', onResize);
     await load();
+    if (window.__cxSub === 'reg') { window.__cxSub = ''; root.querySelector('[data-sub="reg"]').click(); } // se llegó desde «Clientes» tocando «Registros de conectados»
     const t3 = startClock(root); const t1 = setInterval(load, 15000);
     return () => { alive = false; clearInterval(t1); clearInterval(t3); window.removeEventListener('resize', onResize); document.body.classList.remove('gm-on'); };
   };
 
-  views.master = (v) => (v === 'movil' ? movil() : v === 'conectados' ? conectados() : v === 'juegos' ? juegos() : VENUES[v] ? master([v], true) : master(ORDER, false));
+  // «Clientes» (pedido de Cote, 22 nov, por el Registro: «el registro de la información de todos los clientes: sus
+  // nombres, cuánto interactuaron, sus respuestas, qué lugares»): a la izquierda las jornadas (una por sala de juegos y
+  // una por noche de cada sala light); a la derecha, la ficha de cada persona de esa jornada. Buscador por nombre en
+  // todas las jornadas y «Bajar todo a Excel». Servidor: clientes.js (/api/clientes). Va como tercera vista de la pestaña
+  // «Conectados» (En vivo · Registros de conectados · Clientes): una séptima pestaña arriba no cabía en el teléfono.
+  const TIPO = { juegos: 'Sala de juegos', light: 'Sala light' };
+  const clientes = async () => {
+    if (!(await isAdmin())) return viewLogin();
+    document.body.classList.add('gm-on');
+    app.innerHTML = `<div id="gm" class="gm-con gm-cli">${navHTML('conectados')}
+      <div class="cx-sub"><button type="button" data-go="#/master/conectados">En vivo</button><button type="button" data-go="#/master/conectados" data-reg="1">Registros de conectados</button><button type="button" class="on">Clientes</button></div>
+      <div class="cl-top"><input type="search" data-k="q" placeholder="Buscar por nombre en todas las jornadas" autocomplete="off"><span data-k="tot"></span><button type="button" class="btn" data-csv>⬇ Bajar todo a Excel</button></div>
+      <div class="cl-grid"><div class="cl-jor" data-k="jor"></div><div class="cl-per" data-k="per"></div></div></div>`;
+    const root = $('#gm'); const jor = root.querySelector('[data-k="jor"]'); const per = root.querySelector('[data-k="per"]'); const qi = root.querySelector('[data-k="q"]');
+    let alive = true; let sel = ''; let q = ''; let last = null;
+    const hm = new Intl.DateTimeFormat('es-CL', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+    const fecha = (d) => { const [y, m, dd] = String(d).split('-').map(Number); return new Intl.DateTimeFormat('es-CL', { timeZone: 'UTC', weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).format(Date.UTC(y, m - 1, dd, 12)); };
+    const COLS = [['Nombre', (p) => p.name], ['Lugar', (p) => p.place || '—'], ['Entró', (p) => hm.format(p.at)], ['Visitas', (p) => p.visitas], ['Cartones', (p) => p.cartones], ['Bingos ganados', (p) => p.bingos],
+      ['Trivia: respuestas', (p) => p.trivia], ['Trivia: correctas', (p) => p.triviaOk], ['Trivia: puntos', (p) => p.triviaPts], ['Sorteo de concursantes', (p) => p.sorteo || '—'], ['Votos y notas', (p) => p.votos],
+      ['Inscripción (Festival u objeto)', (p) => p.inscrito || '—'], ['Canciones pedidas', (p) => p.canciones || '—'], ['Juego votado', (p) => p.juego || '—'], ['Interacciones', (p) => p.interacciones]];
+    const WIDE = [['Fecha', (p) => fecha(p.date)], ['Local', (p) => p.local], ['Sala', (p) => TIPO[p.tipo] || p.tipo]];
+    const table = (rows, cols) => `<div class="cx-scroll"><table><thead><tr>${cols.map(([h]) => `<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.map((p) => `<tr>${cols.map(([, f]) => `<td>${esc(f(p))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    const paint = (r) => {
+      last = r;
+      root.querySelector('[data-k="tot"]').textContent = r.total ? `${r.total} ${r.total === 1 ? 'ficha' : 'fichas'} en ${r.jornadas.length} ${r.jornadas.length === 1 ? 'jornada' : 'jornadas'}` : '';
+      root.querySelector('[data-csv]').disabled = !r.total;
+      if (!sel && r.jornadas.length && !q) { sel = r.jornadas[0].id; load(); return; }
+      jor.innerHTML = r.jornadas.length ? r.jornadas.map((j) => `<button type="button" class="cl-j th-${j.venue} ${!q && j.id === sel ? 'on' : ''}" data-j="${esc(j.id)}"><b>${esc(j.local)}</b><span>${esc(fecha(j.date))} · ${TIPO[j.tipo] || j.tipo}</span><small>${j.personas} ${j.personas === 1 ? 'persona' : 'personas'} · ${j.interacciones} interacciones</small></button>`).join('')
+        : '<p class="cx-empty">Todavía no hay jornadas. La primera aparece cuando alguien entre a una sala.</p>';
+      const rows = r.personas || [];
+      per.innerHTML = q ? `<p class="cl-h">${rows.length} ${rows.length === 1 ? 'resultado' : 'resultados'} para «${esc(q)}»</p>${rows.length ? table(rows, [...WIDE, ...COLS]) : ''}`
+        : rows.length ? table(rows, COLS) : (r.jornadas.length ? '<p class="cx-empty">Elige una jornada de la lista.</p>' : '');
+    };
+    const load = async () => {
+      const r = await api('GET', `/api/clientes?${q ? `q=${encodeURIComponent(q)}` : sel ? `id=${encodeURIComponent(sel)}` : ''}`).catch(() => null);
+      if (alive && r) paint(r);
+    };
+    let tq = null;
+    qi.addEventListener('input', () => { clearTimeout(tq); tq = setTimeout(() => { q = qi.value.trim(); load(); }, 250); });
+    root.onclick = async (e) => {
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.go) { if (b.dataset.reg) window.__cxSub = 'reg'; location.hash = b.dataset.go; return; }
+      if (b.dataset.j) { sel = b.dataset.j; q = ''; qi.value = ''; load(); }
+      if (b.dataset.csv !== undefined) {
+        const all = await api('GET', '/api/clientes?todo=1').catch(() => null); if (!all || !all.personas) return;
+        const cols = [...WIDE, ...COLS];
+        const csv = [cols.map(([h]) => h), ...all.personas.map((p) => cols.map(([, f]) => f(p)))].map((row) => row.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(';')).join('\r\n');
+        const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff', csv], { type: 'text/csv;charset=utf-8' })); a.download = 'registro-de-clientes.csv'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+      }
+    };
+    await load();
+    const t3 = startClock(root); const t1 = setInterval(load, 20000);
+    return () => { alive = false; clearInterval(t1); clearInterval(t3); clearTimeout(tq); document.body.classList.remove('gm-on'); };
+  };
+
+  views.master = (v) => (v === 'movil' ? movil() : v === 'clientes' ? clientes() : v === 'conectados' ? conectados() : v === 'juegos' ? juegos() : VENUES[v] ? master([v], true) : master(ORDER, false));
 })();

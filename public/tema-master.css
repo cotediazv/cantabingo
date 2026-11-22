@@ -53,3 +53,9 @@ html.t2 .cx-ax { font-family: var(--t-mono); font-size: 9.5px; }
 html.t2 .cx-d { stroke: #100f18; }
 html.t2 .cx-tip { border-radius: 0; background: var(--t-tarima2); }
 html.t2 .cx-reg tbody tr td:nth-child(2) { border-left-color: var(--t-c); }
+
+/* «Clientes» */
+html.t2 .cl-top input { border-radius: 0; border-width: 1px; background: var(--t-tarima); font-family: var(--t-txt); }
+html.t2 .cl-j { --gm: var(--t-c); border-radius: 0; border-width: 1px; border-left-width: 4px; background: #100f18; font-family: var(--t-txt); }
+html.t2 .cl-j.on { border-color: var(--t-foco); border-left-color: var(--gm); background: var(--t-tarima2); }
+html.t2 .cl-j b { font: 900 1.2rem/1 var(--t-disp); text-transform: uppercase; letter-spacing: .01em; }
