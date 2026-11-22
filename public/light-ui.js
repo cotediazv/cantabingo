@@ -3,7 +3,7 @@
 // sala principal y sin tocarla. Panel (#/light), GC para OBS (#/light-gc) y celular del público (#/l/<sala>).
 (() => {
   const VENUES = { kennedy: 'Mercado Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' }; // el local se llama Mercado Kennedy (pedido de Cote, 21 nov)
-  const lightJoin = (id) => `${location.origin}${location.pathname}#/l/${id}`;
+  const lightJoin = (id) => `${window.pubBase()}#/l/${id}`;
   const gcUrl = (v) => `${location.origin}${location.pathname}#/light-gc/${v}`;
   const teamUrl = (v) => `${location.origin}${location.pathname}#/equipo/${v}`;
   // ¿Quién maneja este panel? El moderador, o el equipo del local (clave del equipo)
@@ -371,7 +371,7 @@
     let joinUrl = '';
     const light = await api('GET', `/api/light?local=${v}`).catch(() => null);
     if (location.hash !== mine) return () => {};
-    if (light && light.id) { joinUrl = `${location.origin}${location.pathname}#/l/${light.id}`; $('.lv-qrbox').innerHTML = qr(joinUrl); }
+    if (light && light.id) { joinUrl = `${window.pubBase()}#/l/${light.id}`; $('.lv-qrbox').innerHTML = qr(joinUrl); }
     // Qué recuadros hay para mostrar (solo los que tienen algo)
     const slides = () => {
       const out = [];

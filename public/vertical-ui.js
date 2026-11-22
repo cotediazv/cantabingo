@@ -87,7 +87,7 @@
   views['karaoke-v'] = async () => {
     const [, local, id] = location.hash.replace(/^#\/?/, '').split('/'); // #/karaoke-v/<local>/<sala light>
     document.body.classList.add('full');
-    const stop = await views.karaokeFull(pick(local), id ? `${base()}#/l/${id}` : '');
+    const stop = await views.karaokeFull(pick(local), id ? `${window.pubBase()}#/l/${id}` : '');
     return () => { document.body.classList.remove('full'); if (typeof stop === 'function') stop(); };
   };
 

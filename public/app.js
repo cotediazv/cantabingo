@@ -193,7 +193,7 @@ function subscribe(sid, onState, onGone, asAdmin = false, token = '') {
 // Enlaces fijos: siempre llevan a la sesión activa, así el QR no cambia de una partida a otra
 // La sala se llama «Los Juegos de Frida»; dentro del bingo, el juego se llama «El Bingo de Frida»
 function bingoName(name) { return String(name || '').replace(/^Los Juegos de /, 'El Bingo de '); }
-const joinUrl = () => `${location.origin}${location.pathname}#/jugar`;
+const joinUrl = () => `${window.pubBase()}#/jugar`; // el QR del público: a la dirección elegida en el Centro de control
 const boardUrl = () => `${location.origin}${location.pathname}#/tablero`;
 const gcUrl = () => `${location.origin}${location.pathname}#/gc`;
 const stageUrl = () => `${location.origin}${location.pathname}#/escena`;

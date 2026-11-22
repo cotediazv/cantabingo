@@ -1081,8 +1081,26 @@ app.post('/api/gamevote/reset', requireAdmin, (_req, res) => {
 
 // Leer la pantalla actual es público, para que la fuente de OBS no necesite iniciar sesión; cambiarla es del moderador.
 // Diseño nuevo de las pantallas (pedido de Cote, 22 nov): encendido salvo que se apague en el Centro de control
-app.get('/api/tema', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json({ on: db.tema !== false }); });
+app.get('/api/tema', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json({ on: db.tema !== false, pub: db.pubUrl || '' }); });
 app.post('/api/tema', requireAdmin, (req, res) => { db.tema = (req.body || {}).on !== false; save(); res.json({ on: db.tema }); });
+// Dirección de los QR (pedido de Cote, 22 nov: llevar a la gente a krbstage.cl; eligió la opción A, juegos.krbstage.cl):
+// la sala es la misma y las direcciones de siempre siguen funcionando (OBS, pantallas y decodificadores no se tocan);
+// lo único que cambia es a dónde apuntan los QR que ve el público. Se elige en el Centro de control y, antes de
+// aceptarla, el servidor comprueba que esa dirección responde de verdad (así un QR nunca queda apuntando a la nada).
+const PUB_URLS = ['https://juegos.krbstage.cl'];
+app.post('/api/pub', requireAdmin, async (req, res) => {
+  const url = String((req.body || {}).url || '');
+  if (url && !PUB_URLS.includes(url)) return fail(res, 400, 'Dirección no permitida');
+  if (url && !process.env.PUB_SIN_PRUEBA) {
+    try {
+      const r = await fetch(`${url}/api/tema`, { signal: AbortSignal.timeout(8000) });
+      const j = await r.json();
+      if (!r.ok || typeof j.on !== 'boolean') throw new Error('no es la sala');
+    } catch (e) { return fail(res, 409, `${url.replace('https://', '')} todavía no responde (puede faltar el certificado). Los QR siguen como estaban.`); }
+  }
+  db.pubUrl = url; save(); aviso();
+  res.json({ pub: url });
+});
 app.get('/api/stage', (_req, res) => res.json({ show: roscoLock(db.stage) ? 'rueda' : STAGES.includes(db.stage) ? db.stage : 'bingo', per: perMain() }));
 app.post('/api/gcper', requireAdmin, (req, res) => {
   const b = req.body || {};

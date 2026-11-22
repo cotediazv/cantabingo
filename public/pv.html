@@ -156,7 +156,9 @@
   var offset = 0;
   var cv = $('cv'); var view = $('view'); var vid = $('vid'); var tap = $('tap'); var perShown = ''; // texto del GC PER que está puesto
   function now() { return new Date().getTime() + offset; }
-  function origin() { return location.protocol + '//' + location.host; }
+  // Dirección de los QR: la que se elige en el Centro de control (juegos.krbstage.cl); si no hay, esta misma
+  var PUB = '';
+  function origin() { return PUB || (location.protocol + '//' + location.host); }
   function qrImg(url) { return '<img alt="Código QR" src="/api/qr?text=' + encodeURIComponent(url) + '">'; }
   function clock(ms) { var s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
   function cap(t) { return String(t || '').toLowerCase().replace(/(^|[\s:(«"\-])([a-záéíóúñü])/g, function (m, a, b) { return a + b.toUpperCase(); }); }
@@ -720,6 +722,8 @@
       if (want !== cur) go(want);
     });
   }
+  function pubLoad() { get('/api/tema', function (r) { if (r && typeof r.pub === 'string') PUB = r.pub; }); }
+  pubLoad(); setInterval(pubLoad, 300000);
   tick();
   setInterval(tick, 3000);
   // Versión nueva publicada (pedido de Cote, 21 nov: que la pantalla se actualice sin tener que apretar nada): cada minuto
