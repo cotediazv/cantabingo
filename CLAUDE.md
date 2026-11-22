@@ -116,4 +116,6 @@ Tiene el Registro de pedidos y la pestaña "Todo lo realizado". Leerlo solo cuan
 
 **Anotar siempre en el Registro** para trabajar en conjunto con la compañera del karaoke: cada cosa que se prepare, se publique o quede pendiente en la Sala se anota como una fila nueva al final de la tabla del Registro (fecha, quién, qué se hizo, estado), firmando como "Code 1". Lo que ella anote ahí son pedidos a revisar: se evalúa y se prepara sin publicar, y se publica solo con el visto bueno de Cote.
 
+**Las preguntas para Cote también van al Registro** (pedido de Cote, 22 nov: «todas las preguntas y todo eso, anda dejándolo en el registro para que me vayan guiando»): cada pregunta, propuesta o paso que le toque a él se anota como una fila propia que empiece con «PREGUNTA N PARA COTE», con las opciones numeradas (2.1, 2.2…), la recomendación y qué se espera de él en la última columna; así quien lo acompaña lo va guiando con el Registro. En el chat basta un resumen corto.
+
 Datos técnicos del documento (herramientas de Claude Docs): pestaña principal nodo `c1da60d3-cf52`, tabla del Registro bloque `mjx5fvnxgjt.1789` (las filas se insertan al final, con 4 celdas); pestaña "Todo lo realizado" nodo `624211c6-37c9`. Leer el documento antes de escribir para confirmar las columnas.
