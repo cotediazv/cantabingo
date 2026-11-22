@@ -59,6 +59,59 @@
     return setInterval(tick, 1000);
   };
 
+  // Señal 1 de la sala de juegos (pedido de Cote, 22 nov: «¿el control por qué no muestra la transmisión?»): el monitor 1
+  // muestra, igual que en la página de cada local, 1.º la transmisión nuestra (señal propia), 2.º la de Twitch y 3.º el GC
+  // sobre un fondo. Va siempre sin sonido. Con la página oculta la señal nuestra se desconecta (cada minuto visto se paga).
+  const signal1 = (box, v, { fit, label }) => {
+    box.innerHTML = '<video class="gm-own" muted autoplay playsinline hidden></video><div class="gm-p1in"></div>';
+    const vid = box.querySelector('video'); const inner = box.querySelector('.gm-p1in');
+    let own = false; let live = false; let pc = null; let timer = null; let dead = false; let src = '';
+    const paint = () => {
+      if (dead) return;
+      const mode = own ? 'own' : live ? 'twitch' : 'gc';
+      label(mode === 'own' ? 'Transmisión nuestra' : mode === 'twitch' ? 'Twitch' : 'GC · sin transmisión');
+      const next = mode === 'own' ? 'own' : mode === 'twitch' ? `https://player.twitch.tv/?channel=${TWITCH[v]}&parent=${location.hostname}&muted=true&autoplay=true` : '/?mudo=1#/escena';
+      if (next === src) return;
+      src = next;
+      vid.hidden = mode !== 'own'; inner.hidden = mode === 'own';
+      box.classList.toggle('gm-bg', mode === 'gc'); // el GC es transparente: se ve sobre un fondo con el color del local
+      inner.innerHTML = mode === 'own' ? '' : mode === 'twitch' ? `<iframe data-full="1" title="Twitch de ${esc(VENUES[v])}" allow="autoplay; fullscreen" src="${esc(next)}"></iframe>` : `<iframe title="GC de la sala de juegos" tabindex="-1" src="${next}"></iframe>`;
+      fit();
+    };
+    const stopOwn = () => { clearTimeout(timer); if (pc) { try { pc.close(); } catch { /* nada */ } pc = null; } if (own) { own = false; paint(); } };
+    const startOwn = () => {
+      clearTimeout(timer);
+      if (dead || document.hidden || !window.RTCPeerConnection || !OWN[v]) return;
+      if (pc) { try { pc.close(); } catch { /* nada */ } }
+      const me = pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.cloudflare.com:3478' }], bundlePolicy: 'max-bundle' });
+      const ms = new MediaStream();
+      const again = (wait) => { if (pc !== me) return; try { me.close(); } catch { /* nada */ } pc = null; if (own) { own = false; paint(); } timer = setTimeout(startOwn, wait); };
+      me.addTransceiver('video', { direction: 'recvonly' }); me.addTransceiver('audio', { direction: 'recvonly' });
+      me.ontrack = (e) => { ms.addTrack(e.track); vid.srcObject = ms; vid.play().catch(() => {}); };
+      me.onconnectionstatechange = () => { if (pc === me && ['failed', 'disconnected', 'closed'].includes(me.connectionState)) again(5000); };
+      const limit = setTimeout(() => { if (pc === me && !own) again(20000); }, 12000); // sin señal: se reintenta cada tanto
+      me.createOffer().then((o) => me.setLocalDescription(o))
+        .then(() => new Promise((r) => { if (me.iceGatheringState === 'complete') return r(); const t = setTimeout(r, 1500); me.addEventListener('icegatheringstatechange', () => { if (me.iceGatheringState === 'complete') { clearTimeout(t); r(); } }); return undefined; }))
+        .then(() => fetch(OWN[v], { method: 'POST', headers: { 'content-type': 'application/sdp' }, body: me.localDescription.sdp }))
+        .then((r) => { if (!r.ok) throw new Error(`WHEP ${r.status}`); return r.text(); })
+        .then((sdp) => me.setRemoteDescription({ type: 'answer', sdp }))
+        .catch(() => { clearTimeout(limit); again(20000); });
+    };
+    vid.addEventListener('playing', () => { if (!own && !dead) { own = true; paint(); } });
+    const loadLive = async () => {
+      const r = await api('GET', '/api/web/twitch').catch(() => null);
+      if (dead || !r) return;
+      const c = (r.canales || []).find((x) => x.canal === TWITCH[v]);
+      const now = !!(c && c.vivo);
+      if (now !== live) { live = now; paint(); }
+    };
+    const onVisible = () => (document.hidden ? stopOwn() : (pc || startOwn()));
+    document.addEventListener('visibilitychange', onVisible);
+    const t = setInterval(loadLive, 20000);
+    paint(); startOwn(); loadLive();
+    return () => { dead = true; clearInterval(t); document.removeEventListener('visibilitychange', onVisible); clearTimeout(timer); if (pc) { try { pc.close(); } catch { /* nada */ } pc = null; } };
+  };
+
   // El panel de la sala va dentro de un recuadro y se achica solo, lo justo para que todo quepa sin subir ni bajar: parte en
   // «max» y baja hasta «min» según lo que realmente ocupa el contenido. Con «wide», solo se achica desde ese ancho de ventana.
   const panelFit = (pf, { max, min, wide = 0, alive }) => {
@@ -104,16 +157,18 @@
       <nav class="gmm-tabs"><button type="button" class="on" data-tab="juego"><span>🎮</span><b>Juego</b></button><button type="button" data-tab="gc"><span>🎛️</span><b>GC y efectos</b></button></nav></div>`;
     const root = $('#gm');
     const mon = root.querySelector('[data-k="mon"]'); const gc = root.querySelector('[data-pane="gc"]');
-    let alive = true; let venue = null; let stage = '';
-    const fit = () => root.querySelectorAll('.gm-box').forEach((box) => { const f = box.querySelector('iframe'); if (f) f.style.transform = `scale(${box.clientWidth / Number(box.dataset.w || 1280)})`; });
+    let alive = true; let venue = null; let stage = ''; let sigStop = null;
+    const fit = () => root.querySelectorAll('.gm-box').forEach((box) => { const f = box.querySelector('iframe:not([data-full])'); if (f) f.style.transform = `scale(${box.clientWidth / Number(box.dataset.w || 1280)})`; });
     const ro = new ResizeObserver(fit);
     const key = (k, icon, text, on) => `<button type="button" class="gm-key ${on ? 'on' : ''}" data-main="${k}"><i></i><span>${icon}</span><b>${text}</b></button>`;
     const paintKeys = () => { const box = gc.querySelector('[data-k="keys"]'); if (box) box.innerHTML = MAIN.map(([k, i, t]) => key(k, i, t, stage === k)).join(''); };
     const paint = () => {
       ro.disconnect();
       root.querySelector('[data-k="mtitle"]').textContent = venue ? VENUES[venue] : 'Sala de juegos';
-      mon.innerHTML = venue ? [['GC', '#/escena', 1280, 'gm-bg', ''], ['Tablero', '#/tablero', 1280, '', ''], ['De pie', '#/tablero', 720, '', 'gm-tall']].map(([t, h, w, bg, tall]) => `<div class="gm-scr ${tall} th-${venue}"><small>${t}</small><div class="gm-box ${bg}" data-w="${w}"><iframe title="${t}" tabindex="-1" src="/?mudo=1${h}"></iframe></div></div>`).join('')
+      if (sigStop) { sigStop(); sigStop = null; }
+      mon.innerHTML = venue ? `<div class="gm-scr th-${venue}"><small data-k="p1name">GC</small><div class="gm-box" data-w="1280" data-k="p1box"></div></div>${[['Tablero', '#/tablero', 1280, ''], ['De pie', '#/tablero', 720, 'gm-tall']].map(([t, h, w, tall]) => `<div class="gm-scr ${tall} th-${venue}"><small>${t}</small><div class="gm-box" data-w="${w}"><iframe title="${t}" tabindex="-1" src="/?mudo=1${h}"></iframe></div></div>`).join('')}`
         : '<p class="gmm-none">No hay sala de juegos abierta. Créala aquí abajo, con «Crear sala de juegos».</p>';
+      if (venue) sigStop = signal1(mon.querySelector('[data-k="p1box"]'), venue, { fit, label: (t) => { const el = mon.querySelector('[data-k="p1name"]'); if (el) el.textContent = t; } });
       gc.innerHTML = venue ? `<div class="gm-venue th-${venue}" data-v="${venue}">
           <div class="gm-row"><small>GC de la sala de juegos</small><div class="gm-keyrow" data-k="keys"></div></div>
           <div class="gm-row"><small>Efectos sobre la cámara</small>
@@ -159,7 +214,7 @@
     const t3 = startClock(root);
     const t1 = setInterval(load, 3000);
     const t4 = setInterval(fitPanel, 400);
-    return () => { alive = false; clearInterval(t1); clearInterval(t3); clearInterval(t4); window.removeEventListener('resize', fitPanel); ro.disconnect(); document.body.classList.remove('gm-on', 'gmm-on'); };
+    return () => { alive = false; if (sigStop) sigStop(); clearInterval(t1); clearInterval(t3); clearInterval(t4); window.removeEventListener('resize', fitPanel); ro.disconnect(); document.body.classList.remove('gm-on', 'gmm-on'); };
   };
 
   // «Sala de juegos» (pedido de Cote, 22 nov: «que tengamos Mercado Kennedy, Frida, Tobalaba y luego sala de juegos, para
@@ -175,18 +230,19 @@
         <div class="gm-panel"><iframe title="Panel de la sala de juegos" src="${location.pathname}#/juegos"></iframe></div></div></div>`;
     const root = $('#gm');
     const left = root.querySelector('[data-k="left"]');
-    let alive = true; let venue = null; let stage = '';
-    const fit = () => root.querySelectorAll('.gm-box').forEach((box) => { const f = box.querySelector('iframe'); if (f) f.style.transform = `scale(${box.clientWidth / Number(box.dataset.w || 1280)})`; });
+    let alive = true; let venue = null; let stage = ''; let sigStop = null;
+    const fit = () => root.querySelectorAll('.gm-box').forEach((box) => { const f = box.querySelector('iframe:not([data-full])'); if (f) f.style.transform = `scale(${box.clientWidth / Number(box.dataset.w || 1280)})`; });
     const ro = new ResizeObserver(fit);
     const key = (k, icon, text, on) => `<button type="button" class="gm-key ${on ? 'on' : ''}" data-main="${k}"><i></i><span>${icon}</span><b>${text}</b></button>`;
     const paintKeys = () => { const box = left.querySelector('[data-k="keys"]'); if (box) box.innerHTML = `<div class="gm-row"><small>GC de la sala de juegos</small><div class="gm-keyrow">${MAIN.map(([k, i, t]) => key(k, i, t, stage === k)).join('')}</div></div>`; };
     const paintLeft = () => {
       ro.disconnect();
+      if (sigStop) { sigStop(); sigStop = null; }
       left.innerHTML = venue ? `<section class="gm-venue th-${venue}" data-v="${venue}">
           <header class="gm-head"><b>Sala de juegos · ${esc(VENUES[venue])}</b><span class="gm-sala" data-k="sala"></span></header>
           <div class="gm-screens">
             <div class="gm-left">
-              <div class="gm-scr"><small>1 · GC</small><div class="gm-box gm-bg" data-w="1280"><iframe title="GC de la sala de juegos" tabindex="-1" src="${page('#/escena')}"></iframe></div></div>
+              <div class="gm-scr"><small>1 · <span data-k="p1name">GC</span></small><div class="gm-box" data-w="1280" data-k="p1box"></div></div>
               <div class="gm-scr"><small>2 · Tablero</small><div class="gm-box" data-w="1280"><iframe title="Tablero de la sala de juegos" tabindex="-1" src="${page('#/tablero')}"></iframe></div></div>
             </div>
             <div class="gm-scr gm-tall"><small>3 · De pie</small><div class="gm-box" data-w="720"><iframe title="Pantalla de pie de la sala de juegos" tabindex="-1" src="${page('#/tablero')}"></iframe></div></div>
@@ -198,6 +254,7 @@
           </div></section>`
         : `<section class="gm-venue gm-none"><header class="gm-head"><b>Sala de juegos</b></header>
           <p>No hay sala de juegos abierta. Créala en el panel de al lado («Crear sala de juegos»); cuando esté abierta, aquí aparecen sus pantallas y sus botones.</p></section>`;
+      if (venue) sigStop = signal1(left.querySelector('[data-k="p1box"]'), venue, { fit, label: (t) => { const el = left.querySelector('[data-k="p1name"]'); if (el) el.textContent = t; } });
       root.querySelectorAll('.gm-box').forEach((b) => ro.observe(b));
       paintKeys(); fit();
     };
@@ -238,7 +295,7 @@
     const t3 = startClock(root);
     const t1 = setInterval(load, 3000);
     const t4 = setInterval(fitPanel, 400);
-    return () => { alive = false; clearInterval(t1); clearInterval(t3); clearInterval(t4); window.removeEventListener('resize', fitPanel); ro.disconnect(); document.body.classList.remove('gm-on'); };
+    return () => { alive = false; if (sigStop) sigStop(); clearInterval(t1); clearInterval(t3); clearInterval(t4); window.removeEventListener('resize', fitPanel); ro.disconnect(); document.body.classList.remove('gm-on'); };
   };
 
   // Una página del GC Master: uno o los tres locales
