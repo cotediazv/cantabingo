@@ -2774,3 +2774,5 @@ body.gm-on main { max-width: none; padding: 10px 14px 40px; }
    van más adentro, con margen de seguridad, para que no los corte el borde de la transmisión ni el de los televisores */
 .venue-mark.vm-obs { right: 6vh; top: 6vh; }
 .venue-mark.vm-obs-bingo { left: 5vh; }
+/* Logos del GC de OBS: más adentro y más abajo (pedido de Cote, 21 nov) */
+.venue-mark.vm-obs { right: 10vh; top: 10vh; }
