@@ -148,7 +148,7 @@
   const desk = (x) => ({ x, y: G - 62, w: 104, k: 'desk' });
   const STAGES = [
     {
-      name: 'La sala de clases', th: 'sala', w: 3000, exit: 2900, say: '¡Voy a buscar a mi amada al castillo!',
+      name: 'La sala de clases', th: 'sala', w: 3000, exit: 2900, say: '¡Voy a buscar a Anto al castillo!',
       plats: [260, 560, 900, 1180, 1500, 1760, 2080, 2380, 2640].map(desk),
       floorCoins: [700, 1640, 2480],
       waves: [
@@ -186,7 +186,7 @@
       ],
     },
     {
-      name: 'El castillo', th: 'castillo', w: 2700, exit: 0, say: '¡Llegué al castillo! ¡Ya voy, mi amada!',
+      name: 'El castillo', th: 'castillo', w: 2700, exit: 0, say: '¡Llegué al castillo! ¡Ya voy, Anto!',
       plats: [
         { x: 300, y: G - 72, w: 140, k: 'ledge' }, { x: 860, y: G - 72, w: 140, k: 'ledge' }, { x: 1380, y: G - 72, w: 140, k: 'ledge' },
         { x: 1870, y: G - 100, w: 140, k: 'ledge' }, { x: 2180, y: G - 100, w: 140, k: 'ledge' },
@@ -211,25 +211,29 @@
   const ATK = 0.3;
   const P = { x: 120, y: G, vx: 0, vy: 0, face: 1, onG: true, coy: 0, hp: 5, maxHp: 5, inv: 0, hurt: 0, atk: 0, atkCd: 0, ph: 0, hitSet: new Set(), bub: null, landV: 0 };
 
-  const SKINS = ['#f6d2a8', '#e8b987', '#c98e5d', '#8d5a3b', '#f1c9a0', '#dca878'];
-  const HAIRS = ['#2b1d14', '#5a3a1e', '#a0632b', '#151515', '#d9a441', '#7a3b1a'];
-  function makeLook() {
-    const girl = Math.random() < 0.45;
-    return {
-      skin: pick(SKINS), hairC: pick(HAIRS), girl,
-      hair: girl ? pick(['long', 'pony', 'curly']) : pick(['short', 'spiky', 'curly', 'short']),
-      tie: pick(['#c0262d', '#1f6fbf', '#2e8b57']),
-      bag: Math.random() < 0.5 ? pick(['#e94b3c', '#2a9d8f', '#f4a261', '#6a4c93', '#ffbe0b']) : null,
-      glasses: Math.random() < 0.2, s: 1,
-    };
+  const BOSS_LOOK = { name: 'Mono', skin: '#e8b987', hairC: '#2b1d14', hair: 'short', girl: false, tie: '#c0262d', bag: null, glasses: false, cap: '#d62828', s: 1.45 };
+  // Los compañeros de curso: siempre Felipe, Jorge o Matías, cada uno con su aspecto
+  const KIDS = [
+    { name: 'Felipe', skin: '#f1c9a0', hairC: '#5a3a1e', hair: 'short', girl: false, tie: '#c0262d', bag: '#e94b3c', glasses: false, s: 1 },
+    { name: 'Jorge', skin: '#c98e5d', hairC: '#151515', hair: 'spiky', girl: false, tie: '#1f6fbf', bag: null, glasses: true, s: 1 },
+    { name: 'Matías', skin: '#f6d2a8', hairC: '#d9a441', hair: 'curly', girl: false, tie: '#2e8b57', bag: '#2a9d8f', glasses: false, s: 1 },
+  ];
+  let kidRot = 0;
+  // El compañero que no está ya en pie en la oleada ni cerca (nunca dos Felipe a la vez)
+  function freeKid(wave, x) {
+    const alive = enemies.filter((e) => !e.dead && e.state !== 'down');
+    const inWave = new Set(alive.filter((e) => e.wave === wave).map((e) => e.look.name));
+    const near = new Set(alive.filter((e) => e.wave !== wave && Math.abs(e.x - x) < 1100).map((e) => e.look.name));
+    kidRot++;
+    const order = KIDS.map((_, i) => KIDS[(kidRot + i) % KIDS.length]);
+    return order.find((k) => !inWave.has(k.name) && !near.has(k.name)) || order.find((k) => !inWave.has(k.name)) || order[0];
   }
-  const BOSS_LOOK = { skin: '#e8b987', hairC: '#2b1d14', hair: 'short', girl: false, tie: '#c0262d', bag: null, glasses: false, cap: '#d62828', s: 1.45 };
 
   function mkEnemy(t, x, wave) {
-    const e = { id: uid++, t, x, y: G, vx: 0, vy: 0, face: -1, s: 1, hp: 2, maxHp: 2, state: 'walk', st: 0, cd: rand(0.4, 1), lazy: rand(3, 6), flash: 0, ph: Math.random() * 6, look: makeLook(), wave, active: false, bub: null, spd: rand(70, 95), walk: false, angry: false };
+    const e = { id: uid++, t, x, y: G, vx: 0, vy: 0, face: -1, s: 1, hp: 2, maxHp: 2, state: 'walk', st: 0, cd: rand(0.4, 1), lazy: rand(3, 6), flash: 0, ph: Math.random() * 6, look: t === 'boss' ? BOSS_LOOK : freeKid(wave, x), wave, active: false, bub: null, spd: rand(70, 95), walk: false, angry: false };
     if (t === 'dormilon') { e.state = 'sleep'; e.spd = rand(120, 140); }
     if (t === 'tirador') { e.spd = 90; e.cd = rand(1, 1.8); }
-    if (t === 'boss') { e.look = BOSS_LOOK; e.s = 1.45; e.hp = e.maxHp = 12; e.spd = 88; e.angry = true; }
+    if (t === 'boss') { e.s = 1.45; e.hp = e.maxHp = 12; e.spd = 88; e.angry = true; }
     return e;
   }
 
@@ -246,6 +250,7 @@
     Object.assign(P, { x: 120, y: G, vx: 0, vy: 0, face: 1, onG: true, hp: P.maxHp, inv: 0, hurt: 0, atk: 0, atkCd: 0, bub: null });
     camX = 0; lock = null; lockQ = []; enemies = []; balls = []; parts = []; pickups = [];
     coinsStage = 0; bossE = null; rescue = null; amT = 2; amBub = null;
+    kidRot = 0;
     S.waves.forEach((w, wi) => w.list.forEach((s) => { if (s.at) enemies.push(mkEnemy(s.t, w.x + s.at, wi)); }));
     for (const p of S.plats) {
       pickups.push({ k: 'coin', x: p.x + p.w * 0.3, y: p.y - 36 }, { k: 'coin', x: p.x + p.w * 0.7, y: p.y - 36 });
@@ -398,6 +403,8 @@
     if (e.state === 'down') {
       e.st += dt; e.x += e.vx * dt; e.vx *= Math.pow(0.04, dt);
       if (e.t !== 'boss' && e.st > 1.8) e.dead = true;
+      // si el mismo compañero ya está de nuevo en pie, el derrotado se va en una nube de estrellas
+      if (e.t !== 'boss' && e.st > 0.35 && enemies.some((o) => o !== e && o.look === e.look && o.state !== 'down' && !o.dead && Math.abs(o.x - e.x) < 1100)) { stars(e.x, e.y - 24, 8); dust(e.x, e.y, 4); e.dead = true; }
       return;
     }
     if (e.state === 'sleep') {
@@ -584,8 +591,8 @@
     if (lock) {
       if (lockQ.length) {
         spawnT -= dt;
-        const awake = enemies.filter((e) => e.wave === lock.i && e.state !== 'down' && e.state !== 'sleep').length;
-        if (spawnT <= 0 && awake < 3) spawnNext();
+        const here = enemies.filter((e) => e.wave === lock.i && e.state !== 'down').length;
+        if (spawnT <= 0 && here < KIDS.length) spawnNext();
       }
       if (!lockQ.length && !enemies.some((e) => e.wave === lock.i && e.state !== 'down')) {
         const wv = S.waves[lock.i];
@@ -639,7 +646,7 @@
       if (Math.abs(d) > 62) {
         am.walk = true; am.face = d > 0 ? -1 : 1; am.x -= Math.sign(d) * 150 * dt;
         mv = Math.sign(d);
-      } else { r.phase = 2; r.hug = 0; P.face = d > 0 ? 1 : -1; am.face = -P.face; P.bub = { txt: '¡Te encontré, mi amada!', t: 3 }; }
+      } else { r.phase = 2; r.hug = 0; P.face = d > 0 ? 1 : -1; am.face = -P.face; P.bub = { txt: '¡Te encontré, Anto!', t: 3 }; }
     } else if (r.phase === 2) {
       r.hug += dt;
       if (Math.random() < dt * 9) hearts((P.x + am.x) / 2, P.y - 120, 1);
@@ -1406,6 +1413,15 @@
     ctx.fillStyle = '#fff'; ctx.fillRect(tx - 6, by + h - 4, 12, 4);
     ctx.fillStyle = OUT; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(txt, bx + w / 2, by + h / 2 + 1);
   }
+  function nameTag(x, y, txt, gold, a) {
+    if (x < -80 || x > W + 80 || a <= 0) return;
+    ctx.globalAlpha = a;
+    ctx.font = `800 15px ${FONT}`;
+    const w = ctx.measureText(txt).width + 16;
+    rr(x - w / 2, y - 11, w, 22, 11); ctx.fillStyle = 'rgba(18,12,32,.72)'; ctx.fill();
+    T(txt, x, y + 1, 15, gold ? '#ffd34d' : '#fff', 'center', 0, null, 800);
+    ctx.globalAlpha = 1;
+  }
   function drawParts() {
     for (const p of parts) {
       const x = p.x - camX, a = clamp(p.life * 2.5, 0, 1);
@@ -1444,9 +1460,16 @@
     drawPlayer();
     for (const b of balls) paperBall(b.x - camX, b.y, b.r, b.rot);
     drawParts();
-    for (const e of enemies) if (e.bub) bubble(e.x - camX, e.y - (e.state === 'sleep' || e.state === 'down' ? 56 : 132 * e.s), e.bub.txt);
+    for (const e of enemies) {
+      if (e.state === 'enter' || e.state === 'drop' || !e.look.name) continue;
+      const lying = e.state === 'sleep' || e.state === 'down';
+      const a = e.state === 'down' && e.t !== 'boss' && e.st > 1.3 ? clamp(1 - (e.st - 1.3) / 0.5, 0, 1) : 1;
+      nameTag(e.x - camX, e.y - (lying ? 52 : 128 * e.s), e.look.name, e.t === 'boss', a);
+    }
+    if (S.th === 'castillo') { const ax = rescue ? rescue.am.x : BALCONY.amX, ay = rescue ? rescue.am.y : BALCONY.y; nameTag(ax - camX, ay - 126, 'Anto', false, 1); }
+    for (const e of enemies) if (e.bub) bubble(e.x - camX, e.y - (e.state === 'sleep' || e.state === 'down' ? 74 : 150 * e.s), e.bub.txt);
     if (P.bub) bubble(P.x - camX, P.y - 136, P.bub.txt);
-    if (amBub && S.th === 'castillo') { const ax = rescue ? rescue.am.x : BALCONY.amX, ay = rescue ? rescue.am.y : BALCONY.y; bubble(ax - camX, ay - 120, amBub.txt); }
+    if (amBub && S.th === 'castillo') { const ax = rescue ? rescue.am.x : BALCONY.amX, ay = rescue ? rescue.am.y : BALCONY.y; bubble(ax - camX, ay - 146, amBub.txt); }
     ctx.restore();
   }
 
@@ -1462,7 +1485,7 @@
     T(`${coinsTotal + coinsStage}`, W - 100, 31, 28, '#ffd34d', 'left', 5);
     if (bossE && lock && S.waves[lock.i].boss && bossE.state !== 'down' && bossE.state !== 'drop') {
       const bw = 340, bx = W / 2 - bw / 2;
-      T('EL MÁS FLOJO DEL CURSO', W / 2, 62, 18, '#ffd34d', 'center', 4);
+      T('MONO, EL MÁS FLOJO DEL CURSO', W / 2, 62, 18, '#ffd34d', 'center', 4);
       rr(bx, 76, bw, 16, 8); ctx.fillStyle = 'rgba(20,14,35,.8)'; ctx.fill();
       rr(bx + 3, 79, (bw - 6) * bossE.hp / bossE.maxHp, 10, 5); ctx.fillStyle = '#ff4d4d'; ctx.fill();
       rr(bx, 76, bw, 16, 8); ctx.strokeStyle = OUT; ctx.lineWidth = 2; ctx.stroke();
@@ -1494,7 +1517,7 @@
     drawAgustin(200, 500, 1, { s: 2.2, hero: true, atk: -1, ph: 0 });
     T('AGUSTÍN', 640, 82, 92, '#ffd34d', 'center', 12);
     T('EL PIRATA', 640, 160, 50, '#fff', 'center', 9);
-    T('En busca de su amada', 640, 212, 26, '#fff3d6', 'center', 6);
+    T('En busca de su amada, Anto', 640, 212, 26, '#fff3d6', 'center', 6);
     ctx.save(); ctx.globalAlpha = pulse(t);
     rr(640 - 130, 430, 260, 70, 35); fillStroke('#ffd34d', 4);
     T('▶  JUGAR', 640, 466, 34, OUT, 'center', 0);
@@ -1511,15 +1534,15 @@
     drawAgustin(170, 370, 1, { s: 1.5, atk: -1, ph: 0 });
     const paras = [
       'Agustín es un pirata con tatuajes.',
-      'Tiene que ir a buscar a su amada al castillo.',
-      'En cada etapa lo esperan sus compañeros de curso, que no quieren hacer nada en el colegio.',
+      'Tiene que ir a buscar a su amada, Anto, al castillo.',
+      'En cada etapa lo esperan sus compañeros de curso, Felipe, Jorge y Matías, que no quieren hacer nada en el colegio.',
       '¡Pelea con ellos y llega al castillo!',
     ];
-    let y = 150;
+    let y = 142;
     ctx.fillStyle = '#4a2c12'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     for (const p of paras) {
-      for (const ln of wrap(p, 560, 25)) { ctx.font = `800 25px ${FONT}`; ctx.fillStyle = '#4a2c12'; ctx.fillText(ln, 290, y); y += 33; }
-      y += 10;
+      for (const ln of wrap(p, 560, 25)) { ctx.font = `800 25px ${FONT}`; ctx.fillStyle = '#4a2c12'; ctx.fillText(ln, 290, y); y += 31; }
+      y += 8;
     }
     const ctl = TOUCH ? ['◀ ▶  caminar', '▲  saltar', '⚔  espada'] : ['← →  caminar', '↑ o Espacio  saltar', 'X  espada'];
     ctx.font = `800 20px ${FONT}`;
@@ -1551,7 +1574,7 @@
     } else if (state === 'end') {
       ctx.fillStyle = 'rgba(18,12,32,.45)'; ctx.fillRect(0, 0, W, H);
       band(60, 150, 0.85);
-      fitT('¡Agustín encontró a su amada!', W / 2, 110, 46, W - 60, '#ffd34d', 'center', 9);
+      fitT('¡Agustín encontró a su amada, Anto!', W / 2, 110, 46, W - 60, '#ffd34d', 'center', 9);
       T('FIN', W / 2, 172, 48, '#fff', 'center', 8);
       T(`Monedas de oro: ${coinsTotal}`, W / 2, 236, 24, '#fff', 'center', 5);
       if (stT > 2) { ctx.save(); ctx.globalAlpha = pulse(t); T(`${TAP} para jugar otra vez`, W / 2, 268, 20, '#ffd34d', 'center', 5); ctx.restore(); }
