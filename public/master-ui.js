@@ -43,15 +43,97 @@
       </div>
     </section>`;
 
+  // Barra de arriba: los 3 locales, «Los 3 locales» y «Sala de juegos» (pedido de Cote, 22 nov), con la hora y la fecha
+  const navHTML = (on) => `<nav class="gm-nav"><a class="gm-back" href="#/control">←<span> Centro de control</span></a><b>🎛️ GC Master</b>
+        ${ORDER.map((v) => `<a class="gm-tab ${on === v ? 'on' : ''}" href="#/master/${v}">${esc(VENUES[v])}</a>`).join('')}
+        <a class="gm-tab ${on === 'todos' ? 'on' : ''}" href="#/master">Los 3 locales</a>
+        <a class="gm-tab ${on === 'juegos' ? 'on' : ''}" href="#/master/juegos">Sala de juegos</a>
+        <span class="gm-clock" data-k="clock"><b></b><i></i></span></nav>`;
+  // Arriba, la fecha con el año y la hora local de los locales (hora de Chile), al segundo (pedido de Cote, 22 nov)
+  const startClock = (root) => {
+    const clockEl = root.querySelector('[data-k="clock"]');
+    const fmtDate = new Intl.DateTimeFormat('es-CL', { timeZone: 'America/Santiago', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const fmtTime = new Intl.DateTimeFormat('es-CL', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' });
+    const tick = () => { const now = new Date(); const d = fmtDate.format(now); clockEl.querySelector('i').textContent = d.charAt(0).toUpperCase() + d.slice(1); clockEl.querySelector('b').textContent = fmtTime.format(now); };
+    tick();
+    return setInterval(tick, 1000);
+  };
+
+  // «Sala de juegos» (pedido de Cote, 22 nov: «que tengamos Mercado Kennedy, Frida, Tobalaba y luego sala de juegos, para
+  // poder tener todos los botones y todas las interacciones»): a la izquierda, las 3 pantallas de la sala de juegos abierta
+  // (1 GC de OBS, 2 tablero, 3 pantalla de pie), los botones del GC y los de la capa gráfica; a la derecha, el panel real
+  // de la sala (crear sala, elegir el juego y manejar cada juego), para hacer todo sin salir de esta página.
+  const juegos = async () => {
+    if (!(await isAdmin())) return viewLogin();
+    document.body.classList.add('gm-on');
+    app.innerHTML = `<div id="gm" class="gm-all gm-jg">${navHTML('juegos')}
+      <div class="gm-grid"><div class="gm-jgleft" data-k="left"></div>
+        <div class="gm-panel"><iframe title="Panel de la sala de juegos" src="${location.pathname}#/juegos"></iframe></div></div></div>`;
+    const root = $('#gm');
+    const left = root.querySelector('[data-k="left"]');
+    let alive = true; let venue = null; let stage = '';
+    const fit = () => root.querySelectorAll('.gm-box').forEach((box) => { const f = box.querySelector('iframe'); if (f) f.style.transform = `scale(${box.clientWidth / Number(box.dataset.w || 1280)})`; });
+    const ro = new ResizeObserver(fit);
+    const key = (k, icon, text, on) => `<button type="button" class="gm-key ${on ? 'on' : ''}" data-main="${k}"><i></i><span>${icon}</span><b>${text}</b></button>`;
+    const paintKeys = () => { const box = left.querySelector('[data-k="keys"]'); if (box) box.innerHTML = `<div class="gm-row"><small>GC de la sala de juegos</small><div class="gm-keyrow">${MAIN.map(([k, i, t]) => key(k, i, t, stage === k)).join('')}</div></div>`; };
+    const paintLeft = () => {
+      ro.disconnect();
+      left.innerHTML = venue ? `<section class="gm-venue th-${venue}" data-v="${venue}">
+          <header class="gm-head"><b>Sala de juegos · ${esc(VENUES[venue])}</b><span class="gm-sala" data-k="sala"></span></header>
+          <div class="gm-screens">
+            <div class="gm-left">
+              <div class="gm-scr"><small>1 · GC</small><div class="gm-box gm-bg" data-w="1280"><iframe title="GC de la sala de juegos" tabindex="-1" src="${page('#/escena')}"></iframe></div></div>
+              <div class="gm-scr"><small>2 · Tablero</small><div class="gm-box" data-w="1280"><iframe title="Tablero de la sala de juegos" tabindex="-1" src="${page('#/tablero')}"></iframe></div></div>
+            </div>
+            <div class="gm-scr gm-tall"><small>3 · De pie</small><div class="gm-box" data-w="720"><iframe title="Pantalla de pie de la sala de juegos" tabindex="-1" src="${page('#/tablero')}"></iframe></div></div>
+          </div>
+          <div class="gm-keys" data-k="keys"></div>
+          <div class="gm-txtrow">
+            <input class="gm-text" data-k="text" type="text" maxlength="60" autocomplete="off" placeholder="Texto para el texto 3D">
+            <div class="gm-capa" title="Capa gráfica sobre la cámara">${CAPA.map(([k, i, t, full]) => `<button type="button" class="gm-ckey" data-capa="${k}" title="${full}" aria-label="${full}"><span>${i}</span><b>${t}</b></button>`).join('')}</div>
+          </div></section>`
+        : `<section class="gm-venue gm-none"><header class="gm-head"><b>Sala de juegos</b></header>
+          <p>No hay sala de juegos abierta. Créala en el panel de al lado («Crear sala de juegos»); cuando esté abierta, aquí aparecen sus pantallas y sus botones.</p></section>`;
+      root.querySelectorAll('.gm-box').forEach((b) => ro.observe(b));
+      paintKeys(); fit();
+    };
+    const load = async () => {
+      const r = await api('GET', '/api/consola').catch(() => null);
+      if (!alive || !r) return;
+      const loc = (r.locales || []).find((x) => x.main);
+      const v = loc ? loc.venue : null;
+      const st = loc ? loc.main.stage : '';
+      if (v !== venue) { venue = v; stage = st; paintLeft(); } else if (st !== stage) { stage = st; paintKeys(); }
+      const sala = left.querySelector('[data-k="sala"]');
+      if (sala && loc) sala.textContent = `En pantalla: ${loc.main.stageName}`;
+    };
+    root.onclick = async (e) => {
+      const b = e.target.closest('button');
+      if (!b || !venue || !left.contains(b)) return;
+      e.preventDefault();
+      try {
+        if (b.dataset.main) { await api('POST', '/api/stage', { show: b.dataset.main }); load(); } else if (b.dataset.capa) {
+          const ti = left.querySelector('[data-k="text"]'); const text = ti.value.trim();
+          if (b.dataset.capa === 'texto3d' && !text) { toast('Escribe el texto para el 3D'); ti.focus(); return; }
+          await api('POST', '/api/capa', { local: venue, kind: b.dataset.capa, text });
+          b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 1500);
+          toast(b.dataset.capa === 'off' ? 'Capa quitada' : `${b.title} en la sala de juegos`);
+        }
+      } catch (err) { fail(err); }
+    };
+    paintLeft();
+    await load();
+    const t3 = startClock(root);
+    const t1 = setInterval(load, 3000);
+    return () => { alive = false; clearInterval(t1); clearInterval(t3); ro.disconnect(); document.body.classList.remove('gm-on'); };
+  };
+
   // Una página del GC Master: uno o los tres locales
   const master = async (list, single) => {
     if (!(await isAdmin())) return viewLogin();
     document.body.classList.add('gm-on');
     app.innerHTML = `<div id="gm" class="${single ? 'gm-one' : 'gm-all'}">
-      <nav class="gm-nav"><a class="gm-back" href="#/control">←<span> Centro de control</span></a><b>🎛️ GC Master</b>
-        ${ORDER.map((v) => `<a class="gm-tab ${single && list[0] === v ? 'on' : ''}" href="#/master/${v}">${esc(VENUES[v])}</a>`).join('')}
-        <a class="gm-tab ${single ? '' : 'on'}" href="#/master">Los 3 locales</a>
-        <span class="gm-clock" data-k="clock"><b></b><i></i></span></nav>
+      ${navHTML(single ? list[0] : 'todos')}
       <div class="gm-grid">${list.map(venueHTML).join('')}</div>
       ${single ? '' : `<div class="gm-audio"><small>Audio · escuchar la señal 1 de un local (los otros se apagan)</small><div class="gm-audiorow">${list.map((v, i) => `<button type="button" class="gm-key" data-audio="${v}"><i></i><span>🔇</span><b>${i + 1} · ${esc(VENUES[v])}</b></button>`).join('')}</div></div>`}</div>`;
     const root = $('#gm');
@@ -233,18 +315,12 @@
     list.forEach(ownStart);
     await Promise.all([load(), loadLive()]);
     fit();
-    // Arriba, la fecha con el año y la hora local de los locales (hora de Chile), al segundo (pedido de Cote, 22 nov)
-    const clockEl = root.querySelector('[data-k="clock"]');
-    const fmtDate = new Intl.DateTimeFormat('es-CL', { timeZone: 'America/Santiago', weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    const fmtTime = new Intl.DateTimeFormat('es-CL', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' });
-    const tickClock = () => { const now = new Date(); const d = fmtDate.format(now); clockEl.querySelector('i').textContent = d.charAt(0).toUpperCase() + d.slice(1); clockEl.querySelector('b').textContent = fmtTime.format(now); };
-    tickClock();
-    const t3 = setInterval(tickClock, 1000);
+    const t3 = startClock(root);
     const t1 = setInterval(load, 3000);
     const t2 = setInterval(loadLive, 20000);
     return () => { alive = false; clearInterval(t1); clearInterval(t2); clearInterval(t3); ro.disconnect(); document.removeEventListener('visibilitychange', onVisible); list.forEach((v) => { clearInterval(fades[v]); ownStop(v); }); document.body.classList.remove('gm-on'); };
   };
 
-  // #/master: los 3 locales juntos · #/master/<local>: la página de un local
-  views.master = (v) => (VENUES[v] ? master([v], true) : master(ORDER, false));
+  // #/master: los 3 locales juntos · #/master/<local>: la página de un local · #/master/juegos: la sala de juegos
+  views.master = (v) => (v === 'juegos' ? juegos() : VENUES[v] ? master([v], true) : master(ORDER, false));
 })();

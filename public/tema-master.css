@@ -29,3 +29,6 @@ html.t2 .gm-text:focus { outline: 0; border-color: var(--t-foco); }
 /* botones de la capa gráfica: dorados */
 html.t2 .gm-ckey { border-radius: 0; border: 1px solid #6b5520; background: linear-gradient(#2a2210, #1a1508); color: var(--t-texto); font-family: var(--t-txt); }
 html.t2 .gm-ckey.on { background: var(--t-foco); border-color: #fff1b0; color: var(--t-foco-tinta); }
+/* «Sala de juegos»: el panel de la derecha */
+html.t2 .gm-panel { border-radius: 0; border: 1px solid var(--t-linea); background: #0c0b12; }
+html.t2 .gm-none p { color: var(--t-tenue); }
