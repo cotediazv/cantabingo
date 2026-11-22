@@ -22,7 +22,8 @@ html.t2 body[data-venue="tobalaba"], html.t2 .th-tobalaba { --t-c: #e5413a; --t-
    y una trama fina en diagonal. Se mueve lento (solo transform). */
 /* solo en las pantallas del local: en los GC de OBS el fondo de la página sigue TRANSPARENTE (va sobre la cámara) */
 html.t2:has(body.full) { background-color: #0c0b12 !important; }
-html.t2 body.full { background: #0c0b12; color: var(--t-texto); }
+/* el body va transparente: su fondo taparía los focos (body.full::before va por debajo, con z-index -1) */
+html.t2 body.full { background: transparent; color: var(--t-texto); }
 html.t2 body.full::before { top: -25%; right: -25%; bottom: -25%; left: -25%;
   background: radial-gradient(circle at 26% 22%, color-mix(in srgb, var(--t-c) 46%, transparent) 0, transparent 40%), radial-gradient(circle at 78% 82%, rgba(244, 191, 90, .22) 0, transparent 38%),
     repeating-linear-gradient(115deg, rgba(255, 255, 255, .028) 0 1px, transparent 1px 3.2vh), linear-gradient(160deg, #15131e, #0c0b12 55%, #07060c);
