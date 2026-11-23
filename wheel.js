@@ -486,5 +486,14 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     }
     return removed;
   };
+  // Sala simulada (pedido de Cote, 23 nov): la pregunta del público que está en juego ahora, con su respuesta, para que las
+  // personas virtuales contesten como el público (la respuesta nunca sale del servidor)
+  api.crowdNow = () => {
+    const w = Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0];
+    if (!w) return null;
+    const key = liveKey(w);
+    const options = key ? optionsFor(w, key) : null;
+    return key && options ? { id: w.id, key, options, answer: answerOf(w, key) } : null;
+  };
   return api;
 };

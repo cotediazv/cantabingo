@@ -3327,3 +3327,8 @@ body.con-paso #ctl-reload-fixed { top: calc(var(--paso-h, 64px) + 20px); }
 .ep-cut.crowded { min-height: 0; min-width: 0; flex: 1 1 0; } .ep-crowd { min-width: 0; min-height: 0; } .ep-crowd canvas { min-width: 0; min-height: 0; }
 /* el recuadro del juego ocupa todo el ancho (la regla general de «main» lo centraba y lo dejaba del ancho de su contenido) */
 #ep .ep-main { margin: 0; max-width: none; width: 100%; box-sizing: border-box; align-self: stretch; }
+
+/* Sala simulada (pedido de Cote, 23 nov) */
+.home-sim { margin-top: 10px; opacity: .9; }
+.home-simtag { display: block; margin-top: 6px; font-size: .85rem; font-weight: 700; opacity: .9; }
+.sim-bar { margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; background: rgba(255, 196, 0, .12); border: 2px dashed #ffc400; color: #ffe08a; }

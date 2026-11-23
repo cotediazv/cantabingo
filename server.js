@@ -798,10 +798,21 @@ require('./conectados.js')({ app, db, save, requireAdmin, port: process.env.PORT
   // personas de la sala de juegos de ese local: conectadas ahora (con la sala abierta en el celular) e inscritas en total
   salaOf: (venue) => {
     const s = Object.values(db.sessions)[0];
-    if (!s || (s.theme || 'frida') !== venue) return { now: 0, total: 0 };
+    if (!s || s.sim || (s.theme || 'frida') !== venue) return { now: 0, total: 0 }; // la sala simulada no cuenta en «Conectados»
     const on = new Set([...(clients[s.id] || [])].map((r) => r.playerToken).filter((t) => t && s.players[t]));
     return { now: on.size, total: Object.keys(s.players || {}).length };
   } });
+// Sala simulada (pedido de Cote, 23 nov): personas virtuales que juegan todo, para probar los juegos sin celulares.
+// Cuentan como conectadas (como quien tiene su cartón abierto) con una conexión de mentira, sin red de por medio.
+const fakeConns = new Map();
+const fakeConnect = (sid, token) => {
+  const set = (clients[sid] ||= new Set());
+  const k = `${sid}:${token}`; const old = fakeConns.get(k);
+  if (old && set.has(old)) return;
+  const r = { fake: true, playerToken: token, isAdmin: false, write() {}, end() {} };
+  fakeConns.set(k, r); set.add(r);
+};
+require('./simulador.js')({ app, db, save, requireAdmin, fail, port: PORT, placesFor: (v) => karaoke.placesFor(v), fakeConnect, wheel });
 require('./youtube.js')({ app }); // últimos videos del canal, para la página web
 require('./twitch.js')({ app }); // videos y transmisiones en vivo de Twitch, para la página web
 require('./instagram-web.js')({ app, db, save, insta }); // últimos videos de Instagram de cada local, para la página web

@@ -297,9 +297,51 @@ views.home = async () => {
         <p class="muted small home-note">Hay una sala abierta. Para crear otra, primero ciérrala en el Centro de control.</p>`
     : '<a class="home-create" href="#/nuevo"><span>🎮</span>Crear sala de juegos</a>'}
       <a class="home-control home-control-sm" href="#/control">🎛️ Centro de control</a>
+      <a class="home-control home-control-sm home-sim" href="#/simulada">🤖 Crear sala simulada</a>
       <p style="margin-top:28px"><button id="logout">Cerrar sesión de moderador</button></p>
     </div>`;
   $('#logout').onclick = () => { store.del('adminToken'); route(); };
+  // Si la sala abierta es simulada, se dice al lado de «Continuar»
+  const sim = await api('GET', '/api/sim').catch(() => null);
+  const go = document.querySelector('.home-create.open');
+  if (sim && sim.on && go && open && sim.sid === open.id) go.insertAdjacentHTML('beforeend', `<small class="home-simtag">🤖 Sala simulada · ${sim.n} personas virtuales</small>`);
+  return undefined;
+};
+
+// Sala simulada (pedido de Cote, 23 nov: «crear sala simulada… 120 personas virtuales jugando de manera como lo hacen las
+// personas… para poder probar los juegos de buena manera»): una sala de juegos normal, con personas virtuales que entran
+// y juegan todos los juegos solas (ver simulador.js). Se termina cerrando la sala en el Centro de control.
+views.simulada = async () => {
+  if (!(await isAdmin())) return viewLogin();
+  if ((await activeSessions()).length) { toast('Ya hay una sala abierta: ciérrala en el Centro de control para crear la sala simulada'); location.hash = '#/'; return undefined; }
+  app.innerHTML = `<p class="back"><a href="#/">← Inicio</a></p><h1>🤖 Crear sala simulada</h1>
+    <form class="panel fields" id="f">
+      <p class="wide muted">Una sala de juegos de verdad, con personas virtuales que entran solas y juegan todos los juegos como lo haría el público: bingo, El Rosko, el sorteo de concursantes, El Festival, El objeto más extraño, la votación del juego y El último en pie. Tú la manejas igual que siempre. Para terminar, cierra la sala en el Centro de control.</p>
+      <div class="wide"><span class="f" style="margin-bottom:6px">¿De qué local?</span>
+        <div class="seg" id="venues" role="tablist">
+          <button type="button" data-venue="frida" class="on">Frida</button><button type="button" data-venue="tobalaba">Tobalaba</button><button type="button" data-venue="kennedy">Mercado Kennedy</button>
+        </div>
+        <p class="muted small" style="margin-top:8px">Las pantallas de ese local que estén en «Automático» también van a mostrar los juegos.</p></div>
+      <label class="f">Personas virtuales <span class="hint">de 5 a 300</span><input type="number" name="n" min="5" max="300" value="120" required></label>
+      <div class="wide"><button class="primary big paso">🤖 Crear sala simulada</button></div>
+    </form>`;
+  const f = $('#f'); let venue = 'frida';
+  const NAMES = { frida: 'Los Juegos de Frida', tobalaba: 'Los Juegos de Tobalaba', kennedy: 'Los Juegos de Mercado Kennedy' };
+  $('#venues').onclick = (e) => { const v = e.target.dataset.venue; if (!v) return; venue = v; $$('#venues button').forEach((b) => b.classList.toggle('on', b.dataset.venue === v)); };
+  f.onsubmit = async (e) => {
+    e.preventDefault();
+    const btn = f.querySelector('button.primary'); btn.disabled = true; btn.textContent = '⏳ Entrando las personas virtuales…';
+    const n = Math.max(5, Math.min(300, Number(f.n.value) || 120));
+    try {
+      const p = await api('POST', '/api/projects', { name: NAMES[venue], theme: venue, count: Math.max(320, n + 20), format: 'numbers', values: 75, headers: 'BINGO', freeCenter: false, startNumber: 1 });
+      let s;
+      try { s = await api('POST', `/api/projects/${p.id}/session`, { name: p.name, theme: venue, password: '', cardsPerPlayer: 1, isPublic: true, showName: true, patterns: ['linea'] }); } catch (err) { await api('DELETE', `/api/projects/${p.id}`).catch(() => {}); throw err; }
+      const r = await api('POST', '/api/sim/start', { sid: s.id, n });
+      store.set('lastBingo', p.id);
+      toast(`Sala simulada lista: ${r.n} personas virtuales jugando`);
+      location.hash = '#/juegos';
+    } catch (err) { fail(err); btn.disabled = false; btn.textContent = '🤖 Crear sala simulada'; }
+  };
   return undefined;
 };
 
@@ -520,7 +562,7 @@ views.juegos = async () => {
   if (!open) { location.hash = '#/'; return undefined; }
   store.set('lastBingo', open.projectId);
   // Pedido de Cote (21 nov): al crear la sala, tres botones y nada más (Manual, Por sorteo, Por votación)
-  app.innerHTML = `<p class="back"><a href="#/">← Inicio</a></p><div id="jg-cur"></div>${activitiesNav('', { lobby: true })}
+  app.innerHTML = `<p class="back"><a href="#/">← Inicio</a></p><div id="jg-sim"></div><div id="jg-cur"></div>${activitiesNav('', { lobby: true })}
     <p class="ep-link"><a class="btn" href="#/enpiectl">🧪 Juego en prueba: 🧍 El último en pie</a></p>`;
   const venue = open.theme || 'frida';
   const paint = async () => {
@@ -536,6 +578,7 @@ views.juegos = async () => {
     window.setNavFold(!!cur);
   };
   await paint();
+  api('GET', '/api/sim').then((sim) => { if (sim && sim.on && sim.sid === open.id && $('#jg-sim')) $('#jg-sim').innerHTML = `<p class="sim-bar">🤖 <b>Sala simulada</b> · ${sim.n} personas virtuales jugando. Para terminar, cierra la sala en el Centro de control.</p>`; }).catch(() => {});
   const t = setInterval(() => { paint(); paintGameNav(); }, 4000); // también lo que se haga desde otro equipo (iPad)
   return () => clearInterval(t);
 };
@@ -2386,7 +2429,7 @@ if (new URLSearchParams(location.search).has('diag')) {
 // Pedido de Cote (20 nov): botoncito «Refrescar página» en todos los paneles del moderador (en la aplicación instalada
 // no hay cómo recargar). El Centro de control ya lo trae en su encabezado.
 (() => {
-  const PANELS = /^#\/?($|juegos|figura|anfitrion|ronda|proyectos|nuevo|admin|votoctl|enpiectl|ruedactl|ruedas|sorteoctl|karaokectl|showctl|instactl|light$|consola|verticalctl)/;
+  const PANELS = /^#\/?($|juegos|simulada|figura|anfitrion|ronda|proyectos|nuevo|admin|votoctl|enpiectl|ruedactl|ruedas|sorteoctl|karaokectl|showctl|instactl|light$|consola|verticalctl)/;
   const sync = () => {
     let b = document.getElementById('ctl-reload-fixed');
     const on = PANELS.test(location.hash || '#/') && !document.body.classList.contains('full') && !document.body.classList.contains('obs') && !!store.get('adminToken');

@@ -49,6 +49,7 @@ module.exports = function clientes({ app, db, requireAdmin, dir, port }) {
   const who = (sid, token) => {
     const now = Date.now();
     const s = (db.sessions || {})[sid];
+    if (s && s.sim) return null; // sala simulada: las personas virtuales no quedan en el registro de clientes
     if (s && s.players[token]) { const p = s.players[token]; return ficha(jornada(`J:${s.id}`, 'juegos', s.theme || 'frida', now), token, { name: p.name, place: p.place, cartones: (p.cards || []).length }, now); }
     const l = Object.values(db.lights || {}).find((x) => x.id === sid);
     if (l && l.players[token]) { const p = l.players[token]; return ficha(jornada(`L:${l.venue}:${chileDate(now - 6 * 3600e3)}`, 'light', l.venue, now), token, { name: p.name, place: p.place }, now); }
