@@ -9,7 +9,7 @@ test('jueves en Kennedy: la sala se crea sola a las 18:30 y a las 21:45 pasa sol
   const srv = await startServer({ env: { KRB_FECHA: '2026-11-26T21:44:50-03:00' } });
   try {
     const cur = await until(async () => (await srv.ok('GET', '/api/current')).sessions[0], 8000);
-    assert.equal(cur.name, 'Los Juegos de Kennedy');
+    assert.equal(cur.name, 'Los Juegos de Mercado Kennedy');
     assert.equal(cur.theme, 'kennedy');
     assert.equal((await srv.ok('GET', '/api/stage')).show, 'bingo');
     const show = await until(async () => ((await srv.ok('GET', '/api/stage')).show === 'karaoke' ? 'karaoke' : ''), 25000);

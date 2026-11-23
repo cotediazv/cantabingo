@@ -16,9 +16,9 @@ module.exports = function horarios(ctx) {
     if (p.weekday !== AUTO_KARAOKE.dow || min < AUTO_KARAOKE.from || min >= AUTO_KARAOKE.until || db.autoKaraoke === day) return;
     const s = Object.values(db.sessions)[0];
     if (!s || s.theme !== AUTO_KARAOKE.venue) return;
-    if (ctx.stageLocked('karaoke')) return; // con El Rosco en juego se espera a que termine (hasta las 22:00)
+    if (ctx.stageLocked('karaoke')) return; // con El Rosko en juego se espera a que termine (hasta las 22:00)
     db.autoKaraoke = day;
-    if (db.stage !== 'karaoke') { ctx.setStage('karaoke'); ctx.karaoke.refresh(); console.log('Escenario a Karaoke automático (jueves 21:45, Kennedy)'); }
+    if (db.stage !== 'karaoke') { ctx.setStage('karaoke'); ctx.karaoke.refresh(); console.log('Escenario a Karaoke automático (jueves 21:45, Mercado Kennedy)'); }
     save();
   }, 20e3);
 
@@ -29,13 +29,13 @@ module.exports = function horarios(ctx) {
   // hay, crea 320) y dura hasta las 4 de la mañana siguiente (para que no se cierre en medio de los juegos).
   const AUTO_SALAS_FROM = '2026-11-21'; // la creación automática empieza el sábado 21 de noviembre (pedido de Cote)
   const AUTO_SALAS = [
-    { dow: 'Thu', from: 18 * 60 + 30, venue: 'kennedy', name: 'Los Juegos de Kennedy' },
+    { dow: 'Thu', from: 18 * 60 + 30, venue: 'kennedy', name: 'Los Juegos de Mercado Kennedy' }, // el local se llama Mercado Kennedy (pedido de Cote, 21 nov)
     { dow: 'Fri', from: 18 * 60, until: 22 * 60 + 45, venue: 'tobalaba', name: 'Los Juegos de Tobalaba' },
     { dow: 'Sun', from: 13 * 60, until: 17 * 60, venue: 'frida', name: 'Los Juegos de Frida' },
   ];
   // Fin de los juegos (pedido de Cote, 20 nov): Tobalaba a las 22:45 y Frida (domingo) a las 17:00 la sala del local se
   // cierra sola, aunque se haya creado a mano. Kennedy (21:30) no se cierra: los jueves a las 21:45 pasa sola a Karaoke
-  // para que el público siga pidiendo canciones. Si a esa hora hay un rosco en juego, se espera a que termine.
+  // para que el público siga pidiendo canciones. Si a esa hora hay un rosko en juego, se espera a que termine.
   function autoSala() {
     const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
       .formatToParts(clock.date()).map((x) => [x.type, x.value]));

@@ -1,0 +1,59 @@
+/* Diseño nuevo de la transmisión y las pantallas (pedido de Cote, 22 nov: «Me gusta, aplícalo a todo»). Es la línea gráfica
+   de la propuesta (public/propuesta.html), tomada de krbstage.cl: fondo de noche, foco dorado, el color de cada local,
+   letras Big Shoulders Display (títulos y nombres), Manrope (textos) y JetBrains Mono (horas y etiquetas), formas en
+   diagonal, sin esquinas redondeadas.
+   TODO va bajo «html.t2»: con el interruptor del Centro de control (o ?tema=0) se quita esa clase y vuelve el diseño
+   anterior, sin tocar nada más. Este archivo tiene la base compartida; cada familia de pantallas tiene el suyo:
+   tema-bingo.css, tema-light.css (sala light, karaoke y show), tema-rosco.css (El Rosco y sorteo de concursantes) y
+   tema-juegos.css (Festival, objeto, sorteo y votación del juego, Instagram). No usar blur ni 3D con CSS: el computador
+   de OBS es modesto (se probó el 22 nov); solo transform y opacity en las animaciones. */
+html.t2 {
+  --t-noche: #0c0b12; --t-fondo: #07060c; --t-tarima: #15131e; --t-tarima2: #1c1828; --t-linea: #2a2636; --t-texto: #f3eee6; --t-tenue: #a59fb0; --t-foco: #f4bf5a; --t-foco-tinta: #1a1407;
+  --t-c: #47b8e6; --t-onc: #06131a; /* color del local y el color del texto que va encima */
+  --t-disp: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif; --t-txt: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif; --t-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --t-corte: 3.4vh; /* cuánto se inclina el corte en diagonal de las franjas */
+}
+/* El color del local: lo pone la página en el body (pantallas) y cada pantalla en su caja (.th-<local>) */
+html.t2 body[data-venue="kennedy"], html.t2 .th-kennedy { --t-c: #47b8e6; --t-onc: #06131a; }
+html.t2 body[data-venue="frida"], html.t2 .th-frida { --t-c: #e0338f; --t-onc: #fff; }
+html.t2 body[data-venue="tobalaba"], html.t2 .th-tobalaba { --t-c: #e5413a; --t-onc: #fff; }
+
+/* Fondo de las pantallas del local (tablero y de pie): noche, con el foco del color del local arriba y el dorado abajo,
+   y una trama fina en diagonal. Se mueve lento (solo transform). */
+/* solo en las pantallas del local: en los GC de OBS el fondo de la página sigue TRANSPARENTE (va sobre la cámara) */
+html.t2:has(body.full) { background-color: #0c0b12 !important; }
+/* el body va transparente: su fondo taparía los focos (body.full::before va por debajo, con z-index -1) */
+html.t2 body.full { background: transparent; color: var(--t-texto); }
+html.t2 body.full::before { top: -25%; right: -25%; bottom: -25%; left: -25%;
+  background: radial-gradient(circle at 26% 22%, color-mix(in srgb, var(--t-c) 46%, transparent) 0, transparent 40%), radial-gradient(circle at 78% 82%, rgba(244, 191, 90, .22) 0, transparent 38%),
+    repeating-linear-gradient(115deg, rgba(255, 255, 255, .028) 0 1px, transparent 1px 3.2vh), linear-gradient(160deg, #15131e, #0c0b12 55%, #07060c);
+  animation: t2foco 18s steps(108) infinite alternate; } /* se mueve tan lento que basta con 6 pasos por segundo: se ve igual y el navegador trabaja la décima parte */
+@keyframes t2foco { from { transform: translate(0, 0) scale(1); } to { transform: translate(3%, 2%) scale(1.08); } }
+@media (prefers-reduced-motion: reduce) { html.t2 body.full::before { animation: none; } }
+
+/* Las «neuronas» de los GC: sobre los recuadros oscuros del diseño nuevo se ven igual sin la mezcla «screen», que obligaba
+   al navegador a recomponer toda la pantalla en cada cuadro (pesado para el computador de OBS) */
+html.t2 #neural-bg.neural-gc { mix-blend-mode: normal; }
+
+/* Logos del local (KRB Stage | local): un poco más grandes y sin sombra pesada */
+html.t2 .venue-mark { filter: none; }
+html.t2 .venue-mark i { border-radius: 0; background: rgba(255, 255, 255, .55); }
+
+/* Piezas compartidas, para usarlas igual en todas las pantallas */
+html.t2 .t-disp { font-family: var(--t-disp); font-weight: 900; text-transform: uppercase; letter-spacing: .005em; line-height: .95; }
+html.t2 .t-mono { font-family: var(--t-mono); font-weight: 700; text-transform: uppercase; letter-spacing: .14em; }
+/* entra desde abajo / destello que cruza una franja (para ::after con overflow: hidden en la franja) */
+@keyframes t2sube { from { opacity: 0; transform: translateY(3vh); } to { opacity: 1; transform: none; } }
+@keyframes t2abre { from { transform: scaleX(0); } to { transform: none; } }
+@keyframes t2izq { from { transform: translateX(-112%); } to { transform: none; } }
+@keyframes t2der { from { transform: translateX(112%); } to { transform: none; } }
+@keyframes t2destello { from { left: -30%; } to { left: 115%; } }
+@keyframes t2pulso { 50% { opacity: .25; } }
+
+/* Capa gráfica (cortina): el dorado y la noche del diseño nuevo (el color del local lo pone capa-ui.js) */
+html.t2 #capa .cp-cur i:nth-child(1), html.t2 #capa .cp-cur i:nth-child(5) { background: #f4bf5a; }
+html.t2 #capa .cp-cur i:nth-child(3) { background: #07060c; }
+html.t2 #capa .cp-flat b { font-family: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif; text-transform: uppercase; color: #f4bf5a; }
+
+/* Botón «Activar sonido» de las pantallas: recto y oscuro, con el dorado de la marca (mismo tamaño y lugar de siempre) */
+html.t2 .sound-btn { border-radius: 0; background: #0c0b12; color: #f4bf5a; border: .3vh solid #f4bf5a; box-shadow: none; font-family: "Manrope", system-ui, sans-serif; }

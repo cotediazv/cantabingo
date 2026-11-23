@@ -5,20 +5,20 @@
 const crypto = require('crypto');
 const clock = require('../../core/clock'); // hora del sistema (en las pruebas se puede simular otro día)
 
-const VENUES = { frida: 'Frida Kahlo', kennedy: 'Kennedy', tobalaba: 'Tobalaba' };
+const VENUES = { frida: 'Frida Kahlo', kennedy: 'Mercado Kennedy', tobalaba: 'Tobalaba' }; // el local se llama Mercado Kennedy (pedido de Cote, 21 nov)
 // GC Show de cada local (Apps Script que lee la GLOSA)
 const GLOSA = {
   kennedy: 'https://script.google.com/macros/s/AKfycbzgCkymn_Lu4m3l_kDr68B4fOmyCdIYi4W-vdHP3CrT5f_R7drx-Ryht6E-ltZf9BERNA/exec',
   frida: 'https://script.google.com/macros/s/AKfycby3oCPs4gFVUd3P7csLrQV3XEsefGMpLStZphoa76AnTRVlyExxbEpp2HAEnTbH5zwA/exec',
   tobalaba: 'https://script.google.com/macros/s/AKfycbz1zFsj6YR2i03dlYuLTD0Hj3HRjZ8VlyQU0S9uCp_B6qurdegC0lRlDyfM9AUk7rZ7pQ/exec',
 };
-const STAGES = ['info', 'karaoke', 'show', 'cartelera', 'qr', 'none']; // info: la información que va cambiando (por defecto, pedido de Cote)
+const STAGES = ['info', 'karaoke', 'show', 'cartelera', 'qr', 'custom', 'none']; // custom: GC personalizable, con el texto que escribe el equipo (pedido de Cote, 21 nov) // info: la información que va cambiando (por defecto, pedido de Cote)
 const TZ = 'America/Santiago';
 const NIGHT_STARTS = 6; // la noche cambia a las 6 AM, igual que el karaoke
 const DAYS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 const GLOSA_MS = 10 * 60e3; // la GLOSA se relee cada 10 minutos
 
-module.exports = function light({ app, db, save, requireAdmin, requireLocal = requireAdmin, fail, karaoke, insta }) {
+module.exports = function light({ app, db, save, requireAdmin, requireLocal = requireAdmin, fail, karaoke, insta, aviso = () => {} }) {
   // Una sala light por local (Kennedy, Frida y Tobalaba pueden estar abiertas a la vez)
   db.lights ||= {};
   if (db.light) { db.lights[db.light.venue] = db.light; db.light = null; } // salas guardadas antes de este cambio
@@ -111,7 +111,7 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
   // ---------- Estado ----------
   const pub = (v) => {
     const l = db.lights[v];
-    return l ? { open: true, id: l.id, venue: v, name: VENUES[v], title: `Sala light · ${VENUES[v]}`, stage: l.stage, players: Object.keys(l.players).length } : { open: false, venue: v, name: VENUES[v] };
+    return l ? { open: true, id: l.id, venue: v, name: VENUES[v], title: `Sala light · ${VENUES[v]}`, stage: l.stage, text: l.text || '', video: !!l.video, players: Object.keys(l.players).length } : { open: false, venue: v, name: VENUES[v] };
   };
   // Sin ?local= devuelve la lista de las salas light abiertas (y, por compatibilidad, la primera)
   app.get('/api/light', (req, res) => {
@@ -141,9 +141,25 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
     const show = String(b.show || '');
     if (!db.lights[v]) return fail(res, 404, 'No hay una sala light abierta en este local');
     if (!STAGES.includes(show)) return fail(res, 400, 'Opción no válida');
+    // GC personalizable: el texto que se escribe en el panel (queda guardado para volver a usarlo)
+    if (b.text != null) db.lights[v].text = clean(b.text, 120);
+    if (show === 'custom' && !db.lights[v].text) return fail(res, 400, 'Escribe el texto del GC personalizable');
     db.lights[v].stage = show;
+    db.lights[v].video = false; // cambiar el GC apaga el switch «Video cartelera» (pedido de Cote, 21 nov)
     save();
     if (show === 'karaoke' || show === 'qr') karaoke.refreshVenue(v);
+    aviso(); // las pantallas cambian al instante
+    res.json(pub(v));
+  });
+  // Switch «Video cartelera» (pedido de Cote, 21 nov): deja puesto en la pantalla vertical del local (versión completa y
+  // liviana) el video de la cartelera que está subido, hasta que alguien cambie el GC desde la sala light
+  app.post('/api/light/video', requireLocal, (req, res) => {
+    const b = req.body || {};
+    const v = String(b.local || '');
+    if (!db.lights[v]) return fail(res, 404, 'No hay una sala light abierta en este local');
+    db.lights[v].video = !!b.on;
+    save();
+    aviso();
     res.json(pub(v));
   });
 

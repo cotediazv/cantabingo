@@ -6,7 +6,7 @@
 const clock = require('../../core/clock'); // hora del sistema (en las pruebas se puede simular otro día)
 const TZ = 'America/Santiago';
 const NIGHT_STARTS = 6; // la «noche» cambia a las 6 AM, igual que en el sistema de karaoke
-const VENUES = { frida: 'Frida Kahlo', kennedy: 'Kennedy', tobalaba: 'Tobalaba' };
+const VENUES = { frida: 'Frida Kahlo', kennedy: 'Mercado Kennedy', tobalaba: 'Tobalaba' }; // el local se llama Mercado Kennedy (pedido de Cote, 21 nov)
 
 const DEFAULTS = {
   month: '2026-11',

@@ -4,7 +4,9 @@
 // aquí solo se muestran.
 (() => {
   const POLL_MS = 2000;
-  const sign = (st) => JSON.stringify([st.venue, st.list.slice(0, 6)]);
+  // Diseño nuevo (tema.js): las etiquetas van sin emojis y, al cambiar de diseño, se vuelve a dibujar
+  const se = (s) => (window.sinEmoji ? window.sinEmoji(s) : s);
+  const sign = (st) => JSON.stringify([st.venue, st.list.slice(0, 6), window.t2 && window.t2() ? 1 : 0]);
   const n = (t) => `style="--n:${Math.max(6, String(t).length)}"`;
 
   // Sigue la cola y vuelve a dibujar solo cuando cambia, para que no parpadee
@@ -36,10 +38,10 @@
       if (!box) return;
       const [a, b] = st.list;
       const html = `
-        <div class="kg-qr">${qr(o.join || joinUrl())}<b>Escanea el código QR con tu celular</b></div>
+        <div class="kg-qr">${qr(o.join || joinUrl())}<b><span>Escanea el código QR</span><span>con tu celular</span></b></div>
         ${o.nextUp != null ? o.nextUp : nextUpHTML('kg-up')}
         <div class="kg-bar">
-          <div class="kg-tag"><img class="kg-logo" src="krb-stage.svg" alt="KRB Stage"><div><small>${esc(st.name)}</small><b>🎤 Karaoke</b></div></div>
+          <div class="kg-tag"><img class="kg-logo" src="krb-stage.svg" alt="KRB Stage"><div><small>${esc(st.name)}</small><b>${se('🎤 Karaoke')}</b></div></div>
           ${a ? `<div class="kg-now"><small>Ahora canta</small><b ${n(a.name)}>${esc(a.name)}</b><span ${n(a.song)}>${esc(a.song)}</span>${a.artist ? `<i ${n(a.artist)}>${esc(a.artist)}</i>` : ''}</div>`
     : `<div class="kg-now"><small>Ahora canta</small><b ${n('¡Pide tu canción!')}>¡Pide tu canción!</b><span ${n('Desde el celular')}>Desde el celular</span></div>`}
           ${b ? `<div class="kg-next"><small>Sigue</small><b ${n(b.name)}>${esc(b.name)}</b><span ${n(b.song)}>${esc(b.song)}</span>${b.artist ? `<i ${n(b.artist)}>${esc(b.artist)}</i>` : ''}</div>`
@@ -66,8 +68,8 @@
       box.className = `th-${st.venue}`;
       box.innerHTML = `
         <header class="kf-top"><b>Karaoke ${esc(st.name)}</b><span>${st.total ? `${st.total} en la lista` : 'Lista abierta'}</span></header>
-        <section class="kf-now"><img class="kg-logo" src="krb-stage.svg" alt="KRB Stage">${a ? `<small>🎤 Ahora canta</small><b ${n(a.name)}>${esc(a.name)}</b><span ${n(a.song)}>${esc(a.song)}</span>${a.artist ? `<i ${n(a.artist)}>${esc(a.artist)}</i>` : ''}`
-    : '<small>🎤 Karaoke</small><b style="--n:16">¡Pide tu canción!</b><span style="--n:16">Desde el celular</span>'}</section>
+        <section class="kf-now"><img class="kg-logo" src="krb-stage.svg" alt="KRB Stage">${a ? `<small>${se('🎤 Ahora canta')}</small><b ${n(a.name)}>${esc(a.name)}</b><span ${n(a.song)}>${esc(a.song)}</span>${a.artist ? `<i ${n(a.artist)}>${esc(a.artist)}</i>` : ''}`
+    : `<small>${se('🎤 Karaoke')}</small><b style="--n:16">¡Pide tu canción!</b><span style="--n:16">Desde el celular</span>`}</section>
         <aside class="kf-side">
           <div class="kf-qr">${qr(join || joinUrl())}<b>Escanea el código QR con tu celular</b></div>
           ${next.length ? `<div class="kf-next"><small>Luego vienen</small>${next.map((p, i) => `<div><em>${i + 2}</em><p><b ${n(p.name)}>${esc(p.name)}</b><span ${n(p.song + p.artist)}>${esc(p.song)}${p.artist ? ` · ${esc(p.artist)}` : ''}</span></p></div>`).join('')}</div>` : ''}

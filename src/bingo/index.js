@@ -73,6 +73,27 @@ module.exports = function bingo(ctx) {
     }
     return added;
   }
+  // El bingo de la ronda empezó: se eligió su figura (en #/figura o al pasar de ronda) o ya hay números
+  const bingoStarted = (s) => s.drawn.length > 0 || s.figRound === s.round;
+  // Juego en curso en la sala (para «Volver al juego en curso» en Juegos): lo que está en pantalla y aún no termina
+  const currentGame = (s) => {
+    const st = db.stage || 'bingo';
+    if (st === 'rueda') {
+      const w = Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0];
+      // Termina con el ganador aceptado y el de la Trivia ya mostrado (pedido de Cote: el ganador de la Trivia sale sí o sí)
+      return w && !(w.winAccepted && (w.crowd || {}).winner) ? { game: 'rosco', wheel: w.id } : null;
+    }
+    if (st === 'sorteo') { // el desempate (del bingo o de El Rosko) usa el mismo sorteo
+      const r = db.raffle || {};
+      if (r.mode !== 'tie') return { game: 'rosco' };
+      if ((r.tie || {}).game !== 'rosco') return { game: 'bingo' };
+      const w = Object.values(db.wheels || {}).sort((x, y) => y.created - x.created)[0];
+      return w ? { game: 'rosco', wheel: w.id } : { game: 'rosco' }; // vuelve al panel de El Rosko, donde se acepta al ganador
+    }
+    if (st === 'voto') { const v = db.vote || {}; return v.winner ? null : { game: v.mode === 'karaoke' ? 'festival' : 'objeto' }; }
+    if (st === 'bingo') return bingoStarted(s) && !roundOver(s) ? { game: 'bingo' } : null;
+    return null;
+  };
   // El moderador recibe la lista completa de resultados; los participantes solo los cartones
   // ganadores (sin nombres), que es lo único que necesitan y pesa mucho menos.
   function publicState(s, full = false) {
@@ -85,15 +106,19 @@ module.exports = function bingo(ctx) {
       // Celebración a pantalla completa mientras haya ganadores y el moderador no la haya quitado
       bigQr: !!s.bigQr, tieWinner: s.tieWinner || null, rollMs: 6500,
       celebrate: !s.hideWin && s.results.some((r) => r.validated && !r.dismissed),
-      // Durante El Rosco los celulares cambian el cartón por las preguntas del rosco en curso
       stage: db.stage || 'bingo',
-      // Lo que cada juego agrega para los celulares (ej. roscoId, voteRev, desafioRev): así vuelven a leer su juego cuando cambia
+      // Lo que cada juego agrega para los celulares (ej. roscoId, voteRev, gameVoteRev, desafioRev): así vuelven a leer su
+      // juego cuando cambia
       ...ctx.games.phoneFields(),
+      // El juego en pantalla ya terminó (concurso con ganador o rosko con ganador aceptado): los celulares no muestran sus instrucciones
+      stageDone: db.stage === 'voto' ? !!(db.vote || {}).winner : db.stage === 'rueda' ? !!(Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).winAccepted : false,
       celebrateAt: s.celebrateAt || 0,
       winConfirmed: roundOver(s), winConfirmedAt: s.confirmedAt || 0, now: Date.now(),
+      started: bingoStarted(s), // el bingo de esta ronda empezó (figura elegida o ya hay números); antes, la sala espera el primer juego
       patterns: s.patterns, drawn: s.drawn, results, finalists: s.finalists || null,
       auto: s.auto, cardsPerPlayer: s.cardsPerPlayer, totalCards: p.cards.length,
       players: Object.values(s.players).length,
+      ...(full ? { current: currentGame(s) } : {}),
     };
   }
   // Los avisos se agrupan: si llegan muchos cambios seguidos (cientos de personas entrando o
@@ -279,7 +304,7 @@ module.exports = function bingo(ctx) {
         break;
       case 'restart':
         stopAuto(s);
-        Object.assign(s, { round: s.round + 1, drawn: [], results: [], marks: {}, finalists: null, tieWinner: null, hideWin: false, confirmedAt: 0, patterns: cleanPatterns(b.patterns) });
+        Object.assign(s, { round: s.round + 1, figRound: s.round + 1, drawn: [], results: [], marks: {}, finalists: null, tieWinner: null, hideWin: false, confirmedAt: 0, patterns: cleanPatterns(b.patterns) });
         ctx.setStage('bingo'); // la ronda nueva devuelve la pantalla a la gráfica del bingo
         evaluate(s);
         break;
@@ -293,6 +318,7 @@ module.exports = function bingo(ctx) {
         }
         stopAuto(s);
         s.confirmedAt = Date.now();
+        ctx.festejo(); // confeti en el GC
         // Quien no fue confirmado queda fuera: el cartel muestra solo al ganador aceptado
         for (const r of s.results) if (!r.confirmed) r.dismissed = true;
         if (tied) { s.hideWin = false; ctx.setStage('bingo'); } // vuelve la gráfica del bingo, con la celebración del ganador único
@@ -303,6 +329,13 @@ module.exports = function bingo(ctx) {
         s.tieWinner = null;
         break;
       case 'bigqr': s.bigQr = b.on !== false; break; // cartel con el QR en grande, para antes de empezar
+      // Figura del bingo antes de sacar el primer número (pedido de Cote, 21 nov: la sala ya no parte con el bingo; cuando
+      // el bingo sale en el sorteo o se elige, primero se elige la figura)
+      case 'patterns':
+        if (s.drawn.length || roundOver(s)) return fail(res, 400, 'El bingo ya empezó: la figura se cambia en la ronda siguiente');
+        s.patterns = cleanPatterns(b.patterns);
+        s.figRound = s.round; // figura elegida: el bingo de esta ronda empezó
+        break;
       case 'hidewin': s.hideWin = b.hide !== false; break; // quitar o volver a mostrar la celebración en pantalla
       case 'gc':
         // Textos de las franjas de la gráfica de OBS; quedan como predeterminados para las próximas sesiones
@@ -325,9 +358,11 @@ module.exports = function bingo(ctx) {
     res.json({ ok: true });
   });
 
+  // Estado completo del bingo para el Centro de control liviano del iPad viejo (/cc), que no usa conexiones en vivo
+  app.get('/api/sessions/:sid/host/state', (req, res) => { const s = hostSession(req, res); if (s) res.json(publicState(s, true)); });
   app.get('/api/sessions/:sid/host', (req, res) => {
     const s = hostSession(req, res);
-    if (s) res.json({ password: s.password, isPublic: s.isPublic, round: s.round, patterns: s.patterns, gc: s.gc || gcDefaults(), roundOver: roundOver(s) });
+    if (s) res.json({ password: s.password, isPublic: s.isPublic, round: s.round, patterns: s.patterns, gc: s.gc || gcDefaults(), roundOver: roundOver(s), drawn: s.drawn.length, started: bingoStarted(s) });
   });
 
   // Sesiones activas: a ellas llevan el enlace y el QR fijos
@@ -347,6 +382,13 @@ module.exports = function bingo(ctx) {
     if (!s) return fail(res, 404, 'La sesión no existe o ya terminó');
     // Lugares del local (los mismos del formulario de karaoke): se eligen al entrar, para saber dónde está cada persona
     res.json({ id: s.id, name: s.name, locked: !!s.password, cardsPerPlayer: s.cardsPerPlayer, places: ctx.karaoke.placesFor(s.theme || 'frida') });
+  });
+
+  // Estado público del bingo (lo mismo que reciben los celulares), para la pantalla liviana de los navegadores antiguos (pv.html)
+  app.get('/api/sessions/:sid/state', (req, res) => {
+    const s = db.sessions[req.params.sid];
+    if (!s) return fail(res, 404, 'La sesión no existe o ya terminó');
+    res.json(publicState(s));
   });
 
   // Un participante se une (o recupera sus cartones con su token)
@@ -456,6 +498,14 @@ module.exports = function bingo(ctx) {
       }
       return out;
     },
+    // Personas de la sala de un local: conectadas ahora (con la sala abierta en el celular) e inscritas en total
+    salaOf: (venue) => {
+      const s = Object.values(db.sessions)[0];
+      if (!s || (s.theme || 'frida') !== venue) return { now: 0, total: 0 };
+      const on = new Set([...(clients[s.id] || [])].map((r) => r.playerToken).filter((t) => t && s.players[t]));
+      return { now: on.size, total: Object.keys(s.players || {}).length };
+    },
+    bingoStarted,
     startSession, closeSession, makeCards, newId: id,
   });
 };

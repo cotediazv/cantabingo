@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Prueba de la capa gráfica</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Source+Sans+3:wght@700;900&display=swap">
+<!-- Prueba de la capa gráfica sobre la cámara (pedido de Cote, 21 nov): se pone como fuente navegador en OBS para ver
+     qué funciona ahí antes de construir: animación Lottie, texto 3D con CSS, texto 3D real (WebGL), videos con fondo
+     transparente y una cortina. Al final muestra un resultado para sacarle una foto. ?p=N deja una sola prueba. -->
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; font-family: "Source Sans 3", "Segoe UI", system-ui, sans-serif; color: #fff; }
+  /* fuera de OBS se simula la cámara, para que se note la transparencia */
+  #cam { position: fixed; left: 0; top: 0; width: 100%; height: 100%; display: none;
+    background: radial-gradient(circle at 30% 40%, #6b4a2a 0, transparent 45%), radial-gradient(circle at 75% 60%, #2a4a6b 0, transparent 50%), linear-gradient(160deg, #3a3340, #15131c); }
+  body.sim #cam { display: block; }
+  #stage { position: fixed; left: 50%; top: 50%; width: calc(var(--u) * 177.7778); height: calc(var(--u) * 100); transform: translate(-50%, -50%); overflow: hidden; }
+  section { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: none; }
+  section.on { display: block; }
+  #tag { position: absolute; left: calc(var(--u) * 4); top: calc(var(--u) * 4); z-index: 9; padding: calc(var(--u) * 1) calc(var(--u) * 2.2); border-radius: calc(var(--u) * 1.4);
+    background: rgba(8, 7, 20, .82); border: calc(var(--u) * .3) solid #ffc400; font-weight: 900; font-size: calc(var(--u) * 3.2); }
+  #tag small { display: block; font-weight: 700; font-size: calc(var(--u) * 2.1); color: #ffd76a; }
+
+  /* 1 · Lottie */
+  #lotbox { position: absolute; left: 6%; bottom: 9%; width: 78%; height: calc(var(--u) * 39); }
+  #lot { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+  .lt-text { position: absolute; left: 21%; top: 50%; transform: translateY(-58%); line-height: 1; animation: ltIn 4s linear infinite; }
+  .lt-text b { display: block; font-weight: 900; font-size: calc(var(--u) * 8.4); letter-spacing: .02em; text-shadow: 0 calc(var(--u) * .4) calc(var(--u) * 1) rgba(0, 0, 0, .35); }
+  .lt-text span { display: block; margin-top: calc(var(--u) * .6); font-weight: 700; font-size: calc(var(--u) * 3.6); color: #fff3c4; }
+  @keyframes ltIn { 0%, 14% { opacity: 0; transform: translate(-6%, -58%); } 22%, 80% { opacity: 1; transform: translate(0, -58%); } 86%, 100% { opacity: 0; transform: translate(0, -58%); } }
+
+  /* 2 · Texto 3D con CSS: capas apiladas en profundidad, con giro y brillo */
+  .d3 { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; perspective: calc(var(--u) * 130); }
+  .d3-in { transform-style: preserve-3d; text-align: center; animation: d3spin 7s cubic-bezier(.3, 0, .2, 1) infinite; }
+  .d3-line { position: relative; transform-style: preserve-3d; font-weight: 900; line-height: 1.02; white-space: nowrap; }
+  .d3-line.l1 { font-size: calc(var(--u) * 17); }
+  .d3-line.l2 { font-size: calc(var(--u) * 9); margin-top: calc(var(--u) * 2); }
+  .d3-line span { display: block; }
+  .d3-line span.dp { position: absolute; left: 0; top: 0; width: 100%; }
+  .d3-line span.fr { position: relative; background: linear-gradient(100deg, #ffc400 0%, #ffc400 38%, #fff7d1 50%, #ffc400 62%, #ffc400 100%); background-size: 260% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: d3shine 2.6s linear infinite; }
+  .d3-line.l2 span.fr { background-image: linear-gradient(100deg, #fff 0%, #fff 38%, #bfe6ff 50%, #fff 62%, #fff 100%); }
+  /* la transparencia se anima en el contenedor: si se anima en el mismo elemento que gira, el navegador aplana la profundidad */
+  #t2.on .d3 { animation: d3fade 7s linear infinite; }
+  @keyframes d3fade { 0% { opacity: 0; } 8% { opacity: 1; } 88% { opacity: 1; } 100% { opacity: 0; } }
+  @keyframes d3spin { 0% { transform: rotateY(-78deg) rotateX(18deg) scale(.4); } 22% { transform: rotateY(18deg) rotateX(6deg) scale(1); } 50% { transform: rotateY(-24deg) rotateX(-7deg) scale(1); } 78% { transform: rotateY(22deg) rotateX(7deg) scale(1); } 100% { transform: rotateY(-78deg) rotateX(18deg) scale(.4); } }
+  @keyframes d3shine { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+
+  /* 3 · Texto 3D real (WebGL) */
+  #gl { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+  #glno { position: absolute; left: 0; top: 45%; width: 100%; text-align: center; font-weight: 900; font-size: calc(var(--u) * 5); display: none; }
+
+  /* 4 · Videos con fondo transparente */
+  .vids { position: absolute; left: 3%; top: 22%; width: 94%; display: flex; gap: 2%; }
+  .vid { flex: 1; min-width: 0; text-align: center; }
+  .vid video, .vid img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: contain; }
+  .vid b { display: inline-block; margin-top: calc(var(--u) * 1.5); padding: calc(var(--u) * .8) calc(var(--u) * 2); border-radius: calc(var(--u) * 1.2); background: rgba(8, 7, 20, .82); font-size: calc(var(--u) * 3); font-weight: 900; }
+  .vid b small { display: block; font-size: calc(var(--u) * 2.1); font-weight: 700; color: #ffd76a; }
+
+  /* 5 · Cortina: franjas que cruzan, el logo al centro y se abre */
+  #t5 i { position: absolute; left: -30%; width: 160%; height: 21%; transform: translateX(-110%) skewX(-18deg); }
+  #t5 i:nth-child(1) { top: -1%; background: #ffc400; } #t5 i:nth-child(2) { top: 20%; background: #1487cf; } #t5 i:nth-child(3) { top: 40%; background: #100e22; }
+  #t5 i:nth-child(4) { top: 60%; background: #1487cf; } #t5 i:nth-child(5) { top: 80%; background: #ffc400; }
+  #t5.go i { animation: cur 3.4s cubic-bezier(.7, 0, .2, 1) both; }
+  #t5.go i:nth-child(2) { animation-delay: .07s; } #t5.go i:nth-child(3) { animation-delay: .14s; } #t5.go i:nth-child(4) { animation-delay: .21s; } #t5.go i:nth-child(5) { animation-delay: .28s; }
+  @keyframes cur { 0% { transform: translateX(-110%) skewX(-18deg); } 24%, 66% { transform: translateX(0) skewX(-18deg); } 100% { transform: translateX(110%) skewX(-18deg); } }
+  #t5 img { position: absolute; left: 50%; top: 50%; width: calc(var(--u) * 46); transform: translate(-50%, -50%) scale(0); opacity: 0; filter: drop-shadow(0 calc(var(--u) * .8) calc(var(--u) * 2) rgba(0, 0, 0, .5)); }
+  #t5.go img { animation: curLogo 3.4s ease both; }
+  @keyframes curLogo { 0%, 20% { transform: translate(-50%, -50%) scale(.2); opacity: 0; } 32% { transform: translate(-50%, -50%) scale(1.12); opacity: 1; } 38%, 62% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 74%, 100% { transform: translate(-50%, -50%) scale(1.4); opacity: 0; } }
+
+  /* Resultado */
+  #res .card { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 86%; padding: calc(var(--u) * 3) calc(var(--u) * 4); box-sizing: border-box; border-radius: calc(var(--u) * 3);
+    background: rgba(8, 7, 20, .93); border: calc(var(--u) * .5) solid #ffc400; }
+  #res h1 { margin: 0 0 calc(var(--u) * 1.6); font-family: Fredoka, "Source Sans 3", sans-serif; font-size: calc(var(--u) * 5.4); color: #ffc400; }
+  #res .row { display: flex; align-items: baseline; gap: calc(var(--u) * 2); padding: calc(var(--u) * .9) 0; border-top: calc(var(--u) * .15) solid #3a3360; font-size: calc(var(--u) * 3.5); font-weight: 700; }
+  #res .row b { flex: none; width: 31%; font-weight: 900; }
+  #res .row span { flex: 1; min-width: 0; }
+  #res .ok { color: #5fe39a; } #res .no { color: #ff6b73; } #res .mid { color: #ffd76a; }
+  #res p { margin: calc(var(--u) * 1.6) 0 0; font-size: calc(var(--u) * 2.5); font-weight: 700; color: #cfc9f5; }
+</style>
+</head>
+<body>
+<div id="cam"></div>
+<div id="stage">
+  <div id="tag">Preparando la prueba…</div>
+  <section id="t1"><div id="lotbox"><div id="lot"></div><div class="lt-text"><b>KRB STAGE</b><span>Animación Lottie · fondo transparente</span></div></div></section>
+  <section id="t2"><div class="d3"><div class="d3-in" id="d3"></div></div></section>
+  <section id="t3"><canvas id="gl"></canvas><div id="glno">Este navegador no tiene 3D (WebGL)</div></section>
+  <section id="t4"><div class="vids">
+    <div class="vid"><video id="v9" src="capa/prueba-vp9.webm" muted loop playsinline preload="auto"></video><b>Video A<small>WebM VP9 con transparencia</small></b></div>
+    <div class="vid"><video id="v8" src="capa/prueba-vp8.webm" muted loop playsinline preload="auto"></video><b>Video B<small>WebM VP8 con transparencia</small></b></div>
+    <div class="vid"><img id="wp" alt=""><b>Imagen animada C<small>WebP con transparencia</small></b></div>
+  </div></section>
+  <section id="t5"><i></i><i></i><i></i><i></i><i></i><img src="krb-stage.svg" alt=""></section>
+  <section id="res"><div class="card"><h1>Resultado de la prueba</h1><div id="rows"></div><p id="env"></p></div></section>
+</div>
+<script src="capa/lottie.min.js"></script>
+<script src="capa/capa3d.js"></script>
+<script>
+(function () {
+  var Q = {}; location.search.replace(/[?&]([^=&]+)=([^&]*)/g, function (m, k, v) { Q[k] = decodeURIComponent(v); });
+  var inObs = !!window.obsstudio;
+  if (Q.fondo === '1' || (!inObs && Q.fondo !== '0')) document.body.className = 'sim';
+  var $ = function (id) { return document.getElementById(id); };
+  function unit() { var h = Math.min(window.innerHeight, window.innerWidth * 9 / 16); document.documentElement.style.setProperty('--u', (h / 100) + 'px'); }
+  unit(); window.addEventListener('resize', function () { unit(); if (gl3) gl3.resize(); });
+
+  // cuadros por segundo: cuenta los cuadros que el navegador alcanza a dibujar
+  var frames = 0; (function loop() { frames++; requestAnimationFrame(loop); })();
+  var R = {}, base = 0;
+
+  // 1 · Lottie
+  var lot = null, lotOk = false;
+  function lotStart() {
+    if (lot) { lot.goToAndPlay(0, true); return; }
+    try {
+      lot = lottie.loadAnimation({ container: $('lot'), renderer: 'svg', loop: true, autoplay: true, path: 'capa/anim-prueba.json' });
+      lot.addEventListener('DOMLoaded', function () { lotOk = true; });
+    } catch (e) { lotOk = false; }
+  }
+
+  // 2 · Texto 3D con CSS
+  (function () {
+    var lines = [['¡BIENVENIDOS!', 'l1', 16, '#1487cf', '#0a3f66'], ['MERCADO KENNEDY', 'l2', 12, '#c4175e', '#5c0a2c']], h = '';
+    lines.forEach(function (ln) {
+      h += '<div class="d3-line ' + ln[1] + '">';
+      for (var i = ln[2]; i >= 1; i--) h += '<span class="dp" style="transform:translateZ(calc(var(--u) * ' + (-i * 0.42) + '));color:' + (i > ln[2] / 2 ? ln[4] : ln[3]) + '">' + ln[0] + '</span>';
+      h += '<span class="fr">' + ln[0] + '</span></div>';
+    });
+    $('d3').innerHTML = h;
+  })();
+
+  // 3 · Texto 3D real (WebGL)
+  var gl3 = null, glErr = '', fontData = null;
+  var fx = new XMLHttpRequest(); fx.open('GET', 'capa/fuente-3d.json'); fx.onload = function () { try { fontData = JSON.parse(fx.responseText); } catch (e) { fontData = null; } }; fx.send();
+  function glStart() {
+    if (!gl3 && !glErr) {
+      try {
+        if (!fontData) throw new Error('sin tipografía');
+        gl3 = Capa3D.create($('gl'), fontData);
+        gl3.setText([{ text: 'KRB STAGE', size: 150 }, { text: 'TEXTO EN 3D REAL', size: 62 }], [{ front: 0xffc400, side: 0x1487cf }, { front: 0xffffff, side: 0xc4175e }]);
+      } catch (e) { glErr = String(e && e.message || e); gl3 = null; $('glno').style.display = 'block'; }
+    }
+    if (gl3) gl3.start();
+  }
+
+  // 4 · Videos con fondo transparente: ¿parten?, ¿avanzan?, ¿las esquinas quedan transparentes?
+  function corners(el) {
+    try {
+      var c = document.createElement('canvas'); c.width = 64; c.height = 36; var g = c.getContext('2d'); g.drawImage(el, 0, 0, 64, 36);
+      var d = g.getImageData(0, 0, 64, 36).data, px = function (x, y) { return d[(y * 64 + x) * 4 + 3]; }, max = 0;
+      for (var i = 3; i < d.length; i += 4) if (d[i] > max) max = d[i];
+      return { min: Math.min(px(0, 0), px(63, 0), px(0, 35), px(63, 35)), max: max };
+    } catch (e) { return null; }
+  }
+  var V = { v9: { t: [], a: [], err: false }, v8: { t: [], a: [], err: false }, wp: { a: [], err: false, ok: false } };
+  ['v9', 'v8'].forEach(function (k) { $(k).addEventListener('error', function () { V[k].err = true; }); });
+  $('wp').addEventListener('error', function () { V.wp.err = true; }); $('wp').addEventListener('load', function () { V.wp.ok = true; });
+  function vidStart() {
+    ['v9', 'v8'].forEach(function (k) { V[k].t = []; V[k].a = []; try { $(k).currentTime = 0; var p = $(k).play(); if (p && p.catch) p.catch(function () {}); } catch (e) { V[k].err = true; } });
+    V.wp.a = []; $('wp').src = 'capa/prueba.webp?' + Date.now();
+    [900, 1700, 2500, 3300].forEach(function (ms) { setTimeout(function () {
+      ['v9', 'v8'].forEach(function (k) { V[k].t.push($(k).currentTime); var c = corners($(k)); if (c) V[k].a.push(c); });
+      var c = V.wp.ok ? corners($('wp')) : null; if (c) V.wp.a.push(c);
+    }, ms); });
+  }
+  function vidStop() { ['v9', 'v8'].forEach(function (k) { try { $(k).pause(); } catch (e) {} }); }
+  function vidResult(k) {
+    var v = V[k], moved = false, i;
+    if (v.err) return ['no', 'No carga en este navegador'];
+    if (k !== 'wp') { for (i = 1; i < v.t.length; i++) if (Math.abs(v.t[i] - v.t[i - 1]) > 0.05) moved = true; if (!moved) return ['no', 'No parte o se queda congelado']; }
+    else if (!v.ok) return ['no', 'No carga en este navegador'];
+    if (!v.a.length) return ['mid', 'Se ve; no se pudo medir la transparencia (mírala en pantalla)'];
+    var min = 255, max = 0; v.a.forEach(function (c) { if (c.min < min) min = c.min; if (c.max > max) max = c.max; });
+    if (k === 'wp') return min > 200 ? ['no', 'Carga, pero con fondo negro (sin transparencia)'] : ['mid', 'Carga · mira en pantalla si se mueve y si es transparente'];
+    if (max < 40) return ['no', 'No se ve nada (queda invisible)'];
+    if (min > 200) return ['no', 'Se ve, pero con fondo negro (sin transparencia)'];
+    return ['ok', 'Se ve, avanza y con transparencia'];
+  }
+
+  var TESTS = [
+    { id: 't1', name: 'Animación Lottie', sub: 'animación vectorial, liviana', ms: 8000, start: lotStart, stop: function () { if (lot) lot.pause(); },
+      res: function (fps) { return !lotOk ? ['no', 'No cargó'] : fpsRes(fps); } },
+    { id: 't2', name: 'Texto 3D con CSS', sub: 'cualquier texto, con profundidad y brillo', ms: 7000, start: function () {}, stop: function () {}, res: function (fps) { return fpsRes(fps); } },
+    { id: 't3', name: 'Texto 3D real', sub: 'WebGL: volumen, luces y reflejos', ms: 8000, start: glStart, stop: function () { if (gl3) gl3.stop(); },
+      res: function (fps) { if (!gl3) return ['no', 'No funciona aquí (' + (glErr || 'sin WebGL') + ')']; var soft = /swiftshader|llvmpipe|software|basic render/i.test(gl3.gpu); var r = fpsRes(fps); return soft ? [r[0] === 'ok' ? 'mid' : r[0], r[1] + ' · sin aceleración de la tarjeta de video'] : r; } },
+    { id: 't4', name: 'Videos transparentes', sub: 'tres formatos; mira cuál se ve bien', ms: 7000, start: vidStart, stop: vidStop, res: null },
+    { id: 't5', name: 'Cortina', sub: 'tapa la pantalla y se abre', ms: 4200, start: function () { var e = $('t5'); e.className = 'on'; void e.offsetWidth; e.className = 'on go'; }, stop: function () {}, res: function (fps) { return fpsRes(fps); } }
+  ];
+  function fpsRes(fps) {
+    var txt = Math.round(Math.min(fps, base)) + ' de ' + Math.round(base) + ' cuadros por segundo';
+    return fps >= base * 0.85 ? ['ok', 'Fluida · ' + txt] : fps >= base * 0.55 ? ['mid', 'Algo lenta · ' + txt] : ['no', 'Lenta · ' + txt];
+  }
+  function show(id) { var s = document.querySelectorAll('section'); for (var i = 0; i < s.length; i++) s[i].className = s[i].id === id ? 'on' : ''; }
+  function tag(html) { $('tag').innerHTML = html; $('tag').style.display = html ? 'block' : 'none'; }
+
+  var only = parseInt(Q.p, 10) || 0;
+  function run(i) {
+    var list = only ? [TESTS[only - 1] || TESTS[0]] : TESTS;
+    if (i >= list.length) { if (only) return run(0); return results(); }
+    var t = list[i], f0 = frames, t0 = Date.now();
+    show(t.id); tag('Prueba ' + (only || i + 1) + ' de ' + TESTS.length + ' · ' + t.name + '<small>' + t.sub + '</small>');
+    t.start();
+    setTimeout(function () {
+      var fps = (frames - f0) / ((Date.now() - t0) / 1000);
+      if (t.res) R[t.id] = t.res(fps); else { R.v9 = vidResult('v9'); R.v8 = vidResult('v8'); R.wp = vidResult('wp'); }
+      t.stop(); run(i + 1);
+    }, t.ms);
+  }
+  function results() {
+    var rows = [['Animación Lottie', R.t1], ['Texto 3D con CSS', R.t2], ['Texto 3D real', R.t3], ['Video A (VP9)', R.v9], ['Video B (VP8)', R.v8], ['Imagen animada C', R.wp], ['Cortina', R.t5]], h = '';
+    rows.forEach(function (r) { var v = r[1] || ['mid', 'Sin dato']; h += '<div class="row"><b>' + r[0] + '</b><span class="' + v[0] + '">' + (v[0] === 'ok' ? '✔ ' : v[0] === 'no' ? '✘ ' : '● ') + v[1] + '</span></div>'; });
+    $('rows').innerHTML = h;
+    var chrome = (navigator.userAgent.match(/Chrom(?:e|ium)\/(\d+)/) || [])[1];
+    $('env').textContent = (inObs ? 'OBS ' + (window.obsstudio.pluginVersion || '') : 'Fuera de OBS') + ' · Chrome ' + (chrome || '?') + ' · ' + window.innerWidth + '×' + window.innerHeight + ' · ' + Math.round(base) + ' cuadros por segundo' + (gl3 && gl3.gpu ? ' · ' + gl3.gpu : '') + ' — Sácale una foto a esta pantalla y mándasela a Code 1.';
+    show('res'); tag('');
+    setTimeout(function () { run(0); }, Q.vtest ? 3000 : 25000);
+  }
+  // primero mide cuántos cuadros por segundo da la página sin nada en pantalla
+  setTimeout(function () {
+    var f0 = frames, t0 = Date.now();
+    setTimeout(function () { base = Math.max(1, (frames - f0) / ((Date.now() - t0) / 1000)); run(0); }, 1500);
+  }, 800);
+  window.capaPrueba = { R: R, V: V };
+})();
+</script>
+</body>
+</html>

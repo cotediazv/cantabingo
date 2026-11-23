@@ -26,6 +26,7 @@ body.solo video{position:fixed;inset:0;width:100%;height:100%;object-fit:contain
 #aviso b{font-family:var(--f-display);font-size:40px;text-transform:uppercase;color:var(--c)}
 .flotante{position:fixed;bottom:16px;border:1px solid rgba(255,255,255,.5);background:rgba(0,0,0,.6);color:#fff;border-radius:999px;padding:10px 18px;font:700 16px var(--f-texto);cursor:pointer;text-decoration:none}
 #son{right:16px}#volver{left:16px}
+#tw{position:fixed;inset:0;width:100%;height:100%;border:0;background:#000}
 /* ===== los tres locales ===== */
 .hub{max-width:1280px;margin:0 auto;padding:28px 20px 40px;display:grid;gap:26px}
 .hub h1{margin:0;font-family:var(--f-display);font-weight:800;text-transform:uppercase;font-size:clamp(34px,5vw,56px);line-height:1;text-align:center}
@@ -65,7 +66,7 @@ body.solo .pant{height:100dvh}
 <script>
 const LOCALES={
   kennedy:{n:'Mercado Kennedy',c:'#47b8e6',canal:'krbstagekennedy',whep:'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/c24ccde66ad7d935841dd934d9b3e1cf/webRTC/play'},
-  tobalaba:{n:'Espacio Gastronómico Tobalaba',c:'#e5413a',canal:'krbstage3',whep:'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/9c4d261a1b6c2fb79842b6d3821b9018/webRTC/play'},
+  tobalaba:{n:'Espacio Gastronómico Tobalaba',c:'#e5413a',canal:'krbstage3',respaldoTwitch:true,whep:'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/9c4d261a1b6c2fb79842b6d3821b9018/webRTC/play'},
   frida:{n:'Frida Kahlo',c:'#e0338f',canal:'krbstage',whep:'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/2c9c627707b0fbc53e20c611f84235a0/webRTC/play'}
 };
 const SALA='https://cantabingo.onrender.com';
@@ -89,7 +90,17 @@ if(LOCALES[sel]){
     <a class="flotante" id="volver" href="envivo.html">← Locales</a><button class="flotante" id="son" hidden>🔇 Activar sonido</button>`);
   const v=document.getElementById('v'),aviso=document.getElementById('aviso'),estado=document.getElementById('estado'),son=document.getElementById('son');
   let pc=null,viendo=false;
-  son.onclick=()=>{v.muted=!v.muted;if(!v.muted)v.play().catch(()=>{});son.textContent=v.muted?'🔇 Activar sonido':'🔊 Silenciar'};
+  // Respaldo (pedido de Cote, Tobalaba): si no llega la señal de nuestro servidor, la de Twitch si está en vivo; si no, la pantalla del local
+  let tw=null;
+  const twSrc=()=>`https://player.twitch.tv/?channel=${L.canal}&parent=${location.hostname}&parent=www.krbstage.cl&parent=krbstage.cl&muted=${v.muted}&autoplay=true&controls=false`;
+  const twOn=()=>{if(tw)return;tw=document.createElement('iframe');tw.id='tw';tw.allow='autoplay; fullscreen';tw.title='En vivo (Twitch)';tw.src=twSrc();
+    v.before(tw);pfondo.hidden=true;son.hidden=false};
+  const twOff=()=>{if(tw){tw.remove();tw=null}};
+  function revisarTw(){if(!L.respaldoTwitch||viendo)return;
+    fetch(`${SALA}/api/web/twitch`).then(r=>r.json()).then(j=>{if(viendo)return;const c=(j.canales||[]).find(x=>x.canal===L.canal);
+      if(c&&c.vivo)twOn();else{twOff();pfondo.hidden=false;son.hidden=true}}).catch(()=>{})}
+  if(L.respaldoTwitch)setInterval(revisarTw,20000);
+  son.onclick=()=>{v.muted=!v.muted;if(!v.muted)v.play().catch(()=>{});son.textContent=v.muted?'🔇 Activar sonido':'🔊 Silenciar';if(tw)tw.src=twSrc()};
   const cerrar=()=>{if(pc){try{pc.close()}catch(_){}pc=null}};
   const pfondo=document.getElementById('pfondo'),escCaja=()=>{const c=pfondo.querySelector('.pant-caja'),f=c&&c.querySelector('iframe');if(f)f.style.transform=`scale(${c.clientWidth/1920})`};
   const reesc=()=>{escCaja();setTimeout(escCaja,300);setTimeout(escCaja,800)};
@@ -98,7 +109,7 @@ if(LOCALES[sel]){
   // los botones se esconden a los 3 s y vuelven al tocar la pantalla
   let tLimpio;const mostrar=()=>{document.body.classList.remove('limpio');clearTimeout(tLimpio);tLimpio=setTimeout(()=>document.body.classList.add('limpio'),3000)};
   addEventListener('pointerdown',mostrar);mostrar();
-  const reintentar=msg=>{viendo=false;cerrar();aviso.hidden=false;son.hidden=true;v.style.visibility='hidden';pfondo.hidden=false;estado.textContent=msg;setTimeout(conectar,5000)};
+  const reintentar=msg=>{viendo=false;cerrar();aviso.hidden=false;son.hidden=!tw;v.style.visibility='hidden';pfondo.hidden=!!tw;estado.textContent=msg;revisarTw();setTimeout(conectar,5000)};
   function conectar(){
     cerrar();
     pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.cloudflare.com:3478'}],bundlePolicy:'max-bundle'});
@@ -115,7 +126,7 @@ if(LOCALES[sel]){
       .catch(()=>{clearTimeout(plazo);if(pc===este)reintentar('Sin transmisión en este momento. Se conecta sola apenas empiece.')});
   }
   v.style.visibility='hidden';
-  v.addEventListener('playing',()=>{viendo=true;aviso.hidden=true;son.hidden=false;v.style.visibility='';pfondo.hidden=true});
+  v.addEventListener('playing',()=>{viendo=true;twOff();aviso.hidden=true;son.hidden=false;v.style.visibility='';pfondo.hidden=true});
   conectar();
 }else{
   // ===== los tres locales =====

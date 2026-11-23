@@ -15,12 +15,62 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Baloo+2:wght@800&family=Source+Sans+3:wght@700;900&display=swap">
   <link rel="stylesheet" href="styles.css">
+  <!-- Diseño nuevo (pedido de Cote, 22 nov): todo bajo «html.t2»; se apaga en el Centro de control o con ?tema=0 -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Manrope:wght@500;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+  <link rel="stylesheet" href="tema.css">
+  <link rel="stylesheet" href="tema-bingo.css">
+  <link rel="stylesheet" href="tema-light.css">
+  <link rel="stylesheet" href="tema-rosco.css">
+  <link rel="stylesheet" href="tema-juegos.css">
+  <link rel="stylesheet" href="tema-master.css">
+  <script>
+    // La clase del diseño nuevo se pone antes de dibujar, para que no parpadee (tema.js la mantiene al día con el servidor)
+    (function () {
+      var q = /[?&]tema=([01])/.exec(location.search), v = null, ok = false;
+      try { v = localStorage.getItem('tema'); } catch (e) { v = null; }
+      // El diseño nuevo necesita un navegador reciente (color-mix y :has, Chrome 111 o superior); en uno más antiguo se
+      // desarmaría, así que ahí queda siempre el diseño anterior
+      try { ok = !!(window.CSS && CSS.supports && CSS.supports('color', 'color-mix(in srgb, red 50%, blue)') && CSS.supports('selector(:has(a))')); } catch (e) { ok = false; }
+      window.__t2ok = ok;
+      if (ok && (q ? q[1] === '1' : v !== '0')) document.documentElement.className += ' t2';
+      // juegos.krbstage.cl es la dirección del público (pedido de Cote, 22 nov: «juegos.krbstage.cl lleva a KRB Kids sin
+      // registro»): quien la abre a secas llega a KRB Kids, sin pedir nombre ni clave. Los QR siguen llevando a la sala
+      // (#/jugar) y el moderador entra por cantabingo.onrender.com.
+      if (location.hostname === 'juegos.krbstage.cl' && /^#?\/?$/.test(location.hash) && location.pathname === '/') location.replace('/#/kids');
+      // Dirección a la que apuntan los QR que ve el público (se elige en el Centro de control; vacía = esta misma)
+      try { window.__pub = localStorage.getItem('pub') || ''; } catch (e) { window.__pub = ''; }
+      window.pubBase = function () { return window.__pub ? window.__pub + '/' : location.origin + location.pathname; };
+      // Monitores del GC Master (?mon=1): la misma pantalla en modo liviano (sin fondo animado), para no cargar el computador
+      window.__mon = /[?&]mon=1/.test(location.search) ? '&mon=1' : '';
+      if (window.__mon) document.documentElement.className += ' mon';
+    })();
+  </script>
 </head>
 <body>
   <main id="app"></main>
   <div id="toast" role="status"></div>
   <img class="krb-mark" src="krb-stage.svg" alt="" aria-hidden="true">
   <script>
+    // Pantallas de los locales en navegadores antiguos (pedido de Cote, 21 nov: el Chrome del decodificador de Kennedy y el
+    // iPad viejo no ejecutan esta página y quedaba solo el logo): pasan solas a la versión liviana (pv.html), con las mismas
+    // reglas. Escrito en JavaScript antiguo para que corra en cualquier navegador.
+    (function () {
+      // Los enlaces cortos escritos con «#» (ej. cantabingo.onrender.com/#/vk) llevan al mismo lugar que sin «#»
+      var SHORT = { '#/vk': '#/vertical/kennedy', '#/cc': '/cc.html' };
+      var hash = location.hash || '';
+      var to = SHORT[hash.toLowerCase().replace(/\/+$/, '')];
+      if (to && to.charAt(0) === '/') { location.replace(to + location.search); return; }
+      if (to) hash = to;
+      var m = /^#\/(vertical|vertical-in|pantalla)\/([a-z-]+)/.exec(hash);
+      var old = false;
+      if (m) {
+        try { new Function('try{}catch{}; var o = { ...{} }; var f = async function () {}; return [1].at(-1);')(); } catch (e) { old = true; }
+        if (!old && (!Object.fromEntries || !(window.CSS && CSS.supports && CSS.supports('inset', '0')))) old = true;
+      }
+      if (!old) { if (hash !== location.hash) location.replace(location.pathname + location.search + hash); return; }
+      var q = location.search.replace(/^\?/, '');
+      location.replace('/pv.html?p=' + m[2] + (m[1] === 'vertical' ? '&girar=1' : '') + (q ? '&' + q : ''));
+    })();
     // Con ?diag=1: navegador y errores de carga, aunque el resto de la página no funcione (escrito para navegadores antiguos)
     (function () {
       if (location.search.indexOf('diag') < 0) return;
@@ -33,6 +83,7 @@
       }, 1500);
     })();
   </script>
+  <script src="tema.js"></script>
   <script src="patterns.js"></script>
   <script src="app.js"></script>
   <script src="wheel-ui.js"></script>
@@ -43,9 +94,13 @@
   <script src="agenda-ui.js"></script>
   <script src="vote-ui.js"></script>
   <script src="desafio-ui.js"></script>
+  <script src="gameintro.js"></script>
+  <script src="gamevote-ui.js"></script>
   <script src="insta-ui.js"></script>
   <script src="light-ui.js"></script>
   <script src="kids-ui.js"></script>
   <script src="vertical-ui.js"></script>
+  <script src="master-ui.js"></script>
+  <script src="capa-ui.js"></script>
 </body>
 </html>

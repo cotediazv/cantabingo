@@ -4,22 +4,23 @@
 const { fail } = require('./util');
 
 const BASE_STAGES = ['bingo', 'qr', 'karaoke', 'show', 'insta', 'none'];
-const BASE_NAMES = { bingo: 'Bingo', qr: 'QR grande', karaoke: 'Karaoke', show: 'Show', insta: 'Instagram', none: 'Nada', cartelera: 'Cartelera de la semana' };
+const BASE_NAMES = { bingo: 'Bingo', qr: 'QR grande', karaoke: 'Karaoke', show: 'Show', insta: 'Instagram', none: 'Nada', cartelera: 'Cartelera de la semana', custom: 'GC personalizable', info: 'Información que va cambiando' };
 
 module.exports = function stage(ctx) {
   const { db, save, games } = ctx;
   const stages = () => [...BASE_STAGES, ...games.stages()];
-  // Pedido de Cote: el juego que está en actividad tiene prioridad. Mientras haya, por ejemplo, un rosco en juego, la
-  // pantalla queda en El Rosco aunque se apriete otra cosa (un botón del bingo, el escenario a mano o el karaoke
+  // Pedido de Cote: el juego que está en actividad tiene prioridad. Mientras haya, por ejemplo, un rosko en juego, la
+  // pantalla queda en El Rosko aunque se apriete otra cosa (un botón del bingo, el escenario a mano o el karaoke
   // automático); al terminar, todo vuelve a funcionar como siempre. setStage devuelve false si no se cambió.
   const stageLocked = (show) => games.lockedStage(show);
   const setStage = (show) => {
     const lock = stageLocked(show);
-    if (lock) { if (db.stage !== lock) { db.stage = lock; save(); ctx.broadcastAll(); } return false; }
+    if (lock) { if (db.stage !== lock) { db.stage = lock; save(); ctx.broadcastAll(); ctx.aviso(); } return false; }
     const changed = db.stage !== show;
     db.stage = show;
+    if (changed) ctx.gcper.off(); // un juego tomó la pantalla: el GC PER sale
     save();
-    if (changed) ctx.broadcastAll(); // los celulares se enteran del cambio de juego
+    if (changed) { ctx.broadcastAll(); ctx.aviso(); } // los celulares y las pantallas se enteran al instante
     return undefined;
   };
   const stageNames = () => ({ ...BASE_NAMES, ...games.names() });
@@ -29,6 +30,7 @@ module.exports = function stage(ctx) {
     db.people = {};
     games.reset();
     db.stage = 'bingo';
+    if (db.gcper) db.gcper.on = false;
   };
   Object.assign(ctx, { setStage, stageLocked, stageNames, stages, resetEvent });
 
@@ -37,7 +39,7 @@ module.exports = function stage(ctx) {
     routes() {
       const { app, requireAdmin } = ctx;
       // Leer la pantalla actual es público, para que la fuente de OBS no necesite iniciar sesión; cambiarla es del moderador.
-      app.get('/api/stage', (_req, res) => res.json({ show: stageLocked(db.stage) || (stages().includes(db.stage) ? db.stage : 'bingo') }));
+      app.get('/api/stage', (_req, res) => res.json({ show: stageLocked(db.stage) || (stages().includes(db.stage) ? db.stage : 'bingo'), per: ctx.gcper.main() }));
       app.post('/api/stage', requireAdmin, (req, res) => {
         const show = String((req.body || {}).show);
         if (!stages().includes(show)) return fail(res, 400, 'Opción no válida');
@@ -45,6 +47,7 @@ module.exports = function stage(ctx) {
           const name = stageNames()[db.stage] || 'Un juego';
           return fail(res, 409, `${name} está en juego: la pantalla sigue en ${name} hasta que termine la partida`);
         }
+        if (ctx.gcper.off()) ctx.aviso(); // tocar un botón del GC saca el GC PER, aunque el escenario sea el mismo
         if (show === 'karaoke') ctx.karaoke.refresh(); // primera lectura inmediata, sin esperar al siguiente ciclo
         return res.json({ show });
       });

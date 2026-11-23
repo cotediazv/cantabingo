@@ -84,8 +84,17 @@ test('rosco: fallo pasa el turno, deshacer, empate y desempate por sorteo', asyn
   w = await srv.admin.get(`/api/wheels/${id}`);
   assert.equal(w.turn, 0);
   assert.equal(w.players[0].status[0], 'pending');
-  // Los dos fallan todo → empate
-  for (let i = 0; i < 10; i++) { await act(id, 'start'); await act(id, 'miss'); } // el turno se alterna solo
+  // Los dos fallan todo → empate. Cada 2 rondas hay que desplegar el ranking de la Trivia antes de seguir
+  let rankings = 0;
+  for (let i = 0; i < 10; i++) {
+    if ((await srv.admin.get(`/api/wheels/${id}`)).rankDue) {
+      const r = await srv.admin.call('POST', `/api/wheels/${id}/act`, { action: 'start' });
+      assert.equal(r.status, 400); // sin ranking no se puede iniciar la pregunta
+      await act(id, 'rank'); rankings++;
+    }
+    await act(id, 'start'); await act(id, 'miss'); // el turno se alterna solo
+  }
+  assert.ok(rankings >= 1);
   w = await srv.admin.get(`/api/wheels/${id}`);
   assert.equal(w.finished, true);
   assert.deepEqual(w.tie && w.tie.names, ['ANA', 'BETO']);

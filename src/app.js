@@ -13,6 +13,7 @@ const GAMES = [
   require('./games/votacion'),
   require('./games/desafio'),
   require('./games/sortear-juego'),
+  require('./games/votar-juego'),
 ];
 
 function createApp() {
@@ -31,11 +32,19 @@ function createApp() {
     salaVenue: () => (Object.values(db.sessions)[0] || {}).theme || '',
   };
   Object.assign(ctx, require('./core/auth')(ctx)); // validToken, requireAdmin, requireLocal, staffVenue
+  // Registro de clientes (pedido de Cote, 22 nov): va antes de las rutas, porque mira pasar lo que el público hace desde el
+  // celular (entrar, responder la Trivia, votar, pedir canciones…) y lo anota en la ficha de cada persona
+  require('./features/clientes')({ app, db, requireAdmin: ctx.requireAdmin, dir: path.dirname(DATA_FILE), port: process.env.PORT || 3000 });
+  ctx.aviso = require('./core/aviso')(ctx); // aviso inmediato a las pantallas (/api/live)
+  ctx.gcper = require('./features/gcper')(ctx); // GC PER de la sala de juegos
+  // Confeti en el GC de OBS cada vez que hay un ganador (pedido de Cote, 23 nov): bingo (ganador confirmado), El Rosko y
+  // su Trivia, El Festival y El objeto más extraño. Es el efecto «Confeti» de la capa gráfica, en el local de la sala abierta.
+  ctx.festejo = () => { const s = Object.values(db.sessions)[0]; if (s && ctx.capa) ctx.capa.fire(s.theme || 'frida', 'confeti'); };
   const stage = require('./core/stage')(ctx); // setStage, stageLocked, stageNames, resetEvent
   require('./bingo')(ctx); // findPlayer, broadcast, broadcastAll, connectedNames, startSession, closeSession…
 
   // Juegos y funciones de los locales (el karaoke va antes de la votación como siempre: la sala light lo necesita)
-  const [rosco, sorteo, votacion, desafio, sortearJuego] = GAMES;
+  const [rosco, sorteo, votacion, desafio, sortearJuego, votarJuego] = GAMES;
   ctx.games.register(rosco, ctx);
   ctx.games.register(sorteo, ctx);
   ctx.karaoke = require('./features/karaoke/server')({ app, db, save, requireAdmin: ctx.requireAdmin, requireLocal: ctx.requireLocal, fail,
@@ -48,8 +57,11 @@ function createApp() {
   const dayVenue = () => ctx.salaVenue() || (db.karaoke || {}).venue || 'frida';
   ctx.insta = require('./features/insta/server')({ app, db, save, requireAdmin: ctx.requireAdmin, fail, venue: dayVenue });
   // Sala light: karaoke, show y cartelera en otro local, al mismo tiempo que la sala principal
-  ctx.light = require('./features/light/server')({ app, db, save, requireAdmin: ctx.requireAdmin, requireLocal: ctx.requireLocal, fail, karaoke: ctx.karaoke, insta: ctx.insta });
-  require('./features/vertical/server')({ app, db, save, requireAdmin: ctx.requireAdmin, fail, karaoke: ctx.karaoke, dir: path.dirname(DATA_FILE) }); // pantallas de los locales
+  ctx.light = require('./features/light/server')({ app, db, save, requireAdmin: ctx.requireAdmin, requireLocal: ctx.requireLocal, fail, karaoke: ctx.karaoke, insta: ctx.insta, aviso: ctx.aviso });
+  ctx.capa = require('./features/capa')({ app, requireLocal: ctx.requireLocal, fail, aviso: ctx.aviso }); // capa gráfica sobre la cámara (botones del GC Master)
+  require('./features/vertical/server')({ app, db, save, requireAdmin: ctx.requireAdmin, fail, karaoke: ctx.karaoke, perOf: ctx.gcper.of, dir: path.dirname(DATA_FILE) }); // pantallas de los locales
+  // Conectados (pedido de Cote, 22 nov): números en vivo por local, gráfico de las últimas 3 horas y registro por jornada
+  require('./features/conectados')({ app, db, save, requireAdmin: ctx.requireAdmin, port: process.env.PORT || 3000, salaOf: ctx.salaOf });
   require('./features/web/youtube')({ app }); // últimos videos del canal, para la página web
   require('./features/web/twitch')({ app }); // videos y transmisiones en vivo de Twitch, para la página web
   require('./features/web/instagram-web')({ app, db, save, insta: ctx.insta }); // últimos videos de Instagram de cada local
@@ -57,6 +69,8 @@ function createApp() {
   // Programación del local del día: el de la sala abierta o, si no hay, el elegido en la sección Karaoke
   require('./features/agenda/server')({ app, db, save, requireAdmin: ctx.requireAdmin, fail, currentVenue: dayVenue });
   ctx.games.register(sortearJuego, ctx);
+  ctx.games.register(votarJuego, ctx);
+  require('./features/tema')(ctx); // diseño de las pantallas y dirección de los QR
   stage.routes();
   require('./features/horarios')(ctx); // karaoke automático del jueves y salas automáticas
 

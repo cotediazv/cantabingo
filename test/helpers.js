@@ -88,7 +88,8 @@ async function startServer({ env = {}, data, port: fixedPort } = {}) {
             buf = buf.slice(i + 2);
             const data = chunk.split('\n').filter((l) => l.startsWith('data: ')).map((l) => l.slice(6)).join('\n');
             if (!data) continue;
-            const msg = JSON.parse(data);
+            let msg = data; // los avisos simples (/api/live) son texto, no JSON
+            try { msg = JSON.parse(data); } catch { /* texto */ }
             messages.push(msg);
             for (const w of [...waiters]) if (w.pred(msg)) { waiters.splice(waiters.indexOf(w), 1); w.resolve(msg); }
           }

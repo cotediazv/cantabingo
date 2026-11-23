@@ -1,14 +1,19 @@
 // Sorteo de concursantes: elige al azar, entre las personas que se han unido al bingo,
-// a quienes pasarán a jugar El Rosco. El sorteo se ve en la pantalla de OBS.
+// a quienes pasarán a jugar El Rosko. El sorteo se ve en la pantalla de OBS.
 const crypto = require('crypto');
 
 const ROLL_MS = 6500; // cuánto dura la animación antes de revelar el nombre
-const MAX_PICKS = 4; // un rosco admite hasta 4 concursantes
+const MAX_PICKS = 4; // un rosko admite hasta 4 concursantes
 
 module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, refreshAll, connectedNames }) {
   const key = (name) => String(name).trim().toLowerCase().replace(/\s+/g, ' ');
   db.people ||= {}; // clave normalizada -> { name, at }
   db.raffle ||= { picked: [], roll: null };
+  // Pedido de Cote (21 nov): quien sale sorteado confirma en su celular si quiere jugar en el escenario
+  // («Sí, quiero jugar») o no («No, gracias, prefiero jugar online»); si no quiere, sale de la lista y no vuelve a entrar
+  // al sorteo de este rosco. confirm: nombre -> 'pending' | 'ok'; declined: los que prefirieron jugar online
+  const conf = () => (db.raffle.confirm ||= {});
+  const declined = () => (db.raffle.declined ||= []);
 
   const names = () => Object.values(db.people).sort((a, b) => a.name.localeCompare(b.name, 'es')).map((p) => p.name);
   const shuffle = (a) => {
@@ -21,23 +26,24 @@ module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, 
     const r = db.raffle;
     // Desempate del bingo: la misma tómbola, pero solo entre los ganadores empatados
     if (r.mode === 'tie' && r.tie) return res.json({ mode: 'tie', picked: [], roll: r.tie, rollMs: ROLL_MS, now: Date.now(), pool: r.tie.tied });
-    return res.json({ mode: 'rosco', picked: r.picked, roll: r.roll, rollMs: ROLL_MS, now: Date.now(), pool: names().filter((n) => connectedNames().has(n)).length });
+    const on = connectedNames(); const no = new Set(declined()); // una sola vez por consulta (la leen todos los celulares)
+    return res.json({ mode: 'rosco', picked: r.picked, confirm: conf(), declined: declined(), roll: r.roll, rollMs: ROLL_MS, now: Date.now(), pool: names().filter((n) => on.has(n) && !no.has(n)).length });
   });
 
   app.get('/api/people', requireAdmin, (_req, res) => { const on = connectedNames(); res.json({ names: names(), connected: names().filter((n) => on.has(n)) }); });
 
   app.delete('/api/people', requireAdmin, (_req, res) => {
     db.people = {};
-    db.raffle = { picked: [], roll: null };
+    db.raffle = { picked: [], roll: null, confirm: {}, declined: [] };
     save();
     res.json({ ok: true });
   });
 
   // Corregir un nombre mal escrito: se cambia en la lista, entre los elegidos del sorteo,
-  // en las sesiones de bingo abiertas (ganadores incluidos) y en los roscos ya creados.
+  // en las sesiones de bingo abiertas (ganadores incluidos) y en los roskos ya creados.
   app.post('/api/people/rename', requireAdmin, (req, res) => {
     const from = String((req.body || {}).from || '');
-    const to = String((req.body || {}).to || '').trim().replace(/\s+/g, ' ').slice(0, 30).toLocaleUpperCase('es');
+    const to = String((req.body || {}).to || '').trim().replace(/\s+/g, ' ').slice(0, 50).toLocaleUpperCase('es');
     if (!to) return fail(res, 400, 'Escribe el nombre corregido');
     if (!db.people[key(from)]) return fail(res, 404, 'Esa persona ya no está en la lista');
     if (key(to) !== key(from) && db.people[key(to)]) return fail(res, 400, 'Ya hay otra persona con ese nombre');
@@ -45,6 +51,8 @@ module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, 
     db.people[key(to)] = { name: to, at: Date.now() };
     const fix = (n) => (n === from ? to : n);
     db.raffle.picked = db.raffle.picked.map(fix);
+    if (conf()[from]) { conf()[to] = conf()[from]; delete conf()[from]; }
+    db.raffle.declined = declined().map(fix);
     if (db.raffle.roll) { db.raffle.roll.winner = fix(db.raffle.roll.winner); db.raffle.roll.names = db.raffle.roll.names.map(fix); }
     for (const s of Object.values(db.sessions || {})) {
       for (const pl of Object.values(s.players)) pl.name = fix(pl.name);
@@ -64,6 +72,7 @@ module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, 
     const name = String((req.body || {}).name || '');
     delete db.people[key(name)];
     db.raffle.picked = db.raffle.picked.filter((n) => n !== name);
+    delete conf()[name];
     if (db.raffle.roll && db.raffle.roll.winner === name) db.raffle.roll = null;
     save();
     res.json({ ok: true });
@@ -76,7 +85,7 @@ module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, 
     const all = names();
     // Solo entran al sorteo quienes están conectados en este momento
     const online = connectedNames();
-    const eligible = all.filter((n) => online.has(n) && !r.picked.includes(n));
+    const eligible = all.filter((n) => online.has(n) && !r.picked.includes(n) && !declined().includes(n)); // quien prefirió jugar online no entra
     if (!eligible.length) return fail(res, 400, all.length ? 'No hay participantes conectados por sortear en este momento' : 'Todavía no hay participantes: se agregan al unirse al bingo');
     const winner = eligible[crypto.randomInt(eligible.length)];
     // Nombres que desfilan durante la animación (el elegido va incluido)
@@ -84,12 +93,13 @@ module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, 
     r.roll = { winner, names: shuffle([...parade, winner]), at: Date.now() };
     r.mode = 'rosco';
     r.picked.push(winner);
+    conf()[winner] = 'pending'; // espera que confirme desde su celular
     setStage('sorteo');
     save();
     res.json({ winner, picked: r.picked });
   });
 
-  // El panel del sorteo de El Rosco pone la tómbola en pantalla al abrirse
+  // El panel del sorteo de El Rosko pone la tómbola en pantalla al abrirse
   app.post('/api/raffle/open', requireAdmin, (_req, res) => {
     db.raffle.mode = 'rosco';
     setStage('sorteo');
@@ -118,16 +128,44 @@ module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, 
     res.json({ winner: pick.name });
   });
 
+  // Respuesta de quien salió sorteado, desde su celular: jugar en el escenario o preferir jugar online
+  app.post('/api/raffle/answer', (req, res) => {
+    const b = req.body || {};
+    const pl = (((db.sessions || {})[String(b.sid || '')] || {}).players || {})[String(b.token || '')];
+    if (!pl) return fail(res, 403, 'Primero únete a la sala con tu nombre');
+    const r = db.raffle;
+    const name = r.picked.find((n) => key(n) === key(pl.name));
+    if (!name) return fail(res, 409, 'No estás entre los sorteados');
+    if (r.roll && r.roll.winner === name && Date.now() - r.roll.at < ROLL_MS) return fail(res, 409, 'Espera a que termine el sorteo en pantalla');
+    if (b.play) conf()[name] = 'ok';
+    else {
+      r.picked = r.picked.filter((n) => n !== name);
+      delete conf()[name];
+      if (!declined().includes(name)) declined().push(name);
+      if (r.roll && r.roll.winner === name) r.roll = null; // la pantalla deja de anunciarlo
+    }
+    save();
+    res.json({ picked: r.picked, confirm: conf(), declined: declined() });
+  });
+  // El animador confirma a mano (por ejemplo, la persona ya está en el escenario y no contestó en el celular)
+  app.post('/api/raffle/confirm', requireAdmin, (req, res) => {
+    const name = String((req.body || {}).name || '');
+    if (!db.raffle.picked.includes(name)) return fail(res, 404, 'Esa persona no está entre los sorteados');
+    conf()[name] = 'ok';
+    save();
+    res.json({ picked: db.raffle.picked, confirm: conf() });
+  });
   app.post('/api/raffle/remove', requireAdmin, (req, res) => {
     const name = String((req.body || {}).name || '');
     db.raffle.picked = db.raffle.picked.filter((n) => n !== name);
+    delete conf()[name];
     if (db.raffle.roll && db.raffle.roll.winner === name) db.raffle.roll = null;
     save();
     res.json({ picked: db.raffle.picked });
   });
 
   app.post('/api/raffle/reset', requireAdmin, (_req, res) => {
-    db.raffle = { picked: [], roll: null };
+    db.raffle = { picked: [], roll: null, confirm: {}, declined: [] };
     save();
     res.json({ ok: true });
   });

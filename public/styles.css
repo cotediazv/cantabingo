@@ -2477,3 +2477,841 @@ body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "So
 .dg-intro small { font-size: 3vh; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; }
 .dg-intro b { font-size: min(8vh, calc(70vw / (var(--n, 10) * .6))); font-weight: 900; text-transform: uppercase; color: var(--gc-yellow); text-shadow: .4vh .4vh 0 var(--gc-shade); }
 @media (prefers-reduced-motion: reduce) { .d-opts > div { transition: none; animation: none !important; } }
+/* KRB Kids: juegos con movimiento (Salto, Carrera, Fruta) */
+.kz-canvas { display: block; width: min(100%, 720px); aspect-ratio: 8 / 5; border-radius: 22px; box-shadow: 0 6px 0 rgba(74, 44, 138, .25); touch-action: none; background: #c9f2ff; }
+.kz-canvas.kz-tall { width: min(100%, 420px); aspect-ratio: 600 / 760; }
+.kz-pad3 { grid-template-columns: 1fr 1.3fr 1fr; width: min(100%, 420px); }
+.kz-pad2 { grid-template-columns: 1fr 1fr; width: min(100%, 360px); }
+.kz-pad1 { grid-template-columns: 1fr; width: min(100%, 300px); }
+.kz-pad .kz-jump { background: #ffc400; color: #4a2c8a; font-size: 2.4rem; }
+.kz-canvas.kz-tall { width: auto; height: min(56vh, 532px); max-width: 100%; }
+
+/* KRB Kids: Laberinto (cuadrado) y Topos (hoyos) */
+.kz-canvas.kz-square { width: auto; height: min(52vh, 560px); max-width: 100%; aspect-ratio: 1; background: #fff3c4; }
+.kz-holes { display: grid; grid-template-columns: repeat(var(--c), 1fr); gap: 14px; width: min(100%, 420px); }
+.kz-hole { position: relative; aspect-ratio: 1; border: 0; border-radius: 50%; background: radial-gradient(ellipse at 50% 70%, #5a3d1e 0 45%, #2bb24c 46%); overflow: hidden; box-shadow: 0 5px 0 rgba(74, 44, 138, .25); touch-action: manipulation; padding: 0; }
+.kz-hole span { position: absolute; left: 0; right: 0; bottom: -70%; font-size: clamp(2.6rem, 14vw, 4.4rem); line-height: 1; transition: bottom .18s ease-out; }
+.kz-hole.up span { bottom: 18%; }
+.kz-hole.hit { background: radial-gradient(ellipse at 50% 70%, #ffc400 0 45%, #2bb24c 46%); }
+/* KRB Kids: fondos de los niveles 6 a 8 (Carrera tiene 8 niveles) */
+body.kids[data-kz-level="6"] { background: linear-gradient(160deg, #ffadad 0%, #e63946 100%) fixed; }
+body.kids[data-kz-level="7"] { background: linear-gradient(160deg, #a0c4ff 0%, #1d3557 100%) fixed; }
+body.kids[data-kz-level="8"] { background: linear-gradient(160deg, #fdffb6 0%, #ff8c1a 100%) fixed; }
+
+/* Menú de juegos: pestañas «Sortear juegos» / «Elegir libremente» (pedido de Cote) */
+.games-nav .g-tabs { display: flex; gap: 0; margin: 4px 0 12px; border-radius: 14px; overflow: hidden; border: 2px solid #5a54a0; }
+.games-nav .g-tabs button { flex: 1 1 0; margin: 0; border: 0; border-radius: 0; padding: 14px 6px; font-weight: 900; font-size: 1.05rem; background: var(--surface, #1d1838); color: var(--muted, #b9b4dc); }
+.games-nav .g-tabs button.on { background: #ffc400; color: #1a1a1a; }
+.games-nav .g-free-title { display: none; margin: 0 0 6px; text-align: center; font-weight: 900; color: #ffc400; font-size: 1.1rem; }
+.games-nav.g-free .g-free-title { display: block; }
+.games-nav.g-free .g-plan, .games-nav.g-free .g-draw, .games-nav.g-free .g-undo, .games-nav.g-free .g-direct { display: none !important; }
+.games-nav.g-free [data-game] { min-height: 110px; font-size: 1.15rem; border: 2px solid #ffc400; }
+.games-nav.g-free [data-game] .g-played-note, .games-nav.g-free [data-game].g-played { opacity: 1; }
+.games-nav.g-free .g-played::after { content: none; }
+
+/* Pestañas del menú de juegos: sin el alto de los botones de juego (regla .act-nav > div > *) */
+.games-nav .g-tabs button { display: block; min-height: 0; }
+
+/* Centro de control: botón grande para ir a la sala en juego o crear una */
+.home-create.ctl-go { margin: 6px 0 14px; padding: 16px 14px; font-size: 1.2rem; }
+.home-create.ctl-go span { font-size: 1.6rem; }
+
+/* ---------- Elegir el juego: pestañas «Manual» / «Por sorteo» / «Por votación» (pedido de Cote, 21 nov) ---------- */
+.games-nav .g-tabs button { line-height: 1.2; }
+.games-nav .g-vote { display: none; }
+.games-nav.g-vmode .g-vote { display: block; margin-bottom: 12px; }
+.games-nav.g-vmode [data-game-draw], .games-nav.g-vmode [data-game-undo], .games-nav.g-vmode .g-plan, .games-nav.g-vmode .g-direct, .games-nav.g-vmode .g-free-title { display: none !important; }
+.g-vote .gvp-help { margin: 0 0 10px; text-align: center; font-weight: 700; color: var(--muted, #b9b4dc); line-height: 1.35; }
+.g-vote .gvp-now { margin: 0 0 10px; text-align: center; font-weight: 900; font-size: 1.1rem; color: #ffc400; }
+.g-vote .gvp-now b { font-variant-numeric: tabular-nums; }
+.g-vote .gvp-win { margin: 0 0 10px; text-align: center; font-weight: 900; font-size: 1.35rem; color: #ffc400; }
+.g-vote .gvp-rows, .pgvote .pgv-rows { display: grid; gap: 6px; margin: 0 0 12px; }
+.g-vote .gvp-row, .pgvote .pgv-row { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 8px 12px; border-radius: 10px; font-weight: 800;
+  background: linear-gradient(90deg, rgba(255, 196, 0, .32) var(--p), rgba(255, 255, 255, .06) var(--p)); /* navegadores antiguos */
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 45%, transparent) var(--p), rgba(255, 255, 255, .06) var(--p)); border: 1px solid rgba(255, 255, 255, .14); }
+.g-vote .gvp-row b, .pgvote .pgv-row b { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.g-vote .gvp-row.dim, .pgvote .pgv-row.dim { opacity: .45; }
+.g-vote .gvp-row.win, .g-vote .gvp-row.sel, .pgvote .pgv-row.win, .pgvote .pgv-row.sel { border-color: #ffc400; }
+.g-vote .g-draw { width: 100%; margin-bottom: 6px; }
+.g-vote span { font-size: inherit; line-height: inherit; pointer-events: auto; } /* sin el tamaño de los íconos del menú */
+.g-vote .gvp-row span { overflow-wrap: anywhere; }
+
+/* Celular: los juegos para votar */
+.pgvote .pgv-opts { grid-template-columns: 1fr 1fr; }
+.pgvote .pgv-opts button { border-left: 8px solid var(--c); font-size: 1.2rem; padding: 18px 8px; }
+.pgvote .pvote-win { margin: 12px 0; }
+
+/* Tablero y GC: un gráfico en círculo por juego, con su porcentaje y sus votos */
+#gv { position: fixed; top: 0; right: 0; bottom: 0; left: 0; display: grid; place-items: center; padding: 3vh 3vw; box-sizing: border-box; z-index: 3; }
+#gv .gv-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; grid-gap: 3vw; gap: 3vw; max-width: 94vw; padding: 3.5vh 3.5vw; box-sizing: border-box; overflow: hidden;
+  border-radius: 4vh; text-align: center; color: #fff; background: rgba(14, 12, 30, .92); border: .7vh solid #ffc400; box-shadow: 0 2vh 6vh rgba(0, 0, 0, .55); }
+#gv .gv-main { display: grid; justify-items: center; grid-gap: 1.8vh; gap: 1.8vh; min-width: 0; }
+#gv .gv-main > * { max-width: 100%; box-sizing: border-box; }
+#gv .gv-top { font-size: 3.4vh; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; color: #ffc400; }
+#gv .gv-big { display: block; font-size: 7vh; font-weight: 900; line-height: 1.1; white-space: nowrap; overflow: hidden; }
+#gv .gv-line { margin: 0; font-size: 3.6vh; font-weight: 800; white-space: nowrap; overflow: hidden; }
+#gv .gv-line b { color: #ffc400; font-variant-numeric: tabular-nums; }
+#gv .gv-rings { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); justify-content: center; justify-items: center; grid-gap: 3vw; gap: 3vw; width: 100%; margin-top: 1vh; }
+#gv .gv-opt { display: grid; justify-items: center; grid-gap: 1.2vh; gap: 1.2vh; min-width: 0; transition: opacity .4s; }
+#gv .gv-ring { position: relative; width: 14vw; width: min(25vh, 14vw); }
+#gv .gv-ring svg { display: block; width: 100%; height: auto; transform: rotate(-90deg); }
+#gv .gv-track { fill: none; stroke: rgba(255, 255, 255, .14); stroke-width: 12; }
+#gv .gv-arc { fill: none; stroke: var(--c); stroke-width: 12; transition: stroke-dasharray .6s ease; }
+#gv .gv-in { position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+#gv .gv-in b { font-size: 3.4vw; font-size: min(6vh, 3.4vw); font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
+#gv .gv-in small { margin-top: .6vh; font-size: 1.4vw; font-size: min(2.4vh, 1.4vw); font-weight: 800; color: #d8d3ff; }
+#gv .gv-name { display: block; max-width: 16vw; font-size: 2.8vh; font-weight: 900; line-height: 1.15; white-space: normal; text-align: center; }
+#gv .gv-rings.n2 .gv-ring { width: 20vw; width: min(30vh, 20vw); }
+#gv .gv-rings.n2 .gv-name { max-width: 22vw; }
+#gv .gv-opt.dim { opacity: .35; }
+#gv .gv-opt.win .gv-ring, #gv .gv-opt.sel .gv-ring { filter: drop-shadow(0 0 1.6vh var(--c)); }
+#gv .gv-opt.win .gv-name, #gv .gv-opt.sel .gv-name { color: #ffc400; }
+#gv .gv-total { font-size: 2.6vh; font-weight: 800; color: #d8d3ff; min-height: 1em; }
+#gv .gv-qr { display: grid; justify-items: center; gap: 1vh; width: 20vh; padding: 1.4vh; border-radius: 2.2vh; background: #fff; }
+#gv .gv-qr .qr { display: block; width: 100%; height: auto; border: 0; padding: 0; border-radius: 0; }
+#gv .gv-qr b { font-size: 1.9vh; font-weight: 900; line-height: 1.15; text-transform: uppercase; color: #c4175e; }
+/* GC de OBS: cuadro abajo al centro, más chico y sin tapar el QR de la esquina */
+#gv.gv-gc { place-items: end center; padding: 0 0 4vh; }
+#gv.gv-gc .gv-card { grid-template-columns: 1fr; max-width: 72vw; padding: 2vh 2.6vw; gap: 1vh; }
+#gv.gv-gc .gv-main { gap: 1vh; }
+#gv.gv-gc .gv-top { font-size: 2.4vh; }
+#gv.gv-gc .gv-big { font-size: 4.6vh; }
+#gv.gv-gc .gv-line { font-size: 2.6vh; }
+#gv.gv-gc .gv-ring { width: 12vw; width: min(15vh, 12vw); }
+#gv.gv-gc .gv-name { max-width: 14vw; font-size: 2vh; }
+#gv.gv-gc .gv-in b { font-size: 2.6vw; font-size: min(3.8vh, 2.6vw); }
+#gv.gv-gc .gv-in small { font-size: 1.2vw; font-size: min(1.7vh, 1.2vw); }
+#gv.gv-gc .gv-rings.n2 .gv-ring { width: 14vw; width: min(17vh, 14vw); }
+#gv.gv-gc .gv-total { font-size: 2vh; }
+/* Pantalla de pie: los círculos de a dos y el QR abajo */
+@media (orientation: portrait) {
+  #gv { padding: 2.5vh 3vw 8vh; } /* abajo queda libre la franja de los logos del local */
+  #gv .gv-card { grid-template-columns: 1fr; width: 92vw; max-height: none; grid-gap: 1.6vh; gap: 1.6vh; padding: 2.4vh 4vw; }
+  #gv .gv-main { grid-gap: 1.2vh; gap: 1.2vh; }
+  #gv .gv-top { font-size: 2.4vh; }
+  #gv .gv-big { font-size: 4.4vh; }
+  #gv .gv-line { font-size: 2.6vh; }
+  #gv .gv-rings { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-gap: 2.2vh 4vw; gap: 2.2vh 4vw; justify-items: center; }
+  #gv .gv-ring, #gv .gv-rings.n2 .gv-ring { width: 28vw; width: min(28vw, 16vh); }
+  #gv .gv-name, #gv .gv-rings.n2 .gv-name { width: auto; max-width: 42vw; font-size: 2.1vh; }
+  #gv .gv-in b { font-size: 5.4vw; font-size: min(5.4vw, 3.4vh); }
+  #gv .gv-in small { font-size: 2.4vw; font-size: min(2.4vw, 1.5vh); }
+  #gv .gv-total { font-size: 2vh; }
+  #gv .gv-qr { width: 22vw; justify-self: center; }
+  #gv .gv-qr b { font-size: 1.7vw; }
+  #gv.gv-gc .gv-card { max-width: 94vw; }
+}
+
+/* Menú de juegos con tres botones (pedido de Cote, 21 nov): «Manual», «Por sorteo» y «Por votación», y nada más;
+   al tocar uno se despliega lo suyo. En el lobby, los tres botones grandes */
+.games-nav > .g-modes { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 12px; }
+.games-nav > .g-modes > button { min-height: 96px; font-size: 1.1rem; font-weight: 900; border: 2px solid #5a54a0; }
+.games-nav > .g-modes > button.on { background: #ffc400; color: #1a1a1a; border-color: #ffc400; }
+.games-nav.g-lobby { margin-top: 28px; }
+.games-nav.g-lobby > .g-modes { gap: 16px; }
+.games-nav.g-lobby > .g-modes > button { min-height: 150px; font-size: 1.5rem; border-radius: 22px; }
+.games-nav.g-lobby > .g-modes > button span { font-size: 2.8rem; }
+@media (max-width: 700px) {
+  .games-nav.g-lobby > .g-modes { grid-template-columns: 1fr; }
+  .games-nav.g-lobby > .g-modes > button { min-height: 116px; }
+}
+.games-nav .g-body { display: none; }
+.games-nav.g-open .g-body { display: block; }
+.games-nav .g-games { display: none; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 6px 0 14px; }
+.games-nav.g-free .g-games, .games-nav.g-smode.g-ready .g-games { display: grid; }
+.games-nav .g-games > * { display: grid; justify-items: center; align-content: center; gap: 4px; min-height: 84px; padding: 12px 8px; border-radius: 16px; font-size: 1.05rem; font-weight: 700; text-align: center; text-decoration: none; line-height: 1.2; margin: 0; width: auto; }
+.games-nav:not(.g-smode) .g-plan, .games-nav:not(.g-smode) [data-game-draw], .games-nav:not(.g-smode) [data-game-undo], .games-nav:not(.g-smode) .g-direct { display: none !important; }
+
+/* Presentación antes de votar (pedido de Cote, 21 nov): reglas para el público y cada juego con un dibujo de cómo funciona */
+#gv .gv-intro .gv-main { min-width: 60vw; }
+#gv .gv-introbody { display: grid; grid-template-columns: minmax(0, 42%) minmax(0, 1fr); align-items: center; grid-gap: 3vw; gap: 3vw; width: 100%; text-align: left; }
+#gv .gv-art svg { display: block; width: 100%; height: auto; }
+#gv .gv-lines { margin: 0; padding: 0 0 0 1.1em; font-size: 3.4vh; font-weight: 700; line-height: 1.3; }
+#gv .gv-lines li { margin: 0 0 1.4vh; }
+#gv .gv-dots { margin-top: .6vh; }
+#gv .gv-dots i { display: inline-block; width: 1.5vh; height: 1.5vh; margin: 0 .5vh; border-radius: 50%; background: rgba(255, 255, 255, .3); }
+#gv .gv-dots i.on { background: #ffc400; }
+#gv.gv-gc .gv-intro .gv-main { min-width: 0; }
+#gv.gv-gc .gv-introbody { grid-template-columns: 26vh minmax(0, 1fr); }
+#gv.gv-gc .gv-lines { font-size: 2.3vh; }
+@media (orientation: portrait) {
+  #gv .gv-intro .gv-main { min-width: 0; }
+  #gv .gv-introbody { grid-template-columns: 1fr; justify-items: center; }
+  #gv .gv-art { width: 66vw; }
+  #gv .gv-lines { font-size: 2.4vh; }
+}
+@keyframes giPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.14); } }
+@keyframes giRing { 0% { opacity: .9; transform: scale(.7); } 100% { opacity: 0; transform: scale(1.6); } }
+@keyframes giFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes giUp { 0% { transform: translateY(12px); opacity: 0; } 25% { opacity: 1; } 100% { transform: translateY(-16px); opacity: 0; } }
+@keyframes giBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes giBar { from { transform: scaleY(.15); } to { transform: scaleY(1); } }
+@keyframes giGrow { from { stroke-dasharray: 0 252; } to { stroke-dasharray: 151 252; } }
+.gi .gi-pulse, .gi .gi-ring, .gi .gi-up, .gi .gi-bounce, .gi .gi-bar { transform-box: fill-box; transform-origin: center; }
+.gi .gi-pulse { animation: giPulse 1.2s ease-in-out infinite; }
+.gi .gi-ring { animation: giRing 1.4s ease-out infinite; }
+.gi .gi-mark { opacity: 0; animation: giFade .35s ease forwards; }
+.gi .gi-up { animation: giUp 2.2s ease-in infinite; }
+.gi .gi-bounce { animation: giBounce 1.4s ease-in-out infinite; }
+.gi .gi-bar { transform-origin: bottom; animation: giBar 1.4s ease-out infinite alternate; }
+.gi .gi-grow { animation: giGrow 1.6s ease-out forwards; }
+.pgvote .pgv-step { margin: 8px 0 4px; text-align: center; font-weight: 700; color: #ffd76a; }
+.pgvote .pgv-intro { text-align: center; }
+.pgvote .pgv-intro > b { display: block; font-size: 1.5rem; margin: 4px 0 8px; }
+.pgvote .pgv-intro .gi svg { display: block; width: 100%; max-width: 320px; height: auto; margin: 0 auto; }
+.pgvote .pgv-intro ul { text-align: left; margin: 10px 0; padding-left: 20px; font-size: 1.05rem; line-height: 1.35; }
+.g-vote .gvp-help { font-size: .95rem; }
+
+/* Recuadro «📣 Para anunciar» (pedido de Cote, 21 nov): ganador, premio o información, grande en el panel del animador */
+.ann { text-align: center; border: 3px solid #ffc400; background: rgba(255, 196, 0, .08); }
+.ann small { display: block; font-weight: 900; color: #ffc400; letter-spacing: .08em; text-transform: uppercase; }
+.ann .ann-t { display: block; margin-top: 6px; font-size: 1.25rem; font-weight: 900; }
+.ann .ann-n { display: block; margin: 8px 0; font-size: 2.2rem; font-weight: 900; line-height: 1.1; overflow-wrap: anywhere; }
+.ann .ann-l { display: block; margin-top: 4px; font-size: 1.1rem; font-weight: 700; color: var(--muted, #b9b4dc); }
+.w-accepted.w-ann { padding: 0; background: none; }
+.w-accepted .ann { margin: 0; }
+/* Celular: nombre de la actividad y lo que viene (sorteos, QR, show, espera entre juegos) */
+.pact .pact-list { margin: 12px 0; }
+.pact .pact-list small { display: block; text-align: center; font-weight: 800; color: #ffd76a; margin-bottom: 6px; }
+.pact .pact-list p { margin: 0 0 6px; padding: 10px 12px; border-radius: 12px; background: rgba(0, 0, 0, .25); font-size: 1.15rem; font-weight: 800; }
+.pact .pact-list em { font-style: normal; color: #ffc400; margin-right: 8px; }
+.pact .pact-next { margin: 12px 0 4px; text-align: center; font-weight: 700; color: #d8d3ff; }
+/* Ranking de la Trivia en los celulares (pedido de Cote, 21 nov): sale cuando el animador lo despliega */
+.pcrowd-rank { margin: 12px 0; padding: 12px; border-radius: 14px; border: 2px solid #ffc400; background: rgba(255, 196, 0, .1); }
+.pcrowd-rank small { display: block; text-align: center; font-weight: 900; color: #ffc400; letter-spacing: .04em; }
+.pcrowd-rank > b { display: block; text-align: center; font-size: 1.15rem; margin: 2px 0 8px; }
+.pcrowd-rank > div { display: flex; gap: 8px; align-items: baseline; padding: 6px 8px; border-radius: 10px; font-weight: 800; }
+.pcrowd-rank > div em { font-style: normal; color: #ffc400; min-width: 2.4em; }
+.pcrowd-rank > div span { flex: 1; overflow-wrap: anywhere; }
+.pcrowd-rank > div.me, .pcrowd-rank > div.you { background: #ffc400; color: #1a1a1a; }
+.pcrowd-rank > div.me em, .pcrowd-rank > div.you em { color: #1a1a1a; }
+/* Ranking obligatorio cada 2 rondas en El Rosco (pedido de Cote, 21 nov) */
+.w-rankbtn.due { background: #ffc400; color: #1a1a1a; border-color: #ffc400; font-weight: 900; animation: giPulse 1.2s ease-in-out infinite; }
+/* Confirmación de quien sale sorteado (pedido de Cote, 21 nov) */
+.pact .pact-yesno { display: grid; gap: 10px; margin: 8px 0 12px; }
+.pact .pact-yesno button { width: 100%; margin: 0; }
+.pact .pact-list p i { float: right; font-style: normal; }
+.rf-st { display: block; font-weight: 700; color: var(--muted, #b9b4dc); }
+.rf-st.ok { color: #5fe0a0; }
+.rf-dec { margin: 8px 0 0; text-align: center; font-weight: 700; color: var(--muted, #b9b4dc); }
+/* El Rosco: «Es el turno de» y el nombre grande arriba a la derecha (pedido de Cote, 21 nov) */
+.w-topright { display: flex; align-items: center; gap: 12px; }
+.w-who { padding: 8px 14px; border-radius: 14px; border: 3px solid #4fd1ff; background: rgba(79, 209, 255, .12); text-align: right; max-width: 360px; }
+.w-who small { display: block; font-size: .85rem; font-weight: 700; color: #a9d8ea; }
+.w-who b { display: block; font-size: 2rem; line-height: 1.1; font-weight: 900; color: #4fd1ff; overflow-wrap: anywhere; }
+.w-who.flash { animation: whoFlash 1.8s ease-out 1; }
+.w-who.flash b { animation: whoFlashTxt 1.8s ease-out 1; }
+@keyframes whoFlash { 0% { background: #4fd1ff; transform: scale(1.08); } 100% { background: rgba(79, 209, 255, .12); transform: scale(1); } }
+@keyframes whoFlashTxt { 0% { color: #0d2633; } 100% { color: #4fd1ff; } }
+/* Ranking de la Trivia desplegado: también grande en el panel (pedido de Cote, 21 nov) */
+.rank-ann .rank-ann-list { margin: 10px 0 4px; padding: 0; list-style: none; text-align: left; }
+.rank-ann .rank-ann-list li { display: flex; gap: 10px; align-items: baseline; margin: 0 0 6px; padding: 8px 12px; border-radius: 10px; background: rgba(0, 0, 0, .25); font-size: 1.25rem; font-weight: 800; }
+.rank-ann .rank-ann-list li.top { font-size: 1.5rem; background: rgba(255, 196, 0, .18); }
+.rank-ann .rank-ann-list em { font-style: normal; color: #ffc400; min-width: 2.4em; }
+.rank-ann .rank-ann-list b { flex: 1; overflow-wrap: anywhere; }
+.rank-ann .rank-ann-list i { font-style: normal; color: #ffc400; white-space: nowrap; }
+
+/* Lista «Ya salieron» del celular: el ✅/⏳ queda dentro de la fila aunque el nombre sea largo (revisión 21 nov) */
+.pact .pact-list p { display: flex; align-items: center; gap: 8px; }
+.pact .pact-list p span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.pact .pact-list p i { float: none; flex: none; }
+/* «📣 Para anunciar» del ganador del bingo: fuera de las columnas, que se ocultan al confirmar el ganador (revisión 21 nov) */
+#host-bingo > #win-ann:not(:empty) { margin: 14px 0; }
+
+/* Instrucciones en el celular (pedido de Cote, 21 nov): 2 segundos, o se cierran al tocar cualquier parte de la pantalla */
+#phone-howto { cursor: pointer; }
+#phone-howto .ph-bar { animation-duration: 2s; }
+
+/* Pantalla vertical de Kennedy (pedido de Cote, 21 nov): el QR solo con los botones del karaoke de la sala light; con los
+   demás no hay QR y el recuadro ocupa ese espacio */
+#lv.lv-noqr .lv-qr { display: none; }
+#lv.lv-noqr { grid-template-rows: auto minmax(0, 1fr); }
+@media (orientation: landscape) { #lv.lv-noqr { grid-template-columns: minmax(0, 1fr); } }
+
+/* Sala light: switch «Video cartelera» (pedido de Cote, 21 nov) debajo de los botones del GC */
+.lp-switch { display: flex; align-items: center; gap: 14px; margin-top: 14px; padding: 12px 14px; border-radius: 14px; border: 2px solid var(--line, #3a3360); background: rgba(255, 255, 255, .04); cursor: pointer; user-select: none; }
+.lp-switch input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
+.lp-switch i { flex: none; position: relative; width: 58px; height: 32px; border-radius: 99px; background: #5b557a; transition: background .2s; }
+.lp-switch i::after { content: ""; position: absolute; left: 4px; top: 4px; width: 24px; height: 24px; border-radius: 50%; background: #fff; transition: transform .2s; box-shadow: 0 2px 6px rgba(0, 0, 0, .35); }
+.lp-switch.on { border-color: #ffc400; background: rgba(255, 196, 0, .1); }
+.lp-switch.on i { background: #1fa45a; }
+.lp-switch.on i::after { transform: translateX(26px); }
+.lp-switch span { display: grid; gap: 2px; }
+.lp-switch b { font-size: 1.1rem; }
+.lp-switch small { opacity: .8; }
+/* El nombre del local entero en una línea («Mercado Kennedy»): la columna no se estira con el texto, se achica la letra */
+@media (orientation: portrait) { #lv { grid-template-columns: minmax(0, 1fr); } }
+.lv-top { min-width: 0; }
+.lv-top b { max-width: 100%; overflow: hidden; }
+
+/* Celular de la sala light (pedido de Cote, 21 nov): siempre al final, dónde ver las transmisiones */
+.lm-web { margin: 18px 4px 8px; text-align: center; font-size: 1.05rem; font-weight: 700; line-height: 1.35; opacity: .92; }
+.lm-web a { color: #ffc400; text-decoration: none; }
+.lm-web a b { font-weight: 900; }
+
+/* GC del karaoke (pedido de Cote, 21 nov): el QR va a la izquierda, sobre el GC, más chico y en un recuadro cuadrado;
+   el texto no pasa del ancho del QR: «Escanea el código QR» y, abajo, «con tu celular» */
+.kg-qr { right: auto; left: 3vw; bottom: 26.5vh; box-sizing: border-box; width: 19vh; height: 19vh; align-content: center; gap: .5vh; padding: 0; border-radius: 2vh; }
+.kg-qr .qr { width: 13vh; height: 13vh; }
+.kg-qr b { display: grid; justify-items: center; width: 13vh; font-size: 1.2vh; line-height: 1.25; letter-spacing: 0; text-align: center; }
+.kg-qr b span { display: block; white-space: nowrap; }
+.next-up.kg-up { left: 50%; }
+
+/* Sala light: GC personalizable (pedido de Cote, 21 nov): espacio para escribir y botón, debajo de los botones del GC */
+.lp-custom { display: flex; gap: 10px; margin-top: 12px; }
+.lp-custom input { flex: 1; min-width: 0; font-size: 1.1rem; padding: 12px 14px; }
+.lp-custom button { flex: none; font-weight: 800; font-size: 1.05rem; padding: 12px 16px; white-space: nowrap; }
+.lp-custom button.on { background: #ffc400; color: #1a1a1a; }
+@media (max-width: 560px) { .lp-custom { flex-direction: column; } }
+.lg-custom .lg-main .lg-line { font-size: 4vh; }
+
+/* Nombres largos («El Bingo/El Festival de Mercado Kennedy»): nunca «…»; la letra se achica hasta que quepan */
+.fb-title, .gc-title, .vf-top b { text-overflow: clip; }
+#jd .jd-card { grid-template-columns: minmax(0, 1fr); }
+
+/* Flyers del Instagram del local en la pantalla vertical (pedido de Cote, 21 nov): dentro del mismo recuadro, un poco más chicos */
+.lv-flyer { display: grid; place-items: center; min-height: 0; }
+.lv-flyer img { display: block; max-width: 90%; border-radius: 2vh; border: .5vh solid var(--lv-gold); box-shadow: 0 1vh 3vh rgba(0, 0, 0, .4); }
+
+/* GC Master (pedido de Cote, 21 nov): centro de control de transmisión. Una página por local con 3 pantallas (video en vivo
+   o GC, tablero y vertical) y botones tipo TV; y una página con los 3 locales juntos */
+body.gm-on main { max-width: none; padding: 10px 14px 40px; }
+.gm-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+.gm-nav > b { font-size: 1.3rem; margin: 0 10px 0 6px; }
+.gm-tab { padding: 8px 14px; border-radius: 10px; border: 2px solid #3a3360; background: #1c1836; color: #fff; text-decoration: none; font-weight: 800; }
+.gm-tab.on { background: #ffc400; border-color: #ffc400; color: #1a1a1a; }
+.gm-grid { display: grid; gap: 14px; }
+.gm-all .gm-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.gm-venue { --gm: #1487cf; min-width: 0; padding: 12px; border-radius: 16px; background: #100e22; border: 3px solid var(--gm); }
+.gm-venue.th-frida { --gm: #c4175e; } .gm-venue.th-kennedy { --gm: #1487cf; } .gm-venue.th-tobalaba { --gm: #c81e1e; }
+.gm-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 10px; }
+.gm-head > b { font-size: 1.4rem; }
+.gm-live { padding: 3px 10px; border-radius: 99px; background: #2a2744; font-size: .85rem; font-weight: 800; color: #b9b4d8; }
+.gm-live.on { background: #d21f2b; color: #fff; }
+.gm-sala { font-size: .85rem; opacity: .8; }
+/* Las tres pantallas a la misma altura: dos horizontales (16:9) y la vertical (9:16) */
+.gm-screens { display: grid; grid-template-columns: minmax(0, 256fr) minmax(0, 256fr) minmax(0, 81fr); gap: 10px; align-items: start; }
+.gm-scr { min-width: 0; display: grid; gap: 6px; }
+.gm-scr > small { font-weight: 800; text-transform: uppercase; letter-spacing: .04em; font-size: .78rem; color: #ffd76a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gm-box { position: relative; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 10px; background: #000; border: 2px solid #2c2850; }
+.gm-tall .gm-box { aspect-ratio: 9 / 16; }
+.gm-box.gm-check { background: repeating-conic-gradient(#1b1930 0 25%, #222038 0 50%) 0 0 / 24px 24px; }
+.gm-box iframe { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; border: 0; transform-origin: 0 0; pointer-events: none; }
+.gm-tall .gm-box iframe { width: 720px; height: 1280px; }
+.gm-box iframe[data-full] { width: 100%; height: 100%; transform: none; pointer-events: auto; }
+.gm-p1 { display: flex; flex-wrap: wrap; gap: 6px; }
+.gm-p1 button { padding: 5px 10px; font-size: .82rem; font-weight: 800; border-radius: 8px; }
+.gm-p1 button.on { background: #ffc400; color: #1a1a1a; border-color: #ffc400; }
+/* Botones tipo TV: teclas cuadradas con su luz; la que está al aire queda encendida en rojo */
+.gm-keys { display: grid; gap: 10px; margin-top: 12px; }
+.gm-row > small { display: block; margin-bottom: 6px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; font-size: .78rem; color: #b9b4d8; }
+.gm-keyrow { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+.gm-key { position: relative; display: grid; justify-items: center; align-content: center; gap: 2px; min-height: 74px; padding: 10px 6px 8px; border-radius: 10px; border: 2px solid #3d3966; background: linear-gradient(#2c2850, #1b1836); color: #fff; box-shadow: 0 4px 0 #0a0818; cursor: pointer; }
+.gm-key:active { transform: translateY(3px); box-shadow: 0 1px 0 #0a0818; }
+.gm-key i { position: absolute; top: 6px; right: 6px; width: 8px; height: 8px; border-radius: 50%; background: #4a4670; }
+.gm-key span { font-size: 1.5rem; line-height: 1; }
+.gm-key b { font-size: .8rem; line-height: 1.1; text-align: center; }
+.gm-key.on { background: linear-gradient(#e0252f, #a3121b); border-color: #ff6b73; box-shadow: 0 4px 0 #5c0a10, 0 0 16px rgba(224, 37, 47, .6); }
+.gm-key.on i { background: #fff; box-shadow: 0 0 8px #fff; }
+.gm-custom { display: flex; gap: 8px; margin-top: 8px; }
+.gm-custom input { flex: 1; min-width: 0; padding: 10px 12px; font-size: 1rem; }
+.gm-key.gm-wide { min-height: 0; padding: 10px 14px; flex: none; }
+.gm-all .gm-head > b { font-size: 1.15rem; }
+.gm-all .gm-keyrow { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 6px; }
+.gm-all .gm-key { min-height: 60px; padding: 8px 4px 6px; }
+.gm-all .gm-key span { font-size: 1.2rem; } .gm-all .gm-key b { font-size: .7rem; }
+.gm-all .gm-custom { flex-direction: column; }
+@media (max-width: 1100px) { .gm-all .gm-grid { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 700px) { .gm-screens { grid-template-columns: minmax(0, 1fr); } .gm-tall .gm-box { max-width: 300px; } }
+/* GC Master, los 3 locales juntos: la pantalla 1 arriba a todo el ancho; abajo el tablero y la vertical a la misma altura */
+.gm-all .gm-screens { grid-template-columns: minmax(0, 256fr) minmax(0, 81fr); }
+.gm-all .gm-screens > .gm-scr:first-child { grid-column: 1 / -1; }
+.gm-scr > small { white-space: normal; overflow: visible; text-overflow: clip; }
+/* GC Master, orden del dibujo de Cote (22 nov): a la izquierda la 1 (vivo o GC con un fondo) y debajo la 2 (tablero);
+   a la derecha la 3 (pantalla vertical) a todo el alto. Todo cabe en el alto de la ventana */
+.gm-screens, .gm-all .gm-screens { grid-template-columns: minmax(0, 1fr) minmax(0, .7fr); max-width: max(520px, calc((100vh - 330px) * 1.38)); margin: 0 auto; }
+.gm-all .gm-screens { max-width: none; }
+.gm-all .gm-screens > .gm-scr:first-child { grid-column: auto; }
+.gm-left { min-width: 0; display: grid; gap: 10px; align-content: start; }
+.gm-box.gm-bg { background: radial-gradient(circle at 50% 35%, var(--gm), #0b0a18 120%); }
+@media (max-width: 700px) { .gm-screens, .gm-all .gm-screens { grid-template-columns: minmax(0, 1fr); } }
+/* GC Master: botones cuadrados en filas de 5, debajo de las pantallas y a todo su ancho (dibujo de Cote, 22 nov) */
+.gm-screens, .gm-keys { max-width: max(520px, calc((100vh - 500px) * 1.38)); margin-left: auto; margin-right: auto; }
+.gm-all .gm-screens, .gm-all .gm-keys { max-width: none; }
+.gm-keyrow, .gm-all .gm-keyrow { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+.gm-key, .gm-all .gm-key { min-height: 0; height: 96px; padding: 8px 6px; }
+.gm-all .gm-key { height: 78px; }
+.gm-key span { font-size: 1.9rem; } .gm-key b { font-size: .9rem; }
+.gm-custom { display: block; margin-top: 0; }
+.gm-custom input { display: block; width: 100%; margin-top: 10px; padding: 10px 12px; font-size: 1rem; }
+.gm-row + .gm-row { margin-top: 4px; }
+/* GC Master: las 3 pantallas pegadas, formando un solo bloque (pedido de Cote, 22 nov): sin separación entre ellas; la
+   vertical mide justo el alto de las dos horizontales; el nombre de cada pantalla va dentro, en su esquina */
+.gm-screens, .gm-all .gm-screens { grid-template-columns: minmax(0, 1fr) minmax(0, .6328fr); gap: 0; align-items: start; }
+.gm-screens, .gm-keys { max-width: max(520px, calc((100vh - 470px) * 1.45)); }
+.gm-all .gm-screens, .gm-all .gm-keys { max-width: none; }
+.gm-left { gap: 0; }
+.gm-scr { position: relative; display: block; }
+.gm-scr > small { position: absolute; left: 0; top: 0; z-index: 2; padding: 3px 8px; border-radius: 0 0 8px 0; background: rgba(0, 0, 0, .72); color: #ffd76a; font-size: .72rem; white-space: nowrap; pointer-events: none; }
+.gm-box { border-radius: 0; border: 1px solid #000; }
+.gm-keys { margin-top: 14px; }
+/* GC Master en el teléfono (pedido de Cote, 22 nov): de pie y todo en una sola plana, sin bajar la página: arriba los
+   locales, el bloque de las 3 pantallas pegadas, los botones en 2 filas de 5 y el texto del GC personalizable */
+@media (max-width: 700px) {
+  body.gm-on main { padding: 6px 6px 8px; }
+  .gm-nav { flex-wrap: nowrap; gap: 4px; margin-bottom: 6px; }
+  .gm-nav > a:first-child { flex: none; width: 30px; overflow: hidden; white-space: nowrap; text-decoration: none; font-size: 1.2rem; line-height: 1.6; }
+  .gm-nav > b { display: none; }
+  .gm-tab { flex: 1; min-width: 0; padding: 7px 2px; border-width: 1px; border-radius: 8px; font-size: .72rem; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: clip; }
+  .gm-venue { padding: 6px; border-width: 2px; border-radius: 12px; }
+  .gm-head { flex-wrap: nowrap; gap: 6px; margin-bottom: 6px; }
+  .gm-head > b, .gm-all .gm-head > b { font-size: 1rem; white-space: nowrap; }
+  .gm-live { flex: none; padding: 2px 8px; font-size: .68rem; white-space: nowrap; }
+  .gm-sala { font-size: .66rem; min-width: 0; white-space: nowrap; overflow: hidden; }
+  .gm-screens, .gm-all .gm-screens { grid-template-columns: minmax(0, 1fr) minmax(0, .6328fr); }
+  .gm-one .gm-screens, .gm-one .gm-keys { max-width: min(100%, calc((100vh - 318px) * 1.45)); max-width: min(100%, calc((100dvh - 318px) * 1.45)); }
+  .gm-one .gm-keys { max-width: 100%; }
+  .gm-tall .gm-box { max-width: none; }
+  .gm-scr > small { padding: 2px 5px; font-size: .56rem; }
+  .gm-keys { margin-top: 8px; gap: 6px; }
+  .gm-row > small { margin-bottom: 4px; font-size: .62rem; }
+  .gm-keyrow, .gm-all .gm-keyrow { gap: 5px; }
+  .gm-key, .gm-all .gm-key { height: 58px; padding: 4px 2px; border-radius: 8px; border-width: 1px; box-shadow: 0 3px 0 #0a0818; }
+  .gm-key i { top: 4px; right: 4px; width: 6px; height: 6px; }
+  .gm-key span { font-size: 1.25rem; } .gm-key b { font-size: .58rem; line-height: 1.05; }
+  .gm-custom input { margin-top: 6px; padding: 8px 10px; font-size: 16px; }
+}
+@media (max-width: 700px) {
+  /* nombres de los locales enteros (en dos líneas si hace falta) y botones más altos, que caben igual en una plana */
+  .gm-tab { display: flex; align-items: center; justify-content: center; white-space: normal; overflow: visible; line-height: 1.1; padding: 5px 3px; min-height: 36px; }
+  .gm-nav { align-items: stretch; }
+  .gm-key, .gm-all .gm-key { height: 66px; }
+  .gm-key span { font-size: 1.4rem; } .gm-key b { font-size: .62rem; }
+}
+.gm-scr > small { max-width: 100%; overflow: hidden; }
+.gm-key b { max-width: 100%; }
+@media (max-width: 700px) {
+  .gm-back span, .gm-sala { display: none; }
+  .gm-nav > a.gm-back { width: auto; padding: 0 6px; display: flex; align-items: center; }
+  .gm-key.gm-long b { font-size: .5rem; letter-spacing: -.01em; }
+}
+/* GC Master, señal 1: la transmisión nuestra (video propio) llena la pantalla 1; debajo, Twitch o el GC */
+.gm-own { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: #000; object-fit: contain; }
+.gm-p1in { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+.gm-own[hidden], .gm-p1in[hidden] { display: none; }
+
+/* Logos del local en el GC de OBS (pedido de Cote, 21 nov: en la transmisión de Mercado Kennedy se veían cortados arriba):
+   van más adentro, con margen de seguridad, para que no los corte el borde de la transmisión ni el de los televisores */
+.venue-mark.vm-obs { right: 6vh; top: 6vh; }
+.venue-mark.vm-obs-bingo { left: 5vh; }
+/* Logos del GC de OBS: más adentro y más abajo (pedido de Cote, 21 nov) */
+.venue-mark.vm-obs { right: 10vh; top: 10vh; }
+/* GC Master, audio (pedido de Cote, 22 nov): en «Los 3 locales», abajo, 3 botones para elegir qué local se escucha (uno
+   a la vez); en la página de un local, un botón «Escuchar» junto al nombre */
+.gm-listen { margin-left: auto; padding: 5px 12px; border-radius: 99px; font-size: .85rem; font-weight: 800; white-space: nowrap; }
+.gm-listen.on { background: #1fa45a; border-color: #1fa45a; color: #fff; }
+.gm-all .gm-listen { display: none; }
+.gm-audio { margin-top: 14px; }
+.gm-audio > small { display: block; margin-bottom: 6px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; font-size: .78rem; color: #b9b4d8; }
+.gm-audiorow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.gm-audio .gm-key { height: 64px; grid-auto-flow: column; justify-content: center; align-items: center; gap: 10px; }
+.gm-audio .gm-key span { font-size: 1.6rem; } .gm-audio .gm-key b { font-size: 1rem; }
+.gm-audio .gm-key.on { background: linear-gradient(#27b866, #15803f); border-color: #7be3a6; box-shadow: 0 4px 0 #0a4a22, 0 0 16px rgba(39, 184, 102, .6); }
+@media (max-width: 700px) {
+  .gm-listen { padding: 3px 8px; font-size: .68rem; }
+  .gm-audiorow { gap: 6px; } .gm-audio .gm-key { height: 52px; gap: 4px; } .gm-audio .gm-key b { font-size: .62rem; } .gm-audio .gm-key span { font-size: 1.1rem; }
+}
+
+/* GC Master, versión horizontal de cada local (pedido de Cote, 22 nov): la señal 1 más grande; el tablero a 3/5 de su
+   tamaño; la pantalla vertical también a 3/5; y los botones debajo del tablero, para aprovechar el ancho de la pantalla.
+   --w1 es el ancho de la pantalla 1: lo más grande que cabe a lo ancho y a lo alto sin bajar la página */
+@media (min-width: 900px) {
+  .gm-one .gm-venue { --w1: max(360px, min(calc((100vw - 102px) / 1.9375), calc((100vh - 400px) * 2.963), calc((100vh - 160px) * 1.7778)));
+    display: grid; grid-template-columns: var(--w1) calc(var(--w1) * .6) calc(var(--w1) * .3375); grid-template-rows: auto auto auto;
+    grid-template-areas: "head head head" "p1 p2 p3" "p1 keys p3"; gap: 12px 13px; justify-content: center; align-items: start; }
+  .gm-one .gm-head { grid-area: head; margin-bottom: 0; }
+  .gm-one .gm-screens, .gm-one .gm-left { display: contents; }
+  .gm-one .gm-left > .gm-scr:first-child { grid-area: p1; }
+  .gm-one .gm-left > .gm-scr:last-child { grid-area: p2; }
+  .gm-one .gm-screens > .gm-tall { grid-area: p3; }
+  .gm-one .gm-box { border-radius: 8px; border: 2px solid #2c2850; }
+  .gm-one .gm-scr > small { border-radius: 6px 0 8px 0; }
+  .gm-one .gm-keys { grid-area: keys; max-width: none; margin: 0; gap: 8px; }
+  .gm-one .gm-row > small { margin-bottom: 6px; }
+  .gm-one .gm-keyrow { gap: 8px; }
+  .gm-one .gm-key { height: 62px; padding: 4px 3px; }
+  /* el texto de los botones se achica con la pantalla, para que siempre quepa entero */
+  .gm-one .gm-key span { font-size: min(1.35rem, calc(var(--w1) * .033)); } .gm-one .gm-key b { font-size: min(.7rem, calc(var(--w1) * .0148)); line-height: 1.05; }
+  .gm-one .gm-key.gm-long b { font-size: min(.6rem, calc(var(--w1) * .0118)); }
+  .gm-one .gm-key { padding: 4px 1px; }
+  .gm-one .gm-custom input { margin-top: 8px; padding: 8px 10px; }
+}
+/* GC Master: arriba a la derecha, la fecha con el año y la hora local (pedido de Cote, 22 nov) */
+.gm-clock { margin-left: auto; display: flex; align-items: baseline; gap: 12px; white-space: nowrap; }
+.gm-clock b { font-size: 1.5rem; font-weight: 900; font-variant-numeric: tabular-nums; color: #ffc400; }
+.gm-clock i { font-style: normal; font-weight: 700; font-size: .95rem; color: #d8d3ff; }
+@media (max-width: 1100px) { .gm-clock { gap: 8px; } .gm-clock b { font-size: 1.2rem; } .gm-clock i { font-size: .8rem; } }
+@media (max-width: 700px) {
+  /* en el teléfono va en su propia línea, bajo los locales */
+  .gm-nav { flex-wrap: wrap; }
+  .gm-clock { flex: 1 0 100%; margin: 0; justify-content: center; gap: 8px; }
+  .gm-clock b { font-size: 1rem; } .gm-clock i { font-size: .72rem; }
+  .gm-one .gm-screens, .gm-one .gm-keys { max-width: min(100%, calc((100vh - 344px) * 1.45)); max-width: min(100%, calc((100dvh - 344px) * 1.45)); }
+  .gm-one .gm-keys { max-width: 100%; }
+}
+/* la hora grande y la fecha debajo, para que la barra de arriba no pase a dos líneas en pantallas más chicas */
+@media (min-width: 701px) {
+  .gm-nav { flex-wrap: nowrap; }
+  .gm-clock { flex-direction: column; align-items: flex-end; gap: 0; line-height: 1.15; }
+  .gm-clock b { font-size: 1.35rem; } .gm-clock i { font-size: .8rem; }
+}
+@media (min-width: 701px) and (max-width: 1250px) { .gm-back span { display: none; } .gm-tab { padding: 8px 10px; } }
+
+/* GC Master: el texto del GC personalizable va aparte de los botones (debajo de ellos en el teléfono y en «Los 3 locales») */
+.gm-text { display: block; width: 100%; margin: 10px auto 0; padding: 10px 12px; font-size: 1rem; max-width: max(520px, calc((100vh - 470px) * 1.45)); }
+.gm-all .gm-text { max-width: none; }
+@media (max-width: 700px) { .gm-text { max-width: 100%; margin-top: 6px; padding: 8px 10px; font-size: 16px; } }
+
+/* GC Master, versión horizontal de cada local: la señal 1 MÁS GRANDE (pedido de Cote, 22 nov). La señal 1 ocupa todo el
+   alto disponible a la izquierda; a la derecha, una columna angosta (--r) con el tablero arriba y, debajo, la pantalla
+   vertical junto a los botones (en 2 columnas de 5); el texto del GC personalizable va arriba, sobre esa columna */
+@media (min-width: 900px) {
+  body.gm-on main { padding-bottom: 12px; }
+  .gm-one .gm-venue { --H: calc(100vh - 168px); --W: calc(100vw - 76px); --r: max(360px, calc(var(--W) * .3));
+    --w1: max(420px, min(calc(var(--H) * 1.7778), calc(var(--W) - 10px - var(--r)))); --h2: calc(var(--r) * .5625);
+    --h3: max(190px, calc(var(--H) - var(--h2) - 12px)); --w3: calc(var(--h3) * .5625);
+    grid-template-columns: var(--w1) var(--w3) calc(var(--r) - var(--w3) - 10px); grid-template-rows: auto var(--h2) var(--h3);
+    grid-template-areas: "head txt txt" "p1 p2 p2" "p1 p3 keys"; gap: 12px 10px; }
+  .gm-one .gm-text { grid-area: txt; align-self: center; margin: 0; max-width: none; padding: 7px 10px; }
+  .gm-one .gm-keys { display: block; height: var(--h3); overflow-y: auto; }
+  .gm-one .gm-row > small { margin-bottom: 4px; white-space: nowrap; overflow: hidden; }
+  .gm-one .gm-keyrow { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: calc((var(--h3) - 22px - 4 * 6px) / 5); gap: 6px; }
+  .gm-one .gm-key { height: auto; min-height: 0; grid-auto-flow: column; grid-auto-columns: auto; justify-content: start; justify-items: start; align-items: center; gap: 6px; padding: 2px 16px 2px 8px; box-shadow: 0 3px 0 #0a0818; }
+  .gm-one .gm-key span { font-size: min(1.25rem, calc(var(--h3) * .065)); }
+  .gm-one .gm-key b, .gm-one .gm-key.gm-long b { text-align: left; font-size: min(.82rem, calc(var(--r) * .0285), calc(var(--h3) * .05)); line-height: 1.05; }
+  .gm-one .gm-key i { top: 5px; right: 5px; width: 7px; height: 7px; }
+}
+@media (min-width: 900px) {
+  /* botones: ícono arriba y texto abajo, con la letra según el ancho y el alto de cada botón, para que siempre quepa entero */
+  .gm-one .gm-venue { --kw: calc((var(--r) - var(--w3) - 16px) / 2); --kh: calc((var(--h3) - 22px - 24px) / 5); }
+  .gm-one .gm-keyrow { grid-auto-rows: var(--kh); }
+  .gm-one .gm-key { grid-auto-flow: row; justify-content: center; justify-items: center; align-content: center; gap: 1px; padding: 2px; }
+  .gm-one .gm-key span { font-size: min(1.3rem, calc(var(--kh) * .34)); }
+  .gm-one .gm-key b, .gm-one .gm-key.gm-long b { text-align: center; font-size: min(.8rem, calc(var(--kw) * .112), calc(var(--kh) * .225)); line-height: 1.05; }
+}
+@media (min-width: 900px) {
+  /* la fila del nombre siempre en una línea (si no, la página crecía y había que bajar) */
+  .gm-one .gm-head { flex-wrap: nowrap; min-width: 0; }
+  .gm-one .gm-head > b, .gm-one .gm-live, .gm-one .gm-listen { flex: none; white-space: nowrap; }
+  .gm-one .gm-sala { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
+/* GC Master, versión horizontal de cada local: la pantalla vertical SIEMPRE PEGADA a la 1 (pedido de Cote, 22 nov). La
+   señal 1 y, pegada a su derecha y del mismo alto, la pantalla vertical forman un solo bloque, lo más grande que cabe;
+   a la derecha queda una columna angosta (--r) con el tablero arriba y los botones debajo (2 columnas de 5) */
+@media (min-width: 900px) {
+  .gm-one .gm-venue { --r: max(200px, calc(var(--W) * .14));
+    --h1: max(236px, min(var(--H), calc((var(--W) - 10px - var(--r)) / 2.3403)));
+    --w1: calc(var(--h1) * 1.7778); --w3: calc(var(--h1) * .5625); --h2: calc(var(--r) * .5625);
+    --h3: calc(max(var(--H), var(--h1)) - var(--h2) - 10px); --kw: calc((var(--r) - 6px) / 2); --kh: calc((var(--h3) - 22px - 24px) / 5);
+    grid-template-columns: var(--w1) var(--w3) calc(var(--r) + 10px); grid-template-rows: auto var(--h2) var(--h3);
+    grid-template-areas: "head txt txt" "p1 p3 p2" "p1 p3 keys"; gap: 10px 0; }
+  .gm-one .gm-text, .gm-one .gm-left > .gm-scr:last-child, .gm-one .gm-keys { margin-left: 10px; }
+  .gm-one .gm-left > .gm-scr:first-child .gm-box { border-radius: 8px 0 0 8px; border-right-width: 1px; }
+  .gm-one .gm-screens > .gm-tall .gm-box { border-radius: 0 8px 8px 0; border-left-width: 1px; }
+  .gm-one .gm-screens > .gm-tall > small { border-radius: 0 0 8px 0; }
+}
+
+/* Capa gráfica sobre la cámara (pedido de Cote, 21 nov): capa transparente encima del GC de OBS; las piezas entran y
+   salen solas. --cp es el color del local */
+#capa { position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; z-index: 9500; pointer-events: none; overflow: hidden; }
+#capa .cp { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+/* Cortina: franjas que cruzan, el logo al centro y se abre */
+#capa .cp-cur i { position: absolute; left: -30%; width: 160%; height: 21%; transform: translateX(-110%) skewX(-18deg); animation: cpCur 3.4s cubic-bezier(.7, 0, .2, 1) both; }
+#capa .cp-cur i:nth-child(1) { top: -1%; background: #ffc400; } #capa .cp-cur i:nth-child(2) { top: 20%; background: var(--cp); animation-delay: .07s; }
+#capa .cp-cur i:nth-child(3) { top: 40%; background: #100e22; animation-delay: .14s; } #capa .cp-cur i:nth-child(4) { top: 60%; background: var(--cp); animation-delay: .21s; }
+#capa .cp-cur i:nth-child(5) { top: 80%; background: #ffc400; animation-delay: .28s; }
+@keyframes cpCur { 0% { transform: translateX(-110%) skewX(-18deg); } 24%, 66% { transform: translateX(0) skewX(-18deg); } 100% { transform: translateX(110%) skewX(-18deg); } }
+#capa .cp-cur img { position: absolute; left: 50%; top: 50%; width: 46vh; opacity: 0; transform: translate(-50%, -50%) scale(.2); filter: drop-shadow(0 .8vh 2vh rgba(0, 0, 0, .5)); animation: cpLogo 3.4s ease both; }
+@keyframes cpLogo { 0%, 20% { transform: translate(-50%, -50%) scale(.2); opacity: 0; } 32% { transform: translate(-50%, -50%) scale(1.12); opacity: 1; } 38%, 62% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 74%, 100% { transform: translate(-50%, -50%) scale(1.4); opacity: 0; } }
+/* Celebración (video con fondo transparente) y texto en 3D real */
+#capa .cp-vid video { position: absolute; left: 0; top: 0; width: 100%; height: 100%; object-fit: cover; }
+#capa .cp-gl { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+/* si el navegador no tiene 3D, el mismo texto plano */
+#capa .cp-flat { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2vh; text-align: center; animation: cpFlat 9s ease both; }
+#capa .cp-flat b { font: 900 16vh/1 "Source Sans 3", sans-serif; color: #ffc400; text-shadow: .5vh .5vh 0 var(--cp), 1vh 1vh 2vh rgba(0, 0, 0, .5); padding: 0 4vw; }
+#capa .cp-flat b.s { font-size: 8vh; color: #fff; }
+@keyframes cpFlat { 0% { opacity: 0; transform: scale(.6); } 8%, 90% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.1); } }
+
+/* GC Master: junto al espacio de texto, los botones de la capa gráfica (cortina, texto 3D, celebración, quitar) */
+.gm-txtrow { max-width: max(520px, calc((100vh - 470px) * 1.45)); margin: 10px auto 0; }
+.gm-all .gm-txtrow { max-width: none; }
+.gm-txtrow .gm-text { margin: 0; max-width: none; }
+.gm-capa { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, 1.45fr) minmax(0, 1fr); gap: 6px; margin-top: 6px; }
+.gm-ckey { display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; height: 34px; padding: 0 4px; border-radius: 9px; border: 2px solid #5a4a12; background: linear-gradient(#3a3110, #221c08); color: #fff; font-weight: 800; cursor: pointer; white-space: nowrap; }
+.gm-ckey span { font-size: 1rem; line-height: 1; } .gm-ckey b { font-size: .78rem; overflow: hidden; }
+.gm-ckey.on { background: linear-gradient(#ffc400, #c99700); border-color: #fff1b0; color: #1a1a1a; }
+@media (max-width: 700px) {
+  .gm-txtrow { max-width: 100%; margin-top: 6px; }
+  .gm-capa { gap: 4px; margin-top: 5px; } .gm-ckey { height: 30px; gap: 3px; border-width: 1px; } .gm-ckey span { font-size: .8rem; } .gm-ckey b { font-size: .6rem; }
+}
+@media (min-width: 900px) {
+  /* versión horizontal de un local: el texto sigue arriba a la derecha y los botones de la capa van abajo de la columna
+     derecha, en 2 filas de 2 (a los botones de arriba se les descuenta ese alto, para que todo siga cabiendo) */
+  .gm-one .gm-venue { --h3: calc(max(var(--H), var(--h1)) - var(--h2) - 10px - 72px);
+    grid-template-rows: auto var(--h2) var(--h3) 62px; grid-template-areas: "head txt txt" "p1 p3 p2" "p1 p3 keys" "p1 p3 capa"; }
+  .gm-one .gm-txtrow { display: contents; }
+  .gm-one .gm-txtrow .gm-text { grid-area: txt; align-self: center; margin: 0 0 0 10px; }
+  .gm-one .gm-capa { grid-area: capa; margin: 0 0 0 10px; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .gm-one .gm-ckey { height: 28px; padding: 0 3px; gap: 4px; }
+  .gm-one .gm-ckey span { font-size: .85rem; } .gm-one .gm-ckey b { font-size: min(.74rem, calc(var(--r) * .054)); }
+}
+/* «Los 3 locales»: el texto «GC personalizable» entero dentro de su botón */
+@media (min-width: 701px) { .gm-all .gm-key.gm-long b { font-size: .58rem; letter-spacing: -.01em; } }
+
+/* Capa gráfica: 4 efectos más (pedido de Cote, 22 nov): fuegos artificiales, lluvia de confeti y corazones (dibujados en un
+   lienzo transparente que se estira) y luces de escenario (haces de luz que barren desde arriba), todos en el mismo lienzo */
+#capa .cp-fx { animation: cpFx 7s linear both; }
+#capa .cp-fx canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+@keyframes cpFx { 0%, 90% { opacity: 1; } 100% { opacity: 0; } }
+
+/* GC Master: ahora son 8 botones de la capa (2 filas de 4); en la versión horizontal de un local van solo con su dibujo
+   (el nombre sale al pasar el mouse y en el aviso al apretar), para no quitarle espacio a la señal 1 ni a los botones */
+@media (min-width: 900px) {
+  .gm-one .gm-capa { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .gm-one .gm-ckey b { display: none; }
+  .gm-one .gm-ckey span { font-size: 1.05rem; }
+}
+@media (max-width: 700px) and (max-height: 640px) {
+  /* teléfonos bajos: botones un poco más bajos, para que la segunda fila de la capa quepa en la misma plana */
+  .gm-one .gm-key { height: 54px; } .gm-ckey { height: 26px; }
+}
+
+/* GC Master · «Sala de juegos» (pedido de Cote, 22 nov): a la izquierda las pantallas y botones de la sala abierta; a la
+   derecha, el panel real de la sala (crear sala, elegir y manejar cada juego), que queda a la vista al bajar */
+.gm-jg .gm-grid { grid-template-columns: minmax(340px, 36%) minmax(0, 1fr); align-items: start; }
+.gm-panel { position: sticky; top: 8px; height: calc(100vh - 74px); min-height: 420px; border: 2px solid #2c2850; border-radius: 12px; overflow: hidden; background: #12101f; }
+.gm-panel iframe { display: block; width: 100%; height: 100%; border: 0; }
+.gm-none p { margin: 0; color: #b9b4d8; line-height: 1.45; }
+.gm-jg .gm-head > b { white-space: nowrap; }
+@media (max-width: 900px) {
+  .gm-jg .gm-grid { grid-template-columns: minmax(0, 1fr); }
+  .gm-panel { position: static; height: 86vh; }
+}
+/* la barra de arriba con una pestaña más: en pantallas medianas las pestañas van más justas para que quepa en una línea */
+@media (min-width: 701px) and (max-width: 1500px) { .gm-nav { gap: 6px; } .gm-nav > b { margin: 0 4px 0 2px; font-size: 1.15rem; } .gm-tab { padding: 8px 9px; font-size: .92rem; white-space: nowrap; } .gm-back span { display: none; } }
+@media (min-width: 701px) and (max-width: 1150px) { .gm-nav > b { display: none; } .gm-tab { padding: 7px 7px; font-size: .84rem; } }
+
+/* Empate en la gran final del objeto (pedido de Cote, 22 nov): en la pantalla del ganador se dice por qué ganó */
+.vwin-tie { display: block; max-width: 86vw; margin: 1.6vh auto 0; font-size: 3.2vh; font-weight: 800; line-height: 1.25; text-align: center; color: #fff; }
+.vwin-tie b { display: block; margin-bottom: .4vh; font-size: 3.6vh; color: #ffc400; }
+.vc-tie { margin: 0 0 12px; padding: 10px 12px; border-radius: 10px; background: rgba(255, 196, 0, .12); border: 1px solid #ffc400; }
+.pvote-tie { display: block; margin-top: 8px; opacity: .9; }
+.vk-tie { max-width: 84vw; text-align: center; }
+.vk-tie b { display: block; margin-bottom: .6vh; font-size: 3vh; color: #ffc400; }
+.vk-tie span { display: block; font-size: 2.7vh; font-weight: 800; line-height: 1.25; color: #fff; }
+#vf .vf-main > .vf-tie { max-width: 100%; margin-top: 1.6vh; text-align: center; white-space: normal; font-size: 2.8vh; font-weight: 800; line-height: 1.25; color: #fff; }
+.vf-tie .t { margin-bottom: .4vh; color: #ffc400; }
+
+/* GC Master · «Sala de juegos»: el panel de la derecha va achicado (lo calcula master-ui.js) para que todo quepa */
+.gm-panel iframe { transform-origin: 0 0; }
+
+/* «Sala KRB»: la sala de juegos en el teléfono (pedido de Cote, 22 nov). Pantalla completa y sin bajar la página: fila de
+   arriba, 3 monitores chicos, la zona del medio (panel del juego o botones del GC y efectos) y las 2 teclas de abajo.
+   Respeta la muesca y la barra de inicio del iPhone (safe-area) */
+.gm-movil { display: none; }
+@media (max-width: 900px) { .gm-movil { display: block; margin: 0 0 8px; padding: 10px 12px; border-radius: 10px; background: #ffc400; color: #1a1a1a; font-weight: 800; text-align: center; text-decoration: none; } }
+body.gmm-on { overflow: hidden; overscroll-behavior: none; }
+body.gmm-on main { padding: 0; max-width: none; }
+body.gmm-on .krb-mark { display: none; }
+.gm-m { position: fixed; left: 0; top: 0; right: 0; bottom: 0; display: flex; flex-direction: column; gap: 6px; padding: calc(env(safe-area-inset-top, 0px) + 6px) calc(env(safe-area-inset-right, 0px) + 8px) 0 calc(env(safe-area-inset-left, 0px) + 8px); background: #12101f; }
+.gmm-top { flex: none; display: flex; align-items: baseline; gap: 8px; min-height: 24px; }
+.gmm-top > b { flex: none; font-size: 1.05rem; white-space: nowrap; }
+.gmm-top > span:not(.gm-clock) { flex: 1; min-width: 0; font-size: .74rem; opacity: .8; white-space: nowrap; overflow: hidden; }
+.gm-m .gm-clock { flex: none; margin: 0; } .gm-m .gm-clock i { display: none; } .gm-m .gm-clock b { font-size: 1rem; }
+.gmm-mon { flex: none; display: grid; grid-template-columns: 16fr 16fr 5.0625fr; gap: 4px; align-items: start; }
+.gmm-mon .gm-scr > small { padding: 1px 4px; font-size: .52rem; }
+.gmm-mon .gm-tall .gm-box { max-width: none; }
+.gmm-none { grid-column: 1 / -1; margin: 0; padding: 10px 12px; border: 1px dashed #3a3360; border-radius: 8px; font-size: .85rem; line-height: 1.35; color: #b9b4d8; }
+.gmm-body { flex: 1; min-height: 0; position: relative; }
+.gmm-pane { position: absolute; left: 0; top: 0; right: 0; bottom: 0; overflow: hidden; }
+.gmm-pane[hidden] { display: none; }
+.gm-m .gm-panel { position: absolute; height: auto; min-height: 0; border-width: 1px; border-radius: 8px; }
+.gmm-gc { overflow-y: auto; }
+.gmm-gc .gm-venue { padding: 2px 0 0; border: 0; border-radius: 0; background: none; }
+.gmm-gc .gm-row + .gm-row { margin-top: 12px; }
+.gm-m .gm-keyrow { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.gm-m .gm-key { height: 70px; padding: 4px 2px; }
+.gm-m .gm-key span { font-size: 1.5rem; } .gm-m .gm-key b { font-size: .66rem; line-height: 1.05; }
+.gm-m .gm-text { display: block; width: 100%; max-width: none; margin: 0 0 8px; padding: 10px 12px; font-size: 16px; }
+.gm-m .gm-capa { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0; }
+.gm-m .gm-ckey { height: 58px; flex-direction: column; gap: 2px; padding: 2px; white-space: normal; }
+.gm-m .gm-ckey span { font-size: 1.3rem; } .gm-m .gm-ckey b { font-size: .64rem; line-height: 1.05; }
+.gmm-tabs { flex: none; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 0 0 calc(env(safe-area-inset-bottom, 0px) + 6px); }
+.gmm-tabs button { display: flex; align-items: center; justify-content: center; gap: 8px; height: 46px; padding: 0 6px; border-radius: 10px; font-weight: 800; font-size: 1rem; }
+.gmm-tabs button span { font-size: 1.2rem; line-height: 1; }
+.gmm-tabs button.on { background: #ffc400; border-color: #ffc400; color: #1a1a1a; }
+/* «Sala KRB»: el monitor principal (GC) más grande (pedido de Cote, 22 nov: «que el video principal quede más grande»):
+   ocupa 3/4 del ancho; a su derecha, en una columna, el tablero arriba y la pantalla de pie abajo, del mismo alto total */
+.gmm-mon { grid-template-columns: minmax(0, 1fr) var(--r); grid-template-rows: auto auto; --W: calc(100vw - 16px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px)); --r: calc(var(--W) * .25);
+  --h1: calc((var(--W) - var(--r) - 4px) * .5625); --h3: calc(var(--h1) - var(--r) * .5625 - 4px); }
+.gmm-mon > .gm-scr:first-child { grid-row: 1 / 3; }
+.gmm-mon > .gm-tall { justify-self: center; width: calc(var(--h3) * .5625); }
+.gmm-mon > .gmm-none { grid-row: auto; }
+.gmm-mon > .gm-scr:not(:first-child) > small { padding: 1px 3px; font-size: .42rem; letter-spacing: 0; }
+
+/* Pantallas fluidas en cualquier equipo (pedido de Cote, 22 nov). En los monitores del GC Master (html.mon, ?mon=1) y en
+   los equipos que no dan abasto (html.lento, lo pone solo el vigilante de app.js) el fondo de las pantallas queda quieto:
+   se ve igual, pero el navegador deja de redibujar toda la pantalla sin parar. */
+html.mon body.full::before, html.lento body.full::before { animation: none !important; }
+/* y los rayos que giran detrás del sorteo de concursantes y de los ganadores (son capas enormes: pesan mucho en un equipo
+   modesto) quedan quietos en esos mismos dos casos; en un equipo normal siguen girando como siempre */
+html.mon body.full #rf .rf-rays, html.lento body.full #rf .rf-rays, html.mon #fb .bwin::before, html.lento #fb .bwin::before,
+html.mon body.full .win-screen::before, html.lento body.full .win-screen::before { animation: none !important; }
+
+/* «GC PER» (pedido de Cote, 22 nov): el texto escrito en el GC Master. Lo que va entre comillas sale destacado en amarillo
+   y el resto en blanco (sin nada destacado, se ve como siempre). En las pantallas del local (tablero, de pie, verticales)
+   la misma franja se agrega abajo, encima de lo que estén mostrando (#gcper, lo pone window.gcPer.over en app.js). */
+#lg .lg-custom mark { background: none; color: var(--gc-yellow); font: inherit; }
+#lg .lg-custom.has-hl .lg-main b { color: #fff; }
+#gcper { position: fixed; left: 0; top: 0; right: 0; bottom: 0; z-index: 60; pointer-events: none; }
+/* en las pantallas del local la franja va más baja y pegada abajo, con fondo opaco… */
+#gcper .lg-bottom { left: 2vw; right: 2vw; bottom: 1.2vh; height: auto; min-height: 9vh; background: var(--gc-dots, none), rgb(14, 12, 30); }
+#gcper .lg-tag { padding: 0 2vh; gap: .3vh; } #gcper .lg-tag small { font-size: 1.5vh; } #gcper .lg-tag b { font-size: 2.6vh; }
+#gcper .lg-main { padding: .8vh 2.4vh; }
+#gcper .lg-main b { font-size: min(4.8vh, calc(64vw / (var(--n, 10) * .6))); }
+#gcper .lg-custom .lg-main .lg-line { font-size: 2.9vh; }
+/* …y lo que la pantalla muestra se achica hacia arriba lo justo para que la franja no tape nada (--per-k lo calcula
+   window.gcPer con el alto real de la franja). En las pantallas del local, solo la actividad (el video no se achica). */
+body.full.per-on #app { position: fixed; left: 0; top: 0; right: 0; bottom: 0; transform: scale(var(--per-k, .88)); transform-origin: 50% 0; }
+body.vert-in.per-on .vt-act { transform: scale(var(--per-k, .9)); transform-origin: 50% 0; }
+@media (orientation: portrait) {
+  #gcper .lg-bottom { left: 3vw; right: 3vw; bottom: 1vh; min-height: 5.4vh; }
+  #gcper .lg-tag { display: none; }
+  #gcper .lg-main { border-left: 0; padding: .8vh 3vw; }
+  #gcper .lg-main b { font-size: min(3.6vh, calc(86vw / (var(--n, 10) * .6))); }
+  #gcper .lg-custom .lg-main .lg-line { font-size: 2.1vh; }
+}
+
+/* «Conectados» del GC Master (pedido de Cote, 22 nov): números en vivo por local, gráfico de línea de las últimas 3 horas y
+   registros por jornada. Los 4 colores de las series (--s1 a --s4) están validados para daltonismo sobre este fondo; el
+   texto nunca lleva el color de la serie (lo lleva la rayita de al lado). */
+.gm-con { --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --cx-ink: #f0efec; --cx-ink2: #c3c2b7; --cx-line: #2b2840; position: relative; }
+.cx-sub { display: flex; gap: 8px; margin: 10px 0 12px; }
+.cx-sub button { width: auto; margin: 0; padding: 9px 16px; border: 2px solid var(--cx-line); border-radius: 12px; background: #100e22; color: var(--cx-ink); font: 800 .95rem/1.2 inherit; font-family: inherit; box-shadow: none; cursor: pointer; }
+.cx-sub button.on { background: #ffc400; border-color: #ffc400; color: #1a1407; }
+.cx-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; align-items: start; }
+.cx-card { --gm: #1487cf; min-width: 0; display: grid; gap: 10px; padding: 14px; border-radius: 16px; background: #100e22; border: 3px solid var(--gm); }
+.cx-card.th-frida { --gm: #c4175e; } .cx-card.th-tobalaba { --gm: #c81e1e; }
+.cx-head { display: grid; gap: 2px; } .cx-head b { font-size: 1.25rem; font-weight: 900; } .cx-head small { color: var(--cx-ink2); font-size: .78rem; line-height: 1.3; }
+.cx-hero { display: flex; align-items: baseline; gap: 10px; } .cx-hero b { font-size: 3.2rem; font-weight: 900; line-height: 1; color: var(--cx-ink); font-variant-numeric: tabular-nums; } .cx-hero span { color: var(--cx-ink2); font-weight: 700; }
+.cx-leg { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px; }
+.cx-leg li { display: grid; grid-template-columns: auto 1fr auto; align-items: center; column-gap: 8px; min-width: 0; }
+.cx-leg i, .cx-tip i { width: 14px; height: 3px; border-radius: 2px; }
+.cx-leg span { color: var(--cx-ink2); font-size: .86rem; font-weight: 700; line-height: 1.15; }
+.cx-leg b { color: var(--cx-ink); font-size: 1.2rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+.cx-leg small { grid-column: 2 / 4; color: var(--cx-ink2); font-size: .72rem; opacity: .85; }
+.cx-chart { position: relative; min-width: 0; } .cx-chart svg { display: block; max-width: 100%; }
+.cx-g { stroke: var(--cx-line); stroke-width: 1; } .cx-ax { fill: var(--cx-ink2); font-size: 10.5px; font-family: inherit; }
+.cx-l { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.cx-x { stroke: var(--cx-ink2); stroke-width: 1; opacity: .7; } .cx-d { stroke: #100e22; stroke-width: 2; }
+.cx-hit { fill: transparent; cursor: crosshair; outline: none; } .cx-hit:focus-visible { stroke: var(--cx-ink2); stroke-width: 1; stroke-dasharray: none; }
+.cx-tip { position: absolute; z-index: 5; display: grid; gap: 4px; padding: 9px 12px; border: 1px solid var(--cx-line); border-radius: 10px; background: #1b1830; color: var(--cx-ink); pointer-events: none; box-shadow: 0 8px 22px rgba(0, 0, 0, .45); white-space: nowrap; }
+.cx-tip[hidden] { display: none; }
+.cx-tip b { font-size: .82rem; color: var(--cx-ink2); } .cx-tip span { display: grid; grid-template-columns: auto auto 1fr; align-items: center; column-gap: 8px; }
+.cx-tip strong { font-size: 1.05rem; font-weight: 900; font-variant-numeric: tabular-nums; min-width: 2ch; text-align: right; } .cx-tip em { font-style: normal; color: var(--cx-ink2); font-size: .84rem; }
+.cx-empty { margin: 6px 0 0; color: var(--cx-ink2); font-size: .86rem; }
+.cx-tabla summary { cursor: pointer; color: var(--cx-ink2); font-size: .84rem; font-weight: 700; }
+.gm-con table { width: 100%; border-collapse: collapse; font-size: .84rem; font-variant-numeric: tabular-nums; }
+.gm-con th, .gm-con td { padding: 6px 8px; border-bottom: 1px solid var(--cx-line); text-align: right; white-space: nowrap; color: var(--cx-ink); }
+.gm-con th { color: var(--cx-ink2); font-weight: 700; } .gm-con th:first-child, .gm-con td:first-child, .cx-reg th:nth-child(2), .cx-reg td:nth-child(2) { text-align: left; }
+.cx-reg tbody tr td:nth-child(2) { border-left: 4px solid var(--gm, #1487cf); font-weight: 800; }
+.cx-reghead { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 10px; } .cx-reghead p { margin: 0; color: var(--cx-ink2); font-size: .86rem; line-height: 1.4; } .cx-reghead .btn { flex: none; }
+.cx-scroll { overflow-x: auto; }
+@media (max-width: 1000px) { .cx-grid { grid-template-columns: 1fr; } .cx-reghead { flex-direction: column; align-items: flex-start; } }
+.cx-reg tr.th-frida { --gm: #c4175e; } .cx-reg tr.th-kennedy { --gm: #1487cf; } .cx-reg tr.th-tobalaba { --gm: #c81e1e; }
+/* con la pestaña «Conectados» son 6: en el teléfono cada pestaña ocupa lo que pide su nombre (así ninguno se corta) */
+@media (max-width: 700px) { .gm-nav .gm-tab { flex: 1 1 0; min-width: min-content; padding-left: 2px; padding-right: 2px; font-size: min(.72rem, 2.9vw); } .gm-nav { gap: 3px; } }
+/* y entre el teléfono y el computador (tabletas de pie), la hora baja a su propia línea para que quepan las 6 */
+@media (min-width: 701px) and (max-width: 980px) { .gm-nav { flex-wrap: wrap; } .gm-nav .gm-clock { flex: 1 0 100%; flex-direction: row; justify-content: center; align-items: baseline; gap: 8px; margin: 0; } }
+@media (max-width: 520px) { .cx-leg { grid-template-columns: 1fr; } .cx-sub button { padding: 8px 12px; font-size: .88rem; } }
+.cx-reg th { white-space: normal; vertical-align: bottom; line-height: 1.15; }
+
+/* «Clientes» del GC Master (pedido de Cote, 22 nov): jornadas a la izquierda y la ficha de cada persona a la derecha */
+.cl-top { display: flex; align-items: center; gap: 12px; margin: 10px 0 12px; }
+.cl-top input { flex: 1 1 260px; max-width: 460px; margin: 0; padding: 10px 14px; border: 2px solid var(--cx-line); border-radius: 12px; background: #100e22; color: var(--cx-ink); font: inherit; }
+.cl-top span { flex: 1; color: var(--cx-ink2); font-size: .86rem; } .cl-top .btn { flex: none; }
+.cl-grid { display: grid; grid-template-columns: minmax(210px, 280px) minmax(0, 1fr); gap: 14px; align-items: start; }
+.cl-jor { display: grid; gap: 8px; max-height: calc(100vh - 170px); overflow-y: auto; }
+.cl-j { --gm: #1487cf; width: 100%; margin: 0; display: grid; gap: 2px; padding: 9px 12px; text-align: left; border: 2px solid var(--cx-line); border-left: 5px solid var(--gm); border-radius: 10px; background: #100e22; color: var(--cx-ink); font: inherit; box-shadow: none; cursor: pointer; }
+.cl-j.th-frida { --gm: #c4175e; } .cl-j.th-tobalaba { --gm: #c81e1e; }
+.cl-j.on { border-color: #ffc400; border-left-color: var(--gm); background: #1b1830; }
+.cl-j b { font-size: 1rem; font-weight: 900; } .cl-j span { font-size: .8rem; color: var(--cx-ink2); } .cl-j small { font-size: .74rem; color: var(--cx-ink2); opacity: .85; }
+.cl-per { min-width: 0; } .cl-per td, .cl-per th { text-align: left; } .cl-per td { max-width: 260px; white-space: normal; }
+.cl-per th { white-space: normal; vertical-align: bottom; line-height: 1.15; } .cl-per td:first-child { font-weight: 800; white-space: nowrap; }
+.cl-h { margin: 0 0 8px; color: var(--cx-ink2); font-size: .9rem; }
+@media (max-width: 800px) { .cl-top { flex-wrap: wrap; } .cl-top span { flex: 1 0 100%; order: 3; } .cl-grid { grid-template-columns: 1fr; } .cl-jor { grid-auto-flow: column; grid-auto-columns: minmax(200px, 70%); overflow-x: auto; max-height: none; } }
+
+/* GC Master · sonido y pantalla grande de los monitores de la sala de juegos (pedido de Cote, 23 nov: «habilitar sonido para
+   pantalla 1 y 2, yo elijo cuál suena, también la opción de pantalla completa dentro de la zona delimitada para pantalla…
+   mejora la relación de portes»). Los botoncitos van en la esquina de cada pantalla; la pantalla agrandada ocupa toda la
+   zona de las pantallas, por encima de las otras, sin tapar los botones de abajo. */
+.gm-tools { position: absolute; right: 0; top: 0; z-index: 3; display: flex; gap: 2px; }
+.gm-tool { display: flex; align-items: center; gap: 5px; margin: 0; padding: 4px 9px; min-height: 26px; border: 0; border-radius: 0; background: rgba(0, 0, 0, .78); color: #fff; font: inherit; font-size: .74rem; font-weight: 800; line-height: 1; cursor: pointer; }
+.gm-tool:hover, .gm-tool:focus-visible { background: #2c2850; }
+.gm-tool.on { background: #ffd76a; color: #14101f; }
+.gm-tall .gm-tool b { display: none; }
+.gm-jg .gm-screens, .gmm-mon { position: relative; }
+.gm-jg .gm-left { position: static; }
+.gm-scr.gm-big { position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: 6; display: flex; align-items: center; justify-content: center; background: #05040a; width: auto; }
+.gm-scr.gm-big > .gm-box { flex: none; width: 100%; max-width: none; }
+.gm-scr.gm-tall.gm-big > .gm-box { width: auto; height: 100%; }
+.gm-scr.gm-big .gm-tool b { display: inline; }
+.gm-scr.gm-big .gm-tool { padding: 6px 12px; min-height: 32px; font-size: .84rem; }
+/* mejor relación de portes: las pantallas crecen hasta ocupar el alto libre de la ventana (antes, siempre el 36 % del ancho) */
+@media (min-width: 901px) {
+  .gm-jg .gm-grid { grid-template-columns: clamp(340px, calc((100vh - 345px) * 1.075), 48%) minmax(0, 1fr); grid-template-columns: clamp(340px, calc((100dvh - 345px) * 1.075), 48%) minmax(0, 1fr); }
+}
+/* «Sala KRB» (teléfono): botoncitos más chicos; en los dos monitores chicos, solo el dibujo */
+.gmm-mon .gm-tool { padding: 3px 6px; min-height: 24px; font-size: .62rem; }
+.gmm-mon > .gm-scr:not(.gm-big) .gm-tool b { display: none; }
+.gmm-mon > .gm-scr:not(:first-child):not(.gm-big) .gm-tools { top: auto; bottom: 0; }
+.gmm-mon > .gm-scr:not(:first-child):not(.gm-big) .gm-tool { padding: 2px 4px; min-height: 20px; }
+.gmm-mon > .gm-scr.gm-big { grid-area: 1 / 1 / -1 / -1; width: auto; justify-self: stretch; }
+
+/* GC Master · «Sala de juegos», reacomodo (pedido de Cote, 23 nov: «el lado derecho está muy grande y el lado izquierdo muy
+   chico… pasar los botones al lado derecho, debajo de los juegos, y dejar las pantallas un poco más grandes»): a la
+   izquierda solo las pantallas, lo más grandes que permite el alto de la ventana; a la derecha, el panel de los juegos y,
+   debajo, los botones del GC (una fila de 10), el texto y los efectos (una fila de 8). */
+.gm-jgright { min-width: 0; display: grid; gap: 8px; }
+.gm-jgctl { padding: 8px 10px; }
+.gm-jgctl[hidden] { display: none; }
+.gm-jgctl .gm-keys, .gm-jgctl .gm-txtrow { max-width: none; margin-left: 0; margin-right: 0; }
+@media (min-width: 901px) {
+  .gm-jg .gm-grid { grid-template-columns: clamp(380px, calc((100vh - 150px) * 1.45), 60%) minmax(0, 1fr); grid-template-columns: clamp(380px, calc((100dvh - 150px) * 1.45), 60%) minmax(0, 1fr); }
+  .gm-jgright { position: sticky; top: 8px; height: calc(100vh - 74px); height: calc(100dvh - 74px); min-height: 480px; grid-template-rows: minmax(0, 1fr) auto; }
+  .gm-jgright .gm-panel { position: static; height: auto; min-height: 0; }
+  .gm-jgctl .gm-keyrow { grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 6px; }
+  .gm-jgctl .gm-key { min-height: 58px; height: auto; padding: 8px 2px 6px; }
+  .gm-jgctl .gm-key span { font-size: 1.35rem; } .gm-jgctl .gm-key b { font-size: .68rem; }
+  .gm-jgctl .gm-capa { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+  .gm-jgctl .gm-ckey b { font-size: .68rem; }
+  .gm-jgctl .gm-row > small { margin-bottom: 4px; }
+  .gm-jgctl .gm-txtrow { margin-top: 6px; }
+}
+@media (min-width: 901px) { .gm-jgctl .gm-ckey { gap: 3px; padding: 0 2px; } .gm-jgctl .gm-ckey span { font-size: .85rem; } .gm-jgctl .gm-ckey b { font-size: .6rem; } }
+@media (min-width: 901px) and (max-width: 1700px) { .gm-jgctl .gm-ckey b { display: none; } .gm-jgctl .gm-ckey span { font-size: 1rem; } .gm-jgctl .gm-key b { font-size: .56rem; } .gm-jgctl .gm-keyrow { gap: 4px; } }
+@media (max-width: 900px) { .gm-jgright { display: contents; } .gm-jgctl { order: 2; } .gm-jgright .gm-panel { order: 3; } }
+
+/* El botón que sigue: siempre verde y siempre en el mismo lugar (pedido de Cote, 23 nov). «paso» lo marca cada panel;
+   «paso-fijo» lo pone app.js en uno solo, que queda fijo arriba de la página, a todo el ancho del panel. */
+button.paso, a.paso, .win-actions button.paso { background: #16a34a; border-color: #16a34a; color: #fff; font-weight: 800; }
+button.paso:hover:not(:disabled), a.paso:hover { background: #15803d; border-color: #15803d; }
+button.paso:disabled { background: #1f5133; border-color: #1f5133; color: #cfe9d8; opacity: 1; }
+.paso.paso-fijo { position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 60; box-sizing: border-box; width: min(calc(100vw - 24px), 900px); min-height: 64px; margin: 0 !important; padding: 12px 18px; font-size: 1.25rem; line-height: 1.2; text-align: center; white-space: normal; border-radius: 14px; box-shadow: 0 0 0 4px var(--bg, #12101f), 0 8px 22px rgba(0, 0, 0, .55); }
+a.paso.paso-fijo { display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; }
+body.con-paso #app { padding-top: calc(var(--paso-h, 64px) + 22px) !important; }
+body.con-paso #ctl-reload-fixed { top: calc(var(--paso-h, 64px) + 20px); }
+
+/* Logo de Frida con el dibujo encima de las letras (Cote, 23 nov): en los GC de OBS va más alto que el de KRB Stage */
+.venue-mark.vm-alto img:last-child { height: 9.6vh; }
+.venue-mark.vm-alto i { height: 6vh; }
