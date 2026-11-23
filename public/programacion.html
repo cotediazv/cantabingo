@@ -182,7 +182,7 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
       var p = x.fecha.split('-').map(Number);
       LOCS.forEach(function (l) {
         var c = x.locales[l]; var sh = c.show; if (!c.abierto || !sh || !sh.tipo || interno(sh)) return; n++;
-        var nombre = sh.tipo === 'piano' ? 'Piano Man' : sh.tipo === 'bingo' ? 'Bingo de Frida' : (sh.tipo === 'standup' ? 'Stand Up: ' : sh.tipo === 'doble' ? 'Doble de ' : sh.tipo === 'tributo' ? 'Tributo a ' : '') + (sh.nombre || '') + (sh.artista ? ' (' + sh.artista + ')' : '');
+        var nombre = sh.tipo === 'piano' ? 'Piano Man' : sh.tipo === 'bingo' ? 'Los juegos de ' + ({ MK: 'Mercado Kennedy', TOB: 'Tobalaba', FRIDA: 'Frida' })[l] : (sh.tipo === 'standup' ? 'Stand Up: ' : sh.tipo === 'doble' ? 'Doble de ' : sh.tipo === 'tributo' ? 'Tributo a ' : '') + (sh.nombre || '') + (sh.artista ? ' (' + sh.artista + ')' : '');
         h += '<div class="loc" style="--c:var(--' + l + ');background:var(--panel);border-radius:10px;margin:8px 0"><h4><span>' + DIAS[x.wd].slice(0, 3) + ' ' + p[2] + ' · ' + NL[l] + '</span></h4><div>' + esc(nombre) + '</div>' + camposPago(x.fecha, l, sh) + '</div>';
       });
     });
