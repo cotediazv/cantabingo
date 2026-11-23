@@ -29,7 +29,23 @@ button { cursor: pointer; }
 .btn.chico { padding: 4px 9px; font-size: 13px; }
 .btn:disabled { opacity: .45; cursor: default; }
 .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; display: flex; background: #12101a; border-top: 1px solid var(--linea); padding-bottom: env(safe-area-inset-bottom); }
-.tabs button { flex: 1; background: none; border: 0; padding: 12px 2px; color: var(--suave); font-weight: 800; font-size: 12px; }
+.tabs button { flex: 1 1 auto; background: none; border: 0; padding: 12px 3px; color: var(--suave); font-weight: 800; font-size: 12px; }
+@media (max-width: 480px) { .tabs button { font-size: 10.5px; padding: 12px 1px; } }
+.pers td, .pers th { border-bottom: 1px solid var(--linea); padding: 6px 4px; }
+.pers td.n, .pers th.n { text-align: right; font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
+.pers tr.tot td { font-weight: 800; border-top: 2px solid var(--foco); }
+.pers tr[data-ver] { cursor: pointer; }
+.solo-imp { display: none; }
+@media print {
+  html, body { background: #fff !important; color: #000 !important; }
+  .top, .tabs, .no-imp, .aviso { display: none !important; }
+  .solo-imp { display: block; }
+  .panel { border: 0 !important; background: #fff !important; padding: 0 !important; }
+  .panel, .panel * { color: #000 !important; }
+  .pers tr.tot td { border-top-color: #000 !important; }
+  .pers td, .pers th { border-color: #999; font-size: 12px; }
+  body { padding: 0; }
+}
 .chk { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--linea); }
 .chk input { width: 20px; height: 20px; flex: none; }
 .paso h3 { font-size: 18px; color: var(--foco); margin: 0 0 6px; }
@@ -115,7 +131,7 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
   }
 
   function marco(contenido) {
-    var tabs = [['mes', 'Programación'], ['prellenar', 'Prellenar'], ['shows', 'Shows'], ['archivos', 'Archivos'], ['equipo', 'Equipo'], ['glosa', 'GLOSA']];
+    var tabs = [['mes', 'Programación'], ['prellenar', 'Prellenar'], ['shows', 'Shows'], ['personas', 'Personas'], ['archivos', 'Archivos'], ['equipo', 'Equipo'], ['glosa', 'GLOSA']];
     return '<div class="top"><div class="wrap"><h1>Programación</h1><div class="mes"><button class="btn chico" data-mes="-1">◀</button><b>' + esc(S.data.nombre) + '</b><button class="btn chico" data-mes="1">▶</button></div></div></div>' +
       '<div class="wrap" id="cont">' + contenido + '</div>' +
       '<nav class="tabs">' + tabs.map(function (t) { return '<button data-vista="' + t[0] + '" class="' + (S.vista === t[0] ? 'on' : '') + '">' + t[1] + '</button>'; }).join('') + '</nav>';
@@ -127,12 +143,13 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
   }
   function pintar() {
     var y = window.scrollY;
-    var html = S.vista === 'archivos' ? '<div id="arch"><p class="vacio">Armando los archivos…</p></div>' + vistaImportar() : S.vista === 'shows' ? vistaShows() : S.vista === 'prellenar' ? vistaPrellenar() : S.vista === 'equipo' ? vistaEquipo() : S.vista === 'glosa' ? vistaGlosa() : vistaMes();
+    var html = S.vista === 'archivos' ? '<div id="arch"><p class="vacio">Armando los archivos…</p></div>' + vistaImportar() : S.vista === 'shows' ? vistaShows() : S.vista === 'prellenar' ? vistaPrellenar() : S.vista === 'personas' ? vistaPersonas() : S.vista === 'equipo' ? vistaEquipo() : S.vista === 'glosa' ? vistaGlosa() : vistaMes();
     $app.innerHTML = marco(html);
     $app.querySelectorAll('[data-vista]').forEach(function (b) { b.onclick = function () { S.vista = b.dataset.vista; try { localStorage.setItem('progVista', S.vista); } catch (e) {} window.scrollTo(0, 0); pintar(); }; });
     $app.querySelectorAll('[data-mes]').forEach(function (b) { b.onclick = function () { moverMes(Number(b.dataset.mes)); }; });
     if (S.vista === 'mes' || S.vista === 'shows') enlazarMes();
     if (S.vista === 'prellenar') enlazarPrellenar();
+    if (S.vista === 'personas') enlazarPersonas();
     if (S.vista === 'archivos') { cargarArchivos(); enlazarImportar(); }
     if (S.vista === 'equipo') enlazarEquipo();
     if (S.vista === 'glosa') enlazarGlosa();
@@ -237,6 +254,52 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
         api('POST', '/api/prog/plantilla', { clave: el.dataset.pt, celda: c }).then(function (j) { S.data.plantilla = j.plantilla; aviso('Semana tipo guardada'); }).catch(function (e) { aviso(e.message); });
       };
     });
+  }
+  // ---------- Personas: detalle de cada una en el mes, para contrastar las transferencias (Cote, 23 nov) ----------
+  var ROL_TXT = { dj: 'DJ', extra: 'Técnico o capacitación', cantante: 'Animador cantante', animador: 'Animador', camH: 'Cámara en vivo', camHx: 'Cámara (turno extra)', camV: 'Cámara vertical', camVx: 'Cámara (turno extra)', editor: 'Edición' };
+  // Una fila por cada vez que la persona aparece en un día y local, con lo que cobra (o «sin pago aparte»)
+  function turnosDelMes() {
+    var out = {};
+    S.data.fechas.forEach(function (x) {
+      if (x.cortesia) return;
+      LOCS.forEach(function (l) {
+        var c = x.locales[l]; if (!c.abierto) return;
+        Object.keys(ROL_TXT).forEach(function (k) {
+          var n = c[k]; if (!n) return;
+          var pg = (c.pagos || []).filter(function (p) { return p.rol === k; })[0];
+          (out[n] = out[n] || []).push({ fecha: x.fecha, x: x, l: l, rol: k, monto: pg ? pg.monto : null, falta: pg && pg.falta });
+        });
+      });
+    });
+    return out;
+  }
+  function vistaPersonas() {
+    var T = turnosDelMes(); var nombres = Object.keys(T).sort(function (a, b) { return a.localeCompare(b, 'es'); });
+    var sel = S.persona && T[S.persona] ? S.persona : '';
+    var tot = function (xs) { return xs.reduce(function (s, t) { return s + (t.monto || 0); }, 0); };
+    var dias = function (xs) { return xs.map(function (t) { return t.fecha; }).filter(function (v, i, a) { return a.indexOf(v) === i; }).length; };
+    var h = '<div class="panel no-imp"><h2>Personas · ' + esc(S.data.nombre) + '</h2><p>Elige a una persona para ver todas sus fechas del mes, con el local, lo que hizo y el monto. Sirve para contrastar las transferencias. Se puede imprimir o guardar como PDF.</p>' +
+      '<div class="fila"><div class="campo"><small>Persona</small><select id="psel"><option value="">— Todas (resumen) —</option>' + nombres.map(function (n) { return '<option' + (n === sel ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('') + '</select></div>' +
+      '<button class="btn foco" id="pimp" style="align-self:flex-end">Imprimir o guardar PDF</button></div></div>';
+    if (!sel) {
+      var gran = 0;
+      h += '<div class="panel"><h2 class="solo-imp">Resumen del equipo · ' + esc(S.data.nombre) + '</h2><table class="pers"><tr><th>Persona</th><th class="n">Días</th><th class="n">Turnos</th><th class="n">Total</th></tr>' +
+        nombres.map(function (n) { var t = tot(T[n]); gran += t; return '<tr data-ver="' + esc(n) + '"><td>' + esc(n) + '</td><td class="n">' + dias(T[n]) + '</td><td class="n">' + T[n].length + '</td><td class="n">' + plata(t) + (T[n].some(function (z) { return z.falta; }) ? ' <span class="faltan">*</span>' : '') + '</td></tr>'; }).join('') +
+        '<tr class="tot"><td>Total</td><td></td><td></td><td class="n">' + plata(gran) + '</td></tr></table>' +
+        (nombres.some(function (n) { return T[n].some(function (z) { return z.falta; }); }) ? '<p class="faltan">* Hay turnos sin tarifa: revisa Archivos.</p>' : '') + '<p class="no-imp vacio">Toca un nombre para ver su detalle.</p></div>';
+      return h;
+    }
+    var xs = T[sel];
+    h += '<div class="panel"><h2>' + esc(sel) + ' · ' + esc(S.data.nombre) + '</h2><p>' + dias(xs) + ' ' + (dias(xs) === 1 ? 'día' : 'días') + ' · ' + xs.length + ' ' + (xs.length === 1 ? 'turno' : 'turnos') + '</p>' +
+      '<table class="pers"><tr><th>Fecha</th><th>Local</th><th>Qué hizo</th><th class="n">Monto</th></tr>' +
+      xs.map(function (t) { var d = Number(t.fecha.slice(8)); return '<tr><td>' + DIAS[t.x.wd] + ' ' + d + '</td><td>' + NL[t.l] + '</td><td>' + ROL_TXT[t.rol] + '</td><td class="n">' + (t.falta ? '<span class="faltan">sin tarifa</span>' : t.monto == null ? 'sin pago aparte' : plata(t.monto)) + '</td></tr>'; }).join('') +
+      '<tr class="tot"><td colspan="3">Total del mes</td><td class="n">' + plata(tot(xs)) + '</td></tr></table></div>';
+    return h;
+  }
+  function enlazarPersonas() {
+    document.getElementById('psel').onchange = function () { S.persona = this.value; pintar(); };
+    document.getElementById('pimp').onclick = function () { window.print(); };
+    document.querySelectorAll('tr[data-ver]').forEach(function (tr) { tr.onclick = function () { S.persona = tr.dataset.ver; window.scrollTo(0, 0); pintar(); }; });
   }
   var TIPOS_LOC = { MK: { 4: ['standup'], 5: ['piano'], 6: ['tributo', 'otro'] }, TOB: { 5: ['otro'] }, FRIDA: { 5: ['doble', 'otro'], 6: ['doble', 'otro'], 0: ['bingo'] } };
   function bloqueShow(f, l, wd, c) {
