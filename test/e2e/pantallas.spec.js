@@ -78,7 +78,7 @@ test('celular · entrar a la sala (sin nombre todavía)', async ({ page }) => {
 });
 
 const PANELS = [
-  ['control', '#/control'], ['bingo', `#/anfitrion/${projectId}`], ['rosco', `#/ruedactl/${wheelId}`],
+  ['inicio', '#/'], ['control', '#/control'], ['bingo', `#/anfitrion/${projectId}`], ['rosco', `#/ruedactl/${wheelId}`],
   ['sorteo', '#/sorteoctl'], ['votacion', '#/votoctl'], ['desafio', '#/desafioctl'], ['instagram', '#/instactl'],
   ['juegos', '#/juegos'],
 ];
@@ -110,11 +110,12 @@ for (const page of ['cc.html', 'pv.html']) {
   });
 }
 
-// Sin portada (23 nov): la dirección de siempre lleva directo al Centro de control
-test('#/ lleva al Centro de control', async ({ page }) => {
+// Inicio del animador: un solo botón grande; «Continuar» abre directo el juego en curso
+test('inicio: Continuar abre el juego en curso', async ({ page }) => {
+  await setStage('bingo');
   const errors = await open(page, '#/', { size: PANEL, admin: true });
-  await expect(page).toHaveURL(/#\/control$/);
-  await expect(page.locator('h1')).toHaveText('Centro de control');
+  await page.locator('.home-create').click();
+  await expect(page).toHaveURL(new RegExp(`#/anfitrion/${projectId}$`));
   expect(errors).toEqual([]);
 });
 
@@ -142,8 +143,8 @@ test('Ir a la sala en juego abre el juego en curso', async ({ page }) => {
 // Crear la sala desde el Centro de control (va al final: cierra la sala de los datos fijos)
 test('crear sala de juegos: local y listo', async ({ page }) => {
   await srv.admin.post(`/api/sessions/${sid}/host/close`);
-  const errors = await open(page, '#/control', { size: PANEL, admin: true });
-  await page.locator('#ctl-sala-go a').click();
+  const errors = await open(page, '#/', { size: PANEL, admin: true });
+  await page.locator('.home-create').click();
   await expect(page).toHaveURL(/#\/nuevo$/);
   await page.locator('[data-venue="tobalaba"]').click();
   await page.getByRole('button', { name: '🎮 Crear sala de juegos' }).click();

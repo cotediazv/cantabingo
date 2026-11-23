@@ -306,15 +306,17 @@ if (new URLSearchParams(location.search).has('diag')) {
 
 // Barra de arriba de los paneles del animador: una sola para todos (23 nov; reemplaza el «Refrescar» suelto de cada
 // panel, pedido de Cote del 20 nov, y el enlace «Centro de control» de abajo). A la izquierda, volver a donde
-// corresponde: los paneles de los juegos a la Sala de juegos; la Sala de juegos y los ajustes, al Centro de control.
+// corresponde: los paneles de los juegos a la Sala de juegos; la Sala de juegos y el Centro de control, al inicio; los
+// ajustes (salas light, consola, pantallas de los locales), al Centro de control.
 // A la derecha, «↻ Refrescar» (en la aplicación instalada no hay cómo recargar). Dentro del GC Master (iframe) no lleva
 // «volver», porque el GC Master tiene su propio menú. Va fuera de #app, así no se borra cuando un panel se redibuja.
 (() => {
-  const PANELS = /^#\/?(control|juegos|figura|anfitrion|ronda|nuevo|votoctl|desafioctl|enpiectl|ruedactl|sorteoctl|karaokectl|showctl|instactl|light$|consola|verticalctl)/;
+  const PANELS = /^#\/?($|control|juegos|figura|anfitrion|ronda|nuevo|votoctl|desafioctl|enpiectl|ruedactl|sorteoctl|karaokectl|showctl|instactl|light$|consola|verticalctl)/;
   const CONTROL = ['#/control', 'Centro de control'];
   const backOf = (name, arg) => {
-    if (name === 'control') return null;
-    if (['juegos', 'nuevo', 'light', 'consola', 'verticalctl'].includes(name)) return CONTROL;
+    if (!name) return null; // el inicio
+    if (['control', 'juegos', 'nuevo'].includes(name)) return ['#/', 'Inicio']; // lo del animador vuelve al inicio
+    if (['light', 'consola', 'verticalctl'].includes(name)) return CONTROL; // ajustes de Cote
     if (name === 'karaokectl' && arg) return ['#/light', 'Salas light']; // karaoke de una sala light
     if (name === 'ronda' && arg) return [`#/anfitrion/${arg}`, 'Panel del bingo'];
     return ['#/juegos', 'Sala de juegos'];

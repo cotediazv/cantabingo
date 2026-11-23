@@ -25,9 +25,22 @@ const isAdmin = async () => Boolean(store.get('adminToken')) && (await api('GET'
 
 
 views.home = async () => {
-  // Pedido de Gabriel (23 nov): la portada sobraba (solo repetía el botón de la sala, que ya está arriba en el Centro de
-  // control). La dirección de siempre (#/) lleva directo al Centro de control, sin dejar un paso más en el historial.
-  location.replace(`${location.pathname}${location.search}#/control`);
+  if (!(await isAdmin())) return viewLogin();
+  // Inicio del animador (Gabriel, 23 nov: «para que el animador no vea miles de botones y solo apriete iniciar juego»):
+  // un solo botón grande para crear la sala o seguir con la abierta. El Centro de control (ajustes) es de Cote.
+  // Una sola sala a la vez: si ya hay una abierta, se continúa con ella (directo al juego en curso, si hay uno)
+  const open = (await activeSessions())[0];
+  if (open) store.set('lastBingo', open.projectId);
+  app.innerHTML = `
+    <div class="home">
+      <h1>KRB Stage · Sala de juegos</h1>
+      ${open ? `<a class="home-create open" href="#/juegos/seguir"><span>▶</span>Continuar: ${esc(open.name)}</a>
+        <p class="muted small home-note">Hay una sala abierta. Para crear otra, primero ciérrala en el Centro de control.</p>`
+    : '<a class="home-create" href="#/nuevo"><span>🎮</span>Crear sala de juegos</a>'}
+      <a class="home-control home-control-sm" href="#/control">🎛️ Centro de control</a>
+      <p style="margin-top:28px"><button id="logout">Cerrar sesión de moderador</button></p>
+    </div>`;
+  $('#logout').onclick = () => { store.del('adminToken'); route(); };
   return undefined;
 };
 
