@@ -111,7 +111,7 @@ module.exports = function programacion({ app, dir }) {
     if (!p) { p = { nombre, codigo: plain(nombre), roles: [] }; P.personas.push(p); }
     if (rol && !p.roles.includes(rol)) p.roles.push(rol);
   };
-  // La tarifa más específica: persona, local y día de la semana (o «todos»)
+  // La tarifa más específica: día de la semana, local y persona (o «todos»)
   function tarifa(codigo, rol, local, wd) {
     let best = null; let score = -1;
     for (const t of P.tarifas) {
@@ -119,7 +119,9 @@ module.exports = function programacion({ app, dir }) {
       if (t.persona !== codigo && t.persona !== '*') continue;
       if (t.local !== local && t.local !== '*') continue;
       if (String(t.dia) !== String(wd) && t.dia !== '*') continue;
-      const s = (t.persona === codigo ? 4 : 0) + (t.local === local ? 2 : 0) + (t.dia !== '*' ? 1 : 0);
+      // Gana la más específica en día y local; con el mismo día y local, la de la persona. Así una regla general como
+      // «Todos · Cámara · Kennedy · Viernes» (el karaoke, Cote, 23 nov) vale para todos, salvo quien tenga una propia de ese mismo día y local
+      const s = (t.dia !== '*' ? 4 : 0) + (t.local === local ? 2 : 0) + (t.persona === codigo ? 1 : 0);
       if (s >= score) { score = s; best = t; }
     }
     return best ? Number(best.monto) || 0 : null;

@@ -499,7 +499,7 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
       '</table><div class="fila" style="margin-top:8px"><button class="btn chico" id="padd">＋ Persona</button><button class="btn foco chico" id="psave">Guardar equipo</button></div></div>';
     var codigos = d.personas.map(function (p) { return p.codigo; });
     var opt = function (vals, v) { return vals.map(function (x) { return '<option value="' + esc(x[0]) + '"' + (String(x[0]) === String(v) ? ' selected' : '') + '>' + esc(x[1]) + '</option>'; }).join(''); };
-    var tar = '<div class="panel"><h2>Tarifas (neto por turno)</h2><p>Vale la más específica: persona, local y día. «Todos» sirve para cualquiera. Se guardan solo en los datos de la plataforma.</p><table><tr><th>Persona</th><th>Rol</th><th>Local</th><th>Día</th><th>Monto</th><th></th></tr>' +
+    var tar = '<div class="panel"><h2>Tarifas (neto por turno)</h2><p>Vale la más específica: primero el día, después el local y después la persona. «Todos» sirve para cualquiera; por ejemplo, «Todos · Cámara · Kennedy · Viernes» vale para todas las cámaras del karaoke de Kennedy, salvo quien tenga una tarifa propia de ese mismo día y local. Se guardan solo en los datos de la plataforma.</p><table><tr><th>Persona</th><th>Rol</th><th>Local</th><th>Día</th><th>Monto</th><th></th></tr>' +
       d.tarifas.map(function (t, i) {
         return '<tr data-t="' + i + '"><td><select data-tk="persona">' + opt([['*', 'Todos']].concat(codigos.concat(codigos.indexOf(t.persona) < 0 && t.persona !== '*' ? [t.persona] : []).map(function (c) { return [c, c]; })), t.persona) + '</select></td>' +
           '<td><select data-tk="rol">' + opt([['ent', 'Entretención'], ['cam', 'Cámara'], ['edi', 'Edición']], t.rol) + '</select></td>' +
