@@ -19,7 +19,7 @@ const K_SIGNUP_MS = 90000; // El Festival: la inscripción dura 90 segundos (ped
 const K_MAX = 3; // El Festival parte siempre con 3 participantes (se puede cambiar)
 const SAMPLE_MS = 8000;
 const OPEN_MS = Number(process.env.VOTE_OPEN_MS) || 8000; // cada participante se evalúa durante 8 segundos (pedido de Cote, 23 nov: «8 segundos, no 18, para que sea más rápido»)
-const FINAL_MS = Number(process.env.VOTE_OPEN_MS) || 18000; // la gran final sigue durando 18 segundos
+const FINAL_MS = Number(process.env.VOTE_OPEN_MS) || 8000; // la gran final también dura 8 segundos (pedido de Cote, 23 nov: «la final en 8»)
 const GRACE_MS = 1000; // margen para los votos que venían en camino al llegar a cero
 const SIGNUP_MS = 90000; // El objeto más extraño: la inscripción dura 90 segundos (pedido de Cote, 20 nov)
 
@@ -158,7 +158,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
     if (s.sample && !s.sample.gone && Date.now() - s.sample.at >= SAMPLE_MS) { s.sample.gone = true; changed(); }
     // La votación de cada participante se cierra sola al agotarse sus 10 segundos
     if (s.phase === 'voting' && s.open && s.openUntil && Date.now() >= s.openUntil + GRACE_MS) { actions.close(s); changed(); }
-    // La gran final también dura 18 segundos y se cierra sola
+    // La gran final también dura 8 segundos y se cierra sola
     if (s.phase === 'final' && s.final && s.final.open && s.final.until && Date.now() >= s.final.until + GRACE_MS) { actions.closefinal(s); changed(); }
   }, 250).unref();
 
