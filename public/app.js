@@ -2065,7 +2065,7 @@ window.addEventListener('DOMContentLoaded', route);
 // Logo del local en las pantallas de sus actividades (pedido de Cote: el de Mercado Kennedy, siempre en las
 // actividades de Kennedy). Solo en pantallas (tablero, OBS, GC de la sala light, karaoke de la pantalla vertical),
 // nunca en celulares ni paneles. El local sale de la dirección (#/light-gc/kennedy) o de la sala completa abierta.
-const VENUE_LOGOS = { kennedy: 'logo-kennedy.png' };
+const VENUE_LOGOS = { kennedy: 'logo-kennedy.png', frida: 'logo-frida.png' }; // el de Frida Kahlo lo mandó Cote el 23 nov
 const SCREEN_ROUTES = ['tablero', 'escena', 'gc', 'obs', 'light-gc', 'karaoke-v', 'light-v'];
 let venueOfSala = '';
 let venueAt = 0;
