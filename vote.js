@@ -46,7 +46,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
   const titleOf = (s) => s.title || (s.mode === 'karaoke' ? festival() : TITLE);
   const openMs = () => (karaoke() ? K_OPEN_MS : OPEN_MS);
   const signupMs = () => (karaoke() ? K_SIGNUP_MS : SIGNUP_MS);
-  const sampleOn = (s) => s.mode === 'karaoke' && s.sample && !s.sample.gone && s.last === s.sample.id && !s.open && !s.onstage;
+  const sampleOn = (s) => s.sample && !s.sample.gone && s.last === s.sample.id && !s.open && !s.onstage;
 
   // Lugares ya revelados, del último hacia arriba (nunca los dos primeros: esos van a la gran final)
   const places = () => {
@@ -159,7 +159,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       s.sample.gone = true;
       // El Festival (pedido de Cote, 23 nov: «al terminar la votación… que pase directamente al siguiente participante,
       // sin un botón intermedio»): cuando salen de pantalla las 5 notas, sube solo el siguiente participante
-      if (s.mode === 'karaoke' && s.phase === 'voting' && !s.open && !s.onstage) { const nx = s.players.find((p) => !p.done); if (nx) s.onstage = nx.id; }
+      if (s.phase === 'voting' && !s.open && !s.onstage) { const nx = s.players.find((p) => !p.done); if (nx) s.onstage = nx.id; }
       changed();
     }
     // La votación de cada participante se cierra sola al agotarse sus 10 segundos
@@ -249,7 +249,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
     close: (s) => {
       if (!s.open) return null;
       // Concurso de karaoke: 5 notas al azar de las que puso el público, para dar ambiente sin revelar el promedio
-      if (s.mode === 'karaoke') {
+      { // también en El objeto más extraño (pedido de Cote, 23 nov: «quisiera que también lo hicieras para el objeto más extraño»)
         const p = by(s.open);
         const all = Object.entries(p.votes).map(([t, x]) => ({ note: x, name: (p.voters || {})[t] || '' }));
         for (let i = all.length - 1; i > 0; i--) { const j = crypto.randomInt(i + 1); [all[i], all[j]] = [all[j], all[i]]; }
@@ -258,10 +258,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       by(s.open).done = true;
       s.last = s.open;
       s.open = null;
-      // El objeto más extraño (pedido de Cote, 23 nov: «desde el momento que se termina la votación, pasa automáticamente
-      // a la siguiente persona para que muestre su objeto»): al cerrarse la votación sube solo el siguiente participante;
-      // el animador solo toca «Iniciar votación». Con todos listos, queda «Pasar a los resultados».
-      if (s.mode !== 'karaoke') { const nx = s.players.find((p) => !p.done); s.onstage = nx ? nx.id : null; }
+      // El siguiente participante sube solo cuando salen de pantalla las 5 notas (8 s), en los dos juegos: ver el repaso
       return null;
     },
     results: (s) => {
