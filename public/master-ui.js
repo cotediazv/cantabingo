@@ -34,8 +34,9 @@
           <div class="gm-scr"><small>2 · Tablero</small>
             <div class="gm-box" data-w="1280"><iframe title="Tablero de ${esc(VENUES[v])}" tabindex="-1" src="${page(`#/pantalla/${BOARD[v]}`)}"></iframe></div></div>
         </div>
+        <!-- Mercado Kennedy: la pantalla 3 es la versión liviana (pv.html), la que de verdad se ve en el salón: su decodificador usa esa (pedido de Cote, 23 nov, por el documento de la web) -->
         <div class="gm-scr gm-tall"><small>3 · Vertical</small>
-          <div class="gm-box" data-w="720"><iframe title="Pantalla vertical de ${esc(VENUES[v])}" tabindex="-1" src="${page(`#/vertical-in/${VERT[v]}`)}"></iframe></div></div>
+          <div class="gm-box" data-w="720"><iframe title="Pantalla vertical de ${esc(VENUES[v])}" tabindex="-1" src="${v === 'kennedy' ? '/pv.html?p=kennedy' : page(`#/vertical-in/${VERT[v]}`)}"></iframe></div></div>
       </div>
       <div class="gm-keys" data-k="keys"></div>
       <div class="gm-txtrow">
