@@ -8,7 +8,7 @@
       <div class="cols">
         <div class="panel">
           <div id="rf-ann"></div>
-          <p style="margin:14px 0"><button class="primary big rf-main" id="rf-draw">🎲 Sortear un concursante</button></p>
+          <p style="margin:14px 0"><button class="primary big rf-main paso" id="rf-draw">🎲 Sortear un concursante</button></p>
           <h2>Concursantes elegidos</h2>
           <div id="rf-picked" style="margin:10px 0"></div>
           <div class="row">

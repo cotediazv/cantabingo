@@ -3171,3 +3171,13 @@ body.vert-in.per-on .vt-act { transform: scale(var(--per-k, .9)); transform-orig
 @media (min-width: 901px) { .gm-jgctl .gm-ckey { gap: 3px; padding: 0 2px; } .gm-jgctl .gm-ckey span { font-size: .85rem; } .gm-jgctl .gm-ckey b { font-size: .6rem; } }
 @media (min-width: 901px) and (max-width: 1700px) { .gm-jgctl .gm-ckey b { display: none; } .gm-jgctl .gm-ckey span { font-size: 1rem; } .gm-jgctl .gm-key b { font-size: .56rem; } .gm-jgctl .gm-keyrow { gap: 4px; } }
 @media (max-width: 900px) { .gm-jgright { display: contents; } .gm-jgctl { order: 2; } .gm-jgright .gm-panel { order: 3; } }
+
+/* El botón que sigue: siempre verde y siempre en el mismo lugar (pedido de Cote, 23 nov). «paso» lo marca cada panel;
+   «paso-fijo» lo pone app.js en uno solo, que queda fijo arriba de la página, a todo el ancho del panel. */
+button.paso, a.paso, .win-actions button.paso { background: #16a34a; border-color: #16a34a; color: #fff; font-weight: 800; }
+button.paso:hover:not(:disabled), a.paso:hover { background: #15803d; border-color: #15803d; }
+button.paso:disabled { background: #1f5133; border-color: #1f5133; color: #cfe9d8; opacity: 1; }
+.paso.paso-fijo { position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 60; box-sizing: border-box; width: min(calc(100vw - 24px), 900px); min-height: 64px; margin: 0 !important; padding: 12px 18px; font-size: 1.25rem; line-height: 1.2; text-align: center; white-space: normal; border-radius: 14px; box-shadow: 0 0 0 4px var(--bg, #12101f), 0 8px 22px rgba(0, 0, 0, .55); }
+a.paso.paso-fijo { display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; }
+body.con-paso #app { padding-top: calc(var(--paso-h, 64px) + 22px) !important; }
+body.con-paso #ctl-reload-fixed { top: calc(var(--paso-h, 64px) + 20px); }

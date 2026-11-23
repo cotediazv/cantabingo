@@ -202,23 +202,23 @@
     if (g.phase === 'intro') {
       const k = introNow(g, off); const sl = introSlide(g, k);
       html = `<p class="gvp-now">📢 En pantalla: ${sl ? `${sl.icon} ${esc(sl.title)}` : ''} (${k + 1} de 6)</p><p class="gvp-help">Las reglas y cada juego pasan solos cada 10 segundos. Cuando quieras, inicia la votación.</p>
-        <button type="button" class="primary big g-draw" data-gv-start>🗳️ Iniciar votación (30 s)</button>
+        <button type="button" class="primary big g-draw paso" data-paso="9" data-gv-start>🗳️ Iniciar votación (30 s)</button>
         <button type="button" class="g-undo" data-gv-next ${k >= 5 ? 'disabled' : ''}>⏭ Siguiente</button>${cancel}`;
     } else if (g.phase === 'voting') {
       html = `<p class="gvp-now">🗳️ ${g.round === 2 ? 'Segunda vuelta' : 'Votación abierta'} · quedan <b>${clock(g.until - (Date.now() + off))}</b> · ${votos(g.total)}</p>${rows}
         <button type="button" class="primary big g-draw" disabled>🗳️ Votando…</button>${cancel}`;
     } else if (g.phase === 'result' && g.empty) {
-      html = `<p class="gvp-now">Nadie votó.</p><button type="button" class="primary big g-draw" data-gv-start>🗳️ Repetir votación (30 s)</button>${cancel}`;
+      html = `<p class="gvp-now">Nadie votó.</p><button type="button" class="primary big g-draw paso" data-paso="9" data-gv-start>🗳️ Repetir votación (30 s)</button>${cancel}`;
     } else if (g.phase === 'result' && g.runoff) {
       html = `<p class="gvp-now">Nadie superó el 50%. Segunda vuelta: ${nameOf(info, g.runoff[0])} y ${nameOf(info, g.runoff[1])}${g.tie2 ? ' (empate en el 2.º lugar: se sorteó)' : ''}.</p>${rows}
-        <button type="button" class="primary big g-draw" data-gv-start>🗳️ Iniciar segunda vuelta (30 s)</button>${cancel}`;
+        <button type="button" class="primary big g-draw paso" data-paso="9" data-gv-start>🗳️ Iniciar segunda vuelta (30 s)</button>${cancel}`;
     } else if (g.phase === 'done' && g.winner) {
       html = `<p class="gvp-win">🏆 Ganó ${nameOf(info, g.winner)}${g.tie ? ' (empate: se decidió por sorteo)' : ''}</p>${rows}
-        <button type="button" class="primary big g-draw" data-gv-go="${g.winner}">▶ Ir a ${nameOf(info, g.winner)}</button>
+        <button type="button" class="primary big g-draw paso" data-paso="9" data-gv-go="${g.winner}">▶ Ir a ${nameOf(info, g.winner)}</button>
         ${introBtn}<button type="button" class="g-undo" data-gv-start>🗳️ Nueva votación (30 s)</button>`;
     } else {
       html = `<p class="gvp-help">El público elige el próximo juego desde su celular, en 30 segundos. Gana el juego con más de la mitad de los votos; si ninguno lo logra, hay segunda vuelta entre los 2 primeros.</p>
-        <button type="button" class="primary big g-draw" data-gv-start>🗳️ Iniciar votación (30 s)</button>${introBtn}`;
+        <button type="button" class="primary big g-draw paso" data-paso="9" data-gv-start>🗳️ Iniciar votación (30 s)</button>${introBtn}`;
     }
     boxes.forEach((b) => { if (b.dataset.h !== html) { b.dataset.h = html; b.innerHTML = html; } }); // solo si cambió (no se pierde un toque)
     // Cuando se decide el ganador mientras el panel mira la votación, el panel pasa solo a ese juego (como el sorteo);

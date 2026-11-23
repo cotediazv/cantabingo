@@ -530,7 +530,7 @@ views.juegos = async () => {
     const cur = st.current;
     const info = cur && GAME_INFO(venue)[cur.game];
     const href = !cur ? '' : cur.game === 'bingo' ? `#/anfitrion/${open.projectId}` : cur.wheel ? `#/ruedactl/${cur.wheel}` : info.href;
-    const html = cur ? `<a class="home-create open ctl-go" href="${href}"><span>▶</span>Volver al juego en curso: ${info.icon} ${esc(info.name)}</a>` : '';
+    const html = cur ? `<a class="home-create open ctl-go paso" data-paso="8" href="${href}"><span>▶</span>Volver al juego en curso: ${info.icon} ${esc(info.name)}</a>` : '';
     if ($('#jg-cur').innerHTML !== html) $('#jg-cur').innerHTML = html;
     window.setNavFold(!!cur);
   };
@@ -548,7 +548,7 @@ views.figura = async (pid) => {
   if (info.started) { location.replace(`#/anfitrion/${pid}`); return undefined; }
   app.innerHTML = `<p class="back"><a href="#/juegos">← Juegos</a></p><h1>${esc(bingoName(p.name))}</h1>
     <form class="panel" id="f"><h2>¿Qué figura se juega?</h2>${patternPicker(info.patterns)}
-      <button class="primary big">Empezar el bingo</button></form>`;
+      <button class="primary big paso">Empezar el bingo</button></form>`;
   $('#f').onsubmit = async (e) => {
     e.preventDefault();
     const patterns = readPatterns(e.target);
@@ -635,15 +635,15 @@ async function hostConsole(p) {
             <div id="final"></div>
             <div id="tie-result"></div>
             <p class="tie-hint" id="tie-hint" hidden>Hay un empate: primero desempata por sorteo.</p>
-            <button class="primary" id="tiebreak" hidden>🎲 Desempatar por sorteo</button>
+            <button class="primary paso" data-paso="1" id="tiebreak" hidden>🎲 Desempatar por sorteo</button>
             <div class="win-actions" id="win-actions" hidden>
-              <button id="confirmwin">✔ Confirmar ganador</button>
+              <button id="confirmwin" class="paso" data-paso="2">✔ Confirmar ganador</button>
               <button id="keepplaying">▶ Seguir jugando</button>
             </div>
             <div id="win-confirmed" hidden>${activitiesNav('bingo')}</div>
           </div>
           <div class="row" style="justify-content:center;margin-top:16px"><button id="bigqr"></button></div>
-          <div class="row" style="justify-content:center;margin-top:12px"><button class="primary big" id="gen">Generar un número</button></div>
+          <div class="row" style="justify-content:center;margin-top:12px"><button class="primary big paso" id="gen">Generar un número</button></div>
           <div class="row" style="justify-content:center;margin-top:14px">
             <label class="small" hidden>Pausa <input type="number" id="interval" min="5" max="60" value="10" style="width:70px"> s</label>
             <label class="check" hidden><input type="checkbox" id="stop" checked> Detener al completarse un cartón</label>
@@ -675,6 +675,7 @@ async function hostConsole(p) {
     $('#gen').disabled = st.drawn.length >= st.values || st.auto.on || st.winConfirmed; // ganador confirmado = sorteo terminado
     $('#auto').disabled = !!st.winConfirmed;
     $('#gen').textContent = st.winConfirmed ? 'Sorteo terminado' : 'Generar un número';
+    $('#gen').classList.toggle('paso', !st.winConfirmed); // con el ganador confirmado ya no es el paso que sigue
     $('#auto').textContent = st.auto.on ? '⏸ Detener automático' : '▶ Modo automático';
     $('#auto').classList.toggle('on', st.auto.on);
     $('#manual').classList.toggle('on', manual);
@@ -753,7 +754,7 @@ views.ronda = async (pid) => {
       <h2>Ronda ${next}: ¿qué figura se juega?</h2>
       ${patternPicker(info.patterns)}
       <p class="muted small">Se borran los números sorteados y las marcas de la ronda ${info.round}. Cada participante sigue con su mismo cartón.</p>
-      <button class="primary big">Iniciar la ronda ${next}</button>
+      <button class="primary big paso">Iniciar la ronda ${next}</button>
     </form>`;
   $('#f').onsubmit = async (e) => {
     e.preventDefault();
@@ -1732,7 +1733,7 @@ function activitiesNav(current, opts = {}) {
     <div class="g-modes" role="tablist"><button type="button" role="tab" data-draw-mode="manual"><span>👆</span>Manual</button><button type="button" role="tab" data-draw-mode="sorteo"><span>🎲</span>Por sorteo</button><button type="button" role="tab" data-draw-mode="votacion"><span>🗳️</span>Por votación</button></div>
     <section class="g-body"><p class="g-free-title">👆 Toca el siguiente juego</p><section class="g-vote"></section>
     <div class="g-plan"><div class="g-slots"></div><label>¿Cuántos juegos vamos a sortear?<input type="number" class="g-total" min="1" max="10" value="3"></label></div>
-    <button type="button" class="primary big g-draw" data-game-draw>🎲 Sortear juego</button>
+    <button type="button" class="primary big g-draw paso" data-paso="9" data-game-draw>🎲 Sortear juego</button>
     <button type="button" class="g-undo" data-game-undo disabled>↩️ Deshacer</button>
     <p class="g-direct" hidden>…o toca un juego para elegirlo directo, sin tómbola</p>
     <div class="g-games">${games.map(([k, h]) => (k === current ? h.replace(/data-game="/, 'aria-current="true" data-game="') : h)).join('')}</div></section>
@@ -2379,4 +2380,28 @@ if (new URLSearchParams(location.search).has('diag')) {
   };
   window.addEventListener('hashchange', () => setTimeout(sync, 300));
   setTimeout(sync, 600);
+})();
+
+// ---------- El botón que sigue: siempre verde y siempre en el mismo lugar ----------
+// Pedido de Cote (23 nov): «el botón que el animador tiene que apretar tiene que estar en verde… debería estar siempre en
+// el mismo lugar». Los paneles marcan con la clase «paso» el botón del paso que sigue (bingo: generar número, desempatar,
+// confirmar ganador; sorteo de concursantes; Festival y objeto; sorteo y votación del juego; volver al juego en curso).
+// Aquí se elige uno solo (el de menor «data-paso»; primero los que se pueden apretar) y se deja fijo arriba de la
+// página, a todo el ancho; el resto del panel baja lo que mide el botón. El Rosko queda como está (ahí son 3 botones).
+(() => {
+  let queued = false; let cur = null;
+  const pick = () => {
+    queued = false;
+    const all = [...app.querySelectorAll('.paso')].filter((b) => b.getClientRects().length);
+    const pri = (b) => Number(b.dataset.paso || 5);
+    const best = all.filter((b) => !b.disabled).sort((x, y) => pri(x) - pri(y))[0] || all.sort((x, y) => pri(x) - pri(y))[0] || null;
+    if (best !== cur) { if (cur) cur.classList.remove('paso-fijo'); cur = best; if (cur) cur.classList.add('paso-fijo'); }
+    document.body.classList.toggle('con-paso', !!cur);
+    const h = cur ? `${Math.ceil(cur.getBoundingClientRect().height)}px` : '';
+    if (document.documentElement.style.getPropertyValue('--paso-h') !== h) document.documentElement.style.setProperty('--paso-h', h);
+  };
+  const later = () => { if (!queued) { queued = true; requestAnimationFrame(pick); } };
+  // al redibujarse un panel el botón nuevo queda fijo antes de que se pinte la pantalla (sin saltos)
+  new MutationObserver(() => { if (!queued) pick(); }).observe(app, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'disabled', 'class', 'open'] });
+  window.addEventListener('resize', later);
 })();
