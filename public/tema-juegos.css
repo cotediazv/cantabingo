@@ -406,3 +406,4 @@ html.t2 #ep .ep-c, html.t2 #ep .ep-tag, html.t2 #ep .ep-side > small, html.t2 #e
 html.t2 #ep .ep-opt, html.t2 #ep .ep-intro ul, html.t2 #epg .epg-opts { font-family: var(--t-txt); }
 html.t2 #ep .ep-n b, html.t2 #ep .ep-f b { font-family: var(--t-disp); } html.t2 #ep .ep-n span, html.t2 #ep .ep-f span, html.t2 #ep .ep-cut > small, html.t2 #ep .ep-fin > small { font-family: var(--t-mono); }
 html.t2 #ep .ep-side.wait > b { font-family: var(--t-disp); }
+html.t2 #ep .ep-crowd-n b, html.t2 #ep .ep-crowd-n span, html.t2 #ep .ep-crowd-b b { font-family: var(--t-disp); } html.t2 #ep .ep-crowd-b span, html.t2 #ep .ep-crowd-s { font-family: var(--t-mono); }

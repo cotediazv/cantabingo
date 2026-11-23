@@ -3304,3 +3304,26 @@ body.con-paso #ctl-reload-fixed { top: calc(var(--paso-h, 64px) + 20px); }
 /* «El último en pie» sin reloj (Cote, 23 nov): el tiempo lo maneja el animador */
 .ep-side.wait > b { font-size: 6vh; line-height: 1.1; font-weight: 900; text-transform: uppercase; text-align: center; }
 @media (max-aspect-ratio: 1/1) { .ep-side.wait > b { font-size: 8vw; } }
+
+/* «El último en pie»: las personas dibujadas (idea y dibujo de Cote, 23 nov) */
+.ep-cut.crowded { justify-content: flex-start; gap: 1vh; align-self: stretch; }
+.ep-crowd { flex: 1; min-height: 0; width: 100%; display: flex; flex-direction: column; align-items: center; position: relative; }
+.ep-crowd canvas { flex: 1; min-height: 0; width: 100%; display: block; }
+.ep-crowd-n, .ep-crowd-b { margin: 0; display: flex; align-items: baseline; gap: 1.2vw; text-transform: uppercase; }
+.ep-crowd-n b { font-size: 13vh; line-height: .95; font-weight: 900; color: #f4bf5a; } .ep-crowd-n span { font-size: 4.4vh; font-weight: 900; }
+.ep-crowd-b { position: absolute; left: 0; bottom: 0; } .ep-crowd-b b { font-size: 6vh; line-height: 1; font-weight: 900; } .ep-crowd-b span { font-size: 2.4vh; letter-spacing: .1em; color: #c9c5dd; }
+.ep-crowd-s { position: absolute; right: 0; bottom: 0; font-style: normal; font-size: 2.6vh; font-weight: 800; color: #f4bf5a; text-transform: uppercase; letter-spacing: .06em; min-height: 1em; }
+.ep-side.crowdside { align-items: stretch; justify-content: stretch; padding: 1.4vh 1vw; }
+.ep-crowd.pit .ep-crowd-n b { font-size: 11vh; } .ep-crowd.pit .ep-crowd-n span { font-size: 3vh; } .ep-crowd.pit .ep-crowd-s { position: static; text-align: center; }
+@media (min-aspect-ratio: 1/1) { #ep .ep-cut.crowded .ep-crowd-s { right: 12.5vw; } }
+@media (max-aspect-ratio: 1/1) { .ep-crowd-n b { font-size: 20vw; } .ep-crowd-n span { font-size: 6vw; } .ep-crowd-b b { font-size: 9vw; } .ep-crowd-b span { font-size: 3.4vw; } .ep-crowd-s { font-size: 3.4vw; position: static; } .ep-crowd-b { position: static; } .ep-crowd.pit .ep-crowd-n b { font-size: 18vw; } .ep-side.crowdside { flex: 1; } }
+/* las personas ocupan todo el ancho; abajo, en una línea, la banca a la izquierda y el resumen a la derecha */
+.ep-cut.crowded { align-items: stretch; width: 100%; } .ep-cut.crowded > small { text-align: center; }
+.ep-crowd { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto minmax(0, 1fr) auto; align-items: end; column-gap: 2vw; }
+.ep-crowd-n { grid-column: 1 / -1; justify-content: center; } .ep-crowd canvas { grid-column: 1 / -1; width: 100%; height: 100%; }
+.ep-crowd-b, .ep-crowd-s { position: static !important; } .ep-crowd-s { text-align: right; }
+.ep-crowd.pit { grid-template-columns: 1fr; } .ep-crowd.pit .ep-crowd-s { text-align: center; }
+@media (max-aspect-ratio: 1/1) { .ep-crowd { grid-template-columns: 1fr; } .ep-crowd-b { justify-content: center; } .ep-crowd-s { text-align: center; } }
+.ep-cut.crowded { min-height: 0; min-width: 0; flex: 1 1 0; } .ep-crowd { min-width: 0; min-height: 0; } .ep-crowd canvas { min-width: 0; min-height: 0; }
+/* el recuadro del juego ocupa todo el ancho (la regla general de «main» lo centraba y lo dejaba del ancho de su contenido) */
+#ep .ep-main { margin: 0; max-width: none; width: 100%; box-sizing: border-box; align-self: stretch; }

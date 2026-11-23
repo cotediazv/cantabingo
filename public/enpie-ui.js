@@ -32,11 +32,122 @@
     return a.join(' · ');
   };
   // El corte de la ronda: en pie y en la banca; desde el segundo, también cuántos pasaron a la banca y cuántos salieron
-  const cutHTML = (st) => {
-    const c = st.cut;
-    const box = (n, t, cls = '') => `<div class="ep-n ${cls}"><b>${n}</b><span>${t}</span></div>`;
-    return `<div class="ep-cut"><small>Fin de la ronda ${c.round}${c.last ? ' · se cierra la puerta' : ''}</small><div class="ep-ns">${box(c.standing, 'en pie', 'up')}${box(c.bench, 'en la banca')}${c.round > 1 ? box(c.fell, 'pasaron a la banca', 'sm') + box(c.back, 'salieron de la banca', 'sm') : ''}</div>${c.last ? '<i>Recta final: todos con una sola vida. El que falla, se va, hasta que queden 3</i>' : ''}</div>`;
+  // ---------- Las personas dibujadas (idea y dibujo de Cote, 23 nov) ----------
+  // «Una representación gráfica con monitos simples, de palitos… no son monos, son personas… en blanco y el fondo más
+  // oscuro, sobre una base… hay 150 personas, hay 150 monitos. Arriba sale en grande 150 personas que están de pie. Y al
+  // momento de revelar… el piso se mueve, tiembla muy fuerte, rápidamente, y muestra cómo se caen las personas… y pasan
+  // abajo a la banca… luego vemos cuántas personas suben. Cuando ya pasamos a la ronda final… cada vez que hay una
+  // pregunta, se sacude la tierra y la gente se cae. En ese momento ya la banca desapareció y todos cayeron al vacío».
+  // Una persona por jugador, dibujada como en la foto de Cote: cabeza redonda, cuerpo de un palo, brazos abiertos y las
+  // dos piernas con sus pies hacia afuera. La animación dura unos segundos y queda quieta (regla de pantallas fluidas);
+  // en los monitores del GC Master se dibuja directo el final.
+  const crowd = (() => {
+    let raf = 0;
+    const person = (c, x, y, h, rot) => { // x: centro; y: los pies
+      const w = h * 0.5; const cs = Math.cos(rot); const sn = Math.sin(rot); const cy = -h / 2; // gira sobre su centro
+      const P = (px, py) => [x + px * cs - (py - cy) * sn, y + cy + px * sn + (py - cy) * cs];
+      const L = (a, b) => { const p = P(a[0], a[1]); const q = P(b[0], b[1]); c.moveTo(p[0], p[1]); c.lineTo(q[0], q[1]); };
+      const r = h * 0.15; const hc = P(0, -h + r);
+      c.moveTo(hc[0] + r, hc[1]); c.arc(hc[0], hc[1], r, 0, 6.2832);
+      L([0, -h + 2 * r], [0, -h * 0.36]); L([-w / 2, -h * 0.55], [w / 2, -h * 0.58]);
+      L([0, -h * 0.36], [-w * 0.2, 0]); L([0, -h * 0.36], [w * 0.2, 0]); L([-w * 0.2, 0], [-w * 0.5, 0]); L([w * 0.2, 0], [w * 0.5, 0]);
+    };
+    const pickSome = (n, k) => { const a = Array.from({ length: n }, (_, i) => i); for (let i = a.length - 1; i > 0; i--) { const r = Math.floor(Math.random() * (i + 1)); [a[i], a[r]] = [a[r], a[i]]; } return a.slice(0, k); };
+    const ease = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
+    // spec: total (personas del juego), up y bench antes del temblor, fell (caen) y back (suben); pit: sin banca, caen al vacío
+    const start = (root, spec) => {
+      cancelAnimationFrame(raf); raf = 0;
+      const cv = root.querySelector('canvas'); if (!cv) return;
+      const nUp = root.querySelector('[data-k="up"]'); const nBe = root.querySelector('[data-k="bench"]'); const sum = root.querySelector('[data-k="sum"]');
+      const c = cv.getContext('2d');
+      const total = Math.max(1, spec.total, spec.up + spec.bench);
+      // Las medidas se toman del tamaño real del dibujo y se vuelven a tomar si cambia (al cargar las letras, al girar…)
+      let W = 0; let H = 0; let zUp; let zBe; let cw; let ch; let cols; let ph;
+      const measure = () => {
+        const w = Math.max(200, cv.clientWidth); const h = Math.max(160, cv.clientHeight);
+        if (w === W && h === H) return;
+        W = cv.width = w; H = cv.height = h;
+        const pad = Math.round(W * 0.03);
+        zUp = { x: pad, y: 0, w: W - 2 * pad, h: spec.pit ? H * 0.62 : H * 0.5 };
+        zBe = { x: pad, y: H * 0.58, w: W - 2 * pad, h: H * 0.38 };
+        // tamaño de cada persona: que quepan todas, en filas, en la zona más chica
+        const zone = spec.pit ? zUp : { w: zUp.w, h: Math.min(zUp.h, zBe.h) };
+        cw = Math.min(Math.sqrt((zone.w * zone.h * 0.6) / total), zone.h * 0.6, W / 9);
+        while (Math.floor(zone.w / cw) * Math.floor(zone.h / (cw / 0.6)) < total && cw > 3) cw *= 0.96;
+        ch = cw / 0.6; cols = Math.max(1, Math.floor(zUp.w / cw)); ph = ch * 0.86;
+      };
+      measure();
+      // las filas se llenan desde la base hacia arriba (la gente parada sobre el piso)
+      const slot = (z, i, n) => { const row = Math.floor(i / cols); const inRow = Math.min(cols, n - row * cols); const off = (z.w - inRow * cw) / 2; return { x: z.x + off + ((i % cols) + 0.5) * cw, y: z.y + z.h - row * ch - 4 }; };
+      const fell = Math.min(spec.fell, spec.up); const back = spec.pit ? 0 : Math.min(spec.back, spec.bench);
+      const fallers = pickSome(spec.up, fell); const isF = new Set(fallers);
+      const risers = pickSome(spec.bench, back); const isR = new Set(risers);
+      const stay = Array.from({ length: spec.up }, (_, i) => i).filter((i) => !isF.has(i));
+      const upMid = spec.up - fell; const upEnd = upMid + back; const beMid = spec.bench + fell; const beEnd = beMid - back;
+      const stayB = Array.from({ length: spec.bench }, (_, i) => i).filter((i) => !isR.has(i));
+      const rnd = Array.from({ length: Math.max(spec.up, spec.bench) + 1 }, () => Math.random());
+      // tiempos (ms): quieto → tiembla y caen → se reordenan → suben → se reordenan
+      const T1 = 1100; const SHAKE = 1500; const FALL = 950; const T2 = T1 + 700 + FALL; const PACK = 450; const T3 = T2 + PACK; const RISE = 950; const T4 = back ? T3 + 500 + RISE : T3; const END = T4 + (back ? PACK : 0);
+      const frame = (t) => {
+        measure();
+        c.clearRect(0, 0, W, H);
+        const shaking = t > T1 && t < T1 + SHAKE && fell > 0;
+        const sx = shaking ? (Math.random() - 0.5) * cw * 0.5 : 0; const sy = shaking ? (Math.random() - 0.5) * cw * 0.35 : 0;
+        // la base y la banca
+        c.lineCap = 'round'; c.lineJoin = 'round';
+        c.strokeStyle = '#f4bf5a'; c.lineWidth = Math.max(3, H * 0.012); c.beginPath(); c.moveTo(zUp.x + sx, zUp.y + zUp.h + sy); c.lineTo(zUp.x + zUp.w + sx, zUp.y + zUp.h + sy); c.stroke();
+        if (!spec.pit) { c.strokeStyle = '#5b566d'; c.lineWidth = Math.max(2, H * 0.008); c.beginPath(); const by = zBe.y + zBe.h; c.moveTo(zBe.x, by); c.lineTo(zBe.x + zBe.w, by); c.moveTo(zBe.x + zBe.w * 0.06, by); c.lineTo(zBe.x + zBe.w * 0.06, by + H * 0.03); c.moveTo(zBe.x + zBe.w * 0.94, by); c.lineTo(zBe.x + zBe.w * 0.94, by + H * 0.03); c.stroke(); }
+        const lw = Math.max(1, ph * 0.075);
+        // los que siguen de pie (se reordenan cuando ya cayeron los demás)
+        c.strokeStyle = '#ffffff'; c.lineWidth = lw; c.beginPath();
+        const k = ease((t - T2) / PACK);
+        stay.forEach((i, n) => { const a = slot(zUp, i, spec.up); const b = slot(zUp, n, upEnd); person(c, a.x + (b.x - a.x) * k + sx, a.y + (b.y - a.y) * k + sy, ph, shaking ? (Math.random() - 0.5) * 0.25 : 0); });
+        // los que suben desde la banca
+        risers.forEach((i, n) => { const u = ease((t - T3 - 100 - rnd[i] * 400) / RISE); if (u <= 0) return; const a = slot(zBe, i, spec.bench); const b = slot(zUp, upMid + n, upEnd); person(c, a.x + (b.x - a.x) * u, a.y + (b.y - a.y) * u, ph, 0); });
+        c.stroke();
+        // los que caen: giran en el aire y aterrizan en la banca (o se van al vacío)
+        c.beginPath();
+        let falling = 0;
+        fallers.forEach((i, n) => { const u = Math.min(1, Math.max(0, (t - T1 - 250 - rnd[i] * 450) / FALL)); const a = slot(zUp, i, spec.up); const b = spec.pit ? { x: a.x + (rnd[i] - 0.5) * cw * 6, y: H + ph * 1.5 } : slot(zBe, spec.bench + n, beMid); if (u >= 1 && spec.pit) return; if (u > 0 && u < 1) falling++; const g = u * u; person(c, a.x + (b.x - a.x) * u + (u ? 0 : sx), a.y + (b.y - a.y) * g + (u ? 0 : sy), ph, u > 0 && u < 1 ? (rnd[i] > 0.5 ? 1 : -1) * u * 6.2832 : 0); });
+        c.strokeStyle = t > T1 + 250 ? '#b8b3c9' : '#ffffff'; c.stroke();
+        // la banca
+        if (!spec.pit) {
+          c.strokeStyle = '#8b879c'; c.beginPath();
+          const kb = ease((t - T4) / PACK);
+          stayB.forEach((i, n) => { const a = slot(zBe, i, spec.bench); const b = slot(zBe, n, beEnd); person(c, a.x + (b.x - a.x) * kb, a.y + (b.y - a.y) * kb, ph, 0); });
+          risers.forEach((i) => { if (t - T3 - 100 - rnd[i] * 400 > 0) return; const a = slot(zBe, i, spec.bench); person(c, a.x, a.y, ph, 0); });
+          c.stroke();
+        }
+        // los números de arriba van cambiando con lo que se ve
+        const fd = Math.min(1, Math.max(0, (t - T1 - 250) / (FALL + 450))); const rd = back ? Math.min(1, Math.max(0, (t - T3 - 100) / (RISE + 400))) : 0;
+        const up = Math.round(spec.up - fell * fd + back * rd); const be = Math.round(spec.bench + fell * fd - back * rd);
+        if (nUp && nUp.textContent !== String(up)) nUp.textContent = String(up);
+        if (nBe && nBe.textContent !== String(be)) nBe.textContent = String(be);
+        if (sum && t >= END && !sum.dataset.on) { sum.dataset.on = '1'; sum.textContent = spec.sum || ''; }
+      };
+      // ya quieta, si la pantalla cambia de tamaño se vuelve a dibujar el final
+      if (window.ResizeObserver) new ResizeObserver(() => { if (!raf && document.body.contains(cv)) frame(END + 1); }).observe(cv);
+      if (window.__mon || document.documentElement.classList.contains('lento')) { frame(END + 1); return; } // monitores y equipos lentos: directo el final
+      const t0 = performance.now(); let lastDraw = 0; let rumbled = false;
+      const loop = (now) => {
+        const t = now - t0;
+        if (!rumbled && t > T1 && fell > 0) { rumbled = true; sfx.play('rumble'); }
+        if (now - lastDraw >= 30) { lastDraw = now; frame(t); } // unos 30 cuadros por segundo
+        if (t < END + 60 && document.body.contains(cv)) raf = requestAnimationFrame(loop); else { raf = 0; if (document.body.contains(cv)) frame(END + 1); }
+      };
+      frame(0); raf = requestAnimationFrame(loop);
+    };
+    return { start, stop: () => { cancelAnimationFrame(raf); raf = 0; } };
+  })();
+  // Qué mostrar con las personas: en el corte de cada ronda (caen a la banca y suben los que vuelven) y, en la recta
+  // final, después de cada pregunta (caen al vacío; la banca ya no está)
+  const crowdSpec = (st) => {
+    if (st.phase === 'cut') { const c = st.cut; return { total: c.standing + c.bench, up: c.standing - c.back + c.fell, bench: c.bench - c.fell + c.back, fell: c.fell, back: c.back, pit: false, sum: `${c.fell === 1 ? 'Cayó 1' : `Cayeron ${c.fell}`} a la banca${c.round > 1 ? ` · ${c.back === 1 ? 'volvió 1' : `volvieron ${c.back}`} al juego` : ''}` }; }
+    if (st.phase === 'reveal' && st.direct && st.last) return { total: Math.max(st.directFrom || 0, st.standing + st.last.fell), up: st.standing + st.last.fell, bench: 0, fell: st.last.fell, back: 0, pit: true, sum: lastLine(st) };
+    return null;
   };
+  const crowdHTML = (st, pit) => `<div class="ep-crowd ${pit ? 'pit' : ''}"><p class="ep-crowd-n"><b data-k="up"></b><span>personas de pie</span></p><canvas></canvas>${pit ? '' : '<p class="ep-crowd-b"><b data-k="bench"></b><span>en la banca</span></p>'}<i class="ep-crowd-s" data-k="sum"></i></div>`;
+  const cutHTML = (st) => { const c = st.cut; return `<div class="ep-cut crowded"><small>Fin de la ronda ${c.round}${c.last ? ' · se cierra la puerta: recta final con una sola vida' : ''}</small>${crowdHTML(st, false)}</div>`; };
   const finHTML = (st) => `<div class="ep-fin"><small>La final · en el escenario</small><div class="ep-fs">${st.fin.players.map((p, i) => `<div class="ep-f ${p.out ? 'out' : ''} ${!p.out && st.phase === 'final' && st.fin.turn === i ? 'turn' : ''}"><b>${esc(p.name)}</b><span>${p.out ? 'Eliminado' : st.phase === 'final' && st.fin.turn === i ? 'Su turno' : 'En pie'}</span></div>`).join('')}</div></div>`;
   const follow = (paint, url = '/api/enpie') => {
     let last = ''; let alive = true;
@@ -104,18 +215,21 @@
     if (st.phase === 'cut') return cutHTML(st);
     if (st.phase === 'lobby') return '<div class="ep-intro"><small>Todos juegan desde su celular</small><b>Tienes 3 vidas</b><ul><li>Si fallas, pierdes una vida</li><li>Sin vidas vas a la banca, pero sigues jugando</li><li>Con 3 buenas de 4 vuelves al juego</li><li>Los 3 últimos van a la final en el escenario</li></ul></div>';
     const q = `<div class="ep-q"><small class="ep-tag ${st.direct ? 'subita' : ''}">${esc(qTag(st))}</small><b>${esc(st.q.text)}</b>${opts(st)}</div>`;
-    return st.phase === 'question' ? `${q}<div class="ep-side wait"><small>Pregunta abierta</small><b>Contesta en tu celular</b></div>` : `${q}<div class="ep-side rank"><small>${esc(lastLine(st))}</small>${rank(st, 8)}</div>`;
+    if (st.phase === 'question') return `${q}<div class="ep-side wait"><small>Pregunta abierta</small><b>Contesta en tu celular</b></div>`;
+    return st.direct ? `${q}<div class="ep-side crowdside">${crowdHTML(st, true)}</div>` : `${q}<div class="ep-side rank"><small>${esc(lastLine(st))}</small>${rank(st, 8)}</div>`;
   };
   views.enpieFull = async () => {
     app.innerHTML = '<div id="ep"></div>';
     const stop = follow((st) => {
       const box = $('#ep'); if (!box) return;
-      if (st.phase === 'done' && st.winner && box.dataset.won !== String(st.gen)) { box.dataset.won = String(st.gen); sfx.play('win'); } else if ((st.phase === 'reveal' || st.phase === 'cut') && box.dataset.rev !== String(st.rev)) sfx.play('chime');
+      if (st.phase === 'done' && st.winner && box.dataset.won !== String(st.gen)) { box.dataset.won = String(st.gen); sfx.play('win'); } else if (st.phase === 'reveal' && !st.direct && box.dataset.rev !== String(st.rev)) sfx.play('chime');
       box.dataset.rev = String(st.rev);
       box.className = `th-${st.venue} ph-${st.phase}`;
       box.innerHTML = `<header class="ep-top"><b>El último en pie</b><p>${counters(st)}</p></header><main class="ep-main">${scene(st)}</main>`;
+      const spec = crowdSpec(st); const cr = box.querySelector('.ep-crowd');
+      if (spec && cr) requestAnimationFrame(() => crowd.start(cr, spec)); else crowd.stop();
     });
-    return stop;
+    return () => { stop(); crowd.stop(); };
   };
 
   // ---------- GC de OBS: franja de abajo ----------

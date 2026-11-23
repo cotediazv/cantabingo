@@ -1404,6 +1404,8 @@ const sfx = (() => {
       note(55, t, 0.9, 'sawtooth', 0.35); note(2400, t, 1.2, 'square', 0.06, 900); note(1800, t + 0.02, 1.1, 'sine', 0.08, 700);
     },
     // Ganador: fanfarria ascendente con acorde final
+    // Temblor (El último en pie): el piso se sacude y la gente cae
+    rumble: () => { noise(0, 1.5, 0.5, 140, 0.7); noise(0.1, 1.2, 0.25, 420, 0.6); note(52, 0, 1.4, 'sawtooth', 0.3, 34); note(70, 0.2, 1.1, 'triangle', 0.25, 45); },
     win: () => {
       [523, 659, 784].forEach((f, i) => { note(f, i * 0.14, 0.2, 'sawtooth', 0.16); note(f, i * 0.14, 0.2, 'square', 0.08); });
       [1047, 784, 659, 523].forEach((f) => { note(f, 0.42, 1.6, 'sawtooth', 0.13); note(f * 2, 0.42, 1.2, 'sine', 0.06); });
