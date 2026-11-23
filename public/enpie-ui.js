@@ -6,7 +6,8 @@
   const LET = ['A', 'B', 'C'];
   const HOWTO = [
     'Todos juegan desde su celular, en las mesas.',
-    'Cada persona parte con <b>3 vidas</b>. Si fallas o no contestas a tiempo, pierdes una.',
+    'Cada persona parte con <b>3 vidas</b>. Si fallas o no contestas antes de que se cierre la pregunta, pierdes una.',
+    'Tú manejas el tiempo: «Iniciar pregunta» la muestra a todos, la lees en voz alta, das un momento para responder y con el mismo botón la cierras.',
     'Sin vidas pasas <b>a la banca</b>, pero sigues contestando: con <b>4 buenas de 5</b> vuelves al juego.',
     'Son <b>5 rondas de 5 preguntas</b>. Al final de cada ronda vemos cuántos quedan en pie.',
     'Desde la 6.ª ronda <b>no vuelve nadie</b>: un error y fuera, hasta que queden 3.',
@@ -39,7 +40,7 @@
   const finHTML = (st) => `<div class="ep-fin"><small>La final · en el escenario</small><div class="ep-fs">${st.fin.players.map((p, i) => `<div class="ep-f ${p.out ? 'out' : ''} ${!p.out && st.phase === 'final' && st.fin.turn === i ? 'turn' : ''}"><b>${esc(p.name)}</b><span>${p.out ? 'Eliminado' : st.phase === 'final' && st.fin.turn === i ? 'Su turno' : 'En pie'}</span></div>`).join('')}</div></div>`;
   const follow = (paint, url = '/api/enpie') => {
     let last = ''; let alive = true;
-    const tick = async () => { const st = await api('GET', url).catch(() => null); if (!alive || !st) return; setClock(st); const k = `${st.rev}:${st.phase}`; if (k === last) return; last = k; paint(st); };
+    const tick = async () => { const st = await api('GET', url).catch(() => null); if (!alive || !st) return; setClock(st); const k = `${st.rev}:${st.phase}:${url.endsWith('/host') ? st.answered : ''}`; if (k === last) return; last = k; paint(st); };
     tick(); const t = setInterval(tick, 1500); const off = window.onAviso ? window.onAviso(tick) : () => {};
     return () => { alive = false; clearInterval(t); off(); };
   };
@@ -62,18 +63,18 @@
           <div class="ep-yn"><button type="button" class="ep-yes" data-ep="right">✔ Correcta</button><button type="button" class="ep-no" data-ep="wrong">✘ Incorrecta · queda eliminado</button></div>
           <div class="ep-flist">${st.fin.players.map((x, i) => `<p class="${x.out ? 'out' : ''}"><b>${esc(x.name)}</b><span>${x.out ? 'Eliminado' : i === st.fin.turn ? 'Su turno' : 'En pie'}</span></p>`).join('')}</div>`;
       } else if (st.phase === 'question') {
-        step = `<button class="primary big paso" disabled>⏱ Pregunta en curso · <span class="ep-clock">${left()}</span> s</button>`;
-        body = `<div class="ep-now"><small>${esc(qTag(st))} · ${st.answered} respuestas</small><b>${esc(st.q.text)}</b>${opts(st)}</div><button type="button" data-ep="close">Cerrar la pregunta ahora</button>`;
+        step = `<button class="primary big paso" data-ep="next">⏹ Cerrar la pregunta y mostrar la respuesta</button>`;
+        body = `<div class="ep-now"><small>${esc(qTag(st))} · léela en voz alta · <span class="ep-ansn">${st.answered} ${st.answered === 1 ? 'respuesta' : 'respuestas'}</span></small><b>${esc(st.q.text)}</b>${opts(st)}</div>`;
       } else if (st.phase === 'cut') {
         const c = st.cut;
-        step = `<button class="primary big paso" data-ep="next">${c.last ? (st.standing <= st.finalists ? '🏁 Pasar a la final' : '⚡ Eliminación directa: siguiente pregunta') : `▶ Ronda ${c.round + 1}: siguiente pregunta`}</button>`;
+        step = `<button class="primary big paso" data-ep="next">${c.last ? (st.standing <= st.finalists ? '🏁 Pasar a la final' : '⚡ Eliminación directa: iniciar pregunta') : `▶ Ronda ${c.round + 1}: iniciar pregunta`}</button>`;
         body = window.annHtml(`Fin de la ronda ${c.round}`, [`${c.standing} en pie · ${c.bench} en la banca`], [c.round > 1 ? `En esta ronda: ${c.fell} pasaron a la banca y ${c.back} salieron de la banca` : '', c.last ? 'Se cierra la puerta: desde ahora no vuelve nadie. Un error y fuera, hasta que queden 3.' : ''].filter(Boolean));
       } else if (st.phase === 'reveal') {
         const label = st.last && st.last.toFinal ? '🏁 Pasar a la final en el escenario' : st.cutDue ? `📊 Mostrar el corte de la ronda ${st.round}` : st.nextDirect ? '⚡ Siguiente pregunta (eliminación directa)' : `▶ Siguiente pregunta (ronda ${st.round} · ${st.inRound + 1} de ${st.perRound})`;
         step = `<button class="primary big paso" data-ep="next">${label}</button>`;
         body = `<div class="ep-now"><small>${esc(qTag(st))} · ${esc(lastLine(st))}</small><b>${esc(st.q.text)}</b>${opts(st)}</div>`;
       } else {
-        step = '<button class="primary big paso" data-ep="next">▶ Primera pregunta</button>';
+        step = '<button class="primary big paso" data-ep="next">▶ Iniciar pregunta</button>';
         body = window.readAloud('El último en pie', HOWTO);
       }
       const html = `${step}${body}<p class="ep-counts">${counters(st)}</p>${st.phase !== 'lobby' && st.phase !== 'final' ? `<h2>Ranking</h2>${rank(st, 10) || '<p class="muted">Todavía no contesta nadie.</p>'}` : ''}`;
@@ -103,7 +104,7 @@
     if (st.phase === 'cut') return cutHTML(st);
     if (st.phase === 'lobby') return '<div class="ep-intro"><small>Todos juegan desde su celular</small><b>Tienes 3 vidas</b><ul><li>Si fallas, pierdes una vida</li><li>Sin vidas vas a la banca, pero sigues jugando</li><li>Con 4 buenas de 5 vuelves al juego</li><li>Los 3 últimos van a la final en el escenario</li></ul></div>';
     const q = `<div class="ep-q"><small class="ep-tag ${st.direct ? 'subita' : ''}">${esc(qTag(st))}</small><b>${esc(st.q.text)}</b>${opts(st)}</div>`;
-    return st.phase === 'question' ? `${q}<div class="ep-side"><small>Contesta en tu celular</small><b class="ep-clock">${left()}</b></div>` : `${q}<div class="ep-side rank"><small>${esc(lastLine(st))}</small>${rank(st, 8)}</div>`;
+    return st.phase === 'question' ? `${q}<div class="ep-side wait"><small>Pregunta abierta</small><b>Contesta en tu celular</b></div>` : `${q}<div class="ep-side rank"><small>${esc(lastLine(st))}</small>${rank(st, 8)}</div>`;
   };
   views.enpieFull = async () => {
     app.innerHTML = '<div id="ep"></div>';
@@ -131,7 +132,7 @@
       } else if (st.phase === 'lobby') { tag = 'Nuevo juego'; main = '<b>Todos juegan desde su celular</b><span>3 vidas · sin vidas vas a la banca · con 4 buenas de 5 vuelves</span>'; side = '<small>Prepárate</small>'; } else {
         tag = qTag(st);
         main = `<b>${esc(st.q.text)}</b><span class="epg-opts">${st.q.opts.map((o, i) => `<i class="${st.q.correct === i ? 'ok' : st.q.correct != null ? 'no' : ''}"><em>${LET[i]}</em>${esc(o)}</i>`).join('')}</span>`;
-        side = st.phase === 'question' ? `<small>Tiempo</small><b class="ep-clock">${left()}</b>` : `<small>En pie</small><b>${st.standing}</b>`;
+        side = `<small>En pie</small><b>${st.standing}</b>`;
       }
       box.className = `th-${st.venue} on`;
       box.innerHTML = `<div class="epg-bar"><div class="epg-tag"><small>El último en pie</small><b>${esc(tag)}</b></div><div class="epg-main">${main}</div><div class="epg-side">${side}</div></div>`;
@@ -170,7 +171,7 @@
         const hint = st.direct ? (can ? '⚡ Un error y quedas fuera' : '') : me && !me.up && me.h === st.backNeed - 1 ? '🔁 ¡Si aciertas esta, vuelves al juego!' : !me && st.n > 2 ? `Entras por la banca: con ${st.backNeed} buenas de ${st.backOf} pasas al juego` : '';
         body = `<p class="pvote-ask">${esc(qTag(st))}<b>${esc(st.q.text)}</b></p>${hint ? `<p class="pep-hint">${hint}</p>` : ''}
           ${can ? `<div class="pep-keys">${st.q.opts.map((o, i) => `<button type="button" data-pick="${i}" class="${pick === i ? 'on' : ''}" ${pick != null ? 'disabled' : ''}><em>${LET[i]}</em>${esc(o)}</button>`).join('')}</div>` : '<p class="pvote-wait">Mira la pantalla: quedan pocos en pie.</p>'}
-          <p class="pvote-clock">${pick != null ? '✔ Respuesta enviada · ' : ''}Quedan <b class="ep-clock">${left()}</b> s</p>`;
+          <p class="pvote-clock">${pick != null ? '✔ Respuesta enviada' : can ? 'Responde antes de que se cierre la pregunta' : ''}</p>`;
       } else {
         const played = me && me.lastOk != null && (!st.direct || me.up || me.fell);
         const res = !played ? '' : me.back ? '<div class="pvote-win">🎉 ¡Volviste al juego!<small>Tienes 1 vida</small></div>' : me.fell ? `<div class="pep-res no">${st.direct ? '💔 Quedaste fuera' : '💔 Te quedaste sin vidas<small>Pasas a la banca: sigue contestando, con 4 buenas de 5 vuelves</small>'}</div>` : me.lastOk ? '<div class="pep-res ok">✔ ¡Correcto!</div>' : `<div class="pep-res no">✘ Incorrecto${me.up && !st.last.mercy ? '<small>Pierdes una vida</small>' : ''}</div>`;

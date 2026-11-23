@@ -3300,3 +3300,7 @@ body.con-paso #ctl-reload-fixed { top: calc(var(--paso-h, 64px) + 20px); }
 .ep-flist p, .pep-fin p { display: flex; justify-content: space-between; gap: 10px; margin: 6px 0; padding: 9px 12px; border-radius: 10px; background: rgba(255, 255, 255, .07); }
 .ep-flist p.out, .pep-fin p.out { opacity: .45; } .ep-flist p.out b, .pep-fin p.out b { text-decoration: line-through; }
 @media (max-aspect-ratio: 1/1) { .ep-cut { gap: 1.6vh; justify-content: flex-start; padding-top: 1vh; } .ep-ns { gap: 1.6vh 3vw; } .ep-n { padding: 1.2vh 2vw; } .ep-n b { font-size: 22vw; } .ep-n.sm b { font-size: 13vw; } }
+
+/* «El último en pie» sin reloj (Cote, 23 nov): el tiempo lo maneja el animador */
+.ep-side.wait > b { font-size: 6vh; line-height: 1.1; font-weight: 900; text-transform: uppercase; text-align: center; }
+@media (max-aspect-ratio: 1/1) { .ep-side.wait > b { font-size: 8vw; } }

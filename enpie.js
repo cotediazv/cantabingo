@@ -26,8 +26,9 @@ const ROUNDS = 5; // rondas con repechaje
 const OPEN_Q = ROUND * ROUNDS; // hasta esta pregunta se puede volver de la banca
 const FINAL = 3; // finalistas
 const BACK_OF = 5; const BACK_NEED = 4; // para volver de la banca: 4 buenas de 5
-const Q_MS = Number(process.env.ENPIE_MS) || 10000;
-const GRACE_MS = 700;
+// Sin reloj (Cote, 23 nov: «el control del juego lo va a llevar el animador… ese tiempo para responder finalmente lo
+// maneje él»): la pregunta queda abierta desde «Iniciar pregunta» hasta que el animador la cierra con su botón.
+const Q_MS = 10000; // solo para el desempate por rapidez: lo que se le cuenta a quien entra tarde
 const JOIN_UNTIL = 2; // quien contesta por primera vez en las 2 primeras preguntas entra con sus 3 vidas; después, a la banca
 
 module.exports = function enpie({ app, db, save, requireAdmin, fail, setStage, findPlayer, notify = () => {}, festejo = () => {}, venue = () => 'frida' }) {
@@ -58,7 +59,7 @@ module.exports = function enpie({ app, db, save, requireAdmin, fail, setStage, f
     const f = s.fin;
     return {
       test: true, rev: s.rev, gen: s.gen, venue: venue(), phase: s.phase, n: s.n, round: s.n ? roundOf(s.n) : 1, inRound: s.n ? ((s.n - 1) % ROUND) + 1 : 0, perRound: ROUND, rounds: ROUNDS, direct: direct(s.n), nextDirect: direct(s.n + 1),
-      lives: LIVES, backOf: BACK_OF, backNeed: BACK_NEED, finalists: FINAL, now: Date.now(), until: s.phase === 'question' ? s.until : 0, ms: Q_MS,
+      lives: LIVES, backOf: BACK_OF, backNeed: BACK_NEED, finalists: FINAL, now: Date.now(), until: 0,
       q: s.q && s.phase !== 'cut' && s.phase !== 'final' && s.phase !== 'lobby' ? { text: s.q.text, opts: s.q.opts, correct: reveal || host ? s.q.correct : null } : null,
       standing: c.up, bench: c.bench, cutDue: s.phase === 'reveal' && s.n % ROUND === 0 && s.n <= OPEN_Q, cut: s.cut,
       last: s.last, answered: Object.keys(s.ans).length,
@@ -77,7 +78,7 @@ module.exports = function enpie({ app, db, save, requireAdmin, fail, setStage, f
     s.n++;
     s.q = { text: q.q, opts, correct: opts.indexOf(q.a) };
     s.ans = {};
-    s.until = Date.now() + Q_MS;
+    s.until = 0;
     s.at = Date.now();
     s.phase = 'question';
     s.last = null;
@@ -111,7 +112,7 @@ module.exports = function enpie({ app, db, save, requireAdmin, fail, setStage, f
     let fell = 0; let back = 0; const fallen = [];
     for (const [t, p] of Object.entries(s.players)) {
       const a = s.ans[t];
-      if (p.up || !dir) { p.time += a ? a.ms : Q_MS; p.lastOk = ok(t); if (p.lastOk) p.hits++; }
+      if (p.up || !dir) { p.time += a ? a.ms : Date.now() - s.at; p.lastOk = ok(t); if (p.lastOk) p.hits++; }
       if (p.up) {
         if (!p.lastOk && !mercy) { p.lives = dir ? 0 : p.lives - 1; if (p.lives <= 0) { p.lives = 0; p.up = false; p.fellAt = s.n; p.w = 0; p.h = 0; fell++; fallen.push(t); } }
       } else if (!dir) { // en la banca: 4 buenas de 5 y vuelve; con 2 fallos la cuenta parte de nuevo
@@ -126,9 +127,6 @@ module.exports = function enpie({ app, db, save, requireAdmin, fail, setStage, f
     if (dir && counts(s).up <= FINAL) { s.last.toFinal = true; s.fallen = fallen; }
   };
 
-  // La pregunta se cierra sola al agotarse el reloj
-  setInterval(() => { const s = db.enpie; if (s && s.phase === 'question' && Date.now() >= s.until + GRACE_MS) { close(s); changed(); } }, 300).unref();
-
   app.get('/api/enpie', (req, res) => { res.set('Cache-Control', 'no-store'); res.json(pub(String(req.query.token || ''), false)); });
   app.get('/api/enpie/host', requireAdmin, (_req, res) => res.json(pub('', true)));
 
@@ -137,7 +135,7 @@ module.exports = function enpie({ app, db, save, requireAdmin, fail, setStage, f
     const token = String(b.token || ''); const pk = Number(b.pick);
     const pl = findPlayer(String(b.sid || ''), token);
     if (!pl) return fail(res, 403, 'Entra primero a la sala');
-    if (s.phase !== 'question' || Date.now() > s.until + GRACE_MS) return fail(res, 409, 'Se acabó el tiempo de esta pregunta');
+    if (s.phase !== 'question') return fail(res, 409, 'Esta pregunta ya se cerró');
     if (![0, 1, 2].includes(pk)) return fail(res, 400, 'Elige una alternativa');
     if (s.ans[token]) return fail(res, 409, 'Ya contestaste esta pregunta');
     const dir = direct(s.n);
@@ -154,18 +152,20 @@ module.exports = function enpie({ app, db, save, requireAdmin, fail, setStage, f
     const b = req.body || {}; const action = String(b.action || ''); let s = g();
     if (action === 'new') { db.enpie = blank(); s = db.enpie; setStage('enpie'); } else if (action === 'next') {
       if (s.phase === 'done') return fail(res, 409, 'El juego ya terminó: empieza uno nuevo');
-      if (s.phase === 'question') return fail(res, 409, 'Espera a que termine la pregunta en curso');
       if (s.phase === 'final') return fail(res, 409, 'La final se maneja con «Correcta» e «Incorrecta»');
-      if (!POOL.length) return fail(res, 500, 'No hay preguntas en el banco');
-      const c = counts(s);
-      if (s.phase === 'reveal' && s.n % ROUND === 0 && s.n <= OPEN_Q) {
-        // Corte de la ronda: cuántos en pie, cuántos en la banca y, desde el segundo, cuántos cayeron y cuántos volvieron
-        s.cut = { round: roundOf(s.n), standing: c.up, bench: c.bench, fell: s.stat.fell, back: s.stat.back, last: s.n === OPEN_Q };
-        s.stat = { fell: 0, back: 0 };
-        s.phase = 'cut';
-      } else if (s.phase === 'reveal' && s.last && s.last.toFinal) toFinal(s, s.fallen || []);
-      else if (s.phase === 'cut' && s.cut.last && c.up <= FINAL) toFinal(s, Object.keys(s.players).filter((t) => !s.players[t].up)); // tras las 5 rondas quedan 3 o menos: los cupos que faltan, los mejores de la banca
-      else { ask(s); setStage('enpie'); }
+      if (s.phase === 'question') close(s); // un solo botón: con la pregunta abierta, la cierra y muestra la respuesta
+      else {
+        if (!POOL.length) return fail(res, 500, 'No hay preguntas en el banco');
+        const c = counts(s);
+        if (s.phase === 'reveal' && s.n % ROUND === 0 && s.n <= OPEN_Q) {
+          // Corte de la ronda: cuántos en pie, cuántos en la banca y, desde el segundo, cuántos cayeron y cuántos volvieron
+          s.cut = { round: roundOf(s.n), standing: c.up, bench: c.bench, fell: s.stat.fell, back: s.stat.back, last: s.n === OPEN_Q };
+          s.stat = { fell: 0, back: 0 };
+          s.phase = 'cut';
+        } else if (s.phase === 'reveal' && s.last && s.last.toFinal) toFinal(s, s.fallen || []);
+        else if (s.phase === 'cut' && s.cut.last && c.up <= FINAL) toFinal(s, Object.keys(s.players).filter((t) => !s.players[t].up)); // tras las 5 rondas quedan 3 o menos: los cupos que faltan, los mejores de la banca
+        else { ask(s); setStage('enpie'); }
+      }
     } else if (action === 'close') close(s);
     else if (action === 'right' || action === 'wrong') { // la final: el animador marca la respuesta de quien tiene el turno
       const f = s.fin;

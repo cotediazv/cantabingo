@@ -853,7 +853,7 @@
         o += '<div class="mid" style="margin-top:2.4rem">' + (s.direct ? 'Eliminación directa' : 'Ronda ' + s.round + ' · pregunta ' + s.inRound + ' de ' + s.perRound) + '</div><b class="mid" style="display:block;font-size:4.4rem;line-height:1.1;margin:1rem 3rem 2rem">' + h(s.q.text) + '</b><ol class="rows">';
         for (var i = 0; i < s.q.opts.length; i++) o += '<li' + (s.q.correct === i ? ' style="background:#16a34a;color:#fff"' : s.q.correct != null ? ' style="opacity:.4"' : '') + '><em>' + L[i] + '</em>' + h(s.q.opts[i]) + '</li>';
         o += '</ol>';
-        if (s.phase === 'question') o += '<div class="clock">' + secs + '</div>';
+        if (s.phase === 'question') o += '<div class="mid gold" style="margin-top:2.4rem">Contesta en tu celular</div>';
         else { o += '<ol class="rows" style="margin-top:2.4rem">'; for (k = 0; k < (s.top || []).length && k < 5; k++) o += '<li><em>' + (k + 1) + '</em>' + h(s.top[k].name) + '<i>' + (s.top[k].up ? (s.direct ? 'en pie' : s.top[k].lives + ' ♥') : (s.direct ? 'fuera' : 'banca')) + '</i></li>'; o += '</ol>'; }
       }
       o += '</div>' + qrFoot();
