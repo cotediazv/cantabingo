@@ -155,7 +155,7 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
       var dl = 'u-' + sh.tipo;
       h += '<div class="fila"><div class="campo"><small>' + (sh.tipo === 'standup' ? 'Comediante' : sh.tipo === 'doble' ? 'Doble de' : sh.tipo === 'tributo' ? 'Tributo a' : 'Nombre del show') + '</small><input type="text" list="' + dl + '" value="' + esc(sh.nombre) + '" data-f="' + f + '" data-l="' + l + '" data-sk="nombre"></div>';
       if (sh.tipo === 'otro') h += '<div class="campo"><small>Artista (opcional)</small><input type="text" list="u-artista" value="' + esc(sh.artista) + '" data-f="' + f + '" data-l="' + l + '" data-sk="artista"></div>';
-      if (sh.tipo === 'tributo' || sh.tipo === 'otro') h += '<label class="chip' + (sh.banda ? ' on' : '') + '" style="cursor:pointer"><input type="checkbox" hidden data-f="' + f + '" data-l="' + l + '" data-sk="banda"' + (sh.banda ? ' checked' : '') + '>Con banda (batería)</label>';
+      if (sh.tipo === 'tributo') h += '<label class="chip' + (sh.banda ? ' on' : '') + '" style="cursor:pointer"><input type="checkbox" hidden data-f="' + f + '" data-l="' + l + '" data-sk="banda"' + (sh.banda ? ' checked' : '') + '>Con banda (batería)</label>';
       h += '</div>';
     }
     if (sh.tipo && !interno(sh)) h += camposPago(f, l, sh);

@@ -327,7 +327,7 @@ module.exports = function programacion({ app, dir }) {
         const c = celda(fecha, l);
         if (!abierto(fecha, l) || showVacio(c.show)) continue;
         const f = [String(parse(fecha).d), l, 'SHOW', showGlosaPago(c.show, l)];
-        if (c.show.banda) f.push('BANDA');
+        if (c.show.banda && c.show.tipo === 'tributo') f.push('BANDA'); // solo «Banda tributo» lleva batería (Cote, 23 nov)
         filas.push(f);
         if (interno(c.show)) continue; // el bingo y los juegos son internos: no se le paga a nadie de afuera (Cote, 23 nov)
         if (c.show.monto == null) faltan.push(`${etiquetaTurno(fecha)} ${ETQ[l]}: falta el monto del show`);
