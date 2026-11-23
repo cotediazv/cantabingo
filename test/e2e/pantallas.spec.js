@@ -117,3 +117,38 @@ test('#/ lleva al Centro de control', async ({ page }) => {
   await expect(page.locator('h1')).toHaveText('Centro de control');
   expect(errors).toEqual([]);
 });
+
+// Páginas que ya no existen (23 nov): sus direcciones guardadas llevan a donde quedó lo suyo
+for (const [from, to] of [['#/proyectos', /#\/control$/], [`#/admin/${projectId}`, new RegExp(`#/anfitrion/${projectId}$`)], ['#/sesiones', /#\/jugar$/], ['#/ruedas', /#\/sorteoctl$/], ['#/ruedanueva', /#\/sorteoctl$/]]) {
+  test(`${from} lleva a donde quedó lo suyo`, async ({ page }) => {
+    const errors = await open(page, from, { size: PANEL, admin: true });
+    await expect(page).toHaveURL(to);
+    expect(errors).toEqual([]);
+  });
+}
+
+// Entrar a la sala desde el Centro de control con un juego en curso abre directo su panel (aquí, el bingo)
+test('Ir a la sala en juego abre el juego en curso', async ({ page }) => {
+  await setStage('bingo');
+  const errors = await open(page, '#/control', { size: PANEL, admin: true });
+  await page.locator('#ctl-sala-go a').click();
+  await expect(page).toHaveURL(new RegExp(`#/anfitrion/${projectId}$`));
+  await expect(page.locator('#panel-bar a')).toHaveText('← Sala de juegos');
+  await page.locator('#panel-bar a').click();
+  await expect(page).toHaveURL(/#\/juegos$/); // volver desde el juego sí muestra la Sala de juegos
+  expect(errors).toEqual([]);
+});
+
+// Crear la sala desde el Centro de control (va al final: cierra la sala de los datos fijos)
+test('crear sala de juegos: local y listo', async ({ page }) => {
+  await srv.admin.post(`/api/sessions/${sid}/host/close`);
+  const errors = await open(page, '#/control', { size: PANEL, admin: true });
+  await page.locator('#ctl-sala-go a').click();
+  await expect(page).toHaveURL(/#\/nuevo$/);
+  await page.locator('[data-venue="tobalaba"]').click();
+  await page.getByRole('button', { name: '🎮 Crear sala de juegos' }).click();
+  await expect(page).toHaveURL(/#\/juegos$/);
+  const cur = await srv.ok('GET', '/api/current');
+  expect(cur.sessions[0].name).toBe('Los Juegos de Tobalaba');
+  expect(errors).toEqual([]);
+});

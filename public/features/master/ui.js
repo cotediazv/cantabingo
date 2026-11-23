@@ -191,7 +191,7 @@
       <header class="gmm-top"><b data-k="mtitle">Sala de juegos</b><span data-k="msala"></span><span class="gm-clock" data-k="clock"><b></b><i></i></span></header>
       <div class="gmm-mon" data-k="mon"></div>
       <div class="gmm-body">
-        <div class="gm-panel gmm-pane" data-pane="juego"><iframe title="Panel de la sala de juegos" src="/#/juegos"></iframe></div>
+        <div class="gm-panel gmm-pane" data-pane="juego"><iframe title="Panel de la sala de juegos" src="/#/juegos/seguir"></iframe></div>
         <div class="gmm-pane gmm-gc" data-pane="gc" hidden></div>
       </div>
       <nav class="gmm-tabs"><button type="button" class="on" data-tab="juego"><span>🎮</span><b>Juego</b></button><button type="button" data-tab="gc"><span>🎛️</span><b>GC y efectos</b></button></nav></div>`;
@@ -276,7 +276,7 @@
     app.innerHTML = `<div id="gm" class="gm-all gm-jg">${navHTML('juegos')}
       <a class="gm-movil" href="/sala">📱 Abrir la versión para el teléfono</a>
       <div class="gm-grid"><div class="gm-jgleft" data-k="left"></div>
-        <div class="gm-jgright"><div class="gm-panel"><iframe title="Panel de la sala de juegos" src="${location.pathname}#/juegos"></iframe></div><div class="gm-jgctl" data-k="ctl"></div></div></div></div>`;
+        <div class="gm-jgright"><div class="gm-panel"><iframe title="Panel de la sala de juegos" src="${location.pathname}#/juegos/seguir"></iframe></div><div class="gm-jgctl" data-k="ctl"></div></div></div></div>`;
     const root = $('#gm');
     const left = root.querySelector('[data-k="left"]');
     const ctlBox = root.querySelector('[data-k="ctl"]'); // los botones del GC y de los efectos van a la derecha, debajo del panel de los juegos (pedido de Cote, 23 nov), para que las pantallas queden más grandes

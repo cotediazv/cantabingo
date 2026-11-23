@@ -2334,7 +2334,6 @@ body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "So
 .patterns .pat-group { grid-column: 1 / -1; margin: 12px 0 2px; font-size: 1rem; color: #ffc400; }
 .patterns .pat-group:first-child { margin-top: 0; }
 /* «Refrescar» en todos los paneles */
-#ctl-reload-fixed { position: fixed; top: 8px; right: 8px; z-index: 60; padding: 4px 10px; font-size: .8rem; opacity: .85; }
 
 /* Figuras del bingo: las letras en una pestaña plegada */
 .patterns .pat-letters { grid-column: 1 / -1; margin-top: 12px; }
@@ -2344,8 +2343,6 @@ body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "So
 .v-no { white-space: nowrap; }
 
 /* Enlace al Centro de control abajo de cada panel */
-#ctl-home-link { text-align: center; margin: 24px auto 40px; }
-#ctl-reload-fixed { position: absolute; }
 
 /* ---------- Elegir el juego: pestañas «Manual» / «Por sorteo» / «Por votación» (pedido de Cote, 21 nov) ---------- */
 .games-nav .g-tabs button { line-height: 1.2; }
@@ -3141,13 +3138,10 @@ button.paso:disabled { background: #1f5133; border-color: #1f5133; color: #cfe9d
 .paso.paso-fijo { position: fixed; top: 8px; left: 50%; transform: translateX(-50%); z-index: 60; box-sizing: border-box; width: min(calc(100vw - 24px), 900px); min-height: 64px; margin: 0 !important; padding: 12px 18px; font-size: 1.25rem; line-height: 1.2; text-align: center; white-space: normal; border-radius: 14px; box-shadow: 0 0 0 4px var(--bg, #12101f), 0 8px 22px rgba(0, 0, 0, .55); }
 a.paso.paso-fijo { display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; }
 body.con-paso #app { padding-top: calc(var(--paso-h, 64px) + 22px) !important; }
-body.con-paso #ctl-reload-fixed { top: calc(var(--paso-h, 64px) + 20px); }
 
 /* Logo de Frida con el dibujo encima de las letras (Cote, 23 nov): en los GC de OBS va más alto que el de KRB Stage */
 .venue-mark.vm-alto img:last-child { height: 9.6vh; }
 .venue-mark.vm-alto i { height: 6vh; }
-/* Sin portada (23 nov): el Centro de control es la primera pantalla; el botón «Refrescar» sigue a la derecha y abajo va «Cerrar sesión» */
-.ctl-top .ctl-reload { margin-left: auto; }
 .ctl-logout { margin: 28px 0 8px; text-align: center; }
 
 /* «El último en pie» — versión de prueba (pedido de Cote, 23 nov). Tablero y pantalla de pie (#ep), GC de OBS (#epg),
@@ -3268,3 +3262,18 @@ body.con-paso #ctl-reload-fixed { top: calc(var(--paso-h, 64px) + 20px); }
 /* «El último en pie» sin reloj (Cote, 23 nov): el tiempo lo maneja el animador */
 .ep-side.wait > b { font-size: 6vh; line-height: 1.1; font-weight: 900; text-transform: uppercase; text-align: center; }
 @media (max-aspect-ratio: 1/1) { .ep-side.wait > b { font-size: 8vw; } }
+
+/* Barra de arriba de los paneles del animador (23 nov): volver y refrescar, la misma en todos. El botón del paso que
+   sigue (paso-fijo) queda justo debajo de ella. */
+#panel-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 61; display: flex; justify-content: space-between; align-items: center; gap: 10px; height: 48px; padding: 0 12px; background: var(--bg); border-bottom: 1px solid var(--line); }
+#panel-bar a { color: var(--ink); text-decoration: none; font-weight: 700; font-size: .95rem; }
+body.has-bar main#app { padding-top: 72px; }
+body.has-bar .paso.paso-fijo { top: 56px; }
+body.has-bar.con-paso #app { padding-top: calc(var(--paso-h, 64px) + 22px + 48px) !important; }
+/* Centro de control: las dos puertas de arriba (Sala de juegos y GC Master) */
+.ctl-doors { display: grid; gap: 12px; margin-bottom: 20px; }
+.ctl-doors .home-create { margin: 0; }
+.ctl-doors .ctl-master { display: block; padding: 16px; border-radius: 16px; text-align: center; text-decoration: none; color: var(--ink); font-size: 1.15rem; font-weight: 800; background: var(--raised); border: 1px solid var(--line); }
+/* Botón grande de ir a la sala (Centro de control) o volver al juego en curso (Sala de juegos) */
+.home-create.ctl-go { margin: 6px 0 14px; padding: 16px 14px; font-size: 1.2rem; }
+.home-create.ctl-go span { font-size: 1.6rem; }

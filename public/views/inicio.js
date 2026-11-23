@@ -23,12 +23,6 @@ function viewLogin() {
 }
 const isAdmin = async () => Boolean(store.get('adminToken')) && (await api('GET', '/api/me').catch(() => ({}))).admin === true;
 
-// Catálogo de juegos de la plataforma. Para sumar uno: agregar aquí su entrada y sus vistas.
-const GAMES = [
-  { id: 'bingo', icon: '🎮', name: 'Crea sala de juegos', desc: 'Bingo, El Rosko, El Festival y El objeto más extraño.', href: '#/nuevo' },
-  { id: 'rueda', hidden: true, icon: '🎡', name: 'El Rosko', desc: 'Un rosko de letras por concursante, con reloj. Tú marcas acierto, fallo o paso; el público ve el rosko y la pregunta.', href: '#/ruedas' },
-  { id: 'sorteo', hidden: true, icon: '🎲', name: 'Sorteo de concursantes', desc: 'Elige al azar, entre quienes jugaron el bingo, a los concursantes de El Rosko. Se ve en pantalla.', href: '#/sorteoctl' },
-];
 
 views.home = async () => {
   // Pedido de Gabriel (23 nov): la portada sobraba (solo repetía el botón de la sala, que ya está arriba en el Centro de
@@ -37,35 +31,25 @@ views.home = async () => {
   return undefined;
 };
 
-// Centro de control: qué gráfica se ve en la pantalla de OBS
+// Centro de control: preparar la noche y ajustes (23 nov: el animador maneja los juegos desde la Sala de juegos y el GC
+// se cambia a distancia desde el GC Master; aquí quedan las dos puertas, la sala abierta, los enlaces y los ajustes)
 views.control = async () => {
   if (!(await isAdmin())) return viewLogin();
-  // Pedido de Cote (20 nov): en la aplicación instalada no hay cómo recargar; botoncito «Refrescar página»
-  app.innerHTML = `<p class="back ctl-top"><button type="button" class="ctl-reload" onclick="location.reload()">↻ Refrescar página</button></p><h1>Centro de control</h1>
+  app.innerHTML = `<h1>Centro de control</h1>
+    <div class="ctl-doors"><div id="ctl-sala-go"></div><a class="ctl-master" href="#/master">🎛️ GC Master · la transmisión y el GC, a distancia</a></div>
     <div class="panel"><h2>Sala de juegos abierta</h2>
       <p class="muted small">Si hay más de una, a la gente le aparece una lista para elegir. Cierra las que ya no se usan.</p>
-      <div id="ctl-sala-go"></div><div id="open-list"></div></div>
-    <a class="btn lp-open" href="#/verticalctl/kennedy">📺 Pantallas de los locales · videos vertical y horizontal</a>
-    <div class="panel">
-      <h2>En pantalla</h2>
-      <p class="muted small">La pantalla cambia sola al activar un bingo, lanzar un sorteo o cargar un rosco. Aquí puedes cambiarla a mano.</p>
-      <div class="control-grid" id="stage">
-        <button data-show="bingo"><span>🎱</span>Bingo</button><button data-show="sorteo"><span>🎲</span>Sorteo</button>
-        <button data-show="rueda"><span>🎡</span>El Rosko</button><button data-show="qr"><span>📱</span>QR en pantalla completa</button>
-        <button data-show="karaoke"><span>🎤</span>Karaoke</button><button data-show="show"><span>⭐</span>Show</button>
-        <button data-show="voto"><span>🗳️</span>Votación</button><button data-show="insta"><span>📸</span>Instagram</button>
-        <button data-show="desafio" class="wide"><span>🏆</span>El Gran Desafío</button>
-        <button data-show="none" class="wide"><span>⬛</span>Nada</button>
-      </div>
+      <div id="open-list"></div></div>
+    <div class="panel" id="ctl-enlaces"><h2>Enlaces para OBS y las pantallas</h2>
       <div class="ctl-links">
         <p><b>📱 Participar</b><small>Lo que abre el público al escanear el QR</small><a class="link" href="${joinUrl()}" target="_blank">${esc(joinUrl())}</a></p>
         <p><b>🖥️ Tablero</b><small>Pantalla del DJ, con sonido</small><a class="link" href="${boardUrl()}" target="_blank">${esc(boardUrl())}</a></p>
         <p><b>🎬 OBS</b><small>Fuente de navegador, 1920×1080, transparente</small><a class="link" href="${stageUrl()}" target="_blank">${esc(stageUrl())}</a></p>
       </div>
     </div>
+    <a class="btn lp-open" href="#/verticalctl/kennedy">📺 Pantallas de los locales · videos vertical y horizontal</a>
     <a class="btn lp-open" href="#/light">💡 Sala light · karaoke, show y cartelera en otro local</a>
     <a class="btn lp-open" href="#/consola">🖥️ Consola general · los 3 locales en una pantalla</a>
-    <a class="btn lp-open" href="#/master">🎛️ GC Master · centro de control de transmisión</a>
     <a class="btn lp-open" href="/sala">📱 Sala de juegos en el teléfono · para guardar en el inicio</a>
     <div class="panel"><h2>Karaoke</h2>
       <p class="muted small">Muestra en pantalla la lista de pedidos del sistema de karaoke (formulario y app del equipo).</p>
@@ -143,7 +127,7 @@ views.control = async () => {
     const list = await activeSessions();
     if (!$('#open-list')) return;
     // Pedido de Cote (21 nov): desde el Centro de control, ir directo a la sala en juego o crear una
-    $('#ctl-sala-go').innerHTML = list.length ? `<a class="home-create open ctl-go" href="#/juegos"><span>▶</span>Ir a la sala en juego: ${esc(list[0].name)}</a>`
+    $('#ctl-sala-go').innerHTML = list.length ? `<a class="home-create open ctl-go" href="#/juegos/seguir"><span>▶</span>Ir a la sala en juego: ${esc(list[0].name)}</a>`
       : '<a class="home-create ctl-go" href="#/nuevo"><span>🎮</span>Crear sala de juegos</a>';
     $('#open-list').innerHTML = list.length ? `${list.map((s) => `<div class="open-row"><span><b>${esc(s.name)}</b><br><small class="muted">Ronda ${s.round}</small></span><button class="danger" data-close="${s.id}">Cerrar</button></div>`).join('')}
       ${list.length > 1 ? '<button class="danger big" id="close-all" style="width:100%;margin-top:12px">Cerrar todos</button>' : ''}` : '<p class="muted">No hay ningún bingo abierto.</p>';
@@ -161,15 +145,6 @@ views.control = async () => {
     paintOpen();
   };
   paintOpen();
-  const paintStage = (show) => $$('#stage button').forEach((b) => b.classList.toggle('on', b.dataset.show === show));
-  paintStage((await api('GET', '/api/stage').catch(() => ({}))).show);
-  $('#stage').onclick = async (e) => {
-    const btn = e.target.closest('[data-show]');
-    if (!btn) return;
-    try { paintStage((await api('POST', '/api/stage', { show: btn.dataset.show })).show); } catch (err) { fail(err); }
-  };
-  // Refleja los cambios automáticos mientras el panel está abierto
-  const timer = setInterval(async () => paintStage((await api('GET', '/api/stage').catch(() => ({}))).show), 3000);
-  return () => clearInterval(timer);
+  return undefined;
 };
 

@@ -169,8 +169,7 @@
     const venue = VENUE_SCREENS[arg] ? arg : SCREENS[pick(arg)].venue;
     const pair = VENUE_SCREENS[venue];
     // «Qué mostrar» es uno solo por local y se aplica a las dos pantallas, vertical y horizontal (pedido de Cote)
-    app.innerHTML = `<p class="back"><a href="#/control">← Centro de control</a></p>
-      <h1>📺 Pantallas · ${esc(VENUE_NAMES[venue])}</h1>
+    app.innerHTML = `      <h1>📺 Pantallas · ${esc(VENUE_NAMES[venue])}</h1>
       <p class="vt-locales">${Object.keys(VENUE_SCREENS).map((k) => `<a class="btn${k === venue ? ' primary' : ''}" href="#/verticalctl/${k}">${esc(VENUE_NAMES[k])}</a>`).join('')}</p>
       <div class="panel vt-links"><h2>🔗 Enlaces de ${esc(VENUE_NAMES[venue])}</h2>
         ${[['🎥 GC para OBS (sala light)', `#/light-gc/${venue}`],

@@ -304,23 +304,35 @@ if (new URLSearchParams(location.search).has('diag')) {
   }, 1500);
 }
 
-// Pedido de Cote (20 nov): botoncito «Refrescar página» en todos los paneles del moderador (en la aplicación instalada
-// no hay cómo recargar). El Centro de control ya lo trae en su encabezado.
+// Barra de arriba de los paneles del animador: una sola para todos (23 nov; reemplaza el «Refrescar» suelto de cada
+// panel, pedido de Cote del 20 nov, y el enlace «Centro de control» de abajo). A la izquierda, volver a donde
+// corresponde: los paneles de los juegos a la Sala de juegos; la Sala de juegos y los ajustes, al Centro de control.
+// A la derecha, «↻ Refrescar» (en la aplicación instalada no hay cómo recargar). Dentro del GC Master (iframe) no lleva
+// «volver», porque el GC Master tiene su propio menú. Va fuera de #app, así no se borra cuando un panel se redibuja.
 (() => {
-  const PANELS = /^#\/?($|juegos|figura|anfitrion|ronda|proyectos|nuevo|admin|votoctl|enpiectl|ruedactl|ruedas|sorteoctl|karaokectl|showctl|instactl|light$|consola|verticalctl)/;
-  const sync = () => {
-    let b = document.getElementById('ctl-reload-fixed');
-    const on = PANELS.test(location.hash || '#/') && !document.body.classList.contains('full') && !document.body.classList.contains('obs') && !!store.get('adminToken');
-    // Pedido de Cote (20 nov): abajo de cada panel, siempre, el enlace al Centro de control (no en el inicio ni en el
-    // mismo Centro de control, que ya lo tienen)
-    let home = document.getElementById('ctl-home-link');
-    const homeOn = on && !/^#\/?($|control)/.test(location.hash || '#/');
-    if (!homeOn && home) home.remove();
-    if (homeOn && !home) { home = document.createElement('p'); home.id = 'ctl-home-link'; home.innerHTML = '<a class="home-control home-control-sm" href="#/control">🎛️ Centro de control</a>'; const appEl = document.getElementById('app'); appEl.parentNode.insertBefore(home, appEl.nextSibling); }
-    if (!on) { if (b) b.remove(); return; }
-    if (!b) { b = document.createElement('button'); b.id = 'ctl-reload-fixed'; b.type = 'button'; b.className = 'ctl-reload'; b.textContent = '↻ Refrescar'; b.onclick = () => location.reload(); document.body.appendChild(b); }
+  const PANELS = /^#\/?(control|juegos|figura|anfitrion|ronda|nuevo|votoctl|desafioctl|enpiectl|ruedactl|sorteoctl|karaokectl|showctl|instactl|light$|consola|verticalctl)/;
+  const CONTROL = ['#/control', 'Centro de control'];
+  const backOf = (name, arg) => {
+    if (name === 'control') return null;
+    if (['juegos', 'nuevo', 'light', 'consola', 'verticalctl'].includes(name)) return CONTROL;
+    if (name === 'karaokectl' && arg) return ['#/light', 'Salas light']; // karaoke de una sala light
+    if (name === 'ronda' && arg) return [`#/anfitrion/${arg}`, 'Panel del bingo'];
+    return ['#/juegos', 'Sala de juegos'];
   };
-  window.addEventListener('hashchange', () => setTimeout(sync, 300));
-  setTimeout(sync, 600);
+  const inFrame = (() => { try { return window.top !== window; } catch (e) { return true; } })();
+  const sync = () => {
+    const hash = location.hash || '#/';
+    const on = PANELS.test(hash) && !document.body.classList.contains('full') && !document.body.classList.contains('obs') && !!store.get('adminToken');
+    let bar = document.getElementById('panel-bar');
+    document.body.classList.toggle('has-bar', on);
+    if (!on) { if (bar) bar.remove(); return; }
+    if (!bar) { bar = document.createElement('nav'); bar.id = 'panel-bar'; const appEl = document.getElementById('app'); appEl.parentNode.insertBefore(bar, appEl); }
+    const [name, arg] = hash.replace(/^#\/?/, '').split('/');
+    const back = inFrame ? null : backOf(name, arg);
+    const html = `${back ? `<a href="${back[0]}">← ${esc(back[1])}</a>` : '<span></span>'}<button type="button" class="ctl-reload" onclick="location.reload()">↻ Refrescar</button>`;
+    if (bar.innerHTML !== html) bar.innerHTML = html;
+  };
+  window.addEventListener('hashchange', sync);
+  window.addEventListener('DOMContentLoaded', sync);
 })();
 

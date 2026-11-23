@@ -51,7 +51,7 @@
   };
   const mount = () => {
     if (!/^#\/control\b/.test(location.hash)) return;
-    const stage = document.getElementById('stage');
+    const stage = document.getElementById('ctl-enlaces') || document.getElementById('stage'); // después de los enlaces
     if (!stage || document.getElementById('tema-box')) return;
     const box = document.createElement('div'); box.className = 'panel'; box.id = 'tema-box';
     const panel = stage.closest('.panel'); panel.parentNode.insertBefore(box, panel.nextSibling);

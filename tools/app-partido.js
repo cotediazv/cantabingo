@@ -25,7 +25,7 @@ const PARTS = [
   { file: 'core/base.js', about: 'Base: $, esc, store, api, toast, aviso inmediato y GC PER', start: null },
   { file: 'core/dominio.js', about: 'Bingo en HTML (bolas, cartones, figuras), enlaces, QR y conexión en vivo', start: /^\/\/ ---------- Ayudas de dominio/ },
   { file: 'views/inicio.js', about: 'Vistas: ingreso del moderador, portada y Centro de control', start: /^\/\/ ---------- Vistas ----------/ },
-  { file: 'views/sala.js', about: 'Vistas: proyectos, crear sala, Juegos, figura y panel del bingo', start: /^views\.proyectos = / },
+  { file: 'views/sala.js', about: 'Vistas: crear sala, Sala de juegos, figura y panel del bingo', start: /^views\.nuevo = / },
   { file: 'views/celular.js', about: 'Vista: celular del público (#/jugar), con lo que muestra en cada juego', start: /^views\.jugar = / },
   { file: 'core/sonidos.js', about: 'Efectos de sonido (sin archivos de audio)', start: /^\/\/ ---------- Efectos de sonido/ },
   { file: 'views/tablero.js', about: 'Vista: tablero (pantalla del local), que sigue el escenario', start: /^views\.tablero = / },

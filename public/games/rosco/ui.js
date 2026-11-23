@@ -1,7 +1,6 @@
 /* global views, app, $, $$, esc, api, fail, toast, qr, waiting, route, viewLogin, isAdmin, BACK_BINGO */
 // Interfaz del juego «Rueda de palabras»: lista y creación, panel del moderador y pantalla pública.
 (() => {
-  const DEFAULT_LETTERS = 'ABCDEFGHIJLMNÑOPQRSTUVXYZ';
   const COLORS = { pending: '#2f55d4', hit: '#22a862', miss: '#d64545', pass: '#e0a019' };
   const publicUrl = () => `${location.origin}${location.pathname}#/rueda`;
   const obsUrl = () => `${location.origin}${location.pathname}#/obs`;
@@ -75,67 +74,6 @@
     return () => es.close();
   }
   const openWheels = async () => (await api('GET', '/api/wheel-current').catch(() => ({}))).wheels || [];
-
-  // ---------- Moderador: lista de ruedas ----------
-  views.ruedas = async () => {
-    if (!(await isAdmin())) return viewLogin();
-    const list = await api('GET', '/api/wheels');
-    app.innerHTML = `<p class="back"><a href="#/control">← Centro de control</a></p>
-      <div class="row between" style="margin-bottom:16px"><h1>El Rosko</h1><a class="btn primary" href="#/ruedanueva">⊕ Nuevo rosco</a></div>
-      <div class="panel scroll-x">${list.length ? `<table class="list"><tr><th>Rosko</th><th>Concursantes</th><th>Reloj</th><th></th></tr>
-        ${list.map((w) => `<tr><td><b>${esc(w.name)}</b><br><span class="muted small">${w.letters} letras</span></td><td>${w.players.map(esc).join(', ')}</td><td>${w.seconds} s</td>
-          <td><div class="row"><a class="btn primary" href="#/ruedactl/${w.id}">Dirigir</a><button class="danger" data-del="${w.id}">Eliminar</button></div></td></tr>`).join('')}</table>`
-    : '<p>Aún no hay roscos. Crea el primero.</p>'}</div>`;
-    app.onclick = async (e) => {
-      const del = e.target.dataset.del;
-      if (del && confirm('¿Eliminar este rosco?')) { await api('DELETE', `/api/wheels/${del}`).catch(fail); views.ruedas(); }
-    };
-    return undefined;
-  };
-
-  views.ruedanueva = async () => {
-    if (!(await isAdmin())) return viewLogin();
-    app.innerHTML = `<p class="back"><a href="#/ruedas">← Roskos</a></p><h1>Nuevo rosco</h1>
-      <form class="panel fields" id="wf">
-        <label class="f">Nombre<input type="text" name="name" maxlength="50" placeholder="Rosko del viernes"></label>
-        <label class="f">Segundos por concursante <span class="hint">20 a 900</span><input type="number" name="seconds" min="20" max="900" value="120"></label>
-        <label class="f wide">Letras del rosko <span class="hint">en el orden en que giran</span><input type="text" name="letters" maxlength="40" value="${DEFAULT_LETTERS}"></label>
-        <label class="f wide">Concursantes <span class="hint">uno por línea, de 1 a 4; cada uno tiene su rosko y su reloj</span><textarea name="players" style="min-height:90px">Concursante 1</textarea></label>
-        <label class="f">Preguntas<select name="source"><option value="bank">Automáticas, del banco de preguntas</option><option value="own">Las escribo yo</option></select></label>
-        <div class="wide" id="bank-opts">
-          <div class="row"><b class="small">Temas:</b>
-            <label class="check"><input type="checkbox" name="cat" value="g" checked> Cultura general</label>
-            <label class="check"><input type="checkbox" name="cat" value="m" checked> Música</label>
-            <label class="check"><input type="checkbox" name="cat" value="a" checked> Arte</label></div>
-          <div class="row" style="margin-top:8px"><b class="small">Nivel:</b>
-            <label class="check"><input type="checkbox" name="level" value="f" checked> Fácil</label>
-            <label class="check"><input type="checkbox" name="level" value="m" checked> Medio</label></div>
-          <p class="muted small" style="margin-top:8px">Cada rosko nuevo toma las preguntas que menos se han usado, así van rotando solas. Solo las ves tú.</p>
-        </div>
-        <label class="f wide" id="own-opts" hidden>Tus preguntas <span class="hint">una por línea: <b>Letra; definición; respuesta</b>. Separa las de cada concursante con una línea <b>---</b></span>
-          <textarea name="questions" placeholder="A; Con la A: fruto del manzano; manzana\nB; Con la B: embarcación pequeña; bote"></textarea></label>
-        <div class="wide"><button class="primary big">Crear el rosko</button></div>
-      </form>`;
-    $('#wf').source.onchange = (e) => { $('#bank-opts').hidden = e.target.value !== 'bank'; $('#own-opts').hidden = e.target.value !== 'own'; };
-    $('#wf').onsubmit = async (e) => {
-      e.preventDefault();
-      const fd = new FormData(e.target);
-      const d = Object.fromEntries(fd);
-      const questions = d.questions.split(/^\s*-{3,}\s*$/m).map((block) => {
-        const map = {};
-        block.split(/\r?\n/).forEach((line) => {
-          const [letter, q, a] = line.split(';').map((x) => (x || '').trim());
-          if (letter && q) map[letter.toUpperCase().slice(0, 1)] = { q, a: a || '' };
-        });
-        return map;
-      });
-      try {
-        const w = await api('POST', '/api/wheels', { name: d.name, seconds: d.seconds, letters: d.letters, players: d.players.split(/\r?\n/), source: d.source, cats: fd.getAll('cat'), levels: fd.getAll('level'), questions });
-        location.hash = `#/ruedactl/${w.id}`;
-      } catch (err) { fail(err); }
-    };
-    return undefined;
-  };
 
   // ---------- Moderador: panel de control ----------
   // Top 10 de la Trivia del Rosko (lo usan el panel, la pantalla del local y el GC)
@@ -280,7 +218,7 @@
     };
     document.addEventListener('keydown', onKey);
     const stopClocks = startClocks(() => st);
-    const off = watch(id, (s) => { st = s; render(); }, () => { location.hash = '#/ruedas'; });
+    const off = watch(id, (s) => { st = s; render(); }, () => { location.hash = '#/juegos'; });
     return () => { off(); stopClocks(); document.removeEventListener('keydown', onKey); };
   };
 

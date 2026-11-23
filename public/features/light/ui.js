@@ -17,7 +17,7 @@
   // ---------- Panel del moderador: salas light de cada local ----------
   views.light = async () => {
     if (!(await isAdmin())) return viewLogin();
-    app.innerHTML = '<p class="back"><a href="#/control">← Centro de control</a></p><div id="lp"></div>';
+    app.innerHTML = '<div id="lp"></div>';
     let last = '';
     const paint = async () => {
       const st = await api('GET', '/api/light').catch(() => null);
@@ -102,7 +102,7 @@
   views.consola = async () => {
     if (!(await isAdmin())) return viewLogin();
     const ORDER = ['kennedy', 'frida', 'tobalaba'];
-    app.innerHTML = `<p class="back"><a href="#/control">← Centro de control</a></p><h1 style="margin-top:0">Consola general</h1>
+    app.innerHTML = `<h1 style="margin-top:0">Consola general</h1>
       <div class="cs-grid">${ORDER.map((v) => `<section class="cs-card th-${v}" id="cs-${v}"><header><b>${esc(VENUES[v])}</b><span class="cs-badge" data-k="badge"></span></header>
         <div class="cs-screen"><iframe data-k="frame" title="Pantalla de ${esc(VENUES[v])}" tabindex="-1"></iframe><p class="cs-off" data-k="off">Sin sala abierta</p></div>
         <dl><dt>En pantalla</dt><dd data-k="stage">—</dd><dt>Horario</dt><dd data-k="block">—</dd><dt>Karaoke</dt><dd data-k="kar">—</dd><dt>Personas</dt><dd data-k="people">—</dd></dl>

@@ -66,7 +66,7 @@ views.karaokectl = async (local) => {
       <p class="muted small" style="margin:4px 0 0">Se abre y se cierra solo según el horario del local (Mercado Kennedy: jue a sáb 21:45–00:30 · Frida: vie y sáb 18:30–00:00 · Tobalaba: vie 21:00–22:10). Si lo cambias a mano, vale hasta que pasan 30 minutos sin pedidos.</p>
       <p class="muted small" id="kc-note" style="margin-top:10px"></p>
     </div>
-    ${light ? `<div class="panel" id="kc-lb"></div>${staff ? '' : '<p class="back"><a href="#/light">← Salas light</a></p>'}` : activitiesNav('karaoke')}`;
+    ${light ? `<div class="panel" id="kc-lb"></div>` : activitiesNav('karaoke')}`;
   if (staff) $('#kc-phone').closest('label').hidden = true; // permitir pedidos desde el celular: solo el moderador
   const stopBar = light && views.lightBar ? views.lightBar($('#kc-lt'), $('#kc-lb'), light, staff) : null;
   if (!light) await api('POST', '/api/stage', { show: 'karaoke' }).catch(fail); // al entrar, el karaoke pasa a la pantalla

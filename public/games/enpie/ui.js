@@ -48,7 +48,7 @@
   // ---------- Panel del animador ----------
   views.enpiectl = async () => {
     if (!(await isAdmin())) return viewLogin();
-    app.innerHTML = `<p class="back"><a href="#/juegos">← Juegos</a></p><div class="panel"><h1>🧍 El último en pie <small class="ep-test">versión de prueba</small></h1><div id="ep-ctl"></div></div><div id="ep-nav"></div>
+    app.innerHTML = `<div class="panel"><h1>🧍 El último en pie <small class="ep-test">versión de prueba</small></h1><div id="ep-ctl"></div></div><div id="ep-nav"></div>
       <details class="more"><summary>Más opciones</summary><button type="button" data-ep="new">Empezar un juego nuevo (borra este)</button></details>`;
     const box = $('#ep-ctl'); let shown = '';
     const paint = (st) => {

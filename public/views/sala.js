@@ -1,61 +1,42 @@
-//@ Vistas: proyectos, crear sala, Juegos, figura y panel del bingo. Parte de la aplicación: se carga en orden desde index.html.
-views.proyectos = async () => {
-  const list = await api('GET', '/api/projects');
-  const fmt = { numbers: 'Números', words: 'Palabras', emojis: 'Emojis' };
-  app.innerHTML = `
-    <p class="back"><a href="#/control">← Centro de control</a></p><div class="row between" style="margin-bottom:16px"><h1>Bingo · Mis proyectos</h1><a class="btn primary" href="#/nuevo">⊕ Nuevo proyecto de bingo</a></div>
-    <div class="panel scroll-x">${list.length ? `<table class="list">
-      <tr><th>Proyecto</th><th>Formato</th><th>Cartones</th><th>Estado</th><th></th></tr>
-      ${list.map((p) => `<tr>
-        <td><b>${esc(p.name)}</b><br><span class="muted small">${new Date(p.created).toLocaleDateString('es')}</span></td>
-        <td>${fmt[p.format]}${p.format === 'numbers' ? ` 1–${p.values}` : ''}</td><td>${p.count}</td>
-        <td>${p.sessionId ? '<span class="tag live">Generador activo</span>' : '<span class="tag">Listo</span>'}</td>
-        <td><div class="row"><a class="btn primary" href="#/anfitrion/${p.id}">${p.sessionId ? 'Abrir' : 'Iniciar'}</a>
-          <button class="danger" data-del="${p.id}">Eliminar</button></div></td></tr>`).join('')}
-    </table>` : '<p>Aún no tienes proyectos. Crea el primero para generar tus cartones.</p>'}</div>
-    <p class="muted small">Tus proyectos quedan asociados a este navegador.</p>`;
-  app.onclick = async (e) => {
-    const del = e.target.dataset.del;
-    if (del && confirm('¿Eliminar este proyecto y sus cartones?')) { await api('DELETE', `/api/projects/${del}`).catch(fail); views.proyectos(); }
-  };
-};
-
+//@ Vistas: crear sala, Sala de juegos, figura y panel del bingo. Parte de la aplicación: se carga en orden desde index.html.
 views.nuevo = async () => {
   if (!(await isAdmin())) return viewLogin();
   // Una sola sala a la vez
   if ((await activeSessions()).length) { toast('Ya hay una sala abierta: ciérrala en el Centro de control para crear otra'); location.hash = '#/'; return undefined; }
   app.innerHTML = `
-    ${BACK}<h1>Nuevo proyecto de bingo</h1>
+    <h1>Crear sala de juegos</h1>
     <form class="panel fields" id="f">
       <div class="wide">
-        <span class="f" style="margin-bottom:6px">¿Qué bingo es?</span>
+        <span class="f" style="margin-bottom:6px">¿De qué local?</span>
         <div class="seg" id="venues" role="tablist">
           <button type="button" role="tab" data-venue="frida" class="on">Frida</button>
           <button type="button" role="tab" data-venue="tobalaba">Tobalaba</button>
           <button type="button" role="tab" data-venue="kennedy">Mercado Kennedy</button>
-          <button type="button" role="tab" data-venue="new">Otro nombre</button>
         </div>
         <p class="muted small" id="venue-note" style="margin-top:8px"></p>
         <input type="hidden" name="theme" value="frida">
       </div>
-      <label class="f" id="pname-wrap" hidden>Nombre del bingo<input type="text" name="name" maxlength="60" value="Los Juegos de Frida"></label>
+      <details class="wide"><summary class="small">Más opciones</summary><div class="fields" style="margin-top:10px">
+      <div class="seg" role="tablist"><button type="button" role="tab" data-venue="new">Otro nombre</button></div>
+      <label class="f" id="pname-wrap" hidden>Nombre de la sala<input type="text" name="name" maxlength="60" value="Los Juegos de Frida"></label>
       <label class="f" id="ptheme-wrap" hidden>Colores en pantalla<select id="ptheme">
         <option value="frida">Magenta (como Frida)</option><option value="tobalaba">Rojo (como Tobalaba)</option><option value="kennedy">Celeste azulado (como Mercado Kennedy)</option></select></label>
-      <label class="f">Número de cartones <span class="hint">de 25 a 3.000</span><input type="number" name="count" min="25" max="3000" value="320" required></label>
-      <div class="wide"><button class="primary big">Crear los cartones</button></div>
+      <label class="f">Cartones del bingo <span class="hint">de 25 a 3.000</span><input type="number" name="count" min="25" max="3000" value="320" required></label>
+      </div></details>
+      <div class="wide"><button class="primary big">🎮 Crear sala de juegos</button></div>
     </form>`;
   const f = $('#f');
   // Pestañas de local: cada una fija el nombre y los colores de la pantalla; «Otro nombre» deja elegirlos
   const VENUES = { frida: ['Los Juegos de Frida', 'magenta'], tobalaba: ['Los Juegos de Tobalaba', 'rojo'], kennedy: ['Los Juegos de Mercado Kennedy', 'celeste azulado'] }; // el local se llama Mercado Kennedy (pedido de Cote, 21 nov)
   const pickVenue = (v) => {
-    $$('#venues button').forEach((b) => { b.classList.toggle('on', b.dataset.venue === v); b.setAttribute('aria-selected', b.dataset.venue === v); });
+    $$('#f [data-venue]').forEach((b) => { b.classList.toggle('on', b.dataset.venue === v); b.setAttribute('aria-selected', b.dataset.venue === v); });
     const custom = v === 'new';
     $('#pname-wrap').hidden = !custom;
     $('#ptheme-wrap').hidden = !custom;
     if (custom) { f.name.value = ''; f.theme.value = $('#ptheme').value; $('#venue-note').textContent = 'Escribe el nombre y elige los colores de la pantalla.'; f.name.focus(); }
     else { f.name.value = VENUES[v][0]; f.theme.value = v; $('#venue-note').textContent = `Se llamará «${VENUES[v][0]}» y la pantalla saldrá en ${VENUES[v][1]}.`; }
   };
-  $('#venues').onclick = (e) => { const v = e.target.dataset.venue; if (v) pickVenue(v); };
+  f.onclick = (e) => { const v = e.target.dataset && e.target.dataset.venue; if (v) pickVenue(v); };
   $('#ptheme').onchange = (e) => { f.theme.value = e.target.value; };
   pickVenue('frida');
   f.onsubmit = async (e) => {
@@ -77,13 +58,13 @@ views.nuevo = async () => {
 
 // Juegos (pedido de Cote, 21 nov): la sala parte aquí, sin bingo. Arriba la sala y el QR de entrada; abajo el menú de
 // juegos con las pestañas «Sortear juegos» / «Elegir libremente»
-views.juegos = async () => {
+views.juegos = async (arg) => {
   if (!(await isAdmin())) return viewLogin();
   const open = (await activeSessions())[0];
   if (!open) { location.hash = '#/'; return undefined; }
   store.set('lastBingo', open.projectId);
   // Pedido de Cote (21 nov): al crear la sala, tres botones y nada más (Manual, Por sorteo, Por votación)
-  app.innerHTML = `<p class="back"><a href="#/control">← Centro de control</a></p><div id="jg-cur"></div>${activitiesNav('', { lobby: true })}
+  app.innerHTML = `<div id="jg-cur"></div>${activitiesNav('', { lobby: true })}
     <p class="ep-link"><a class="btn" href="#/enpiectl">🧪 Juego en prueba: 🧍 El último en pie</a></p>`;
   const venue = open.theme || 'frida';
   const paint = async () => {
@@ -94,6 +75,9 @@ views.juegos = async () => {
     const cur = st.current;
     const info = cur && GAME_INFO(venue)[cur.game];
     const href = !cur ? '' : cur.game === 'bingo' ? `#/anfitrion/${open.projectId}` : cur.wheel ? `#/ruedactl/${cur.wheel}` : info.href;
+    // Al entrar a la sala desde el Centro de control o el GC Master (#/juegos/seguir) con un juego en curso, se va directo
+    // a su panel, sin pasar por aquí (23 nov). Volver desde un juego («← Sala de juegos») sí muestra esta página.
+    if (arg === 'seguir') { arg = ''; if (href) { location.replace(`${location.pathname}${location.search}${href}`); return; } history.replaceState(null, '', '#/juegos'); }
     const html = cur ? `<a class="home-create open ctl-go paso" data-paso="8" href="${href}"><span>▶</span>Volver al juego en curso: ${info.icon} ${esc(info.name)}</a>` : '';
     if ($('#jg-cur').innerHTML !== html) $('#jg-cur').innerHTML = html;
     window.setNavFold(!!cur);
@@ -110,7 +94,7 @@ views.figura = async (pid) => {
   const info = await api('GET', `/api/sessions/${p.sessionId}/host`);
   if (info.roundOver) { location.replace(`#/ronda/${pid}`); return undefined; }
   if (info.started) { location.replace(`#/anfitrion/${pid}`); return undefined; }
-  app.innerHTML = `<p class="back"><a href="#/juegos">← Juegos</a></p><h1>${esc(bingoName(p.name))}</h1>
+  app.innerHTML = `<h1>${esc(bingoName(p.name))}</h1>
     <form class="panel" id="f"><h2>¿Qué figura se juega?</h2>${patternPicker(info.patterns)}
       <button class="primary big paso">Empezar el bingo</button></form>`;
   $('#f').onsubmit = async (e) => {
@@ -187,7 +171,7 @@ async function hostConsole(p) {
   let manual = false;
   let spoken = -1;
   app.innerHTML = `
-    <div id="host-bingo"><p class="back"><a href="#/control">← Centro de control</a></p>
+    <div id="host-bingo">
       <div class="panel"><h1 id="title"></h1><div id="meta" class="muted"></div><div id="pats" style="margin-top:10px"></div></div>
       ${window.readAloud('Bingo', BINGO_HOWTO)}
       <div class="cols">
@@ -222,8 +206,27 @@ async function hostConsole(p) {
       </div>
       <div id="win-ann"></div>
       ${activitiesNav('bingo')}
-      <p class="small" style="text-align:center;margin-top:22px"><a href="#/admin/${p.id}">⚙️ Administración</a></p>
+      <details class="panel bingo-more" id="bingo-more"><summary>⚙️ Más opciones del bingo</summary>
+        <h3>Textos de la gráfica de OBS</h3>
+        <div class="fields" style="margin-top:10px">
+          <label class="f">Franja superior<input type="text" id="gc-top" maxlength="90" placeholder="Escanea el código QR con tu celular y participa"></label>
+          <label class="f">Franja inferior<input type="text" id="gc-bottom" maxlength="140" placeholder="Pon tu nombre, apellido y participa"></label>
+        </div>
+        <p class="muted small" style="margin-top:8px">En la franja inferior, lo que escribas entre asteriscos sale resaltado en amarillo: <b>*CONTRASEÑA: 1234*</b></p>
+        <p style="margin-top:10px"><button type="button" id="gc-save">Guardar textos</button></p>
+        <h3>Selección final</h3>
+        <p class="muted small">Si hay varios ganadores, elige al azar cuántos cartones conservar. El resultado aparece arriba en el panel.</p>
+        <div class="row"><label class="small">Conservar <input type="number" id="keep" min="1" value="1" style="width:80px"> cartones</label><button type="button" id="finalbtn">Elegir al azar</button></div>
+      </details>
     </div>`;
+  // Más opciones (antes en la página «Administración»): los textos se leen al abrir el recuadro
+  $('#bingo-more').ontoggle = async (e) => {
+    if (!e.target.open) return;
+    const info = await api('GET', `/api/sessions/${sid}/host`).catch(() => null);
+    if (info && $('#gc-top')) { $('#gc-top').value = info.gc.top || ''; $('#gc-bottom').value = info.gc.bottom || ''; }
+  };
+  $('#gc-save').onclick = async () => { await act('gc', { top: $('#gc-top').value, bottom: $('#gc-bottom').value }); toast('Textos de la gráfica guardados'); };
+  $('#finalbtn').onclick = async () => { await act('final', { keep: Number($('#keep').value) || 1 }); toast('Selección hecha: mírala arriba en el panel'); };
   const render = () => {
     $('#title').textContent = bingoName(st.name);
     const mins = Math.max(0, Math.round((st.expires - Date.now()) / 60000));
@@ -313,7 +316,7 @@ views.ronda = async (pid) => {
   if (!p.sessionId) { location.hash = `#/anfitrion/${pid}`; return undefined; }
   const info = await api('GET', `/api/sessions/${p.sessionId}/host`);
   const next = info.round + 1;
-  app.innerHTML = `<p class="back"><a href="#/anfitrion/${pid}">← Volver al bingo anterior</a></p><h1>${esc(p.name)}</h1>
+  app.innerHTML = `<h1>${esc(p.name)}</h1>
     <form class="panel" id="f">
       <h2>Ronda ${next}: ¿qué figura se juega?</h2>
       ${patternPicker(info.patterns)}
@@ -329,46 +332,4 @@ views.ronda = async (pid) => {
   return undefined;
 };
 
-// Administración del bingo en curso: lo que no se usa durante el juego
-views.admin = async (pid) => {
-  if (!(await isAdmin())) return viewLogin();
-  const p = await api('GET', `/api/projects/${pid}`);
-  if (!p.sessionId) { location.hash = `#/anfitrion/${pid}`; return undefined; }
-  const sid = p.sessionId;
-  const info = await api('GET', `/api/sessions/${sid}/host`);
-  const act = (action, body) => api('POST', `/api/sessions/${sid}/host/${action}`, body || {});
-  app.innerHTML = `<p class="back"><a href="#/anfitrion/${pid}">← Volver al bingo</a></p><h1>Administración</h1>
-    <div class="panel"><h2>Enlaces y código QR</h2>
-      <div class="row between"><div class="small">
-        <b>Participantes:</b> <a class="link" href="${joinUrl()}" target="_blank">${esc(joinUrl())}</a><br>
-        <b>Pantalla de OBS:</b> <a class="link" href="${stageUrl()}" target="_blank">${esc(stageUrl())}</a><br>
-        <b>Tablero para el DJ:</b> <a class="link" href="${boardUrl()}" target="_blank">${esc(boardUrl())}</a><br>
-        <b>Contraseña:</b> ${info.password ? esc(info.password) : '<i>sin contraseña</i>'}</div>${qr(joinUrl())}</div></div>
-    <div class="panel"><h2>Textos de la gráfica de OBS</h2>
-      <div class="fields" style="margin-top:10px">
-        <label class="f">Franja superior<input type="text" id="gc-top" maxlength="90" value="${esc(info.gc.top)}" placeholder="Escanea el código QR con tu celular y participa"></label>
-        <label class="f">Franja inferior<input type="text" id="gc-bottom" maxlength="140" value="${esc(info.gc.bottom)}" placeholder="Pon tu nombre, apellido y participa"></label>
-      </div>
-      <p class="muted small" style="margin-top:8px">En la franja inferior, lo que escribas entre asteriscos sale resaltado en amarillo: <b>*CONTRASEÑA: 1234*</b></p>
-      <p style="margin-top:10px"><button id="gc-save">Guardar textos</button></p></div>
-    <div class="panel"><h2>Selección final</h2>
-      <p class="muted small">Si hay varios ganadores, elige al azar cuántos cartones conservar. El resultado aparece en el panel del bingo.</p>
-      <div class="row"><label class="small">Conservar <input type="number" id="keep" min="1" value="1" style="width:80px"> cartones</label><button id="finalbtn">Elegir al azar</button></div></div>
-    <div class="panel"><h2>Cerrar la sesión</h2>
-      <p class="muted small">Termina el bingo para todos: se pierden los cartones repartidos y los participantes tendrán que volver a entrar.</p>
-      <button class="danger" id="close">Cerrar la sesión</button></div>`;
-  $('#gc-save').onclick = async () => { try { await act('gc', { top: $('#gc-top').value, bottom: $('#gc-bottom').value }); toast('Textos de la gráfica guardados'); } catch (err) { fail(err); } };
-  $('#finalbtn').onclick = async () => { try { await act('final', { keep: Number($('#keep').value) || 1 }); toast('Selección hecha: mírala en el panel del bingo'); } catch (err) { fail(err); } };
-  $('#close').onclick = async () => { if (confirm('¿Cerrar la sesión para todos?')) { await act('close').catch(fail); store.del('lastBingo'); location.hash = '#/'; } };
-  return undefined;
-};
-
-views.sesiones = async () => {
-  const list = await api('GET', '/api/sessions');
-  app.innerHTML = `${BACK}<h1>Sesiones activas</h1>
-    <div class="panel scroll-x">${list.length ? `<table class="list"><tr><th>Sesión</th><th>Ronda</th><th></th></tr>
-      ${list.map((s) => `<tr><td><b>${esc(s.name)}</b> ${s.locked ? '🔒' : ''}</td><td>${s.round}</td>
-        <td><div class="row"><a class="btn primary" href="#/jugar/${s.id}">Unirse</a><a class="btn" href="#/tablero/${s.id}">Tablero</a></div></td></tr>`).join('')}</table>`
-    : '<p>No hay sesiones públicas activas en este momento. Si tu anfitrión te dio un enlace o un código QR, úsalo para entrar.</p>'}</div>`;
-};
 
