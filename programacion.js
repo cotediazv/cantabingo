@@ -124,7 +124,20 @@ module.exports = function programacion({ app, dir }) {
     if (typeof c.abierto === 'boolean') o.abierto = c.abierto;
     const sh = limpiaShow(c.show);
     if (sh) o.show = sh;
-    for (const r of ROLES) { const v = clean(c[r], 40); if (v) o[r] = v; }
+    // Nombres limpios (Cote, 23 nov: «Caro», no «Caro (Guille)»; «Claudia», no «Claudia 1.5»). En cámaras, el nombre
+    // entre paréntesis es un turno extra de un turno que normalmente hace otra persona: queda aparte (camHx, camVx)
+    for (const r of ROLES) {
+      let v = clean(c[r], 60).replace(/\s+\d+(?:[.,]\d+)?$/, '');
+      const x = v.match(/^(.+?)\s*\(([^)]*)\)\s*(.*)$/);
+      if (x) {
+        v = `${x[1]} ${x[3]}`.trim().replace(/\s+\d+(?:[.,]\d+)?$/, '');
+        const p = clean(x[2], 40);
+        if (p && !/\d/.test(p)) { if ((r === 'camH' || r === 'camV') && !c[`${r}x`]) o[`${r}x`] = p; else if (r === 'dj' && !c.extra) o.extra = p; }
+      }
+      v = clean(v, 40);
+      if (v) o[r] = v;
+    }
+    for (const k of ['camHx', 'camVx']) { const v = clean(c[k], 40).replace(/\s*\(.*$/, '').replace(/\s+\d+(?:[.,]\d+)?$/, ''); if (v && o[k.slice(0, 4)]) o[k] = v; }
     for (const k of ['showPor', 'camNota']) { const v = clean(c[k], 40); if (v) o[k] = v; }
     if (c.montos && typeof c.montos === 'object') {
       const m = {};
@@ -137,7 +150,21 @@ module.exports = function programacion({ app, dir }) {
     P.dias[f] ||= {};
     P.dias[f][local] = limpiaCelda(c);
     for (const r of ROLES) if (P.dias[f][local][r]) persona(P.dias[f][local][r], ROL_TARIFA[r]);
+    for (const k of ['camHx', 'camVx']) if (P.dias[f][local][k]) persona(P.dias[f][local][k], 'cam');
   };
+  // Una vez al abrir: limpia los nombres que ya estaban guardados con agregados y saca esas «personas» de la lista
+  {
+    const sucio = (n) => /[()]|\s\d+(?:[.,]\d+)?$/.test(String(n || ''));
+    let n = 0;
+    for (const [f, d] of Object.entries(P.dias)) for (const l of Object.keys(d)) {
+      const antes = JSON.stringify(d[l]);
+      setCelda(f, l, d[l]);
+      if (JSON.stringify(P.dias[f][l]) !== antes) n++;
+    }
+    const antes = P.personas.length;
+    P.personas = P.personas.filter((p) => !sucio(p.nombre));
+    if (n || antes !== P.personas.length) console.log(`Programación: nombres limpiados en ${n} días y ${antes - P.personas.length} personas`);
+  }
 
   // ---------- Fechas de un mes ----------
   // Jueves a domingo del mes, solo los días del mes (Cote, 23 nov: sin los días de cortesía del mes anterior)
@@ -212,7 +239,7 @@ module.exports = function programacion({ app, dir }) {
     const wd = parse(f).wd;
     return ORDEN_CAM[wd].filter((l) => abierto(f, l)).map((l) => {
       const c = celda(f, l);
-      const ns = [c.camH, c.camV].filter(Boolean);
+      const ns = [c.camH && c.camH + (c.camHx ? ` (${c.camHx})` : ''), c.camV && c.camV + (c.camVx ? ` (${c.camVx})` : '')].filter(Boolean);
       return ns.length ? `${etqCam(l, wd)}: ${ns.join(' - ')}${c.camNota ? ` (${c.camNota})` : ''}` : '';
     }).filter(Boolean);
   };
@@ -403,9 +430,10 @@ module.exports = function programacion({ app, dir }) {
       const [cams, edis] = String(b.camaras).split(/^\s*editores[^\n]*$/im);
       leerTurnos(cams, y, m, (f, l, t) => {
         const c = cel(f, l); c.abierto = true;
-        const x = t.match(/\(([^)]+)\)\s*$/);
+        const x = t.match(/\(([^)]*\d[^)]*)\)\s*$/); // el horario lleva números; un nombre entre paréntesis es turno extra
         if (x) { c.camNota = x[1].trim(); t = t.slice(0, x.index).trim(); } else delete c.camNota;
         const ps = t.split(/\s+-\s+/).map((s) => s.trim()).filter(Boolean);
+        delete c.camHx; delete c.camVx;
         if (ps.length >= 2) { c.camH = ps[0]; c.camV = ps[1]; } else { delete c.camH; c.camV = ps[0]; }
       });
       if (edis) leerTurnos(edis, y, m, (f, l, t) => { const c = cel(f, l); c.abierto = true; c.editor = t.trim(); });
