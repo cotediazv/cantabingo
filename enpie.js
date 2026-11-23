@@ -6,13 +6,13 @@
 // 6.ª ronda no hay más repechaje y… rápidamente vamos tirando preguntas hasta que queden 3 personas. Esas personas pasan
 // a la final y la final se hace en el escenario, continuando con las preguntas, pero esta vez habladas… El que se
 // equivoca queda eliminado inmediatamente y quien queda en pie es el ganador».
-//   1) Rondas 1 a 5 (5 preguntas cada una, desde el celular): cada persona parte con 3 vidas; quien falla o no contesta
-//      pierde una; sin vidas pasa a la banca y sigue contestando. Para volver de la banca: 4 buenas en sus 5 preguntas
-//      siguientes (vuelve con 1 vida apenas junta la cuarta; si falla 2, su cuenta parte de nuevo). Al terminar cada
+//   1) Rondas 1 a 5 (4 preguntas cada una, desde el celular): cada persona parte con 3 vidas; quien falla o no contesta
+//      pierde una; sin vidas pasa a la banca y sigue contestando. Para volver de la banca, en sus 4 preguntas siguientes:
+//      3 buenas, vuelve con 1 vida; las 4 buenas, vuelve con 2 vidas (si falla 2, su cuenta parte de nuevo). Al terminar cada
 //      ronda hay un «corte»: cuántos en pie, cuántos en la banca y, desde el segundo, cuántos pasaron a la banca y
 //      cuántos salieron de ella en esa ronda.
-//   2) Desde la 6.ª ronda: se cierra la puerta (no vuelve nadie) y es eliminación directa: un error y fuera, pregunta
-//      tras pregunta, hasta que queden 3. Si una pregunta deja menos de 3, los cupos que faltan los ocupan los que
+//   2) Desde la 6.ª ronda: se cierra la puerta (no vuelve nadie de la banca); las vidas siguen valiendo (Cote, 23 nov)
+//      y se sigue, pregunta tras pregunta, hasta que queden 3. Si una pregunta deja menos de 3, los cupos que faltan los ocupan los que
 //      cayeron en esa misma pregunta con más aciertos (y, si empatan, los más rápidos). Si nadie acierta, nadie cae.
 //   3) Final en el escenario: los 3 finalistas, preguntas habladas por el animador, por turnos; el que se equivoca
 //      queda eliminado de inmediato y el que queda en pie gana.
@@ -21,11 +21,13 @@ const { BANK } = require('./questions-bank.js');
 const ALTS = require('./questions-alternatives.js');
 
 const LIVES = 3;
-const ROUND = 5; // preguntas por ronda
+const ROUND = 4; // preguntas por ronda (Cote, 23 nov: «hagamos las rondas de 4 preguntas»)
 const ROUNDS = 5; // rondas con repechaje
 const OPEN_Q = ROUND * ROUNDS; // hasta esta pregunta se puede volver de la banca
 const FINAL = 3; // finalistas
-const BACK_OF = 5; const BACK_NEED = 4; // para volver de la banca: 4 buenas de 5
+// Para volver de la banca (Cote, 23 nov): se miran las 4 preguntas siguientes a la caída: «3 de 4 vuelves al juego con
+// 1 vida; 4 de 4 vuelves al juego con 2 vidas». Con 2 fallos ya no alcanza y la cuenta parte de nuevo.
+const BACK_OF = 4; const BACK_NEED = 3;
 // Sin reloj (Cote, 23 nov: «el control del juego lo va a llevar el animador… ese tiempo para responder finalmente lo
 // maneje él»): la pregunta queda abierta desde «Iniciar pregunta» hasta que el animador la cierra con su botón.
 const Q_MS = 10000; // solo para el desempate por rapidez: lo que se le cuenta a quien entra tarde
@@ -108,16 +110,17 @@ module.exports = function enpie({ app, db, save, requireAdmin, fail, setStage, f
     const ups = Object.keys(s.players).filter((t) => s.players[t].up);
     const upsOk = ups.filter(ok);
     // Si ninguno de los que están en pie acierta, nadie cae por esa pregunta (el juego no se puede quedar sin gente en pie)
-    const mercy = ups.length > 0 && upsOk.length === 0 && (dir || ups.every((t) => s.players[t].lives <= 1));
+    const mercy = ups.length > 0 && upsOk.length === 0 && ups.every((t) => s.players[t].lives <= 1);
     let fell = 0; let back = 0; const fallen = [];
     for (const [t, p] of Object.entries(s.players)) {
       const a = s.ans[t];
       if (p.up || !dir) { p.time += a ? a.ms : Date.now() - s.at; p.lastOk = ok(t); if (p.lastOk) p.hits++; }
       if (p.up) {
-        if (!p.lastOk && !mercy) { p.lives = dir ? 0 : p.lives - 1; if (p.lives <= 0) { p.lives = 0; p.up = false; p.fellAt = s.n; p.w = 0; p.h = 0; fell++; fallen.push(t); } }
-      } else if (!dir) { // en la banca: 4 buenas de 5 y vuelve; con 2 fallos la cuenta parte de nuevo
+        if (!p.lastOk && !mercy) { p.lives -= 1; if (p.lives <= 0) { p.lives = 0; p.up = false; p.fellAt = s.n; p.w = 0; p.h = 0; fell++; fallen.push(t); } }
+      } else if (!dir) { // en la banca: se cuentan sus 4 preguntas siguientes; con 2 fallos la cuenta parte de nuevo
         p.w = (p.w || 0) + 1; if (p.lastOk) p.h = (p.h || 0) + 1;
-        if ((p.h || 0) >= BACK_NEED) { p.up = true; p.lives = 1; p.backAt = s.n; p.w = 0; p.h = 0; back++; } else if (p.w - (p.h || 0) > BACK_OF - BACK_NEED) { p.w = 0; p.h = 0; }
+        if (p.w >= BACK_OF && p.h >= BACK_NEED) { p.up = true; p.lives = p.h >= BACK_OF ? 2 : 1; p.backAt = s.n; p.w = 0; p.h = 0; back++; } // se decide al completar las 4: 3 buenas, 1 vida; las 4, 2 vidas
+        else if (p.w - (p.h || 0) > BACK_OF - BACK_NEED) { p.w = 0; p.h = 0; }
       }
     }
     s.stat.fell += fell; s.stat.back += back;
