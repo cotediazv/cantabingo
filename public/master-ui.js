@@ -275,15 +275,16 @@
     app.innerHTML = `<div id="gm" class="gm-all gm-jg">${navHTML('juegos')}
       <a class="gm-movil" href="/sala">📱 Abrir la versión para el teléfono</a>
       <div class="gm-grid"><div class="gm-jgleft" data-k="left"></div>
-        <div class="gm-panel"><iframe title="Panel de la sala de juegos" src="${location.pathname}#/juegos"></iframe></div></div></div>`;
+        <div class="gm-jgright"><div class="gm-panel"><iframe title="Panel de la sala de juegos" src="${location.pathname}#/juegos"></iframe></div><div class="gm-jgctl" data-k="ctl"></div></div></div></div>`;
     const root = $('#gm');
     const left = root.querySelector('[data-k="left"]');
+    const ctlBox = root.querySelector('[data-k="ctl"]'); // los botones del GC y de los efectos van a la derecha, debajo del panel de los juegos (pedido de Cote, 23 nov), para que las pantallas queden más grandes
     let alive = true; let venue = null; let stage = ''; let sigStop = null;
     const fit = () => root.querySelectorAll('.gm-box').forEach((box) => { const f = box.querySelector('iframe:not([data-full])'); if (f) f.style.transform = `scale(${box.clientWidth / Number(box.dataset.w || 1280)})`; });
     const ro = new ResizeObserver(fit);
     const ctl = monCtl(fit);
     const key = (k, icon, text, on) => `<button type="button" class="gm-key ${on ? 'on' : ''}" data-main="${k}"><i></i><span>${icon}</span><b>${text}</b></button>`;
-    const paintKeys = () => { const box = left.querySelector('[data-k="keys"]'); if (box) box.innerHTML = `<div class="gm-row"><small>GC de la sala de juegos</small><div class="gm-keyrow">${MAIN.map(([k, i, t]) => key(k, i, t, stage === k)).join('')}</div></div>`; };
+    const paintKeys = () => { const box = ctlBox.querySelector('[data-k="keys"]'); if (box) box.innerHTML = `<div class="gm-row"><small>GC de la sala de juegos</small><div class="gm-keyrow">${MAIN.map(([k, i, t]) => key(k, i, t, stage === k)).join('')}</div></div>`; };
     const paintLeft = () => {
       ro.disconnect();
       if (sigStop) { sigStop(); sigStop = null; }
@@ -296,13 +297,14 @@
             </div>
             <div class="gm-scr gm-tall" data-n="3"><small>3 · De pie</small>${TOOLS(3, false)}<div class="gm-box" data-w="720"><iframe title="Pantalla de pie de la sala de juegos" tabindex="-1" src="${page('#/tablero')}"></iframe></div></div>
           </div>
-          <div class="gm-keys" data-k="keys"></div>
-          <div class="gm-txtrow">
-            <input class="gm-text" data-k="text" type="text" maxlength="120" autocomplete="off" placeholder='Texto para el GC PER y el texto 3D · "entre comillas" sale destacado'>
-            <div class="gm-capa" title="Capa gráfica sobre la cámara">${CAPA.map(([k, i, t, full]) => `<button type="button" class="gm-ckey" data-capa="${k}" title="${full}" aria-label="${full}"><span>${i}</span><b>${t}</b></button>`).join('')}</div>
-          </div></section>`
+          </section>`
         : `<section class="gm-venue gm-none"><header class="gm-head"><b>Sala de juegos</b></header>
           <p>No hay sala de juegos abierta. Créala en el panel de al lado («Crear sala de juegos»); cuando esté abierta, aquí aparecen sus pantallas y sus botones.</p></section>`;
+      ctlBox.className = venue ? `gm-jgctl gm-venue th-${venue}` : 'gm-jgctl'; ctlBox.hidden = !venue;
+      ctlBox.innerHTML = venue ? `<div class="gm-keys" data-k="keys"></div>
+          <div class="gm-txtrow">
+            <input class="gm-text" data-k="text" type="text" maxlength="120" autocomplete="off" placeholder='Texto para el GC PER y el texto 3D · "entre comillas" sale destacado'>
+            <div class="gm-capa" title="Capa gráfica sobre la cámara">${CAPA.map(([k, i, t, full]) => `<button type="button" class="gm-ckey" data-capa="${k}" title="${full}" aria-label="${full}"><span>${i}</span><b>${t}</b></button>`).join('')}</div></div>` : '';
       if (venue) sigStop = signal1(left.querySelector('[data-k="p1box"]'), venue, { fit, label: (t) => { const el = left.querySelector('[data-k="p1name"]'); if (el) el.textContent = t; } });
       root.querySelectorAll('.gm-box').forEach((b) => ro.observe(b));
       ctl.attach(venue ? left.querySelector('.gm-screens') : null, sigStop);
@@ -317,20 +319,20 @@
       if (v !== venue) { venue = v; stage = st; paintLeft(); } else if (st !== stage) { stage = st; paintKeys(); }
       const sala = left.querySelector('[data-k="sala"]');
       if (sala && loc) sala.textContent = `En pantalla: ${loc.main.stageName}`;
-      const ti = left.querySelector('[data-k="text"]'); if (ti && loc && loc.main.perText && !ti.value && document.activeElement !== ti) ti.value = loc.main.perText; // el último texto del GC PER queda a mano
+      const ti = ctlBox.querySelector('[data-k="text"]'); if (ti && loc && loc.main.perText && !ti.value && document.activeElement !== ti) ti.value = loc.main.perText; // el último texto del GC PER queda a mano
     };
     root.onclick = async (e) => {
       const b = e.target.closest('button');
-      if (!b || !venue || !left.contains(b)) return;
+      if (!b || !venue || !(left.contains(b) || ctlBox.contains(b))) return;
       e.preventDefault();
       if (ctl.click(b)) return;
       try {
         if (b.dataset.main === 'per') {
-          const ti = left.querySelector('[data-k="text"]'); const text = ti.value.trim();
+          const ti = ctlBox.querySelector('[data-k="text"]'); const text = ti.value.trim();
           if (!text) { toast('Escribe el texto del GC PER'); ti.focus(); return; }
           ti.blur(); await api('POST', '/api/gcper', { on: true, text }); toast('GC PER en pantalla'); load();
         } else if (b.dataset.main) { await api('POST', '/api/stage', { show: b.dataset.main }); load(); } else if (b.dataset.capa) {
-          const ti = left.querySelector('[data-k="text"]'); const text = ti.value.trim();
+          const ti = ctlBox.querySelector('[data-k="text"]'); const text = ti.value.trim();
           if (b.dataset.capa === 'texto3d' && !text) { toast('Escribe el texto para el 3D'); ti.focus(); return; }
           await api('POST', '/api/capa', { local: venue, kind: b.dataset.capa, text });
           b.classList.add('on'); setTimeout(() => b.classList.remove('on'), 1500);

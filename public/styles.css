@@ -3147,3 +3147,27 @@ body.vert-in.per-on .vt-act { transform: scale(var(--per-k, .9)); transform-orig
 .gmm-mon > .gm-scr:not(:first-child):not(.gm-big) .gm-tools { top: auto; bottom: 0; }
 .gmm-mon > .gm-scr:not(:first-child):not(.gm-big) .gm-tool { padding: 2px 4px; min-height: 20px; }
 .gmm-mon > .gm-scr.gm-big { grid-area: 1 / 1 / -1 / -1; width: auto; justify-self: stretch; }
+
+/* GC Master · «Sala de juegos», reacomodo (pedido de Cote, 23 nov: «el lado derecho está muy grande y el lado izquierdo muy
+   chico… pasar los botones al lado derecho, debajo de los juegos, y dejar las pantallas un poco más grandes»): a la
+   izquierda solo las pantallas, lo más grandes que permite el alto de la ventana; a la derecha, el panel de los juegos y,
+   debajo, los botones del GC (una fila de 10), el texto y los efectos (una fila de 8). */
+.gm-jgright { min-width: 0; display: grid; gap: 8px; }
+.gm-jgctl { padding: 8px 10px; }
+.gm-jgctl[hidden] { display: none; }
+.gm-jgctl .gm-keys, .gm-jgctl .gm-txtrow { max-width: none; margin-left: 0; margin-right: 0; }
+@media (min-width: 901px) {
+  .gm-jg .gm-grid { grid-template-columns: clamp(380px, calc((100vh - 150px) * 1.45), 60%) minmax(0, 1fr); grid-template-columns: clamp(380px, calc((100dvh - 150px) * 1.45), 60%) minmax(0, 1fr); }
+  .gm-jgright { position: sticky; top: 8px; height: calc(100vh - 74px); height: calc(100dvh - 74px); min-height: 480px; grid-template-rows: minmax(0, 1fr) auto; }
+  .gm-jgright .gm-panel { position: static; height: auto; min-height: 0; }
+  .gm-jgctl .gm-keyrow { grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 6px; }
+  .gm-jgctl .gm-key { min-height: 58px; height: auto; padding: 8px 2px 6px; }
+  .gm-jgctl .gm-key span { font-size: 1.35rem; } .gm-jgctl .gm-key b { font-size: .68rem; }
+  .gm-jgctl .gm-capa { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+  .gm-jgctl .gm-ckey b { font-size: .68rem; }
+  .gm-jgctl .gm-row > small { margin-bottom: 4px; }
+  .gm-jgctl .gm-txtrow { margin-top: 6px; }
+}
+@media (min-width: 901px) { .gm-jgctl .gm-ckey { gap: 3px; padding: 0 2px; } .gm-jgctl .gm-ckey span { font-size: .85rem; } .gm-jgctl .gm-ckey b { font-size: .6rem; } }
+@media (min-width: 901px) and (max-width: 1700px) { .gm-jgctl .gm-ckey b { display: none; } .gm-jgctl .gm-ckey span { font-size: 1rem; } .gm-jgctl .gm-key b { font-size: .56rem; } .gm-jgctl .gm-keyrow { gap: 4px; } }
+@media (max-width: 900px) { .gm-jgright { display: contents; } .gm-jgctl { order: 2; } .gm-jgright .gm-panel { order: 3; } }
