@@ -22,6 +22,7 @@ const TIPOS = {
   standup: 'Stand Up', piano: 'Piano Man', tributo: 'Tributo', doble: 'Doble', bingo: 'Bingo de Frida', otro: 'Especial u otro',
 };
 const ROLES = ['dj', 'extra', 'cantante', 'animador', 'camH', 'camV', 'editor'];
+const SIN_PAGO = ['COTE']; // Cote, 23 nov: «todo lo que sea Cote no se anota»
 const ROL_TARIFA = { dj: 'ent', extra: 'ent', cantante: 'ent', animador: 'ent', camH: 'cam', camV: 'cam', editor: 'edi' };
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -139,12 +140,9 @@ module.exports = function programacion({ app, dir }) {
   };
 
   // ---------- Fechas de un mes ----------
-  // Jueves a domingo del mes, más los «días de cortesía»: jueves a sábado del mes anterior en la semana del día 1
+  // Jueves a domingo del mes, solo los días del mes (Cote, 23 nov: sin los días de cortesía del mes anterior)
   function fechasMes(y, m) {
     const out = [];
-    const primero = ymd(y, m, 1);
-    const lunes = semana(primero);
-    for (let f = lunes; f < primero; f = addDays(f, 1)) if ([4, 5, 6, 0].includes(parse(f).wd)) out.push({ fecha: f, cortesia: true });
     const ultimo = new Date(Date.UTC(y, m, 0)).getUTCDate();
     for (let d = 1; d <= ultimo; d++) { const f = ymd(y, m, d); if ([4, 5, 6, 0].includes(parse(f).wd)) out.push({ fecha: f, cortesia: false }); }
     return out;
@@ -222,17 +220,20 @@ module.exports = function programacion({ app, dir }) {
     const wd = parse(f).wd;
     return ORDEN_EDI[wd].filter((l) => abierto(f, l)).map((l) => { const c = celda(f, l); return c.editor ? `${etqEdi(l, wd)}: ${c.editor}` : ''; }).filter(Boolean);
   };
-  // Quién se paga en una celda y cuánto (en el orden del bloque de TURNOS; una persona se paga una sola vez entre
-  // entretención y cámara, como Andrés en Tobalaba, que anima y graba; el editor va aparte)
+  // Quién se paga en una celda y cuánto (en el orden del bloque de TURNOS)
   function pagos(f, l) {
     const c = celda(f, l); const wd = parse(f).wd;
     const out = []; const vistos = new Set();
     for (const r of ROLES) {
       if (!c[r]) continue;
       const cod = codigoDe(c[r]);
-      if (r !== 'editor') { if (vistos.has(cod)) continue; vistos.add(cod); }
+      if (SIN_PAGO.includes(cod)) continue; // Cote no se anota (no tiene tarifa)
       const fijo = c.montos && c.montos[r] != null ? c.montos[r] : null;
       const monto = fijo != null ? fijo : tarifa(cod, ROL_TARIFA[r], l, wd);
+      // Quien está en entretención y en cámara (Andrés en Tobalaba, que anima y graba) se paga una vez, salvo que su
+      // cámara tenga monto o tarifa propia (Guille en Tobalaba: entretención y cámara, Cote, 23 nov)
+      if (r !== 'editor' && vistos.has(cod) && monto == null) continue;
+      if (r !== 'editor') vistos.add(cod);
       if (r === 'extra' && monto == null) continue; // en capacitación: solo se paga si tiene tarifa o monto
       out.push({ rol: r, nombre: c[r], codigo: cod, monto, falta: monto == null });
     }
