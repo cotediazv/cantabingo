@@ -161,8 +161,12 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
   function vistaPrellenar() {
     var d = S.data; var A = d.asist || {}; var P = d.plantilla || {};
     var h = '<div class="panel"><h2>Prellenar ' + esc(d.nombre) + '</h2><p>Revisa los pasos en orden, toca «Prellenar el mes» y después ajusta lo que quieras en la pestaña Programación. El prellenado <b>solo llena lo vacío</b>: nunca borra lo que ya marcaste. Cuando esté aprobado, se envía a la GLOSA.</p></div>';
-    // Paso 1: semana tipo
-    h += '<div class="panel paso"><h3>1 · Semana tipo</h3><p>Con esto se llena cada día. Confírmala o cámbiala antes de partir el mes. Los cantantes que se reparten (viernes en Kennedy y viernes y sábado en Frida) van vacíos.</p>' +
+    // Paso 1: días que no se trabaja este mes
+    var cer = A.cerrados || d.fechas.filter(function (x) { return x.cerrado; }).map(function (x) { return x.fecha; });
+    h += '<div class="panel paso"><h3>1 · Días que no se trabaja</h3><p>¿Hay días de ' + esc(d.nombre) + ' en que no se va a trabajar (feriados u otros)? Márcalos. Esos días quedan cerrados en todos los locales y esa semana no corre la regla de los tres días.</p>' +
+      fechasDe([4, 5, 6, 0]).map(function (x) { return '<label class="chk"><input type="checkbox" data-si="cerrados" value="' + x.fecha + '"' + (cer.indexOf(x.fecha) >= 0 ? ' checked' : '') + '>' + etqDia(x) + '</label>'; }).join('') + '</div>';
+    // Paso 2: semana tipo
+    h += '<div class="panel paso"><h3>2 · Semana tipo</h3><p>Con esto se llena cada día. Confírmala o cámbiala antes de partir el mes. Los cantantes que se reparten (viernes en Kennedy y viernes y sábado en Frida) van vacíos.</p>' +
       '<details><summary class="btn chico" style="display:inline-block;margin:6px 0">Ver y cambiar la semana tipo</summary>' +
       SLOTS.map(function (s) {
         var c = P[s[0]] || {}; var l = s[0].split('|')[1];
@@ -171,7 +175,7 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
           '<div class="campo" style="flex:0 1 110px"><small>Horario de cámara</small><input type="text" value="' + esc(c.camNota) + '" data-pt="' + s[0] + '" data-k="camNota"></div></div></div>';
       }).join('') + '</details></div>';
     // Pasos de las personas
-    var n = 2;
+    var n = 3;
     (d.pasos || []).forEach(function (p) {
       var sel = A[p.tipo === 'fijo' ? 'no' + p.id : p.id] || [];
       h += '<div class="panel paso"><h3>' + (n++) + ' · ' + esc(p.nombre) + '</h3>';
@@ -205,14 +209,14 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
   }
   function leerAsist() {
     var a = {};
-    (S.data.pasos || []).forEach(function (p) { a[p.tipo === 'fijo' ? 'no' + p.id : p.id] = []; }); a.domOscar = [];
+    (S.data.pasos || []).forEach(function (p) { a[p.tipo === 'fijo' ? 'no' + p.id : p.id] = []; }); a.domOscar = []; a.cerrados = [];
     document.querySelectorAll('[data-no]').forEach(function (c) { if (!c.checked) a[c.dataset.no].push(c.value); });
     document.querySelectorAll('[data-si]').forEach(function (c) { if (c.checked) a[c.dataset.si].push(c.value); });
     return a;
   }
   function enlazarPrellenar() {
-    var guardarA = function () { return api('POST', '/api/prog/asist', { mes: S.mes, asist: leerAsist() }).then(function (j) { S.data.asist = j.asist; }); };
-    document.getElementById('asave').onclick = function () { guardarA().then(function () { aviso('Respuestas guardadas'); }).catch(function (e) { aviso(e.message); }); };
+    var guardarA = function () { return api('POST', '/api/prog/asist', { mes: S.mes, asist: leerAsist() }).then(function (j) { S.data.asist = j.asist; return api('GET', '/api/prog/mes?m=' + S.mes); }).then(function (d) { S.data = d; }); };
+    document.getElementById('asave').onclick = function () { guardarA().then(function () { aviso('Respuestas guardadas'); pintar(); }).catch(function (e) { aviso(e.message); }); };
     document.getElementById('aprell').onclick = function () {
       if (!confirm('¿Prellenar ' + S.data.nombre + '? Solo se llena lo que está vacío.')) return;
       guardarA().then(function () { return api('POST', '/api/prog/prellenar', { mes: S.mes }); }).then(function (j) {

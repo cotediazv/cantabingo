@@ -38,7 +38,7 @@ const parse = (f) => { const [y, m, d] = f.split('-').map(Number); return { y, m
 const addDays = (f, n) => { const x = parse(f); const t = new Date(Date.UTC(x.y, x.m - 1, x.d + n)); return ymd(t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate()); };
 // Semana de lunes a domingo (para separar con una línea en blanco)
 const semana = (f) => { const x = parse(f); return addDays(f, -((x.wd + 6) % 7)); };
-const cerrado = (f) => { const x = parse(f); return CERRADOS.includes(`${x.d}-${x.m}`); };
+const cerradoFijo = (f) => { const x = parse(f); return CERRADOS.includes(`${x.d}-${x.m}`); };
 
 module.exports = function programacion({ app, dir }) {
   const FILE = process.env.PROG_FILE || path.join(dir, 'programacion.json');
@@ -126,6 +126,9 @@ module.exports = function programacion({ app, dir }) {
   }
 
   // ---------- Celdas (un local en una fecha) ----------
+  // Días que no se trabaja (Cote, 23 nov): se marcan por mes en «Prellenar» (A.cerrados); si el mes aún no los tiene
+  // marcados, valen los de siempre (24 y 25 de diciembre, 31 de diciembre y 1 de enero)
+  const cerrado = (f) => { const a = P.asist[f.slice(0, 7)]; return a && Array.isArray(a.cerrados) ? a.cerrados.includes(f) : cerradoFijo(f); };
   const abreDefault = (f, local) => !cerrado(f) && ABRE[local].includes(parse(f).wd);
   const celda = (f, local) => ((P.dias[f] || {})[local]) || {};
   const abierto = (f, local) => { const c = celda(f, local); return typeof c.abierto === 'boolean' ? c.abierto : abreDefault(f, local); };
@@ -327,8 +330,9 @@ module.exports = function programacion({ app, dir }) {
     for (const { fecha } of delMes) ((semanas[semana(fecha)] ||= [])).push(fecha);
     const trabaja = (f, q) => LOCALES.some((l) => abierto(f, l) && ['dj', 'extra', 'cantante', 'animador', 'camH', 'camV'].some((k) => celda(f, l)[k] === q));
     for (const fs of Object.values(semanas)) {
-      // Solo semanas completas: con jueves, viernes y sábado en el mes y ninguno cerrado (no la de Navidad ni la cortada por el mes)
-      if (![4, 5, 6].every((wd) => fs.some((f) => parse(f).wd === wd && !cerrado(f)))) continue;
+      // Solo semanas completas (jueves, viernes y sábado en el mes) y sin días cerrados: en esas semanas la regla no corre
+      if (![4, 5, 6].every((wd) => fs.some((f) => parse(f).wd === wd))) continue;
+      if (fs.some((f) => cerrado(f))) continue;
       for (const q of ['Oscar', 'Fer']) { const n = fs.filter((f) => trabaja(f, q)).length; if (n < 3) faltan.push(`Semana del ${parse(fs[0]).d}: ${q} tiene ${n} ${n === 1 ? 'día' : 'días'} (deben ser 3)`); }
     }
     const nMati = delMes.filter(({ fecha }) => parse(fecha).wd === 5 && trabaja(fecha, 'Mati')).length;
