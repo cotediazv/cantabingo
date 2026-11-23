@@ -158,9 +158,12 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
       if (sh.tipo === 'tributo' || sh.tipo === 'otro') h += '<label class="chip' + (sh.banda ? ' on' : '') + '" style="cursor:pointer"><input type="checkbox" hidden data-f="' + f + '" data-l="' + l + '" data-sk="banda"' + (sh.banda ? ' checked' : '') + '>Con banda (batería)</label>';
       h += '</div>';
     }
-    if (sh.tipo) h += camposPago(f, l, sh);
+    if (sh.tipo && !interno(sh)) h += camposPago(f, l, sh);
+
     return h + '</div>';
   }
+  // El bingo y los juegos son internos: no llevan monto ni persona (Cote, 23 nov)
+  function interno(sh) { return sh.tipo === 'bingo' || /bingo|juego/i.test(sh.nombre || ''); }
   // A nombre de quién se paga el show (va entre paréntesis en la GLOSA, para la contadora) y su monto
   function camposPago(f, l, sh) {
     return '<div class="fila" style="margin-top:6px"><div class="campo"><small>A nombre de (para la contadora)</small><input type="text" list="u-persona" value="' + esc(sh.persona) + '" data-f="' + f + '" data-l="' + l + '" data-sk="persona"></div>' +
@@ -178,7 +181,7 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
     S.data.fechas.forEach(function (x) {
       var p = x.fecha.split('-').map(Number);
       LOCS.forEach(function (l) {
-        var c = x.locales[l]; var sh = c.show; if (!c.abierto || !sh || !sh.tipo) return; n++;
+        var c = x.locales[l]; var sh = c.show; if (!c.abierto || !sh || !sh.tipo || interno(sh)) return; n++;
         var nombre = sh.tipo === 'piano' ? 'Piano Man' : sh.tipo === 'bingo' ? 'Bingo de Frida' : (sh.tipo === 'standup' ? 'Stand Up: ' : sh.tipo === 'doble' ? 'Doble de ' : sh.tipo === 'tributo' ? 'Tributo a ' : '') + (sh.nombre || '') + (sh.artista ? ' (' + sh.artista + ')' : '');
         h += '<div class="loc" style="--c:var(--' + l + ');background:var(--panel);border-radius:10px;margin:8px 0"><h4><span>' + DIAS[x.wd].slice(0, 3) + ' ' + p[2] + ' · ' + NL[l] + '</span></h4><div>' + esc(nombre) + '</div>' + camposPago(x.fecha, l, sh) + '</div>';
       });

@@ -208,6 +208,7 @@ module.exports = function programacion({ app, dir }) {
     else t = [s.nombre, s.artista ? `(${s.artista})` : ''].filter(Boolean).join(' ');
     return local === 'TOB' ? `BINGO + ${t} + Karaoke` : t;
   }
+  const interno = (s) => Boolean(s) && (s.tipo === 'bingo' || /bingo|juego/i.test(`${s.nombre || ''}`));
   const showVacio = (s) => !s || (!['piano', 'bingo'].includes(s.tipo) && !clean(s.nombre));
 
   // ---------- Los 3 archivos y el bloque de TURNOS ----------
@@ -325,6 +326,7 @@ module.exports = function programacion({ app, dir }) {
         const f = [String(parse(fecha).d), l, 'SHOW', showGlosaPago(c.show)];
         if (c.show.banda) f.push('BANDA');
         filas.push(f);
+        if (interno(c.show)) continue; // el bingo y los juegos son internos: no se le paga a nadie de afuera (Cote, 23 nov)
         if (c.show.monto == null) faltan.push(`${etiquetaTurno(fecha)} ${ETQ[l]}: falta el monto del show`);
         // Bloque del día en la pestaña del mes (el mismo orden de jueves a domingo que usa llenarMes)
         else shows.push({ bloque: delMes.findIndex((x) => x.fecha === fecha), local: l, monto: c.show.monto });
