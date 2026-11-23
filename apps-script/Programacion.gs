@@ -11,7 +11,7 @@
 // También escribe el mes en B8 y el monto de cada show en la columna siguiente a la del show.
 // llenarMes (el archivo de antes) no se usa ni se toca.
 const CLAVE_PROGRAMACION = '__CLAVE__';
-const PROG_VERSION = 4;
+const PROG_VERSION = 5;
 
 const PR_PRIMERA = 12, PR_ALTO = 39, PR_BLOQUES = 20, PR_RESUMEN = 835;
 const PR_COL = { MK: 3, KENNEDY: 3, EV: 12, EVENTOS: 12, KR: 22, KARAROCK: 22, TOB: 32, TOBALABA: 32, FRI: 42, FRIDA: 42, PAN: 52, PANORAMICO: 52 };
@@ -244,6 +244,15 @@ function llenarProg_(ss, sh, b) {
   ];
   const bil = sh.getRange(827, 71, 16, 1);
   const usados = bil.getValues().map(function (r) { return String(r[0]).trim(); });
+  // Las facturas que escribe este script y que no son de este mes (por ejemplo, las de noviembre que vienen en la pestaña
+  // duplicada) se borran, para no cobrar dos veces. Lo que Cote escribe a mano en la billetera no se toca.
+  const propias = FACT.map(function (f) { return f[0]; });
+  usados.forEach(function (t, i) {
+    if (/^Factura (Kennedy saldo|Kennedy anticipo jueves|Frida|Tobalaba) /.test(t) && propias.indexOf(t) < 0) {
+      sh.getRange(827 + i, 71, 1, 3).setValues([['', '', '']]);
+      usados[i] = '';
+    }
+  });
   FACT.forEach(function (f) {
     const texto = f[0], neto = f[1];
     if (!neto) return;
