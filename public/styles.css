@@ -3181,3 +3181,7 @@ button.paso:disabled { background: #1f5133; border-color: #1f5133; color: #cfe9d
 a.paso.paso-fijo { display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; }
 body.con-paso #app { padding-top: calc(var(--paso-h, 64px) + 22px) !important; }
 body.con-paso #ctl-reload-fixed { top: calc(var(--paso-h, 64px) + 20px); }
+
+/* Logo de Frida con el dibujo encima de las letras (Cote, 23 nov): en los GC de OBS va más alto que el de KRB Stage */
+.venue-mark.vm-alto img:last-child { height: 9.6vh; }
+.venue-mark.vm-alto i { height: 6vh; }

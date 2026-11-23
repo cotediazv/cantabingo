@@ -2066,6 +2066,10 @@ window.addEventListener('DOMContentLoaded', route);
 // actividades de Kennedy). Solo en pantallas (tablero, OBS, GC de la sala light, karaoke de la pantalla vertical),
 // nunca en celulares ni paneles. El local sale de la dirección (#/light-gc/kennedy) o de la sala completa abierta.
 const VENUE_LOGOS = { kennedy: 'logo-kennedy.png', frida: 'logo-frida.png' }; // el de Frida Kahlo lo mandó Cote el 23 nov
+// Frida (Cote, 23 nov: «y esto encima»): el dibujo azul va encima de las letras. Donde hay espacio (GC de OBS, arriba a la
+// derecha) va así, más alto que el de KRB Stage; en la franja de abajo de los tableros y pantallas de pie no cabe un logo
+// alto, así que ahí el dibujo va al lado de las letras, al mismo alto.
+const VENUE_LOGOS_STRIP = { frida: 'logo-frida-h.png' };
 const SCREEN_ROUTES = ['tablero', 'escena', 'gc', 'obs', 'light-gc', 'karaoke-v', 'light-v'];
 let venueOfSala = '';
 let venueAt = 0;
@@ -2091,14 +2095,15 @@ async function syncVenueMark() {
   if ((document.body.dataset.venue || '') !== v) document.body.dataset.venue = v;
   paintVenueBg();
   let el = document.getElementById('venue-mark');
-  const src = VENUE_LOGOS[v];
+  const strip = document.body.classList.contains('full');
+  const src = (strip && VENUE_LOGOS_STRIP[v]) || VENUE_LOGOS[v];
   if (!src) { if (el) el.remove(); document.body.classList.remove('has-vm'); return; }
   // Los dos logos juntos y al mismo alto, separados por una línea: KRB Stage | Mercado Kennedy
   if (!el) { el = document.createElement('div'); el.id = 'venue-mark'; el.setAttribute('aria-hidden', 'true'); document.body.appendChild(el); }
   if (el.dataset.src !== src) { el.dataset.src = src; el.innerHTML = `<img src="krb-stage.svg" alt=""><i></i><img src="${src}" alt="">`; }
   // Dónde va: en el tablero, en una franja abajo que se le deja libre; en OBS, arriba a la derecha (en el bingo, sobre la bolita)
   const spot = document.body.classList.contains('full') ? 'full' : document.getElementById('gc') ? 'obs-bingo' : 'obs';
-  el.className = `venue-mark vm-${spot}`;
+  el.className = `venue-mark vm-${spot}${v === 'frida' && !strip ? ' vm-alto' : ''}`;
   document.body.classList.add('has-vm');
 }
 window.addEventListener('hashchange', () => { setTimeout(syncVenueMark, 50); setTimeout(syncVenueMark, 700); }); // la segunda, cuando la pantalla ya se armó
