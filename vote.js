@@ -9,6 +9,7 @@
 const crypto = require('crypto');
 
 const MAX_PLAYERS = 8;
+const O_MAX = 5; // El objeto más extraño parte con 5 cupos (pedido de Cote, 23 nov; se puede cambiar en el panel)
 const TITLE = 'El objeto más extraño';
 const TITLES = { objeto: TITLE, karaoke: '' }; // el festival se llama según el local (ver festival())
 const SHORT = { frida: 'Frida', kennedy: 'Mercado Kennedy', tobalaba: 'Tobalaba' }; // el local se llama Mercado Kennedy (pedido de Cote, 21 nov)
@@ -24,7 +25,7 @@ const GRACE_MS = 1000; // margen para los votos que venían en camino al llegar 
 const SIGNUP_MS = 90000; // El objeto más extraño: la inscripción dura 90 segundos (pedido de Cote, 20 nov)
 
 module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, findPlayer, venue, notify }) {
-  const blank = (mode = 'objeto') => ({ mode, title: mode === 'karaoke' ? '' : TITLES[mode] || TITLE, max: mode === 'karaoke' ? K_MAX : MAX_PLAYERS, players: [], open: null, last: null, sample: null, phase: 'voting', rank: [], revealed: 0, final: null, winner: null, winAt: 0, rev: ((db.vote || {}).rev || 0) + 1, gen: ((db.vote || {}).gen || 0) + 1 });
+  const blank = (mode = 'objeto') => ({ mode, title: mode === 'karaoke' ? '' : TITLES[mode] || TITLE, max: mode === 'karaoke' ? K_MAX : O_MAX, players: [], open: null, last: null, sample: null, phase: 'voting', rank: [], revealed: 0, final: null, winner: null, winAt: 0, rev: ((db.vote || {}).rev || 0) + 1, gen: ((db.vote || {}).gen || 0) + 1 });
   db.vote ||= blank();
   // Arreglo (20 nov): un Festival empezado de nuevo quedaba con el título «El objeto más extraño»
   if (db.vote.mode === 'karaoke' && db.vote.title === TITLE) db.vote.title = '';
@@ -180,7 +181,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
     mode: (s, b) => {
       if (s.phase !== 'voting' || s.players.length) return 'El tipo de concurso se elige antes de anotar participantes';
       const m = b.mode === 'karaoke' ? 'karaoke' : 'objeto';
-      s.mode = m; s.title = ''; s.max = m === 'karaoke' ? K_MAX : MAX_PLAYERS;
+      s.mode = m; s.title = ''; s.max = m === 'karaoke' ? K_MAX : O_MAX;
       s.gen = (s.gen || 0) + 1; // otro tipo de concurso: los celulares muestran sus instrucciones
       return null;
     },
