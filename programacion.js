@@ -22,6 +22,11 @@ const TIPOS = {
   standup: 'Stand Up', piano: 'Piano Man', tributo: 'Tributo', doble: 'Doble', bingo: 'Los juegos de…', otro: 'Especial u otro',
 };
 const ROLES = ['dj', 'extra', 'cantante', 'animador', 'camH', 'camHx', 'camV', 'camVx', 'editor'];
+// Los pasos del asistente para prellenar el mes, en el orden que pidió Cote (23 nov)
+const PASOS = [
+  { id: 'Oscar', nombre: 'Oscar', tipo: 'fijo' }, { id: 'Fer', nombre: 'Fer', tipo: 'fijo' },
+  { id: 'mati', nombre: 'Matías', tipo: 'viernes' }, { id: 'dispPriss', nombre: 'Priss', tipo: 'disp' }, { id: 'dispKony', nombre: 'Kony', tipo: 'disp' },
+];
 const SIN_PAGO = ['COTE']; // Cote, 23 nov: «todo lo que sea Cote no se anota»
 const ROL_TARIFA = { dj: 'ent', extra: 'ent', cantante: 'ent', animador: 'ent', camH: 'cam', camHx: 'cam', camV: 'cam', camVx: 'cam', editor: 'edi' };
 
@@ -39,7 +44,18 @@ module.exports = function programacion({ app, dir }) {
   const FILE = process.env.PROG_FILE || path.join(dir, 'programacion.json');
   let P = {};
   try { P = JSON.parse(fs.readFileSync(FILE, 'utf8')); } catch { /* primera vez */ }
-  P.dias ||= {}; P.personas ||= []; P.tarifas ||= []; P.horarios ||= {}; P.glosa ||= {};
+  P.dias ||= {}; P.personas ||= []; P.tarifas ||= []; P.horarios ||= {}; P.glosa ||= {}; P.asist ||= {};
+  // Semana tipo (criterio de noviembre que dijo Cote, 23 nov): con qué se prellena cada día y local. Cote la confirma o
+  // la cambia al empezar cada mes. Solo nombres cortos; los montos nunca van aquí.
+  P.plantilla ||= {
+    '4|MK': { dj: 'Oscar', cantante: 'Fer', animador: 'Gonzalo', camH: 'Caro', camHx: 'Fer', camV: 'Liza', editor: 'Meni' },
+    '5|MK': { dj: 'Fer', camV: 'Guille', camNota: '22:30', editor: 'Meni' },
+    '5|TOB': { dj: 'Oscar', cantante: 'Andrés', animador: 'Gonzalo', camH: 'Andrés', camV: 'Vero', editor: 'Vero' },
+    '5|FRIDA': { dj: 'Nico', camH: 'Caro', camV: 'Guille', camNota: '21 a 22', editor: 'Vero' },
+    '6|MK': { dj: 'Oscar', cantante: 'Fer', camV: 'Guille', editor: 'Meni' },
+    '6|FRIDA': { dj: 'Nico', camH: 'Caro', camV: 'Vero', editor: 'Meni' },
+    '0|FRIDA': { dj: 'Nico', cantante: 'Gonzalo', camH: 'Guille', camV: 'Liza', editor: 'Meni' },
+  };
   if (!P.glosa.clave) P.glosa.clave = crypto.randomBytes(12).toString('hex');
   let timer = null;
   const save = () => {
@@ -306,6 +322,17 @@ module.exports = function programacion({ app, dir }) {
     secCart('TOB', 'TOBALABA', 'TOBALABA');
     secCart('FRIDA', 'FRIDA KAHLO', 'FRIDA KAHLO');
     while (cart[cart.length - 1] === '') cart.pop();
+    // Lo obligado (Cote, 23 nov): Oscar y Fer, tres días cada semana; Matías, dos viernes al mes
+    const semanas = {};
+    for (const { fecha } of delMes) ((semanas[semana(fecha)] ||= [])).push(fecha);
+    const trabaja = (f, q) => LOCALES.some((l) => abierto(f, l) && ['dj', 'extra', 'cantante', 'animador', 'camH', 'camV'].some((k) => celda(f, l)[k] === q));
+    for (const fs of Object.values(semanas)) {
+      // Solo semanas completas: con jueves, viernes y sábado en el mes y ninguno cerrado (no la de Navidad ni la cortada por el mes)
+      if (![4, 5, 6].every((wd) => fs.some((f) => parse(f).wd === wd && !cerrado(f)))) continue;
+      for (const q of ['Oscar', 'Fer']) { const n = fs.filter((f) => trabaja(f, q)).length; if (n < 3) faltan.push(`Semana del ${parse(fs[0]).d}: ${q} tiene ${n} ${n === 1 ? 'día' : 'días'} (deben ser 3)`); }
+    }
+    const nMati = delMes.filter(({ fecha }) => parse(fecha).wd === 5 && trabaja(fecha, 'Mati')).length;
+    if (nMati !== 2) faltan.push(`Matías tiene ${nMati} ${nMati === 1 ? 'viernes' : 'viernes'} este mes (deben ser 2)`);
     // Turnos
     const ent = [`${pad(m)} Turnos Entretención ${Mes} ${y}`, '', ...porDias(fechas, lineaEnt)];
     const cam = [`${pad(m)} Turnos Cámaras y Editores ${Mes} ${String(y).slice(2)}`, '', ...porDias(fechas, lineaCam), '', `Editores ${Mes}:`, ...porDias(delMes, lineaEdi)];
@@ -530,9 +557,81 @@ module.exports = function programacion({ app, dir }) {
       mes: `${y}-${pad(m)}`, nombre: `${titulo(MESES[m - 1])} ${y}`, fechas, personas: P.personas, tarifas: P.tarifas, horarios: P.horarios,
       tipos: TIPOS, usados: Object.fromEntries(Object.entries(usados).map(([k, v]) => [k, [...v].sort()])), locales: NOMBRE_LOCAL,
       glosa: { url: P.glosa.url || '', ultimo: P.glosa.ultimo || null },
+      plantilla: P.plantilla, asist: P.asist[`${y}-${pad(m)}`] || {}, pasos: PASOS,
     };
   }
   app.get('/api/prog/mes', auth, (req, res) => { const { y, m } = mesDe(req.query.m); res.json(estadoMes(y, m)); });
+
+  // ---------- Prellenar el mes (Cote, 23 nov: «que la plataforma le vaya preguntando… y después un prellenado que Cote
+  // pueda ir modificando hasta aprobarlo») ----------
+  app.post('/api/prog/plantilla', auth, (req, res) => {
+    const b = req.body || {};
+    if (!/^[0456]\|(MK|TOB|FRIDA)$/.test(String(b.clave))) return fail(res, 400, 'Día o local no válido');
+    const c = limpiaCelda(b.celda); delete c.show; delete c.montos; delete c.abierto;
+    P.plantilla[b.clave] = c;
+    for (const r of ROLES) if (c[r]) persona(c[r], ROL_TARIFA[r]);
+    save(); res.json({ ok: true, plantilla: P.plantilla });
+  });
+  // Respuestas del asistente: días que NO hace cada persona fija, domingos de Oscar, viernes de Matías, días de Priss y Kony
+  app.post('/api/prog/asist', auth, (req, res) => {
+    const b = req.body || {}; const { y, m } = mesDe(b.mes);
+    const lista = (xs) => (Array.isArray(xs) ? xs.map(String).filter((x) => /^\d{4}-\d{2}-\d{2}(\|[A-Z]+\|\w+)?$/.test(x)).slice(0, 200) : []);
+    const a = b.asist || {}; const o = {};
+    for (const k of Object.keys(a)) if (/^[\w-]{1,20}$/.test(k)) o[k] = lista(a[k]);
+    P.asist[`${y}-${pad(m)}`] = o;
+    save(); res.json({ ok: true, asist: o });
+  });
+  app.post('/api/prog/prellenar', auth, (req, res) => {
+    const { y, m } = mesDe((req.body || {}).mes);
+    res.json({ ok: true, ...prellenar(y, m) });
+  });
+  function prellenar(y, m) {
+    const A = P.asist[`${y}-${pad(m)}`] || {};
+    const no = new Set([...(A.noOscar || []), ...(A.noFer || [])]);
+    const delMes = fechasMes(y, m).filter((x) => !x.cortesia).map((x) => x.fecha);
+    let n = 0;
+    for (const f of delMes) {
+      const wd = parse(f).wd;
+      for (const l of LOCALES) {
+        if (!abierto(f, l)) continue;
+        const base = P.plantilla[`${wd}|${l}`];
+        if (!base) continue;
+        const c = { ...celda(f, l) }; let cambio = false;
+        for (const k of [...ROLES, 'camNota']) {
+          if (c[k] || !base[k]) continue;
+          if (no.has(`${f}|${l}|${k}`)) continue; // Cote dijo que ese día no lo hace
+          if ((k === 'camHx' && !c.camH && !base.camH) || (k === 'camVx' && !c.camV && !base.camV)) continue;
+          c[k] = base[k]; cambio = true;
+        }
+        // Domingos de Frida: DJ Oscar los domingos que eligió Cote; los otros, el de la semana tipo
+        if (l === 'FRIDA' && wd === 0 && (A.domOscar || []).includes(f) && (!celda(f, l).dj)) { c.dj = 'Oscar'; cambio = true; }
+        // Viernes de Matías: animador cantante en Mercado Kennedy
+        if (l === 'MK' && wd === 5 && (A.mati || []).includes(f) && !c.cantante) { c.cantante = 'Mati'; cambio = true; }
+        if (cambio) { setCelda(f, l, c); n++; }
+      }
+    }
+    // Lo que queda de animador cantante (viernes en Kennedy y viernes y sábado en Frida) se reparte parejo entre Priss y
+    // Kony según los días que dieron; en Frida no repite la misma el viernes y el sábado; nadie en dos locales el mismo día
+    const cuenta = { Priss: 0, Kony: 0 };
+    for (const f of delMes) for (const l of LOCALES) { const v = celda(f, l).cantante; if (v in cuenta) cuenta[v]++; }
+    const ocupado = (f, quien) => LOCALES.some((l) => Object.values(celda(f, l)).includes(quien));
+    let repartidos = 0; const sinNadie = [];
+    for (const f of delMes) {
+      const wd = parse(f).wd;
+      for (const l of ['MK', 'FRIDA']) {
+        if (!abierto(f, l) || celda(f, l).cantante) continue;
+        if (!((l === 'MK' && wd === 5) || (l === 'FRIDA' && (wd === 5 || wd === 6)))) continue;
+        const otro = l === 'FRIDA' ? (wd === 5 ? addDays(f, 1) : addDays(f, -1)) : '';
+        const cand = ['Priss', 'Kony'].filter((q) => (A[`disp${q}`] || []).includes(f) && !ocupado(f, q) && !(otro && celda(otro, 'FRIDA').cantante === q));
+        if (!cand.length) { sinNadie.push(`${etiquetaTurno(f)} ${ETQ[l]}`); continue; }
+        cand.sort((a, b) => cuenta[a] - cuenta[b]);
+        const q = cand[0]; cuenta[q]++; repartidos++;
+        setCelda(f, l, { ...celda(f, l), cantante: q });
+      }
+    }
+    save();
+    return { celdas: n, repartidos, sinNadie };
+  }
   app.post('/api/prog/celda', auth, (req, res) => {
     const b = req.body || {};
     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(b.fecha)) || !LOCALES.includes(b.local)) return fail(res, 400, 'Fecha o local no válido');

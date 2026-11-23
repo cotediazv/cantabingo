@@ -29,7 +29,10 @@ button { cursor: pointer; }
 .btn.chico { padding: 4px 9px; font-size: 13px; }
 .btn:disabled { opacity: .45; cursor: default; }
 .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; display: flex; background: #12101a; border-top: 1px solid var(--linea); padding-bottom: env(safe-area-inset-bottom); }
-.tabs button { flex: 1; background: none; border: 0; padding: 12px 4px; color: var(--suave); font-weight: 800; font-size: 13px; }
+.tabs button { flex: 1; background: none; border: 0; padding: 12px 2px; color: var(--suave); font-weight: 800; font-size: 12px; }
+.chk { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--linea); }
+.chk input { width: 20px; height: 20px; flex: none; }
+.paso h3 { font-size: 18px; color: var(--foco); margin: 0 0 6px; }
 .tabs button.on { color: var(--foco); box-shadow: inset 0 3px 0 var(--foco); }
 .semana { margin: 18px 0 6px; display: flex; align-items: center; gap: 10px; }
 .semana h2 { font-size: 15px; color: var(--suave); flex: 1; }
@@ -112,7 +115,7 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
   }
 
   function marco(contenido) {
-    var tabs = [['mes', 'Programación'], ['shows', 'Shows'], ['archivos', 'Archivos'], ['equipo', 'Equipo'], ['glosa', 'GLOSA']];
+    var tabs = [['mes', 'Programación'], ['prellenar', 'Prellenar'], ['shows', 'Shows'], ['archivos', 'Archivos'], ['equipo', 'Equipo'], ['glosa', 'GLOSA']];
     return '<div class="top"><div class="wrap"><h1>Programación</h1><div class="mes"><button class="btn chico" data-mes="-1">◀</button><b>' + esc(S.data.nombre) + '</b><button class="btn chico" data-mes="1">▶</button></div></div></div>' +
       '<div class="wrap" id="cont">' + contenido + '</div>' +
       '<nav class="tabs">' + tabs.map(function (t) { return '<button data-vista="' + t[0] + '" class="' + (S.vista === t[0] ? 'on' : '') + '">' + t[1] + '</button>'; }).join('') + '</nav>';
@@ -124,11 +127,12 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
   }
   function pintar() {
     var y = window.scrollY;
-    var html = S.vista === 'archivos' ? '<div id="arch"><p class="vacio">Armando los archivos…</p></div>' + vistaImportar() : S.vista === 'shows' ? vistaShows() : S.vista === 'equipo' ? vistaEquipo() : S.vista === 'glosa' ? vistaGlosa() : vistaMes();
+    var html = S.vista === 'archivos' ? '<div id="arch"><p class="vacio">Armando los archivos…</p></div>' + vistaImportar() : S.vista === 'shows' ? vistaShows() : S.vista === 'prellenar' ? vistaPrellenar() : S.vista === 'equipo' ? vistaEquipo() : S.vista === 'glosa' ? vistaGlosa() : vistaMes();
     $app.innerHTML = marco(html);
     $app.querySelectorAll('[data-vista]').forEach(function (b) { b.onclick = function () { S.vista = b.dataset.vista; try { localStorage.setItem('progVista', S.vista); } catch (e) {} window.scrollTo(0, 0); pintar(); }; });
     $app.querySelectorAll('[data-mes]').forEach(function (b) { b.onclick = function () { moverMes(Number(b.dataset.mes)); }; });
     if (S.vista === 'mes' || S.vista === 'shows') enlazarMes();
+    if (S.vista === 'prellenar') enlazarPrellenar();
     if (S.vista === 'archivos') { cargarArchivos(); enlazarImportar(); }
     if (S.vista === 'equipo') enlazarEquipo();
     if (S.vista === 'glosa') enlazarGlosa();
@@ -143,6 +147,90 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
     var o = function (n) { return '<option' + (n === valor ? ' selected' : '') + '>' + esc(n) + '</option>'; };
     return '<div class="campo"><small>' + etiqueta + '</small><select data-f="' + f + '" data-l="' + l + '" data-k="' + campo + '" class="' + (valor ? '' : 'vacio') + '"><option value="">—</option>' +
       pref.sort().map(o).join('') + (otros.length ? '<optgroup label="Otras personas">' + otros.sort().map(o).join('') + '</optgroup>' : '') + '<option value="+">＋ Otra persona…</option></select></div>';
+  }
+  // ---------- Prellenar el mes: semana tipo y preguntas en orden (Cote, 23 nov) ----------
+  var CAMPOS = [['dj', 'DJ', 'ent'], ['extra', 'Técnico o capacitación', 'ent'], ['cantante', 'Animador cantante', 'ent'], ['animador', 'Animador', 'ent'],
+    ['camH', 'Cámara en vivo', 'cam'], ['camHx', 'Entre paréntesis, junto a la de en vivo', 'cam'], ['camV', 'Cámara vertical', 'cam'], ['camVx', 'Entre paréntesis, junto a la vertical', 'cam'], ['editor', 'Editor', 'edi']];
+  var NOMBRE_CAMPO = {}; CAMPOS.forEach(function (c) { NOMBRE_CAMPO[c[0]] = c[0] === 'dj' ? 'DJ' : c[1].toLowerCase(); });
+  var SLOTS = [['4|MK', 'Jueves · Mercado Kennedy'], ['5|MK', 'Viernes · Mercado Kennedy'], ['5|TOB', 'Viernes · Tobalaba'], ['5|FRIDA', 'Viernes · Frida Kahlo'], ['6|MK', 'Sábado · Mercado Kennedy'], ['6|FRIDA', 'Sábado · Frida Kahlo'], ['0|FRIDA', 'Domingo · Frida Kahlo']];
+  function selPT(clave, campo, valor, rol, etiqueta) {
+    return selPersona('', '', campo, valor, rol, etiqueta).replace('data-f="" data-l=""', 'data-pt="' + clave + '"');
+  }
+  function fechasDe(wds) { return S.data.fechas.filter(function (x) { return !x.cortesia && wds.indexOf(x.wd) >= 0; }); }
+  function etqDia(x) { return DIAS[x.wd] + ' ' + Number(x.fecha.slice(8)); }
+  function vistaPrellenar() {
+    var d = S.data; var A = d.asist || {}; var P = d.plantilla || {};
+    var h = '<div class="panel"><h2>Prellenar ' + esc(d.nombre) + '</h2><p>Revisa los pasos en orden, toca «Prellenar el mes» y después ajusta lo que quieras en la pestaña Programación. El prellenado <b>solo llena lo vacío</b>: nunca borra lo que ya marcaste. Cuando esté aprobado, se envía a la GLOSA.</p></div>';
+    // Paso 1: semana tipo
+    h += '<div class="panel paso"><h3>1 · Semana tipo</h3><p>Con esto se llena cada día. Confírmala o cámbiala antes de partir el mes. Los cantantes que se reparten (viernes en Kennedy y viernes y sábado en Frida) van vacíos.</p>' +
+      '<details><summary class="btn chico" style="display:inline-block;margin:6px 0">Ver y cambiar la semana tipo</summary>' +
+      SLOTS.map(function (s) {
+        var c = P[s[0]] || {}; var l = s[0].split('|')[1];
+        return '<div class="loc" style="--c:var(--' + l + ');background:var(--panel2);border-radius:10px;margin:8px 0"><h4><span>' + s[1] + '</span></h4><div class="fila">' +
+          CAMPOS.map(function (k) { return selPT(s[0], k[0], c[k[0]], k[2], k[1]); }).join('') +
+          '<div class="campo" style="flex:0 1 110px"><small>Horario de cámara</small><input type="text" value="' + esc(c.camNota) + '" data-pt="' + s[0] + '" data-k="camNota"></div></div></div>';
+      }).join('') + '</details></div>';
+    // Pasos de las personas
+    var n = 2;
+    (d.pasos || []).forEach(function (p) {
+      var sel = A[p.tipo === 'fijo' ? 'no' + p.id : p.id] || [];
+      h += '<div class="panel paso"><h3>' + (n++) + ' · ' + esc(p.nombre) + '</h3>';
+      if (p.tipo === 'fijo') {
+        h += '<p>Los turnos de ' + esc(p.nombre) + ' según la semana tipo. Desmarca los días que no hace.</p>';
+        var items = [];
+        d.fechas.forEach(function (x) {
+          if (x.cortesia) return;
+          LOCS.forEach(function (l) {
+            var c = P[x.wd + '|' + l]; if (!c || !x.locales[l].abierto) return;
+            CAMPOS.forEach(function (k) { if (c[k[0]] === p.nombre && k[0] !== 'camHx' && k[0] !== 'camVx') items.push({ id: x.fecha + '|' + l + '|' + k[0], t: etqDia(x) + ' · ' + NL[l] + ' · ' + NOMBRE_CAMPO[k[0]] }); });
+          });
+        });
+        h += items.map(function (it) { return '<label class="chk"><input type="checkbox" data-no="no' + p.id + '" value="' + it.id + '"' + (sel.indexOf(it.id) >= 0 ? '' : ' checked') + '>' + esc(it.t) + '</label>'; }).join('') || '<p class="vacio">No tiene turnos en la semana tipo.</p>';
+        if (p.id === 'Oscar') {
+          var doms = A.domOscar || [];
+          h += '<p style="margin-top:10px">Domingos en Frida: marca los que hace Oscar como DJ (los otros, el de la semana tipo).</p>' +
+            fechasDe([0]).filter(function (x) { return x.locales.FRIDA.abierto; }).map(function (x) { return '<label class="chk"><input type="checkbox" data-si="domOscar" value="' + x.fecha + '"' + (doms.indexOf(x.fecha) >= 0 ? ' checked' : '') + '>' + etqDia(x) + '</label>'; }).join('');
+        }
+      } else if (p.tipo === 'viernes') {
+        h += '<p>Marca los dos viernes que dio ' + esc(p.nombre) + '. Va como animador cantante en Mercado Kennedy.</p>' +
+          fechasDe([5]).map(function (x) { return '<label class="chk"><input type="checkbox" data-si="' + p.id + '" value="' + x.fecha + '"' + (sel.indexOf(x.fecha) >= 0 ? ' checked' : '') + '>' + etqDia(x) + '</label>'; }).join('');
+      } else {
+        h += '<p>Marca los días que tiene disponibles ' + esc(p.nombre) + '. Los cantantes que quedan se reparten parejo entre Priss y Kony.</p>' +
+          fechasDe([5, 6]).map(function (x) { return '<label class="chk"><input type="checkbox" data-si="' + p.id + '" value="' + x.fecha + '"' + (sel.indexOf(x.fecha) >= 0 ? ' checked' : '') + '>' + etqDia(x) + '</label>'; }).join('');
+      }
+      h += '</div>';
+    });
+    h += '<div class="panel"><div class="fila"><button class="btn" id="asave">Guardar respuestas</button><button class="btn foco" id="aprell">Prellenar el mes</button></div><div id="ares"></div></div>';
+    return h;
+  }
+  function leerAsist() {
+    var a = {};
+    (S.data.pasos || []).forEach(function (p) { a[p.tipo === 'fijo' ? 'no' + p.id : p.id] = []; }); a.domOscar = [];
+    document.querySelectorAll('[data-no]').forEach(function (c) { if (!c.checked) a[c.dataset.no].push(c.value); });
+    document.querySelectorAll('[data-si]').forEach(function (c) { if (c.checked) a[c.dataset.si].push(c.value); });
+    return a;
+  }
+  function enlazarPrellenar() {
+    var guardarA = function () { return api('POST', '/api/prog/asist', { mes: S.mes, asist: leerAsist() }).then(function (j) { S.data.asist = j.asist; }); };
+    document.getElementById('asave').onclick = function () { guardarA().then(function () { aviso('Respuestas guardadas'); }).catch(function (e) { aviso(e.message); }); };
+    document.getElementById('aprell').onclick = function () {
+      if (!confirm('¿Prellenar ' + S.data.nombre + '? Solo se llena lo que está vacío.')) return;
+      guardarA().then(function () { return api('POST', '/api/prog/prellenar', { mes: S.mes }); }).then(function (j) {
+        document.getElementById('ares').innerHTML = '<p class="ok">✔ Listo: ' + j.celdas + ' locales y días prellenados; ' + j.repartidos + ' cantantes repartidos entre Priss y Kony.</p>' +
+          (j.sinNadie.length ? '<p>Quedaron sin cantante (nadie disponible), para completar a mano:</p><ul class="faltan">' + j.sinNadie.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') +
+          '<p>Revisa y ajusta en la pestaña Programación. Los avisos de lo obligado (Oscar, Fer y Matías) salen en Archivos.</p>';
+        return api('GET', '/api/prog/mes?m=' + S.mes).then(function (d) { S.data = d; });
+      }).catch(function (e) { aviso(e.message); });
+    };
+    document.querySelectorAll('select[data-pt], input[data-pt]').forEach(function (el) {
+      el.onchange = function () {
+        var v = el.value;
+        if (v === '+') { v = (prompt('Nombre corto de la persona:') || '').trim(); if (!v) { pintar(); return; } }
+        var c = Object.assign({}, S.data.plantilla[el.dataset.pt] || {});
+        if (v) c[el.dataset.k] = v.trim(); else delete c[el.dataset.k];
+        api('POST', '/api/prog/plantilla', { clave: el.dataset.pt, celda: c }).then(function (j) { S.data.plantilla = j.plantilla; aviso('Semana tipo guardada'); }).catch(function (e) { aviso(e.message); });
+      };
+    });
   }
   var TIPOS_LOC = { MK: { 4: ['standup'], 5: ['piano'], 6: ['tributo', 'otro'] }, TOB: { 5: ['otro'] }, FRIDA: { 5: ['doble', 'otro'], 6: ['doble', 'otro'], 0: ['bingo'] } };
   function bloqueShow(f, l, wd, c) {
