@@ -3269,3 +3269,34 @@ body.con-paso #ctl-reload-fixed { top: calc(var(--paso-h, 64px) + 20px); }
 @media (max-aspect-ratio: 1/1) { #ep { padding-bottom: 21vh; } #ep .ep-top > p { gap: 6vw; } #ep .ep-side { overflow: hidden; } #ep .ep-side:not(.rank) { flex: 1; } }
 
 .pep-me i { display: block; margin-top: 6px; font-style: normal; font-size: .9rem; font-weight: 700; color: #ffc400; }
+
+/* «El último en pie»: el corte de cada ronda y la final en el escenario (estructura de Cote, 23 nov) */
+.ep-cut, .ep-fin { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3vh; text-align: center; }
+.ep-cut > small, .ep-fin > small { font-size: 3vh; text-transform: uppercase; letter-spacing: .14em; color: #f4bf5a; }
+.ep-cut > i { font-style: normal; font-size: 3vh; font-weight: 700; }
+.ep-ns { display: flex; flex-wrap: wrap; justify-content: center; gap: 2.4vh 3vw; }
+.ep-n { min-width: 16vw; padding: 2vh 2vw; background: rgba(21, 19, 30, .9); border: .25vh solid #2a2636; }
+.ep-n b { display: block; font-size: 18vh; line-height: 1; font-weight: 900; } .ep-n.up b { color: #f4bf5a; }
+.ep-n span { display: block; font-size: 2.6vh; text-transform: uppercase; letter-spacing: .1em; color: #c9c5dd; }
+.ep-n.sm b { font-size: 11vh; }
+.ep-fs { display: flex; flex-wrap: wrap; justify-content: center; gap: 2.4vh 2vw; width: 100%; }
+.ep-f { flex: 1 1 24vw; max-width: 30vw; padding: 3vh 1.6vw; background: rgba(21, 19, 30, .9); border: .4vh solid #2a2636; }
+.ep-f b { display: block; font-size: 5.4vh; line-height: 1.05; font-weight: 900; text-transform: uppercase; overflow-wrap: anywhere; }
+.ep-f span { display: block; margin-top: 1.4vh; font-size: 2.4vh; text-transform: uppercase; letter-spacing: .12em; color: #c9c5dd; }
+.ep-f.turn { border-color: #f4bf5a; } .ep-f.turn span { color: #f4bf5a; }
+.ep-f.out { opacity: .38; } .ep-f.out b { text-decoration: line-through; }
+@media (max-aspect-ratio: 1/1) {
+  .ep-cut > small, .ep-fin > small { font-size: 4vw; } .ep-cut > i { font-size: 4vw; } .ep-n { min-width: 36vw; } .ep-n b { font-size: 26vw; } .ep-n.sm b { font-size: 17vw; } .ep-n span { font-size: 3.2vw; }
+  .ep-f { flex-basis: 100%; max-width: none; } .ep-f b { font-size: 8.4vw; } .ep-f span { font-size: 3.6vw; }
+}
+.epg-opts i.ok { color: #f4bf5a; }
+/* panel: la final son dos botones, como en El Rosko */
+.ep-turn { margin: 4px 0 10px; padding: 12px 14px; border-radius: 14px; background: rgba(71, 184, 230, .14); border: 2px solid #47b8e6; }
+.ep-turn small { display: block; font-weight: 800; color: #47b8e6; } .ep-turn b { font-size: 2rem; line-height: 1.1; }
+.ep-ans { margin: 0; font-size: 1.15rem; } .ep-ans b { color: #4ade80; font-size: 1.4rem; }
+.ep-yn { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+.ep-yn button { padding: 22px 10px; font-size: 1.25rem; font-weight: 800; border-radius: 14px; color: #fff; }
+.ep-yes { background: #16a34a; border-color: #16a34a; } .ep-no { background: #b91c1c; border-color: #b91c1c; }
+.ep-flist p, .pep-fin p { display: flex; justify-content: space-between; gap: 10px; margin: 6px 0; padding: 9px 12px; border-radius: 10px; background: rgba(255, 255, 255, .07); }
+.ep-flist p.out, .pep-fin p.out { opacity: .45; } .ep-flist p.out b, .pep-fin p.out b { text-decoration: line-through; }
+@media (max-aspect-ratio: 1/1) { .ep-cut { gap: 1.6vh; justify-content: flex-start; padding-top: 1vh; } .ep-ns { gap: 1.6vh 3vw; } .ep-n { padding: 1.2vh 2vw; } .ep-n b { font-size: 22vw; } .ep-n.sm b { font-size: 13vw; } }

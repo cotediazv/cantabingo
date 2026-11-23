@@ -843,15 +843,18 @@
       if (sig === last) return;
       last = sig;
       var o = '<div class="abs g-title fit">El último en pie</div><div class="abs v-body" style="top:16rem">';
-      o += '<div class="mid gold">' + s.standing + ' en pie · ' + s.bench + ' en la banca</div>';
-      if (s.phase === 'done') o += '<div class="big gold fit" style="margin-top:3rem">' + (s.winner ? '¡Ganó!' : 'Fin del juego') + '</div><b class="big fit" style="display:block">' + h(s.winner ? s.winner.name : 'Nadie quedó en pie') + '</b>' + (s.benchWinner ? '<div class="mid" style="margin-top:2rem">El mejor de la banca: ' + h(s.benchWinner.name) + '</div>' : '');
-      else if (s.phase === 'lobby' || !s.q) o += '<b class="big fit" style="display:block;margin-top:3rem">Tienes 3 vidas</b><div class="mid" style="margin-top:2rem">Todos juegan desde su celular</div><div class="mid">Sin vidas vas a la banca; con 4 buenas de 5 vuelves</div><div class="mid">Gana el último en pie</div>';
+      o += '<div class="mid gold">' + s.standing + ' en pie · ' + s.bench + (s.direct || s.phase === 'final' || s.phase === 'done' ? ' fuera' : ' en la banca') + '</div>';
+      var k; var fp;
+      if (s.phase === 'done') o += '<div class="big gold fit" style="margin-top:3rem">' + (s.winner ? '¡Ganó!' : 'Fin del juego') + '</div><b class="big fit" style="display:block">' + h(s.winner ? s.winner.name : 'Nadie quedó en pie') + '</b>';
+      else if (s.phase === 'final' && s.fin) { o += '<div class="mid" style="margin-top:2.4rem">La final · en el escenario</div><ol class="rows" style="margin-top:2rem">'; fp = s.fin.players || []; for (k = 0; k < fp.length; k++) o += '<li' + (fp[k].out ? ' style="opacity:.4"' : '') + '>' + h(fp[k].name) + '<i>' + (fp[k].out ? 'Eliminado' : k === s.fin.turn ? 'Su turno' : 'En pie') + '</i></li>'; o += '</ol>'; }
+      else if (s.phase === 'cut' && s.cut) o += '<div class="mid" style="margin-top:2.4rem">Fin de la ronda ' + s.cut.round + '</div><b class="big fit" style="display:block;margin-top:2rem">' + s.cut.standing + ' en pie</b><div class="mid">' + s.cut.bench + ' en la banca</div>' + (s.cut.round > 1 ? '<div class="mid" style="margin-top:2rem">' + s.cut.fell + ' pasaron a la banca</div><div class="mid">' + s.cut.back + ' salieron de la banca</div>' : '') + (s.cut.last ? '<div class="mid gold" style="margin-top:2rem">Se cierra la puerta: un error y fuera</div>' : '');
+      else if (s.phase === 'lobby' || !s.q) o += '<b class="big fit" style="display:block;margin-top:3rem">Tienes 3 vidas</b><div class="mid" style="margin-top:2rem">Todos juegan desde su celular</div><div class="mid">Sin vidas vas a la banca; con 4 buenas de 5 vuelves</div><div class="mid">Los 3 últimos van a la final</div>';
       else {
-        o += '<div class="mid" style="margin-top:2.4rem">' + (s.kind === 'subita' ? 'Muerte súbita' : 'Pregunta ' + s.n + ' de ' + s.total) + '</div><b class="mid" style="display:block;font-size:4.4rem;line-height:1.1;margin:1rem 3rem 2rem">' + h(s.q.text) + '</b><ol class="rows">';
+        o += '<div class="mid" style="margin-top:2.4rem">' + (s.direct ? 'Eliminación directa' : 'Ronda ' + s.round + ' · pregunta ' + s.inRound + ' de ' + s.perRound) + '</div><b class="mid" style="display:block;font-size:4.4rem;line-height:1.1;margin:1rem 3rem 2rem">' + h(s.q.text) + '</b><ol class="rows">';
         for (var i = 0; i < s.q.opts.length; i++) o += '<li' + (s.q.correct === i ? ' style="background:#16a34a;color:#fff"' : s.q.correct != null ? ' style="opacity:.4"' : '') + '><em>' + L[i] + '</em>' + h(s.q.opts[i]) + '</li>';
         o += '</ol>';
         if (s.phase === 'question') o += '<div class="clock">' + secs + '</div>';
-        else { o += '<ol class="rows" style="margin-top:2.4rem">'; for (var k = 0; k < (s.top || []).length && k < 5; k++) o += '<li><em>' + (k + 1) + '</em>' + h(s.top[k].name) + '<i>' + (s.top[k].up ? s.top[k].lives + ' ♥' : 'banca') + '</i></li>'; o += '</ol>'; }
+        else { o += '<ol class="rows" style="margin-top:2.4rem">'; for (k = 0; k < (s.top || []).length && k < 5; k++) o += '<li><em>' + (k + 1) + '</em>' + h(s.top[k].name) + '<i>' + (s.top[k].up ? (s.direct ? 'en pie' : s.top[k].lives + ' ♥') : (s.direct ? 'fuera' : 'banca')) + '</i></li>'; o += '</ol>'; }
       }
       o += '</div>' + qrFoot();
       view.innerHTML = o;

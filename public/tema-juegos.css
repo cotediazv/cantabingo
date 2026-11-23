@@ -404,3 +404,4 @@ html.t2 #ep .ep-top > b, html.t2 #ep .ep-q > b, html.t2 #ep .ep-intro b, html.t2
 html.t2 #ep .ep-q > b, html.t2 #epg .epg-main > b { text-transform: uppercase; }
 html.t2 #ep .ep-c, html.t2 #ep .ep-tag, html.t2 #ep .ep-side > small, html.t2 #ep .ep-intro small, html.t2 #ep .ep-win small, html.t2 #epg small { font-family: var(--t-mono); }
 html.t2 #ep .ep-opt, html.t2 #ep .ep-intro ul, html.t2 #epg .epg-opts { font-family: var(--t-txt); }
+html.t2 #ep .ep-n b, html.t2 #ep .ep-f b { font-family: var(--t-disp); } html.t2 #ep .ep-n span, html.t2 #ep .ep-f span, html.t2 #ep .ep-cut > small, html.t2 #ep .ep-fin > small { font-family: var(--t-mono); }
