@@ -265,3 +265,6 @@
     return () => { stop(); document.body.classList.remove('obs', 'gc-screen'); };
   };
 })();
+
+// Qué se ve en el tablero y en el GC de OBS cuando el escenario es El Gran Desafío (public/core/escenarios.js)
+KRB.escenario('desafio', { full: () => views.desafioFull(), gc: () => views.desafioGC() });

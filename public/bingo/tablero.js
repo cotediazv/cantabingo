@@ -103,3 +103,7 @@
     return () => { clearInterval(poll); leave(); window.removeEventListener('tema', onTema); };
   };
 })();
+
+// Qué se ve en el tablero y en el GC de OBS cuando el escenario es el bingo o el QR grande (public/core/escenarios.js)
+KRB.escenario('bingo', { full: () => views.bingoFull(), gc: () => views.gc() });
+KRB.escenario('qr', { full: () => views.qrFull(), gc: () => views.qrBig() });

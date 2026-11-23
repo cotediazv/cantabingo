@@ -102,5 +102,5 @@ test('enlaces cortos y QR', async () => {
   const qr = await fetch(`${srv.url}/api/qr?text=${encodeURIComponent('https://ejemplo.cl/#/jugar')}`);
   assert.equal(qr.status, 200);
   const page = await fetch(`${srv.url}/`);
-  assert.match(await page.text(), /<script src="app.js/);
+  assert.match(await page.text(), /<script src="core\/router.js/);
 });

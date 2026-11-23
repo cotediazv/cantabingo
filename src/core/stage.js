@@ -54,3 +54,4 @@ module.exports = function stage(ctx) {
     },
   };
 };
+module.exports.BASE_STAGES = BASE_STAGES;

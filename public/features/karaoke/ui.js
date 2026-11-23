@@ -78,3 +78,6 @@
     return () => { stop(); document.body.classList.remove('logo-in-box'); };
   };
 })();
+
+// Qué se ve en el tablero y en el GC de OBS cuando el escenario es el karaoke (public/core/escenarios.js)
+KRB.escenario('karaoke', { full: () => views.karaokeFull(), gc: () => views.karaokeGC() });

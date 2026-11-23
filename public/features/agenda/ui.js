@@ -83,3 +83,6 @@ const nextUpHTML = (cls = '') => {
     return () => stop();
   };
 })();
+
+// Qué se ve en el tablero y en el GC de OBS cuando el escenario es el show (public/core/escenarios.js)
+KRB.escenario('show', { full: () => views.showFull(), gc: () => views.showGC(), qrFull: 'br', qrGc: 'above' });

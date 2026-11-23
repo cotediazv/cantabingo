@@ -161,3 +161,6 @@
     return () => { clearInterval(timer); clearTimeout(spin); document.body.classList.remove('obs', 'raffle-screen'); };
   };
 })();
+
+// Qué se ve en el tablero y en el GC de OBS cuando el escenario es el sorteo de concursantes o un desempate (public/core/escenarios.js)
+KRB.escenario('sorteo', { full: () => views.sorteo(), gc: () => views.sorteo(), qrFull: 'tr', qrGc: 'br' });

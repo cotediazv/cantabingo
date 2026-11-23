@@ -613,3 +613,6 @@
   views.rueda = (id) => publicView('rueda', id);
   views.obs = (id) => publicView('obs', id);
 })();
+
+// Qué se ve en el tablero y en el GC de OBS cuando el escenario es El Rosko (public/core/escenarios.js)
+KRB.escenario('rueda', { full: () => views.rueda(), gc: () => views.obs(), qrFull: 'tr', qrGc: 'bl' });

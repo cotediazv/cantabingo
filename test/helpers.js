@@ -27,7 +27,9 @@ async function startServer({ env = {}, data, port: fixedPort } = {}) {
     cwd: ROOT,
     // KRB_FECHA: un miércoles a media mañana, cuando no corre nada automático (salas, karaoke del jueves).
     // Las pruebas de horarios ponen otra fecha.
-    env: { ...process.env, PORT: String(port), DATA_FILE: dataFile, ADMIN_USER: ADMIN.user, ADMIN_PASS: ADMIN.pass, KARAOKE_CLAVE: '', KRB_FECHA: QUIET, ...env },
+    env: { ...process.env, PORT: String(port), DATA_FILE: dataFile, ADMIN_USER: ADMIN.user, ADMIN_PASS: ADMIN.pass, KARAOKE_CLAVE: '', KRB_FECHA: QUIET,
+      GLOSA_TEST_URL: 'http://127.0.0.1:9/glosa', // las pruebas no salen a internet (la programación de los locales)
+      ...env },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   let log = '';

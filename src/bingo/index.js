@@ -1,7 +1,7 @@
 // Bingo y sala de juegos: proyectos (cartones), la sala abierta, unirse desde el celular, sacar números,
 // marcar, ganadores y el flujo en vivo (SSE) que reciben celulares, tablero, OBS y el panel.
 const crypto = require('crypto');
-const PATTERNS = require('../../public/patterns.js');
+const PATTERNS = require('../../public/bingo/figuras.js');
 const { id, clamp, str, shuffle, fail } = require('../core/util');
 const { makeCards } = require('./cards');
 

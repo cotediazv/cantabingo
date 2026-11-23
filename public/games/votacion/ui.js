@@ -397,3 +397,6 @@
     return () => { stop(); ticking = 0; clearTimeout(tickTimer); sfx.roll(false); };
   };
 })();
+
+// Qué se ve en el tablero y en el GC de OBS cuando el escenario es la votación: El objeto más extraño o El Festival (public/core/escenarios.js)
+KRB.escenario('voto', { full: () => views.votoFull(), gc: () => views.votoGC() });

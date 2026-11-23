@@ -90,3 +90,6 @@
     return () => stop();
   };
 })();
+
+// Qué se ve en el tablero y en el GC de OBS cuando el escenario es «Síguenos en Instagram» (public/core/escenarios.js)
+KRB.escenario('insta', { full: () => views.instaFull(), gc: () => views.instaGC() });

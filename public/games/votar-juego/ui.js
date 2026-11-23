@@ -258,3 +258,6 @@
     window.paintGvote('votacion');
   });
 })();
+
+// Qué se ve en el tablero y en el GC de OBS cuando el escenario es la votación del próximo juego (public/core/escenarios.js; en el tablero el QR va dentro del cuadro)
+KRB.escenario('votojuego', { full: () => views.gameVote('full'), gc: () => views.gameVote('gc'), qrGc: 'br' });
