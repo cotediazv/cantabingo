@@ -85,7 +85,10 @@ const CLOSE = '  <!-- /app -->';
 
 function once(text, a, b, where) {
   const n = text.split(a).length - 1;
-  if (n !== 1) throw new Error(`${where}: el texto a reemplazar aparece ${n} veces (debe ser 1). Revisa PATCHES en tools/app-partido.js.\n${a.slice(0, 200)}`);
+  if (n !== 1) throw new Error(`${where}: el texto a reemplazar aparece ${n} veces (debe ser 1). Revisa PATCHES en tools/app-partido.js.\n`
+    + 'Si en main se agregó un escenario a la cadena de «if» del tablero o de la escena: quita esa línea de public/app.js y registra la\n'
+    + "pantalla en el ui.js del juego con KRB.escenario('<escenario>', { full, gc, qrFull, qrGc }); después vuelve a partir.\n"
+    + `${a.slice(0, 200)}`);
   return text.replace(a, () => b);
 }
 
