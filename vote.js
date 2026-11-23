@@ -67,8 +67,8 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       // El Festival: 5 notas al azar del último que cantó, con el nombre de quien la puso (sin el promedio), durante 8 s
       sample: sampleOn(s) ? s.sample.notes : null,
       // El Festival: si se inscribieron más que los cupos, hay que sortear; drawn = los elegidos por sorteo
-      overflow: karaoke() && s.phase === 'voting' && s.players.length > cap(),
-      drawn: karaoke() && s.drawnAt && !s.players.some((p) => p.done) && !s.open ? s.players.map((p) => p.name) : null,
+      overflow: s.phase === 'voting' && s.players.length > cap(), // también en El objeto más extraño (pedido de Cote, 23 nov: «si llegan más inscripciones, hacemos un sorteo rápido y se muestran en pantalla las 5 personas sorteadas»)
+      drawn: s.drawnAt && !s.players.some((p) => p.done) && !s.open ? s.players.map((p) => p.name) : null,
       players: s.players.map((p) => ({ id: p.id, no: no(p), name: p.name, thing: p.thing || '', done: !!p.done })),
       open: open ? { id: open.id, no: no(open), name: open.name, thing: open.thing || '' } : null,
       // «Iniciar participante» (pedido de Cote): quien está en el escenario antes de abrir su votación
@@ -144,10 +144,8 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       if (song.length < 2 || artist.length < 2) return fail(res, 400, 'Escribe la canción y el artista');
       what = `${song} · ${artist}`;
     } else if (what.length < 2) return fail(res, 400, 'Escribe con qué vas a participar');
-    if (!karaoke() && s.players.length >= cap()) return fail(res, 409, 'Ya se completaron los cupos');
     if (s.players.length >= 200) return fail(res, 409, 'Ya se completaron las inscripciones');
     s.players.push({ id: crypto.randomBytes(4).toString('hex'), name: pl.name, thing: what, by: token, votes: {}, done: false });
-    if (!karaoke() && s.players.length >= cap()) s.signup = false; // se completaron los cupos: el llamado termina sin esperar al reloj
     changed();
     return res.json({ ok: true, no: s.players.length });
   });
@@ -205,7 +203,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
     },
     // El Festival: si se inscribieron más que los cupos, se sortean los que cantan (los demás salen de la lista)
     draw: (s) => {
-      if (s.mode !== 'karaoke' || s.phase !== 'voting') return null;
+      if (s.phase !== 'voting') return null; // también en El objeto más extraño (pedido de Cote, 23 nov)
       if (s.players.length <= cap()) return 'No hace falta sortear: caben todos';
       if (s.players.some((p) => p.done) || s.open) return 'Ya empezó la votación';
       const pool = [...s.players];
@@ -229,7 +227,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
     present: (s, b) => {
       if (s.phase !== 'voting') return 'El concurso ya pasó a los resultados';
       if (s.open) return 'Primero cierra la votación en curso';
-      if (s.mode === 'karaoke' && s.players.length > cap()) return `Se inscribieron ${s.players.length}: primero sortea a los ${cap()} que cantan`;
+      if (s.players.length > cap()) return `Se inscribieron ${s.players.length}: primero sortea a los ${cap()} que ${s.mode === 'karaoke' ? 'cantan' : 'participan'}`;
       const p = by(b.id) || s.players.find((x) => !x.done);
       if (!p) return 'Ya participaron todos';
       s.onstage = p.id;
@@ -240,7 +238,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       if (s.phase !== 'voting') return 'El concurso ya pasó a los resultados';
       if (!by(b.id)) return 'Ese participante ya no está';
       s.onstage = null;
-      if (s.mode === 'karaoke' && s.players.length > cap()) return `Se inscribieron ${s.players.length}: primero sortea a los ${cap()} que cantan`;
+      if (s.players.length > cap()) return `Se inscribieron ${s.players.length}: primero sortea a los ${cap()} que ${s.mode === 'karaoke' ? 'cantan' : 'participan'}`;
       if (s.open && s.open !== b.id) { by(s.open).done = true; s.last = s.open; }
       s.open = b.id;
       s.openUntil = Date.now() + openMs();
