@@ -156,7 +156,8 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
   function selPT(clave, campo, valor, rol, etiqueta) {
     return selPersona('', '', campo, valor, rol, etiqueta).replace('data-f="" data-l=""', 'data-pt="' + clave + '"');
   }
-  function fechasDe(wds) { return S.data.fechas.filter(function (x) { return !x.cortesia && wds.indexOf(x.wd) >= 0; }); }
+  // Sin los días que no se trabaja (Cote, 23 nov), salvo en la lista para marcarlos
+  function fechasDe(wds, conCerrados) { return S.data.fechas.filter(function (x) { return !x.cortesia && wds.indexOf(x.wd) >= 0 && (conCerrados || !x.cerrado); }); }
   function etqDia(x) { return DIAS[x.wd] + ' ' + Number(x.fecha.slice(8)); }
   function vistaPrellenar() {
     var d = S.data; var A = d.asist || {}; var P = d.plantilla || {};
@@ -164,7 +165,7 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
     // Paso 1: días que no se trabaja este mes
     var cer = A.cerrados || d.fechas.filter(function (x) { return x.cerrado; }).map(function (x) { return x.fecha; });
     h += '<div class="panel paso"><h3>1 · Días que no se trabaja</h3><p>¿Hay días de ' + esc(d.nombre) + ' en que no se va a trabajar (feriados u otros)? Márcalos. Esos días quedan cerrados en todos los locales y esa semana no corre la regla de los tres días.</p>' +
-      fechasDe([4, 5, 6, 0]).map(function (x) { return '<label class="chk"><input type="checkbox" data-si="cerrados" value="' + x.fecha + '"' + (cer.indexOf(x.fecha) >= 0 ? ' checked' : '') + '>' + etqDia(x) + '</label>'; }).join('') + '</div>';
+      fechasDe([4, 5, 6, 0], true).map(function (x) { return '<label class="chk"><input type="checkbox" data-si="cerrados" value="' + x.fecha + '"' + (cer.indexOf(x.fecha) >= 0 ? ' checked' : '') + '>' + etqDia(x) + '</label>'; }).join('') + '</div>';
     // Paso 2: semana tipo
     h += '<div class="panel paso"><h3>2 · Semana tipo</h3><p>Con esto se llena cada día. Confírmala o cámbiala antes de partir el mes. Los cantantes que se reparten (viernes en Kennedy y viernes y sábado en Frida) van vacíos.</p>' +
       '<details><summary class="btn chico" style="display:inline-block;margin:6px 0">Ver y cambiar la semana tipo</summary>' +
@@ -226,6 +227,7 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
         return api('GET', '/api/prog/mes?m=' + S.mes).then(function (d) { S.data = d; });
       }).catch(function (e) { aviso(e.message); });
     };
+    document.querySelectorAll('[data-si=cerrados]').forEach(function (c) { c.onchange = function () { guardarA().then(function () { aviso('Guardado'); pintar(); }).catch(function (e) { aviso(e.message); }); }; });
     document.querySelectorAll('select[data-pt], input[data-pt]').forEach(function (el) {
       el.onchange = function () {
         var v = el.value;

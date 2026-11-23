@@ -614,24 +614,54 @@ module.exports = function programacion({ app, dir }) {
         if (cambio) { setCelda(f, l, c); n++; }
       }
     }
-    // Lo que queda de animador cantante (viernes en Kennedy y viernes y sábado en Frida) se reparte parejo entre Priss y
-    // Kony según los días que dieron; en Frida no repite la misma el viernes y el sábado; nadie en dos locales el mismo día
+    // Lo que queda de animador cantante (viernes en Kennedy y viernes y sábado en Frida) se reparte entre Priss y Kony
+    // según los días que dieron. Reglas: en Frida no repite la misma el viernes y el sábado; nadie en dos locales el mismo
+    // día. Se arma cada fin de semana completo (Cote, 23 nov: «hay que usar el criterio»: si el sábado solo puede Kony,
+    // Kony queda el sábado y el viernes Priss va a Frida y Kony a Kennedy), llenando la mayor cantidad posible y
+    // después lo más parejo entre las dos.
+    const QUIEN = ['Priss', 'Kony'];
     const cuenta = { Priss: 0, Kony: 0 };
     for (const f of delMes) for (const l of LOCALES) { const v = celda(f, l).cantante; if (v in cuenta) cuenta[v]++; }
-    const ocupado = (f, quien) => LOCALES.some((l) => Object.values(celda(f, l)).includes(quien));
+    const ocupado = (f, q, l0) => LOCALES.some((l) => l !== l0 && Object.values(celda(f, l)).includes(q));
     let repartidos = 0; const sinNadie = [];
+    const slots = [];
     for (const f of delMes) {
       const wd = parse(f).wd;
       for (const l of ['MK', 'FRIDA']) {
         if (!abierto(f, l) || celda(f, l).cantante) continue;
-        if (!((l === 'MK' && wd === 5) || (l === 'FRIDA' && (wd === 5 || wd === 6)))) continue;
-        const otro = l === 'FRIDA' ? (wd === 5 ? addDays(f, 1) : addDays(f, -1)) : '';
-        const cand = ['Priss', 'Kony'].filter((q) => (A[`disp${q}`] || []).includes(f) && !ocupado(f, q) && !(otro && celda(otro, 'FRIDA').cantante === q));
-        if (!cand.length) { sinNadie.push(`${etiquetaTurno(f)} ${ETQ[l]}`); continue; }
-        cand.sort((a, b) => cuenta[a] - cuenta[b]);
-        const q = cand[0]; cuenta[q]++; repartidos++;
-        setCelda(f, l, { ...celda(f, l), cantante: q });
+        if ((l === 'MK' && wd === 5) || (l === 'FRIDA' && (wd === 5 || wd === 6))) slots.push({ f, l, wd, sem: semana(f) });
       }
+    }
+    for (const sem of [...new Set(slots.map((x) => x.sem))]) {
+      const ss = slots.filter((x) => x.sem === sem);
+      const opciones = ss.map((x) => [...QUIEN.filter((q) => (A[`disp${q}`] || []).includes(x.f) && !ocupado(x.f, q, x.l)), null]);
+      let mejor = null; let mejorNota = -Infinity;
+      const prueba = (k, elegidos) => {
+        if (k === ss.length) {
+          // Reglas dentro del fin de semana (también contra lo que ya estaba marcado)
+          for (let a = 0; a < ss.length; a++) {
+            const q = elegidos[a]; if (!q) continue;
+            for (let b = 0; b < ss.length; b++) if (a !== b && elegidos[b] === q && ss[b].f === ss[a].f) return; // dos locales el mismo día
+            if (ss[a].l === 'FRIDA') {
+              const otro = ss[a].wd === 5 ? addDays(ss[a].f, 1) : addDays(ss[a].f, -1);
+              const b = ss.findIndex((x) => x.l === 'FRIDA' && x.f === otro);
+              if ((b >= 0 && elegidos[b] === q) || celda(otro, 'FRIDA').cantante === q) return; // repite viernes y sábado en Frida
+            }
+          }
+          const c = { ...cuenta }; elegidos.forEach((q) => { if (q) c[q]++; });
+          const nota = elegidos.filter(Boolean).length * 1000 - Math.abs(c.Priss - c.Kony);
+          if (nota > mejorNota) { mejorNota = nota; mejor = elegidos.slice(); }
+          return;
+        }
+        for (const q of opciones[k]) { elegidos.push(q); prueba(k + 1, elegidos); elegidos.pop(); }
+      };
+      prueba(0, []);
+      ss.forEach((x, k) => {
+        const q = mejor && mejor[k];
+        if (!q) { sinNadie.push(`${etiquetaTurno(x.f)} ${ETQ[x.l]}`); return; }
+        cuenta[q]++; repartidos++;
+        setCelda(x.f, x.l, { ...celda(x.f, x.l), cantante: q });
+      });
     }
     save();
     return { celdas: n, repartidos, sinNadie };
