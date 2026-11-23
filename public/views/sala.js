@@ -3,7 +3,7 @@ views.proyectos = async () => {
   const list = await api('GET', '/api/projects');
   const fmt = { numbers: 'Números', words: 'Palabras', emojis: 'Emojis' };
   app.innerHTML = `
-    <p class="back"><a href="#/">← Inicio</a></p><div class="row between" style="margin-bottom:16px"><h1>Bingo · Mis proyectos</h1><a class="btn primary" href="#/nuevo">⊕ Nuevo proyecto de bingo</a></div>
+    <p class="back"><a href="#/control">← Centro de control</a></p><div class="row between" style="margin-bottom:16px"><h1>Bingo · Mis proyectos</h1><a class="btn primary" href="#/nuevo">⊕ Nuevo proyecto de bingo</a></div>
     <div class="panel scroll-x">${list.length ? `<table class="list">
       <tr><th>Proyecto</th><th>Formato</th><th>Cartones</th><th>Estado</th><th></th></tr>
       ${list.map((p) => `<tr>
@@ -83,7 +83,7 @@ views.juegos = async () => {
   if (!open) { location.hash = '#/'; return undefined; }
   store.set('lastBingo', open.projectId);
   // Pedido de Cote (21 nov): al crear la sala, tres botones y nada más (Manual, Por sorteo, Por votación)
-  app.innerHTML = `<p class="back"><a href="#/">← Inicio</a></p><div id="jg-cur"></div>${activitiesNav('', { lobby: true })}`;
+  app.innerHTML = `<p class="back"><a href="#/control">← Centro de control</a></p><div id="jg-cur"></div>${activitiesNav('', { lobby: true })}`;
   const venue = open.theme || 'frida';
   const paint = async () => {
     const st = await api('GET', `/api/sessions/${open.id}/host/state`).catch((err) => (err.status === 404 ? 'cerrada' : null));
@@ -186,7 +186,7 @@ async function hostConsole(p) {
   let manual = false;
   let spoken = -1;
   app.innerHTML = `
-    <div id="host-bingo"><p class="back"><a href="#/">← Inicio</a></p>
+    <div id="host-bingo"><p class="back"><a href="#/control">← Centro de control</a></p>
       <div class="panel"><h1 id="title"></h1><div id="meta" class="muted"></div><div id="pats" style="margin-top:10px"></div></div>
       ${window.readAloud('Bingo', BINGO_HOWTO)}
       <div class="cols">

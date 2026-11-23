@@ -78,7 +78,7 @@ test('celular · entrar a la sala (sin nombre todavía)', async ({ page }) => {
 });
 
 const PANELS = [
-  ['inicio', '#/'], ['control', '#/control'], ['bingo', `#/anfitrion/${projectId}`], ['rosco', `#/ruedactl/${wheelId}`],
+  ['control', '#/control'], ['bingo', `#/anfitrion/${projectId}`], ['rosco', `#/ruedactl/${wheelId}`],
   ['sorteo', '#/sorteoctl'], ['votacion', '#/votoctl'], ['desafio', '#/desafioctl'], ['instagram', '#/instactl'],
   ['juegos', '#/juegos'],
 ];
@@ -109,3 +109,11 @@ for (const page of ['cc.html', 'pv.html']) {
     expect(errors).toEqual([]);
   });
 }
+
+// Sin portada (23 nov): la dirección de siempre lleva directo al Centro de control
+test('#/ lleva al Centro de control', async ({ page }) => {
+  const errors = await open(page, '#/', { size: PANEL, admin: true });
+  await expect(page).toHaveURL(/#\/control$/);
+  await expect(page.locator('h1')).toHaveText('Centro de control');
+  expect(errors).toEqual([]);
+});

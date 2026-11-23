@@ -80,7 +80,7 @@
   views.ruedas = async () => {
     if (!(await isAdmin())) return viewLogin();
     const list = await api('GET', '/api/wheels');
-    app.innerHTML = `<p class="back"><a href="#/">← Inicio</a></p>
+    app.innerHTML = `<p class="back"><a href="#/control">← Centro de control</a></p>
       <div class="row between" style="margin-bottom:16px"><h1>El Rosko</h1><a class="btn primary" href="#/ruedanueva">⊕ Nuevo rosco</a></div>
       <div class="panel scroll-x">${list.length ? `<table class="list"><tr><th>Rosko</th><th>Concursantes</th><th>Reloj</th><th></th></tr>
         ${list.map((w) => `<tr><td><b>${esc(w.name)}</b><br><span class="muted small">${w.letters} letras</span></td><td>${w.players.map(esc).join(', ')}</td><td>${w.seconds} s</td>

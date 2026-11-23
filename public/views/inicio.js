@@ -31,23 +31,9 @@ const GAMES = [
 ];
 
 views.home = async () => {
-  if (!(await isAdmin())) return viewLogin();
-  // Si ya hay un bingo en curso, el paso 1 lleva a su panel; si no, a la lista
-  // Una sola sala a la vez: si ya hay una abierta, se continúa con ella en vez de crear otra
-  const open = (await activeSessions())[0];
-  if (open) store.set('lastBingo', open.projectId);
-  const last = open ? open.projectId : store.get('lastBingo');
-  const bingoHref = open ? '#/juegos' : last ? `#/anfitrion/${last}` : '#/proyectos'; // la sala abierta continúa en Juegos
-  app.innerHTML = `
-    <div class="home">
-      <h1>KRB Stage · Sala de juegos</h1>
-      ${open ? `<a class="home-create open" href="${bingoHref}"><span>▶</span>Continuar: ${esc(open.name)}</a>
-        <p class="muted small home-note">Hay una sala abierta. Para crear otra, primero ciérrala en el Centro de control.</p>`
-    : '<a class="home-create" href="#/nuevo"><span>🎮</span>Crear sala de juegos</a>'}
-      <a class="home-control home-control-sm" href="#/control">🎛️ Centro de control</a>
-      <p style="margin-top:28px"><button id="logout">Cerrar sesión de moderador</button></p>
-    </div>`;
-  $('#logout').onclick = () => { store.del('adminToken'); route(); };
+  // Pedido de Gabriel (23 nov): la portada sobraba (solo repetía el botón de la sala, que ya está arriba en el Centro de
+  // control). La dirección de siempre (#/) lleva directo al Centro de control, sin dejar un paso más en el historial.
+  location.replace(`${location.pathname}${location.search}#/control`);
   return undefined;
 };
 
@@ -55,7 +41,7 @@ views.home = async () => {
 views.control = async () => {
   if (!(await isAdmin())) return viewLogin();
   // Pedido de Cote (20 nov): en la aplicación instalada no hay cómo recargar; botoncito «Refrescar página»
-  app.innerHTML = `<p class="back ctl-top"><a href="#/">← Inicio</a><button type="button" class="ctl-reload" onclick="location.reload()">↻ Refrescar página</button></p><h1>Centro de control</h1>
+  app.innerHTML = `<p class="back ctl-top"><button type="button" class="ctl-reload" onclick="location.reload()">↻ Refrescar página</button></p><h1>Centro de control</h1>
     <div class="panel"><h2>Sala de juegos abierta</h2>
       <p class="muted small">Si hay más de una, a la gente le aparece una lista para elegir. Cierra las que ya no se usan.</p>
       <div id="ctl-sala-go"></div><div id="open-list"></div></div>
@@ -97,7 +83,9 @@ views.control = async () => {
       <details style="margin-top:12px"><summary class="small">Editar horarios y cartelera del mes</summary>
         <form id="ag-form" class="fields" style="grid-template-columns:1fr;margin-top:10px"></form></details>
     </div>
+    <p class="ctl-logout"><button type="button" id="logout">Cerrar sesión de moderador</button></p>
 `;
+  $('#logout').onclick = () => { store.del('adminToken'); route(); }; // antes estaba en la portada, que ya no existe
   // Karaoke: local del día y direcciones de la web app y del formulario de cada local
   const paintKar = (c) => {
     if (!$('#kar-venue')) return;
