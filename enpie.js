@@ -11,8 +11,8 @@
 //      3 buenas, vuelve con 1 vida; las 4 buenas, vuelve con 2 vidas (si falla 2, su cuenta parte de nuevo). Al terminar cada
 //      ronda hay un «corte»: cuántos en pie, cuántos en la banca y, desde el segundo, cuántos pasaron a la banca y
 //      cuántos salieron de ella en esa ronda.
-//   2) Desde la 6.ª ronda: se cierra la puerta (no vuelve nadie de la banca); las vidas siguen valiendo (Cote, 23 nov)
-//      y se sigue, pregunta tras pregunta, hasta que queden 3. Si una pregunta deja menos de 3, los cupos que faltan los ocupan los que
+//   2) Recta final (después de la última ronda con repechaje): se cierra la puerta (no vuelve nadie de la banca) y todos
+//      los que siguen en pie quedan con una sola vida: el que falla, se va; pregunta tras pregunta, hasta que queden 3. Si una pregunta deja menos de 3, los cupos que faltan los ocupan los que
 //      cayeron en esa misma pregunta con más aciertos (y, si empatan, los más rápidos). Si nadie acierta, nadie cae.
 //   3) Final en el escenario: los 3 finalistas, preguntas habladas por el animador, por turnos; el que se equivoca
 //      queda eliminado de inmediato y el que queda en pie gana.
@@ -22,7 +22,12 @@ const ALTS = require('./questions-alternatives.js');
 
 const LIVES = 3;
 const ROUND = 4; // preguntas por ronda (Cote, 23 nov: «hagamos las rondas de 4 preguntas»)
-const ROUNDS = 5; // rondas con repechaje
+// Para que dure 10 a 15 minutos con el salón lleno (simulación con 150 personas, 23 nov; Cote: «dale, hazlo»): 3 rondas
+// con repechaje (eran 5) y, en la recta final, todos con una sola vida (Cote: «se pierden las vidas, solamente tienen
+// una vida. Y ahí el que pierde se va»). Las preguntas van de más fáciles a más difíciles (Cote: «escalonadas, cada vez
+// un poquito más difícil»): el banco tiene dos niveles, fácil y medio; la ronda 1 es toda fácil, la 2 termina con 1
+// media, la 3 con 2 medias, y la recta final y la final son todas de nivel medio.
+const ROUNDS = Number(process.env.ENPIE_ROUNDS) || 3; // rondas con repechaje
 const OPEN_Q = ROUND * ROUNDS; // hasta esta pregunta se puede volver de la banca
 const FINAL = 3; // finalistas
 // Para volver de la banca (Cote, 23 nov): se miran las 4 preguntas siguientes a la caída: «3 de 4 vuelves al juego con
@@ -45,9 +50,14 @@ module.exports = function enpie({ app, db, save, requireAdmin, fail, setStage, f
   const better = (a, b) => (b.hits - a.hits) || (a.time - b.time);
   const order = (s) => Object.entries(s.players).map(([token, p]) => ({ token, ...p })).sort((a, b) => (b.up - a.up) || (b.up ? b.lives - a.lives : 0) || better(a, b));
   const counts = (s) => { let up = 0; let all = 0; for (const p of Object.values(s.players)) { all++; if (p.up) up++; } return { up, bench: all - up }; };
-  const pick = (s) => {
-    const free = POOL.filter((q) => !s.used.includes(q.key));
-    const q = (free.length ? free : POOL)[crypto.randomInt((free.length ? free : POOL).length)];
+  // Nivel de la pregunta que viene: en las rondas, las últimas de cada ronda son de nivel medio (ronda 1: ninguna; ronda
+  // 2: una; ronda 3: dos…); en la recta final y en la final, todas de nivel medio
+  const levelFor = (n) => (n > OPEN_Q ? 'm' : ((n - 1) % ROUND) >= ROUND - Math.min(ROUND, roundOf(n) - 1) ? 'm' : 'f');
+  const pick = (s, level) => {
+    const pool = POOL.filter((q) => q.level === level);
+    const base = pool.length ? pool : POOL;
+    const free = base.filter((q) => !s.used.includes(q.key));
+    const q = (free.length ? free : base)[crypto.randomInt((free.length ? free : base).length)];
     s.used.push(q.key);
     return q;
   };
@@ -62,7 +72,7 @@ module.exports = function enpie({ app, db, save, requireAdmin, fail, setStage, f
     return {
       test: true, rev: s.rev, gen: s.gen, venue: venue(), phase: s.phase, n: s.n, round: s.n ? roundOf(s.n) : 1, inRound: s.n ? ((s.n - 1) % ROUND) + 1 : 0, perRound: ROUND, rounds: ROUNDS, direct: direct(s.n), nextDirect: direct(s.n + 1),
       lives: LIVES, backOf: BACK_OF, backNeed: BACK_NEED, finalists: FINAL, now: Date.now(), until: 0,
-      q: s.q && s.phase !== 'cut' && s.phase !== 'final' && s.phase !== 'lobby' ? { text: s.q.text, opts: s.q.opts, correct: reveal || host ? s.q.correct : null } : null,
+      q: s.q && s.phase !== 'cut' && s.phase !== 'final' && s.phase !== 'lobby' ? { text: s.q.text, opts: s.q.opts, correct: reveal || host ? s.q.correct : null, level: host ? s.q.level : undefined } : null,
       standing: c.up, bench: c.bench, cutDue: s.phase === 'reveal' && s.n % ROUND === 0 && s.n <= OPEN_Q, cut: s.cut,
       last: s.last, answered: Object.keys(s.ans).length,
       top: list.slice(0, 10).map((p) => ({ name: p.name, lives: p.lives, hits: p.hits, up: p.up })),
@@ -74,11 +84,11 @@ module.exports = function enpie({ app, db, save, requireAdmin, fail, setStage, f
   };
 
   const ask = (s) => {
-    const q = pick(s);
+    const q = pick(s, levelFor(s.n + 1));
     const opts = [q.a, ...ALTS[q.a].slice(0, 2)];
     for (let i = opts.length - 1; i > 0; i--) { const j = crypto.randomInt(i + 1); [opts[i], opts[j]] = [opts[j], opts[i]]; }
     s.n++;
-    s.q = { text: q.q, opts, correct: opts.indexOf(q.a) };
+    s.q = { text: q.q, opts, correct: opts.indexOf(q.a), level: q.level };
     s.ans = {};
     s.until = 0;
     s.at = Date.now();
@@ -87,7 +97,7 @@ module.exports = function enpie({ app, db, save, requireAdmin, fail, setStage, f
   };
 
   // La final: los finalistas pasan al escenario; las preguntas las hace el animador en voz alta, por turnos
-  const finQuestion = (s) => { const q = pick(s); s.fin.q = { text: q.q, answer: q.a }; s.fin.asked++; };
+  const finQuestion = (s) => { const q = pick(s, 'm'); s.fin.q = { text: q.q, answer: q.a }; s.fin.asked++; };
   const startFinal = (s, tokens) => {
     s.fin = { players: tokens.map((t) => ({ token: t, name: s.players[t].name, out: false })), turn: 0, asked: 0, q: null };
     for (const [t, p] of Object.entries(s.players)) if (!tokens.includes(t)) p.up = false;
@@ -165,8 +175,9 @@ module.exports = function enpie({ app, db, save, requireAdmin, fail, setStage, f
           s.cut = { round: roundOf(s.n), standing: c.up, bench: c.bench, fell: s.stat.fell, back: s.stat.back, last: s.n === OPEN_Q };
           s.stat = { fell: 0, back: 0 };
           s.phase = 'cut';
+          if (s.cut.last) for (const p of Object.values(s.players)) if (p.up) p.lives = 1; // recta final: todos con una sola vida
         } else if (s.phase === 'reveal' && s.last && s.last.toFinal) toFinal(s, s.fallen || []);
-        else if (s.phase === 'cut' && s.cut.last && c.up <= FINAL) toFinal(s, Object.keys(s.players).filter((t) => !s.players[t].up)); // tras las 5 rondas quedan 3 o menos: los cupos que faltan, los mejores de la banca
+        else if (s.phase === 'cut' && s.cut.last && c.up <= FINAL) toFinal(s, Object.keys(s.players).filter((t) => !s.players[t].up)); // tras las rondas quedan 3 o menos: los cupos que faltan, los mejores de la banca
         else { ask(s); setStage('enpie'); }
       }
     } else if (action === 'close') close(s);
