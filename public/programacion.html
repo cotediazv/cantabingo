@@ -362,7 +362,7 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
     var g = S.data.glosa; var u = g.ultimo;
     var h = '<div class="panel"><h2>Enviar ' + esc(S.data.nombre) + ' a la GLOSA</h2>';
     if (!g.url) h += '<p>Primero conecta la GLOSA (abajo).</p>';
-    else h += '<p>Escribe la hoja TURNOS con lo de este mes y ejecuta llenarMes. Si falta la pestaña del mes, se crea duplicando la del mes anterior.</p><div class="fila"><button class="btn foco" id="genv">Enviar y llenar el mes</button><button class="btn" id="gcmp">Comparar con la GLOSA</button><button class="btn" id="gtraer">Traer los shows de la GLOSA</button></div>';
+    else h += '<p>Escribe la hoja TURNOS con lo de este mes y llena la pestaña del mes: semanas de jueves a domingo, presupuesto neto solo los días con actividad (los demás en cero), montos de los shows y el mes en B8. Si falta la pestaña del mes, se crea duplicando la del mes anterior.</p><div class="fila"><button class="btn foco" id="genv">Enviar y llenar el mes</button><button class="btn" id="gcmp">Comparar con la GLOSA</button><button class="btn" id="gtraer">Traer los shows de la GLOSA</button></div>';
     h += '<p id="gest">' + (u ? estadoTxt(u) : '') + '</p><div id="gres"></div></div>';
     h += '<div class="panel"><h2>Conectar la GLOSA</h2><ol class="pasos">' +
       '<li>Abre la planilla <b>GLOSA KRB STAGE OFICIAL 2026</b> con la cuenta dueña (la de Kennedy).</li>' +
@@ -387,7 +387,7 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
     $('gscript').onclick = function () { fetch('/api/prog/glosa/script', { headers: { 'x-prog': TOKEN } }).then(function (r) { return r.text(); }).then(function (t) { var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); try { navigator.clipboard.writeText(t); } catch (e) { document.execCommand('copy'); } document.execCommand('copy'); ta.remove(); aviso('Script copiado'); }); };
     $('gsave').onclick = function () { api('POST', '/api/prog/glosa', { url: $('gurl').value }).then(function (j) { S.data.glosa.url = j.url; aviso('Guardado'); pintar(); }).catch(function (e) { aviso(e.message); }); };
     if ($('genv')) $('genv').onclick = function () {
-      if (!confirm('¿Enviar ' + S.data.nombre + ' a la GLOSA? Se reemplaza lo que haya en la hoja TURNOS y se ejecuta llenarMes en la pestaña del mes.')) return;
+      if (!confirm('¿Enviar ' + S.data.nombre + ' a la GLOSA? Se reemplaza lo que haya en la hoja TURNOS y se llena la pestaña del mes.')) return;
       api('POST', '/api/prog/glosa/enviar', { mes: S.mes }).then(function (u) { $('gest').innerHTML = estadoTxt(u); setTimeout(seguir, 3000); }).catch(function (e) { aviso(e.message); });
     };
     if ($('gcmp')) $('gcmp').onclick = function () {

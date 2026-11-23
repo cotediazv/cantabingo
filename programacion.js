@@ -332,13 +332,24 @@ module.exports = function programacion({ app, dir }) {
         if (interno(c.show)) continue; // el bingo y los juegos son internos: no se le paga a nadie de afuera (Cote, 23 nov)
         if (c.show.monto == null) faltan.push(`${etiquetaTurno(fecha)} ${ETQ[l]}: falta el monto del show`);
         // Bloque del día en la pestaña del mes (el mismo orden de jueves a domingo que usa llenarMes)
-        else shows.push({ bloque: delMes.findIndex((x) => x.fecha === fecha), local: l, monto: c.show.monto });
+        else shows.push({ dia: parse(fecha).d, local: l, monto: c.show.monto });
       }
     }
     const turnos = filas.map((f) => f.join('-')).join('\n');
+    // Los 20 bloques de la pestaña del mes: 5 semanas de jueves a domingo (Cote, 23 nov: el domingo 1 de noviembre va en
+    // la cuarta celda de la semana 1 y la semana 2 parte el jueves 5)
+    const POS = { 4: 0, 5: 1, 6: 2, 0: 3 };
+    const bloques = Array(20).fill(null); const jueves = [];
+    for (const { fecha } of delMes) {
+      const x = parse(fecha);
+      const j = addDays(fecha, -(x.wd === 0 ? 3 : x.wd - 4));
+      if (!jueves.includes(j)) jueves.push(j);
+      const k = (jueves.length - 1) * 4 + POS[x.wd];
+      if (k < 20) bloques[k] = { d: x.d, wd: x.wd };
+    }
     return {
       mes: `${y}-${pad(m)}`, pestana: pest, anterior: `${MESES[(m + 10) % 12]}${String(m === 1 ? y - 1 : y).slice(2)} MASTER TOTAL`, b8: `${MES}${String(y).slice(2)}`,
-      cartelera: cart.join('\n'), entretencion: ent.join('\n'), camaras: cam.join('\n'), turnos, filas, shows, faltan: [...new Set(faltan)],
+      cartelera: cart.join('\n'), entretencion: ent.join('\n'), camaras: cam.join('\n'), turnos, filas, shows, bloques, mesNum: m, anio: y, faltan: [...new Set(faltan)],
     };
   }
 
@@ -565,13 +576,13 @@ module.exports = function programacion({ app, dir }) {
     const { y, m } = mesDe((req.body || {}).mes);
     const a = archivos(y, m);
     envio = { estado: 'enviando', mes: a.mes, desde: Date.now() };
-    const body = JSON.stringify({ clave: P.glosa.clave, pestana: a.pestana, anterior: a.anterior, b8: a.b8, filas: a.filas, shows: a.shows, llenar: (req.body || {}).llenar !== false });
+    const body = JSON.stringify({ clave: P.glosa.clave, pestana: a.pestana, anterior: a.anterior, b8: a.b8, filas: a.filas, shows: a.shows, bloques: a.bloques, mes: a.mesNum, anio: a.anio, llenar: (req.body || {}).llenar !== false });
     fetch(GLOSA_URL(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, redirect: 'follow', signal: AbortSignal.timeout(6 * 60e3) })
       .then((r) => r.text()).then((t) => {
         let j; try { j = JSON.parse(t); } catch { throw new Error('La GLOSA no respondió como se esperaba (revisa que el script esté publicado como aplicación web)'); }
         if (j.error) throw new Error(j.error);
-        const viejo = !(Number(j.version) >= 2) && a.shows.length;
-        envio = { estado: 'listo', mes: a.mes, a: Date.now(), creada: Boolean(j.creada), aviso: [j.aviso || '', viejo ? 'Los montos de los shows no llegaron: actualiza el script de la GLOSA (pestaña GLOSA, «Actualizar el script»).' : ''].filter(Boolean).join(' ') };
+        const viejo = !(Number(j.version) >= 3);
+        envio = { estado: 'listo', mes: a.mes, a: Date.now(), creada: Boolean(j.creada), aviso: [j.aviso || '', viejo ? 'El script de la GLOSA es una versión anterior: el mes se llenó a la antigua (sin las semanas de jueves a domingo ni los ceros ni los montos de los shows). Actualiza el script (pestaña GLOSA, «Actualizar el script») y vuelve a enviar.' : ''].filter(Boolean).join(' ') };
       })
       .catch((e) => { envio = { estado: 'error', mes: a.mes, a: Date.now(), error: clean(e && e.message, 300) || 'No se pudo enviar' }; })
       .finally(() => { P.glosa.ultimo = envio; save(); });
@@ -622,66 +633,8 @@ module.exports = function programacion({ app, dir }) {
   });
 };
 
-// Script para pegar en la GLOSA (archivo nuevo «Programacion» en Extensiones → Apps Script, junto a llenarMes)
+// Script para pegar en la GLOSA (archivo «Programacion» en Extensiones → Apps Script): apps-script/Programacion.gs,
+// con la clave puesta
 function scriptGlosa(clave) {
-  return `// Programación KRB (Code 3): recibe los turnos y shows del mes desde la plataforma de programación,
-// los escribe en la hoja TURNOS (ya separados, como al dividir por guion) y ejecuta llenarMes.
-// Si falta la pestaña del mes, la crea duplicando la del mes anterior y escribe el mes en B8.
-// También deja leer la hoja TURNOS para compararla con la plataforma.
-const CLAVE_PROGRAMACION = '${clave}';
-
-function doGet(e) {
-  if (!e || !e.parameter || e.parameter.clave !== CLAVE_PROGRAMACION) return respuesta_({ error: 'Clave incorrecta' });
-  const t = SpreadsheetApp.getActive().getSheetByName('TURNOS');
-  if (!t) return respuesta_({ error: 'Falta la hoja TURNOS' });
-  return respuesta_({ ok: true, version: 2, filas: t.getDataRange().getDisplayValues() });
-}
-
-function doPost(e) {
-  let b;
-  try { b = JSON.parse(e.postData.contents); } catch (x) { return respuesta_({ error: 'Datos no válidos' }); }
-  if (!b || b.clave !== CLAVE_PROGRAMACION) return respuesta_({ error: 'Clave incorrecta' });
-  const lock = LockService.getDocumentLock();
-  if (!lock.tryLock(30000)) return respuesta_({ error: 'La GLOSA está ocupada, prueba de nuevo en un minuto' });
-  try {
-    const ss = SpreadsheetApp.getActive();
-    let creada = false;
-    if (!ss.getSheetByName(b.pestana)) {
-      const ant = ss.getSheetByName(b.anterior);
-      if (!ant) return respuesta_({ error: 'No encuentro la pestaña ' + b.pestana + ' ni la del mes anterior (' + b.anterior + ')' });
-      const nueva = ant.copyTo(ss).setName(b.pestana);
-      nueva.getRange('B8').setValue(b.b8);
-      creada = true;
-    }
-    let t = ss.getSheetByName('TURNOS');
-    if (!t) t = ss.insertSheet('TURNOS');
-    t.clearContents();
-    const ancho = b.filas.reduce(function (n, f) { return Math.max(n, f.length); }, 1);
-    const datos = b.filas.map(function (f) { const r = f.slice(); while (r.length < ancho) r.push(''); return r; });
-    t.getRange(1, 1, datos.length, ancho).setNumberFormat('@').setValues(datos);
-    SpreadsheetApp.flush();
-    let aviso = '';
-    if (b.llenar) {
-      try { llenarMes(); } catch (x) {
-        // llenarMes termina con un aviso en pantalla, que no se puede mostrar desde aquí: eso significa que terminó bien
-        const m = String((x && x.message) || x);
-        if (!/getUi/i.test(m)) aviso = 'llenarMes: ' + m;
-      }
-    }
-    // Montos de los shows: en la columna siguiente a la del show, en el resumen de shows (fila 835 en adelante)
-    if (b.shows && b.shows.length) {
-      const sh = ss.getSheetByName(b.pestana);
-      const COL_SHOW = { MK: 3, TOB: 32, FRIDA: 42 };
-      b.shows.forEach(function (x) { if (x.bloque >= 0 && COL_SHOW[x.local]) sh.getRange(835 + x.bloque, COL_SHOW[x.local] + 1).setValue(x.monto); });
-    }
-    return respuesta_({ ok: true, version: 2, creada: creada, aviso: aviso });
-  } finally {
-    lock.releaseLock();
-  }
-}
-
-function respuesta_(o) {
-  return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);
-}
-`;
+  return fs.readFileSync(path.join(__dirname, 'apps-script', 'Programacion.gs'), 'utf8').replace('__CLAVE__', clave);
 }
