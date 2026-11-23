@@ -11,7 +11,7 @@
 // También escribe el mes en B8 y el monto de cada show en la columna siguiente a la del show.
 // llenarMes (el archivo de antes) no se usa ni se toca.
 const CLAVE_PROGRAMACION = '__CLAVE__';
-const PROG_VERSION = 5;
+const PROG_VERSION = 6;
 
 const PR_PRIMERA = 12, PR_ALTO = 39, PR_BLOQUES = 20, PR_RESUMEN = 835;
 const PR_COL = { MK: 3, KENNEDY: 3, EV: 12, EVENTOS: 12, KR: 22, KARAROCK: 22, TOB: 32, TOBALABA: 32, FRI: 42, FRIDA: 42, PAN: 52, PANORAMICO: 52 };
@@ -236,9 +236,11 @@ function llenarProg_(ss, sh, b) {
   const ultimoSig = new Date(anioSig, mesSig, 0).getDate();
   for (let d = 1; d <= ultimoSig; d++) if (new Date(anioSig, mesSig - 1, d).getDay() === 4 && PR_CERRADOS.indexOf(d + '-' + mesSig) < 0) juevesSig++;
   const pptoJueves = Number(sh.getRange(3, 4).getValue()) || 0;
+  const sinAnticipo = anio * 12 + mes >= 2026 * 12 + 12;
   const FACT = [
-    ['Factura Kennedy saldo ' + MESES[mes - 1], netoLocal(3, function (x) { return x.wd !== 4; })],
-    ['Factura Kennedy anticipo jueves ' + MESES[mesSig - 1], juevesSig * pptoJueves],
+    // Desde diciembre de 2026 ya no hay anticipo (Cote, 23 nov): la factura de Kennedy es el total del mes, jueves incluidos
+    sinAnticipo ? ['Factura Kennedy saldo ' + MESES[mes - 1], netoLocal(3)] : ['Factura Kennedy saldo ' + MESES[mes - 1], netoLocal(3, function (x) { return x.wd !== 4; })],
+    sinAnticipo ? ['', 0] : ['Factura Kennedy anticipo jueves ' + MESES[mesSig - 1], juevesSig * pptoJueves],
     ['Factura Frida ' + MESES[mes - 1], netoLocal(42)],
     ['Factura Tobalaba ' + MESES[mes - 1], netoLocal(32)]
   ];
