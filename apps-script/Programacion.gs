@@ -7,11 +7,11 @@
 //  - Las 5 semanas de la pestaña parten el jueves: jueves, viernes, sábado y domingo. Así el domingo 1 de noviembre
 //    queda en la cuarta celda de la semana 1 y la semana 2 empieza el jueves 5 (llenarMes los ponía seguidos).
 //  - El presupuesto neto de cada día toma el monto de la fila 3 solo si ese local tiene actividad ese día;
-//    los días sin actividad quedan en cero.
+//    los días sin actividad quedan en cero. Los días con banda tributo (show con «BANDA») suman $35.000 de batería.
 // También escribe el mes en B8 y el monto de cada show en la columna siguiente a la del show.
 // llenarMes (el archivo de antes) no se usa ni se toca.
 const CLAVE_PROGRAMACION = '__CLAVE__';
-const PROG_VERSION = 3;
+const PROG_VERSION = 4;
 
 const PR_PRIMERA = 12, PR_ALTO = 39, PR_BLOQUES = 20, PR_RESUMEN = 835;
 const PR_COL = { MK: 3, KENNEDY: 3, EV: 12, EVENTOS: 12, KR: 22, KARAROCK: 22, TOB: 32, TOBALABA: 32, FRI: 42, FRIDA: 42, PAN: 52, PANORAMICO: 52 };
@@ -114,7 +114,7 @@ function llenarProg_(ss, sh, b) {
     });
   }
   const nombres = sh.getRange(PR_PRIMERA + 3, 2, 30, 1).getValues().map(function (r) { return String(r[0]).trim().toUpperCase(); });
-  const agregados = [], suma = {}, activo = {};
+  const agregados = [], suma = {}, activo = {}, banda = {};
 
   filas.forEach(function (r) {
     const k = bloqueDe[Number(r[0])];
@@ -122,6 +122,7 @@ function llenarProg_(ss, sh, b) {
     const col = PR_COL[local];
     if (k == null || !col) { avisos.push('Día o local no válido: ' + r[0] + '-' + r[1]); return; }
     activo[k + '|' + col] = true;
+    if (esShow(r) && String(r[4] || '').trim().toUpperCase() === 'BANDA') banda[k + '|' + col] = true;
     if (esShow(r)) {
       const ci = PR_COLS.indexOf(col);
       sh.getRange(PR_RESUMEN + k, PR_DIA_RESUMEN[ci] + 1).setValue(String(r[3]).trim().toUpperCase());
@@ -149,7 +150,8 @@ function llenarProg_(ss, sh, b) {
     sh.getRange(PR_PRIMERA + p[0] * PR_ALTO + 3 + p[2], p[1]).setValue(suma[key]);
   });
 
-  // Presupuesto neto de cada día: el monto de la fila 3 según el día, solo si el local tiene actividad; si no, cero
+  // Presupuesto neto de cada día: el monto de la fila 3 según el día, solo si el local tiene actividad; si no, cero.
+  // Con banda tributo se suman $35.000 de batería (Cote, 23 nov)
   const OFF_DIA = { 3: 0, 4: 1, 5: 2, 6: 3, 0: 4 }; // MIE, JUE, VIE, SAB, DOM
   for (let k = 0; k < PR_BLOQUES; k++) {
     const fila = PR_PRIMERA + k * PR_ALTO + 34;
@@ -157,7 +159,7 @@ function llenarProg_(ss, sh, b) {
     PR_COLS.forEach(function (c) {
       const celda = sh.getRange(fila, c);
       if (!x || cerrado(x.d) || !activo[k + '|' + c]) { celda.setValue(0); return; }
-      celda.setFormula('=' + letraProg_(c + OFF_DIA[x.wd]) + '$3');
+      celda.setFormula('=' + letraProg_(c + OFF_DIA[x.wd]) + '$3' + (banda[k + '|' + c] ? '+35000' : ''));
     });
   }
 
@@ -216,8 +218,8 @@ function llenarProg_(ss, sh, b) {
   });
   sh.getRange('BU866').setValue(bonoOscar);
 
-  // Billetera (bruto = neto x 1,19): Kennedy en dos (saldo del mes: viernes y sábados + batería $35.000 por banda
-  // tributo; y anticipo con los jueves del mes siguiente), Frida y Tobalaba; fecha el día 2 del mes, filas 827 a 842
+  // Billetera (bruto = neto x 1,19): Kennedy en dos (saldo del mes: viernes y sábados, con la batería que ya va en el
+  // presupuesto de cada día; y anticipo con los jueves del mes siguiente), Frida y Tobalaba; fecha el día 2 del mes, filas 827 a 842
   SpreadsheetApp.flush();
   const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
   const netoLocal = function (c, filtro) {
@@ -229,17 +231,13 @@ function llenarProg_(ss, sh, b) {
     }
     return n;
   };
-  let bandas = 0;
-  filas.forEach(function (r) {
-    if (String(r[1]).trim().toUpperCase() === 'MK' && esShow(r) && String(r[4] || '').trim().toUpperCase() === 'BANDA') bandas++;
-  });
   const mesSig = mes % 12 + 1, anioSig = mes === 12 ? anio + 1 : anio;
   let juevesSig = 0;
   const ultimoSig = new Date(anioSig, mesSig, 0).getDate();
   for (let d = 1; d <= ultimoSig; d++) if (new Date(anioSig, mesSig - 1, d).getDay() === 4 && PR_CERRADOS.indexOf(d + '-' + mesSig) < 0) juevesSig++;
   const pptoJueves = Number(sh.getRange(3, 4).getValue()) || 0;
   const FACT = [
-    ['Factura Kennedy saldo ' + MESES[mes - 1], netoLocal(3, function (x) { return x.wd !== 4; }) + bandas * 35000],
+    ['Factura Kennedy saldo ' + MESES[mes - 1], netoLocal(3, function (x) { return x.wd !== 4; })],
     ['Factura Kennedy anticipo jueves ' + MESES[mesSig - 1], juevesSig * pptoJueves],
     ['Factura Frida ' + MESES[mes - 1], netoLocal(42)],
     ['Factura Tobalaba ' + MESES[mes - 1], netoLocal(32)]
