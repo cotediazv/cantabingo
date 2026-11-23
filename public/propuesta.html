@@ -43,17 +43,17 @@
   .fr.v { aspect-ratio: 9 / 16; max-width: 430px; margin: 0 auto; }
   body.solo .fr { position: fixed; left: 50%; top: 50%; border: 0; max-width: none; width: min(100vw, 177.78vh); height: min(100vh, 56.25vw); transform: translate(-50%, -50%); }
   body.solo .fr.v { width: min(100vw, 56.25vh); height: min(100vh, 177.78vw); }
-  .fr .st { position: absolute; inset: 0; }
+  .fr .st { position: absolute; top: 0; right: 0; bottom: 0; left: 0; }
   .disp { font-family: var(--disp); font-weight: 900; text-transform: uppercase; line-height: .92; letter-spacing: .005em; }
   .mono { font-family: var(--mono); font-weight: 700; text-transform: uppercase; letter-spacing: .14em; }
   [data-fit] { white-space: nowrap; }
 
   /* fondo de escenario: noche con dos focos que se mueven lento y una trama fina */
-  .bg { position: absolute; inset: 0; background: linear-gradient(160deg, #15131e, #0c0b12 55%, #07060c); overflow: hidden; }
+  .bg { position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: linear-gradient(160deg, #15131e, #0c0b12 55%, #07060c); overflow: hidden; }
   .bg::before, .bg::after { content: ""; position: absolute; width: 120cqh; height: 120cqh; border-radius: 50%; opacity: .5; animation: foco 16s ease-in-out infinite alternate; }
   .bg::before { left: -30cqh; top: -50cqh; background: radial-gradient(circle, var(--c) 0, transparent 62%); }
   .bg::after { right: -40cqh; bottom: -60cqh; background: radial-gradient(circle, var(--foco) 0, transparent 60%); opacity: .28; animation-duration: 21s; animation-direction: alternate-reverse; }
-  .bg i { position: absolute; inset: 0; background: repeating-linear-gradient(115deg, rgba(255, 255, 255, .028) 0 1px, transparent 1px 3.2cqh); }
+  .bg i { position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: repeating-linear-gradient(115deg, rgba(255, 255, 255, .028) 0 1px, transparent 1px 3.2cqh); }
   @keyframes foco { from { transform: translate(0, 0) scale(1); } to { transform: translate(26cqh, 14cqh) scale(1.15); } }
 
   /* logos arriba a la derecha y aviso «en vivo» */
@@ -67,7 +67,7 @@
 
   /* ---------- GC: franja inferior ---------- */
   .fr.gc { background: transparent; }
-  .cam { position: absolute; inset: 0; background: radial-gradient(circle at 28% 38%, #6a4a2c 0, transparent 46%), radial-gradient(circle at 76% 58%, #27425f 0, transparent 52%), linear-gradient(160deg, #3b3342, #17151e); }
+  .cam { position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: radial-gradient(circle at 28% 38%, #6a4a2c 0, transparent 46%), radial-gradient(circle at 76% 58%, #27425f 0, transparent 52%), linear-gradient(160deg, #3b3342, #17151e); }
   body.obs .cam { display: none; }
   .lt { position: absolute; left: 5cqh; right: 5cqh; bottom: 6cqh; height: 16cqh; display: flex; align-items: stretch; filter: drop-shadow(0 1.2cqh 2.4cqh rgba(0, 0, 0, .5)); }
   .lt-tag { position: relative; flex: none; min-width: 34cqh; padding: 0 5.5cqh 0 3cqh; display: flex; flex-direction: column; justify-content: center; gap: .6cqh; background: var(--c); color: var(--onc);
@@ -201,7 +201,7 @@
   .vg span.y { background: var(--foco); border-color: var(--foco); color: #1a1407; } .vg span.u { background: var(--c); border-color: #fff; color: var(--onc); }
 
   /* ---------- cortina entre escenas del tablero y de la vertical ---------- */
-  .wipe { position: absolute; inset: 0; pointer-events: none; z-index: 5; }
+  .wipe { position: absolute; top: 0; right: 0; bottom: 0; left: 0; pointer-events: none; z-index: 5; }
   .wipe i { position: absolute; left: -40%; width: 180%; height: 35%; transform: translateX(-115%) skewX(-16deg); }
   .wipe i:nth-child(1) { top: -1%; background: var(--c); } .wipe i:nth-child(2) { top: 33%; background: var(--foco); } .wipe i:nth-child(3) { top: 66.5%; background: #07060c; }
   .wipe.go i { animation: wipe 1.05s cubic-bezier(.7, 0, .2, 1) both; } .wipe.go i:nth-child(2) { animation-delay: .06s; } .wipe.go i:nth-child(3) { animation-delay: .12s; }

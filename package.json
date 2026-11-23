@@ -4,7 +4,9 @@
   "private": true,
   "description": "Generador de cartones de bingo y sesiones virtuales en tiempo real",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "eslint && node --test --test-concurrency=1 test/compat.test.js 'test/api/*.test.js'",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "express": "^4.21.2",
@@ -13,5 +15,10 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.48.2",
+    "acorn": "^8.19.0",
+    "eslint": "9.39.5"
   }
 }

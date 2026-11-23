@@ -197,7 +197,7 @@ body.obs .wheel text { paint-order: stroke; stroke: rgba(0,0,0,.55); stroke-widt
 
 /* OBS: rueda a pantalla completa con el centro vacío y reloj en la esquina */
 body.obs main { padding: 0; }
-body.obs #pw { position: fixed; inset: 0; display: grid; place-items: center; }
+body.obs #pw { position: fixed; top: 0; right: 0; bottom: 0; left: 0; display: grid; place-items: center; }
 .obs-wheel { width: min(99vh, 99vw); }
 .obs-wheel .wheel { max-width: none; }
 .obs-corner { position: fixed; top: 2vh; left: 2vh; display: grid; gap: 1.2vh; z-index: 2; }
@@ -262,14 +262,14 @@ body.obs #pw { grid-template-rows: none; padding: 0; }
 
 /* Columna derecha de OBS: la pregunta y, debajo, la respuesta acertada */
 .obs-side { position: fixed; right: 2.5vh; top: 50%; transform: translateY(-50%); width: calc((100vw - 94vh) / 2 - 4.5vh); display: grid; gap: 2.4vh; }
-.obs-side .obs-question, .obs-side .obs-reveal { position: relative; inset: auto; transform: none; width: auto; margin: 0; }
+.obs-side .obs-question, .obs-side .obs-reveal { position: relative; top: auto; right: auto; bottom: auto; left: auto; transform: none; width: auto; margin: 0; }
 .obs-side .obs-question.pop, .obs-side .obs-reveal.pop { animation: sidepop .45s cubic-bezier(.2, 1.4, .4, 1); }
 @keyframes sidepop { from { transform: scale(.7); opacity: 0; } }
 @media (max-aspect-ratio: 3/2) { .obs-side { position: static; transform: none; width: auto; max-width: 92vw; margin: 6vh auto 0; } }
 @media (prefers-reduced-motion: reduce) { .obs-side .obs-question.pop, .obs-side .obs-reveal.pop { animation: none; } }
 
 /* Pantalla de rosco completo */
-.win-screen { position: fixed; inset: 0; display: grid; place-items: center; overflow: hidden; font-family: Fredoka, "Baloo 2", "Trebuchet MS", system-ui, sans-serif; }
+.win-screen { position: fixed; top: 0; right: 0; bottom: 0; left: 0; display: grid; place-items: center; overflow: hidden; font-family: Fredoka, "Baloo 2", "Trebuchet MS", system-ui, sans-serif; }
 .win-card { position: relative; display: grid; justify-items: center; gap: 1.5vh; text-align: center; color: #fff; max-width: 92vw; padding: 5vh 7vh; border-radius: 5vh; border: .8vh solid #fff;
   background: linear-gradient(150deg, #ff8a00, #e52e71 55%, #7b2ff7); box-shadow: 0 2vh 6vh rgba(0,0,0,.5); animation: winpop .7s cubic-bezier(.2, 1.5, .4, 1); }
 .win-trophy { font-size: 14vh; line-height: 1; }
@@ -285,7 +285,7 @@ body.obs #pw { grid-template-rows: none; padding: 0; }
 /* ---------- Gráfica del bingo para OBS (GC) ---------- */
 /* Medidas en vh: el diseño está pensado para un lienzo de 1920×1080 (1vh = 10,8 px) */
 body.gc-screen main { padding: 0; max-width: none; }
-#gc { position: fixed; inset: 0; color: #fff; font-family: "Source Sans 3", "Source Sans Pro", "Segoe UI", system-ui, sans-serif;
+#gc { position: fixed; top: 0; right: 0; bottom: 0; left: 0; color: #fff; font-family: "Source Sans 3", "Source Sans Pro", "Segoe UI", system-ui, sans-serif;
   --gc-pink: #c4175e; --gc-yellow: #ffc400; --gc-line: .37vh;
   --gc-dots: radial-gradient(circle, rgba(255,255,255,.13) 0 .42vh, transparent .46vh) 0 0 / 4.2vh 4.2vh, radial-gradient(circle, rgba(255,255,255,.13) 0 .42vh, transparent .46vh) 2.1vh 2.1vh / 4.2vh 4.2vh; }
 .gc-top, .gc-bottom, .gc-qr, .gc-draw, .gc-figure { background: var(--gc-dots), var(--gc-pink); }
@@ -324,7 +324,7 @@ body.gc-screen main { padding: 0; max-width: none; }
 
 /* ---------- Sorteo de concursantes (OBS) ---------- */
 body.raffle-screen main { padding: 0; max-width: none; }
-#rf { position: fixed; inset: 0; display: grid; grid-template-rows: auto 1fr auto; justify-items: center; align-items: center; padding: 4vh; overflow: hidden; color: #fff; font-family: Fredoka, "Baloo 2", "Trebuchet MS", system-ui, sans-serif; }
+#rf { position: fixed; top: 0; right: 0; bottom: 0; left: 0; display: grid; grid-template-rows: auto 1fr auto; justify-items: center; align-items: center; padding: 4vh; overflow: hidden; color: #fff; font-family: Fredoka, "Baloo 2", "Trebuchet MS", system-ui, sans-serif; }
 .rf-title { font-size: 5vh; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; padding: 1vh 4vh; border-radius: 99px; border: .5vh solid #fff; background: linear-gradient(90deg, #7b2ff7, #f107a3); box-shadow: 0 1vh 3vh rgba(0,0,0,.4); }
 .rf-stage { display: grid; place-items: center; width: 100%; }
 .rf-card { position: relative; display: grid; justify-items: center; gap: 2vh; text-align: center; min-width: 60vw; max-width: 92vw; padding: 5vh 7vh; border-radius: 5vh; border: .8vh solid #fff; background: rgba(12, 10, 28, .86); box-shadow: 0 2vh 6vh rgba(0,0,0,.5); }
@@ -344,7 +344,7 @@ body.raffle-screen main { padding: 0; max-width: none; }
 .rf-row button { padding: 6px 12px; font-size: .85rem; }
 
 /* ---------- Celebración de bingo a pantalla completa ---------- */
-.bwin { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; overflow: hidden; color: #fff; font-family: "Source Sans 3", "Source Sans Pro", "Segoe UI", system-ui, sans-serif; }
+.bwin { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 20; display: grid; place-items: center; overflow: hidden; color: #fff; font-family: "Source Sans 3", "Source Sans Pro", "Segoe UI", system-ui, sans-serif; }
 body.tv .bwin { background: rgba(10, 8, 24, .92); }
 .bwin-card { position: relative; display: grid; justify-items: center; gap: 2.2vh; text-align: center; min-width: 56vw; max-width: 94vw; padding: 4vh 7vh 5vh; border-radius: 5vh; border: .8vh solid #ffc400;
   background: radial-gradient(circle, rgba(255,255,255,.13) 0 .42vh, transparent .46vh) 0 0 / 4.2vh 4.2vh, var(--gc-pink, #c4175e); box-shadow: 0 2vh 6vh rgba(0,0,0,.55); animation: winpop .7s cubic-bezier(.2, 1.5, .4, 1); }
@@ -446,7 +446,7 @@ a.btn.big { display: block; text-align: center; font-size: 1.15rem; font-weight:
 @media (prefers-reduced-motion: reduce) { .gc-big { animation: none; } }
 
 /* El cartel del QR se centra con una rejilla (no con transform) para que la animación de entrada no lo desplace */
-.gc-big-wrap { position: absolute; inset: 0; display: grid; place-items: center; }
+.gc-big-wrap { position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: grid; place-items: center; }
 .gc-big { position: static; left: auto; top: auto; transform: none; }
 
 /* Total de personas que han entrado al bingo, bajo la guirnalda */
@@ -474,7 +474,7 @@ a.btn.big { display: block; text-align: center; font-size: 1.15rem; font-weight:
 html:has(body.full), body.full { background: #1b0f3a; }
 body.full { overflow: hidden; }
 body.full main { padding: 0; max-width: none; }
-body.full::before { content: ""; position: fixed; inset: -20%; z-index: 0; pointer-events: none;
+body.full::before { content: ""; position: fixed; top: -20%; right: -20%; bottom: -20%; left: -20%; z-index: 0; pointer-events: none;
   background: radial-gradient(circle at 20% 25%, rgba(255, 79, 163, .55), transparent 38%), radial-gradient(circle at 80% 20%, rgba(53, 198, 255, .45), transparent 36%),
     radial-gradient(circle at 70% 85%, rgba(255, 154, 61, .5), transparent 40%), radial-gradient(circle at 15% 85%, rgba(155, 92, 255, .55), transparent 38%);
   animation: fullglow 16s ease-in-out infinite alternate; }
@@ -488,7 +488,7 @@ body.full .pw-title { font-size: 6vh; margin: 1vh 0; }
 body.full .pw-question { font-size: 3.6vh; max-width: 120vh; padding: 1.6vh 3vh; border-radius: 2.4vh; }
 body.full .pw-reveal { max-width: 120vh; } body.full .pw-reveal .rv-answer { font-size: 5vh; }
 
-#fb { position: fixed; inset: 0; color: #fff; font-family: "Source Sans 3", "Source Sans Pro", "Segoe UI", system-ui, sans-serif; display: grid; grid-template-columns: 40vh 1fr 30vh; grid-template-rows: auto 1fr; gap: 2.5vh 3vh; padding: 3vh 4vh;
+#fb { position: fixed; top: 0; right: 0; bottom: 0; left: 0; color: #fff; font-family: "Source Sans 3", "Source Sans Pro", "Segoe UI", system-ui, sans-serif; display: grid; grid-template-columns: 40vh 1fr 30vh; grid-template-rows: auto 1fr; gap: 2.5vh 3vh; padding: 3vh 4vh;
   --gc-pink: #c4175e; --gc-yellow: #ffc400; --gc-line: .5vh; --gc-shade: rgba(60, 0, 30, .55);
   --gc-dots: radial-gradient(circle, rgba(255,255,255,.13) 0 .42vh, transparent .46vh) 0 0 / 4.2vh 4.2vh, radial-gradient(circle, rgba(255,255,255,.13) 0 .42vh, transparent .46vh) 2.1vh 2.1vh / 4.2vh 4.2vh; }
 #fb.th-tobalaba { --gc-pink: #c81e1e; --gc-shade: rgba(70, 0, 0, .55); }
@@ -517,7 +517,7 @@ body.full .pw-reveal { max-width: 120vh; } body.full .pw-reveal .rv-answer { fon
 .fb-figure > span, .fb-qr > span { font-size: 2.8vh; font-weight: 900; text-transform: uppercase; }
 .fb-figure .gc-grid { width: 20vh; } .fb-figure b { font-size: 3.2vh; font-weight: 900; text-transform: uppercase; color: var(--gc-yellow); line-height: 1.05; text-wrap: balance; }
 .fb-qr .qr { display: block; width: 22vh; height: 22vh; background: #fff; border: 0; border-radius: 1.6vh; padding: 1.2vh; }
-.fb-idle { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 1.5vh; text-align: center; }
+.fb-idle { position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: grid; place-content: center; justify-items: center; gap: 1.5vh; text-align: center; }
 .fb-idle span { font-size: 18vh; line-height: 1; animation: fbpulse 2.4s ease-in-out infinite; } .fb-idle b { font-size: 12vh; font-weight: 900; line-height: 1; } .fb-idle small { font-size: 4.5vh; font-weight: 700; opacity: .85; }
 #fb .gc-big-wrap { grid-column: 1 / -1; grid-row: 1 / -1; position: static; }
 @media (prefers-reduced-motion: reduce) { body.full::before, .fb-ballwrap.pop, .fb-row > span.last, .fb-idle span { animation: none; } }
@@ -579,7 +579,7 @@ body.full #rf .rf-dice { display: block; font-size: 22vh; line-height: 1; animat
 @media (prefers-reduced-motion: reduce) { body.full #rf .rf-rays, body.full #rf .rf-card.rolling .rf-name, body.full #rf .rf-card.win, body.full #rf .rf-dice { animation: none; } }
 
 /* El confeti del sorteo cae por toda la pantalla, no desde el borde del cuadro */
-#rf .confetti { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 3; }
+#rf .confetti { position: fixed; top: 0; right: 0; bottom: 0; left: 0; overflow: hidden; pointer-events: none; z-index: 3; }
 
 /* Ante un ganador: confirmar o seguir jugando */
 .win-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
@@ -637,7 +637,7 @@ body.full #rf .rf-dice { display: block; font-size: 22vh; line-height: 1; animat
 .live-bar button { padding: 9px 6px; font-size: .92rem; font-weight: 700; border-radius: 10px; }
 /* Vista ampliada: ocupa toda la pantalla; con el celular en vertical el video se gira para aprovecharla */
 body.live-open { overflow: hidden; }
-.live.full { position: fixed; inset: 0; z-index: 1000; max-width: none; height: auto; margin: 0; border: 0; border-radius: 0; display: grid; place-items: center; }
+.live.full { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 1000; max-width: none; height: auto; margin: 0; border: 0; border-radius: 0; display: grid; place-items: center; }
 .live.full #live-player { width: min(100vw, calc(100vh * 16 / 9)); }
 .live.full .live-bar { position: absolute; left: 50%; bottom: max(10px, env(safe-area-inset-bottom)); transform: translateX(-50%); background: rgba(0, 0, 0, .55); border-radius: 14px; width: min(92vw, 420px); }
 @media (orientation: portrait) {
@@ -683,7 +683,7 @@ body.live-open { overflow: hidden; }
 /* Tablero del DJ · El Rosco: tres franjas de alto fijo (título, textos, ruedas). La pregunta y la
    respuesta ocupan siempre el mismo espacio, así el rosco no se mueve ni se corta, sea corto o largo el texto. */
 body.full.wheel-screen { overflow: hidden; }
-body.full.wheel-screen #pw { position: fixed; inset: 0; display: grid; grid-template-rows: 8vh 24vh minmax(0, 1fr); padding: 0 2vw 2vh; overflow: hidden; }
+body.full.wheel-screen #pw { position: fixed; top: 0; right: 0; bottom: 0; left: 0; display: grid; grid-template-rows: 8vh 24vh minmax(0, 1fr); padding: 0 2vw 2vh; overflow: hidden; }
 body.full.wheel-screen #pw:has(.win-screen), body.full.wheel-screen #pw:has(#fb) { display: block; padding: 0; }
 body.full .pw-title { margin: 0; align-self: center; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 body.full .pw-text { display: flex; flex-direction: column; justify-content: center; gap: 1vh; min-height: 0; overflow: hidden; }
@@ -714,7 +714,7 @@ body.full #rf .rf-card.win .rf-name:not(.small) { font-size: min(21vh, calc(84vw
 @media (max-width: 700px) { .win-name { font-size: min(15vw, calc(80vw / (var(--n, 8) * .63))); } }
 
 /* Antes de la primera bolita: aviso en el lugar de la bolita */
-.gc-soon { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 1vh; font-size: 3.3vh; font-weight: 900; line-height: 1.1; text-transform: uppercase; color: var(--gc-yellow); text-shadow: .3vh .3vh 0 var(--gc-shade, rgba(60, 0, 30, .55)); animation: soonbeat 1.4s ease-in-out infinite; }
+.gc-soon { position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: grid; place-items: center; text-align: center; padding: 1vh; font-size: 3.3vh; font-weight: 900; line-height: 1.1; text-transform: uppercase; color: var(--gc-yellow); text-shadow: .3vh .3vh 0 var(--gc-shade, rgba(60, 0, 30, .55)); animation: soonbeat 1.4s ease-in-out infinite; }
 .fb-soon { display: grid; place-items: center; text-align: center; font-size: 6vh; font-weight: 900; line-height: 1.1; text-transform: uppercase; color: #ffc400; text-shadow: .5vh .5vh 0 rgba(0, 0, 0, .35); animation: soonbeat 1.4s ease-in-out infinite; min-height: 22vh; }
 @keyframes soonbeat { 50% { transform: scale(1.06); } }
 @media (prefers-reduced-motion: reduce) { .gc-soon, .fb-soon { animation: none; } }
@@ -734,7 +734,7 @@ body.full #rf .rf-card.win .rf-name:not(.small) { font-size: min(21vh, calc(84vw
 #kg.th-tobalaba, #kf.th-tobalaba { --gc-pink: #c81e1e; --gc-shade: rgba(70, 0, 0, .55); }
 #kg.th-kennedy, #kf.th-kennedy { --gc-pink: #1487cf; --gc-shade: rgba(0, 32, 78, .55); }
 /* GC de OBS: zócalo abajo y QR arriba a la derecha; entra y sale deslizándose */
-#kg { position: fixed; inset: 0; overflow: hidden; }
+#kg { position: fixed; top: 0; right: 0; bottom: 0; left: 0; overflow: hidden; }
 .kg-bar { position: absolute; left: 3vw; right: 3vw; bottom: 4vh; height: 20vh; display: flex; align-items: stretch; border-radius: 3vh; overflow: hidden;
   background: var(--gc-dots), rgba(14, 12, 30, .94); border: var(--gc-line) solid var(--gc-yellow); box-shadow: 0 1.2vh 3vh rgba(0, 0, 0, .5); transform: translateY(160%); transition: transform .6s cubic-bezier(.3, .9, .3, 1); }
 #kg.on .kg-bar { transform: none; }
@@ -759,7 +759,7 @@ body.full #rf .rf-card.win .rf-name:not(.small) { font-size: min(21vh, calc(84vw
 .kg-qr b { font-size: 2.4vh; font-weight: 900; text-transform: uppercase; color: var(--gc-pink); }
 @media (prefers-reduced-motion: reduce) { .kg-bar, .kg-qr { transition: none; } }
 /* Tablero del DJ: cantante actual en grande, QR y los que siguen */
-#kf { position: fixed; inset: 0; display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); grid-template-rows: 13vh minmax(0, 1fr); gap: 3vh; padding: 3vh 2.4vw; overflow: hidden; }
+#kf { position: fixed; top: 0; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); grid-template-rows: 13vh minmax(0, 1fr); gap: 3vh; padding: 3vh 2.4vw; overflow: hidden; }
 .kf-top { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 3vh; padding: 0 4vh; border-radius: 3vh; background: var(--gc-dots), var(--gc-pink); border: var(--gc-line) solid var(--gc-yellow); }
 .kf-top b { font-size: 7vh; font-weight: 900; text-transform: uppercase; color: var(--gc-yellow); text-shadow: .4vh .4vh 0 var(--gc-shade); white-space: nowrap; }
 .kf-top span { font-size: 3.4vh; font-weight: 700; background: var(--gc-shade); padding: .6vh 3vh; border-radius: 99px; white-space: nowrap; }
@@ -797,7 +797,7 @@ body.full #rf .rf-card.win .rf-name:not(.small) { font-size: min(21vh, calc(84vw
 .ag-b.on { background: var(--win); color: #fff; font-weight: 700; }
 #sg, #sf { --gc-pink: #c4175e; --gc-shade: rgba(60, 0, 30, .55); --gc-yellow: #ffc400; --gc-line: .5vh;
   --gc-dots: radial-gradient(circle, rgba(255,255,255,.13) 0 .42vh, transparent .46vh) 0 0 / 4.2vh 4.2vh, radial-gradient(circle, rgba(255,255,255,.13) 0 .42vh, transparent .46vh) 2.1vh 2.1vh / 4.2vh 4.2vh;
-  position: fixed; inset: 0; overflow: hidden; color: #fff; font-family: "Source Sans 3", "Source Sans Pro", "Segoe UI", system-ui, sans-serif; }
+  position: fixed; top: 0; right: 0; bottom: 0; left: 0; overflow: hidden; color: #fff; font-family: "Source Sans 3", "Source Sans Pro", "Segoe UI", system-ui, sans-serif; }
 #sg.th-tobalaba, #sf.th-tobalaba { --gc-pink: #c81e1e; --gc-shade: rgba(70, 0, 0, .55); }
 #sg.th-kennedy, #sf.th-kennedy { --gc-pink: #1487cf; --gc-shade: rgba(0, 32, 78, .55); }
 /* GC del show: zócalo abajo a la izquierda, deja libre el escenario */
@@ -942,7 +942,7 @@ body.full #rf .rf-card.win .rf-name:not(.small) { font-size: min(21vh, calc(84vw
   color: #fff; font-family: "Source Sans 3", "Source Sans Pro", "Segoe UI", system-ui, sans-serif; }
 #vg.th-kennedy, #vf.th-kennedy { --gc-pink: #1a3fb8; --gc-shade: rgba(3, 12, 60, .65); --k-tag: #0a1238; --k-next: #0f1d5c; --gc-yellow: #e6b445; }
 #vg.th-tobalaba, #vf.th-tobalaba { --gc-pink: #5b2a86; --gc-shade: rgba(30, 6, 50, .65); --k-tag: #d1345b; --k-next: #2a1440; --gc-yellow: #f0c14b; }
-#vg { position: fixed; inset: 0; overflow: hidden; }
+#vg { position: fixed; top: 0; right: 0; bottom: 0; left: 0; overflow: hidden; }
 .vg-bar { position: absolute; left: 3vw; right: 3vw; bottom: 4vh; height: 20vh; display: flex; align-items: stretch; border-radius: 3vh; overflow: hidden; background: var(--k-next);
   border: var(--gc-line) solid var(--gc-yellow); box-shadow: 0 1.2vh 3vh rgba(0, 0, 0, .45); transform: translateY(140%); transition: transform .6s cubic-bezier(.2, .8, .2, 1); }
 #vg.on .vg-bar { transform: none; }
@@ -968,7 +968,7 @@ body.full #rf .rf-card.win .rf-name:not(.small) { font-size: min(21vh, calc(84vw
 .vwin-cup { font-size: 18vh; line-height: 1; }
 @media (prefers-reduced-motion: reduce) { .vg-bar, .vg-qr { transition: none; } }
 /* Tablero del DJ */
-#vf { position: fixed; inset: 0; display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); grid-template-rows: 13vh minmax(0, 1fr); gap: 3vh; padding: 3vh 2.4vw; overflow: hidden; }
+#vf { position: fixed; top: 0; right: 0; bottom: 0; left: 0; display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); grid-template-rows: 13vh minmax(0, 1fr); gap: 3vh; padding: 3vh 2.4vw; overflow: hidden; }
 .vf-top { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 3vh; padding: 0 4vh; border-radius: 3vh; background: var(--gc-dots), var(--k-tag); border: var(--gc-line) solid var(--gc-yellow); overflow: hidden; }
 .vf-top b { min-width: 0; font-size: 6.4vh; font-weight: 900; text-transform: uppercase; color: var(--gc-yellow); text-shadow: .4vh .4vh 0 var(--gc-shade); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .vf-top span { font-size: 3.4vh; font-weight: 700; background: var(--gc-shade); padding: .6vh 3vh; border-radius: 99px; white-space: nowrap; }
@@ -1317,7 +1317,7 @@ body.rot-screen main { padding: 0; max-width: none; }
 .lp-links .qr { width: 150px; height: 150px; }
 .lp-links a { overflow-wrap: anywhere; }
 /* GC de la sala light (OBS, fondo transparente) */
-#lg { position: fixed; inset: 0; overflow: hidden; --gc-pink: #1487cf; --gc-yellow: #ffc400; --gc-line: .37vh; --gc-shade: rgba(0, 32, 78, .55); color: #fff; }
+#lg { position: fixed; top: 0; right: 0; bottom: 0; left: 0; overflow: hidden; --gc-pink: #1487cf; --gc-yellow: #ffc400; --gc-line: .37vh; --gc-shade: rgba(0, 32, 78, .55); color: #fff; }
 #lg.th-frida { --gc-pink: #c4175e; --gc-shade: rgba(60, 0, 30, .55); }
 #lg.th-tobalaba { --gc-pink: #c81e1e; --gc-shade: rgba(70, 0, 0, .55); }
 .lg-card { position: absolute; background: rgba(14, 12, 30, .94); border: var(--gc-line) solid var(--gc-yellow); border-radius: 3vh; box-shadow: 0 1.2vh 3vh rgba(0, 0, 0, .5); overflow: hidden; }
@@ -1440,7 +1440,7 @@ body.kids main { max-width: 640px; }
 .kz-mcard.up span { visibility: visible; }
 .kz-yes { outline: 6px solid #2bb24c; animation: kz-bounce .5s; }
 .kz-no { animation: kz-shake .45s; }
-.kz-confetti { position: fixed; inset: 0; pointer-events: none; z-index: 60; overflow: hidden; }
+.kz-confetti { position: fixed; top: 0; right: 0; bottom: 0; left: 0; pointer-events: none; z-index: 60; overflow: hidden; }
 .kz-confetti i { position: absolute; top: -20px; width: 12px; height: 18px; border-radius: 3px; animation: kz-fall 1.8s ease-in forwards; }
 @keyframes kz-fall { to { transform: translateY(110vh) rotate(540deg); } }
 @keyframes kz-float { 50% { transform: translateY(-10px); } }
@@ -1503,7 +1503,7 @@ body.kids[data-kz-level="6"] { background: radial-gradient(circle at 50% 30%, #f
 .kz-stage { gap: 12px; }
 .kz-sky { height: calc(100vh - 150px); }
 /* KRB Kids, inicio: animales estampados como con timbre (siluetas blancas, semitransparentes) */
-.kz-stamps { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.kz-stamps { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 0; overflow: hidden; pointer-events: none; }
 .kz-stamps i { position: absolute; font-style: normal; line-height: 1; filter: brightness(0) invert(1); opacity: .22; }
 .kz-stamps ~ .kz { position: relative; z-index: 1; }
 /* En KRB Kids el logo de KRB Stage va abajo al centro */
@@ -1565,7 +1565,7 @@ body.kids .krb-mark { left: 50%; transform: translateX(-50%); height: clamp(22px
 .cs-badge.on { background: var(--cs); color: #fff; }
 .cs-screen { position: relative; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 12px; background: repeating-conic-gradient(#1b1930 0 25%, #222038 0 50%) 0 0 / 24px 24px; }
 .cs-screen iframe { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; border: 0; transform-origin: 0 0; pointer-events: none; }
-.cs-off { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; color: rgba(255, 255, 255, .6); font-weight: 700; }
+.cs-off { position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: grid; place-items: center; margin: 0; color: rgba(255, 255, 255, .6); font-weight: 700; }
 .cs-card dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 0; font-size: .95rem; }
 .cs-card dt { color: rgba(255, 255, 255, .6); font-weight: 700; }
 .cs-card dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
@@ -1596,7 +1596,7 @@ body.kids .krb-mark { left: 50%; transform: translateX(-50%); height: clamp(22px
 .kz-pad4 button { padding: 12px 0; }
 .kz-menu .kz-game:last-child:nth-child(odd) { grid-column: 1 / -1; justify-self: center; width: calc(50% - 8px); }
 /* KRB Kids: al acertar, el fondo cambia de color un momento; sin zoom ni movimiento (pedido de Cote: marea a los niños) */
-body.kids::before { content: ''; position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0; transition: opacity .3s; background: radial-gradient(circle at 50% 40%, #d8ffb0 0%, #5fd068 55%, #1f9d55 100%); }
+body.kids::before { content: ''; position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 0; pointer-events: none; opacity: 0; transition: opacity .3s; background: radial-gradient(circle at 50% 40%, #d8ffb0 0%, #5fd068 55%, #1f9d55 100%); }
 body.kids.kz-acierto::before { opacity: 1; }
 body.kids .kz, body.kids .kz-stamps { position: relative; z-index: 1; }
 body.kids .kz-stamps { position: fixed; }
@@ -1608,9 +1608,9 @@ body.kids .kz-stamps { position: fixed; }
 /* Pantalla vertical: video de la cartelera a pantalla completa o la actividad del local */
 body.vert-in { margin: 0; overflow: hidden; background: #000; }
 body.vert-in .krb-mark { display: none; }
-.vt { position: fixed; inset: 0; background: #000; }
-.vt-video, .vt-act { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; object-fit: contain; background: #000; }
-.vt-empty { position: absolute; inset: 0; display: grid; place-items: center; }
+.vt { position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: #000; }
+.vt-video, .vt-act { position: absolute; top: 0; right: 0; bottom: 0; left: 0; width: 100%; height: 100%; border: 0; object-fit: contain; background: #000; }
+.vt-empty { position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: grid; place-items: center; }
 .vt-empty img { width: 50%; opacity: .8; }
 .vt-locales { display: flex; flex-wrap: wrap; gap: 8px; }
 .vt-now { display: grid; gap: 4px; text-align: center; }
@@ -1623,7 +1623,7 @@ body.vert-in .krb-mark { display: none; }
 .vt-prev { display: block; height: 260px; max-width: 100%; margin: 6px 0; border-radius: 10px; background: #000; }
 .vt-up { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .vt-prog { position: relative; height: 26px; margin-top: 10px; border-radius: 13px; background: rgba(255, 255, 255, .15); overflow: hidden; }
-.vt-prog i { position: absolute; inset: 0 auto 0 0; width: 0; background: #2bb24c; }
+.vt-prog i { position: absolute; top: 0; right: auto; bottom: 0; left: 0; width: 0; background: #2bb24c; }
 .vt-prog span { position: relative; display: block; text-align: center; line-height: 26px; font-size: .85rem; font-weight: 700; }
 .vt-link { width: min(100%, 420px); }
 button.link { background: none; border: 0; padding: 0; color: inherit; text-decoration: underline; cursor: pointer; }
@@ -1712,11 +1712,11 @@ body.has-vm .krb-mark { display: none; }
 /* Con los dos logos juntos (KRB Stage | local), el logo de KRB dentro de las gráficas del karaoke no se repite */
 body.has-vm .kg-logo { display: none; }
 /* Fondo de neuronas (como en krbstage.cl) en las pantallas de las actividades: sobre el fondo de colores, bajo todo lo demás */
-#neural-bg { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; opacity: .9; }
+#neural-bg { position: fixed; top: 0; right: 0; bottom: 0; left: 0; width: 100vw; height: 100vh; z-index: 0; pointer-events: none; opacity: .9; }
 /* Fondo vertical de la sala light (pantallas de pie de Kennedy y Frida): esta noche, recuadro que cambia y QR grande */
 #lv { --lv-main: #c4175e; --lv-tag: #05686e; --lv-gold: #ffc400; --lv-shade: rgba(60, 0, 30, .55);
   --lv-dots: radial-gradient(circle, rgba(255,255,255,.13) 0 .4vh, transparent .44vh) 0 0 / 4vh 4vh, radial-gradient(circle, rgba(255,255,255,.13) 0 .4vh, transparent .44vh) 2vh 2vh / 4vh 4vh;
-  position: fixed; inset: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 2.4vh; padding: 3vh 5vw 2vh; color: #fff; font-family: "Source Sans 3", "Source Sans Pro", "Segoe UI", system-ui, sans-serif; }
+  position: fixed; top: 0; right: 0; bottom: 0; left: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 2.4vh; padding: 3vh 5vw 2vh; color: #fff; font-family: "Source Sans 3", "Source Sans Pro", "Segoe UI", system-ui, sans-serif; }
 #lv.th-kennedy { --lv-main: #1a3fb8; --lv-tag: #0a1238; --lv-gold: #e6b445; --lv-shade: rgba(3, 12, 60, .65); }
 body.full.has-vm #lv { padding-bottom: 7vh; }
 .lv-top { display: grid; justify-items: center; gap: .6vh; padding: 2.2vh 4vw; border-radius: 3vh; text-align: center; background: var(--lv-dots), var(--lv-tag); border: .5vh solid var(--lv-gold); box-shadow: 0 1.5vh 4vh rgba(0, 0, 0, .4); }
@@ -1913,7 +1913,7 @@ body.full #app { z-index: auto; }
 .obs-rank li::before { width: 3.4vh; height: 3.4vh; font-size: 1.9vh; }
 .obs-rank p { margin: 0; text-align: center; font-size: 2.4vh; font-weight: 700; }
 /* pantalla del local: la lista completa, encima del rosco */
-.pw-rankwrap { position: fixed; inset: 0; z-index: 5; display: grid; place-items: center; background: rgba(10, 6, 30, .72); }
+.pw-rankwrap { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 5; display: grid; place-items: center; background: rgba(10, 6, 30, .72); }
 .pw-rank { width: min(92vw, 110vh); display: grid; gap: 1.6vh; padding: 3vh 4vh; border-radius: 4vh; background: linear-gradient(160deg, #7b2ff7, #e0338f); border: .8vh solid #ffc400; color: #fff; box-shadow: 0 3vh 9vh rgba(0, 0, 0, .55); animation: sidepop .5s cubic-bezier(.2, 1.4, .4, 1); }
 .pw-rank-head small { font-size: 2.6vh; } .pw-rank-head b { font-size: 6vh; font-weight: 900; } .pw-rank-head span { font-size: 2.6vh; font-weight: 700; opacity: .9; }
 .pw-rank ol { gap: 1vh; grid-template-columns: 1fr 1fr; grid-auto-flow: column; grid-template-rows: repeat(5, auto); column-gap: 2.4vh; }
@@ -1980,7 +1980,7 @@ body.full[data-venue="kennedy"]::before {
 .join-qr b { justify-self: stretch; }
 
 /* Pantalla vertical de El Rosco: ranking completo de la Trivia del Rosco (pedido de Cote) */
-.rv-rank { position: fixed; inset: 0; top: 0; right: 0; bottom: 0; left: 0; z-index: 2; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 1.6vh; padding: 3vh 4vw 2.4vh; color: #fff; }
+.rv-rank { position: fixed; top: 0; right: 0; bottom: 0; left: 0; top: 0; right: 0; bottom: 0; left: 0; z-index: 2; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 1.6vh; padding: 3vh 4vw 2.4vh; color: #fff; }
 .rv-head { display: grid; justify-items: center; gap: .4vh; padding: 2vh 3vw; border-radius: 3vh; text-align: center; background: var(--gc-dots, none), linear-gradient(160deg, #7b2ff7, #e0338f); border: .6vh solid #ffc400; box-shadow: 0 1.5vh 4vh rgba(0, 0, 0, .4); }
 .rv-head b { font-size: 7.5vh; font-weight: 900; line-height: 1; text-transform: uppercase; color: #ffc400; text-shadow: .4vh .4vh 0 rgba(0, 0, 0, .3); }
 .rv-head span { font-size: 3.6vh; font-weight: 900; text-transform: uppercase; letter-spacing: .04em; }
@@ -2177,7 +2177,7 @@ body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "So
 .games-nav .g-played { opacity: .55; }
 .games-nav .g-played::after { content: '✔ ya salió'; display: block; font-size: .72rem; font-weight: 700; color: #3fe08f; }
 /* Sorteo del siguiente juego en pantalla */
-#jd { position: fixed; inset: 0; top: 0; right: 0; bottom: 0; left: 0; display: grid; place-items: center; z-index: 3; }
+#jd { position: fixed; top: 0; right: 0; bottom: 0; left: 0; top: 0; right: 0; bottom: 0; left: 0; display: grid; place-items: center; z-index: 3; }
 .jd-card { display: grid; justify-items: center; gap: 2.4vh; padding: 4vh 6vw; border-radius: 4vh; text-align: center; color: #fff; background: rgba(14, 12, 30, .9); border: .7vh solid #ffc400; box-shadow: 0 2vh 6vh rgba(0, 0, 0, .55); }
 .jd-card small { font-size: 3.4vh; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; color: #ffc400; }
 .jd-roll, .jd-win { font-family: Fredoka, "Baloo 2", system-ui, sans-serif; font-size: 9vh; font-weight: 700; line-height: 1.05; white-space: nowrap; }
@@ -2255,7 +2255,7 @@ body.full.wheel-screen #pw.pw-idle .pw-howto { font-family: "Source Sans 3", "So
 @media (orientation: portrait) { #jd .jd-card { width: 94vw; } }
 
 /* Instrucciones del juego en el celular, 5 segundos al empezar cada juego (pedido de Cote) */
-#phone-howto { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; padding: 16px; background: rgba(8, 6, 20, .72); animation: ph-in .25s ease-out; }
+#phone-howto { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 2000; display: grid; place-items: center; padding: 16px; background: rgba(8, 6, 20, .72); animation: ph-in .25s ease-out; }
 #phone-howto .ph-card { position: relative; overflow: hidden; width: min(440px, 100%); padding: 20px 20px 26px; border-radius: 18px; background: var(--raised, #221d44); border: 3px solid #ffc400; color: var(--ink, #fff); box-shadow: 0 12px 40px rgba(0, 0, 0, .6); }
 #phone-howto small { display: block; color: #ffc400; font-weight: 900; letter-spacing: .04em; text-transform: uppercase; }
 #phone-howto b { display: block; margin: 4px 0 10px; font-size: 1.5rem; line-height: 1.15; }

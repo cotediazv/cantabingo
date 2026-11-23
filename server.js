@@ -1142,13 +1142,19 @@ app.post('/api/stage', requireAdmin, (req, res) => {
   res.json({ show });
 });
 
+// La hora para el karaoke del jueves y las salas automáticas. En las pruebas automáticas, KRB_FECHA (fecha ISO) fija
+// desde qué momento corre el reloj, para simular cualquier día; sin KRB_FECHA (en Render) es la hora real.
+const RELOJ_DESDE = Date.now();
+const RELOJ_BASE = process.env.KRB_FECHA ? Date.parse(process.env.KRB_FECHA) : NaN;
+const ahora = () => new Date(Number.isNaN(RELOJ_BASE) ? Date.now() : RELOJ_BASE + (Date.now() - RELOJ_DESDE));
+
 // Pedido de Cote: todos los jueves a las 21:45 (hora de Chile), si la sala abierta es la de Kennedy, el escenario
 // pasa solo a Karaoke, para que el público siga pidiendo canciones desde su celular. Una vez por jueves; después
 // se puede cambiar a mano. Si el servicio estaba reiniciándose justo a esa hora, se hace apenas vuelve (hasta las 22:00).
 const AUTO_KARAOKE = { venue: 'kennedy', dow: 'Thu', from: 21 * 60 + 45, until: 22 * 60 };
 setInterval(() => {
   const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
-    .formatToParts(new Date()).map((x) => [x.type, x.value]));
+    .formatToParts(ahora()).map((x) => [x.type, x.value]));
   const min = +p.hour * 60 + +p.minute;
   const day = `${p.year}-${p.month}-${p.day}`;
   if (p.weekday !== AUTO_KARAOKE.dow || min < AUTO_KARAOKE.from || min >= AUTO_KARAOKE.until || db.autoKaraoke === day) return;
@@ -1176,7 +1182,7 @@ const AUTO_SALAS = [
 // para que el público siga pidiendo canciones. Si a esa hora hay un rosko en juego, se espera a que termine.
 function autoSala() {
   const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
-    .formatToParts(new Date()).map((x) => [x.type, x.value]));
+    .formatToParts(ahora()).map((x) => [x.type, x.value]));
   const min = +p.hour * 60 + +p.minute;
   const a = AUTO_SALAS.find((x) => x.dow === p.weekday && min >= x.from);
   if (!a) return;

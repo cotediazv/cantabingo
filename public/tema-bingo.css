@@ -75,7 +75,7 @@ html.t2 #gc .gc-prev[hidden] { order: 1; display: flex !important; /* styles.css
 html.t2 #gc .ball.gcprev { --d: 8vh; background: #1c1828; }
 /* Antes del primer número */
 html.t2 #gc .gc-prev[hidden]:empty { display: none !important; }
-html.t2 #gc .gc-soon { order: 2; position: static; inset: auto; display: block; margin: 0 -1.3vh -1.3vh 0; padding: 1.8vh 3vh 1.8vh 2.4vh; text-align: left; background: rgba(12, 11, 18, .96); border-left: .6vh solid var(--t-foco);
+html.t2 #gc .gc-soon { order: 2; position: static; top: auto; right: auto; bottom: auto; left: auto; display: block; margin: 0 -1.3vh -1.3vh 0; padding: 1.8vh 3vh 1.8vh 2.4vh; text-align: left; background: rgba(12, 11, 18, .96); border-left: .6vh solid var(--t-foco);
   font: 900 4.6vh/1.1 var(--t-disp); text-transform: uppercase; color: var(--t-foco); text-shadow: none; animation: none; }
 /* «A continuación» y los logos, arriba */
 html.t2 #gc .next-up { position: absolute; left: 5vh; right: auto; top: 5vh; bottom: auto; transform: none; max-width: 100vh; gap: 1.6vh; padding: 1.1vh 2.2vh 1.1vh 1.8vh; border: 0; border-left: .5vh solid var(--t-c); border-radius: 0; clip-path: none;
