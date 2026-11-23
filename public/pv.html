@@ -845,9 +845,9 @@
       var o = '<div class="abs g-title fit">El último en pie</div><div class="abs v-body" style="top:16rem">';
       o += '<div class="mid gold">' + s.standing + ' en pie · ' + s.bench + ' en la banca</div>';
       if (s.phase === 'done') o += '<div class="big gold fit" style="margin-top:3rem">' + (s.winner ? '¡Ganó!' : 'Fin del juego') + '</div><b class="big fit" style="display:block">' + h(s.winner ? s.winner.name : 'Nadie quedó en pie') + '</b>' + (s.benchWinner ? '<div class="mid" style="margin-top:2rem">El mejor de la banca: ' + h(s.benchWinner.name) + '</div>' : '');
-      else if (s.phase === 'lobby' || !s.q) o += '<b class="big fit" style="display:block;margin-top:3rem">Tienes 3 vidas</b><div class="mid" style="margin-top:2rem">Todos juegan desde su celular</div><div class="mid">Sin vidas vas a la banca, pero sigues jugando</div><div class="mid">Gana el último en pie</div>';
+      else if (s.phase === 'lobby' || !s.q) o += '<b class="big fit" style="display:block;margin-top:3rem">Tienes 3 vidas</b><div class="mid" style="margin-top:2rem">Todos juegan desde su celular</div><div class="mid">Sin vidas vas a la banca; con 4 buenas de 5 vuelves</div><div class="mid">Gana el último en pie</div>';
       else {
-        o += '<div class="mid" style="margin-top:2.4rem">' + (s.kind === 'subita' ? 'Muerte súbita' : s.kind === 'repechaje' ? 'Pregunta de repechaje' : 'Pregunta ' + s.n + ' de ' + s.total) + '</div><b class="mid" style="display:block;font-size:4.4rem;line-height:1.1;margin:1rem 3rem 2rem">' + h(s.q.text) + '</b><ol class="rows">';
+        o += '<div class="mid" style="margin-top:2.4rem">' + (s.kind === 'subita' ? 'Muerte súbita' : 'Pregunta ' + s.n + ' de ' + s.total) + '</div><b class="mid" style="display:block;font-size:4.4rem;line-height:1.1;margin:1rem 3rem 2rem">' + h(s.q.text) + '</b><ol class="rows">';
         for (var i = 0; i < s.q.opts.length; i++) o += '<li' + (s.q.correct === i ? ' style="background:#16a34a;color:#fff"' : s.q.correct != null ? ' style="opacity:.4"' : '') + '><em>' + L[i] + '</em>' + h(s.q.opts[i]) + '</li>';
         o += '</ol>';
         if (s.phase === 'question') o += '<div class="clock">' + secs + '</div>';

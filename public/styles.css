@@ -3267,3 +3267,5 @@ body.con-paso #ctl-reload-fixed { top: calc(var(--paso-h, 64px) + 20px); }
 /* «El último en pie»: lugar para el QR de la esquina (tablero) y del pie (pantalla de pie) */
 @media (min-aspect-ratio: 1/1) { #ep .ep-main { padding-right: 12.5vw; } }
 @media (max-aspect-ratio: 1/1) { #ep { padding-bottom: 21vh; } #ep .ep-top > p { gap: 6vw; } #ep .ep-side { overflow: hidden; } #ep .ep-side:not(.rank) { flex: 1; } }
+
+.pep-me i { display: block; margin-top: 6px; font-style: normal; font-size: .9rem; font-weight: 700; color: #ffc400; }

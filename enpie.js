@@ -2,9 +2,11 @@
 // revisando el ranking… ¿puedes crear una versión de prueba para que lo veamos?»).
 // Cómo se juega: todo el salón juega desde el celular. Cada persona parte con 3 vidas. Preguntas de 3 alternativas con
 // 10 segundos; quien falla o no contesta pierde una vida. Quien se queda sin vidas no deja de jugar: pasa «a la banca»
-// y sigue contestando. Cada 5 preguntas hay una «pregunta de repechaje»: los de la banca que la aciertan vuelven al
-// juego con 1 vida (así siempre hay esperanza de ganar). En las últimas 3 preguntas se cierra la puerta: ya no vuelve
-// nadie. Gana el último en pie; si al final quedan varios, sigue la «muerte súbita» (un error y fuera) y, si tras 5
+// y sigue contestando. Para volver (regla de Cote, 23 nov: «desde el momento que la persona sale del juego y pasa a la
+// banca, por las 5 siguientes preguntas debería contestar por lo menos 4 buenas de 5 para poder subir»): quien junta 4
+// buenas en sus 5 preguntas siguientes vuelve al juego con 1 vida (vuelve apenas completa la cuarta); si falla 2, la
+// cuenta parte de nuevo con la pregunta siguiente (así siempre hay esperanza). En las últimas 3 preguntas se cierra la
+// puerta: ya no vuelve nadie. Gana el último en pie; si al final quedan varios, sigue la «muerte súbita» (un error y fuera) y, si tras 5
 // preguntas siguen varios, gana quien tiene más aciertos y, si empatan, quien contestó más rápido. Segundo premio: «el
 // mejor de la banca» (más aciertos entre los que no quedaron en pie).
 const crypto = require('crypto');
@@ -13,7 +15,7 @@ const ALTS = require('./questions-alternatives.js');
 
 const LIVES = 3;
 const TOTAL = 15; // preguntas del juego (después, muerte súbita)
-const EVERY = 5; // cada cuántas preguntas hay repechaje
+const BACK_OF = 5; const BACK_NEED = 4; // para volver de la banca: 4 buenas de 5
 const DOOR = 3; // en las últimas 3 ya no vuelve nadie
 const Q_MS = Number(process.env.ENPIE_MS) || 10000;
 const GRACE_MS = 700;
@@ -26,7 +28,7 @@ module.exports = function enpie({ app, db, save, requireAdmin, fail, setStage, f
   const g = () => (db.enpie ||= blank());
   const changed = () => { const s = g(); s.rev = (s.rev || 0) + 1; save(); notify(); };
 
-  const kindOf = (n) => (n > TOTAL ? 'subita' : n % EVERY === 0 && n <= TOTAL - DOOR ? 'repechaje' : 'normal');
+  const kindOf = (n) => (n > TOTAL ? 'subita' : 'normal');
   const order = (s) => Object.entries(s.players).map(([token, p]) => ({ token, ...p })).sort((a, b) => (b.up - a.up) || (b.up ? b.lives - a.lives : 0) || (b.hits - a.hits) || (a.time - b.time));
   const counts = (s) => { let up = 0; let all = 0; for (const p of Object.values(s.players)) { all++; if (p.up) up++; } return { up, bench: all - up }; };
 
@@ -37,14 +39,14 @@ module.exports = function enpie({ app, db, save, requireAdmin, fail, setStage, f
     const me = token && s.players[token] ? s.players[token] : null;
     const reveal = s.phase !== 'question';
     return {
-      test: true, rev: s.rev, gen: s.gen, venue: venue(), phase: s.phase, n: s.n, total: TOTAL, kind: s.n ? kindOf(s.n) : 'normal', lives: LIVES, every: EVERY,
+      test: true, rev: s.rev, gen: s.gen, venue: venue(), phase: s.phase, n: s.n, total: TOTAL, kind: s.n ? kindOf(s.n) : 'normal', lives: LIVES, backOf: BACK_OF, backNeed: BACK_NEED,
       now: Date.now(), until: s.phase === 'question' ? s.until : 0, ms: Q_MS,
       q: s.q ? { text: s.q.text, opts: s.q.opts, correct: reveal || host ? s.q.correct : null } : null,
       standing: c.up, bench: c.bench, door: s.n >= TOTAL - DOOR + 1 && s.n <= TOTAL, nextKind: s.phase === 'done' ? '' : kindOf(s.n + 1), doorNext: s.n + 1 === TOTAL - DOOR + 1,
       last: s.last, answered: Object.keys(s.ans).length,
       top: list.slice(0, 10).map((p) => ({ name: p.name, lives: p.lives, hits: p.hits, up: p.up })),
       winner: s.winner, benchWinner: s.bench,
-      me: me ? { name: me.name, lives: me.lives, up: me.up, hits: me.hits, pos: list.findIndex((p) => p.token === token) + 1, of: list.length, pick: (s.ans[token] || {}).pick ?? null, lastOk: me.lastOk ?? null, back: me.backAt === s.n && s.phase !== 'question', fell: me.fellAt === s.n && s.phase !== 'question' } : null,
+      me: me ? { name: me.name, lives: me.lives, up: me.up, hits: me.hits, pos: list.findIndex((p) => p.token === token) + 1, of: list.length, pick: (s.ans[token] || {}).pick ?? null, lastOk: me.lastOk ?? null, w: me.w || 0, h: me.h || 0, back: me.backAt === s.n && s.phase !== 'question', fell: me.fellAt === s.n && s.phase !== 'question' } : null,
     };
   };
 
@@ -86,8 +88,11 @@ module.exports = function enpie({ app, db, save, requireAdmin, fail, setStage, f
       p.lastOk = ok(t);
       if (p.lastOk) p.hits++;
       if (p.up) {
-        if (!p.lastOk && !mercy) { p.lives = kind === 'subita' ? 0 : p.lives - 1; if (p.lives <= 0) { p.lives = 0; p.up = false; p.fellAt = s.n; fell++; } }
-      } else if (kind === 'repechaje' && p.lastOk) { p.up = true; p.lives = 1; p.backAt = s.n; back++; }
+        if (!p.lastOk && !mercy) { p.lives = kind === 'subita' ? 0 : p.lives - 1; if (p.lives <= 0) { p.lives = 0; p.up = false; p.fellAt = s.n; p.w = 0; p.h = 0; fell++; } }
+      } else if (kind === 'normal' && s.n <= TOTAL - DOOR) { // en la banca: 4 buenas de 5 y vuelve; con 2 fallos la cuenta parte de nuevo
+        p.w = (p.w || 0) + 1; if (p.lastOk) p.h = (p.h || 0) + 1;
+        if ((p.h || 0) >= BACK_NEED) { p.up = true; p.lives = 1; p.backAt = s.n; p.w = 0; p.h = 0; back++; } else if (p.w - (p.h || 0) > BACK_OF - BACK_NEED) { p.w = 0; p.h = 0; }
+      }
     }
     const c = counts(s);
     s.last = { n: s.n, kind, fell, back, mercy, okCount: Object.keys(s.players).filter(ok).length };
@@ -114,7 +119,7 @@ module.exports = function enpie({ app, db, save, requireAdmin, fail, setStage, f
     if (s.phase !== 'question' || Date.now() > s.until + GRACE_MS) return fail(res, 409, 'Se acabó el tiempo de esta pregunta');
     if (![0, 1, 2].includes(pick)) return fail(res, 400, 'Elige una alternativa');
     if (s.ans[token]) return fail(res, 409, 'Ya contestaste esta pregunta');
-    if (!s.players[token]) { const full = s.n <= JOIN_UNTIL; s.players[token] = { name: pl.name, lives: full ? LIVES : 0, up: full, hits: 0, time: full ? 0 : Q_MS * (s.n - 1), fellAt: 0, backAt: 0 }; }
+    if (!s.players[token]) { const full = s.n <= JOIN_UNTIL; s.players[token] = { name: pl.name, lives: full ? LIVES : 0, up: full, hits: 0, time: full ? 0 : Q_MS * (s.n - 1), fellAt: 0, backAt: 0, w: 0, h: 0 }; }
     s.ans[token] = { pick, ms: Math.max(0, Date.now() - s.at) };
     return res.json({ ok: true, pick }); // no se avisa a todos con cada respuesta: el resultado llega al cerrarse la pregunta
   });

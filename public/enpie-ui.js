@@ -1,5 +1,5 @@
 // «El último en pie» — VERSIÓN DE PRUEBA (pedido de Cote, 23 nov). Todo el salón juega desde el celular: 3 vidas,
-// preguntas de 3 alternativas, quien se queda sin vidas pasa a la banca y puede volver en las preguntas de repechaje.
+// preguntas de 3 alternativas, quien se queda sin vidas pasa a la banca y vuelve si contesta 4 buenas de sus 5 preguntas siguientes.
 // Aquí: el panel del animador (#/enpiectl), el tablero y la pantalla de pie, el GC de OBS y el celular.
 (() => {
   const LET = ['A', 'B', 'C'];
@@ -7,11 +7,11 @@
     'Todos juegan desde su celular, en las mesas.',
     'Cada persona parte con <b>3 vidas</b>. Si fallas o no contestas a tiempo, pierdes una.',
     'Sin vidas pasas <b>a la banca</b>, pero sigues contestando.',
-    'Cada 5 preguntas hay <b>repechaje</b>: los de la banca que aciertan vuelven al juego con 1 vida.',
+    'Para volver de la banca: <b>4 buenas en tus 5 preguntas siguientes</b> y vuelves al juego con 1 vida. Si fallas 2, la cuenta parte de nuevo.',
     'En las últimas 3 preguntas <b>se cierra la puerta</b>: ya no vuelve nadie. Gana el último en pie.',
   ];
   const hearts = (n, max = 3) => '❤️'.repeat(Math.max(0, n)) + '🖤'.repeat(Math.max(0, max - n));
-  const kindTag = (st) => (st.kind === 'subita' ? 'Muerte súbita' : st.kind === 'repechaje' ? 'Pregunta de repechaje' : st.door ? `Pregunta ${st.n} de ${st.total} · puerta cerrada` : `Pregunta ${st.n} de ${st.total}`);
+  const kindTag = (st) => (st.kind === 'subita' ? 'Muerte súbita' : st.door ? `Pregunta ${st.n} de ${st.total} · puerta cerrada` : `Pregunta ${st.n} de ${st.total}`);
   const counters = (st) => `<span class="ep-c up"><b>${st.standing}</b> en pie</span><span class="ep-c"><b>${st.bench}</b> en la banca</span>`;
   // Reloj: cuenta local, sincronizada con la hora del servidor
   let end = 0; let endKey = 0;
@@ -20,7 +20,7 @@
   setInterval(() => { if (!endKey) return; const t = String(left()); for (const el of document.querySelectorAll('.ep-clock')) if (el.textContent !== t) el.textContent = t; }, 200);
   const opts = (st, cls = '') => `<div class="ep-opts ${cls}">${st.q.opts.map((o, i) => `<div class="ep-opt ${st.q.correct === i ? 'ok' : st.q.correct != null ? 'no' : ''}"><em>${LET[i]}</em><span>${esc(o)}</span></div>`).join('')}</div>`;
   const rank = (st, n = 8) => (st.top.length ? `<ol class="ep-rank">${st.top.slice(0, n).map((p, i) => `<li class="${p.up ? 'up' : 'out'}"><em>${i + 1}</em><b>${esc(p.name)}</b><span>${p.up ? hearts(p.lives) : 'banca'}</span><i>${p.hits}</i></li>`).join('')}</ol>` : '');
-  const lastLine = (st) => { const l = st.last; if (!l) return ''; const a = []; if (l.mercy) a.push('Nadie acertó: nadie cae'); else a.push(l.fell ? `${l.fell === 1 ? 'Cayó 1' : `Cayeron ${l.fell}`} a la banca` : 'Nadie cayó'); if (l.kind === 'repechaje') a.push(l.back ? `${l.back === 1 ? 'Vuelve 1' : `Vuelven ${l.back}`} al juego` : 'No volvió nadie'); return a.join(' · '); };
+  const lastLine = (st) => { const l = st.last; if (!l) return ''; const a = []; if (l.mercy) a.push('Nadie acertó: nadie cae'); else a.push(l.fell ? `${l.fell === 1 ? 'Cayó 1' : `Cayeron ${l.fell}`} a la banca` : 'Nadie cayó'); if (l.back) a.push(`${l.back === 1 ? 'Vuelve 1' : `Vuelven ${l.back}`} al juego`); return a.join(' · '); };
   const follow = (paint, url = '/api/enpie') => {
     let last = ''; let alive = true;
     const tick = async () => { const st = await api('GET', url).catch(() => null); if (!alive || !st) return; setClock(st); const k = `${st.rev}:${st.phase}`; if (k === last) return; last = k; paint(st); };
@@ -36,7 +36,7 @@
     const box = $('#ep-ctl'); let shown = '';
     const paint = (st) => {
       let step; let body = '';
-      const nextLabel = st.nextKind === 'subita' ? '⚡ Muerte súbita: siguiente pregunta' : st.nextKind === 'repechaje' ? `🔁 Pregunta de repechaje (${st.n + 1} de ${st.total})` : st.doorNext ? `🚪 Se cierra la puerta · pregunta ${st.n + 1} de ${st.total}` : `▶ Siguiente pregunta (${st.n + 1} de ${st.total})`;
+      const nextLabel = st.nextKind === 'subita' ? '⚡ Muerte súbita: siguiente pregunta' : st.doorNext ? `🚪 Se cierra la puerta · pregunta ${st.n + 1} de ${st.total}` : `▶ Siguiente pregunta (${st.n + 1} de ${st.total})`;
       if (st.phase === 'done') {
         step = '';
         body = window.annHtml('El último en pie', st.winner ? [st.winner.name] : ['Nadie quedó en pie'], [st.winner ? `Premio mayor · ${st.winner.hits} aciertos` : '', st.benchWinner ? `El mejor de la banca: ${st.benchWinner.name} (${st.benchWinner.hits} aciertos)` : ''].filter(Boolean));
@@ -76,7 +76,7 @@
       return `<div class="ep-win"><small>${st.winner ? 'El último en pie' : 'Fin del juego'}</small><b>${esc(st.winner ? st.winner.name : 'Nadie quedó en pie')}</b>${st.winner ? `<span>${st.winner.hits} aciertos · ¡Felicitaciones!</span>` : ''}${st.benchWinner ? `<i>El mejor de la banca: ${esc(st.benchWinner.name)} · ${st.benchWinner.hits} aciertos</i>` : ''}</div>`;
     }
     if (st.phase === 'lobby') {
-      return `<div class="ep-intro"><small>Todos juegan desde su celular</small><b>Tienes 3 vidas</b><ul><li>Si fallas, pierdes una vida</li><li>Sin vidas vas a la banca, pero sigues jugando</li><li>En el repechaje puedes volver al juego</li><li>Gana el último en pie</li></ul></div>`;
+      return `<div class="ep-intro"><small>Todos juegan desde su celular</small><b>Tienes 3 vidas</b><ul><li>Si fallas, pierdes una vida</li><li>Sin vidas vas a la banca, pero sigues jugando</li><li>Con 4 buenas de 5 vuelves al juego</li><li>Gana el último en pie</li></ul></div>`;
     }
     const q = `<div class="ep-q"><small class="ep-tag ${st.kind}">${esc(kindTag(st))}</small><b>${esc(st.q.text)}</b>${opts(st)}</div>`;
     return st.phase === 'question' ? `${q}<div class="ep-side"><small>Contesta en tu celular</small><b class="ep-clock">${left()}</b></div>` : `${q}<div class="ep-side rank"><small>${esc(lastLine(st))}</small>${rank(st, 8)}</div>`;
@@ -101,7 +101,7 @@
     const stop = follow((st) => {
       const box = $('#epg'); if (!box) return;
       let main; let side;
-      if (st.phase === 'done') { main = `<b>${esc(st.winner ? st.winner.name : 'Nadie quedó en pie')}</b>${st.benchWinner ? `<span>El mejor de la banca: ${esc(st.benchWinner.name)}</span>` : ''}`; side = st.winner ? `<small>Ganó</small><b>${st.winner.hits}</b>` : ''; } else if (st.phase === 'lobby') { main = '<b>Todos juegan desde su celular</b><span>3 vidas · sin vidas vas a la banca · en el repechaje puedes volver</span>'; side = '<small>Prepárate</small>'; } else {
+      if (st.phase === 'done') { main = `<b>${esc(st.winner ? st.winner.name : 'Nadie quedó en pie')}</b>${st.benchWinner ? `<span>El mejor de la banca: ${esc(st.benchWinner.name)}</span>` : ''}`; side = st.winner ? `<small>Ganó</small><b>${st.winner.hits}</b>` : ''; } else if (st.phase === 'lobby') { main = '<b>Todos juegan desde su celular</b><span>3 vidas · sin vidas vas a la banca · con 4 buenas de 5 vuelves</span>'; side = '<small>Prepárate</small>'; } else {
         main = `<b>${esc(st.q.text)}</b><span class="epg-opts">${st.q.opts.map((o, i) => `<i class="${st.q.correct === i ? 'ok' : st.q.correct != null ? 'no' : ''}"><em>${LET[i]}</em>${esc(o)}</i>`).join('')}</span>`;
         side = st.phase === 'question' ? `<small>Tiempo</small><b class="ep-clock">${left()}</b>` : `<small>En pie</small><b>${st.standing}</b>`;
       }
@@ -122,7 +122,9 @@
       if (!st || !box || box.hidden) return;
       setClock(st);
       const me = st.me;
-      const status = me ? `<p class="pep-me ${me.up ? 'up' : 'out'}">${me.up ? `${hearts(me.lives)} <b>En pie</b>` : '🪑 <b>En la banca</b>'}<span>Puesto ${me.pos} de ${me.of} · ${me.hits} aciertos</span></p>` : '';
+      const closed = st.door || st.kind === 'subita' || st.phase === 'done' || (st.doorNext && st.phase !== 'question');
+      const way = !me || me.up ? '' : closed ? '<i>La puerta está cerrada: juegas por «el mejor de la banca»</i>' : `<i>Para volver: ${st.backNeed} buenas de ${st.backOf} · llevas <b>${me.h}</b> de ${st.backNeed}${me.w - me.h ? ' · ya no puedes fallar' : ' · puedes fallar 1'}</i>`;
+      const status = me ? `<p class="pep-me ${me.up ? 'up' : 'out'}">${me.up ? `${hearts(me.lives)} <b>En pie</b>` : '🪑 <b>En la banca</b>'}<span>Puesto ${me.pos} de ${me.of} · ${me.hits} aciertos</span>${way}</p>` : '';
       let body;
       if (st.phase === 'done') {
         body = `<div class="pvote-win">🏆 ${esc(st.winner ? st.winner.name : 'Nadie quedó en pie')}<small>${st.winner ? '¡Es el último en pie!' : 'Fin del juego'}</small></div>${st.benchWinner ? `<p class="pvote-wait">El mejor de la banca: <b>${esc(st.benchWinner.name)}</b></p>` : ''}${rank(st, 10)}`;
@@ -130,12 +132,12 @@
         body = `<p class="pvote-ask">¡Prepárate!<b>Tienes 3 vidas</b></p><ul class="pep-how">${HOWTO.slice(1).map((l) => `<li>${l}</li>`).join('')}</ul>`;
       } else if (st.phase === 'question') {
         const pick = me ? me.pick : null;
-        const hint = st.kind === 'repechaje' && me && !me.up ? '🔁 ¡Repechaje! Si aciertas, vuelves al juego' : st.kind === 'subita' ? '⚡ Muerte súbita: un error y fuera' : !me && st.n > 2 ? 'Entras por la banca: en el repechaje puedes pasar al juego' : '';
+        const hint = st.kind === 'subita' ? '⚡ Muerte súbita: un error y fuera' : me && !me.up && !closed && me.h === st.backNeed - 1 ? '🔁 ¡Si aciertas esta, vuelves al juego!' : !me && st.n > 2 ? `Entras por la banca: con ${st.backNeed} buenas de ${st.backOf} pasas al juego` : '';
         body = `<p class="pvote-ask">${esc(kindTag(st))}<b>${esc(st.q.text)}</b></p>${hint ? `<p class="pep-hint">${hint}</p>` : ''}
           <div class="pep-keys">${st.q.opts.map((o, i) => `<button type="button" data-pick="${i}" class="${pick === i ? 'on' : ''}" ${pick != null ? 'disabled' : ''}><em>${LET[i]}</em>${esc(o)}</button>`).join('')}</div>
           <p class="pvote-clock">${pick != null ? '✔ Respuesta enviada · ' : ''}Quedan <b class="ep-clock">${left()}</b> s</p>`;
       } else {
-        const res = !me ? '' : me.back ? '<div class="pvote-win">🎉 ¡Volviste al juego!<small>Tienes 1 vida</small></div>' : me.fell ? '<div class="pep-res no">💔 Te quedaste sin vidas<small>Pasas a la banca: sigue contestando, en el repechaje puedes volver</small></div>' : me.lastOk ? '<div class="pep-res ok">✔ ¡Correcto!</div>' : `<div class="pep-res no">✘ Incorrecto${me.up && !st.last.mercy ? '<small>Pierdes una vida</small>' : ''}</div>`;
+        const res = !me ? '' : me.back ? '<div class="pvote-win">🎉 ¡Volviste al juego!<small>Tienes 1 vida</small></div>' : me.fell ? '<div class="pep-res no">💔 Te quedaste sin vidas<small>Pasas a la banca: sigue contestando, con 4 buenas de 5 vuelves</small></div>' : me.lastOk ? '<div class="pep-res ok">✔ ¡Correcto!</div>' : `<div class="pep-res no">✘ Incorrecto${me.up && !st.last.mercy ? '<small>Pierdes una vida</small>' : ''}</div>`;
         body = `${res}<p class="pvote-wait">La respuesta era <b>${LET[st.q.correct]} · ${esc(st.q.opts[st.q.correct])}</b></p><p class="pep-last">${esc(lastLine(st))}</p><h3 class="pep-h">Ranking</h3>${rank(st, 10)}`;
       }
       const html = `<div class="pvote-head"><b>🧍 El último en pie</b></div><p class="pep-counts">${counters(st)}</p>${status}${body}`;
