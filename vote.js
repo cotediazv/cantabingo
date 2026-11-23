@@ -155,7 +155,13 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
   setInterval(() => {
     const s = v();
     if (s.signup && s.signupUntil && Date.now() >= s.signupUntil) { s.signup = false; changed(); }
-    if (s.sample && !s.sample.gone && Date.now() - s.sample.at >= SAMPLE_MS) { s.sample.gone = true; changed(); }
+    if (s.sample && !s.sample.gone && Date.now() - s.sample.at >= SAMPLE_MS) {
+      s.sample.gone = true;
+      // El Festival (pedido de Cote, 23 nov: «al terminar la votación… que pase directamente al siguiente participante,
+      // sin un botón intermedio»): cuando salen de pantalla las 5 notas, sube solo el siguiente participante
+      if (s.mode === 'karaoke' && s.phase === 'voting' && !s.open && !s.onstage) { const nx = s.players.find((p) => !p.done); if (nx) s.onstage = nx.id; }
+      changed();
+    }
     // La votación de cada participante se cierra sola al agotarse sus 10 segundos
     if (s.phase === 'voting' && s.open && s.openUntil && Date.now() >= s.openUntil + GRACE_MS) { actions.close(s); changed(); }
     // La gran final también dura 8 segundos y se cierra sola
