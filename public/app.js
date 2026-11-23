@@ -520,7 +520,8 @@ views.juegos = async () => {
   if (!open) { location.hash = '#/'; return undefined; }
   store.set('lastBingo', open.projectId);
   // Pedido de Cote (21 nov): al crear la sala, tres botones y nada más (Manual, Por sorteo, Por votación)
-  app.innerHTML = `<p class="back"><a href="#/">← Inicio</a></p><div id="jg-cur"></div>${activitiesNav('', { lobby: true })}`;
+  app.innerHTML = `<p class="back"><a href="#/">← Inicio</a></p><div id="jg-cur"></div>${activitiesNav('', { lobby: true })}
+    <p class="ep-link"><a class="btn" href="#/enpiectl">🧪 Juego en prueba: 🧍 El último en pie</a></p>`;
   const venue = open.theme || 'frida';
   const paint = async () => {
     const st = await api('GET', `/api/sessions/${open.id}/host/state`).catch((err) => (err.status === 404 ? 'cerrada' : null));
@@ -528,7 +529,7 @@ views.juegos = async () => {
     if (!st || !$('#jg-cur')) return;
     // Si hay un juego en curso, se vuelve a él con un botón grande y el menú queda plegado (para no sortear otro por error)
     const cur = st.current;
-    const info = cur && GAME_INFO(venue)[cur.game];
+    const info = cur && (cur.game === 'enpie' ? { icon: '🧍', name: 'El último en pie', href: '#/enpiectl' } : GAME_INFO(venue)[cur.game]);
     const href = !cur ? '' : cur.game === 'bingo' ? `#/anfitrion/${open.projectId}` : cur.wheel ? `#/ruedactl/${cur.wheel}` : info.href;
     const html = cur ? `<a class="home-create open ctl-go paso" data-paso="8" href="${href}"><span>▶</span>Volver al juego en curso: ${info.icon} ${esc(info.name)}</a>` : '';
     if ($('#jg-cur').innerHTML !== html) $('#jg-cur').innerHTML = html;
@@ -852,6 +853,7 @@ views.jugar = async (sid) => {
     <div class="prosco" id="prosco" hidden></div>
     <div class="pkar" id="pkar" hidden></div>
     <div class="pvote" id="pvote" hidden></div>
+    <div class="pvote penpie" id="penpie" hidden></div>
     <div class="pvote pinsta" id="pinsta" hidden></div>
     <div class="pvote pgvote" id="pgvote" hidden></div>
     <div class="pvote pact" id="pact" hidden></div>
@@ -1005,6 +1007,16 @@ views.jugar = async (sid) => {
   // Pedido de Cote (21 nov): en todo momento el celular muestra el nombre de la actividad y lo que viene; el cartón del
   // bingo solo mientras se juega el bingo. Sorteo de concursantes, sorteo del próximo juego, QR, show o espera entre juegos
   let actTimer = null; let actKey = ''; let actShown = ''; let actSoon = null;
+  // «El último en pie» (versión de prueba): el celular muestra la pregunta, sus vidas y el ranking
+  let epTimer = null; let epRev = null;
+  const syncEnpie = () => {
+    const on = st.stage === 'enpie';
+    $('#penpie').hidden = !on;
+    if (on && !epTimer) { window.phoneEnpie.reset(); epRev = null; epTimer = setInterval(() => window.phoneEnpie.draw(sid, me.token), 6000); }
+    if (on && epRev !== st.enpieRev) { epRev = st.enpieRev; window.phoneEnpie.draw(sid, me.token); }
+    if (!on && epTimer) { clearInterval(epTimer); epTimer = null; }
+    return on;
+  };
   const actOf = () => {
     const s = st.stage || 'bingo';
     if (['sorteo', 'juego', 'qr', 'show', 'none'].includes(s)) return s;
@@ -1141,14 +1153,14 @@ views.jugar = async (sid) => {
   // esperando, QR, show, karaoke, sorteo o votación del próximo juego, y cuando un juego ya terminó)
   const syncKids = () => {
     const s = st.stage || 'bingo';
-    const inGame = (s === 'bingo' && st.started && !st.winConfirmed) || s === 'sorteo' || (s === 'rueda' && !!st.roscoId && !st.stageDone) || (s === 'voto' && !st.stageDone);
+    const inGame = (s === 'bingo' && st.started && !st.winConfirmed) || s === 'sorteo' || (s === 'rueda' && !!st.roscoId && !st.stageDone) || (s === 'voto' && !st.stageDone) || (s === 'enpie' && !st.stageDone);
     const slot = $('#kids-slot');
     if (slot) slot.hidden = inGame;
   };
   const syncStage = () => {
     syncHowto();
     syncKids();
-    const kar = syncKar() | syncVote() | syncInsta() | syncGvote() | syncAct();
+    const kar = syncKar() | syncVote() | syncEnpie() | syncInsta() | syncGvote() | syncAct();
     const on = (st.stage === 'rueda' && !!st.roscoId) || kar;
     $('#bingo-top').hidden = on;
     $('#bingo-bottom').hidden = on;
@@ -1472,12 +1484,13 @@ views.tablero = async () => {
         else if (show === 'qr') stop = await views.qrFull();
         else if (show === 'karaoke') stop = await views.karaokeFull();
         else if (show === 'voto') stop = await views.votoFull();
+        else if (show === 'enpie') stop = await views.enpieFull();
         else if (show === 'juego') stop = await views.juegoDraw('full');
         else if (show === 'votojuego') stop = await views.gameVote('full'); // el QR va dentro del cuadro
         else if (show === 'insta') stop = await views.instaFull();
         else if (show === 'show') stop = await views.showFull();
         else stop = await views.bingoFull(); // bingo, o la portada si no hay nada en juego
-        joinQr({ sorteo: 'tr', rueda: 'tr', show: 'br' }[show]);
+        joinQr({ sorteo: 'tr', rueda: 'tr', show: 'br', enpie: 'br' }[show]);
       }
       mark();
     } finally { busy = false; if (again) { again = false; apply(); } }
@@ -2011,11 +2024,12 @@ views.escena = async () => {
         else if (show === 'qr') stop = await views.qrBig();
         else if (show === 'karaoke') stop = await views.karaokeGC();
         else if (show === 'voto') stop = await views.votoGC();
+        else if (show === 'enpie') stop = await views.enpieGC();
         else if (show === 'juego') stop = await views.juegoDraw('gc');
         else if (show === 'votojuego') stop = await views.gameVote('gc');
         else if (show === 'insta') stop = await views.instaGC();
         else if (show === 'show') stop = await views.showGC();
-        joinQr({ sorteo: 'br', rueda: 'bl', show: 'above', votojuego: 'br' }[show]);
+        joinQr({ sorteo: 'br', rueda: 'bl', show: 'above', votojuego: 'br', enpie: 'above' }[show]);
         document.body.classList.add('obs');
       }
     } finally { busy = false; if (again) { again = false; apply(); } }
@@ -2370,7 +2384,7 @@ if (new URLSearchParams(location.search).has('diag')) {
 // Pedido de Cote (20 nov): botoncito «Refrescar página» en todos los paneles del moderador (en la aplicación instalada
 // no hay cómo recargar). El Centro de control ya lo trae en su encabezado.
 (() => {
-  const PANELS = /^#\/?($|juegos|figura|anfitrion|ronda|proyectos|nuevo|admin|votoctl|ruedactl|ruedas|sorteoctl|karaokectl|showctl|instactl|light$|consola|verticalctl)/;
+  const PANELS = /^#\/?($|juegos|figura|anfitrion|ronda|proyectos|nuevo|admin|votoctl|enpiectl|ruedactl|ruedas|sorteoctl|karaokectl|showctl|instactl|light$|consola|verticalctl)/;
   const sync = () => {
     let b = document.getElementById('ctl-reload-fixed');
     const on = PANELS.test(location.hash || '#/') && !document.body.classList.contains('full') && !document.body.classList.contains('obs') && !!store.get('adminToken');

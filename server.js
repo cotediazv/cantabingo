@@ -178,6 +178,7 @@ const currentGame = (s) => {
     return w ? { game: 'rosco', wheel: w.id } : { game: 'rosco' }; // vuelve al panel de El Rosko, donde se acepta al ganador
   }
   if (st === 'voto') { const v = db.vote || {}; return v.winner ? null : { game: v.mode === 'karaoke' ? 'festival' : 'objeto' }; }
+  if (st === 'enpie') { const e = db.enpie || {}; return e.phase && e.phase !== 'done' ? { game: 'enpie' } : null; }
   if (st === 'bingo') return bingoStarted(s) && !roundOver(s) ? { game: 'bingo' } : null;
   return null;
 };
@@ -195,10 +196,11 @@ function publicState(s, full = false) {
     stage: db.stage || 'bingo', roscoId: db.stage === 'rueda' ? (Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).id || null : null,
     celebrateAt: s.celebrateAt || 0,
     voteRev: (db.vote || {}).rev || 0, // los celulares vuelven a leer la votación cuando cambia
+    enpieRev: (db.enpie || {}).rev || 0, // «El último en pie» (versión de prueba): los celulares vuelven a leer cuando cambia
     voteGen: (db.vote || {}).gen || 0, // cambia con cada concurso nuevo (El Festival u objeto): los celulares muestran sus instrucciones
     gameVoteRev: (db.gameVote || {}).rev || 0, // votación del juego: cambia al abrir o cerrar cada vuelta (no con cada voto)
     // El juego en pantalla ya terminó (concurso con ganador o rosco con ganador aceptado): los celulares no muestran sus instrucciones
-    stageDone: db.stage === 'voto' ? !!(db.vote || {}).winner : db.stage === 'rueda' ? !!(Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).winAccepted : false,
+    stageDone: db.stage === 'enpie' ? (db.enpie || {}).phase === 'done' : db.stage === 'voto' ? !!(db.vote || {}).winner : db.stage === 'rueda' ? !!(Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).winAccepted : false,
     winConfirmed: roundOver(s), winConfirmedAt: s.confirmedAt || 0, now: Date.now(),
     started: bingoStarted(s), // el bingo de esta ronda empezó (figura elegida o ya hay números); antes, la sala espera el primer juego
     patterns: s.patterns, drawn: s.drawn, results, finalists: s.finalists || null,
@@ -703,7 +705,7 @@ app.get('/api/sessions/:sid/events', (req, res) => {
 // Segundo juego de la plataforma
 // Pantalla única de OBS: qué gráfica se muestra ahora. Cambia sola al activar un bingo,
 // crear un rosko o lanzar un sorteo; el moderador también puede cambiarla a mano.
-const STAGES = ['bingo', 'rueda', 'sorteo', 'qr', 'karaoke', 'show', 'voto', 'insta', 'juego', 'votojuego', 'none'];
+const STAGES = ['bingo', 'rueda', 'sorteo', 'qr', 'karaoke', 'show', 'voto', 'insta', 'juego', 'votojuego', 'enpie', 'none'];
 // Pedido de Cote: el juego que está en actividad tiene prioridad. Mientras haya un rosko en juego, la pantalla queda en
 // El Rosko aunque se apriete otra cosa (un botón del bingo, el escenario a mano o el karaoke automático); al terminar
 // el rosko (ganador, empate o se acabó), todo vuelve a funcionar como siempre. Devuelve false si no se cambió.
@@ -784,6 +786,11 @@ const vote = require('./vote.js')({ app, db, save, requireAdmin, fail, setStage,
 const insta = require('./insta.js')({ app, db, save, requireAdmin, fail, venue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
 // Sala light: karaoke, show y cartelera en otro local, al mismo tiempo que la sala principal
 lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta, aviso });
+// «El último en pie», versión de prueba (pedido de Cote, 23 nov)
+require('./enpie.js')({ app, db, save, requireAdmin, fail, setStage, festejo,
+  findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null,
+  venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
+  notify: () => { Object.values(db.sessions).forEach((s) => broadcast(s)); aviso(); } });
 capaFire = require('./capa.js')({ app, requireLocal, fail, aviso }).fire; // capa gráfica sobre la cámara (botones del GC Master)
 require('./vertical.js')({ app, db, save, requireAdmin, fail, karaoke, perOf, dir: path.dirname(DATA_FILE) }); // pantalla vertical: video del mes y actividades
 // Conectados (pedido de Cote, 22 nov): números en vivo por local, gráfico de las últimas 3 horas y registro por jornada
@@ -800,7 +807,7 @@ require('./twitch.js')({ app }); // videos y transmisiones en vivo de Twitch, pa
 require('./instagram-web.js')({ app, db, save, insta }); // últimos videos de Instagram de cada local, para la página web
 
 // Consola general: en qué está cada local (sala principal o sala light), su bloque del horario y su karaoke
-const STAGE_NAMES = { bingo: 'Bingo', rueda: 'El Rosko', sorteo: 'Sorteo', qr: 'QR grande', karaoke: 'Karaoke', show: 'Show', voto: 'Votación', insta: 'Instagram', juego: 'Sorteo de juegos', votojuego: 'Votación del juego', none: 'Nada', cartelera: 'Cartelera de la semana', custom: 'GC personalizable', info: 'Información que va cambiando' };
+const STAGE_NAMES = { bingo: 'Bingo', rueda: 'El Rosko', sorteo: 'Sorteo', qr: 'QR grande', karaoke: 'Karaoke', show: 'Show', voto: 'Votación', enpie: 'El último en pie', insta: 'Instagram', juego: 'Sorteo de juegos', votojuego: 'Votación del juego', none: 'Nada', cartelera: 'Cartelera de la semana', custom: 'GC personalizable', info: 'Información que va cambiando' };
 app.get('/api/consola', requireAdmin, async (_req, res) => {
   const main = Object.values(db.sessions)[0] || null;
   const out = await Promise.all(['kennedy', 'frida', 'tobalaba'].map(async (v) => {

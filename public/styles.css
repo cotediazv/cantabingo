@@ -3185,3 +3185,85 @@ body.con-paso #ctl-reload-fixed { top: calc(var(--paso-h, 64px) + 20px); }
 /* Logo de Frida con el dibujo encima de las letras (Cote, 23 nov): en los GC de OBS va más alto que el de KRB Stage */
 .venue-mark.vm-alto img:last-child { height: 9.6vh; }
 .venue-mark.vm-alto i { height: 6vh; }
+
+/* «El último en pie» — versión de prueba (pedido de Cote, 23 nov). Tablero y pantalla de pie (#ep), GC de OBS (#epg),
+   celular (#penpie) y panel del animador (#ep-ctl). */
+#ep { position: fixed; left: 0; top: 0; right: 0; bottom: 0; display: flex; flex-direction: column; padding: 4vh 4vw 9vh; box-sizing: border-box; color: #fff; --ep: #e0338f; }
+#ep.th-kennedy, #epg.th-kennedy { --ep: #47b8e6; } #ep.th-tobalaba, #epg.th-tobalaba { --ep: #e5413a; }
+.ep-top { display: flex; align-items: flex-end; justify-content: space-between; gap: 3vw; padding-bottom: 1.6vh; border-bottom: .4vh solid var(--ep); }
+.ep-top > b { font-size: 7vh; line-height: 1; font-weight: 900; text-transform: uppercase; }
+.ep-top > p { margin: 0; display: flex; gap: 2.4vw; }
+.ep-c { font-size: 2.6vh; text-transform: uppercase; letter-spacing: .08em; color: #c9c5dd; white-space: nowrap; }
+.ep-c b { font-size: 5vh; color: #fff; margin-right: .5vw; } .ep-c.up b { color: #f4bf5a; }
+.ep-main { flex: 1; min-height: 0; display: flex; gap: 3vw; align-items: stretch; padding-top: 3vh; }
+.ep-q { flex: 1.5; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2.4vh; }
+.ep-tag { align-self: flex-start; padding: .8vh 1.4vw; background: var(--ep); color: #0c0b12; font-size: 2.4vh; font-weight: 800; text-transform: uppercase; letter-spacing: .12em; }
+.ep-tag.repechaje, .ep-tag.subita { background: #f4bf5a; }
+.ep-q > b { font-size: 5.4vh; line-height: 1.12; font-weight: 800; }
+.ep-opts { display: grid; gap: 1.4vh; }
+.ep-opt { display: flex; align-items: center; gap: 1.2vw; padding: 1.4vh 1.4vw; background: rgba(21, 19, 30, .9); border: .25vh solid #2a2636; font-size: 3.8vh; font-weight: 700; }
+.ep-opt em { flex: none; width: 5vh; height: 5vh; display: grid; place-items: center; background: var(--ep); color: #0c0b12; font-style: normal; font-weight: 900; }
+.ep-opt.ok { background: #16a34a; border-color: #16a34a; } .ep-opt.ok em { background: #fff; }
+.ep-opt.no { opacity: .38; }
+.ep-side { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1vh; background: rgba(21, 19, 30, .9); border: .25vh solid #2a2636; padding: 2vh 1.6vw; }
+.ep-side > small { font-size: 2.4vh; text-transform: uppercase; letter-spacing: .1em; color: #f4bf5a; text-align: center; }
+.ep-side > .ep-clock { font-size: 26vh; line-height: 1; font-weight: 900; }
+.ep-side.rank { justify-content: flex-start; align-items: stretch; }
+.ep-rank { list-style: none; margin: 0; padding: 0; display: grid; gap: .7vh; }
+.ep-rank li { display: flex; align-items: center; gap: .8vw; padding: .7vh .8vw; background: rgba(255, 255, 255, .06); font-size: 2.5vh; }
+.ep-rank li em { flex: none; width: 3.4vh; text-align: center; font-style: normal; font-weight: 900; color: #f4bf5a; }
+.ep-rank li b { flex: 1; min-width: 0; font-weight: 800; overflow-wrap: anywhere; line-height: 1.1; }
+.ep-rank li span { flex: none; font-size: .8em; white-space: nowrap; color: #c9c5dd; }
+.ep-rank li i { flex: none; min-width: 3vh; text-align: right; font-style: normal; font-weight: 800; }
+.ep-rank li.out { opacity: .6; }
+.ep-intro, .ep-win { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 2vh; }
+.ep-intro small, .ep-win small { font-size: 3vh; text-transform: uppercase; letter-spacing: .14em; color: #f4bf5a; }
+.ep-intro b { font-size: 11vh; line-height: 1; font-weight: 900; text-transform: uppercase; }
+.ep-intro ul { list-style: none; margin: 1vh 0 0; padding: 0; display: grid; gap: 1.2vh; font-size: 3.6vh; font-weight: 700; }
+.ep-win b { font-size: 12vh; line-height: 1.02; font-weight: 900; text-transform: uppercase; color: #f4bf5a; overflow-wrap: anywhere; }
+.ep-win span { font-size: 4vh; font-weight: 700; } .ep-win i { font-style: normal; font-size: 3vh; color: #c9c5dd; margin-top: 2vh; }
+/* pantalla de pie: todo en una columna */
+@media (max-aspect-ratio: 1/1) {
+  #ep { padding: 3vh 5vw 8vh; }
+  .ep-top { flex-direction: column; align-items: flex-start; gap: 1vh; } .ep-top > b { font-size: 9.5vw; } .ep-c { font-size: 3vw; } .ep-c b { font-size: 6vw; }
+  .ep-main { flex-direction: column; gap: 2vh; }
+  .ep-q { flex: none; } .ep-tag { font-size: 3vw; } .ep-q > b { font-size: 6.6vw; } .ep-opt { font-size: 5vw; gap: 3vw; padding: 1.2vh 3vw; } .ep-opt em { width: 8vw; height: 8vw; }
+  .ep-side > small { font-size: 3.4vw; } .ep-side > .ep-clock { font-size: 34vw; } .ep-rank li { font-size: 3.8vw; gap: 2vw; padding: .7vh 2vw; } .ep-rank li em { width: 6vw; }
+  .ep-intro b { font-size: 13vw; } .ep-intro ul { font-size: 4.6vw; } .ep-intro small, .ep-win small { font-size: 3.6vw; } .ep-win b { font-size: 14vw; } .ep-win span { font-size: 5vw; } .ep-win i { font-size: 3.8vw; }
+}
+/* GC de OBS */
+#epg { position: fixed; left: 3vw; right: 3vw; bottom: 6vh; color: #fff; --ep: #e0338f; }
+.epg-bar { display: flex; align-items: stretch; background: rgba(12, 11, 18, .94); min-height: 16vh; }
+.epg-tag { flex: none; width: 23vw; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center; padding: 1.4vh 1.6vw; background: var(--ep); color: #0c0b12; }
+.epg-tag small { font-size: 1.7vh; font-weight: 700; text-transform: uppercase; letter-spacing: .14em; } .epg-tag b { font-size: 3.4vh; line-height: 1.05; font-weight: 900; text-transform: uppercase; }
+.epg-main { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: .8vh; padding: 1.4vh 1.8vw; }
+.epg-main > b { font-size: 3.5vh; line-height: 1.12; font-weight: 800; } .epg-main > span { font-size: 2.5vh; color: #f4bf5a; font-weight: 700; }
+.epg-opts { display: flex; flex-wrap: wrap; gap: .6vh 1.6vw; } .epg-opts i { font-style: normal; color: #fff; white-space: nowrap; } .epg-opts em { font-style: normal; font-weight: 900; color: #f4bf5a; margin-right: .5vw; }
+.epg-opts i.ok { color: #4ade80; } .epg-opts i.no { opacity: .4; }
+.epg-side { flex: none; width: 13vw; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #1c1826; }
+.epg-side small { font-size: 1.7vh; text-transform: uppercase; letter-spacing: .12em; color: #f4bf5a; } .epg-side b { font-size: 8vh; line-height: 1; font-weight: 900; }
+/* celular */
+.pep-counts { display: flex; justify-content: center; gap: 18px; margin: 6px 0 10px; } .pep-counts .ep-c { font-size: .8rem; } .pep-counts .ep-c b { font-size: 1.5rem; }
+.pep-me { margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; background: rgba(255, 255, 255, .08); text-align: center; font-size: 1.15rem; }
+.pep-me span { display: block; font-size: .85rem; opacity: .8; margin-top: 2px; } .pep-me.out { opacity: .9; }
+.pep-keys { display: grid; gap: 10px; margin: 12px 0; }
+.pep-keys button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 16px 14px; font-size: 1.2rem; font-weight: 700; text-align: left; border-radius: 14px; }
+.pep-keys button em { flex: none; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; background: #ffc400; color: #1a1a1a; font-style: normal; font-weight: 900; }
+.pep-keys button.on { background: #16a34a; border-color: #16a34a; color: #fff; } .pep-keys button:disabled:not(.on) { opacity: .45; }
+.pep-hint { margin: 6px 0 0; padding: 8px 10px; border-radius: 10px; background: #ffc400; color: #1a1a1a; font-weight: 800; text-align: center; }
+.pep-res { margin: 8px 0; padding: 14px; border-radius: 14px; text-align: center; font-size: 1.5rem; font-weight: 900; } .pep-res small { display: block; font-size: .9rem; font-weight: 600; margin-top: 4px; }
+.pep-res.ok { background: #16a34a; color: #fff; } .pep-res.no { background: #7f1d1d; color: #fff; }
+.pep-last { text-align: center; font-weight: 700; margin: 6px 0; } .pep-h { margin: 14px 0 6px; font-size: 1rem; text-align: center; } .pep-how { margin: 8px 0 0; padding-left: 20px; line-height: 1.5; }
+.penpie .ep-rank li { font-size: .95rem; gap: 8px; padding: 7px 9px; border-radius: 8px; } .penpie .ep-rank li em { width: 22px; } .penpie .ep-rank li i { min-width: 20px; }
+/* panel del animador */
+.ep-test { font-size: .5em; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: #ffc400; color: #1a1a1a; vertical-align: middle; }
+.ep-now { margin: 12px 0; padding: 14px; border-radius: 14px; border: 2px solid #ffc400; background: rgba(255, 196, 0, .08); }
+.ep-now > small { display: block; font-weight: 800; color: #ffc400; margin-bottom: 4px; } .ep-now > b { display: block; font-size: 1.5rem; line-height: 1.2; margin-bottom: 10px; }
+#ep-ctl .ep-opt { font-size: 1.1rem; padding: 8px 10px; gap: 10px; border-width: 1px; border-radius: 10px; } #ep-ctl .ep-opt em { width: 28px; height: 28px; border-radius: 50%; background: #ffc400; }
+#ep-ctl .ep-opts { gap: 6px; } .ep-counts { display: flex; gap: 22px; margin: 14px 0 6px; } #ep-ctl .ep-c { font-size: .85rem; } #ep-ctl .ep-c b { font-size: 1.8rem; }
+#ep-ctl .ep-rank li { font-size: 1rem; gap: 10px; padding: 7px 10px; border-radius: 8px; } #ep-ctl .ep-rank li em { width: 24px; }
+.ep-link { text-align: center; margin: 22px 0 0; } .ep-link .btn { opacity: .9; }
+
+/* «El último en pie»: lugar para el QR de la esquina (tablero) y del pie (pantalla de pie) */
+@media (min-aspect-ratio: 1/1) { #ep .ep-main { padding-right: 12.5vw; } }
+@media (max-aspect-ratio: 1/1) { #ep { padding-bottom: 21vh; } #ep .ep-top > p { gap: 6vw; } #ep .ep-side { overflow: hidden; } #ep .ep-side:not(.rank) { flex: 1; } }
