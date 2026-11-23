@@ -7,7 +7,7 @@ const fixture = require('./fixture.json');
 
 const PORT = 3311; // fijo: el QR lleva la dirección del sitio y debe salir igual en cada captura
 const { sid, projectId, wheelId, phone } = fixture.fixture;
-const STAGES = ['bingo', 'qr', 'rueda', 'sorteo', 'voto', 'desafio', 'insta', 'show', 'juego', 'karaoke', 'none'];
+const STAGES = ['bingo', 'qr', 'rueda', 'sorteo', 'voto', 'desafio', 'insta', 'show', 'juego', 'votojuego', 'karaoke', 'none'];
 const TV = { width: 1920, height: 1080 };
 const CEL = { width: 390, height: 844 };
 const PANEL = { width: 1280, height: 900 };
@@ -80,6 +80,7 @@ test('celular · entrar a la sala (sin nombre todavía)', async ({ page }) => {
 const PANELS = [
   ['inicio', '#/'], ['control', '#/control'], ['bingo', `#/anfitrion/${projectId}`], ['rosco', `#/ruedactl/${wheelId}`],
   ['sorteo', '#/sorteoctl'], ['votacion', '#/votoctl'], ['desafio', '#/desafioctl'], ['instagram', '#/instactl'],
+  ['juegos', '#/juegos'],
 ];
 for (const [name, hash] of PANELS) {
   test(`panel · ${name}`, async ({ page }) => {
@@ -91,10 +92,20 @@ for (const [name, hash] of PANELS) {
 }
 
 // Pantallas que dependen de la hora real (horarios, «esta noche»): solo se revisa que abran sin errores
-for (const hash of ['#/vertical/kennedy', '#/pantalla/tobalaba', '#/light-v/kennedy', '#/light', '#/karaokectl', '#/showctl', '#/kids', '#/consola']) {
+for (const hash of ['#/vertical/kennedy', '#/pantalla/tobalaba', '#/light-v/kennedy', '#/light', '#/karaokectl', '#/showctl', '#/kids', '#/consola',
+  '#/master', '#/master/kennedy', '#/master/movil']) {
   test(`abre sin errores · ${hash}`, async ({ page }) => {
     const errors = await open(page, hash, { admin: true });
     expect(await page.locator('#app').count()).toBe(1);
+    expect(errors).toEqual([]);
+  });
+}
+
+// Páginas livianas para equipos antiguos (Centro de control del iPad viejo y pantalla liviana)
+for (const page of ['cc.html', 'pv.html']) {
+  test(`abre sin errores · ${page}`, async ({ page: p }) => {
+    const errors = await open(p, page, { admin: true });
+    expect(await p.locator('body').count()).toBe(1);
     expect(errors).toEqual([]);
   });
 }
