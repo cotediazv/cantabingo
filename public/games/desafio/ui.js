@@ -267,4 +267,8 @@
 })();
 
 // Qué se ve en el tablero y en el GC de OBS cuando el escenario es El Gran Desafío (public/core/escenarios.js)
-KRB.escenario('desafio', { full: () => views.desafioFull(), gc: () => views.desafioGC() });
+KRB.escenario('desafio', { full: () => views.desafioFull(), gc: () => views.desafioGC(),
+  // celular: la caja con la teclera o la pregunta (views.jugar la muestra con este escenario)
+  celular: { id: 'pdesafio', cls: 'pvote pdesafio', rev: 'desafioRev', every: 8000, reset: () => window.phoneDesafio.reset(), draw: (sid, token) => window.phoneDesafio.draw(sid, token) },
+});
+KRB.juego({ id: 'desafio', menu: 'otros', orden: 14, icon: '🏆', name: 'El Gran Desafío', href: '#/desafioctl' });

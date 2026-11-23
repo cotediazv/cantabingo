@@ -616,3 +616,4 @@
 
 // Qué se ve en el tablero y en el GC de OBS cuando el escenario es El Rosko (public/core/escenarios.js)
 KRB.escenario('rueda', { full: () => views.rueda(), gc: () => views.obs(), qrFull: 'tr', qrGc: 'bl' });
+KRB.juego({ id: 'rosco', menu: 'juego', orden: 2, icon: '🎡', name: 'El Rosko', href: '#/sorteoctl' }); // parte con el sorteo de concursantes

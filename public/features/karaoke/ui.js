@@ -81,3 +81,4 @@
 
 // Qué se ve en el tablero y en el GC de OBS cuando el escenario es el karaoke (public/core/escenarios.js)
 KRB.escenario('karaoke', { full: () => views.karaokeFull(), gc: () => views.karaokeGC() });
+KRB.juego({ id: 'karaoke', menu: 'otros', orden: 12, icon: '🎤', name: 'Karaoke', href: '#/karaokectl' });

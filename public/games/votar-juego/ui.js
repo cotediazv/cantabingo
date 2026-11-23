@@ -40,7 +40,7 @@
     }
     return { top: '🗳️ Votación', big: '¿Qué juego quieren jugar?', line: '' };
   };
-  const optionsOf = (g) => (g.options && g.options.length ? g.options : ['bingo', 'rosco', 'festival', 'objeto']);
+  const optionsOf = (g) => (g.options && g.options.length ? g.options : KRB.menu('juego').map((j) => j.id));
   // Achica un texto de una línea hasta que quepa en su cuadro (nunca se corta)
   const fitText = (el) => {
     if (!el) return;
@@ -260,4 +260,7 @@
 })();
 
 // Qué se ve en el tablero y en el GC de OBS cuando el escenario es la votación del próximo juego (public/core/escenarios.js; en el tablero el QR va dentro del cuadro)
-KRB.escenario('votojuego', { full: () => views.gameVote('full'), gc: () => views.gameVote('gc'), qrGc: 'br' });
+KRB.escenario('votojuego', { full: () => views.gameVote('full'), gc: () => views.gameVote('gc'), qrGc: 'br',
+  // celular: la caja con la teclera o la pregunta (views.jugar la muestra con este escenario)
+  celular: { id: 'pgvote', cls: 'pvote pgvote', rev: 'gameVoteRev', every: 8000, reset: () => window.phoneGvote.reset(), draw: (sid, token) => window.phoneGvote.draw(sid, token), stop: () => window.phoneGvote.stop() },
+});

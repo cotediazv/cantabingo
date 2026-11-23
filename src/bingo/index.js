@@ -75,26 +75,6 @@ module.exports = function bingo(ctx) {
   }
   // El bingo de la ronda empezó: se eligió su figura (en #/figura o al pasar de ronda) o ya hay números
   const bingoStarted = (s) => s.drawn.length > 0 || s.figRound === s.round;
-  // Juego en curso en la sala (para «Volver al juego en curso» en Juegos): lo que está en pantalla y aún no termina
-  const currentGame = (s) => {
-    const st = db.stage || 'bingo';
-    if (st === 'rueda') {
-      const w = Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0];
-      // Termina con el ganador aceptado y el de la Trivia ya mostrado (pedido de Cote: el ganador de la Trivia sale sí o sí)
-      return w && !(w.winAccepted && (w.crowd || {}).winner) ? { game: 'rosco', wheel: w.id } : null;
-    }
-    if (st === 'sorteo') { // el desempate (del bingo o de El Rosko) usa el mismo sorteo
-      const r = db.raffle || {};
-      if (r.mode !== 'tie') return { game: 'rosco' };
-      if ((r.tie || {}).game !== 'rosco') return { game: 'bingo' };
-      const w = Object.values(db.wheels || {}).sort((x, y) => y.created - x.created)[0];
-      return w ? { game: 'rosco', wheel: w.id } : { game: 'rosco' }; // vuelve al panel de El Rosko, donde se acepta al ganador
-    }
-    if (st === 'voto') { const v = db.vote || {}; return v.winner ? null : { game: v.mode === 'karaoke' ? 'festival' : 'objeto' }; }
-    if (st === 'enpie') { const e = db.enpie || {}; return e.phase && e.phase !== 'done' ? { game: 'enpie' } : null; }
-    if (st === 'bingo') return bingoStarted(s) && !roundOver(s) ? { game: 'bingo' } : null;
-    return null;
-  };
   // El moderador recibe la lista completa de resultados; los participantes solo los cartones
   // ganadores (sin nombres), que es lo único que necesitan y pesa mucho menos.
   function publicState(s, full = false) {
@@ -111,15 +91,15 @@ module.exports = function bingo(ctx) {
       // Lo que cada juego agrega para los celulares (ej. roscoId, voteRev, gameVoteRev, desafioRev): así vuelven a leer su
       // juego cuando cambia
       ...ctx.games.phoneFields(),
-      // El juego en pantalla ya terminó (concurso con ganador o rosko con ganador aceptado): los celulares no muestran sus instrucciones
-      stageDone: db.stage === 'enpie' ? (db.enpie || {}).phase === 'done' : db.stage === 'voto' ? !!(db.vote || {}).winner : db.stage === 'rueda' ? !!(Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).winAccepted : false,
+      // El juego en pantalla ya terminó (cada juego lo dice con done()): los celulares no muestran sus instrucciones
+      stageDone: ctx.games.done(db.stage),
       celebrateAt: s.celebrateAt || 0,
       winConfirmed: roundOver(s), winConfirmedAt: s.confirmedAt || 0, now: Date.now(),
       started: bingoStarted(s), // el bingo de esta ronda empezó (figura elegida o ya hay números); antes, la sala espera el primer juego
       patterns: s.patterns, drawn: s.drawn, results, finalists: s.finalists || null,
       auto: s.auto, cardsPerPlayer: s.cardsPerPlayer, totalCards: p.cards.length,
       players: Object.values(s.players).length,
-      ...(full ? { current: currentGame(s) } : {}),
+      ...(full ? { current: ctx.games.current(db.stage || 'bingo', s) } : {}), // juego en curso, para «volver al juego»
     };
   }
   // Los avisos se agrupan: si llegan muchos cambios seguidos (cientos de personas entrando o
@@ -509,4 +489,9 @@ module.exports = function bingo(ctx) {
     bingoStarted,
     startSession, closeSession, makeCards, newId: id,
   });
+  // El bingo es un juego más para el registro: se puede elegir como el juego que sigue y sabe si está en curso
+  ctx.games.register({ id: 'bingo', name: 'Bingo', stage: 'bingo', register: () => ({
+    elegibles: [{ id: 'bingo', icon: '🎱', name: 'Bingo' }],
+    current: (s) => (s && bingoStarted(s) && !roundOver(s) ? { game: 'bingo' } : null),
+  }) }, ctx);
 };

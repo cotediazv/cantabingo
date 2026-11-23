@@ -9,6 +9,8 @@ module.exports = {
       venue: () => ctx.salaVenue() || 'frida', notify: () => { ctx.broadcastAll(); ctx.aviso(); } });
     return {
       phoneFields: () => ({ enpieRev: (db.enpie || {}).rev || 0 }), // los celulares vuelven a leer cuando cambia
+      current: () => { const e = db.enpie || {}; return e.phase && e.phase !== 'done' ? { game: 'enpie' } : null; },
+      done: () => (db.enpie || {}).phase === 'done',
     };
   },
 };

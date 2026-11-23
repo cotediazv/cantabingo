@@ -1,30 +1,18 @@
 //@ Menú de juegos y actividades de los paneles (GAME_INFO, activitiesNav). Parte de la aplicación: se carga en orden desde index.html.
 // Menú de abajo en el panel de todos los juegos (pedido de Cote): «Sortear juego» y después los juegos con su ícono;
 // más abajo, las demás actividades
-const GAME_INFO = (venue) => ({
-  bingo: { icon: '🎱', name: 'Bingo', href: '' },
-  rosco: { icon: '🎡', name: 'El Rosko', href: '#/sorteoctl' },
-  festival: { icon: '🎤', name: `El Festival de ${{ frida: 'Frida', kennedy: 'Mercado Kennedy', tobalaba: 'Tobalaba' }[venue] || 'Frida'}`, href: '#/votoctl/festival' },
-  objeto: { icon: '🗳️', name: 'El objeto más extraño', href: '#/votoctl/objeto' },
-});
+// Íconos, nombres y paneles de cada juego: los registra cada juego en su archivo con KRB.juego (public/core/escenarios.js)
+const GAME_INFO = (venue) => KRB.gameInfo(venue);
 // Menú de juegos (pedido de Cote, 21 nov): tres botones grandes, «Manual», «Por sorteo» y «Por votación», y nada más;
 // al tocar uno se despliega lo de esa modalidad en su momento (Manual: los juegos para tocar; Por sorteo: cuántos juegos
 // y el botón del sorteo, y los juegos solo para elegir directo después de «Iniciar sorteo»; Por votación: la votación).
 // En el lobby (opts.lobby) no van las otras actividades.
 function activitiesNav(current, opts = {}) {
-  const games = [
-    ['bingo', '<button type="button" data-back-bingo data-game="bingo"><span>🎱</span>Bingo</button>'],
-    ['rosco', '<a class="btn" data-game="rosco" href="#/sorteoctl"><span>🎡</span>El Rosko</a>'],
-    ['festival', '<a class="btn" data-game="festival" href="#/votoctl/festival"><span>🎤</span><b class="g-fest">El Festival</b></a>'],
-    ['objeto', '<a class="btn" data-game="objeto" href="#/votoctl/objeto"><span>🗳️</span>El objeto más extraño</a>'],
-  ];
-  const more = [
-    ['show', '<a class="btn" href="#/showctl"><span>⭐</span>Show</a>'],
-    ['karaoke', '<a class="btn" href="#/karaokectl"><span>🎤</span>Karaoke</a>'],
-    ['insta', '<a class="btn" href="#/instactl"><span>📸</span>Instagram</a>'],
-    ['desafio', '<a class="btn" href="#/desafioctl"><span>🏆</span>El Gran Desafío</a>'],
-    ['qr', '<button type="button" data-stage-qr><span>📱</span>QR en pantalla completa</button>'],
-  ];
+  // Los juegos (los que se pueden elegir como el que sigue) y las otras actividades salen del registro (KRB.juego)
+  const games = KRB.menu('juego').map((j) => [j.id, j.boton ? `<button type="button" ${j.boton} data-game="${j.id}"><span>${j.icon}</span>${j.label}</button>`
+    : `<a class="btn" data-game="${j.id}" href="${j.href}"><span>${j.icon}</span>${j.label}</a>`]);
+  const more = KRB.menu('otros').map((j) => [j.id, j.boton ? `<button type="button" ${j.boton}><span>${j.icon}</span>${j.label}</button>`
+    : `<a class="btn" href="${j.href}"><span>${j.icon}</span>${j.label}</a>`]);
   setTimeout(paintGameNav, 0);
   return `<div class="act-nav games-nav ${navFoldState() ? 'g-folded' : ''}${opts.lobby ? ' g-lobby' : ''}"><button type="button" class="g-unfold" data-nav-unfold>▸ Ver otros juegos y actividades</button>
     <div class="g-modes" role="tablist"><button type="button" role="tab" data-draw-mode="manual"><span>👆</span>Manual</button><button type="button" role="tab" data-draw-mode="sorteo"><span>🎲</span>Por sorteo</button><button type="button" role="tab" data-draw-mode="votacion"><span>🗳️</span>Por votación</button></div>
@@ -162,4 +150,6 @@ document.addEventListener('click', async (e) => {
     if (g.last.game === 'bingo') backToBingo(); else location.hash = info.href;
   } catch (err) { fail(err); }
 }, true);
-const BACK_BINGO = activitiesNav('rosco');
+// Menú de abajo del sorteo de concursantes y de El Rosko: se arma cuando ya cargaron los juegos (se registran después)
+let BACK_BINGO = '';
+window.addEventListener('DOMContentLoaded', () => { BACK_BINGO = activitiesNav('rosco'); });

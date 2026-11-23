@@ -42,11 +42,7 @@ views.jugar = async (sid) => {
     <div class="cards" id="cards"></div></div>
     <div class="prosco" id="prosco" hidden></div>
     <div class="pkar" id="pkar" hidden></div>
-    <div class="pvote" id="pvote" hidden></div>
-    <div class="pvote penpie" id="penpie" hidden></div>
-    <div class="pvote pinsta" id="pinsta" hidden></div>
-    <div class="pvote pdesafio" id="pdesafio" hidden></div>
-    <div class="pvote pgvote" id="pgvote" hidden></div>
+    ${KRB.cajasCelular()}
     <div class="pvote pact" id="pact" hidden></div>
     <div id="bingo-bottom"><button class="primary big" id="sync" style="margin-top:16px">↻ Actualizar y marcar lo que falta</button>
     <p class="muted small" style="margin-top:8px">Marca por ti los valores ya anunciados que se te pasaron.</p>
@@ -175,49 +171,24 @@ views.jugar = async (sid) => {
     if (!on && karTimer) { clearInterval(karTimer); karTimer = null; karSent = false; }
     return on;
   };
-  // Durante una votación: se guarda el cartón y aparece la teclera (vote-ui.js)
-  let voteTimer = null;
-  let voteRev = null;
-  const syncVote = () => {
-    const on = st.stage === 'voto';
-    $('#pvote').hidden = !on;
-    if (on && !voteTimer) { window.phoneVote.reset(); voteRev = null; voteTimer = setInterval(() => window.phoneVote.draw(sid, me.token), 8000); }
-    if (on && voteRev !== st.voteRev) { voteRev = st.voteRev; window.phoneVote.draw(sid, me.token); }
-    if (!on && voteTimer) { clearInterval(voteTimer); voteTimer = null; }
-    return on;
-  };
-  // «Síguenos en Instagram»: se guarda el cartón y aparece la cuenta del local (insta-ui.js)
-  let instaOn = false;
-  const syncInsta = () => {
-    const on = st.stage === 'insta';
-    $('#pinsta').hidden = !on;
-    if (on && !instaOn) { window.phoneInsta.reset(); window.phoneInsta.draw(); instaOn = setInterval(() => window.phoneInsta.draw(), 10000); } // se vuelve a leer por si el animador corrige la cuenta
-    if (!on && instaOn) { clearInterval(instaOn); instaOn = false; }
-    return on;
-  };
-  // El Gran Desafío: se guarda el cartón; los botones A, B, C y D aparecen con la pregunta al público (desafio-ui.js)
-  let desafioTimer = null;
-  let desafioRev = null;
-  const syncDesafio = () => {
-    const on = st.stage === 'desafio';
-    $('#pdesafio').hidden = !on;
-    if (on && !desafioTimer) { window.phoneDesafio.reset(); desafioRev = null; desafioTimer = setInterval(() => window.phoneDesafio.draw(sid, me.token), 8000); }
-    if (on && desafioRev !== st.desafioRev) { desafioRev = st.desafioRev; window.phoneDesafio.draw(sid, me.token); }
-    if (!on && desafioTimer) { clearInterval(desafioTimer); desafioTimer = null; }
-    return on;
-  };
   // Pedido de Cote (21 nov): en todo momento el celular muestra el nombre de la actividad y lo que viene; el cartón del
   // bingo solo mientras se juega el bingo. Sorteo de concursantes, sorteo del próximo juego, QR, show o espera entre juegos
   let actTimer = null; let actKey = ''; let actShown = ''; let actSoon = null;
-  // «El último en pie» (versión de prueba): el celular muestra la pregunta, sus vidas y el ranking
-  let epTimer = null; let epRev = null;
-  const syncEnpie = () => {
-    const on = st.stage === 'enpie';
-    $('#penpie').hidden = !on;
-    if (on && !epTimer) { window.phoneEnpie.reset(); epRev = null; epTimer = setInterval(() => window.phoneEnpie.draw(sid, me.token), 6000); }
-    if (on && epRev !== st.enpieRev) { epRev = st.enpieRev; window.phoneEnpie.draw(sid, me.token); }
-    if (!on && epTimer) { clearInterval(epTimer); epTimer = null; }
-    return on;
+  // Juegos con su caja en el celular (KRB.escenario(…, { celular }), en el ui.js de cada juego): la caja aparece con su
+  // escenario y se guarda el cartón; al entrar se reinicia, se vuelve a dibujar cuando cambia su aviso (rev) y cada
+  // cierto tiempo, y al salir se detiene
+  const boxes = Object.keys(KRB.escenarios).filter((k) => KRB.escenarios[k].celular).map((k) => ({ stage: k, ...KRB.escenarios[k].celular, timer: null, last: null }));
+  const syncBoxes = () => {
+    let any = false;
+    for (const b of boxes) {
+      const on = st.stage === b.stage;
+      $(`#${b.id}`).hidden = !on;
+      if (on && !b.timer) { b.reset(); b.last = null; if (!b.rev) b.draw(sid, me.token); b.timer = setInterval(() => b.draw(sid, me.token), b.every); }
+      if (on && b.rev && b.last !== st[b.rev]) { b.last = st[b.rev]; b.draw(sid, me.token); }
+      if (!on && b.timer) { clearInterval(b.timer); b.timer = null; if (b.stop) b.stop(); }
+      any = any || on;
+    }
+    return any;
   };
   const actOf = () => {
     const s = st.stage || 'bingo';
@@ -307,17 +278,6 @@ views.jugar = async (sid) => {
     if (k !== actKey) { actKey = k; actShown = ''; clearInterval(actTimer); actTimer = null; if (k) { drawAct(); if (k === 'sorteo' || k === 'juego') actTimer = setInterval(drawAct, 3000); } } else if (k === 'bingofin') drawAct(); // por si se confirma otro ganador
     return !!k;
   };
-  // Votación del próximo juego (pedido de Cote, 21 nov): los juegos para votar; se vuelve a leer al abrir o cerrar cada
-  // vuelta (gameVoteRev) y, por si acaso, cada 8 segundos
-  let gvRev = null; let gvTimer = null;
-  const syncGvote = () => {
-    const on = st.stage === 'votojuego';
-    $('#pgvote').hidden = !on;
-    if (on && !gvTimer) { window.phoneGvote.reset(); gvRev = null; gvTimer = setInterval(() => window.phoneGvote.draw(sid, me.token), 8000); }
-    if (on && gvRev !== st.gameVoteRev) { gvRev = st.gameVoteRev; window.phoneGvote.draw(sid, me.token); }
-    if (!on && gvTimer) { clearInterval(gvTimer); gvTimer = null; window.phoneGvote.stop(); }
-    return on;
-  };
   // Instrucciones en el celular (pedido de Cote, 20 nov): al empezar cada juego (y al entrar a la sala) aparecen
   // 2 segundos las instrucciones del juego en curso: Bingo (cada ronda), El Rosko, El Festival o El objeto más extraño
   // Cada juego tiene su propia clave: bingo por ronda (desde que se elige la figura), El Rosko por rosco cargado y la votación
@@ -362,7 +322,7 @@ views.jugar = async (sid) => {
   const syncStage = () => {
     syncHowto();
     syncKids();
-    const kar = syncKar() | syncVote() | syncEnpie() | syncInsta() | syncGvote() | syncAct() | syncDesafio();
+    const kar = syncKar() | syncBoxes() | syncAct();
     const on = (st.stage === 'rueda' && !!st.roscoId) || kar;
     $('#bingo-top').hidden = on;
     $('#bingo-bottom').hidden = on;
@@ -500,7 +460,7 @@ views.jugar = async (sid) => {
   const onFs = () => { if (!document.fullscreenElement && $('#live') && $('#live').classList.contains('full') && $('#live').requestFullscreen) setFull(false); };
   document.addEventListener('fullscreenchange', onFs);
   const off = subscribe(sid, (s) => { st = s; render(); startLive(); }, () => { store.del(key); backToStart(); }, false, me.token);
-  return () => { off(); stopRosco(); clearInterval(karTimer); clearInterval(voteTimer); clearInterval(desafioTimer); clearInterval(instaOn); clearInterval(gvTimer); window.phoneGvote.stop(); clearInterval(actTimer); liveFor = null; player = null; document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('visibilitychange', onBack); document.body.classList.remove('live-open'); };
+  return () => { off(); stopRosco(); clearInterval(karTimer); boxes.forEach((b) => { clearInterval(b.timer); if (b.stop) b.stop(); }); clearInterval(actTimer); liveFor = null; player = null; document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('visibilitychange', onBack); document.body.classList.remove('live-open'); };
 };
 // Canal de Twitch de cada local (uno por local: KRB Stage en Frida, KRB Stage Kennedy en Kennedy, KRB Stage 3 en Tobalaba)
 const LIVE_CHANNELS = { frida: 'krbstage', kennedy: 'krbstagekennedy', tobalaba: 'krbstage3' };

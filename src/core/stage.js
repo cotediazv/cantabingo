@@ -3,8 +3,8 @@
 // Los escenarios de los juegos salen del registro (src/core/registry.js); aquí están solo los que no son juegos.
 const { fail } = require('./util');
 
-const BASE_STAGES = ['bingo', 'qr', 'karaoke', 'show', 'insta', 'none'];
-const BASE_NAMES = { bingo: 'Bingo', qr: 'QR grande', karaoke: 'Karaoke', show: 'Show', insta: 'Instagram', none: 'Nada', cartelera: 'Cartelera de la semana', custom: 'GC personalizable', info: 'Información que va cambiando' };
+const BASE_STAGES = ['qr', 'karaoke', 'show', 'insta', 'none']; // el bingo se registra como juego (src/bingo)
+const BASE_NAMES = { qr: 'QR grande', karaoke: 'Karaoke', show: 'Show', insta: 'Instagram', none: 'Nada', cartelera: 'Cartelera de la semana', custom: 'GC personalizable', info: 'Información que va cambiando' };
 
 module.exports = function stage(ctx) {
   const { db, save, games } = ctx;

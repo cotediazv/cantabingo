@@ -12,7 +12,7 @@ const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((d) =
 const js = walk(PUBLIC).filter((f) => f.endsWith('.js')).map((f) => fs.readFileSync(f, 'utf8')).join('\n');
 
 test('cada escenario tiene su pantalla registrada (KRB.escenario)', () => {
-  const stages = [...BASE_STAGES, ...GAMES.map((g) => g.stage).filter(Boolean)].filter((s) => s !== 'none');
+  const stages = ['bingo', ...BASE_STAGES, ...GAMES.map((g) => g.stage).filter(Boolean)].filter((s) => s !== 'none');
   const missing = stages.filter((s) => !js.includes(`KRB.escenario('${s}'`));
   assert.deepEqual(missing, [], 'Falta KRB.escenario(...) en el archivo ui.js del juego');
 });
@@ -22,4 +22,15 @@ test('index.html: todos los archivos que carga existen', () => {
   const refs = [...html.matchAll(/(?:src|href)="([^":]+\.(?:js|css))"/g)].map((m) => m[1]);
   assert.ok(refs.length > 20);
   assert.deepEqual(refs.filter((r) => !fs.existsSync(path.join(PUBLIC, r))), []);
+});
+
+test('cada juego que se puede elegir tiene su botón en el menú (KRB.juego)', async () => {
+  const { startServer } = require('./helpers');
+  const srv = await startServer();
+  try {
+    const { games } = await srv.ok('GET', '/api/gamedraw'); // sale del registro del servidor (elegibles de cada juego)
+    assert.deepEqual(games, ['bingo', 'rosco', 'festival', 'objeto']);
+    const missing = games.filter((id) => !new RegExp(`KRB\\.juego\\(\\{ id: '${id}', menu: 'juego'`).test(js));
+    assert.deepEqual(missing, [], 'Falta KRB.juego({ id, menu: \'juego\', … }) en el ui.js del juego');
+  } finally { await srv.stop(); }
 });

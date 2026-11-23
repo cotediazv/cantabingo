@@ -191,4 +191,8 @@
 })();
 
 // Qué se ve en el tablero y en el GC de OBS cuando el escenario es El último en pie (public/core/escenarios.js)
-KRB.escenario('enpie', { full: () => views.enpieFull(), gc: () => views.enpieGC(), qrFull: 'br', qrGc: 'above' });
+KRB.escenario('enpie', { full: () => views.enpieFull(), gc: () => views.enpieGC(), qrFull: 'br', qrGc: 'above',
+  // celular: la caja con la teclera o la pregunta (views.jugar la muestra con este escenario)
+  celular: { id: 'penpie', cls: 'pvote penpie', rev: 'enpieRev', every: 6000, reset: () => window.phoneEnpie.reset(), draw: (sid, token) => window.phoneEnpie.draw(sid, token) },
+});
+KRB.juego({ id: 'enpie', icon: '🧍', name: 'El último en pie', href: '#/enpiectl' }); // versión de prueba: se abre desde Juegos

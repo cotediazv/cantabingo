@@ -14,6 +14,12 @@ module.exports = {
         voteGen: (db.vote || {}).gen || 0, // cambia con cada concurso nuevo (El Festival u objeto): los celulares muestran sus instrucciones
       }),
       onReset: () => { vote.clear(); },
+      elegibles: [
+        { id: 'festival', icon: '🎤', name: (v) => `El Festival de ${({ kennedy: 'Mercado Kennedy', tobalaba: 'Tobalaba' })[v] || 'Frida'}` },
+        { id: 'objeto', icon: '🗳️', name: 'El objeto más extraño' },
+      ],
+      current: () => { const v = db.vote || {}; return v.winner ? null : { game: v.mode === 'karaoke' ? 'festival' : 'objeto' }; },
+      done: () => !!(db.vote || {}).winner,
     };
   },
 };

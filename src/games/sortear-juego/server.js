@@ -10,7 +10,8 @@ module.exports = function sortearJuego(ctx) {
   // (Bingo, El Rosko, El Festival y El objeto más extraño; el karaoke no es un juego), el bingo incluido desde el primer
   // sorteo. El juego que sale queda bloqueado solo para el sorteo siguiente y después vuelve a estar disponible.
   // El sorteo se ve en el tablero y en el GC (escenario «juego»).
-  const DRAW_GAMES = ['bingo', 'rosco', 'festival', 'objeto'];
+  // Los juegos que se pueden elegir salen del registro (cada juego declara los suyos en `elegibles`)
+  const DRAW_GAMES = ctx.games.elegibles().map((x) => x.id);
   db.gameDraw ||= { played: [], last: null };
   if (!db.gameDraw.rule2) { db.gameDraw.played = db.gameDraw.last ? [db.gameDraw.last.game] : []; db.gameDraw.rule2 = true; }
   // Cómo se elige el juego (pedido de Cote, 21 nov): tres pestañas en el lobby y bajo cada juego: «Manual» (el animador

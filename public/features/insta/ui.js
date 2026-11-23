@@ -92,4 +92,8 @@
 })();
 
 // Qué se ve en el tablero y en el GC de OBS cuando el escenario es «Síguenos en Instagram» (public/core/escenarios.js)
-KRB.escenario('insta', { full: () => views.instaFull(), gc: () => views.instaGC() });
+KRB.escenario('insta', { full: () => views.instaFull(), gc: () => views.instaGC(),
+  // celular: la cuenta del local (se vuelve a leer por si el animador la corrige) (views.jugar la muestra con este escenario)
+  celular: { id: 'pinsta', cls: 'pvote pinsta', every: 10000, reset: () => window.phoneInsta.reset(), draw: () => window.phoneInsta.draw() },
+});
+KRB.juego({ id: 'insta', menu: 'otros', orden: 13, icon: '📸', name: 'Instagram', href: '#/instactl' });

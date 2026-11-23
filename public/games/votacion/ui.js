@@ -399,4 +399,10 @@
 })();
 
 // Qué se ve en el tablero y en el GC de OBS cuando el escenario es la votación: El objeto más extraño o El Festival (public/core/escenarios.js)
-KRB.escenario('voto', { full: () => views.votoFull(), gc: () => views.votoGC() });
+KRB.escenario('voto', { full: () => views.votoFull(), gc: () => views.votoGC(),
+  // celular: la caja con la teclera o la pregunta (views.jugar la muestra con este escenario)
+  celular: { id: 'pvote', cls: 'pvote', rev: 'voteRev', every: 8000, reset: () => window.phoneVote.reset(), draw: (sid, token) => window.phoneVote.draw(sid, token) },
+});
+KRB.juego({ id: 'festival', menu: 'juego', orden: 3, icon: '🎤', href: '#/votoctl/festival', label: '<b class="g-fest">El Festival</b>',
+  name: (v) => `El Festival de ${({ frida: 'Frida', kennedy: 'Mercado Kennedy', tobalaba: 'Tobalaba' })[v] || 'Frida'}` });
+KRB.juego({ id: 'objeto', menu: 'juego', orden: 4, icon: '🗳️', name: 'El objeto más extraño', href: '#/votoctl/objeto' });

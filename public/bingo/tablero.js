@@ -107,3 +107,5 @@
 // Qué se ve en el tablero y en el GC de OBS cuando el escenario es el bingo o el QR grande (public/core/escenarios.js)
 KRB.escenario('bingo', { full: () => views.bingoFull(), gc: () => views.gc() });
 KRB.escenario('qr', { full: () => views.qrFull(), gc: () => views.qrBig() });
+KRB.juego({ id: 'bingo', menu: 'juego', orden: 1, icon: '🎱', name: 'Bingo', boton: 'data-back-bingo' }); // su panel se abre con backToBingo()
+KRB.juego({ id: 'qr', menu: 'otros', orden: 15, icon: '📱', name: 'QR en pantalla completa', boton: 'data-stage-qr' });
