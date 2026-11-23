@@ -16,7 +16,8 @@
     let sid = null;
     let lastCount = -1;
     let shown = null; // qué pantalla especial está dibujada (para no redibujar y cortar animaciones)
-    const leave = () => { if (off) off(); off = null; sid = null; lastCount = -1; shown = null; };
+    let inPlay = false; // diseño nuevo: las piezas entran con movimiento solo la primera vez que se dibuja el bingo
+    const leave = () => { if (off) off(); off = null; sid = null; lastCount = -1; shown = null; inPlay = false; };
     // Sin nada en juego: portada con el QR, para que la gente vaya entrando desde ya
     const idle = () => {
       $('#fb').className = '';
@@ -25,13 +26,20 @@
         <small>Escanea el código QR con tu celular y prepárate</small><small class="soon">En unos momentos comenzamos</small></div>`;
     };
 
+    const fitTitle = () => { if (window.fitOneLine) window.fitOneLine($('#fb .fb-title'), 14); };
+    // Al cambiar de diseño sin recargar, el título se vuelve a ajustar (y otra vez cuando cargan las letras de ese diseño)
+    const onTema = () => { fitTitle(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTitle); };
+    window.addEventListener('tema', onTema);
+
     const draw = (st) => {
       $('#fb').className = `th-${st.theme}`;
       if (st.celebrate) {
+        inPlay = false;
         if (shown !== `win:${winKey(st)}`) { shown = `win:${winKey(st)}`; $('#fb').innerHTML = winScreenHTML(st); }
         return;
       }
       if (st.bigQr) {
+        inPlay = false;
         const count = st.players === 1 ? '1 participante ya está dentro' : `${st.players} participantes ya están dentro`;
         if (shown !== 'qr' || !$('.gc-big-count')) {
           shown = 'qr';
@@ -62,7 +70,7 @@
       $('#fb').innerHTML = `
         <header class="fb-top">
           <b class="fb-title">${esc(bingoName(st.name))}</b>
-          <span class="fb-pill">👥 <b>${st.players}</b> ${st.players === 1 ? 'participante' : 'participantes'}</span>
+          <span class="fb-pill"><span class="t2-emo">👥</span> <b>${st.players}</b> ${st.players === 1 ? 'participante' : 'participantes'}</span>
           <span class="fb-pill">Ronda <b>${st.round}</b></span>
           <span class="fb-pill"><b>${st.drawn.length}</b> de ${st.values}</span>
         </header>
@@ -72,9 +80,12 @@
         </section>
         <section class="fb-board">${rows}</section>
         <aside class="fb-side">
-          <div class="fb-figure"><span>Figura</span><div class="gc-grid">${figure}</div><b>${esc(PATTERNS.byId[id].name)}</b></div>
+          <div class="fb-figure${/^figura\b/i.test(PATTERNS.byId[id].name) ? ' fig-sola' : ''}"><span>Figura</span><div class="gc-grid">${figure}</div><b>${esc(PATTERNS.byId[id].name)}</b></div>
           <div class="fb-qr">${qr(joinUrl())}<span>Escanea el código QR con tu celular y juega</span></div>
         </aside>`;
+      // El título entero (ej. «El Bingo de Mercado Kennedy»): si no cabe se achica la letra, nunca se corta con «…»
+      fitTitle(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTitle);
+      if (!inPlay) { inPlay = true; $('#fb').classList.add('t2-entra'); }
     };
 
     const follow = async () => {
@@ -89,6 +100,6 @@
     idle();
     await follow();
     const poll = setInterval(follow, 5000);
-    return () => { clearInterval(poll); leave(); };
+    return () => { clearInterval(poll); leave(); window.removeEventListener('tema', onTema); };
   };
 })();

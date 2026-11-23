@@ -14,7 +14,7 @@ let FFMPEG = null;
 try { FFMPEG = require('ffmpeg-static'); } catch { /* sin paquete */ }
 if (!FFMPEG || !fs.existsSync(FFMPEG)) FFMPEG = ['/usr/bin/ffmpeg', '/usr/local/bin/ffmpeg'].find((x) => fs.existsSync(x)) || null;
 
-const VENUES = { frida: 'Frida Kahlo', kennedy: 'Kennedy', tobalaba: 'Tobalaba' };
+const VENUES = { frida: 'Frida Kahlo', kennedy: 'Mercado Kennedy', tobalaba: 'Tobalaba' }; // el local se llama Mercado Kennedy (pedido de Cote, 21 nov)
 // Pantallas: cada una con su video y su modo; la actividad es la de su local. Pantallas verticales en los tres
 // locales (pedido de Cote) y, además, una horizontal en Tobalaba. La clave es también el nombre del archivo del video.
 // Kennedy y Frida tienen además su pantalla horizontal con su propio video (pedido de Cote, 19 nov: kennedy-h y frida-h).
@@ -22,7 +22,7 @@ const SCREENS = { kennedy: 'kennedy', frida: 'frida', 'tobalaba-v': 'tobalaba', 
 const MODES = ['auto', 'video', 'actividad'];
 const MAX_BYTES = 300 * 1024 * 1024; // 300 MB por video
 
-module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, karaoke }) {
+module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, karaoke, perOf = () => null }) {
   db.vertical ||= {}; // local -> { video: número de versión (fecha de subida), size, mode }
   const file = (v) => path.join(dir, `vertical-${v}.mp4`);
   const conf = (v) => (db.vertical[v] ||= { video: 0, size: 0, mode: 'auto' });
@@ -96,7 +96,7 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
   for (const v of Object.keys(SCREENS)) { const c = db.vertical[v]; if (c && c.opt && (c.opt.state === 'procesando' || c.opt.state === 'esperando')) { c.opt = { ...c.opt, state: 'error' }; save(); } try { fs.rmSync(`${file(v)}.optimizando.mp4`, { force: true }); } catch { /* nada */ } }
 
   // Qué actividad hay ahora en el local: la sala de juegos completa de ese local abierta y con algo en juego
-  // (pedido de Cote: si la sala está abierta pero sin bingo, El Rosco ni otro juego en curso, se ve la información
+  // (pedido de Cote: si la sala está abierta pero sin bingo, El Rosko ni otro juego en curso, se ve la información
   // del local con los shows que vienen). En el bingo cuenta como «en juego» si ya salieron números, si está el QR
   // grande para entrar o si hay ganador en pantalla.
   const activityOf = (v) => {
@@ -146,8 +146,12 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
     // Los juegos de la sala completa siempre pasan adelante (salvo «Siempre el video»)
     let show = c.mode === 'video' ? 'video' : c.mode === 'actividad' ? (act || rest || 'sala') : (act || rest || 'video');
     if (show === 'video' && !hasVideo) show = act || 'light'; // sin video subido y sin juegos: la información del local (shows que vienen, horarios, QR)
+    // Switch «Video cartelera» de la sala light (pedido de Cote, 21 nov): la pantalla vertical deja puesto el video subido
+    // hasta que alguien cambie el GC desde la sala light (sin video subido no cambia nada)
+    const lightVideo = !!(LIGHT_SCREENS[v] && ((db.lights || {})[venue] || {}).video);
+    if (lightVideo && hasVideo) show = 'video';
     // lightStage: lo que el equipo eligió en el panel de la sala light del local; la pantalla lo sigue cuando muestra la información
-    return { screen: v, venue: SCREENS[v], name: VENUES[SCREENS[v]], opt: c.opt || null, optimiza: !!FFMPEG, lightStage: ((db.lights || {})[venue] || {}).stage || 'cartelera', karaokeNow: !!karaoke.nowOf(venue).now, mode: c.mode, activity: act, show, video: hasVideo ? c.video : 0, size: hasVideo ? c.size : 0 };
+    return { screen: v, venue: SCREENS[v], name: VENUES[SCREENS[v]], per: perOf(venue), lightVideo: lightVideo && hasVideo, opt: c.opt || null, optimiza: !!FFMPEG, lightStage: ((db.lights || {})[venue] || {}).stage || 'cartelera', karaokeNow: !!karaoke.nowOf(venue).now, mode: c.mode, activity: act, show, video: hasVideo ? c.video : 0, size: hasVideo ? c.size : 0 };
   };
 
   app.get('/api/vertical/:local', (req, res) => {

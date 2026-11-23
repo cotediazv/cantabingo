@@ -4,9 +4,9 @@
 (() => {
   // Pantallas: verticales (de pie, la imagen se entrega girada) y horizontales, en los tres locales
   const SCREENS = {
-    kennedy: { venue: 'kennedy', name: 'Kennedy', up: true },
+    kennedy: { venue: 'kennedy', name: 'Mercado Kennedy', up: true },
     // horizontales de Kennedy y Frida, con su propio video (pedido de Cote)
-    'kennedy-h': { venue: 'kennedy', name: 'Kennedy', up: false },
+    'kennedy-h': { venue: 'kennedy', name: 'Mercado Kennedy', up: false },
     frida: { venue: 'frida', name: 'Frida Kahlo', up: true },
     'frida-h': { venue: 'frida', name: 'Frida Kahlo', up: false },
     'tobalaba-v': { venue: 'tobalaba', name: 'Tobalaba', up: true },
@@ -25,7 +25,7 @@
   views.vertical = async (local) => {
     const v = pick(local);
     document.body.classList.add('rot-screen');
-    app.innerHTML = `<iframe class="rot-frame" title="Pantalla vertical" src="${location.pathname}?mudo=1#/vertical-in/${v}"></iframe>`;
+    app.innerHTML = `<iframe class="rot-frame" title="Pantalla vertical" src="${location.pathname}?mudo=1${window.__mon || ''}#/vertical-in/${v}"></iframe>`;
     return () => document.body.classList.remove('rot-screen');
   };
 
@@ -43,9 +43,11 @@
     let ver = 0;
     let alive = true;
     let lightId = '';
+    let seq = 0; // si dos lecturas se cruzan (la de cada 3 s y la del aviso inmediato), vale solo la última
     const apply = async () => {
+      const n = ++seq;
       const st = await api('GET', `/api/vertical/${v}`).catch(() => null);
-      if (!alive || !st) return;
+      if (!alive || !st || n !== seq) return;
       if (st.video !== ver) {
         ver = st.video;
         // La página web (krbstage.cl) puede pasar una copia liviana del mismo video (?liviano=<dirección>&lver=<versión>),
@@ -58,29 +60,34 @@
       // Con la información del local en pantalla, se sigue lo que el equipo elige en el panel de la sala light del local
       // (Karaoke, Show y lo que viene, Cartelera, QR grande y lista); «Nada» deja la información con los shows que vienen
       // (Karaoke sin nadie en la lista: el cartón base con las actividades)
-      if (st.show === 'light') st.show = { karaoke: st.karaokeNow ? 'karaoke' : 'light', qr: 'light-qr', show: 'light-show' }[st.lightStage] || 'light';
+      // (Karaoke sin nadie cantando: la información que va cambiando, con el QR para pedir canciones)
+      if (st.show === 'light') st.show = { karaoke: st.karaokeNow ? 'karaoke' : 'light-kar', qr: 'light-qr', show: 'light-show' }[st.lightStage] || 'light';
       if (st.show === 'karaoke' && !lightId) lightId = ((await api('GET', `/api/light?local=${venue}`).catch(() => ({}))) || {}).id || '';
       // Fondo de la sala light cuando toca; sin video subido y sin actividad en este local: el logo (no el tablero de la
       // sala abierta, que puede ser de otro local)
-      const want = st.show === 'video' ? 'video' : st.show === 'light' ? `#/light-v/${venue}` : st.show === 'light-qr' ? `#/light-v/${venue}/qr` : st.show === 'light-show' ? `#/light-v/${venue}/show` : st.show === 'karaoke' ? `#/karaoke-v/${venue}/${lightId}` : !st.activity ? 'video' : '#/tablero';
+      const want = st.show === 'video' ? 'video' : st.show === 'light' ? `#/light-v/${venue}` : st.show === 'light-qr' ? `#/light-v/${venue}/qr` : st.show === 'light-show' ? `#/light-v/${venue}/show` : st.show === 'light-kar' ? `#/light-v/${venue}/karaoke` : st.show === 'karaoke' ? `#/karaoke-v/${venue}/${lightId}` : !st.activity ? 'video' : '#/tablero';
+      // GC PER: se agrega como una franja abajo, sobre lo que la pantalla esté mostrando (si adentro va el tablero de la
+      // sala de juegos, la franja de la sala la pone el mismo tablero)
+      window.gcPer.over(st.per && !(st.per.from === 'main' && /^#\/tablero/.test(want)) ? st.per.text : '', venue);
       if (want === shown) return;
       shown = want;
       const isVideo = want === 'video';
       video.hidden = !isVideo || !ver;
       empty.hidden = !isVideo || !!ver;
       frame.hidden = isVideo;
-      if (isVideo) { frame.src = 'about:blank'; if (ver) video.play().catch(() => {}); } else { video.pause(); frame.src = `${location.pathname}?mudo=1${want}`; }
+      if (isVideo) { frame.src = 'about:blank'; if (ver) video.play().catch(() => {}); } else { video.pause(); frame.src = `${location.pathname}?mudo=1${window.__mon || ''}${want}`; }
     };
     await apply();
     const timer = setInterval(apply, 3000);
-    return () => { alive = false; clearInterval(timer); document.body.classList.remove('vert-in'); };
+    const offAviso = window.onAviso(apply);
+    return () => { alive = false; clearInterval(timer); offAviso(); window.gcPer.over(''); document.body.classList.remove('vert-in'); };
   };
 
   // Karaoke de la sala light de un local a pantalla completa (lo usa la pantalla vertical)
   views['karaoke-v'] = async () => {
     const [, local, id] = location.hash.replace(/^#\/?/, '').split('/'); // #/karaoke-v/<local>/<sala light>
     document.body.classList.add('full');
-    const stop = await views.karaokeFull(pick(local), id ? `${base()}#/l/${id}` : '');
+    const stop = await views.karaokeFull(pick(local), id ? `${window.pubBase()}#/l/${id}` : '');
     return () => { document.body.classList.remove('full'); if (typeof stop === 'function') stop(); };
   };
 
@@ -88,7 +95,7 @@
   // Panel por local (pedido de Cote): una pestaña por local y, dentro, dos espacios, la pantalla vertical y la horizontal,
   // cada una con su video, su modo y su enlace para el decodificador. #/verticalctl/<local> (también acepta una pantalla).
   const VENUE_SCREENS = { kennedy: ['kennedy', 'kennedy-h'], frida: ['frida', 'frida-h'], tobalaba: ['tobalaba-v', 'tobalaba'] };
-  const VENUE_NAMES = { kennedy: 'Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' };
+  const VENUE_NAMES = { kennedy: 'Mercado Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' };
   const NAMES = { video: '🎬 Video de la cartelera', sala: '🎲 Juegos (sala completa)', light: '💡 Información del local (QR, cartelera, horarios)', karaoke: '🎤 Karaoke (sala light)' };
   // Un espacio (vertical u horizontal) dentro del panel del local
   const screenBox = (root, v, onState) => {
@@ -106,7 +113,7 @@
     let lastSig = '';
     const paint = (st) => {
       q('.vt-show').textContent = st.show === 'sala' && !st.activity ? '🎲 Portada de la sala (no hay video subido)' : NAMES[st.show] || st.show;
-      q('.vt-why').textContent = st.mode === 'auto' ? (st.activity ? 'Hay una actividad en este local.' : 'No hay actividad en este local.') : 'Puesto a mano.';
+      q('.vt-why').textContent = st.lightVideo ? 'Puesto desde la sala light (switch «Video cartelera»), hasta que se cambie el GC.' : st.mode === 'auto' ? (st.activity ? 'Hay una actividad en este local.' : 'No hay actividad en este local.') : 'Puesto a mano.';
       onState(v, st);
       q('.vt-cur').innerHTML = st.video
         ? `<video class="vt-prev" src="/vertical/${v}.mp4?v=${st.video}" muted controls playsinline preload="metadata"></video>

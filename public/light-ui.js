@@ -2,14 +2,17 @@
 // Sala light: karaoke, show, lo que viene y cartelera de la semana en un local, al mismo tiempo que la
 // sala principal y sin tocarla. Panel (#/light), GC para OBS (#/light-gc) y celular del público (#/l/<sala>).
 (() => {
-  const VENUES = { kennedy: 'Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' };
-  const lightJoin = (id) => `${location.origin}${location.pathname}#/l/${id}`;
+  const VENUES = { kennedy: 'Mercado Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' }; // el local se llama Mercado Kennedy (pedido de Cote, 21 nov)
+  const lightJoin = (id) => `${window.pubBase()}#/l/${id}`;
   const gcUrl = (v) => `${location.origin}${location.pathname}#/light-gc/${v}`;
   const teamUrl = (v) => `${location.origin}${location.pathname}#/equipo/${v}`;
   // ¿Quién maneja este panel? El moderador, o el equipo del local (clave del equipo)
   const staffVenue = async () => (store.get('staffToken') ? (await api('GET', '/api/staff/me').catch(() => ({}))).venue || '' : '');
   const STAGES = [['info', '🔄', 'Información que va cambiando'], ['karaoke', '🎤', 'Karaoke'], ['show', '⭐', 'Show y lo que viene'], ['cartelera', '📅', 'Cartelera de la semana'], ['qr', '📱', 'QR grande y lista'], ['none', '⛔', 'Nada']];
   const dayName = (d) => ({ MIERCOLES: 'Miércoles', SABADO: 'Sábado' }[d] || d.charAt(0) + d.slice(1).toLowerCase());
+  // Diseño nuevo (tema.js): las etiquetas de las pantallas van sin emojis; con el diseño anterior quedan como siempre
+  const se = (s) => (window.sinEmoji ? window.sinEmoji(s) : s);
+  const t2on = () => (window.t2 && window.t2() ? 1 : 0);
 
   // ---------- Panel del moderador: salas light de cada local ----------
   views.light = async () => {
@@ -34,7 +37,7 @@
             <div class="lp-key-row"><input type="text" name="clave" minlength="4" required autocomplete="off" placeholder="${key[v] ? 'Cambiar la clave' : 'Clave de este local'}"><button class="primary">Guardar</button></div></form>`).join('')}</div>
         <div class="panel"><h2 style="margin-top:0">Pantallas verticales</h2>
           <p class="muted small">Enlace para el decodificador de cada pantalla de pie (sale girado). El video y el modo se manejan en <a href="#/verticalctl/kennedy">Pantallas de los locales</a>.</p>
-          ${[['kennedy', 'Kennedy'], ['frida', 'Frida Kahlo'], ['tobalaba-v', 'Tobalaba']].map(([k, n]) => `<p class="small"><b>${esc(n)}</b><br><a href="${esc(`${location.origin}${location.pathname}#/vertical/${k}`)}" target="_blank">${esc(`${location.origin}${location.pathname}#/vertical/${k}`)}</a></p>`).join('')}</div>`;
+          ${[['kennedy', 'Mercado Kennedy'], ['frida', 'Frida Kahlo'], ['tobalaba-v', 'Tobalaba']].map(([k, n]) => `<p class="small"><b>${esc(n)}</b><br><a href="${esc(`${location.origin}${location.pathname}#/vertical/${k}`)}" target="_blank">${esc(`${location.origin}${location.pathname}#/vertical/${k}`)}</a></p>`).join('')}</div>`;
       document.querySelectorAll('.lp-key').forEach((f) => { f.onsubmit = async (e) => { e.preventDefault(); try { await api('POST', '/api/staff/clave', { local: f.dataset.v, clave: new FormData(f).get('clave') }); toast(`Clave de ${VENUES[f.dataset.v]} guardada`); last = ''; paint(); } catch (err) { fail(err); } }; });
     };
     await paint();
@@ -69,16 +72,26 @@
       if (!st || !top.isConnected) return;
       const sig = JSON.stringify(st);
       if (sig === last) return;
+      // Mientras se escribe el texto del GC personalizable no se redibuja (se perdería lo escrito)
+      if (document.activeElement && document.activeElement.name === 'text' && top.contains(document.activeElement)) return;
       last = sig;
       top.innerHTML = `<h1 style="margin:0">${esc(st.title)}</h1><span class="muted">${st.players} ${st.players === 1 ? 'persona entró' : 'personas entraron'} a la sala</span>
         <h2 style="margin:16px 0 10px">En pantalla (GC)</h2>
-        <div class="lp-stages">${STAGES.map(([k, i, t]) => `<button type="button" data-st="${k}" class="${st.stage === k ? 'on' : ''}"><span>${i}</span>${t}</button>`).join('')}</div>`;
+        <div class="lp-stages">${STAGES.map(([k, i, t]) => `<button type="button" data-st="${k}" class="${st.stage === k ? 'on' : ''}"><span>${i}</span>${t}</button>`).join('')}</div>
+        <form class="lp-custom${st.stage === 'custom' ? ' on' : ''}"><input type="text" name="text" maxlength="120" autocomplete="off" placeholder="Escribe aquí el texto del GC" value="${esc(st.text || '')}"><button class="${st.stage === 'custom' ? 'on' : ''}">✏️ GC personalizable</button></form>
+        <label class="lp-switch${st.video ? ' on' : ''}"><input type="checkbox" data-video ${st.video ? 'checked' : ''}><i></i><span><b>🎬 Video cartelera</b><small>La pantalla vertical deja puesto el video subido hasta que se cambie el GC</small></span></label>`;
       bottom.innerHTML = `<h2 style="margin-top:0">Direcciones</h2>
         <div class="lp-links"><div>${qr(lightJoin(st.id))}</div><div>
           <p class="small"><b>Para entrar desde el celular</b> (es el QR de la sala light):<br><a href="${esc(lightJoin(st.id))}" target="_blank">${esc(lightJoin(st.id))}</a></p>
           <p class="small"><b>GC para OBS</b> (fuente de navegador):<br><a href="${esc(gcUrl(v))}" target="_blank">${esc(gcUrl(v))}</a></p></div></div>
 `;
       top.querySelectorAll('[data-st]').forEach((b) => { b.onclick = async () => { try { await api('POST', '/api/light/stage', { show: b.dataset.st, local: v }); last = ''; paint(); } catch (err) { fail(err); } }; });
+      // GC personalizable (pedido de Cote, 21 nov): pone en el GC el texto escrito
+      const cf = top.querySelector('.lp-custom');
+      if (cf) cf.onsubmit = async (e) => { e.preventDefault(); const text = cf.text.value.trim(); if (!text) { toast('Escribe el texto del GC'); cf.text.focus(); return; } try { cf.text.blur(); await api('POST', '/api/light/stage', { show: 'custom', local: v, text }); toast('GC personalizable en pantalla'); last = ''; paint(); } catch (err) { fail(err); } };
+      // Switch «Video cartelera» (pedido de Cote, 21 nov): se apaga solo al cambiar el GC
+      const sw = top.querySelector('[data-video]');
+      if (sw) sw.onchange = async () => { sw.closest('.lp-switch').classList.toggle('on', sw.checked); try { await api('POST', '/api/light/video', { local: v, on: sw.checked }); toast(sw.checked ? 'Video cartelera en la pantalla vertical' : 'La pantalla vertical vuelve a seguir el GC'); } catch (err) { sw.checked = !sw.checked; fail(err); } last = ''; paint(); };
     };
     paint();
     const timer = setInterval(paint, 4000);
@@ -106,7 +119,7 @@
         const q = (k) => card.querySelector(`[data-k="${k}"]`);
         const src = l.light ? `#/light-gc/${l.venue}` : l.main ? '#/escena' : '';
         const frame = q('frame');
-        if ((frame.dataset.src || '') !== src) { frame.dataset.src = src; frame.src = src ? `${location.pathname}?mudo=1${src}` : 'about:blank'; }
+        if ((frame.dataset.src || '') !== src) { frame.dataset.src = src; frame.src = src ? `${location.pathname}?mudo=1${window.__mon || ''}${src}` : 'about:blank'; }
         frame.hidden = !src; q('off').hidden = !!src;
         q('badge').textContent = l.light && l.main ? 'Sala principal + light' : l.light ? 'Sala light' : l.main ? 'Sala principal' : 'Cerrado';
         q('badge').className = `cs-badge ${l.light || l.main ? 'on' : ''}`;
@@ -129,7 +142,7 @@
 
   // ---------- GC para OBS ----------
   const weekHTML = (c) => c.week.map((d) => `<div class="lg-day ${d.today ? 'today' : ''}"><b>${esc(dayName(d.day))} ${d.date}</b>
-      ${d.show ? `<span class="lg-show">⭐ ${esc(d.show)}</span>` : ''}
+      ${d.show ? `<span class="lg-show">${se('⭐')} ${esc(d.show)}</span>` : ''}
       ${d.hours.length ? `<span class="lg-hours">${d.hours.map((h) => `${esc(h.time)} ${esc(h.label)}`).join(' · ')}</span>` : ''}</div>`).join('');
   views['light-gc'] = async (venue) => {
     document.body.classList.add('obs', 'gc-screen');
@@ -138,17 +151,19 @@
     let sub = null; // la vista del karaoke, cuando está en pantalla
     let alive = true;
     const stopSub = () => { if (typeof sub === 'function') sub(); sub = null; };
+    let seq = 0; // si dos lecturas se cruzan (la de cada 2,5 s y la del aviso inmediato), vale solo la última
     const tick = async () => {
+      const n = ++seq;
       // Con local (#/light-gc/kennedy) muestra esa sala; sin local, la primera abierta
       const st = await api('GET', `/api/light${VENUES[venue] ? `?local=${venue}` : ''}`).catch(() => null);
-      if (!alive || !st) return;
+      if (!alive || !st || n !== seq) return;
       const stage = st.open ? st.stage : 'none';
       let c = null;
       if (stage === 'show' || stage === 'cartelera' || stage === 'info') c = await api('GET', `/api/light/cartelera?local=${st.venue}`).catch(() => null);
       let k = null;
       if (stage === 'qr') k = await api('GET', `/api/karaoke?local=${st.venue}`).catch(() => null);
-      if (!alive) return;
-      const sig = JSON.stringify([stage, st.id, st.venue, c && [c.show, c.current, c.next, c.week, c.blocks, c.month], k && k.list.map((p) => [p.name, p.song]), stage === 'info' ? Math.floor(Date.now() / 9000) : 0]);
+      if (!alive || n !== seq) return;
+      const sig = JSON.stringify([stage, st.id, st.venue, stage === 'custom' ? st.text : '', c && [c.show, c.current, c.next, c.week, c.blocks, c.month], k && k.list.map((p) => [p.name, p.song]), stage === 'info' ? Math.floor(Date.now() / 9000) : 0, t2on()]); // t2on: al cambiar de diseño se vuelve a dibujar
       if (sig === shown) return;
       const wasKaraoke = shown.startsWith('["karaoke"');
       shown = sig;
@@ -161,9 +176,13 @@
       if (!$('#lg')) app.innerHTML = '<div id="lg"></div>';
       const box = $('#lg');
       box.className = `th-${st.venue || 'kennedy'}`;
-      if (stage === 'show') {
+      if (stage === 'custom') {
+        // GC personalizable: el texto escrito en el panel, en la franja de abajo (corto: grande; largo: en líneas)
+        const t = String(st.text || '');
+        box.innerHTML = window.gcPer.card(st.venue, t); // lo que va entre comillas sale destacado (pedido de Cote, 22 nov)
+      } else if (stage === 'show') {
         box.innerHTML = `<div class="lg-card lg-bottom">
-          <div class="lg-tag"><small>${esc(c ? c.name : '')}</small><b>${c && c.show ? '⭐ Show de hoy' : 'Esta noche'}</b></div>
+          <div class="lg-tag"><small>${esc(c ? c.name : '')}</small><b>${c && c.show ? se('⭐ Show de hoy') : 'Esta noche'}</b></div>
           <div class="lg-main">${c && c.show ? `<b style="--n:${c.show.length}">${esc(c.show)}</b>` : `<b style="--n:12">KRB Stage</b>`}
           ${c && c.next ? `<span>A continuación · <em>${esc(c.next.time)}</em> ${esc(c.next.label)}</span>` : ''}</div></div>`;
       } else if (stage === 'info') {
@@ -181,40 +200,46 @@
         if (!slides.length) slides.push(['🎶 Bienvenidos', '<b style="--n:10">KRB Stage</b><span>Música, shows y karaoke</span>']);
         const [title, main] = slides[Math.floor(Date.now() / 9000) % slides.length];
         box.innerHTML = `<div class="lg-card lg-bottom lg-info">
-          <div class="lg-tag"><small>${esc(c ? c.name : VENUES[st.venue] || '')}</small><b>${title}</b></div>
+          <div class="lg-tag"><small>${esc(c ? c.name : VENUES[st.venue] || '')}</small><b>${se(title)}</b></div>
           <div class="lg-main">${main}</div></div>`;
       } else if (stage === 'cartelera') {
-        box.innerHTML = `<div class="lg-card lg-week"><div class="lg-head"><small>${esc(c ? c.name : '')}</small><b>📅 Cartelera de la semana</b></div>
+        box.innerHTML = `<div class="lg-card lg-week"><div class="lg-head"><small>${esc(c ? c.name : '')}</small><b>${se('📅 Cartelera de la semana')}</b></div>
           ${c && c.week.length ? weekHTML(c) : '<p class="lg-empty">Pronto la cartelera de la semana</p>'}</div>`;
       } else if (stage === 'qr') {
         const list = k ? k.list.slice(0, 6) : [];
         box.innerHTML = `<div class="lg-card lg-qr"><div class="lg-qrbox">${qr(lightJoin(st.id))}<b>Escanea el código QR con tu celular</b><span>Pide tu canción de karaoke</span></div>
-          <div class="lg-list"><small>🎤 Próximos en cantar</small>${list.length ? list.map((p, i) => `<div><em>${i + 1}</em><p><b>${esc(p.name)}</b><span>${esc(p.song)}${p.artist ? ` · ${esc(p.artist)}` : ''}</span></p></div>`).join('') : '<p class="lg-empty">¡Sé el primero en pedir tu canción!</p>'}</div></div>`;
+          <div class="lg-list"><small>${se('🎤 Próximos en cantar')}</small>${list.length ? list.map((p, i) => `<div><em>${i + 1}</em><p><b>${esc(p.name)}</b><span>${esc(p.song)}${p.artist ? ` · ${esc(p.artist)}` : ''}</span></p></div>`).join('') : '<p class="lg-empty">¡Sé el primero en pedir tu canción!</p>'}</div></div>`;
       } else box.innerHTML = '';
     };
     await tick();
     const timer = setInterval(tick, 2500);
-    return () => { alive = false; clearInterval(timer); stopSub(); document.body.classList.remove('obs', 'gc-screen'); };
+    const offAviso = window.onAviso(tick); // el cambio de GC llega al instante
+    return () => { alive = false; clearInterval(timer); offAviso(); stopSub(); document.body.classList.remove('obs', 'gc-screen'); };
   };
 
   // ---------- Celular del público ----------
   views.l = async (id) => {
     const info = await api('GET', `/api/light/${encodeURIComponent(id || '')}`).catch(() => null);
     if (!info) { app.innerHTML = '<div class="panel"><h1>Esta sala ya terminó</h1><p class="muted">Pide al equipo el código QR de la sala de hoy.</p></div>'; return undefined; }
+    // «Conectados» (pedido de Cote, 22 nov): mientras la sala light está abierta en el celular, avisa cada 45 s para
+    // contarla (una marca al azar del navegador, sin datos personales; se corta sola al salir de esta pantalla)
+    { const here = location.hash; const vid = window.vid();
+      const ping = () => { if (location.hash !== here) return clearInterval(tPing); if (!document.hidden) fetch(`/api/web/viendo?que=light&local=${info.venue}&id=${vid}`).catch(() => {}); return undefined; };
+      const tPing = setInterval(ping, 45000); setTimeout(ping, 1500); }
     const key = `light-${id}`;
     let me = null;
     try { me = JSON.parse(store.get(key) || 'null'); } catch { me = null; }
-    if (me && me.token) me = await api('POST', `/api/light/${id}/join`, { token: me.token }).catch(() => null);
+    if (me && me.token) me = await api('POST', `/api/light/${id}/join`, { token: me.token, vid: window.vid() }).catch(() => null);
     const joinForm = () => {
       app.innerHTML = `<div class="panel"><h1 style="margin-top:0">${esc(info.title)}</h1><p class="muted">Entra con tu nombre para pedir canciones de karaoke y ver la cartelera.</p>
         <form id="lj" class="fields" style="grid-template-columns:1fr">
           <label class="f">Nombre<input type="text" name="name" maxlength="20" required autocomplete="given-name" autocapitalize="words"></label>
           <label class="f">Apellido<input type="text" name="surname" maxlength="25" required autocomplete="family-name" autocapitalize="words"></label>
           ${info.places.length ? `<label class="f">¿Dónde estás?<select name="place" required><option value="">Elige tu lugar</option>${info.places.map((x) => `<option>${esc(x)}</option>`).join('')}</select></label>` : ''}
-          <button class="primary big">Entrar</button></form></div>`;
+          <button class="primary big">Entrar</button></form></div><p class="lm-web">Ve los registros en vivo de esta y todas las noches en <a href="https://krbstage.cl" target="_blank" rel="noopener"><b>krbstage.cl</b></a></p>`;
       $('#lj').onsubmit = async (e) => {
         e.preventDefault();
-        try { me = await api('POST', `/api/light/${id}/join`, Object.fromEntries(new FormData(e.target))); store.set(key, JSON.stringify({ token: me.token })); main(); } catch (err) { fail(err); }
+        try { me = await api('POST', `/api/light/${id}/join`, { ...Object.fromEntries(new FormData(e.target)), vid: window.vid() }); store.set(key, JSON.stringify({ token: me.token })); main(); } catch (err) { fail(err); }
       };
     };
     let tab = 'karaoke';
@@ -225,7 +250,8 @@
       app.innerHTML = `<div class="panel lm"><h1 style="margin:0">${esc(info.title)}</h1><p class="muted small" style="margin:4px 0 0">Hola, <b>${esc(me.name)}</b></p>
         <div class="lm-tabs"><button data-tab="karaoke">🎤 Karaoke</button><button data-tab="cartelera">📅 Cartelera</button><button data-tab="redes">📸 Redes</button></div>
         <div id="lm-body"></div></div>
-        ${window.krbKidsButton ? window.krbKidsButton() : '<a class="btn kids-entry" href="#/kids">🧸 <b>KRB Kids</b><span>Zona de niños</span></a>'}`;
+        ${window.krbKidsButton ? window.krbKidsButton() : '<a class="btn kids-entry" href="#/kids">🧸 <b>KRB Kids</b><span>Zona de niños</span></a>'}
+        <p class="lm-web">Ve los registros en vivo de esta y todas las noches en <a href="https://krbstage.cl" target="_blank" rel="noopener"><b>krbstage.cl</b></a></p>`; // siempre al final (pedido de Cote, 21 nov)
       app.querySelectorAll('[data-tab]').forEach((b) => { b.onclick = () => { tab = b.dataset.tab; shown = ''; draw(); }; });
       draw();
       clearInterval(timer);
@@ -306,34 +332,46 @@
 // arriba lo de esta noche; al medio, un recuadro que va cambiando solo (ahora y a continuación, horarios de hoy, la semana,
 // la cartelera del mes y el karaoke cuando hay lista); abajo, grande, el QR para entrar a la sala light desde el celular.
 (() => {
-  const NAMES = { kennedy: 'Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' };
+  const NAMES = { kennedy: 'Mercado Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' };
   const DAYS = { LUNES: 'Lunes', MARTES: 'Martes', MIERCOLES: 'Miércoles', JUEVES: 'Jueves', VIERNES: 'Viernes', SABADO: 'Sábado', DOMINGO: 'Domingo' };
   const day = (d) => DAYS[String(d || '').toUpperCase()] || String(d || '');
   const cap = (t) => String(t || '').toLocaleLowerCase('es').replace(/(^|[\s:(«"-])(\p{L})/gu, (m, a, b) => a + b.toLocaleUpperCase('es'));
   const SLIDE_MS = 9000;
+  // Diseño nuevo (tema.js): los títulos de la pantalla van sin emojis; con el diseño anterior quedan como siempre
+  const se = (s) => (window.sinEmoji ? window.sinEmoji(s) : s);
   // Shows con el artista entre paréntesis (ej. «ESPECIAL MÉXICO (VERÓNICA YAÑEZ)»): el título arriba y, abajo, «por» y el
   // nombre del artista en grande y en color (pedido de Cote)
   const showHtml = (t) => {
     const m = String(t || '').match(/^(.*?)\s*\(([^()]+)\)\s*$/);
     return m ? `<span class="lv-sh">${esc(cap(m[1]))}</span><span class="lv-by"><small>por</small> ${esc(cap(m[2]))}</span>` : `<span class="lv-sh">${esc(cap(t))}</span>`;
   };
+  // Pedido de Cote (21 nov): en la pantalla vertical de Kennedy el QR es solo para pedir canciones. Se ve solo con los botones
+  // del karaoke de la sala light (Karaoke: #/light-v/<local>/karaoke, y QR grande y lista: /qr); con los demás botones
+  // (Información que va cambiando, Show, Cartelera, Nada) no hay QR. (La frase de krbstage.cl va en el celular, no aquí.)
+  const QR_ONLY_KAR = { kennedy: true };
   views['light-v'] = async (local) => {
     const v = NAMES[local] ? local : 'kennedy';
     // #/light-v/<local>/qr: QR grande con los próximos en cantar · #/light-v/<local>/show: el show y lo de esta noche
+    // · #/light-v/<local>/karaoke: la información que va cambiando, con el QR para pedir canciones
+    const mine = location.hash; // si mientras carga se cambia de botón (otra dirección), esta vista ya no pinta nada
     const focus = (location.hash.split('/')[3] || '').replace(/[^a-z]/g, '');
+    const karOnly = !!QR_ONLY_KAR[v];
+    const withQr = !karOnly || focus === 'karaoke' || focus === 'qr';
     document.body.classList.add('full');
-    app.innerHTML = `<div id="lv" class="th-${v}${focus === 'qr' ? ' lv-qrmode' : ''}"><header class="lv-top"><small>Esta noche en</small><b>${esc(NAMES[v])}</b><span class="lv-show" hidden></span></header>
+    app.innerHTML = `<div id="lv" class="th-${v}${focus === 'qr' ? ' lv-qrmode' : ''}${withQr ? '' : ' lv-noqr'}"><header class="lv-top"><small>Esta noche en</small><b>${esc(NAMES[v])}</b><span class="lv-show" hidden></span></header>
       <section class="lv-card"><div class="lv-slide"></div><div class="lv-dots"></div></section>
       <footer class="lv-qr"><div class="lv-qrbox"></div><div class="lv-qrtext"><b>Escanea el código QR con tu celular</b><span>Pide tu canción de karaoke y espera tu turno</span></div></footer></div>`;
     let alive = true;
     let cart = null;
     let kar = null;
     let idx = 0;
+    let flyers = []; // flyers del Instagram del local (pedido de Cote, 21 nov): pasan en el mismo recuadro, solo en la pantalla vertical
     // El QR lleva a la sala light de este mismo local (en Tobalaba también: antes llevaba a la sala de juegos abierta,
     // que podía ser de otro local)
     let joinUrl = '';
     const light = await api('GET', `/api/light?local=${v}`).catch(() => null);
-    if (light && light.id) { joinUrl = `${location.origin}${location.pathname}#/l/${light.id}`; $('.lv-qrbox').innerHTML = qr(joinUrl); }
+    if (location.hash !== mine) return () => {};
+    if (light && light.id) { joinUrl = `${window.pubBase()}#/l/${light.id}`; $('.lv-qrbox').innerHTML = qr(joinUrl); }
     // Qué recuadros hay para mostrar (solo los que tienen algo)
     const slides = () => {
       const out = [];
@@ -372,28 +410,48 @@
       slide.style.zoom = 1;
       for (let z = 0.95; z > 0.5 && slide.scrollHeight > slide.clientHeight + 1; z -= 0.05) slide.style.zoom = z.toFixed(2);
     };
-    if (document.fonts) document.fonts.ready.then(fit);
+    // El nombre del local (ej. «Mercado Kennedy») va entero en una línea: si no cabe, se achica la letra
+    const fitTop = () => {
+      const b = $('.lv-top b');
+      if (!b) return;
+      b.style.fontSize = ''; b.style.whiteSpace = 'nowrap';
+      let px = parseFloat(getComputedStyle(b).fontSize) || 40;
+      while (b.scrollWidth > b.clientWidth + 1 && px > 12) { px -= 1; b.style.fontSize = `${px}px`; }
+    };
+    fitTop();
+    window.addEventListener('resize', fitTop);
+    if (document.fonts) document.fonts.ready.then(() => { fit(); fitTop(); });
     const paint = () => {
-      if (!alive || !$('#lv')) return;
+      if (!alive || !$('#lv') || location.hash !== mine) return;
       const all = slides();
-      idx %= all.length;
+      // Al final de cada vuelta pasa un flyer distinto del Instagram del local (solo con la pantalla de pie)
+      const turn = Math.floor(idx / (all.length + 1));
+      if (flyers.length && focus !== 'qr' && innerHeight > innerWidth) all.push(`<div class="lv-flyer"><img alt="" src="${esc(flyers[turn % flyers.length].url)}"></div>`);
+      const at = idx % all.length;
       const slide = $('.lv-slide');
       slide.style.zoom = 1;
-      slide.innerHTML = all[idx];
-      fit();
-      setTimeout(fit, 400); // otra vez cuando ya cargaron las letras
-      $('.lv-dots').innerHTML = all.length > 1 ? all.map((_, i) => `<i class="${i === idx ? 'on' : ''}"></i>`).join('') : '';
+      slide.innerHTML = all[at].replace(/<h2>([^<]*)<\/h2>/g, (m, t) => `<h2>${se(t)}</h2>`);
+      const fly = slide.querySelector('.lv-flyer img');
+      if (fly) {
+        fly.style.maxHeight = `${Math.floor(slide.clientHeight * 0.92)}px`;
+        fly.onerror = () => { const bad = fly.getAttribute('src'); flyers = flyers.filter((f) => f.url !== bad); idx++; paint(); }; // un flyer que no carga se salta
+      } else { fit(); setTimeout(fit, 400); } // otra vez cuando ya cargaron las letras
+      $('.lv-dots').innerHTML = all.length > 1 ? all.map((_, i) => `<i class="${i === at ? 'on' : ''}"></i>`).join('') : '';
       const show = $('.lv-show');
       show.hidden = !(cart && cart.show);
-      if (cart && cart.show) show.innerHTML = `⭐ ${showHtml(cart.show)}`;
+      if (cart && cart.show) show.innerHTML = `${se('⭐')} ${showHtml(cart.show)}`;
     };
     const loadCart = async () => { const c = await api('GET', `/api/light/cartelera?local=${v}`).catch(() => null); if (c) cart = c; };
     const loadKar = async () => { const k = await api('GET', `/api/karaoke?local=${v}`).catch(() => null); if (k) kar = k; };
+    const loadFly = async () => { const r = await api('GET', `/api/web/flyers?local=${v}`).catch(() => null); if (r && r.flyers) flyers = r.flyers; };
+    loadFly(); // sin esperar: si Instagram demora, la pantalla parte igual
+    const tFly = setInterval(loadFly, 10 * 60000);
     await Promise.all([loadCart(), loadKar()]);
+    if (location.hash !== mine) { window.removeEventListener('resize', fitTop); clearInterval(tFly); return () => {}; }
     paint();
     const tSlide = setInterval(() => { idx++; paint(); }, SLIDE_MS);
     const tCart = setInterval(loadCart, 60000);
     const tKar = setInterval(loadKar, 5000);
-    return () => { alive = false; clearInterval(tSlide); clearInterval(tCart); clearInterval(tKar); document.body.classList.remove('full'); };
+    return () => { alive = false; clearInterval(tSlide); clearInterval(tCart); clearInterval(tKar); clearInterval(tFly); window.removeEventListener('resize', fitTop); document.body.classList.remove('full'); };
   };
 })();

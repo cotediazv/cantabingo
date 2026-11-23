@@ -1,0 +1,13 @@
+{
+  "name": "Sala KRB · Sala de juegos en el teléfono",
+  "short_name": "Sala KRB",
+  "start_url": "/sala",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0c0b12",
+  "theme_color": "#0c0b12",
+  "icons": [
+    { "src": "/icono-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icono-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
