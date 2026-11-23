@@ -21,9 +21,9 @@ const titulo = (s) => s.charAt(0) + s.slice(1).toLowerCase();
 const TIPOS = {
   standup: 'Stand Up', piano: 'Piano Man', tributo: 'Tributo', doble: 'Doble', bingo: 'Bingo de Frida', otro: 'Especial u otro',
 };
-const ROLES = ['dj', 'extra', 'cantante', 'animador', 'camH', 'camV', 'editor'];
+const ROLES = ['dj', 'extra', 'cantante', 'animador', 'camH', 'camHx', 'camV', 'camVx', 'editor'];
 const SIN_PAGO = ['COTE']; // Cote, 23 nov: «todo lo que sea Cote no se anota»
-const ROL_TARIFA = { dj: 'ent', extra: 'ent', cantante: 'ent', animador: 'ent', camH: 'cam', camV: 'cam', editor: 'edi' };
+const ROL_TARIFA = { dj: 'ent', extra: 'ent', cantante: 'ent', animador: 'ent', camH: 'cam', camHx: 'cam', camV: 'cam', camVx: 'cam', editor: 'edi' };
 
 const pad = (n) => String(n).padStart(2, '0');
 const plain = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().trim();
@@ -127,6 +127,7 @@ module.exports = function programacion({ app, dir }) {
     // Nombres limpios (Cote, 23 nov: «Caro», no «Caro (Guille)»; «Claudia», no «Claudia 1.5»). En cámaras, el nombre
     // entre paréntesis es un turno extra de un turno que normalmente hace otra persona: queda aparte (camHx, camVx)
     for (const r of ROLES) {
+      if (r === 'camHx' || r === 'camVx') continue; // van más abajo
       let v = clean(c[r], 60).replace(/\s+\d+(?:[.,]\d+)?$/, '');
       const x = v.match(/^(.+?)\s*\(([^)]*)\)\s*(.*)$/);
       if (x) {

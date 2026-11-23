@@ -240,7 +240,7 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
         var p = b.dataset.montos.split('|'); var x = buscar(p[0]); var cel = x.locales[p[1]];
         var ms = Object.assign({}, cel.montos || {});
         (cel.pagos || []).forEach(function (pg) {
-          var r = prompt('Monto de ' + pg.nombre + ' (' + (pg.rol === 'editor' ? 'edición' : pg.rol === 'camH' || pg.rol === 'camV' ? 'cámara' : 'entretención') + ') este día.\nDéjalo vacío para usar su tarifa.', ms[pg.rol] != null ? ms[pg.rol] : '');
+          var r = prompt('Monto de ' + pg.nombre + ' (' + (pg.rol === 'editor' ? 'edición' : pg.rol.indexOf('cam') === 0 ? (pg.rol.length > 4 ? 'turno extra de cámara' : 'cámara') : 'entretención') + ') este día.\nDéjalo vacío para usar su tarifa.', ms[pg.rol] != null ? ms[pg.rol] : '');
           if (r === null) return; r = r.replace(/[^\d]/g, ''); if (r === '') delete ms[pg.rol]; else ms[pg.rol] = Number(r);
         });
         guardar(p[0], p[1], function (y) { y.montos = ms; });
