@@ -33,7 +33,7 @@
     } catch (e) { /* sin conexión: queda como está */ }
   };
   // Centro de control: a dónde apuntan los QR
-  const PUBS = [['', 'cantabingo.onrender.com', 'la de siempre'], ['https://juegos.krbstage.cl', 'juegos.krbstage.cl', 'la de krbstage.cl']];
+  const PUBS = [['', 'cantabingo.onrender.com', 'la de siempre'], ['https://saladejuegos.krbstage.cl', 'saladejuegos.krbstage.cl', 'la de los participantes']];
   const paintPub = () => {
     const box = document.getElementById('pub-box');
     if (!box || pub === null) return;
@@ -64,7 +64,7 @@
     box.parentNode.insertBefore(pbox, box.nextSibling);
     pbox.onclick = async (e) => {
       const b = e.target.closest('button[data-pub]'); if (!b || b.dataset.pub === pub) return;
-      try { b.disabled = true; const r = await api('POST', '/api/pub', { url: b.dataset.pub }); pub = r.pub; setPub(r.pub); paintPub(); toast(r.pub ? 'Los QR ahora llevan a juegos.krbstage.cl' : 'Los QR vuelven a cantabingo.onrender.com'); } catch (err) { toast(err.message); paintPub(); }
+      try { b.disabled = true; const r = await api('POST', '/api/pub', { url: b.dataset.pub }); pub = r.pub; setPub(r.pub); paintPub(); toast(r.pub ? `Los QR ahora llevan a ${r.pub.replace('https://', '')}` : 'Los QR vuelven a cantabingo.onrender.com'); } catch (err) { toast(err.message); paintPub(); }
     };
     paintPub();
   };

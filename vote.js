@@ -18,7 +18,8 @@ const K_OPEN_MS = 8000;
 const K_SIGNUP_MS = 90000; // El Festival: la inscripción dura 90 segundos (pedido de Cote, 20 nov)
 const K_MAX = 3; // El Festival parte siempre con 3 participantes (se puede cambiar)
 const SAMPLE_MS = 8000;
-const OPEN_MS = Number(process.env.VOTE_OPEN_MS) || 18000; // cada participante se evalúa durante 18 segundos
+const OPEN_MS = Number(process.env.VOTE_OPEN_MS) || 8000; // cada participante se evalúa durante 8 segundos (pedido de Cote, 23 nov: «8 segundos, no 18, para que sea más rápido»)
+const FINAL_MS = Number(process.env.VOTE_OPEN_MS) || 18000; // la gran final sigue durando 18 segundos
 const GRACE_MS = 1000; // margen para los votos que venían en camino al llegar a cero
 const SIGNUP_MS = 90000; // El objeto más extraño: la inscripción dura 90 segundos (pedido de Cote, 20 nov)
 
@@ -251,6 +252,10 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       by(s.open).done = true;
       s.last = s.open;
       s.open = null;
+      // El objeto más extraño (pedido de Cote, 23 nov: «desde el momento que se termina la votación, pasa automáticamente
+      // a la siguiente persona para que muestre su objeto»): al cerrarse la votación sube solo el siguiente participante;
+      // el animador solo toca «Iniciar votación». Con todos listos, queda «Pasar a los resultados».
+      if (s.mode !== 'karaoke') { const nx = s.players.find((p) => !p.done); s.onstage = nx ? nx.id : null; }
       return null;
     },
     results: (s) => {
@@ -280,7 +285,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       if (s.mode === 'karaoke') { s.phase = 'final'; Object.assign(s.final, { drum: true, open: false, closed: true, at: Date.now() }); return null; }
       s.phase = 'final';
       s.final.open = true;
-      s.final.until = Date.now() + OPEN_MS;
+      s.final.until = Date.now() + FINAL_MS;
       s.final.closed = false;
       return null;
     },

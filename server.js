@@ -1090,7 +1090,7 @@ app.post('/api/tema', requireAdmin, (req, res) => { db.tema = (req.body || {}).o
 // la sala es la misma y las direcciones de siempre siguen funcionando (OBS, pantallas y decodificadores no se tocan);
 // lo único que cambia es a dónde apuntan los QR que ve el público. Se elige en el Centro de control y, antes de
 // aceptarla, el servidor comprueba que esa dirección responde de verdad (así un QR nunca queda apuntando a la nada).
-const PUB_URLS = ['https://juegos.krbstage.cl'];
+const PUB_URLS = ['https://saladejuegos.krbstage.cl', 'https://juegos.krbstage.cl']; // saladejuegos: la que Cote quiere para el QR y los participantes (23 nov)
 app.post('/api/pub', requireAdmin, async (req, res) => {
   const url = String((req.body || {}).url || '');
   if (url && !PUB_URLS.includes(url)) return fail(res, 400, 'Dirección no permitida');
