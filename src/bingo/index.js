@@ -91,6 +91,7 @@ module.exports = function bingo(ctx) {
       return w ? { game: 'rosco', wheel: w.id } : { game: 'rosco' }; // vuelve al panel de El Rosko, donde se acepta al ganador
     }
     if (st === 'voto') { const v = db.vote || {}; return v.winner ? null : { game: v.mode === 'karaoke' ? 'festival' : 'objeto' }; }
+    if (st === 'enpie') { const e = db.enpie || {}; return e.phase && e.phase !== 'done' ? { game: 'enpie' } : null; }
     if (st === 'bingo') return bingoStarted(s) && !roundOver(s) ? { game: 'bingo' } : null;
     return null;
   };
@@ -111,7 +112,7 @@ module.exports = function bingo(ctx) {
       // juego cuando cambia
       ...ctx.games.phoneFields(),
       // El juego en pantalla ya terminó (concurso con ganador o rosko con ganador aceptado): los celulares no muestran sus instrucciones
-      stageDone: db.stage === 'voto' ? !!(db.vote || {}).winner : db.stage === 'rueda' ? !!(Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).winAccepted : false,
+      stageDone: db.stage === 'enpie' ? (db.enpie || {}).phase === 'done' : db.stage === 'voto' ? !!(db.vote || {}).winner : db.stage === 'rueda' ? !!(Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).winAccepted : false,
       celebrateAt: s.celebrateAt || 0,
       winConfirmed: roundOver(s), winConfirmedAt: s.confirmedAt || 0, now: Date.now(),
       started: bingoStarted(s), // el bingo de esta ronda empezó (figura elegida o ya hay números); antes, la sala espera el primer juego

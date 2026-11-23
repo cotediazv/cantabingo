@@ -14,6 +14,7 @@ const GAMES = [
   require('./games/desafio'),
   require('./games/sortear-juego'),
   require('./games/votar-juego'),
+  require('./games/enpie'),
 ];
 
 function createApp() {
@@ -44,7 +45,7 @@ function createApp() {
   require('./bingo')(ctx); // findPlayer, broadcast, broadcastAll, connectedNames, startSession, closeSession…
 
   // Juegos y funciones de los locales (el karaoke va antes de la votación como siempre: la sala light lo necesita)
-  const [rosco, sorteo, votacion, desafio, sortearJuego, votarJuego] = GAMES;
+  const [rosco, sorteo, votacion, desafio, sortearJuego, votarJuego, enpie] = GAMES;
   ctx.games.register(rosco, ctx);
   ctx.games.register(sorteo, ctx);
   ctx.karaoke = require('./features/karaoke/server')({ app, db, save, requireAdmin: ctx.requireAdmin, requireLocal: ctx.requireLocal, fail,
@@ -57,6 +58,7 @@ function createApp() {
   const dayVenue = () => ctx.salaVenue() || (db.karaoke || {}).venue || 'frida';
   ctx.insta = require('./features/insta/server')({ app, db, save, requireAdmin: ctx.requireAdmin, fail, venue: dayVenue });
   // Sala light: karaoke, show y cartelera en otro local, al mismo tiempo que la sala principal
+  ctx.games.register(enpie, ctx); // «El último en pie», versión de prueba (pedido de Cote, 23 nov)
   ctx.light = require('./features/light/server')({ app, db, save, requireAdmin: ctx.requireAdmin, requireLocal: ctx.requireLocal, fail, karaoke: ctx.karaoke, insta: ctx.insta, aviso: ctx.aviso });
   ctx.capa = require('./features/capa')({ app, requireLocal: ctx.requireLocal, fail, aviso: ctx.aviso }); // capa gráfica sobre la cámara (botones del GC Master)
   require('./features/vertical/server')({ app, db, save, requireAdmin: ctx.requireAdmin, fail, karaoke: ctx.karaoke, perOf: ctx.gcper.of, dir: path.dirname(DATA_FILE) }); // pantallas de los locales

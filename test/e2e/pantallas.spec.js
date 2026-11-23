@@ -7,7 +7,7 @@ const fixture = require('./fixture.json');
 
 const PORT = 3311; // fijo: el QR lleva la dirección del sitio y debe salir igual en cada captura
 const { sid, projectId, wheelId, phone } = fixture.fixture;
-const STAGES = ['bingo', 'qr', 'rueda', 'sorteo', 'voto', 'desafio', 'insta', 'show', 'juego', 'votojuego', 'karaoke', 'none'];
+const STAGES = ['bingo', 'qr', 'rueda', 'sorteo', 'voto', 'desafio', 'insta', 'show', 'juego', 'votojuego', 'enpie', 'karaoke', 'none'];
 const TV = { width: 1920, height: 1080 };
 const CEL = { width: 390, height: 844 };
 const PANEL = { width: 1280, height: 900 };
@@ -61,7 +61,7 @@ for (const stage of STAGES) {
   });
 }
 
-for (const stage of ['bingo', 'rueda', 'voto', 'desafio', 'insta', 'karaoke']) {
+for (const stage of ['bingo', 'rueda', 'voto', 'desafio', 'enpie', 'insta', 'karaoke']) {
   test(`celular · ${stage}`, async ({ page }) => {
     await setStage(stage);
     const errors = await open(page, `#/jugar/${sid}`, { size: CEL, phoneToken: true });
