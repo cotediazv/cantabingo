@@ -112,7 +112,7 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
   }
 
   function marco(contenido) {
-    var tabs = [['mes', 'Programación'], ['archivos', 'Archivos'], ['equipo', 'Equipo'], ['glosa', 'GLOSA']];
+    var tabs = [['mes', 'Programación'], ['shows', 'Shows'], ['archivos', 'Archivos'], ['equipo', 'Equipo'], ['glosa', 'GLOSA']];
     return '<div class="top"><div class="wrap"><h1>Programación</h1><div class="mes"><button class="btn chico" data-mes="-1">◀</button><b>' + esc(S.data.nombre) + '</b><button class="btn chico" data-mes="1">▶</button></div></div></div>' +
       '<div class="wrap" id="cont">' + contenido + '</div>' +
       '<nav class="tabs">' + tabs.map(function (t) { return '<button data-vista="' + t[0] + '" class="' + (S.vista === t[0] ? 'on' : '') + '">' + t[1] + '</button>'; }).join('') + '</nav>';
@@ -124,11 +124,11 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
   }
   function pintar() {
     var y = window.scrollY;
-    var html = S.vista === 'archivos' ? '<div id="arch"><p class="vacio">Armando los archivos…</p></div>' + vistaImportar() : S.vista === 'equipo' ? vistaEquipo() : S.vista === 'glosa' ? vistaGlosa() : vistaMes();
+    var html = S.vista === 'archivos' ? '<div id="arch"><p class="vacio">Armando los archivos…</p></div>' + vistaImportar() : S.vista === 'shows' ? vistaShows() : S.vista === 'equipo' ? vistaEquipo() : S.vista === 'glosa' ? vistaGlosa() : vistaMes();
     $app.innerHTML = marco(html);
     $app.querySelectorAll('[data-vista]').forEach(function (b) { b.onclick = function () { S.vista = b.dataset.vista; try { localStorage.setItem('progVista', S.vista); } catch (e) {} window.scrollTo(0, 0); pintar(); }; });
     $app.querySelectorAll('[data-mes]').forEach(function (b) { b.onclick = function () { moverMes(Number(b.dataset.mes)); }; });
-    if (S.vista === 'mes') enlazarMes();
+    if (S.vista === 'mes' || S.vista === 'shows') enlazarMes();
     if (S.vista === 'archivos') { cargarArchivos(); enlazarImportar(); }
     if (S.vista === 'equipo') enlazarEquipo();
     if (S.vista === 'glosa') enlazarGlosa();
@@ -158,7 +158,32 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
       if (sh.tipo === 'tributo' || sh.tipo === 'otro') h += '<label class="chip' + (sh.banda ? ' on' : '') + '" style="cursor:pointer"><input type="checkbox" hidden data-f="' + f + '" data-l="' + l + '" data-sk="banda"' + (sh.banda ? ' checked' : '') + '>Con banda (batería)</label>';
       h += '</div>';
     }
+    if (sh.tipo) h += camposPago(f, l, sh);
     return h + '</div>';
+  }
+  // A nombre de quién se paga el show (va entre paréntesis en la GLOSA, para la contadora) y su monto
+  function camposPago(f, l, sh) {
+    return '<div class="fila" style="margin-top:6px"><div class="campo"><small>A nombre de (para la contadora)</small><input type="text" list="u-persona" value="' + esc(sh.persona) + '" data-f="' + f + '" data-l="' + l + '" data-sk="persona"></div>' +
+      '<div class="campo" style="flex:0 1 140px"><small>Monto del show</small><input type="number" inputmode="numeric" min="0" step="1000" value="' + (sh.monto != null ? sh.monto : '') + '" data-f="' + f + '" data-l="' + l + '" data-sk="monto"' + (sh.monto == null ? ' style="border-color:var(--mal)"' : '') + '></div></div>';
+  }
+  function datalistPersonas() {
+    var xs = [];
+    S.data.fechas.forEach(function (x) { LOCS.forEach(function (l) { var p = (x.locales[l].show || {}).persona; if (p && xs.indexOf(p) < 0) xs.push(p); }); });
+    return '<datalist id="u-persona">' + xs.sort().map(function (n) { return '<option value="' + esc(n) + '">'; }).join('') + '</datalist>';
+  }
+  // ---------- Shows: monto tras monto ----------
+  function vistaShows() {
+    var h = '<div class="panel"><h2>Shows de ' + esc(S.data.nombre) + '</h2><p>A nombre de quién se paga cada show y su monto. Se guarda al pasar al siguiente. En la GLOSA el nombre va entre paréntesis junto al show y el monto en la columna siguiente.</p></div>';
+    var n = 0;
+    S.data.fechas.forEach(function (x) {
+      var p = x.fecha.split('-').map(Number);
+      LOCS.forEach(function (l) {
+        var c = x.locales[l]; var sh = c.show; if (!c.abierto || !sh || !sh.tipo) return; n++;
+        var nombre = sh.tipo === 'piano' ? 'Piano Man' : sh.tipo === 'bingo' ? 'Bingo de Frida' : (sh.tipo === 'standup' ? 'Stand Up: ' : sh.tipo === 'doble' ? 'Doble de ' : sh.tipo === 'tributo' ? 'Tributo a ' : '') + (sh.nombre || '') + (sh.artista ? ' (' + sh.artista + ')' : '');
+        h += '<div class="loc" style="--c:var(--' + l + ');background:var(--panel);border-radius:10px;margin:8px 0"><h4><span>' + DIAS[x.wd].slice(0, 3) + ' ' + p[2] + ' · ' + NL[l] + '</span></h4><div>' + esc(nombre) + '</div>' + camposPago(x.fecha, l, sh) + '</div>';
+      });
+    });
+    return datalistPersonas() + h + (n ? '' : '<p class="vacio">Este mes todavía no tiene shows.</p>');
   }
   function bloqueLocal(x, l) {
     var c = x.locales[l]; var f = x.fecha;
@@ -186,7 +211,7 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
         LOCS.filter(function (l) { return x.locales[l].abierto || x.locales[l].abreDefault || hayDatos(x.locales[l]); }).map(function (l) { return bloqueLocal(x, l); }).join('') +
         (LOCS.some(function (l) { return !(x.locales[l].abierto || x.locales[l].abreDefault || hayDatos(x.locales[l])); }) ? '<div class="loc" style="--c:var(--linea)"><button class="btn chico" data-otro="' + x.fecha + '">＋ Abrir otro local este día</button></div>' : '') + '</div></section>';
     });
-    return dls + '<datalist id="u-artista">' + [].concat.apply([], d.fechas.map(function (x) { return LOCS.map(function (l) { return (x.locales[l].show || {}).artista || ''; }); })).filter(function (v, i, a) { return v && a.indexOf(v) === i; }).map(function (n) { return '<option value="' + esc(n) + '">'; }).join('') + '</datalist>' + h;
+    return dls + datalistPersonas() + '<datalist id="u-artista">' + [].concat.apply([], d.fechas.map(function (x) { return LOCS.map(function (l) { return (x.locales[l].show || {}).artista || ''; }); })).filter(function (v, i, a) { return v && a.indexOf(v) === i; }).map(function (n) { return '<option value="' + esc(n) + '">'; }).join('') + '</datalist>' + h;
   }
   function hayDatos(c) { return ['show', 'dj', 'cantante', 'animador', 'camH', 'camV', 'editor'].some(function (k) { return c[k]; }); }
   function buscar(f) { for (var i = 0; i < S.data.fechas.length; i++) if (S.data.fechas[i].fecha === f) return S.data.fechas[i]; return null; }
@@ -202,7 +227,7 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
         var p = S.data.personas.filter(function (q) { return q.nombre.toLowerCase() === n.toLowerCase(); })[0];
         if (!p) S.data.personas.push({ nombre: n, codigo: n.toUpperCase(), roles: [rol] }); else if (p.roles.indexOf(rol) < 0) p.roles.push(rol);
       });
-      if (repintar !== false) pintar(); else actualizarPagos(f, l);
+      if (repintar === 'no') { /* sigue escribiendo: no se redibuja */ } else if (repintar !== false) pintar(); else actualizarPagos(f, l);
       aviso('Guardado');
     }).catch(function (e) { aviso(e.message); });
   }
@@ -225,7 +250,7 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
       };
     });
     c.querySelectorAll('input[data-sk]').forEach(function (i) {
-      i.onchange = function () { guardar(i.dataset.f, i.dataset.l, function (x) { x.show = Object.assign({}, x.show); x.show[i.dataset.sk] = i.type === 'checkbox' ? i.checked : i.value.trim(); }); };
+      i.onchange = function () { var sk = i.dataset.sk; if (sk === 'monto') i.style.borderColor = i.value === '' ? 'var(--mal)' : ''; guardar(i.dataset.f, i.dataset.l, function (x) { x.show = Object.assign({}, x.show); x.show[sk] = i.type === 'checkbox' ? i.checked : i.value.trim(); }, sk === 'monto' || sk === 'persona' ? 'no' : undefined); };
     });
     c.querySelectorAll('[data-abrir]').forEach(function (b) { b.onclick = function () { guardar(b.dataset.f, b.dataset.l, function (x) { x.abierto = b.dataset.abrir === '1'; }); }; });
     c.querySelectorAll('[data-otro]').forEach(function (b) {
@@ -342,6 +367,7 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
       '<li>Borra lo que traiga, pega el script (botón de abajo) y guarda con el disquete. No toques el archivo de llenarMes.</li>' +
       '<li>Arriba a la derecha: <b>Implementar → Nueva implementación</b>. En el engranaje elige <b>Aplicación web</b>. Ejecutar como: <b>Yo</b>. Quién tiene acceso: <b>Cualquier persona</b>. Toca Implementar y acepta los permisos.</li>' +
       '<li>Copia la <b>URL de la aplicación web</b> (termina en /exec) y pégala aquí.</li></ol>' +
+      '<p><b>Actualizar el script</b> (cuando Code 3 lo pida): copia el script, ábrelo en Apps Script en el archivo <code>Programacion</code>, borra todo, pega y guarda. Después <b>Implementar → Administrar implementaciones</b>, toca el lápiz, en Versión elige <b>Nueva versión</b> y toca Implementar. La URL no cambia.</p>' +
       '<div class="fila"><button class="btn foco chico" id="gscript">Copiar el script</button></div>' +
       '<div class="fila" style="margin-top:10px"><div class="campo"><small>URL de la aplicación web</small><input type="text" id="gurl" value="' + esc(g.url) + '" placeholder="https://script.google.com/macros/s/…/exec"></div><button class="btn chico" id="gsave">Guardar</button></div></div>';
     return h;

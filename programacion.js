@@ -116,7 +116,12 @@ module.exports = function programacion({ app, dir }) {
   const limpiaShow = (s) => {
     s = s || {};
     const tipo = TIPOS[s.tipo] ? s.tipo : '';
-    return tipo ? { tipo, nombre: clean(s.nombre, 80), artista: clean(s.artista, 60), banda: Boolean(s.banda) } : null;
+    if (!tipo) return null;
+    const o = { tipo, nombre: clean(s.nombre, 80), artista: clean(s.artista, 60), banda: Boolean(s.banda) };
+    // Para la contadora (Cote, 23 nov): a nombre de quién se paga el show y su monto (variable, show por show)
+    const per = clean(s.persona, 60); if (per) o.persona = per;
+    if (s.monto !== '' && s.monto != null && Number.isFinite(Number(s.monto))) o.monto = Math.max(0, Math.round(Number(s.monto)));
+    return o;
   };
   function limpiaCelda(c) {
     c = c || {};
@@ -190,6 +195,8 @@ module.exports = function programacion({ app, dir }) {
     if (s.tipo === 'bingo') return 'Bingo de Frida';
     return [s.nombre, s.artista ? `(${s.artista})` : ''].filter(Boolean).join(' ');
   }
+  // En la GLOSA el show lleva entre paréntesis el nombre de la persona a quien se le paga (Cote, 23 nov)
+  const showGlosaPago = (s) => [showGlosa(s), s && s.persona ? `(${s.persona})` : ''].filter(Boolean).join(' ');
   function showCartelera(s, local) {
     if (!s) return '';
     let t;
@@ -310,19 +317,23 @@ module.exports = function programacion({ app, dir }) {
       }
     }
     filas.push([]);
+    const shows = [];
     for (const l of ['MK', 'TOB', 'FRIDA']) {
       for (const { fecha } of delMes) {
         const c = celda(fecha, l);
         if (!abierto(fecha, l) || showVacio(c.show)) continue;
-        const f = [String(parse(fecha).d), l, 'SHOW', showGlosa(c.show)];
+        const f = [String(parse(fecha).d), l, 'SHOW', showGlosaPago(c.show)];
         if (c.show.banda) f.push('BANDA');
         filas.push(f);
+        if (c.show.monto == null) faltan.push(`${etiquetaTurno(fecha)} ${ETQ[l]}: falta el monto del show`);
+        // Bloque del día en la pestaña del mes (el mismo orden de jueves a domingo que usa llenarMes)
+        else shows.push({ bloque: delMes.findIndex((x) => x.fecha === fecha), local: l, monto: c.show.monto });
       }
     }
     const turnos = filas.map((f) => f.join('-')).join('\n');
     return {
       mes: `${y}-${pad(m)}`, pestana: pest, anterior: `${MESES[(m + 10) % 12]}${String(m === 1 ? y - 1 : y).slice(2)} MASTER TOTAL`, b8: `${MES}${String(y).slice(2)}`,
-      cartelera: cart.join('\n'), entretencion: ent.join('\n'), camaras: cam.join('\n'), turnos, filas, faltan: [...new Set(faltan)],
+      cartelera: cart.join('\n'), entretencion: ent.join('\n'), camaras: cam.join('\n'), turnos, filas, shows, faltan: [...new Set(faltan)],
     };
   }
 
@@ -549,12 +560,13 @@ module.exports = function programacion({ app, dir }) {
     const { y, m } = mesDe((req.body || {}).mes);
     const a = archivos(y, m);
     envio = { estado: 'enviando', mes: a.mes, desde: Date.now() };
-    const body = JSON.stringify({ clave: P.glosa.clave, pestana: a.pestana, anterior: a.anterior, b8: a.b8, filas: a.filas, llenar: (req.body || {}).llenar !== false });
+    const body = JSON.stringify({ clave: P.glosa.clave, pestana: a.pestana, anterior: a.anterior, b8: a.b8, filas: a.filas, shows: a.shows, llenar: (req.body || {}).llenar !== false });
     fetch(GLOSA_URL(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, redirect: 'follow', signal: AbortSignal.timeout(6 * 60e3) })
       .then((r) => r.text()).then((t) => {
         let j; try { j = JSON.parse(t); } catch { throw new Error('La GLOSA no respondió como se esperaba (revisa que el script esté publicado como aplicación web)'); }
         if (j.error) throw new Error(j.error);
-        envio = { estado: 'listo', mes: a.mes, a: Date.now(), creada: Boolean(j.creada), aviso: j.aviso || '' };
+        const viejo = !(Number(j.version) >= 2) && a.shows.length;
+        envio = { estado: 'listo', mes: a.mes, a: Date.now(), creada: Boolean(j.creada), aviso: [j.aviso || '', viejo ? 'Los montos de los shows no llegaron: actualiza el script de la GLOSA (pestaña GLOSA, «Actualizar el script»).' : ''].filter(Boolean).join(' ') };
       })
       .catch((e) => { envio = { estado: 'error', mes: a.mes, a: Date.now(), error: clean(e && e.message, 300) || 'No se pudo enviar' }; })
       .finally(() => { P.glosa.ultimo = envio; save(); });
@@ -617,7 +629,7 @@ function doGet(e) {
   if (!e || !e.parameter || e.parameter.clave !== CLAVE_PROGRAMACION) return respuesta_({ error: 'Clave incorrecta' });
   const t = SpreadsheetApp.getActive().getSheetByName('TURNOS');
   if (!t) return respuesta_({ error: 'Falta la hoja TURNOS' });
-  return respuesta_({ ok: true, filas: t.getDataRange().getDisplayValues() });
+  return respuesta_({ ok: true, version: 2, filas: t.getDataRange().getDisplayValues() });
 }
 
 function doPost(e) {
@@ -651,7 +663,13 @@ function doPost(e) {
         if (!/getUi/i.test(m)) aviso = 'llenarMes: ' + m;
       }
     }
-    return respuesta_({ ok: true, creada: creada, aviso: aviso });
+    // Montos de los shows: en la columna siguiente a la del show, en el resumen de shows (fila 835 en adelante)
+    if (b.shows && b.shows.length) {
+      const sh = ss.getSheetByName(b.pestana);
+      const COL_SHOW = { MK: 3, TOB: 32, FRIDA: 42 };
+      b.shows.forEach(function (x) { if (x.bloque >= 0 && COL_SHOW[x.local]) sh.getRange(835 + x.bloque, COL_SHOW[x.local] + 1).setValue(x.monto); });
+    }
+    return respuesta_({ ok: true, version: 2, creada: creada, aviso: aviso });
   } finally {
     lock.releaseLock();
   }
