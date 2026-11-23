@@ -241,7 +241,9 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       if (s.players.length > cap()) return `Se inscribieron ${s.players.length}: primero sortea a los ${cap()} que ${s.mode === 'karaoke' ? 'cantan' : 'participan'}`;
       if (s.open && s.open !== b.id) { by(s.open).done = true; s.last = s.open; }
       s.open = b.id;
-      s.openUntil = Date.now() + openMs();
+      // El Festival (pedido de Cote, 23 nov): la votación parte junto con la canción y no tiene tiempo: se cierra cuando el
+      // animador toca «Terminó la canción · Terminar votación». El objeto más extraño sigue con sus 8 segundos.
+      s.openUntil = karaoke() ? 0 : Date.now() + openMs();
       s.signup = false; // al empezar a votar se cierran las inscripciones
       return null;
     },

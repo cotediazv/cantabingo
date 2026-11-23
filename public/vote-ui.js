@@ -82,10 +82,12 @@
         const voted = st.players.some((p) => p.done) || st.onstage || st.open;
         const who = (p, label) => `<div class="vc-now"><small>${label}</small><b>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}</div>`;
         let step;
-        if (st.open) step = `${who(st.open, `🗳️ Votación abierta · <span class="v-clock">${clockText()}</span> · ${st.counts[st.open.id] || 0} votos`)}<button class="primary big" data-act="close">Cerrar votación</button>`;
+        if (st.open && isK(st)) step = `${who(st.open, `🎤 Cantando · 🗳️ votación abierta · ${st.counts[st.open.id] || 0} votos`)}<button class="primary big" data-act="close">🏁 Terminó la canción · Terminar votación</button>`; // El Festival (Cote, 23 nov): se vota durante la canción, sin tiempo
+        else if (st.open) step = `${who(st.open, `🗳️ Votación abierta · <span class="v-clock">${clockText()}</span> · ${st.counts[st.open.id] || 0} votos`)}<button class="primary big" data-act="close">Cerrar votación</button>`;
         else if (st.signup) step = `<div class="vc-signup on"><p><b>📲 Inscripciones abiertas · <span class="v-clock">${clockText()}</span></b></p><button data-act="signup">Cerrar</button></div>`;
         else if (!st.players.length) step = '<button class="primary big" data-act="signup" data-on="1">📲 Abrir inscripciones</button>';
         else if (st.overflow) step = `<button class="primary big" data-act="draw">🎲 Sortear los ${st.max} que ${isK(st) ? 'cantan' : 'participan'} (se inscribieron ${st.players.length})</button>`;
+        else if (next && isK(st)) step = `${who(next, st.onstage && st.onstage.id === next.id ? '🎤 En el escenario' : voted ? 'Ya viene el siguiente participante' : 'Primer participante')}<button class="primary big" data-act="open" data-id="${next.id}">🎤 Iniciar participante</button>`; // un solo botón: parte la canción y la votación
         else if (next && st.onstage && st.onstage.id === next.id) step = `${who(next, isK(st) ? '🎤 En el escenario' : '🗳️ Presentando su objeto')}<button class="primary big" data-act="open" data-id="${next.id}">🗳️ Iniciar votación</button>`;
         else if (next) step = `${who(next, voted ? 'Ya viene el siguiente participante' : 'Primer participante')}<button class="primary big" data-act="present" data-id="${next.id}">🎤 Iniciar participante</button>`;
         else if (st.players.length >= 2) step = '<button class="primary big" data-act="results">🏁 Pasar a los resultados</button>';
@@ -193,7 +195,7 @@
       else if (st.open) {
         body = `<p class="pvote-ask">Pon tu nota a<b>${nm(st.open)}</b>${thing(st.open)}</p>
           <div class="pvote-keys">${Array.from({ length: 10 }, (_, i) => `<button type="button" data-v="${i + 1}" data-id="${st.open.id}" class="${st.mine === i + 1 ? 'on' : ''}">${i + 1}</button>`).join('')}</div>
-          <p class="pvote-clock">Quedan <b class="v-clock">${clockText()}</b></p>
+          ${st.clockUntil ? `<p class="pvote-clock">Quedan <b class="v-clock">${clockText()}</b></p>` : '<p class="pvote-clock">Vota mientras canta: la votación se cierra al terminar la canción.</p>'}
           ${st.mine ? `<p class="pvote-ok">✔ Tu nota: ${st.mine}. Puedes cambiarla mientras la votación esté abierta.</p>` : '<p class="muted small" style="text-align:center">1 es la nota más baja y 10 la más alta.</p>'}`;
       } else if (st.me && st.overflow) body = `<div class="pvote-in">✔ Estás inscrito<b>${esc(st.me.thing)}</b><small>Se inscribieron más personas que los cupos: haremos un sorteo. ¡Mira la pantalla!</small></div>`;
       else if (st.me) body = `<div class="pvote-in">✔ Estás en la lista<b>${badge(st.me.no)}${esc(st.me.thing)}</b><small>Atento al llamado del animador para subir al escenario.</small></div>`;
@@ -284,6 +286,7 @@
         : { tag: 'Resultados', main: 'Vamos desde el último lugar', sub: 'hasta la gran final', side: ['🏁', `${st.players.length} participantes`] };
     }
     if (st.onstage) return { tag: isK(st) ? 'En el escenario' : 'Presenta su objeto', no: st.onstage.no, main: st.onstage.name, featured: !!st.onstage.thing, sub: st.onstage.thing || '', side: isK(st) ? ['🎤', '¡Aplausos!'] : ['🗳️', 'Atentos'] };
+    if (st.open && !st.clockUntil) return { tag: 'Votación abierta', no: st.open.no, main: st.open.name, featured: !!st.open.thing, sub: st.open.thing || 'Pon tu nota del 1 al 10 desde tu celular', side: ['🗳️', 'Vota del 1 al 10'], qr: true }; // El Festival: se vota durante la canción, sin reloj
     if (st.open) return { tag: 'Votación abierta', no: st.open.no, main: st.open.name, featured: !!st.open.thing, sub: st.open.thing || 'Pon tu nota del 1 al 10 desde tu celular', clock: 'Vota del 1 al 10', qr: true };
     if (st.drawn) return { tag: 'Sorteo de participantes', main: window.sinEmoji(isK(st) ? '🎲 ¡Ellos cantan!' : '🎲 ¡Ellos participan!'), sub: isK(st) ? 'Prepárense para subir al escenario' : 'Prepárense para mostrar su objeto', list: st.drawn, side: [isK(st) ? '🎤' : '🎁', `${st.drawn.length} ${isK(st) ? 'cantan' : 'participan'}`] };
     if (st.last && st.sample && st.sample.length) return { tag: 'Notas del público', no: st.last.no, main: st.last.name, sub: st.last.thing || '', notes: true };
