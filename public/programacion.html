@@ -276,7 +276,10 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
   function vistaPersonas() {
     var T = turnosDelMes(); var nombres = Object.keys(T).sort(function (a, b) { return a.localeCompare(b, 'es'); });
     var sel = S.persona && T[S.persona] ? S.persona : '';
-    var tot = function (xs) { return xs.reduce(function (s, t) { return s + (t.monto || 0); }, 0); };
+    var diario = function (xs) { return xs.reduce(function (s, t) { return s + (t.monto || 0); }, 0); };
+    var fijoDe = function (n) { var p = S.data.personas.filter(function (q) { return q.nombre.toLowerCase() === n.toLowerCase(); })[0]; return p && p.fijo ? p.fijo : 0; };
+    // Con sueldo fijo mensual, el total es el sueldo; los valores por día quedan como referencia del costo de cada día
+    var tot = function (xs, n) { return fijoDe(n) || diario(xs); };
     var dias = function (xs) { return xs.map(function (t) { return t.fecha; }).filter(function (v, i, a) { return a.indexOf(v) === i; }).length; };
     var h = '<div class="panel no-imp"><h2>Personas · ' + esc(S.data.nombre) + '</h2><p>Elige a una persona para ver todas sus fechas del mes, con el local, lo que hizo y el monto. Sirve para contrastar las transferencias. Se puede imprimir o guardar como PDF.</p>' +
       '<div class="fila"><div class="campo"><small>Persona</small><select id="psel"><option value="">— Todas (resumen) —</option>' + nombres.map(function (n) { return '<option' + (n === sel ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('') + '</select></div>' +
@@ -284,7 +287,7 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
     if (!sel) {
       var gran = 0;
       h += '<div class="panel"><h2 class="solo-imp">Resumen del equipo · ' + esc(S.data.nombre) + '</h2><table class="pers"><tr><th>Persona</th><th class="n">Días</th><th class="n">Turnos</th><th class="n">Total</th></tr>' +
-        nombres.map(function (n) { var t = tot(T[n]); gran += t; return '<tr data-ver="' + esc(n) + '"><td>' + esc(n) + '</td><td class="n">' + dias(T[n]) + '</td><td class="n">' + T[n].length + '</td><td class="n">' + plata(t) + (T[n].some(function (z) { return z.falta; }) ? ' <span class="faltan">*</span>' : '') + '</td></tr>'; }).join('') +
+        nombres.map(function (n) { var t = tot(T[n], n); gran += t; return '<tr data-ver="' + esc(n) + '"><td>' + esc(n) + (fijoDe(n) ? ' <small class="vacio">(sueldo fijo)</small>' : '') + '</td><td class="n">' + dias(T[n]) + '</td><td class="n">' + T[n].length + '</td><td class="n">' + plata(t) + (T[n].some(function (z) { return z.falta; }) ? ' <span class="faltan">*</span>' : '') + '</td></tr>'; }).join('') +
         '<tr class="tot"><td>Total</td><td></td><td></td><td class="n">' + plata(gran) + '</td></tr></table>' +
         (nombres.some(function (n) { return T[n].some(function (z) { return z.falta; }); }) ? '<p class="faltan">* Hay turnos sin tarifa: revisa Archivos.</p>' : '') + '<p class="no-imp vacio">Toca un nombre para ver su detalle.</p></div>';
       return h;
@@ -293,12 +296,17 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
     h += '<div class="panel"><h2>' + esc(sel) + ' · ' + esc(S.data.nombre) + '</h2><p>' + dias(xs) + ' ' + (dias(xs) === 1 ? 'día' : 'días') + ' · ' + xs.length + ' ' + (xs.length === 1 ? 'turno' : 'turnos') + '</p>' +
       '<table class="pers"><tr><th>Fecha</th><th>Local</th><th>Qué hizo</th><th class="n">Monto</th></tr>' +
       xs.map(function (t) { var d = Number(t.fecha.slice(8)); return '<tr><td>' + DIAS[t.x.wd] + ' ' + d + '</td><td>' + NL[t.l] + '</td><td>' + ROL_TXT[t.rol] + '</td><td class="n">' + (t.falta ? '<span class="faltan">sin tarifa</span>' : t.monto == null ? 'sin pago aparte' : plata(t.monto)) + '</td></tr>'; }).join('') +
-      '<tr class="tot"><td colspan="3">Total del mes</td><td class="n">' + plata(tot(xs)) + '</td></tr></table></div>';
+      (fijoDe(sel) ? '<tr><td colspan="3">Suma de los valores por día (referencia del costo)</td><td class="n">' + plata(diario(xs)) + '</td></tr><tr class="tot"><td colspan="3">Sueldo fijo mensual</td><td class="n">' + plata(fijoDe(sel)) + '</td></tr>'
+        : '<tr class="tot"><td colspan="3">Total del mes</td><td class="n">' + plata(diario(xs)) + '</td></tr>') + '</table>' +
+      '<div class="fila no-imp" style="margin-top:12px"><div class="campo" style="flex:0 1 220px"><small>Sueldo fijo mensual (vacío si no tiene)</small><input type="number" inputmode="numeric" min="0" step="1" id="pfijo" value="' + (fijoDe(sel) || '') + '"></div><button class="btn chico" id="pfijog" style="align-self:flex-end">Guardar</button></div>' +
+      (fijoDe(sel) ? '<p class="vacio no-imp">Con sueldo fijo, los montos de cada día son solo de referencia del costo por día.</p>' : '') + '</div>';
     return h;
   }
   function enlazarPersonas() {
     document.getElementById('psel').onchange = function () { S.persona = this.value; pintar(); };
     document.getElementById('pimp').onclick = function () { window.print(); };
+    var g = document.getElementById('pfijog');
+    if (g) g.onclick = function () { api('POST', '/api/prog/fijo', { nombre: S.persona, fijo: document.getElementById('pfijo').value }).then(function (j) { S.data.personas = j.personas; aviso('Guardado'); pintar(); }).catch(function (e) { aviso(e.message); }); };
     document.querySelectorAll('tr[data-ver]').forEach(function (tr) { tr.onclick = function () { S.persona = tr.dataset.ver; window.scrollTo(0, 0); pintar(); }; });
   }
   var TIPOS_LOC = { MK: { 4: ['standup'], 5: ['piano'], 6: ['tributo', 'otro'] }, TOB: { 5: ['otro'] }, FRIDA: { 5: ['doble', 'otro'], 6: ['doble', 'otro'], 0: ['bingo'] } };

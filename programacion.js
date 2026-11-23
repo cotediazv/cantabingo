@@ -152,17 +152,17 @@ module.exports = function programacion({ app, dir }) {
     // entre paréntesis es un turno extra de un turno que normalmente hace otra persona: queda aparte (camHx, camVx)
     for (const r of ROLES) {
       if (r === 'camHx' || r === 'camVx') continue; // van más abajo
-      let v = clean(c[r], 60).replace(/\s+\d+(?:[.,]\d+)?$/, '');
+      let v = clean(c[r], 60).replace(/\s*[x×*]?\s*\d+(?:[.,]\d+)?\s*$/i, '');
       const x = v.match(/^(.+?)\s*\(([^)]*)\)\s*(.*)$/);
       if (x) {
-        v = `${x[1]} ${x[3]}`.trim().replace(/\s+\d+(?:[.,]\d+)?$/, '');
+        v = `${x[1]} ${x[3]}`.trim().replace(/\s*[x×*]?\s*\d+(?:[.,]\d+)?\s*$/i, '');
         const p = clean(x[2], 40);
         if (p && !/\d/.test(p)) { if ((r === 'camH' || r === 'camV') && !c[`${r}x`]) o[`${r}x`] = p; else if (r === 'dj' && !c.extra) o.extra = p; }
       }
       v = clean(v, 40);
       if (v) o[r] = v;
     }
-    for (const k of ['camHx', 'camVx']) { const v = clean(c[k], 40).replace(/\s*\(.*$/, '').replace(/\s+\d+(?:[.,]\d+)?$/, ''); if (v && o[k.slice(0, 4)]) o[k] = v; }
+    for (const k of ['camHx', 'camVx']) { const v = clean(c[k], 40).replace(/\s*\(.*$/, '').replace(/\s*[x×*]?\s*\d+(?:[.,]\d+)?\s*$/i, ''); if (v && o[k.slice(0, 4)]) o[k] = v; }
     for (const k of ['showPor', 'camNota']) { const v = clean(c[k], 40); if (v) o[k] = v; }
     if (c.montos && typeof c.montos === 'object') {
       const m = {};
@@ -179,7 +179,7 @@ module.exports = function programacion({ app, dir }) {
   };
   // Una vez al abrir: limpia los nombres que ya estaban guardados con agregados y saca esas «personas» de la lista
   {
-    const sucio = (n) => /[()]|\s\d+(?:[.,]\d+)?$/.test(String(n || ''));
+    const sucio = (n) => /[()]|\d/.test(String(n || ''));
     let n = 0;
     for (const [f, d] of Object.entries(P.dias)) for (const l of Object.keys(d)) {
       const antes = JSON.stringify(d[l]);
@@ -675,7 +675,23 @@ module.exports = function programacion({ app, dir }) {
   });
   app.post('/api/prog/personas', auth, (req, res) => {
     const xs = Array.isArray((req.body || {}).personas) ? req.body.personas : [];
-    P.personas = xs.map((p) => ({ nombre: clean(p.nombre, 40), codigo: plain(p.codigo || p.nombre).slice(0, 40), roles: (Array.isArray(p.roles) ? p.roles : []).filter((r) => ['ent', 'cam', 'edi'].includes(r)) })).filter((p) => p.nombre);
+    const antes = Object.fromEntries(P.personas.map((p) => [plain(p.nombre), p.fijo]));
+    P.personas = xs.map((p) => {
+      const o = { nombre: clean(p.nombre, 40), codigo: plain(p.codigo || p.nombre).slice(0, 40), roles: (Array.isArray(p.roles) ? p.roles : []).filter((r) => ['ent', 'cam', 'edi'].includes(r)) };
+      const f = p.fijo != null ? p.fijo : antes[plain(o.nombre)];
+      if (Number(f) > 0) o.fijo = Math.round(Number(f));
+      return o;
+    }).filter((p) => p.nombre);
+    save(); res.json({ ok: true, personas: P.personas });
+  });
+  // Sueldo fijo mensual (Cote, 23 nov: Oscar y Fer tienen sueldo fijo; los valores por día son solo de referencia)
+  app.post('/api/prog/fijo', auth, (req, res) => {
+    const b = req.body || {};
+    const n = clean(b.nombre, 40); if (!n) return fail(res, 400, 'Falta el nombre');
+    persona(n);
+    const p = P.personas.find((x) => plain(x.nombre) === plain(n));
+    const f = Math.round(Number(String(b.fijo == null ? '' : b.fijo).replace(/[^\d]/g, '')) || 0);
+    if (f > 0) p.fijo = f; else delete p.fijo;
     save(); res.json({ ok: true, personas: P.personas });
   });
   app.post('/api/prog/tarifas', auth, (req, res) => {
