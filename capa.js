@@ -29,4 +29,7 @@ module.exports = function capa({ app, requireLocal, fail, aviso = () => {} }) {
     aviso(); // el GC lo reproduce al instante (si esa conexión falla, lo lee igual en el segundo siguiente)
     return res.json({ ok: true, ...live[v] });
   });
+  // Disparo desde el propio servidor (confeti cada vez que hay un ganador en la sala de juegos; pedido de Cote, 23 nov)
+  const fire = (v, kind) => { if (!VENUES.includes(v) || !KINDS.includes(kind)) return; const prev = live[v] ? live[v].id : 0; live[v] = { id: Math.max(Date.now(), prev + 1), kind, text: '', at: Date.now() }; aviso(); };
+  return { fire };
 };

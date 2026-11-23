@@ -536,6 +536,7 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
       }
       stopAuto(s);
       s.confirmedAt = Date.now();
+      festejo(); // confeti en el GC
       // Quien no fue confirmado queda fuera: el cartel muestra solo al ganador aceptado
       for (const r of s.results) if (!r.confirmed) r.dismissed = true;
       if (tied) { s.hideWin = false; setStage('bingo'); } // vuelve la gráfica del bingo, con la celebración del ganador único
@@ -748,7 +749,12 @@ const setStage = (show) => {
   if (changed) for (const s of Object.values(db.sessions)) broadcast(s); // los celulares se enteran del cambio de juego
   if (changed) aviso(); // y las pantallas, al instante
 };
-const wheel = require('./wheel.js')({ app, db, save, requireAdmin, fail, setStage, findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null });
+// Confeti en el GC de OBS cada vez que hay un ganador (pedido de Cote, 23 nov: «tiene que haber confeti en el GC cada vez
+// que haya un ganador»): bingo (ganador confirmado), El Rosko y su Trivia, El Festival y El objeto más extraño. Es el
+// mismo efecto «Confeti» de la capa gráfica, disparado solo, en el local de la sala abierta.
+let capaFire = () => {};
+const festejo = () => { const s = Object.values(db.sessions)[0]; if (s) capaFire(s.theme || 'frida', 'confeti'); };
+const wheel = require('./wheel.js')({ app, db, save, requireAdmin, fail, setStage, festejo, findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null });
 roscoRef = wheel;
 // Tras corregir un nombre, se vuelve a enviar el estado a todas las pantallas abiertas
 const refreshAll = () => { Object.values(db.sessions).forEach((s) => broadcast(s)); wheel.refresh(); };
@@ -770,7 +776,7 @@ const karaoke = require('./karaoke.js')({ app, db, save, requireAdmin, requireLo
   findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || (lightApi ? lightApi.findPlayer(sid, token) : null),
   lightVenue: (sid) => (lightApi ? lightApi.venueOf(sid) : ''), extraVenues: () => (lightApi ? lightApi.pollVenues() : []) });
 // Votación del público (nota del 1 al 10 desde el celular)
-const vote = require('./vote.js')({ app, db, save, requireAdmin, fail, setStage,
+const vote = require('./vote.js')({ app, db, save, requireAdmin, fail, setStage, festejo,
   findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null,
   venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
   notify: () => Object.values(db.sessions).forEach((s) => broadcast(s)) });
@@ -778,7 +784,7 @@ const vote = require('./vote.js')({ app, db, save, requireAdmin, fail, setStage,
 const insta = require('./insta.js')({ app, db, save, requireAdmin, fail, venue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
 // Sala light: karaoke, show y cartelera en otro local, al mismo tiempo que la sala principal
 lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta, aviso });
-require('./capa.js')({ app, requireLocal, fail, aviso }); // capa gráfica sobre la cámara (botones del GC Master)
+capaFire = require('./capa.js')({ app, requireLocal, fail, aviso }).fire; // capa gráfica sobre la cámara (botones del GC Master)
 require('./vertical.js')({ app, db, save, requireAdmin, fail, karaoke, perOf, dir: path.dirname(DATA_FILE) }); // pantalla vertical: video del mes y actividades
 // Conectados (pedido de Cote, 22 nov): números en vivo por local, gráfico de las últimas 3 horas y registro por jornada
 require('./conectados.js')({ app, db, save, requireAdmin, port: process.env.PORT || 3000,

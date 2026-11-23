@@ -8,7 +8,7 @@ const LETTERS = 'ABCDEFGHIJLMNÑOPQRSTUVXYZ';
 const OPEN = (st) => st === 'pending' || st === 'pass';
 const REVEAL_MS = 4000; // tiempo que la respuesta acertada queda en pantalla
 
-module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStage, findPlayer }) {
+module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStage, findPlayer, festejo = () => {} }) {
   const api = { refresh: () => {} };
   db.wheels ||= {};
   db.bankUsed ||= {}; // cuántas veces se ha usado cada pregunta del banco
@@ -416,9 +416,13 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     if (!w) return;
     if (db.stage === 'qr') setStage('rueda'); // cualquier acción del rosko retira el QR a pantalla completa
     rankSeen(w);
+    const had = winnerOf(w) >= 0; const hadCrowd = !!((w.crowd || {}).winner);
     const error = act(w, String((req.body || {}).action), req.body || {});
     rankSeen(w);
     if (error) return fail(res, 400, error);
+    // Confeti en el GC cuando aparece el ganador de El Rosko o el de la Trivia (pedido de Cote, 23 nov)
+    const cw = (w.crowd || {}).winner;
+    if ((!had && winnerOf(w) >= 0) || (!hadCrowd && cw && !cw.none)) festejo();
     broadcast(w);
     // El estado completo en la respuesta: el panel del iPad se dibuja al instante, sin volver a leer (pedido de Cote, 21 nov)
     res.json({ ok: true, ...publicState(w), questions: w.questions, fromBank: !!w.bank });
@@ -443,7 +447,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     db.raffle.mode = 'tie';
     setStage('sorteo');
     broadcast(w);
-    setTimeout(() => broadcast(w), TIE_ROLL_MS + 200); // al terminar la tómbola, el panel recibe al ganador
+    setTimeout(() => { broadcast(w); festejo(); }, TIE_ROLL_MS + 200); // al terminar la tómbola, el panel recibe al ganador
     res.json({ ok: true });
   });
 

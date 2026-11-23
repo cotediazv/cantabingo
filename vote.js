@@ -24,7 +24,7 @@ const FINAL_MS = Number(process.env.VOTE_OPEN_MS) || 8000; // la gran final tamb
 const GRACE_MS = 1000; // margen para los votos que venían en camino al llegar a cero
 const SIGNUP_MS = 90000; // El objeto más extraño: la inscripción dura 90 segundos (pedido de Cote, 20 nov)
 
-module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, findPlayer, venue, notify }) {
+module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, findPlayer, venue, notify, festejo = () => {} }) {
   const blank = (mode = 'objeto') => ({ mode, title: mode === 'karaoke' ? '' : TITLES[mode] || TITLE, max: mode === 'karaoke' ? K_MAX : O_MAX, players: [], open: null, last: null, sample: null, phase: 'voting', rank: [], revealed: 0, final: null, winner: null, winAt: 0, rev: ((db.vote || {}).rev || 0) + 1, gen: ((db.vote || {}).gen || 0) + 1 });
   db.vote ||= blank();
   // Arreglo (20 nov): un Festival empezado de nuevo quedaba con el título «El objeto más extraño»
@@ -322,6 +322,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       }
       s.phase = 'winner';
       s.winAt = Date.now();
+      festejo(); // confeti en el GC de OBS (pedido de Cote, 23 nov)
       return null;
     },
     reset: (s) => { db.vote = blank(s.mode); return null; }, // el concurso nuevo es del mismo tipo

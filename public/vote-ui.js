@@ -312,7 +312,6 @@
     app.innerHTML = '<div id="vg"></div><div id="vg-win"></div>';
     let swap = null;
     let sceneKey = '';
-    let drumHeard = null;
     // Diseño nuevo: los nombres van siempre enteros; si con la letra nueva alguno no cabe en su línea, se achica
     const fitGC = () => { if (window.t2 && window.t2()) document.querySelectorAll('#vg .vg-main > b, #vg .vg-main > span, #vg .vg-side > b').forEach((el) => window.fitOneLine(el)); };
     const stop = follow((st, celebrating) => {
@@ -333,13 +332,13 @@
       // Si solo cambió un detalle (llegó otro inscrito), se actualiza en el lugar, sin sacar y volver a entrar el zócalo
       const key = celebrating ? '' : JSON.stringify([s.tag, s.main, s.sub, !!s.qr, !!s.notes]);
       // Redoble de tambores (concurso de karaoke) también en el GC, para la transmisión
-      if (s.drum && drumHeard !== st.rev) { drumHeard = st.rev; sfx.unlock(); sfx.play('drum'); }
+      if (s.drum) { if (!sfx.rolling()) { sfx.unlock(); sfx.roll(true); } } else if (sfx.rolling()) sfx.roll(false); // suena hasta que se revela al ganador
       if (key && key === sceneKey && box.classList.contains('on')) { box.classList.add('t2q'); box.innerHTML = html; fitGC(); return; } // t2q: en el diseño nuevo, sin repetir la entrada
       sceneKey = key;
       box.className = `th-${st.venue}`;
       swap = setTimeout(() => { if ($('#vg')) { $('#vg').innerHTML = html; $('#vg').className = `th-${st.venue} ${html ? 'on' : ''}`; fitGC(); whenFonts(fitGC); } }, box.innerHTML ? 650 : 0);
     });
-    return () => { stop(); clearTimeout(swap); document.body.classList.remove('obs', 'gc-screen'); };
+    return () => { stop(); clearTimeout(swap); sfx.roll(false); document.body.classList.remove('obs', 'gc-screen'); };
   };
 
   // Tablero del DJ: lo mismo a pantalla completa, con la lista de participantes al costado
@@ -373,7 +372,8 @@
       const s = scene(st, celebrating);
       // Sonidos: redoble al revelar un lugar y fanfarria al conocerse quién ganó
       const cue = st.phase === 'winner' ? 'win' : st.phase === 'final' && st.final && st.final.drum ? 'drum' : st.phase === 'results' && st.places.length ? `place${st.places.length}` : '';
-      if (!first && cue && cue !== heard) sfx.play(cue === 'win' ? 'win' : cue === 'drum' ? 'drum' : 'hit');
+      if (cue === 'drum') { if (!sfx.rolling()) sfx.roll(true); } else if (sfx.rolling()) sfx.roll(false); // el redoble suena hasta que se revela al ganador
+      if (!first && cue && cue !== heard && cue !== 'drum') sfx.play(cue === 'win' ? 'win' : 'hit');
       heard = cue;
       const key = JSON.stringify([s.tag, s.main, s.sub, !!s.notes, !!s.list, celebrating]);
       box.className = `th-${st.venue}${key !== sceneKey ? ' t2in' : ''}`;
@@ -394,6 +394,6 @@
       fitAll();
       whenFonts(fitAll);
     });
-    return () => { stop(); ticking = 0; clearTimeout(tickTimer); };
+    return () => { stop(); ticking = 0; clearTimeout(tickTimer); sfx.roll(false); };
   };
 })();

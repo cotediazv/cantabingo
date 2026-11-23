@@ -1398,7 +1398,36 @@ const sfx = (() => {
     },
   };
   const play = (name) => { if (ready() && sounds[name]) { try { sounds[name](); } catch { /* sin audio */ } } };
-  return { unlock, ready, play, played: [], ticks: 0 };
+  // Redoble de tambores sostenido (pedido de Cote, 23 nov: «cuando se va a revelar el ganador del Festival… tiene que haber
+  // un redoble de tambores que suene»): golpes de caja hechos con ruido (se oyen bien en cualquier parlante; el redoble
+  // anterior era de tonos graves, casi mudo en parlantes chicos), cada vez más rápidos y fuertes, que siguen sonando hasta
+  // que se revela al ganador (tope 45 s); al parar, un golpe de platillo.
+  let noiseBuf = null; let rollTimer = null;
+  const noise = (at, dur, vol, freq, q) => {
+    if (!noiseBuf) { noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+    const t = Math.max(ctx.currentTime, ctx.currentTime + at);
+    const src = ctx.createBufferSource(); src.buffer = noiseBuf; src.loop = true;
+    const f = ctx.createBiquadFilter(); f.type = q ? 'bandpass' : 'highpass'; f.frequency.value = freq; if (q) f.Q.value = q;
+    const g = ctx.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(f).connect(g).connect(ctx.destination); src.start(t, Math.random() * 0.5); src.stop(t + dur + 0.05);
+  };
+  const snare = (at, vol) => { noise(at, 0.085, vol, 2200, 0.9); note(210, Math.max(0, at), 0.06, 'triangle', vol * 0.5, 150); };
+  const roll = (on) => {
+    const was = !!rollTimer;
+    clearInterval(rollTimer); rollTimer = null;
+    if (!on) { if (was && ready()) { try { noise(0, 1.6, 0.3, 5200, 0); note(60, 0, 0.5, 'sine', 0.4, 40); } catch { /* sin audio */ } } return; }
+    if (!ready()) return;
+    const t0 = ctx.currentTime; let next = 0.02;
+    const sched = () => {
+      try {
+        const now = ctx.currentTime - t0;
+        if (now > 45) { roll(false); return; }
+        while (next < now + 0.7) { const k = Math.min(1, next / 3.5); snare(next - now, 0.1 + 0.26 * k); next += 0.11 - 0.062 * k; }
+      } catch { /* sin audio */ }
+    };
+    sched(); rollTimer = setInterval(sched, 250);
+  };
+  return { unlock, ready, play, roll, rolling: () => !!rollTimer, played: [], ticks: 0 };
 })();
 
 // Tablero del DJ: pantalla completa (no transparente) que sigue sola lo que está pasando,
