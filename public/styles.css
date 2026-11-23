@@ -3120,3 +3120,30 @@ body.vert-in.per-on .vt-act { transform: scale(var(--per-k, .9)); transform-orig
 .cl-per th { white-space: normal; vertical-align: bottom; line-height: 1.15; } .cl-per td:first-child { font-weight: 800; white-space: nowrap; }
 .cl-h { margin: 0 0 8px; color: var(--cx-ink2); font-size: .9rem; }
 @media (max-width: 800px) { .cl-top { flex-wrap: wrap; } .cl-top span { flex: 1 0 100%; order: 3; } .cl-grid { grid-template-columns: 1fr; } .cl-jor { grid-auto-flow: column; grid-auto-columns: minmax(200px, 70%); overflow-x: auto; max-height: none; } }
+
+/* GC Master · sonido y pantalla grande de los monitores de la sala de juegos (pedido de Cote, 23 nov: «habilitar sonido para
+   pantalla 1 y 2, yo elijo cuál suena, también la opción de pantalla completa dentro de la zona delimitada para pantalla…
+   mejora la relación de portes»). Los botoncitos van en la esquina de cada pantalla; la pantalla agrandada ocupa toda la
+   zona de las pantallas, por encima de las otras, sin tapar los botones de abajo. */
+.gm-tools { position: absolute; right: 0; top: 0; z-index: 3; display: flex; gap: 2px; }
+.gm-tool { display: flex; align-items: center; gap: 5px; margin: 0; padding: 4px 9px; min-height: 26px; border: 0; border-radius: 0; background: rgba(0, 0, 0, .78); color: #fff; font: inherit; font-size: .74rem; font-weight: 800; line-height: 1; cursor: pointer; }
+.gm-tool:hover, .gm-tool:focus-visible { background: #2c2850; }
+.gm-tool.on { background: #ffd76a; color: #14101f; }
+.gm-tall .gm-tool b { display: none; }
+.gm-jg .gm-screens, .gmm-mon { position: relative; }
+.gm-jg .gm-left { position: static; }
+.gm-scr.gm-big { position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: 6; display: flex; align-items: center; justify-content: center; background: #05040a; width: auto; }
+.gm-scr.gm-big > .gm-box { flex: none; width: 100%; max-width: none; }
+.gm-scr.gm-tall.gm-big > .gm-box { width: auto; height: 100%; }
+.gm-scr.gm-big .gm-tool b { display: inline; }
+.gm-scr.gm-big .gm-tool { padding: 6px 12px; min-height: 32px; font-size: .84rem; }
+/* mejor relación de portes: las pantallas crecen hasta ocupar el alto libre de la ventana (antes, siempre el 36 % del ancho) */
+@media (min-width: 901px) {
+  .gm-jg .gm-grid { grid-template-columns: clamp(340px, calc((100vh - 345px) * 1.075), 48%) minmax(0, 1fr); grid-template-columns: clamp(340px, calc((100dvh - 345px) * 1.075), 48%) minmax(0, 1fr); }
+}
+/* «Sala KRB» (teléfono): botoncitos más chicos; en los dos monitores chicos, solo el dibujo */
+.gmm-mon .gm-tool { padding: 3px 6px; min-height: 24px; font-size: .62rem; }
+.gmm-mon > .gm-scr:not(.gm-big) .gm-tool b { display: none; }
+.gmm-mon > .gm-scr:not(:first-child):not(.gm-big) .gm-tools { top: auto; bottom: 0; }
+.gmm-mon > .gm-scr:not(:first-child):not(.gm-big) .gm-tool { padding: 2px 4px; min-height: 20px; }
+.gmm-mon > .gm-scr.gm-big { grid-area: 1 / 1 / -1 / -1; width: auto; justify-self: stretch; }

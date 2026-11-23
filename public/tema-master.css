@@ -59,3 +59,9 @@ html.t2 .cl-top input { border-radius: 0; border-width: 1px; background: var(--t
 html.t2 .cl-j { --gm: var(--t-c); border-radius: 0; border-width: 1px; border-left-width: 4px; background: #100f18; font-family: var(--t-txt); }
 html.t2 .cl-j.on { border-color: var(--t-foco); border-left-color: var(--gm); background: var(--t-tarima2); }
 html.t2 .cl-j b { font: 900 1.2rem/1 var(--t-disp); text-transform: uppercase; letter-spacing: .01em; }
+
+/* Sonido y pantalla grande de los monitores (Cote, 23 nov) */
+html.t2 body.gm-on .gm-tool { background: rgba(12, 11, 18, .88); font-family: var(--t-mono); letter-spacing: .04em; text-transform: uppercase; }
+html.t2 body.gm-on .gm-tool:hover, html.t2 body.gm-on .gm-tool:focus-visible { background: #2a2738; }
+html.t2 body.gm-on .gm-tool.on { background: var(--t-foco); color: #0c0b12; }
+html.t2 body.gm-on .gm-scr.gm-big { background: #0c0b12; }
