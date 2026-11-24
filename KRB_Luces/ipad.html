@@ -799,10 +799,6 @@ function dibujar3D(){
   poly([[-14,0,-5],[12,0,-5],[12,0,largoSalon],[-14,0,largoSalon]].map(p => rotY(p, gs)), '#0d0e12'); // piso del salon (girado)
   for (let k = -14; k <= 12; k += 2) linea(rotY([k, 0.01, 0.5], gs), rotY([k, 0.01, largoSalon], gs), '#15171c', 1); // baldosas
   for (let k = 2; k <= largoSalon; k += 2) linea(rotY([-14, 0.01, k], gs), rotY([12, 0.01, k], gs), '#15171c', 1);
-  [0, 1, 2].forEach(n => {                                                          // columnas del salon
-    const c = columnaSalon(n);
-    caja(c[0] - 0.4, c[0] + 0.4, 0, 4.6, c[2] - 0.4, c[2] + 0.4, '#1d2027', '#171a20', '#23262e');
-  });
   poly([[-8.2,0,-1.2],[-6.4,0,-1.2],[-6.4,2.6,-1.2],[-8.2,2.6,-1.2]], '#1a1f26', '#2a313b'); // acceso a estacionamientos (lado izquierdo, abierto)
   poly([[-8.0,2.0,-1.19],[-6.6,2.0,-1.19],[-6.6,2.5,-1.19],[-8.0,2.5,-1.19]], '#e8eaee');    // letrero del acceso
   poly([[-5,0,-4],[5,0,-4],[5,4.6,-4],[-5,4.6,-4]], '#17191e');                   // pared del fondo (oscura)
@@ -827,8 +823,20 @@ function dibujar3D(){
   [[-6.3, -5.3], [5.3, 6.3]].forEach(([x0, x1]) => {
     caja(x0, x1, 0, 4.3, -0.6, 0.6, '#2f5f9e', '#264f86', '#3a6fb5');
     for (let x = x0 + 0.12; x < x1; x += 0.16) linea([x, 0, 0.61], [x, 4.3, 0.61], '#24497d', 1);
-    const xp = x0 < 0 ? x1 + 0.005 : x0 - 0.005;
-    poly([[xp,1.9,-0.25],[xp,1.9,0.25],[xp,3.1,0.25],[xp,3.1,-0.25]], '#e9edf2');   // panel de luz
+    poly([[x0+0.15,2.3,0.62],[x1-0.15,2.3,0.62],[x1-0.15,3.7,0.62],[x0+0.15,3.7,0.62]], '#9fb4d8', '#cfd8e8'); // pantalla vertical (mira al publico)
+    if (x0 > 0) poly([[x0-0.35,1.25,0.66],[x1+0.35,1.25,0.66],[x1+0.35,2.05,0.66],[x0-0.35,2.05,0.66]], '#5d78a8', '#222'); // TV mas abajo (columna derecha)
+  });
+  // A la derecha del escenario: barra con azulejos de mariscos y neon azul vertical
+  poly([[6.6,0,-4.5],[12,0,-4.5],[12,3.2,-4.5],[6.6,3.2,-4.5]], '#c9d0d6');
+  for (let x = 6.9; x < 12; x += 0.7) for (let y = 0.6; y < 3; y += 0.7) poly([[x,y,-4.49],[x+0.3,y,-4.49],[x+0.3,y+0.25,-4.49],[x,y+0.25,-4.49]], '#55606c');
+  caja(6.8, 11.5, 0, 1.1, -3.6, -2.6, '#2a2c31', '#202227', '#e0c27a');
+  // Detras a la izquierda: el mall abierto con locales iluminados
+  [[-17, -14.2, '#f0e6d2'], [-13.8, -11.4, '#e9a23b'], [-11, -9.2, '#f4f1ea']].forEach(([a, b, col]) =>
+    poly([[a,0.4,-7],[b,0.4,-7],[b,2.6,-7],[a,2.6,-7]], col, '#444'));
+  // Lamparas hexagonales y sombreros de paja colgando sobre el salon
+  [[-3, 6], [-6.5, 7.5], [1.5, 9], [-2, 12], [-8, 11], [3, 4]].forEach(([sx, sz]) => {
+    const c = rotY([sx, 0, sz], gs), r = 0.8;
+    poly([0,1,2,3,4,5].map(k => [c[0] + r * Math.cos(k * Math.PI / 3), 4.3, c[2] + r * Math.sin(k * Math.PI / 3)]), '#a8824c', '#c99d5e');
   });
   // Marco azul arriba
   linea([-5.8, 4.5, 0.3], [5.8, 4.5, 0.3], '#3a6fb5', 4);
@@ -848,8 +856,46 @@ function dibujar3D(){
     poly([0,1,2,3,4,5].map(k => [cx + r * Math.cos(k * Math.PI / 3), cy + r * Math.sin(k * Math.PI / 3) * 0.85, cz]), '#b08a52', '#d0aa6a');
   });
 
+  // --- Salon: mesas con velas y sillas amarillas, y columnas de piedra (de lejos a cerca) ---
+  const objetos = [], velas = [];
+  for (let sx = -12; sx <= 5; sx += 2.6) for (let sz = 3; sz <= 24; sz += 2.4){
+    const c = rotY([sx, 0, sz], gs);
+    if (c[2] < 1.6 && c[0] > -6.5) continue;                                         // no encima de la tarima
+    if ([0, 1, 2].some(n => { const q = columnaSalon(n); return Math.hypot(q[0] - c[0], q[2] - c[2]) < 1.8; })) continue;
+    objetos.push({ d: Math.hypot(...sub(c, V.ojo)), f: () => {
+      [-1, 1].forEach(s => {                                                       // sillas amarillas (asiento + respaldo)
+        const x = c[0] + s * 0.62;
+        caja(x - 0.2, x + 0.2, 0.42, 0.47, c[2] - 0.2, c[2] + 0.2, '#c9a227', '#a8861d', '#d8b437');
+        const xr = x + s * 0.2;
+        caja(Math.min(xr, xr + s * 0.04), Math.max(xr, xr + s * 0.04), 0.47, 0.9, c[2] - 0.2, c[2] + 0.2, '#c9a227', '#a8861d', '#d8b437');
+      });
+      caja(c[0] - 0.04, c[0] + 0.04, 0, 0.72, c[2] - 0.04, c[2] + 0.04, '#3b3f46', '#30333a', '#3b3f46'); // pata
+      caja(c[0] - 0.4, c[0] + 0.4, 0.72, 0.77, c[2] - 0.4, c[2] + 0.4, '#7a5a38', '#6a4d30', '#9a7a50'); // cubierta de madera
+    }});
+    velas.push([c[0], 0.82, c[2]]);
+  }
+  [0, 1, 2].forEach(n => {
+    const c = columnaSalon(n);
+    objetos.push({ d: Math.hypot(...sub(c, V.ojo)), f: () => {
+      caja(c[0] - 0.6, c[0] + 0.6, 0, 5.5, c[2] - 0.6, c[2] + 0.6, '#34373d', '#2a2d32', '#3c3f45');
+      if (n === 0){                                                                  // letrero de neon EAT FISH
+        const p = P([c[0], 3.3, c[2] + 0.62]);
+        if (p && p[2] > 2){
+          const ctx = V.ctx, s = Math.max(7, Math.min(22, 0.32 * p[3]));
+          ctx.save(); ctx.font = `bold ${s}px system-ui`; ctx.textAlign = 'center';
+          ctx.shadowColor = '#7ff6ff'; ctx.shadowBlur = 10; ctx.fillStyle = '#c9fbff';
+          ctx.fillText('EAT', p[0], p[1]); ctx.fillText('FISH', p[0], p[1] + s); ctx.restore();
+        }
+      }
+    }});
+  });
+  objetos.sort((a, b) => b.d - a.d).forEach(o => o.f());
+
   // --- Luces (se suman como luz real) ---
   ctx.globalCompositeOperation = 'lighter';
+  velas.forEach(v => brillo(v, 0.45, {r:255, g:170, b:70, i:1}, 0.55));            // velas de las mesas
+  brillo([7.0, 2.3, -4.4], 0.9, {r:60, g:120, b:255, i:1}, 0.9);                   // neon azul de la barra
+  linea([7.0, 1.5, -4.45], [7.0, 3.1, -4.45], '#7fb0ff', 3);
   const marcas = [];
   conf.grupos.forEach(g => {
     const def = POS3D[g.id] || {}, c = colorGrupo(g);
