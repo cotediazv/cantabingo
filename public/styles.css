@@ -3401,3 +3401,13 @@ body.gp-on main { max-width: none; padding: 0; margin: 0; }
 .gm-fueranote { margin: 12px 0; color: #b9b4c9; }
 .gm-fuera .dm-solo { grid-template-columns: minmax(0, 1fr); max-width: 300px; }
 #gp .gp-hot { position: absolute; z-index: 4; top: 0; left: 0; right: 0; height: 44px; }
+
+/* El QR en versión GC en el GC de OBS (pregunta 19 de Cote, 24 nov): abajo a la izquierda, con la franja al lado */
+#gc .gc-qrgc { --qrgc-t: 6vh; position: absolute; left: 5vh; right: 5vh; bottom: 6vh; display: flex; align-items: flex-end; }
+#gc .gc-qrgc-qr { flex: none; box-sizing: border-box; width: 24vh; padding: 1.3vh; background: #fff; color: #14121c; text-align: center; font: 800 1.9vh/1.2 inherit; border-radius: 2vh 0 0 2vh; }
+#gc .gc-qrgc-qr .qr { display: block; width: 100%; height: auto; aspect-ratio: 1; padding: 0; border: 0; border-radius: 0; margin-bottom: .9vh; }
+#gc .gc-qrgc-band { flex: 1; min-width: 0; display: grid; gap: 1vh; align-content: center; min-height: 15vh; padding: 2.4vh 4vh; background: var(--gc-shade, rgba(60, 0, 30, .85)); color: #fff; border-radius: 0 2vh 2vh 0; }
+#gc .gc-qrgc-title { display: block; font-size: var(--qrgc-t); font-weight: 900; line-height: 1.05; text-transform: uppercase; color: var(--gc-yellow, #ffc400); white-space: nowrap; overflow: hidden; }
+#gc .gc-qrgc-band > span { font-size: 3.2vh; font-weight: 700; }
+#gc .gc-qrgc .gc-big-count { justify-self: start; font-style: normal; font-size: 2.6vh; padding: .4vh 2vh; }
+body:has(#gc .gc-qrgc) .venue-mark.vm-obs-bingo { left: auto; right: 5vh; top: 5vh; bottom: auto; } /* con el QR en versión GC el logo va arriba a la derecha, sin tapar el QR */

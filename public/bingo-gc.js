@@ -8,13 +8,21 @@
   // En el texto inferior, lo escrito entre asteriscos se resalta en amarillo: *CONTRASEÑA: 1234*
   const rich = (text) => esc(text).replace(/\*([^*]+)\*/g, '<b>$1</b>');
 
-  // QR a pantalla completa, elegido a mano en el centro de control: cartel grande sobre fondo transparente
+  // El QR en versión GC (pregunta 19 de Cote, 24 nov: «en todo», también en el GC real de OBS): en lugar del cartel
+  // grande al centro, que tapaba al animador, el QR va abajo a la izquierda con su frase (que no pasa de su ancho) y,
+  // a su lado, la franja con el nombre de la sala. Lo usan «QR en pantalla completa» y el QR del bingo antes del primer
+  // número. El tablero y la pantalla de pie siguen con el QR grande.
+  const qrGC = (name, count) => `<div class="gc-qrgc">
+      <div class="gc-qrgc-qr">${qr(joinUrl())}<span>Escanea el código QR con tu celular</span></div>
+      <div class="gc-qrgc-band"><b class="gc-qrgc-title">${esc(name)}</b><span>Pon tu nombre, apellido y participa</span>${count ? '<em class="gc-big-count"></em>' : ''}</div></div>`;
+  // Nombre completo siempre: si no cabe en la franja, se achica la letra
+  const fitQrGC = () => { const t = document.querySelector('.gc-qrgc-title'); if (!t) return; t.style.fontSize = ''; let k = 1; while (t.scrollWidth > t.clientWidth + 1 && k > 0.4) { k -= 0.05; t.style.fontSize = `calc(var(--qrgc-t) * ${k})`; } };
+  // QR a pantalla completa, elegido a mano en el centro de control (en el GC de OBS, en versión GC)
   views.qrBig = async () => {
     document.body.classList.add('obs', 'gc-screen');
     const s = ((await api('GET', '/api/current').catch(() => ({}))).sessions || [])[0];
-    app.innerHTML = `<div id="gc" class="th-${s ? s.theme : 'frida'}"><div class="gc-big-wrap"><div class="gc-big"><b class="gc-big-title">${s ? esc(s.name) : 'KRB Stage · Sala de juegos'}</b>
-      <div class="gc-big-qr">${qr(joinUrl())}</div>
-      <span class="gc-big-text">Escanea el código QR con tu celular, pon tu nombre, apellido y participa</span></div></div></div>`;
+    app.innerHTML = `<div id="gc" class="th-${s ? s.theme : 'frida'}">${qrGC(s ? s.name : 'KRB Stage · Sala de juegos', false)}</div>`;
+    fitQrGC(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitQrGC);
     return () => document.body.classList.remove('obs', 'gc-screen');
   };
 
@@ -98,10 +106,8 @@
         // Se dibuja una sola vez; después solo se actualiza el contador, para que el cartel no salte
         if (!bigShown || !$('.gc-big-count')) {
           bigShown = true;
-          $('#gc').innerHTML = `<div class="gc-big-wrap"><div class="gc-big"><b class="gc-big-title">${esc(st.name)}</b>
-            <div class="gc-big-qr">${qr(joinUrl())}</div>
-            <span class="gc-big-text">Escanea el código QR con tu celular, pon tu nombre, apellido y participa</span>
-            <span class="gc-big-count"></span></div></div>`;
+          $('#gc').innerHTML = qrGC(st.name, true);
+          fitQrGC(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitQrGC);
         }
         $('.gc-big-count').textContent = count;
         return;
