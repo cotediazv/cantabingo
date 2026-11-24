@@ -114,6 +114,9 @@
   /* Vista previa 3D */
   .vista{margin:0 20px 14px;position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#050608}
   .vista canvas{display:block;width:100%;height:var(--vh,300px);touch-action:none;cursor:grab}
+  /* demo: paginas de la Sala en las pantallas del escenario (iframes detras del lienzo 3D, que les abre un hueco) */
+  .capa3d{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+  .vista #cv3dgl{position:relative}
   .vista.oculta canvas{display:none}
   .nav3d{position:absolute;right:8px;bottom:8px;display:grid;grid-template-columns:repeat(3,32px);gap:4px;z-index:2}
   .nav3d button{width:32px;height:32px;border:0;border-radius:8px;background:#000a;color:#fff;font-size:14px;cursor:pointer;touch-action:none;padding:0}
@@ -1748,7 +1751,7 @@ function simAccion(ruta, q){
   }
   return false;
 }
-function simMomento(n){
+function simMomento(n, encadenado){
   const acc = SIM.momentos[n]; if (!acc) return false;
   if (!acc.length) return true;                                         // bingo_numero: no cambia nada
   const gen = ++SIM.gen; SIM.momento = n; SIM.momentoN++;
@@ -1756,11 +1759,11 @@ function simMomento(n){
     for (const l of acc){
       if (gen !== SIM.gen) return;
       if (l.startsWith('espera:')){ await new Promise(r => setTimeout(r, +l.slice(7) * 1000)); continue; }
-      if (l.startsWith('@')){ if (gen === SIM.gen){ simMomento(l.slice(1).trim()); pintarEstado(simEstado()); } return; }
+      if (l.startsWith('@')){ if (gen === SIM.gen){ simMomento(l.slice(1).trim(), true); pintarEstado(simEstado()); } return; }
       const i = l.indexOf('?'); simAccion(i >= 0 ? l.slice(0, i) : l, new URLSearchParams(i >= 0 ? l.slice(i + 1) : ''));
     }
   })();
-  recorridoDemo(n);
+  recorridoDemo(n, encadenado);
   return true;
 }
 const simEstado = () => ({ tipo:'demo', puerto:'', conectado:false, error:'', efectos:[...SIM.ef.keys()],
@@ -1784,7 +1787,15 @@ async function simApi(path, params){
 /* Animador del demo: en el escenario; con bingo_al_publico baja, se para en una mesa, habla, pasa a otra,
    cambia de lado y vuelve. Las cabezas 1-3 lo siguen solas (en el show real se siguen a mano en Seguir). */
 const DEMO_ESC = [0.3, 0.45, -1.6];
-const demoAn = { ruta:null, i:0, s:0, espera:0, p:[...DEMO_ESC], rumbo:0, paso:0, quieto:true, mira:null };
+// El Rosko (Cote, 24 nov): el animador sentado en un piso alto al costado derecho (mirando el escenario desde el frente);
+// el concursante al centro con su atril. Con la pregunta en pantalla, la camara va a un plano cerrado del concursante.
+const DEMO_PISO = [3.0, 0.45, -1.3];
+const ROSKO_CERCA = ['rosko_pregunta', 'rosko_correcta', 'rosko_incorrecta', 'rosko_pasa', 'rosko_tiempo'];
+const FUERA_ROSKO = /^(sala_abierta|juego_siguiente|siguiente_juego|inicio_noche|bingo_|objeto_|festival_)/;
+const demoAn = { ruta:null, i:0, s:0, espera:0, p:[...DEMO_ESC], rumbo:0, paso:0, quieto:true, mira:null, tour:false, rosko:false, sentado:false };
+let demoUltimo = '';                                                  // ultimo momento que llego de la Sala (no los encadenados)
+const casaDemo = () => demoAn.rosko ? DEMO_PISO : DEMO_ESC;
+function irDemo(dest){ demoAn.ruta = [{p:[...demoAn.p], t:0}, {p:[...dest], t:0}]; demoAn.i = 0; demoAn.s = 0; demoAn.espera = 0; demoAn.tour = false; }
 function rutaDemo(paradas){
   // paradas: [u, v, segundos] en metros del salon (0 = no se detiene). Bajada y subida por la escalera del escenario.
   const bajar = [[0.3, 0.45, -1.6], [-1.2, 0.45, -0.1], [-1.3, 0, 1.1]];
@@ -1793,20 +1804,29 @@ function rutaDemo(paradas){
   bajar.slice().reverse().forEach(p => pts.push({p, t:0}));
   return pts;
 }
-function recorridoDemo(n){
+function recorridoDemo(n, encadenado){
+  if (!encadenado) demoUltimo = n;
   let m = momentoPorId(n); const nombres = [n]; while (m && m.igual){ nombres.push(m.igual); m = momentoPorId(m.igual); }
+  const antes = demoAn.rosko;
+  if (n.startsWith('rosko_')) demoAn.rosko = true; else if (FUERA_ROSKO.test(n)) demoAn.rosko = false;
   if (nombres.includes('bingo_al_publico')){
     // Pasillo de los sillones (dos mesas), cruce entre filas y pasillo de las cocinas (una mesa), y vuelta por el mismo camino
     demoAn.ruta = rutaDemo([[-3.2, 1.0, 0], [-3.2, 5.5, 7], [-3.2, 11.5, 7], [-3.2, 15.7, 0], [2.8, 15.7, 0], [2.8, 21, 7], [2.8, 15.7, 0], [-3.2, 15.7, 0], [-3.2, 1.0, 0]]);
-  } else if (demoAn.ruta && nombres.includes('base_juegos')){         // hay ganador / vuelve: sube al escenario por el camino que trae
+    demoAn.tour = true;
+  } else if (demoAn.tour && demoAn.ruta && nombres.includes('base_juegos')){   // hay ganador / vuelve: sube al escenario por el camino que trae
     const hecho = demoAn.ruta.slice(0, demoAn.i + 1).reverse().map(x => ({p:x.p, t:0}));
-    demoAn.ruta = [{p:[...demoAn.p], t:0}, ...hecho];
-  } else return;
+    demoAn.ruta = [{p:[...demoAn.p], t:0}, ...hecho]; demoAn.tour = false;
+  } else { if (demoAn.rosko !== antes && !demoAn.tour) irDemo(casaDemo()); return; }   // entra o sale de El Rosko: al piso alto o a su lugar
   demoAn.i = 0; demoAn.s = 0; demoAn.espera = 0;
 }
 function pasoAnimadorDemo(dt){
   const a = demoAn;
-  if (!a.ruta){ a.quieto = true; a.p = [...DEMO_ESC]; const f = deSalon(0, 8, 0); a.rumbo = Math.atan2(f[0] - a.p[0], f[2] - a.p[2]); return; }
+  a.sentado = false;
+  if (!a.ruta){
+    a.quieto = true; a.p = [...casaDemo()];
+    const f = a.rosko ? [0.5, 0, 0.3] : deSalon(0, 8, 0);                  // en El Rosko mira hacia el concursante y el frente
+    a.rumbo = Math.atan2(f[0] - a.p[0], f[2] - a.p[2]); a.sentado = a.rosko; return;
+  }
   if (a.espera > 0){ a.espera -= dt; a.quieto = true; return; }
   const A = a.ruta[a.i], B = a.ruta[a.i + 1];
   if (!B){ a.ruta = null; return; }
@@ -1825,7 +1845,8 @@ function bucleDemo(){
   if (!animador.activo){
     pasoAnimadorDemo(dt);
     const a = demoAn;
-    V.animador = { p:a.p, rumbo:a.rumbo, t:a.paso, quieto:a.quieto };
+    V.animador = { p:a.p, rumbo:a.rumbo, t:a.paso, quieto:a.quieto, sentado:a.sentado };
+    V.rosko = a.rosko;
     // En el demo las cabezas siguen solas al animador mientras esta en el publico
     if (SIM.momento === 'bingo_al_publico' && demoAn.ruta){
       segIds().forEach(id => {
@@ -1835,10 +1856,14 @@ function bucleDemo(){
       });
     }
     if (TV){                                                          // camara de transmision: sigue al animador, suave
-      const obj = [a.p[0], a.p[1] + 1.3, a.p[2]], k = Math.min(1, dt * 1.5);
+      // El Rosko con la pregunta en pantalla: plano cerrado del concursante, del pecho a la cabeza, de frente (queda dentro del rosco)
+      const cerca = a.rosko && ROSKO_CERCA.includes(demoUltimo);
+      const enEsc = a.p[1] > 0.2 && a.p[2] < 0;
+      const obj = cerca ? [0, 1.66, -1.2] : [a.p[0], a.p[1] + (a.sentado ? 1.1 : 1.3), a.p[2]];
+      const dist = cerca ? 1.2 : (enEsc ? 8 : 6.5), yaw = cerca ? 0 : giroSalon() * 0.6, pitch = cerca ? 0.02 : 0.22;
+      const k = Math.min(1, dt * (cerca ? 2.5 : 1.5));
       V.objetivo = V.objetivo.map((x, i) => x + (obj[i] - x) * k);
-      const enEsc = a.p[1] > 0.2 && a.p[2] < 0, dist = enEsc ? 8 : 6.5;
-      V.dist += (dist - V.dist) * k; V.pitch += (0.22 - V.pitch) * k;
+      V.dist += (dist - V.dist) * k; V.pitch += (pitch - V.pitch) * k; V.yaw += (yaw - V.yaw) * k;
     }
   }
   simTick(); V.salida = SIM.salida; V.sucio = true;
