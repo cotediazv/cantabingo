@@ -61,6 +61,7 @@
     window.addEventListener('tema', onTema);
 
     const draw = (st) => {
+      if (!$('#gc')) return; // llegó un aviso justo después de salir de esta pantalla (otro juego en el GC)
       const current = st.drawn.at(-1);
       const fresh = st.drawn.length !== lastCount && lastCount >= 0 && st.drawn.length > 0;
       lastCount = st.drawn.length;
@@ -137,6 +138,7 @@
 
     // Sin sesión activa: queda solo el QR arriba a la derecha, sobre fondo transparente
     const idle = () => {
+      if (!$('#gc')) return;
       $('#gc').className = 'th-frida';
       $('#gc').innerHTML = `<div class="gc-qr">${qr(joinUrl())}</div><div class="gc-idle-label">Escanea el código QR con tu celular y prepárate</div>`;
     };
