@@ -80,8 +80,8 @@ const texAzulejos = () => textura(256, 256, (c, w, h, r) => {
   }
 }, [4, 2]);
 const texPiso = () => textura(512, 512, (c, w, h, r) => {
-  c.fillStyle = '#18191d'; c.fillRect(0, 0, w, h);
-  c.strokeStyle = 'rgba(255,255,255,.035)'; c.lineWidth = 2;
+  c.fillStyle = '#2a2b30'; c.fillRect(0, 0, w, h);
+  c.strokeStyle = 'rgba(255,255,255,.05)'; c.lineWidth = 2;
   for (let i = 0; i <= w; i += 128){ c.beginPath(); c.moveTo(i, 0); c.lineTo(i, h); c.stroke(); c.beginPath(); c.moveTo(0, i); c.lineTo(w, i); c.stroke(); }
   grano(c, w, h, 16, r);
 }, [12, 40]);
@@ -113,11 +113,12 @@ function materialHaz(){
 /* ---------- construccion de la escena (una vez, cuando ya esta la configuracion) ---------- */
 function construir(){
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x050608);
-  scene.fog = new THREE.FogExp2(0x07080b, 0.009);
+  scene.background = new THREE.Color(0x0c0e12);
+  scene.fog = new THREE.FogExp2(0x0c0e12, 0.0045);
   // luz de ambiente del local (tenue, calida) para que se vea el lugar aunque las luces de show esten apagadas
-  scene.add(new THREE.HemisphereLight(0x4a5670, 0x1a140e, 1.1));
-  const amb = new THREE.DirectionalLight(0xffd9a8, 0.35); amb.position.set(-10, 20, 25); scene.add(amb);
+  scene.add(new THREE.HemisphereLight(0x6a7590, 0x2a2016, 1.7));
+  const amb = new THREE.DirectionalLight(0xffd9a8, 0.6); amb.position.set(-10, 20, 25); scene.add(amb);
+  const amb2 = new THREE.DirectionalLight(0xb8c4ff, 0.25); amb2.position.set(15, 12, -10); scene.add(amb2);
   const gs = giroSalon(), L = SALON.largo;
 
   const mat = {
@@ -131,7 +132,7 @@ function construir(){
     listones: new THREE.MeshStandardMaterial({ map: texListones(), roughness: 0.6 }),
     azul: new THREE.MeshStandardMaterial({ color: 0x3a6fb5, roughness: 0.4, metalness: 0.4 }),
     azulejos: new THREE.MeshStandardMaterial({ map: texAzulejos(), roughness: 0.35 }),
-    muro: new THREE.MeshStandardMaterial({ color: 0x2a2c31, roughness: 0.9 }),
+    muro: new THREE.MeshStandardMaterial({ color: 0x3e4048, roughness: 0.9 }),
     negro: new THREE.MeshStandardMaterial({ color: 0x0e0f12, roughness: 0.5 }),
     gris: new THREE.MeshStandardMaterial({ color: 0x2c2f36, roughness: 0.6, metalness: 0.3 }),
     amarillo: new THREE.MeshStandardMaterial({ color: 0xc9a227, roughness: 0.55 }),

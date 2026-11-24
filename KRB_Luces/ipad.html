@@ -70,7 +70,7 @@
   #seguir .help{margin-top:6px}
   .map,.pad{position:relative;height:min(50vh,460px);border-radius:var(--r);border:1px solid var(--line);touch-action:none;overflow:hidden;background:#121419}
   .map{background:linear-gradient(#ffffff08 1px,transparent 1px) 0 0/100% 25%,linear-gradient(90deg,#ffffff08 1px,transparent 1px) 0 0/25% 100%,#121419}
-  .map{height:auto;aspect-ratio:70/16}
+  .map{height:auto;aspect-ratio:58/16}
   .map svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
   .map .target{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:radial-gradient(#ffe2b0,#ffb35c80 55%,transparent 70%);pointer-events:none;display:none}
   .map .warn{position:absolute;left:0;right:0;bottom:14px;text-align:center;color:var(--warn);font-size:12px;padding:0 10px;pointer-events:none;text-shadow:0 1px 3px #000}
@@ -135,7 +135,7 @@
     body.en-seguir .vista{position:static;margin:0 14px 6px;box-shadow:none}
     body.en-seguir .vista canvas{height:calc(var(--disp,500px) * 0.47)}
     body.en-seguir main{padding:0 14px 0}
-    body.en-seguir .map{max-height:calc(var(--disp,500px) * 0.53 - 8px);width:min(100%, calc((var(--disp,500px) * 0.53 - 8px) * 4.375));margin:0 auto}
+    body.en-seguir .map{max-height:calc(var(--disp,500px) * 0.53 - 8px);width:min(100%, calc((var(--disp,500px) * 0.53 - 8px) * 3.625));margin:0 auto}
     body.en-seguir .map .warn{font-size:10px;bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     body.en-seguir .vista .bar span{display:none} body.en-seguir .vista .bar{justify-content:flex-end}
     body.en-seguir .master label, body.en-seguir .fade label{display:none}
@@ -194,7 +194,7 @@
     <!-- Primero el control (mapa o pad), pegado a la vista 3D; los botones van abajo -->
     <div id="panelMapa">
       <div class="map" id="map">
-        <svg id="plano" viewBox="0 0 700 160" preserveAspectRatio="none"></svg>
+        <svg id="plano" viewBox="0 0 580 160" preserveAspectRatio="none"></svg>
         <div class="target" id="target"></div>
         <div class="warn" id="mapWarn"></div>
       </div>
@@ -283,7 +283,7 @@ const ESQUINAS = [
   {k:'fd', u:1, v:1, nombre:'4 · Mesas del fondo, lado columnas'}
 ];
 // Mapa de Seguir: x = a lo largo del salon (escenario a la izquierda), y = de cocinas (arriba) a pasillo (abajo). En metros del salon.
-const MAPA = { v0:-7, v1:63, u0:6.5, u1:-9.5 };                      // todo el salon: 70 m de largo x 16 m de ancho
+const MAPA = { v0:-7, v1:51, u0:6.5, u1:-9.5 };                      // todo el salon: 58 m de largo x 16 m de ancho
 const CAL = { v0:1.5, v1:25.5, u0:5, u1:-5.2 };      // zona de mesas donde se calibran las 4 esquinas
 const VEL = { parpadeo:[0.4, 0.2, 0.1], alternar:[4, 2, 1], mover:[12, 8, 4] };
 
@@ -826,11 +826,11 @@ const giroSalon = () => {
 const rotY = (p, a) => [p[0] * Math.cos(a) + p[2] * Math.sin(a), p[1], -p[0] * Math.sin(a) + p[2] * Math.cos(a)];
 const deSalon = (u, v, y) => rotY([u, y || 0, v], giroSalon());                   // salon -> metros del escenario
 const aSalon = p => { const a = giroSalon(); return [p[0] * Math.cos(a) - p[2] * Math.sin(a), p[0] * Math.sin(a) + p[2] * Math.cos(a)]; };
-// El salon sigue hasta el fondo: 6 pilares y tres restaurantes con mesas iguales (Cote, 24 nov).
-const SALON = { largo: 62, cocinas: 5.6, pasillo: -8.8 };
+// El salon sigue hasta el fondo con mesas iguales (tres restaurantes). Son 5 pilares (Cote, 24 nov: sobraba el mas lejano).
+const SALON = { largo: 50, cocinas: 5.6, pasillo: -8.8 };
 // Columnas del salon (lado pasillo), en metros del salon [u, v]. Las cabezas 1, 2 y 3 van en las tres primeras.
-// Se pueden cambiar en luces.json > vista3d > columnas_salon; si ahi hay menos de 6, se completan con estas.
-const COLS_DEF = [[-6.2, 0], [-6.0, 13.5], [-6.0, 23], [-6.0, 34], [-6.0, 45], [-6.0, 56]];
+// Se pueden cambiar en luces.json > vista3d > columnas_salon; si ahi hay menos de 5, se completan con estas.
+const COLS_DEF = [[-6.2, 0], [-6.0, 13.5], [-6.0, 23], [-6.0, 34], [-6.0, 45]];
 const colsSalon = () => {
   const c = (conf && conf.vista3d && conf.vista3d.columnas_salon) || [];
   return c.concat(COLS_DEF.slice(c.length));
