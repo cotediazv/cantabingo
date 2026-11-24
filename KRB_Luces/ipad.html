@@ -115,6 +115,10 @@
   .vista{margin:0 20px 14px;position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#050608}
   .vista canvas{display:block;width:100%;height:var(--vh,300px);touch-action:none;cursor:grab}
   .vista.oculta canvas{display:none}
+  .nav3d{position:absolute;right:8px;bottom:8px;display:grid;grid-template-columns:repeat(3,32px);gap:4px;z-index:2}
+  .nav3d button{width:32px;height:32px;border:0;border-radius:8px;background:#000a;color:#fff;font-size:14px;cursor:pointer;touch-action:none;padding:0}
+  .nav3d button:active{background:var(--acc)}
+  .vista.oculta .nav3d{display:none}
   /* Vista realista (three.js) si esta disponible; si no, la vista simple */
   .vista.gl #cv3d{display:none} .vista:not(.gl) #cv3dgl{display:none}
   /* En Seguir: la vista 3D queda fija arriba mientras se usa el mapa, para ver las luces moverse en tiempo real */
@@ -132,7 +136,7 @@
     body.en-seguir header{padding:6px 14px 2px} body.en-seguir h1{font-size:18px}
     body.en-seguir .pill{padding:5px 10px;font-size:12px}
     body.en-seguir nav{margin:4px 14px 6px;padding:3px} body.en-seguir nav button{padding:7px 4px;font-size:15px}
-    body.en-seguir .vista{position:static;margin:0 14px 6px;box-shadow:none}
+    body.en-seguir .vista{position:relative;margin:0 14px 6px;box-shadow:none}
     body.en-seguir .vista canvas{height:calc(var(--disp,500px) * 0.47)}
     body.en-seguir main{padding:0 14px 0}
     body.en-seguir .map{max-height:calc(var(--disp,500px) * 0.53 - 8px);width:min(100%, calc((var(--disp,500px) * 0.53 - 8px) * 3.625));margin:0 auto}
@@ -166,7 +170,12 @@
 <section class="vista" id="vista">
   <canvas id="cv3dgl"></canvas>
   <canvas id="cv3d"></canvas>
-  <div class="bar"><span>Vista previa 3D · aproximada · arrastra para girar</span>
+  <div class="nav3d" title="Moverse por el salón">
+    <button data-nav="giraI" title="Girar">⟲</button><button data-nav="adelante" title="Adelante">▲</button><button data-nav="giraD" title="Girar">⟳</button>
+    <button data-nav="izq" title="Izquierda">◀</button><button data-nav="atras" title="Atrás">▼</button><button data-nav="der" title="Derecha">▶</button>
+    <button data-nav="mas" title="Acercar">＋</button><span></span><button data-nav="menos" title="Alejar">－</button>
+  </div>
+  <div class="bar"><span>Vista previa 3D · arrastra para girar · dos dedos o clic derecho para moverte</span>
     <div><button id="vReset">Centrar</button><button id="vSalon">Ver salón</button><button id="vTam">Más grande</button><button id="vOcultar">Ocultar</button></div></div>
 </section>
 
@@ -228,14 +237,14 @@
         <span class="help" style="margin:0">Úsalo si se calibró sin las luces reales (por ejemplo, en el Dell de prueba).</span></div>
     </div>
 
-    <div class="seg chico" id="cabezas" style="margin-top:12px">
-      <button data-s="0">Cabeza 1</button><button data-s="1">Cabeza 2</button><button data-s="2">Cabeza 3</button><button data-s="both" class="act">Las 3 juntas</button>
+    <!-- Tamano del foco de las cabezas 1, 2 y 3: botones rapidos pegados al mapa -->
+    <div class="row" id="focoFila" style="margin-top:8px;gap:8px;flex-wrap:nowrap">
+      <span class="help" style="margin:0;white-space:nowrap">Foco</span>
+      <button class="chip" data-z="8">◉ Angosto</button><button class="chip act" data-z="50">◎ Medio</button><button class="chip" data-z="92">○ Ancho</button>
+      <input type="range" id="zoom" min="0" max="100" value="50" style="flex:1;height:34px;margin:0" title="Tamaño del foco: angosto ↔ ancho">
     </div>
-    <div class="row" style="margin-top:2px;gap:10px;flex-wrap:nowrap">
-      <span class="help" style="margin:0;white-space:nowrap">Tamaño del foco</span>
-      <span class="help" style="margin:0">angosto</span>
-      <input type="range" id="zoom" min="0" max="100" value="50" style="flex:1;height:34px;margin:0">
-      <span class="help" style="margin:0">ancho</span>
+    <div class="seg chico" id="cabezas" style="margin-top:8px">
+      <button data-s="0">Cabeza 1</button><button data-s="1">Cabeza 2</button><button data-s="2">Cabeza 3</button><button data-s="both" class="act">Las 3 juntas</button>
     </div>
     <div class="seg chico" id="modoSeguir">
       <button data-m="mapa" class="act">Mapa del salón</button>
@@ -707,9 +716,15 @@ async function guardarEsquina(k){
 $('zoom').oninput = () => {
   const val = +$('zoom').value;
   segActivos().forEach(id => { encenderSiApagada(id); zona(id).zoom = val; });
-  V.sucio = true;
+  V.sucio = true; marcarFoco(val);
   limitar('zoom', () => enviarGrupos(segActivos(), 0));
 };
+function marcarFoco(val){                                     // ilumina el boton rapido mas cercano
+  const bs = [...document.querySelectorAll('[data-z]')];
+  const cerca = bs.reduce((a, b) => Math.abs(+b.dataset.z - val) < Math.abs(+a.dataset.z - val) ? b : a);
+  bs.forEach(b => b.classList.toggle('act', b === cerca));
+}
+document.querySelectorAll('[data-z]').forEach(b => b.onclick = () => { $('zoom').value = b.dataset.z; $('zoom').oninput(); });
 $('borrarCal').onclick = async () => {
   if (!confirm('¿Borrar la calibración de las 3 cabezas? Después habrá que calibrar de nuevo en Kennedy.')) return;
   datos.calibracion = {};
@@ -728,7 +743,7 @@ $('segEscenario').onclick = () => accionSeguir((z, id) => { encenderSiApagada(id
 function pintarSeguir(){
   if (!conf) return;
   document.querySelectorAll('#cabezas button').forEach(b => b.classList.toggle('act', b.dataset.s === seleccion));
-  const zPrim = zona(segActivos()[0]); $('zoom').value = zPrim.zoom != null ? zPrim.zoom : 50;
+  const zPrim = zona(segActivos()[0]); $('zoom').value = zPrim.zoom != null ? zPrim.zoom : 50; marcarFoco(+$('zoom').value);
   document.querySelectorAll('#modoSeguir button').forEach(b => b.classList.toggle('act', b.dataset.m === modoSeguir));
   $('panelMapa').style.display = modoSeguir === 'mapa' ? '' : 'none';
   $('panelMano').style.display = modoSeguir === 'mano' ? '' : 'none';
@@ -1287,17 +1302,64 @@ function dibujar3D(){
 
 /* Girar con el dedo, centrar, tamaño, ocultar */
 (() => {
-  const cv = $('vista'); let last = null;                       // sirve para la vista simple y la realista
+  /* Navegar en la vista 3D (computador y celular):
+     - un dedo / arrastrar con el mouse: girar alrededor
+     - dos dedos / boton derecho / Shift + arrastrar: desplazarse por el salon
+     - pellizcar / ruedita: acercar o alejar
+     - teclado: flechas o WASD = moverse, Q/E = girar, + / - = acercar
+     - botones con flechas sobre la vista */
+  const cv = $('vista'), punteros = new Map(); let modo = 'girar';
   cv.style.touchAction = 'none';
-  cv.addEventListener('pointerdown', e => { if (e.target.closest('button')) return; last = [e.clientX, e.clientY]; cv.setPointerCapture(e.pointerId); });
-  cv.addEventListener('pointermove', e => {
-    if (!last) return;
-    V.yaw = Math.max(giroSalon() - 1.3, Math.min(giroSalon() + 1.3, V.yaw - (e.clientX - last[0]) * 0.006));
-    V.pitch = Math.max(0.03, Math.min(0.9, V.pitch + (e.clientY - last[1]) * 0.004));
-    last = [e.clientX, e.clientY]; V.sucio = true;
+  cv.addEventListener('contextmenu', e => e.preventDefault());
+  const limitarObjetivo = () => {                                     // no salir del salon
+    const [u, v] = aSalon(V.objetivo), uu = Math.max(-14, Math.min(9, u)), vv = Math.max(-12, Math.min(SALON.largo + 4, v));
+    const p = deSalon(uu, vv, V.objetivo[1]); V.objetivo = [p[0], Math.max(0.3, Math.min(5, V.objetivo[1])), p[2]];
+  };
+  const desplazar = (dx, dy) => {                                     // arrastrar el piso: el salon se mueve con el dedo
+    const k = V.dist * 0.0016, sy = Math.sin(V.yaw), cy = Math.cos(V.yaw);
+    V.objetivo = [V.objetivo[0] - cy * dx * k - sy * dy * k, V.objetivo[1], V.objetivo[2] + sy * dx * k - cy * dy * k];
+    limitarObjetivo(); V.sucio = true;
+  };
+  const girar = (dx, dy) => {
+    V.yaw -= dx * 0.006;
+    V.pitch = Math.max(0.03, Math.min(1.45, V.pitch + dy * 0.004)); V.sucio = true;
+  };
+  const acercar = f => { V.dist = Math.max(2, Math.min(110, V.dist * f)); V.sucio = true; };
+  const medio = () => { const p = [...punteros.values()]; return [(p[0].x + p[1].x) / 2, (p[0].y + p[1].y) / 2, Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y)]; };
+  cv.addEventListener('pointerdown', e => {
+    if (e.target.closest('button')) return;
+    punteros.set(e.pointerId, {x: e.clientX, y: e.clientY}); cv.setPointerCapture(e.pointerId);
+    modo = (e.button === 2 || e.shiftKey) ? 'mover' : 'girar';
   });
-  const fin = () => last = null; cv.addEventListener('pointerup', fin); cv.addEventListener('pointercancel', fin);
-  cv.addEventListener('wheel', e => { e.preventDefault(); V.dist = Math.max(6, Math.min(110, V.dist * (1 + e.deltaY * 0.001))); V.sucio = true; }, {passive:false});
+  cv.addEventListener('pointermove', e => {
+    const p = punteros.get(e.pointerId); if (!p) return;
+    if (punteros.size >= 2){                                           // dos dedos: desplazar + pellizcar
+      const [mx, my, d] = medio(); p.x = e.clientX; p.y = e.clientY; const [nx, ny, nd] = medio();
+      desplazar(nx - mx, ny - my); if (d > 0 && nd > 0) acercar(d / nd);
+      return;
+    }
+    const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
+    modo === 'mover' ? desplazar(dx, dy) : girar(dx, dy);
+  });
+  const fin = e => { punteros.delete(e.pointerId); if (punteros.size === 1) modo = 'girar'; };
+  cv.addEventListener('pointerup', fin); cv.addEventListener('pointercancel', fin);
+  cv.addEventListener('wheel', e => { e.preventDefault(); acercar(1 + e.deltaY * 0.001); }, {passive:false});
+  window.addEventListener('keydown', e => {
+    if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) || $('vista').classList.contains('oculta')) return;
+    const t = { ArrowUp:[0,-40], KeyW:[0,-40], ArrowDown:[0,40], KeyS:[0,40], ArrowLeft:[-40,0], KeyA:[-40,0], ArrowRight:[40,0], KeyD:[40,0] }[e.code];
+    if (t){ desplazar(-t[0], -t[1]); e.preventDefault(); return; }
+    if (e.code === 'KeyQ') girar(-25, 0); else if (e.code === 'KeyE') girar(25, 0);
+    else if (e.key === '+' || e.key === '=') acercar(0.85); else if (e.key === '-') acercar(1.18);
+  });
+  // botones con flechas sobre la vista (mantener apretado para seguir moviendo)
+  const accion = { adelante: () => desplazar(0, 30), atras: () => desplazar(0, -30), izq: () => desplazar(30, 0), der: () => desplazar(-30, 0),
+                   mas: () => acercar(0.9), menos: () => acercar(1.11), giraI: () => girar(-18, 0), giraD: () => girar(18, 0) };
+  document.querySelectorAll('[data-nav]').forEach(b => {
+    let rep = null;
+    const parar = () => { clearInterval(rep); rep = null; };
+    b.addEventListener('pointerdown', e => { e.preventDefault(); accion[b.dataset.nav](); parar(); rep = setInterval(accion[b.dataset.nav], 60); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, parar));
+  });
   const vp = JSON.parse(localStorage.getItem('krb_vista') || '{"oculta":false,"grande":false}');
   const aplicar = () => {
     $('vista').classList.toggle('oculta', vp.oculta);
