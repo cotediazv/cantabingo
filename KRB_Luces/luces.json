@@ -37,10 +37,10 @@
   },
 
   "vista3d": {
-    "_ayuda": "salon_hacia: hacia donde se abre el salon, mirando el escenario desde el salon (izquierda o derecha). angulo: cuantos grados mira el escenario hacia el salon (45 = en diagonal). distancia_columnas: metros entre las columnas del salon donde van las cabezas 1, 2 y 3 (aprox. 30 a 40).",
-    "salon_hacia": "izquierda",
-    "angulo": 45,
-    "distancia_columnas": 35
+    "_ayuda": "Segun el plano dibujado por Cote. salon_hacia: mirando el escenario desde las mesas, hacia donde se extiende el salon (derecha = lado cocinas). angulo: grados entre el escenario y el largo del salon. columnas_salon: las 3 columnas del lado pasillo, en metros [de lado, a lo largo] (de lado: 0 = centro, negativo = hacia el pasillo; a lo largo: 0 = frente al escenario).",
+    "salon_hacia": "derecha",
+    "angulo": 55,
+    "columnas_salon": [[-6.2, 0], [-6.0, 13.5], [-6.0, 23]]
   },
 
   "fondo_enlazado": {

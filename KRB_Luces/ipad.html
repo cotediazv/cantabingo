@@ -67,10 +67,10 @@
   .seg button.act{background:var(--acc);border-color:var(--acc)}
   .map,.pad{position:relative;height:min(50vh,460px);border-radius:var(--r);border:1px solid var(--line);touch-action:none;overflow:hidden;background:#121419}
   .map{background:linear-gradient(#ffffff08 1px,transparent 1px) 0 0/100% 25%,linear-gradient(90deg,#ffffff08 1px,transparent 1px) 0 0/25% 100%,#121419}
-  .map .stage{position:absolute;left:0;right:0;top:0;height:34px;background:#2a2f3c;color:var(--mut);font-size:13px;font-weight:700;letter-spacing:.2em;display:grid;place-items:center}
-  .map .corner{position:absolute;font-size:12px;color:var(--mut);padding:6px 8px}
+  .map{height:auto;aspect-ratio:34/16}
+  .map svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
   .map .target{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:radial-gradient(#ffe2b0,#ffb35c80 55%,transparent 70%);pointer-events:none;display:none}
-  .map .warn{position:absolute;inset:34px 0 0;display:grid;place-items:center;text-align:center;color:var(--warn);font-size:16px;padding:20px;pointer-events:none}
+  .map .warn{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:var(--warn);font-size:16px;padding:20px;pointer-events:none}
   .pad{background:radial-gradient(circle at center,#ffffff10 0 2px,transparent 3px) 0 0/40px 40px,#121419}
   .pad .lbl{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;color:var(--mut);font-size:17px;pointer-events:none}
   .pt{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;border:3px solid #fff;pointer-events:none;display:grid;place-items:center;font-size:12px;font-weight:800}
@@ -106,7 +106,7 @@
     .fade label{display:none} .fade button{padding:9px 10px}
     .blackout{flex:1;padding:12px;font-size:16px}
     .bgrow{grid-template-columns:repeat(2,1fr)} .bg{height:72px} .fxrow{grid-template-columns:1fr}
-    .scene{min-height:96px} .map,.pad{height:56vh}
+    .scene{min-height:96px} .pad{height:56vh}
   }
   /* Vista previa 3D */
   .vista{margin:0 20px 14px;position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#050608}
@@ -171,13 +171,11 @@
 
     <div id="panelMapa">
       <div class="map" id="map">
-        <div class="stage">ESCENARIO</div>
-        <div class="corner" style="left:0;top:34px">↖ 1</div><div class="corner" style="right:0;top:34px">2 ↗</div>
-        <div class="corner" style="left:0;bottom:0">↙ 3</div><div class="corner" style="right:0;bottom:0">4 ↘</div>
+        <svg id="plano" viewBox="0 0 340 160" preserveAspectRatio="none"></svg>
         <div class="target" id="target"></div>
         <div class="warn" id="mapWarn"></div>
       </div>
-      <p class="help" style="margin-top:10px">Toca o arrastra el dedo donde está la persona: las cabezas elegidas apuntan a ese punto del salón.</p>
+      <p class="help" style="margin-top:10px">Plano del salón según el dibujo de Cote. Toca o arrastra el dedo donde está la persona: las cabezas elegidas apuntan a ese punto.</p>
     </div>
 
     <div id="panelMano" style="display:none">
@@ -188,7 +186,7 @@
         <button class="chip" id="invX">Invertir ↔</button><button class="chip" id="invY">Invertir ↕</button>
       </div>
       <h2 class="sec">Calibrar el mapa (una sola vez)</h2>
-      <p class="help">Para cada esquina del salón: elige <b>Cabeza 1</b>, apúntala al suelo en esa esquina y toca la esquina. Luego haz lo mismo con <b>Cabeza 2</b>. Las esquinas son las del mapa, con el escenario arriba.</p>
+      <p class="help">Para cada esquina del salón: elige <b>Cabeza 1</b>, apúntala al suelo en esa esquina y toca la esquina. Luego haz lo mismo con <b>Cabeza 2</b>. Las 4 esquinas son las de la zona de mesas, marcadas con números en el mapa (escenario a la izquierda, cocinas arriba, columnas y pasillo abajo).</p>
       <div class="calib" id="calib"></div>
     </div>
 
@@ -241,11 +239,14 @@
 const $ = id => document.getElementById(id);
 const COLOR_CSS = {blanco_calido:'#ffd9a0',blanco:'#ffffff',azul:'#2b55ff',rojo:'#ff2a2a',verde:'#22dd55',amarillo:'#ffbe00',ambar:'#ff8a00',morado:'#9b3cff',rosa:'#ff3fa0',cian:'#22e5ff'};
 const ESQUINAS = [
-  {k:'ei', u:0, v:0, nombre:'1 ↖ Escenario, izquierda'},
-  {k:'ed', u:1, v:0, nombre:'2 ↗ Escenario, derecha'},
-  {k:'fi', u:0, v:1, nombre:'3 ↙ Fondo, izquierda'},
-  {k:'fd', u:1, v:1, nombre:'4 ↘ Fondo, derecha'}
+  {k:'ei', u:0, v:0, nombre:'1 · Mesas junto al escenario, lado cocinas'},
+  {k:'ed', u:1, v:0, nombre:'2 · Mesas del fondo, lado cocinas'},
+  {k:'fi', u:0, v:1, nombre:'3 · Mesas junto al escenario, lado columnas'},
+  {k:'fd', u:1, v:1, nombre:'4 · Mesas del fondo, lado columnas'}
 ];
+// Mapa de Seguir: x = a lo largo del salon (escenario a la izquierda), y = de cocinas (arriba) a pasillo (abajo). En metros del salon.
+const MAPA = { v0:-7, v1:27, u0:6.5, u1:-9.5 };
+const CAL = { v0:1.5, v1:25.5, u0:5, u1:-5.2 };      // zona de mesas donde se calibran las 4 esquinas
 const VEL = { parpadeo:[0.4, 0.2, 0.1], alternar:[4, 2, 1], mover:[12, 8, 4] };
 
 let conf = null, datos = {calibracion:{}}, master = 100, fade = 1, zonas = {}, escenaActiva = -1;
@@ -444,12 +445,14 @@ function apuntar(id, u, v){
 (() => {
   const map = $('map'); let activo = false;
   const mover = e => {
-    const r = map.getBoundingClientRect(), top = 34;
-    const u = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
-    const v = Math.max(0, Math.min(1, (e.clientY - r.top - top) / (r.height - top)));
-    objetivo = {u, v};
+    const r = map.getBoundingClientRect();
+    const fx = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+    const fy = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
+    objetivo = {fx, fy};
+    const vS = MAPA.v0 + fx * (MAPA.v1 - MAPA.v0), uS = MAPA.u0 + fy * (MAPA.u1 - MAPA.u0);   // punto del salon (metros)
+    const s = (vS - CAL.v0) / (CAL.v1 - CAL.v0), t = (uS - CAL.u0) / (CAL.u1 - CAL.u0);         // relativo a las 4 esquinas
     const ok = segActivos().filter(calibrada);
-    ok.forEach(id => apuntar(id, u, v));
+    ok.forEach(id => apuntar(id, s, t));
     pintarSeguir();
     if (ok.length) limitar('mapa', () => enviarGrupos(ok, 0));
   };
@@ -516,7 +519,7 @@ function pintarSeguir(){
   const faltan = segActivos().filter(id => !calibrada(id)).map(id => segIds().indexOf(id) + 1);
   $('mapWarn').textContent = faltan.length ? `Cabeza ${faltan.join(' y ')} sin calibrar. Ve a "A mano · calibrar" y guarda las 4 esquinas.` : '';
   const t = $('target'), map = $('map');
-  if (objetivo){ t.style.display = 'block'; t.style.left = (objetivo.u * map.clientWidth) + 'px'; t.style.top = (34 + objetivo.v * (map.clientHeight - 34)) + 'px'; }
+  if (objetivo){ t.style.display = 'block'; t.style.left = (objetivo.fx * map.clientWidth) + 'px'; t.style.top = (objetivo.fy * map.clientHeight) + 'px'; }
 
   // pad
   const pad = $('pad'), w = pad.clientWidth, h = pad.clientHeight, txt = [];
@@ -679,18 +682,23 @@ const mul = (a, k) => [a[0]*k, a[1]*k, a[2]*k], dot = (a, b) => a[0]*b[0] + a[1]
 const cross = (a, b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
 const norm = a => { const l = Math.hypot(...a) || 1; return mul(a, 1 / l); };
 // El escenario mira en diagonal hacia el salon. giro_salon (grados) en luces.json > vista3d; positivo = salon hacia la derecha.
-// vista3d.salon_hacia: "izquierda" o "derecha" (mirando el escenario desde el salon); vista3d.angulo: grados (45 = diagonal).
+/* Plano del salon (segun el plano dibujado por Cote, 24 nov).
+   Ejes del salon: v = a lo largo (0 = frente al escenario, crece hacia el fondo);
+   u = de lado (positivo = lado cocinas, negativo = lado pasillo).
+   vista3d.salon_hacia: "derecha" = mirando el escenario desde las mesas, el salon se extiende hacia la derecha (lado cocinas).
+   vista3d.angulo: grados entre el escenario y el largo del salon (55 segun el plano). */
 const giroSalon = () => {
-  const v = (conf && conf.vista3d) || {}, ang = v.angulo != null ? +v.angulo : 45;
-  return (v.salon_hacia === 'derecha' ? ang : -ang) * Math.PI / 180;
+  // Solo se usa la configuracion si ya viene en el formato del plano (con columnas_salon); si no, valores del plano.
+  const c = (conf && conf.vista3d) || {}, v = c.columnas_salon ? c : {}, ang = v.angulo != null ? +v.angulo : 55;
+  return (v.salon_hacia === 'izquierda' ? -ang : ang) * Math.PI / 180;
 };
 const rotY = (p, a) => [p[0] * Math.cos(a) + p[2] * Math.sin(a), p[1], -p[0] * Math.sin(a) + p[2] * Math.cos(a)];
-const distCol = () => ((conf && conf.vista3d && conf.vista3d.distancia_columnas) || 35);
-// Columna n del salon: la primera junto a la columna derecha del escenario; las siguientes hacia el fondo del salon.
-function columnaSalon(n){
-  const dir = rotY([0, 0, 1], giroSalon());
-  return add([8.5, 0, 0.5], mul(dir, distCol() * n));
-}
+const deSalon = (u, v, y) => rotY([u, y || 0, v], giroSalon());                   // salon -> metros del escenario
+const aSalon = p => { const a = giroSalon(); return [p[0] * Math.cos(a) - p[2] * Math.sin(a), p[0] * Math.sin(a) + p[2] * Math.cos(a)]; };
+const SALON = { largo: 27, cocinas: 5.6, pasillo: -8.8 };
+// Columnas del salon (lado pasillo), en metros del salon [u, v]. Se pueden cambiar en luces.json > vista3d > columnas_salon.
+const colsSalon = () => ((conf && conf.vista3d && conf.vista3d.columnas_salon) || [[-6.2, 0], [-6.0, 13.5], [-6.0, 23]]);
+function columnaSalon(n){ const c = colsSalon()[n] || colsSalon()[0]; return deSalon(c[0], c[1]); }
 
 function camara(){
   const cp = Math.cos(V.pitch), sp = Math.sin(V.pitch);
@@ -795,10 +803,12 @@ function dibujar3D(){
 
   // --- Sala (segun las fotos del escenario de Mercado Kennedy) ---
   const gs = giroSalon();
-  const largoSalon = distCol() * 2 + 15;
-  poly([[-14,0,-5],[12,0,-5],[12,0,largoSalon],[-14,0,largoSalon]].map(p => rotY(p, gs)), '#0d0e12'); // piso del salon (girado)
-  for (let k = -14; k <= 12; k += 2) linea(rotY([k, 0.01, 0.5], gs), rotY([k, 0.01, largoSalon], gs), '#15171c', 1); // baldosas
-  for (let k = 2; k <= largoSalon; k += 2) linea(rotY([-14, 0.01, k], gs), rotY([12, 0.01, k], gs), '#15171c', 1);
+  const L = SALON.largo;
+  poly([[SALON.pasillo, -9],[SALON.cocinas + 0.6, -9],[SALON.cocinas + 0.6, L],[SALON.pasillo, L]].map(([u, v]) => deSalon(u, v)), '#0d0e12'); // piso del salon
+  poly([[SALON.pasillo - 4, -9],[SALON.pasillo, -9],[SALON.pasillo, L],[SALON.pasillo - 4, L]].map(([u, v]) => deSalon(u, v)), '#16181d'); // pasillo del mall
+  for (let u = SALON.pasillo; u <= SALON.cocinas; u += 2) linea(deSalon(u, -2, 0.01), deSalon(u, L, 0.01), '#15171c', 1);   // baldosas
+  for (let v = 0; v <= L; v += 2) linea(deSalon(SALON.pasillo, v, 0.01), deSalon(SALON.cocinas, v, 0.01), '#15171c', 1);
+  linea(deSalon(SALON.pasillo, 0, 0.02), deSalon(SALON.pasillo, L, 0.02), '#2b2f37', 2);                                   // borde del pasillo
   poly([[-8.2,0,-1.2],[-6.4,0,-1.2],[-6.4,2.6,-1.2],[-8.2,2.6,-1.2]], '#1a1f26', '#2a313b'); // acceso a estacionamientos (lado izquierdo, abierto)
   poly([[-8.0,2.0,-1.19],[-6.6,2.0,-1.19],[-6.6,2.5,-1.19],[-8.0,2.5,-1.19]], '#e8eaee');    // letrero del acceso
   poly([[-5,0,-4],[5,0,-4],[5,4.6,-4],[-5,4.6,-4]], '#17191e');                   // pared del fondo (oscura)
@@ -826,16 +836,20 @@ function dibujar3D(){
     poly([[x0+0.15,2.3,0.62],[x1-0.15,2.3,0.62],[x1-0.15,3.7,0.62],[x0+0.15,3.7,0.62]], '#9fb4d8', '#cfd8e8'); // pantalla vertical (mira al publico)
     if (x0 > 0) poly([[x0-0.35,1.25,0.66],[x1+0.35,1.25,0.66],[x1+0.35,2.05,0.66],[x0-0.35,2.05,0.66]], '#5d78a8', '#222'); // TV mas abajo (columna derecha)
   });
-  // A la derecha del escenario: barra con azulejos de mariscos y neon azul vertical
-  poly([[6.6,0,-4.5],[12,0,-4.5],[12,3.2,-4.5],[6.6,3.2,-4.5]], '#c9d0d6');
-  for (let x = 6.9; x < 12; x += 0.7) for (let y = 0.6; y < 3; y += 0.7) poly([[x,y,-4.49],[x+0.3,y,-4.49],[x+0.3,y+0.25,-4.49],[x,y+0.25,-4.49]], '#55606c');
-  caja(6.8, 11.5, 0, 1.1, -3.6, -2.6, '#2a2c31', '#202227', '#e0c27a');
-  // Detras a la izquierda: el mall abierto con locales iluminados
-  [[-17, -14.2, '#f0e6d2'], [-13.8, -11.4, '#e9a23b'], [-11, -9.2, '#f4f1ea']].forEach(([a, b, col]) =>
-    poly([[a,0.4,-7],[b,0.4,-7],[b,2.6,-7],[a,2.6,-7]], col, '#444'));
+  // Lado cocinas (todo el largo del salon): pared con azulejos de mariscos al principio y cocinas iluminadas
+  const uc = SALON.cocinas + 0.6;
+  poly([[uc,0,1],[uc,0,L],[uc,3.4,L],[uc,3.4,1]].map(([u, y, v]) => deSalon(u, v, y)), '#24272d');
+  poly([[uc-0.01,0.3,1],[uc-0.01,0.3,8],[uc-0.01,3.2,8],[uc-0.01,3.2,1]].map(([u, y, v]) => deSalon(u, v, y)), '#c9d0d6'); // azulejos
+  for (let v = 1.3; v < 7.8; v += 0.8) for (let y = 0.6; y < 3; y += 0.7)
+    poly([[uc-0.02,y,v],[uc-0.02,y,v+0.35],[uc-0.02,y+0.25,v+0.35],[uc-0.02,y+0.25,v]].map(([u, yy, vv]) => deSalon(u, vv, yy)), '#55606c');
+  for (let v = 9; v < L - 1; v += 4.5)                                               // ventanas de las cocinas
+    poly([[uc-0.01,1.1,v],[uc-0.01,1.1,v+3.6],[uc-0.01,2.3,v+3.6],[uc-0.01,2.3,v]].map(([u, y, vv]) => deSalon(u, vv, y)), '#cdb98e', '#5a5040');
+  // Lado pasillo: locales iluminados del mall
+  [[1, '#f0e6d2'], [6.5, '#e9a23b'], [12, '#f4f1ea'], [17.5, '#d9e4f0'], [23, '#e9c46a']].forEach(([v, col]) =>
+    poly([[SALON.pasillo-4,0.3,v],[SALON.pasillo-4,0.3,v+4.2],[SALON.pasillo-4,2.7,v+4.2],[SALON.pasillo-4,2.7,v]].map(([u, y, vv]) => deSalon(u, vv, y)), col, '#444'));
   // Lamparas hexagonales y sombreros de paja colgando sobre el salon
-  [[-3, 6], [-6.5, 7.5], [1.5, 9], [-2, 12], [-8, 11], [3, 4]].forEach(([sx, sz]) => {
-    const c = rotY([sx, 0, sz], gs), r = 0.8;
+  [[-2.5, 5], [1.5, 6.5], [-1, 9.5], [3, 11], [-3.5, 13], [1, 15.5]].forEach(([su, sv]) => {
+    const c = deSalon(su, sv), r = 0.8;
     poly([0,1,2,3,4,5].map(k => [c[0] + r * Math.cos(k * Math.PI / 3), 4.3, c[2] + r * Math.sin(k * Math.PI / 3)]), '#a8824c', '#c99d5e');
   });
   // Marco azul arriba
@@ -858,8 +872,8 @@ function dibujar3D(){
 
   // --- Salon: mesas con velas y sillas amarillas, y columnas de piedra (de lejos a cerca) ---
   const objetos = [], velas = [];
-  for (let sx = -12; sx <= 5; sx += 2.6) for (let sz = 3; sz <= 24; sz += 2.4){
-    const c = rotY([sx, 0, sz], gs);
+  for (let su = -4.6; su <= 4.6; su += 2.3) for (let sv = 2.5; sv <= SALON.largo - 1.5; sv += 2.5){
+    const c = deSalon(su, sv);
     if (c[2] < 1.6 && c[0] > -6.5) continue;                                         // no encima de la tarima
     if ([0, 1, 2].some(n => { const q = columnaSalon(n); return Math.hypot(q[0] - c[0], q[2] - c[2]) < 1.8; })) continue;
     objetos.push({ d: Math.hypot(...sub(c, V.ojo)), f: () => {
@@ -894,8 +908,9 @@ function dibujar3D(){
   // --- Luces (se suman como luz real) ---
   ctx.globalCompositeOperation = 'lighter';
   velas.forEach(v => brillo(v, 0.45, {r:255, g:170, b:70, i:1}, 0.55));            // velas de las mesas
-  brillo([7.0, 2.3, -4.4], 0.9, {r:60, g:120, b:255, i:1}, 0.9);                   // neon azul de la barra
-  linea([7.0, 1.5, -4.45], [7.0, 3.1, -4.45], '#7fb0ff', 3);
+  const neon = deSalon(SALON.cocinas + 0.55, 4.5, 2.3);                              // neon azul vertical, lado cocinas
+  brillo(neon, 0.9, {r:60, g:120, b:255, i:1}, 0.9);
+  linea(deSalon(SALON.cocinas + 0.55, 4.5, 1.5), deSalon(SALON.cocinas + 0.55, 4.5, 3.1), '#7fb0ff', 3);
   const marcas = [];
   conf.grupos.forEach(g => {
     const def = POS3D[g.id] || {}, c = colorGrupo(g);
@@ -958,8 +973,8 @@ function dibujar3D(){
   $('vTam').onclick = () => { vp.grande = !vp.grande; aplicar(); };
   $('vReset').onclick = () => { V.objetivo = [0, 1.7, -2]; V.yaw = giroSalon() * 0.6; V.pitch = 0.2; V.dist = 11; V.sucio = true; };
   $('vSalon').onclick = () => {                         // vista desde arriba de todo el salon, con las 3 columnas
-    const m = columnaSalon(1), lado = rotY([-6, 0, 0], giroSalon()); V.objetivo = add(m, lado);
-    V.yaw = giroSalon() + (giroSalon() < 0 ? 1.25 : -1.25); V.pitch = 0.62; V.dist = distCol() * 1.75; V.sucio = true;
+    V.objetivo = deSalon(-1, SALON.largo * 0.42);
+    V.yaw = giroSalon() + (giroSalon() < 0 ? 1.25 : -1.25); V.pitch = 0.75; V.dist = SALON.largo * 1.25; V.sucio = true;
   };
   window.addEventListener('resize', aplicar);
   aplicar();
@@ -973,13 +988,47 @@ async function sondearVista(){
   setTimeout(sondearVista, 150);
 }
 
+/* ---------- Plano del salon en el mapa de Seguir ---------- */
+function dibujarPlano(){
+  const X = v => ((v - MAPA.v0) * 10).toFixed(1), Y = u => ((MAPA.u0 - u) * 10).toFixed(1);
+  const pt = p => { const [u, v] = aSalon(p); return X(v) + ',' + Y(u); };
+  let s = '';
+  s += `<rect x="0" y="0" width="340" height="160" fill="#121419"/>`;
+  s += `<rect x="0" y="0" width="340" height="${Y(SALON.cocinas)}" fill="#24272d"/>`;
+  s += `<text x="200" y="6.5" fill="#8a91a0" font-size="5.5" text-anchor="middle" font-weight="700" letter-spacing="2">COCINAS</text>`;
+  s += `<rect x="0" y="${Y(SALON.pasillo)}" width="340" height="${160 - Y(SALON.pasillo)}" fill="#1c1f25"/>`;
+  s += `<text x="200" y="158" fill="#8a91a0" font-size="5.5" text-anchor="middle" font-weight="700" letter-spacing="2">PASILLO</text>`;
+  // escenario (tarima en diagonal) y pared del fondo
+  const tar = [[-5,-4],[5,-4],[5,-1.6],[3.2,0.3],[-5,0.3]].map(([x, z]) => pt([x, 0, z])).join(' ');
+  s += `<polygon points="${tar}" fill="#3a2f22" stroke="#7d5a30" stroke-width="1"/>`;
+  s += `<line x1="${pt([-5,0,-4]).split(',')[0]}" y1="${pt([-5,0,-4]).split(',')[1]}" x2="${pt([5,0,-4]).split(',')[0]}" y2="${pt([5,0,-4]).split(',')[1]}" stroke="#2c6f8a" stroke-width="2"/>`;
+  const ce = aSalon([0.5, 0, -2]);
+  s += `<text x="${X(ce[1])}" y="${Y(ce[0])}" fill="#e8d3b0" font-size="6" text-anchor="middle" font-weight="700">ESCENARIO</text>`;
+  [[-5.8, 0], [5.8, 0]].forEach(([x, z]) => { const p = pt([x, 0, z]).split(','); s += `<rect x="${p[0]-3}" y="${p[1]-3}" width="6" height="6" fill="#3a6fb5"/>`; });
+  // mesas (igual que en la vista 3D)
+  for (let su = -4.6; su <= 4.6; su += 2.3) for (let sv = 2.5; sv <= SALON.largo - 1.5; sv += 2.5){
+    const c = deSalon(su, sv); if (c[2] < 1.6 && c[0] > -6.5) continue;
+    s += `<rect x="${X(sv) - 3.5}" y="${Y(su) - 3.5}" width="7" height="7" fill="none" stroke="#c98a3a" stroke-width="0.9"/>`;
+  }
+  // columnas del salon con las cabezas 1, 2 y 3
+  colsSalon().forEach(([u, v], i) => {
+    s += `<rect x="${X(v) - 5}" y="${Y(u) - 5}" width="10" height="10" fill="#34373d" stroke="#6b7079"/>`;
+    s += `<text x="${X(v)}" y="${+Y(u) + 2.2}" fill="#fff" font-size="6.5" text-anchor="middle" font-weight="700">${i + 1}</text>`;
+  });
+  // esquinas de calibracion
+  [[CAL.u0, CAL.v0, 1], [CAL.u0, CAL.v1, 2], [CAL.u1, CAL.v0, 3], [CAL.u1, CAL.v1, 4]].forEach(([u, v, n]) => {
+    s += `<circle cx="${X(v)}" cy="${Y(u)}" r="4" fill="#f5c542"/><text x="${X(v)}" y="${+Y(u) + 2}" fill="#000" font-size="5.5" text-anchor="middle" font-weight="800">${n}</text>`;
+  });
+  $('plano').innerHTML = s;
+}
+
 /* ---------- Inicio ---------- */
 (async () => {
   try { conf = await api('/luces.json'); }
   catch(e){ if (!pidiendo) document.querySelector('main').innerHTML = '<p class="help">No se pudo leer luces.json desde el Dell. ¿Está abierto INICIAR.bat?</p>'; return; }
   try { datos = await api('/api/datos'); if (!datos.calibracion) datos.calibracion = {}; } catch(e){}
   conf.grupos.forEach(g => zonas[g.id] = {color:null, intensidad:0});
-  pintarDirecciones(); pintarTodo();
+  pintarDirecciones(); dibujarPlano(); pintarTodo();
   V.yaw = giroSalon() * 0.6; V.dist = 11; V.pitch = 0.2;   // vista inicial: desde el salon, en diagonal
   sondear(); setInterval(sondear, 3000); sondearVista(); V.sucio = true;
 })();
