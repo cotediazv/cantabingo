@@ -94,6 +94,53 @@ function texLetrero(lineas, color){
   t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; return t;
 }
 
+/* ---------- lo que muestran las pantallas: imagenes de muestra de la Sala de juegos ----------
+   Solo es decoracion de la vista previa (dibujada aqui); no se conecta ni toca el sistema de Code 1. */
+function pantalla(w, h, dibujar){
+  const t = textura(w, h, dibujar); t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; return t;
+}
+function qrMuestra(c, x, y, tam, r){                         // dibujo con aspecto de QR (no es un codigo real)
+  const n = 21, m = tam / n;
+  c.fillStyle = '#fff'; c.fillRect(x - m, y - m, tam + 2 * m, tam + 2 * m); c.fillStyle = '#111';
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) if (r() < 0.48) c.fillRect(x + i * m, y + j * m, m, m);
+  [[0, 0], [n - 7, 0], [0, n - 7]].forEach(([a, b]) => {
+    c.fillStyle = '#111'; c.fillRect(x + a * m, y + b * m, 7 * m, 7 * m); c.fillStyle = '#fff'; c.fillRect(x + (a + 1) * m, y + (b + 1) * m, 5 * m, 5 * m);
+    c.fillStyle = '#111'; c.fillRect(x + (a + 2) * m, y + (b + 2) * m, 3 * m, 3 * m);
+  });
+}
+const texBingo = () => pantalla(1024, 560, (c, w, h, r) => {
+  const g = c.createLinearGradient(0, 0, w, h); g.addColorStop(0, '#13204a'); g.addColorStop(1, '#3a0f4a'); c.fillStyle = g; c.fillRect(0, 0, w, h);
+  c.fillStyle = '#f5c542'; c.font = 'bold 44px system-ui'; c.fillText('SALA DE JUEGOS · KRB', 40, 70);
+  c.fillStyle = '#fff'; c.font = 'bold 120px system-ui'; c.fillText('BINGO', 40, 200);
+  for (let i = 0; i < 75; i++){                               // tablero de numeros, algunos ya cantados
+    const x = 46 + (i % 15) * 42, y = 250 + Math.floor(i / 15) * 52, sale = r() < 0.3;
+    c.fillStyle = sale ? '#f5c542' : 'rgba(255,255,255,.12)'; c.beginPath(); c.arc(x, y, 18, 0, Math.PI * 2); c.fill();
+    c.fillStyle = sale ? '#1a1030' : 'rgba(255,255,255,.6)'; c.font = 'bold 16px system-ui'; c.textAlign = 'center'; c.fillText(i + 1, x, y + 6); c.textAlign = 'left';
+  }
+  qrMuestra(c, 740, 170, 230, r);
+  c.fillStyle = '#fff'; c.font = 'bold 22px system-ui'; c.textAlign = 'center';
+  c.fillText('Escanea el código QR', 855, 450); c.fillText('con tu celular', 855, 480); c.textAlign = 'left';
+});
+const texRosko = () => pantalla(256, 512, (c, w, h) => {
+  c.fillStyle = '#0d1a3a'; c.fillRect(0, 0, w, h);
+  c.fillStyle = '#fff'; c.font = 'bold 34px system-ui'; c.textAlign = 'center'; c.fillText('EL ROSKO', w / 2, 60);
+  const letras = 'ABCDEFGHIJLMNÑOPQRSTUVXYZ';
+  [...letras].forEach((l, i) => {
+    const a = i / letras.length * Math.PI * 2 - Math.PI / 2, x = w / 2 + Math.cos(a) * 95, y = 250 + Math.sin(a) * 95;
+    c.fillStyle = i < 9 ? '#3ecf8e' : (i === 9 ? '#ff5c5c' : '#2b55ff'); c.beginPath(); c.arc(x, y, 14, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#fff'; c.font = 'bold 14px system-ui'; c.fillText(l, x, y + 5);
+  });
+  c.font = 'bold 22px system-ui'; c.fillStyle = '#f5c542'; c.fillText('¡Juega en la sala!', w / 2, 420);
+  c.font = '16px system-ui'; c.fillStyle = '#cfd8e8'; c.fillText('Escanea el código QR', w / 2, 455); c.fillText('con tu celular', w / 2, 477);
+});
+const texKaraoke = () => pantalla(512, 288, (c, w, h) => {
+  c.fillStyle = '#1b1238'; c.fillRect(0, 0, w, h);
+  c.fillStyle = '#f5c542'; c.font = 'bold 30px system-ui'; c.textAlign = 'center'; c.fillText('KARAOKE', w / 2, 60);
+  c.fillStyle = '#fff'; c.font = 'bold 26px system-ui'; c.fillText('Ahora canta', w / 2, 125);
+  c.font = 'bold 36px system-ui'; c.fillStyle = '#7fdcff'; c.fillText('¡Pide tu canción!', w / 2, 180);
+  c.font = '20px system-ui'; c.fillStyle = '#cfd8e8'; c.fillText('Desde el celular', w / 2, 230);
+});
+
 /* ---------- haz de luz con humo (cono aditivo) ---------- */
 const geoHaz = new THREE.ConeGeometry(1, 1, 40, 1, true).translate(0, -0.5, 0); // punta en 0, base en y = -1
 function materialHaz(){
@@ -141,7 +188,8 @@ function construir(){
     macetero: new THREE.MeshStandardMaterial({ color: 0x3a3430, roughness: 0.9 }),
     planta: new THREE.MeshStandardMaterial({ color: 0x2f5d34, roughness: 0.8 }),
     cuerda: new THREE.LineBasicMaterial({ color: 0xb8a27a }),
-    lampara: new THREE.MeshStandardMaterial({ map: texMadera('#b08a52', '#6a4a22'), roughness: 0.7, emissive: 0x5a3a10, emissiveIntensity: 0.35 }),
+    lampara: new THREE.MeshStandardMaterial({ map: texMadera('#b08a52', '#6a4a22'), roughness: 0.7, emissive: 0x5a3a10, emissiveIntensity: 0.35,
+      transparent: true, opacity: 0.4, depthWrite: false }),            // lamparas colgantes algo transparentes (Cote)
     piel: new THREE.MeshStandardMaterial({ color: 0xc68e6a, roughness: 0.7 }),
     ropa: new THREE.MeshStandardMaterial({ color: 0x8a1c1c, roughness: 0.8 }),
     ropaPublico: new THREE.MeshStandardMaterial({ color: 0x4a5060, roughness: 0.85 }),
@@ -161,7 +209,7 @@ function construir(){
   const geoT = new THREE.ExtrudeGeometry(forma, { depth: 0.45, bevelEnabled: false }); geoT.rotateX(-Math.PI / 2);
   scene.add(sombra(new THREE.Mesh(geoT, [mat.tarima, mat.madera])));
   const fondo = new THREE.Mesh(new THREE.PlaneGeometry(10, 4.6), mat.fondo); fondo.position.set(0, 2.3, -4); fondo.receiveShadow = true; scene.add(fondo);
-  const tv = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 1.25), new THREE.MeshStandardMaterial({ color: 0x05070c, emissive: 0x0b1a33, emissiveIntensity: 1, roughness: 0.2 }));
+  const tv = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 1.25), new THREE.MeshBasicMaterial({ map: texBingo(), color: 0xc8c8c8 }));   // muestra: Bingo
   tv.position.set(0, 1.97, -3.93); scene.add(tv);
   // bateria electronica armada, delante de la pantalla (Cote, 24 nov)
   {
@@ -193,11 +241,11 @@ function construir(){
   // columnas azules del escenario: SIEMPRE visibles (Cote). Las casi invisibles son solo los pilares del salon.
   [-5.8, 5.8].forEach(x => {
     caja(1.0, 4.3, 1.2, mat.listones, x, 2.15, 0);
-    const pant = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 1.4), new THREE.MeshStandardMaterial({ color: 0x101826, emissive: 0x3a5a90, emissiveIntensity: 0.6 }));
+    const pant = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 1.4), new THREE.MeshBasicMaterial({ map: texRosko(), color: 0xc8c8c8 }));   // muestra: El Rosko
     pant.position.set(x, 3.0, 0.61); scene.add(pant);
     // debajo, en las DOS columnas: pantalla de 42" (unos 93 x 52 cm), del ancho del pilar
     const marco = new THREE.Mesh(new THREE.BoxGeometry(0.97, 0.56, 0.05), mat.negro); marco.position.set(x, 1.95, 0.625); scene.add(marco);
-    const t2 = new THREE.Mesh(new THREE.PlaneGeometry(0.93, 0.52), new THREE.MeshStandardMaterial({ color: 0x101826, emissive: 0x2c4a7a, emissiveIntensity: 0.7 })); t2.position.set(x, 1.95, 0.652); scene.add(t2);
+    const t2 = new THREE.Mesh(new THREE.PlaneGeometry(0.93, 0.52), new THREE.MeshBasicMaterial({ map: texKaraoke(), color: 0xc8c8c8 }));  // muestra: Karaoke t2.position.set(x, 1.95, 0.652); scene.add(t2);
   });
   // marco azul, red de cuerdas y lamparas hexagonales
   const barra = (a, b) => { const d = v3(b).sub(v3(a)), m = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, d.length(), 10), mat.azul);
@@ -321,7 +369,8 @@ function actualizarFocos(){
     let destino, ang, fuerzaHaz;
     if (f.g.id === 'perimetrales'){ destino = [f.pos[0], 2.8, -3.95]; ang = 0.42; fuerzaHaz = 0.25; }
     else if (f.g.id === 'fondo'){ destino = [Math.sign(f.pos[0]) * 2.4, 2.4, -3.97]; ang = 0.45; fuerzaHaz = 0.18; }
-    else if (f.g.id === 'frontales'){ destino = [f.pos[0] * 0.25, 0.45, -1.4]; ang = 0.32; fuerzaHaz = 0.14; }
+    // frontales: cruzados y a la cara de la persona en el escenario (color parejo), no a los pies (Cote, 24 nov)
+    else if (f.g.id === 'frontales'){ destino = [-Math.sign(f.pos[0]) * 0.6, 2.0, -1.5]; ang = 0.22; fuerzaHaz = 0.14; }
     else if (c.pan != null && c.tilt != null){
       const d = direccion(f.pos, c.pan, c.tilt, f.def.piso, f.g.id);
       destino = choque(f.pos, d).p;

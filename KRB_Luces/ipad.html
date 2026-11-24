@@ -1346,8 +1346,8 @@ function dibujar3D(){
         haz(pos, muro, c, 0.3);
         brillo(muro, 2.9, c, 0.9);
       } else if (g.id === 'frontales'){                                  // frontales: blanco de frente al escenario
-        const blanco = [pos[0] * 0.25, 0.4, -1.4];
-        haz(pos, blanco, c, 0.2); brillo(blanco, 2.2, c, 0.9, 0.35);
+        const blanco = [-Math.sign(pos[0]) * 0.6, 2.0, -1.5];                // cruzados, a la cara de la persona
+        haz(pos, blanco, c, 0.15); brillo(blanco, 1.2, c, 0.9);
       } else if (c.pan != null && c.tilt != null){                       // cabezas moviles
         const d = direccion(pos, c.pan, c.tilt, def.piso, g.id), h = choque(pos, d);
         const zf = (c.zoom != null ? c.zoom : 50) / 100;                    // 0 = foco angosto y potente, 1 = ancho y suave
