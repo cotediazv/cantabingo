@@ -809,6 +809,18 @@ function dibujar3D(){
   for (let u = SALON.pasillo; u <= SALON.cocinas; u += 2) linea(deSalon(u, -2, 0.01), deSalon(u, L, 0.01), '#15171c', 1);   // baldosas
   for (let v = 0; v <= L; v += 2) linea(deSalon(SALON.pasillo, v, 0.01), deSalon(SALON.cocinas, v, 0.01), '#15171c', 1);
   linea(deSalon(SALON.pasillo, 0, 0.02), deSalon(SALON.pasillo, L, 0.02), '#2b2f37', 2);                                   // borde del pasillo
+  // Paredes de los costados: se dibujan ANTES que el escenario, para que nunca tapen las columnas azules.
+  // Lado cocinas (todo el largo del salon): pared con azulejos de mariscos al principio y cocinas iluminadas
+  const uc = SALON.cocinas + 0.6;
+  poly([[uc,0,1],[uc,0,L],[uc,3.4,L],[uc,3.4,1]].map(([u, y, v]) => deSalon(u, v, y)), '#24272d');
+  poly([[uc-0.01,0.3,1],[uc-0.01,0.3,8],[uc-0.01,3.2,8],[uc-0.01,3.2,1]].map(([u, y, v]) => deSalon(u, v, y)), '#c9d0d6'); // azulejos
+  for (let v = 1.3; v < 7.8; v += 0.8) for (let y = 0.6; y < 3; y += 0.7)
+    poly([[uc-0.02,y,v],[uc-0.02,y,v+0.35],[uc-0.02,y+0.25,v+0.35],[uc-0.02,y+0.25,v]].map(([u, yy, vv]) => deSalon(u, vv, yy)), '#55606c');
+  for (let v = 9; v < L - 1; v += 4.5)                                               // ventanas de las cocinas
+    poly([[uc-0.01,1.1,v],[uc-0.01,1.1,v+3.6],[uc-0.01,2.3,v+3.6],[uc-0.01,2.3,v]].map(([u, y, vv]) => deSalon(u, vv, y)), '#cdb98e', '#5a5040');
+  // Lado pasillo: locales iluminados del mall
+  [[1, '#f0e6d2'], [6.5, '#e9a23b'], [12, '#f4f1ea'], [17.5, '#d9e4f0'], [23, '#e9c46a']].forEach(([v, col]) =>
+    poly([[SALON.pasillo-4,0.3,v],[SALON.pasillo-4,0.3,v+4.2],[SALON.pasillo-4,2.7,v+4.2],[SALON.pasillo-4,2.7,v]].map(([u, y, vv]) => deSalon(u, vv, y)), col, '#444'));
   poly([[-8.2,0,-1.2],[-6.4,0,-1.2],[-6.4,2.6,-1.2],[-8.2,2.6,-1.2]], '#1a1f26', '#2a313b'); // acceso a estacionamientos (lado izquierdo, abierto)
   poly([[-8.0,2.0,-1.19],[-6.6,2.0,-1.19],[-6.6,2.5,-1.19],[-8.0,2.5,-1.19]], '#e8eaee');    // letrero del acceso
   poly([[-5,0,-4],[5,0,-4],[5,4.6,-4],[-5,4.6,-4]], '#17191e');                   // pared del fondo (oscura)
@@ -836,17 +848,6 @@ function dibujar3D(){
     poly([[x0+0.15,2.3,0.62],[x1-0.15,2.3,0.62],[x1-0.15,3.7,0.62],[x0+0.15,3.7,0.62]], '#9fb4d8', '#cfd8e8'); // pantalla vertical (mira al publico)
     if (x0 > 0) poly([[x0-0.35,1.25,0.66],[x1+0.35,1.25,0.66],[x1+0.35,2.05,0.66],[x0-0.35,2.05,0.66]], '#5d78a8', '#222'); // TV mas abajo (columna derecha)
   });
-  // Lado cocinas (todo el largo del salon): pared con azulejos de mariscos al principio y cocinas iluminadas
-  const uc = SALON.cocinas + 0.6;
-  poly([[uc,0,1],[uc,0,L],[uc,3.4,L],[uc,3.4,1]].map(([u, y, v]) => deSalon(u, v, y)), '#24272d');
-  poly([[uc-0.01,0.3,1],[uc-0.01,0.3,8],[uc-0.01,3.2,8],[uc-0.01,3.2,1]].map(([u, y, v]) => deSalon(u, v, y)), '#c9d0d6'); // azulejos
-  for (let v = 1.3; v < 7.8; v += 0.8) for (let y = 0.6; y < 3; y += 0.7)
-    poly([[uc-0.02,y,v],[uc-0.02,y,v+0.35],[uc-0.02,y+0.25,v+0.35],[uc-0.02,y+0.25,v]].map(([u, yy, vv]) => deSalon(u, vv, yy)), '#55606c');
-  for (let v = 9; v < L - 1; v += 4.5)                                               // ventanas de las cocinas
-    poly([[uc-0.01,1.1,v],[uc-0.01,1.1,v+3.6],[uc-0.01,2.3,v+3.6],[uc-0.01,2.3,v]].map(([u, y, vv]) => deSalon(u, vv, y)), '#cdb98e', '#5a5040');
-  // Lado pasillo: locales iluminados del mall
-  [[1, '#f0e6d2'], [6.5, '#e9a23b'], [12, '#f4f1ea'], [17.5, '#d9e4f0'], [23, '#e9c46a']].forEach(([v, col]) =>
-    poly([[SALON.pasillo-4,0.3,v],[SALON.pasillo-4,0.3,v+4.2],[SALON.pasillo-4,2.7,v+4.2],[SALON.pasillo-4,2.7,v]].map(([u, y, vv]) => deSalon(u, vv, y)), col, '#444'));
   // Lamparas hexagonales y sombreros de paja colgando sobre el salon
   [[-2.5, 5], [1.5, 6.5], [-1, 9.5], [3, 11], [-3.5, 13], [1, 15.5]].forEach(([su, sv]) => {
     const c = deSalon(su, sv), r = 0.8;
