@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Luces KRB">
+<title>Luces KRB</title>
+<style>
+  :root{--bg:#0c0d10;--card:#17191f;--line:#262932;--txt:#eceef2;--mut:#8a91a0;--acc:#4f8cff;--ok:#3ecf8e;--warn:#f5c542;--bad:#ff5c5c;--r:18px}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,system-ui,"Segoe UI",Roboto,sans-serif;-webkit-user-select:none;user-select:none}
+  body{padding:env(safe-area-inset-top) 0 0}
+  header{display:flex;align-items:center;gap:14px;padding:16px 20px 8px}
+  h1{font-size:22px;margin:0;font-weight:700;flex:1}
+  .pill{display:flex;align-items:center;gap:8px;font-size:14px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 14px;cursor:pointer}
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--bad)}
+  .dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)}
+  nav{display:flex;gap:6px;margin:6px 20px 14px;background:#121419;border-radius:14px;padding:5px}
+  nav button{flex:1;border:0;background:transparent;color:var(--mut);font-size:17px;font-weight:600;padding:12px 6px;border-radius:10px;cursor:pointer}
+  nav button.act{background:var(--card);color:var(--txt);box-shadow:inset 0 0 0 1px var(--line)}
+  main{padding:0 20px 160px}
+  .tab{display:none}.tab.act{display:block}
+  h2.sec{font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin:26px 0 10px;font-weight:600}
+  .help{color:var(--mut);font-size:15px;line-height:1.45;margin:0 0 12px}
+  .chip{border:1px solid var(--line);background:#121419;color:var(--txt);border-radius:999px;padding:11px 16px;font-size:15px;cursor:pointer}
+  .chip.act{background:var(--acc);border-color:var(--acc)}
+  .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+
+  /* Escenas */
+  .scenes{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
+  .scene{position:relative;border:0;border-radius:var(--r);min-height:120px;padding:18px;text-align:left;cursor:pointer;color:#fff;
+         background:var(--card);box-shadow:inset 0 0 0 1px var(--line);font-size:20px;font-weight:700;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+  .scene .glow{position:absolute;inset:0;opacity:.35;transition:.2s}
+  .scene span,.scene small{position:relative}
+  .scene small{display:block;font-size:13px;font-weight:500;color:#ffffffb0;margin-top:4px}
+  .scene.act{box-shadow:inset 0 0 0 3px #fff}.scene.act .glow{opacity:.7}
+  .scene:active,.bg:active,.big:active{transform:scale(.97)}
+  .bgrow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .bg{border:0;border-radius:var(--r);height:92px;font-size:19px;font-weight:800;color:#fff;cursor:pointer;text-shadow:0 1px 3px #0009;box-shadow:inset 0 0 0 1px #ffffff22}
+  .bg.act{box-shadow:0 0 0 3px var(--bg),0 0 0 6px #fff}
+  .fxrow{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .big{border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:var(--r);padding:18px 14px;font-size:17px;font-weight:700;cursor:pointer;text-align:left}
+  .big small{display:block;font-weight:400;color:var(--mut);font-size:13px;margin-top:4px}
+  .big.act{background:#2a3f6e;border-color:var(--acc);box-shadow:inset 0 0 0 2px var(--acc)}
+
+  /* Zonas */
+  .zone{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;margin-bottom:12px}
+  .zone .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .zone h3{margin:0;font-size:18px}
+  .zone .meta{font-size:13px;color:var(--mut)}
+  .zone .val{font-size:15px;color:var(--mut);min-width:48px;text-align:right}
+  .swatches{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+  .sw{width:46px;height:46px;border-radius:12px;border:0;cursor:pointer;box-shadow:inset 0 0 0 1px #ffffff22}
+  .sw.act{box-shadow:0 0 0 3px var(--bg),0 0 0 5px #fff}
+  .sw.off{background:#000;color:var(--mut);font-size:12px}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:44px;background:transparent;margin:6px 0 0}
+  input[type=range]::-webkit-slider-runnable-track{height:10px;border-radius:5px;background:#2a2e39}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:32px;height:32px;margin-top:-11px;border-radius:50%;background:#fff;box-shadow:0 2px 8px #0008}
+  input[type=range]::-moz-range-track{height:10px;border-radius:5px;background:#2a2e39}
+  input[type=range]::-moz-range-thumb{width:30px;height:30px;border-radius:50%;background:#fff;border:0}
+
+  /* Seguir */
+  .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px;margin-bottom:12px}
+  .seg button{border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:12px;padding:14px 8px;font-size:17px;font-weight:600;cursor:pointer}
+  .seg button.act{background:var(--acc);border-color:var(--acc)}
+  .map,.pad{position:relative;height:min(50vh,460px);border-radius:var(--r);border:1px solid var(--line);touch-action:none;overflow:hidden;background:#121419}
+  .map{background:linear-gradient(#ffffff08 1px,transparent 1px) 0 0/100% 25%,linear-gradient(90deg,#ffffff08 1px,transparent 1px) 0 0/25% 100%,#121419}
+  .map .stage{position:absolute;left:0;right:0;top:0;height:34px;background:#2a2f3c;color:var(--mut);font-size:13px;font-weight:700;letter-spacing:.2em;display:grid;place-items:center}
+  .map .corner{position:absolute;font-size:12px;color:var(--mut);padding:6px 8px}
+  .map .target{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:radial-gradient(#ffe2b0,#ffb35c80 55%,transparent 70%);pointer-events:none;display:none}
+  .map .warn{position:absolute;inset:34px 0 0;display:grid;place-items:center;text-align:center;color:var(--warn);font-size:16px;padding:20px;pointer-events:none}
+  .pad{background:radial-gradient(circle at center,#ffffff10 0 2px,transparent 3px) 0 0/40px 40px,#121419}
+  .pad .lbl{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;color:var(--mut);font-size:17px;pointer-events:none}
+  .pt{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;border:3px solid #fff;pointer-events:none;display:grid;place-items:center;font-size:12px;font-weight:800}
+  .pt.p1{background:#ffb35c;color:#3a2200}.pt.p2{background:#4f8cff;color:#fff}
+  .drag{border-color:var(--acc)!important}
+  .readout{color:var(--mut);font-size:14px;margin-top:10px;font-variant-numeric:tabular-nums}
+  .calib{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
+  .calib button{border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:12px;padding:12px;font-size:15px;cursor:pointer;text-align:left}
+  .calib button small{display:block;color:var(--mut);font-size:12px;margin-top:3px}
+  .calib button.ok small{color:var(--ok)}
+
+  /* Probar canales */
+  .addr{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+  .addr input{width:90px;font-size:17px;padding:10px;border-radius:10px;border:1px solid var(--line);background:#121419;color:var(--txt)}
+  .chan{display:grid;grid-template-columns:120px 1fr 48px;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px 14px;margin-bottom:6px}
+  .chan b{font-size:16px}.chan small{display:block;color:var(--mut);font-size:12px;font-weight:400}
+  .chan .v{text-align:right;font-variant-numeric:tabular-nums;color:var(--mut)}
+
+  /* Barra inferior */
+  footer{position:fixed;left:0;right:0;bottom:0;background:#0c0d10f2;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+         border-top:1px solid var(--line);padding:12px 20px calc(12px + env(safe-area-inset-bottom));display:flex;gap:18px;align-items:center;z-index:5}
+  .master{flex:1;min-width:0}
+  .master label,.fade label{font-size:13px;color:var(--mut);display:flex;justify-content:space-between}
+  .fade{display:flex;flex-direction:column;gap:4px}
+  .fade div{display:flex;gap:4px}
+  .fade button{border:1px solid var(--line);background:#121419;color:var(--txt);border-radius:10px;padding:10px 12px;font-size:15px;cursor:pointer}
+  .fade button.act{background:var(--acc);border-color:var(--acc)}
+  .blackout{border:0;background:var(--bad);color:#fff;font-size:18px;font-weight:800;border-radius:14px;padding:18px 22px;cursor:pointer}
+  @media (max-width:640px){
+    header{padding:12px 14px 4px} nav{margin:6px 14px 10px} nav button{font-size:15px;padding:10px 4px} main{padding:0 14px 150px}
+    footer{flex-wrap:wrap;gap:8px 10px;padding:8px 14px calc(8px + env(safe-area-inset-bottom))}
+    .master{flex-basis:100%} .master input[type=range]{height:34px;margin:0}
+    .fade label{display:none} .fade button{padding:9px 10px}
+    .blackout{flex:1;padding:12px;font-size:16px}
+    .bgrow{grid-template-columns:repeat(2,1fr)} .bg{height:72px} .fxrow{grid-template-columns:1fr}
+    .scene{min-height:96px} .map,.pad{height:56vh}
+  }
+  /* Vista previa 3D */
+  .vista{margin:0 20px 14px;position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#050608}
+  .vista canvas{display:block;width:100%;height:var(--vh,300px);touch-action:none;cursor:grab}
+  .vista.oculta canvas{display:none}
+  .vista .bar{position:absolute;top:8px;left:10px;right:8px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
+  .vista .bar span{font-size:12px;color:#ffffffa0;background:#0008;padding:4px 8px;border-radius:8px}
+  .vista .bar div{display:flex;gap:6px;pointer-events:auto}
+  .vista .bar button{border:0;background:#000a;color:#fff;border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer}
+  .vista.oculta .bar{position:static;padding:8px 10px}
+  @media (max-width:640px){.vista{margin:0 14px 10px}}
+  .toast{position:fixed;left:50%;top:18px;transform:translate(-50%,-80px);background:#232733;border:1px solid var(--line);padding:10px 18px;border-radius:999px;font-size:15px;transition:.25s;opacity:0;z-index:9}
+  .toast.show{transform:translate(-50%,0);opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <h1>Luces KRB</h1>
+  <div class="pill" id="pill" title="Tocar para reconectar el cable"><span class="dot" id="dot"></span><span id="pillTxt">Conectando…</span></div>
+</header>
+<nav>
+  <button data-t="escenas" class="act">Escenas</button>
+  <button data-t="seguir">Seguir</button>
+  <button data-t="zonas">Zonas</button>
+  <button data-t="probar">Probar canales</button>
+</nav>
+
+<section class="vista" id="vista">
+  <canvas id="cv3d"></canvas>
+  <div class="bar"><span>Vista previa 3D · aproximada · arrastra para girar</span>
+    <div><button id="vReset">Centrar</button><button id="vTam">Más grande</button><button id="vOcultar">Ocultar</button></div></div>
+</section>
+
+<main>
+  <!-- ===== ESCENAS ===== -->
+  <section class="tab act" id="escenas">
+    <div class="scenes" id="sceneGrid"></div>
+
+    <h2 class="sec">Color del fondo · perimetrales + focos de pared</h2>
+    <div class="bgrow" id="bgRow"></div>
+
+    <h2 class="sec">Efectos</h2>
+    <div class="fxrow">
+      <button class="big" id="fxParpadeo">Parpadeo pared<small>Prende y apaga la pared; frontales y cabezas siguen fijas</small></button>
+      <button class="big" id="fxAlternar">Alternar colores<small>Azul, rojo, verde y amarillo en la pared</small></button>
+      <button class="big" id="fxMini">Mini cabezas en movimiento<small>Se mueven solas en el escenario</small></button>
+    </div>
+    <div class="row"><span class="help" style="margin:0 6px 0 0">Velocidad de los efectos:</span>
+      <button class="chip" data-vel="0">Lenta</button><button class="chip act" data-vel="1">Media</button><button class="chip" data-vel="2">Rápida</button>
+    </div>
+  </section>
+
+  <!-- ===== SEGUIR ===== -->
+  <section class="tab" id="seguir">
+    <div class="seg" id="modoSeguir">
+      <button data-m="mapa" class="act">Mapa del salón</button>
+      <button data-m="mano">A mano · calibrar</button>
+    </div>
+    <div class="seg" id="cabezas">
+      <button data-s="0">Cabeza 1</button><button data-s="1">Cabeza 2</button><button data-s="both" class="act">Ambas</button>
+    </div>
+
+    <div id="panelMapa">
+      <div class="map" id="map">
+        <div class="stage">ESCENARIO</div>
+        <div class="corner" style="left:0;top:34px">↖ 1</div><div class="corner" style="right:0;top:34px">2 ↗</div>
+        <div class="corner" style="left:0;bottom:0">↙ 3</div><div class="corner" style="right:0;bottom:0">4 ↘</div>
+        <div class="target" id="target"></div>
+        <div class="warn" id="mapWarn"></div>
+      </div>
+      <p class="help" style="margin-top:10px">Toca o arrastra el dedo donde está la persona: las cabezas elegidas apuntan a ese punto del salón.</p>
+    </div>
+
+    <div id="panelMano" style="display:none">
+      <div class="pad" id="pad"><div class="lbl">Arrastra el dedo para mover la luz</div><div class="pt p1" id="pt0">1</div><div class="pt p2" id="pt1">2</div></div>
+      <div class="row">
+        <span class="help" style="margin:0 6px 0 0">Velocidad:</span>
+        <button class="chip" data-v="0.15">Fina</button><button class="chip act" data-v="0.4">Normal</button><button class="chip" data-v="1">Rápida</button>
+        <button class="chip" id="invX">Invertir ↔</button><button class="chip" id="invY">Invertir ↕</button>
+      </div>
+      <h2 class="sec">Calibrar el mapa (una sola vez)</h2>
+      <p class="help">Para cada esquina del salón: elige <b>Cabeza 1</b>, apúntala al suelo en esa esquina y toca la esquina. Luego haz lo mismo con <b>Cabeza 2</b>. Las esquinas son las del mapa, con el escenario arriba.</p>
+      <div class="calib" id="calib"></div>
+    </div>
+
+    <div class="readout" id="readout"></div>
+    <div class="row">
+      <button class="chip" id="segOn">Encender (blanco cálido)</button>
+      <button class="chip" id="segPublico">Ir al público</button>
+      <button class="chip" id="segEscenario">Volver al escenario</button>
+      <button class="chip" id="segOff">Apagar cabezas</button>
+    </div>
+  </section>
+
+  <!-- ===== ZONAS ===== -->
+  <section class="tab" id="zonas"><div id="zoneList"></div></section>
+
+  <!-- ===== PROBAR CANALES ===== -->
+  <section class="tab" id="probar">
+    <p class="help">Para descubrir qué hace cada canal de una luz: elige su dirección y mueve los controles uno por uno. Anota qué canal es pan, tilt, dimmer, rojo, verde, azul y blanco, y cámbialo en <b>luces.json</b>.</p>
+    <div class="addr" id="addrBar"><span>Dirección inicial</span><input type="number" id="addr" min="1" max="497" value="1"></div>
+    <div id="chanList"></div>
+    <button class="chip" id="cero16" style="margin-top:8px">Poner estos 16 canales en 0</button>
+  </section>
+</main>
+
+<footer>
+  <div class="master">
+    <label><span>Intensidad general</span><span id="masterTxt">100%</span></label>
+    <input type="range" id="master" min="0" max="100" value="100">
+  </div>
+  <div class="fade">
+    <label>Fundido</label>
+    <div id="fadeBtns"><button data-f="0">0 s</button><button data-f="1" class="act">1 s</button><button data-f="3">3 s</button></div>
+  </div>
+  <button class="blackout" id="blackout">APAGAR TODO</button>
+</footer>
+<div class="toast" id="toast"></div>
+
+<div id="login" style="display:none;position:fixed;inset:0;z-index:20;background:var(--bg);place-items:center;padding:24px">
+  <form id="loginForm" style="width:min(100%,360px);text-align:center">
+    <h1 style="font-size:26px;margin-bottom:8px">Luces KRB</h1>
+    <p class="help">Escribe la clave para controlar las luces.</p>
+    <input type="password" id="clave" autocomplete="current-password" placeholder="Clave"
+      style="width:100%;font-size:20px;padding:16px;border-radius:14px;border:1px solid var(--line);background:#121419;color:var(--txt);text-align:center">
+    <button type="submit" class="blackout" style="width:100%;margin-top:14px;background:var(--acc)">Entrar</button>
+    <p class="help" id="loginErr" style="color:var(--bad);margin-top:12px;min-height:20px"></p>
+  </form>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const COLOR_CSS = {blanco_calido:'#ffd9a0',blanco:'#ffffff',azul:'#2b55ff',rojo:'#ff2a2a',verde:'#22dd55',amarillo:'#ffbe00',ambar:'#ff8a00',morado:'#9b3cff',rosa:'#ff3fa0',cian:'#22e5ff'};
+const ESQUINAS = [
+  {k:'ei', u:0, v:0, nombre:'1 ↖ Escenario, izquierda'},
+  {k:'ed', u:1, v:0, nombre:'2 ↗ Escenario, derecha'},
+  {k:'fi', u:0, v:1, nombre:'3 ↙ Fondo, izquierda'},
+  {k:'fd', u:1, v:1, nombre:'4 ↘ Fondo, derecha'}
+];
+const VEL = { parpadeo:[0.4, 0.2, 0.1], alternar:[4, 2, 1], mover:[12, 8, 4] };
+
+let conf = null, datos = {calibracion:{}}, master = 100, fade = 1, zonas = {}, escenaActiva = -1;
+let canales = new Array(512).fill(0), efectosActivos = [], efectoPared = null, velEf = 1;
+
+/* ---------- Comunicacion con el Dell ---------- */
+async function api(path){
+  const r = await fetch(path, {cache:'no-store', credentials:'same-origin'});
+  if (r.status === 401){ pedirClave(); throw new Error('clave'); }
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+let pidiendo = false;
+function pedirClave(){
+  if (pidiendo) return; pidiendo = true;
+  $('login').style.display = 'grid'; setTimeout(() => $('clave').focus(), 50);
+}
+$('loginForm').onsubmit = async ev => {
+  ev.preventDefault();
+  $('loginErr').textContent = 'Comprobando…';
+  try {
+    const r = await fetch('/api/login', {method:'POST', body:$('clave').value, credentials:'same-origin', cache:'no-store'});
+    if (r.ok){ location.reload(); return; }
+    $('loginErr').textContent = 'Clave incorrecta'; $('clave').select();
+  } catch(e){ $('loginErr').textContent = 'Sin conexión con el Dell'; }
+};
+const serial = vals => Object.entries(vals).map(([c, v]) => c + ':' + v).join(',');
+async function enviar(valores, f){
+  const d = serial(valores); if (!d) return;
+  try { pintarEstado(await api('/api/set?d=' + d + '&f=' + f)); } catch(e){ sinConexion(); }
+}
+async function efecto(id, params){
+  try { pintarEstado(await api('/api/efecto?id=' + encodeURIComponent(id) + '&' + new URLSearchParams(params))); } catch(e){ sinConexion(); }
+}
+const limitar = (() => { const t = {}; return (clave, fn) => {
+  const x = t[clave] || (t[clave] = {last:0, timer:null});
+  const ahora = Date.now(), espera = 90 - (ahora - x.last);
+  clearTimeout(x.timer);
+  if (espera <= 0){ x.last = ahora; fn(); } else x.timer = setTimeout(() => { x.last = Date.now(); fn(); }, espera);
+};})();
+
+/* ---------- Calculo de canales por grupo ---------- */
+const grupo = id => conf.grupos.find(g => g.id === id);
+const zona = id => zonas[id] || (zonas[id] = {color:null, intensidad:0});
+function valoresGrupo(g, zOverride){
+  const z = zOverride || zonas[g.id], ch = g.canales || {}, base = g.direccion - 1, out = {};
+  const on = z && z.color && z.intensidad > 0;
+  const col = on ? (conf.colores[z.color] || {}) : {};
+  const k = on ? (z.intensidad / 100) * (master / 100) : 0;
+  const rgbw = ['r','g','b','w'];
+  if (ch.dimmer){
+    out[base + ch.dimmer] = Math.round(255 * k);
+    rgbw.forEach(c => { if (ch[c]) out[base + ch[c]] = on ? (col[c] || 0) : 0; });
+  } else {
+    rgbw.forEach(c => { if (ch[c]) out[base + ch[c]] = Math.round((col[c] || 0) * k); });
+  }
+  if (z && z.pan != null){
+    if (ch.pan) out[base + ch.pan] = Math.round(z.pan);
+    if (ch.tilt) out[base + ch.tilt] = Math.round(z.tilt);
+  }
+  for (const [c, v] of Object.entries(g.fijos || {})) out[base + (+c)] = v;
+  return out;
+}
+function enviarGrupos(ids, f){
+  const todo = {};
+  ids.forEach(id => { const g = grupo(id); if (g) Object.assign(todo, valoresGrupo(g)); });
+  enviar(todo, f);
+}
+const todosLosIds = () => conf.grupos.map(g => g.id);
+function fijarPosicion(z, nombre){
+  const p = conf.posiciones[nombre]; if (!p) return;
+  z.posicion = nombre; z.pan = p.pan; z.tilt = p.tilt;
+}
+
+/* ---------- Efectos (corren en el Dell) ---------- */
+function moverGrupo(id, on){
+  const g = grupo(id); if (!g) return;
+  if (!on) return efecto('mover:' + id, {off:1});
+  const z = zona(id), ch = g.canales, base = g.direccion - 1, m = g.mover || {};
+  if (!ch.pan || !ch.tilt) return toast('Falta pan/tilt en ' + g.nombre);
+  const centro = [z.pan != null ? z.pan : 128, z.tilt != null ? z.tilt : 110];
+  efecto('mover:' + id, {tipo:'seno', ch:[base + ch.pan, base + ch.tilt].join(','), centro:centro.join(','),
+    amp:[m.amp_pan || 70, m.amp_tilt || 35].join(','), periodo:(m.periodo || VEL.mover[velEf])});
+}
+const pasosTxt = pasos => pasos.map(serial).join('|');
+function idsPared(){ return (conf.fondo_enlazado && conf.fondo_enlazado.grupos) || ['perimetrales', 'fondo']; }
+function asegurarPared(){
+  idsPared().forEach(id => { const z = zona(id); if (!z.color) z.color = 'azul'; if (!(z.intensidad > 0)) z.intensidad = 100; });
+}
+function efectoParedOn(tipo){
+  efectoPared = tipo; asegurarPared();
+  efecto(tipo === 'parpadeo' ? 'alternar' : 'parpadeo', {off:1});
+  if (tipo === 'parpadeo'){
+    const prendido = {}, apagado = {};
+    idsPared().forEach(id => { const g = grupo(id); Object.assign(prendido, valoresGrupo(g)); Object.assign(apagado, valoresGrupo(g, {...zona(id), intensidad:0})); });
+    efecto('parpadeo', {tipo:'sec', pasos:pasosTxt([prendido, apagado]), t:VEL.parpadeo[velEf], fx:0});
+  } else {
+    const pasos = conf.fondo_enlazado.colores.map(c => {
+      const s = {}; idsPared().forEach(id => Object.assign(s, valoresGrupo(grupo(id), {...zona(id), color:c}))); return s;
+    });
+    efecto('alternar', {tipo:'sec', pasos:pasosTxt(pasos), t:VEL.alternar[velEf], fx:0.25});
+  }
+  pintarEfectos(); pintarZonas();
+}
+function efectoParedOff(){ efectoPared = null; efecto('parpadeo', {off:1}); efecto('alternar', {off:1}); pintarEfectos(); }
+function refrescarEfectos(){
+  if (efectoPared) efectoParedOn(efectoPared);
+  conf.grupos.forEach(g => { if (efectosActivos.includes('mover:' + g.id)) moverGrupo(g.id, true); });
+}
+$('fxParpadeo').onclick = () => efectoPared === 'parpadeo' ? efectoParedOff() : efectoParedOn('parpadeo');
+$('fxAlternar').onclick = () => efectoPared === 'alternar' ? efectoParedOff() : efectoParedOn('alternar');
+$('fxMini').onclick = () => {
+  const on = !efectosActivos.includes('mover:mini');
+  if (on){ const z = zona('mini'); if (!z.color) z.color = 'rojo'; if (!(z.intensidad > 0)) z.intensidad = 100; if (z.pan == null) fijarPosicion(z, 'escenario'); enviarGrupos(['mini'], fade); }
+  moverGrupo('mini', on);
+};
+document.querySelectorAll('[data-vel]').forEach(b => b.onclick = () => {
+  velEf = +b.dataset.vel; document.querySelectorAll('[data-vel]').forEach(x => x.classList.toggle('act', x === b)); refrescarEfectos();
+});
+function pintarEfectos(){
+  $('fxParpadeo').classList.toggle('act', efectoPared === 'parpadeo');
+  $('fxAlternar').classList.toggle('act', efectoPared === 'alternar');
+  $('fxMini').classList.toggle('act', efectosActivos.includes('mover:mini'));
+}
+
+/* ---------- Escenas ---------- */
+function pintarEscenas(){
+  const grid = $('sceneGrid'); grid.innerHTML = '';
+  conf.escenas.forEach((e, i) => {
+    const b = document.createElement('button');
+    b.className = 'scene' + (i === escenaActiva ? ' act' : '');
+    const extra = e.efectos && e.efectos.length ? ' · mini en movimiento' : '';
+    b.innerHTML = `<div class="glow" style="background:radial-gradient(120% 90% at 80% 0%, ${e.muestra || '#888'}, transparent 70%)"></div><span>${e.nombre}</span><small>${e.detalle || ''}${extra}</small>`;
+    b.onclick = () => aplicarEscena(i);
+    grid.appendChild(b);
+  });
+}
+async function aplicarEscena(i){
+  const e = conf.escenas[i];
+  const anteriores = zonas; zonas = {};
+  conf.grupos.forEach(g => {
+    const s = e.grupos[g.id], prev = anteriores[g.id] || {};
+    const z = s ? {...s} : {color:null, intensidad:0};
+    if (s && s.posicion) fijarPosicion(z, s.posicion);
+    else { z.posicion = prev.posicion; z.pan = prev.pan; z.tilt = prev.tilt; }
+    zonas[g.id] = z;
+  });
+  escenaActiva = i; efectoPared = null;
+  await efecto('todos', {todos:'off'});
+  enviarGrupos(todosLosIds(), fade);
+  (e.efectos || []).forEach(x => {
+    const [tipo, id] = x.split(':');
+    if (tipo === 'mover') moverGrupo(id, true);
+    if (tipo === 'parpadeo' || tipo === 'alternar') efectoParedOn(tipo);
+  });
+  pintarTodo(); toast(e.nombre);
+  if (e.abrir) abrirTab(e.abrir);
+}
+
+/* ---------- Color del fondo (perimetrales + fondo juntos) ---------- */
+function pintarFondo(){
+  const fe = conf.fondo_enlazado; if (!fe) return;
+  const row = $('bgRow'); row.innerHTML = '';
+  const actual = zona(fe.grupos[0]);
+  fe.colores.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'bg' + (actual.color === c && actual.intensidad > 0 && efectoPared !== 'alternar' ? ' act' : '');
+    b.style.background = COLOR_CSS[c] || '#888';
+    b.textContent = c[0].toUpperCase() + c.slice(1);
+    b.onclick = () => {
+      fe.grupos.forEach(id => { const z = zona(id); z.color = c; if (!(z.intensidad > 0)) z.intensidad = 100; });
+      escenaActiva = -1;
+      if (efectoPared === 'alternar') efectoParedOff();
+      if (efectoPared === 'parpadeo') efectoParedOn('parpadeo'); else enviarGrupos(fe.grupos, fade);
+      pintarTodo(); toast('Fondo ' + c);
+    };
+    row.appendChild(b);
+  });
+}
+
+/* ---------- Seguir: seleccion de cabezas ---------- */
+const prefs = JSON.parse(localStorage.getItem('krb_seguir') || '{"vel":0.4,"invX":false,"invY":false}');
+let seleccion = 'both', modoSeguir = 'mapa', objetivo = null;
+const segIds = () => (conf.seguir && conf.seguir.grupos) || ['seguidor1', 'seguidor2'];
+const segActivos = () => seleccion === 'both' ? segIds() : [segIds()[+seleccion]];
+function guardarPrefs(){ localStorage.setItem('krb_seguir', JSON.stringify(prefs)); }
+document.querySelectorAll('#cabezas button').forEach(b => b.onclick = () => { seleccion = b.dataset.s; pintarSeguir(); });
+document.querySelectorAll('#modoSeguir button').forEach(b => b.onclick = () => { modoSeguir = b.dataset.m; pintarSeguir(); });
+
+/* Mapa: interpolacion entre las 4 esquinas calibradas */
+const calibrada = id => { const c = (datos.calibracion || {})[id]; return c && ESQUINAS.every(e => c[e.k]); };
+function apuntar(id, u, v){
+  const c = datos.calibracion[id], lerp = key => (1-u)*(1-v)*c.ei[key] + u*(1-v)*c.ed[key] + (1-u)*v*c.fi[key] + u*v*c.fd[key];
+  const z = zona(id); z.pan = lerp('pan'); z.tilt = lerp('tilt'); z.posicion = null;
+}
+(() => {
+  const map = $('map'); let activo = false;
+  const mover = e => {
+    const r = map.getBoundingClientRect(), top = 34;
+    const u = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+    const v = Math.max(0, Math.min(1, (e.clientY - r.top - top) / (r.height - top)));
+    objetivo = {u, v};
+    const ok = segActivos().filter(calibrada);
+    ok.forEach(id => apuntar(id, u, v));
+    pintarSeguir();
+    if (ok.length) limitar('mapa', () => enviarGrupos(ok, 0));
+  };
+  map.addEventListener('pointerdown', e => { activo = true; map.setPointerCapture(e.pointerId); map.classList.add('drag'); mover(e); });
+  map.addEventListener('pointermove', e => { if (activo) mover(e); });
+  const fin = () => { activo = false; map.classList.remove('drag'); escenaActiva = -1; pintarEscenas(); };
+  map.addEventListener('pointerup', fin); map.addEventListener('pointercancel', fin);
+})();
+
+/* A mano: pad relativo */
+document.querySelectorAll('[data-v]').forEach(b => b.onclick = () => { prefs.vel = +b.dataset.v; guardarPrefs(); pintarSeguir(); });
+$('invX').onclick = () => { prefs.invX = !prefs.invX; guardarPrefs(); pintarSeguir(); };
+$('invY').onclick = () => { prefs.invY = !prefs.invY; guardarPrefs(); pintarSeguir(); };
+(() => {
+  const pad = $('pad'); let last = null;
+  pad.addEventListener('pointerdown', e => { last = {x: e.clientX, y: e.clientY}; pad.setPointerCapture(e.pointerId); pad.classList.add('drag'); });
+  pad.addEventListener('pointermove', e => {
+    if (!last) return;
+    const dx = (e.clientX - last.x) * prefs.vel * (prefs.invX ? -1 : 1);
+    const dy = (e.clientY - last.y) * prefs.vel * (prefs.invY ? -1 : 1);
+    last = {x: e.clientX, y: e.clientY};
+    segActivos().forEach(id => {
+      const z = zona(id);
+      z.pan = Math.max(0, Math.min(255, (z.pan != null ? z.pan : 128) + dx));
+      z.tilt = Math.max(0, Math.min(255, (z.tilt != null ? z.tilt : 128) + dy));
+      z.posicion = null;
+    });
+    pintarSeguir();
+    limitar('pad', () => enviarGrupos(segActivos(), 0));
+  });
+  const fin = () => { last = null; pad.classList.remove('drag'); escenaActiva = -1; pintarEscenas(); };
+  pad.addEventListener('pointerup', fin); pad.addEventListener('pointercancel', fin);
+})();
+
+/* Calibracion: guarda pan/tilt actuales de las cabezas elegidas en una esquina */
+async function guardarEsquina(k){
+  datos.calibracion = datos.calibracion || {};
+  const nombres = [];
+  segActivos().forEach(id => {
+    const z = zona(id);
+    (datos.calibracion[id] = datos.calibracion[id] || {})[k] = {pan: Math.round(z.pan != null ? z.pan : 128), tilt: Math.round(z.tilt != null ? z.tilt : 128)};
+    nombres.push(segIds().indexOf(id) + 1);
+  });
+  try { await api('/api/guardar?d=' + encodeURIComponent(JSON.stringify(datos))); toast('Esquina guardada para cabeza ' + nombres.join(' y ')); }
+  catch(e){ toast('No se pudo guardar en el Dell'); }
+  pintarSeguir();
+}
+
+/* Acciones rapidas */
+function accionSeguir(fn){ segActivos().forEach(id => fn(zona(id))); escenaActiva = -1; pintarTodo(); enviarGrupos(segActivos(), fade); }
+$('segOn').onclick = () => accionSeguir(z => { z.color = (conf.seguir && conf.seguir.color) || 'blanco_calido'; z.intensidad = 100; });
+$('segOff').onclick = () => accionSeguir(z => { z.intensidad = 0; });
+$('segPublico').onclick = () => accionSeguir(z => fijarPosicion(z, 'publico'));
+$('segEscenario').onclick = () => accionSeguir(z => fijarPosicion(z, 'escenario'));
+
+function pintarSeguir(){
+  if (!conf) return;
+  document.querySelectorAll('#cabezas button').forEach(b => b.classList.toggle('act', b.dataset.s === seleccion));
+  document.querySelectorAll('#modoSeguir button').forEach(b => b.classList.toggle('act', b.dataset.m === modoSeguir));
+  $('panelMapa').style.display = modoSeguir === 'mapa' ? '' : 'none';
+  $('panelMano').style.display = modoSeguir === 'mano' ? '' : 'none';
+
+  // mapa
+  const faltan = segActivos().filter(id => !calibrada(id)).map(id => segIds().indexOf(id) + 1);
+  $('mapWarn').textContent = faltan.length ? `Cabeza ${faltan.join(' y ')} sin calibrar. Ve a "A mano · calibrar" y guarda las 4 esquinas.` : '';
+  const t = $('target'), map = $('map');
+  if (objetivo){ t.style.display = 'block'; t.style.left = (objetivo.u * map.clientWidth) + 'px'; t.style.top = (34 + objetivo.v * (map.clientHeight - 34)) + 'px'; }
+
+  // pad
+  const pad = $('pad'), w = pad.clientWidth, h = pad.clientHeight, txt = [];
+  segIds().forEach((id, i) => {
+    const z = zona(id), pt = $('pt' + i);
+    const pan = z.pan != null ? z.pan : 128, tilt = z.tilt != null ? z.tilt : 128;
+    pt.style.left = (pan / 255 * w) + 'px'; pt.style.top = (tilt / 255 * h) + 'px';
+    pt.style.opacity = segActivos().includes(id) ? 1 : .35;
+    txt.push(`Cabeza ${i + 1}: pan ${Math.round(pan)} · tilt ${Math.round(tilt)} · ${z.intensidad > 0 ? 'encendida' : 'apagada'}`);
+  });
+  $('readout').textContent = txt.join('   |   ');
+  document.querySelectorAll('[data-v]').forEach(b => b.classList.toggle('act', +b.dataset.v === prefs.vel));
+  $('invX').classList.toggle('act', prefs.invX); $('invY').classList.toggle('act', prefs.invY);
+
+  // calibracion
+  const cal = $('calib'); cal.innerHTML = '';
+  ESQUINAS.forEach(e => {
+    const hechas = segIds().map((id, i) => ((datos.calibracion || {})[id] || {})[e.k] ? (i + 1) + ' ✓' : (i + 1) + ' –');
+    const b = document.createElement('button');
+    b.className = hechas.every(x => x.includes('✓')) ? 'ok' : '';
+    b.innerHTML = `Guardar ${e.nombre}<small>Cabeza ${hechas.join('  ·  ')}</small>`;
+    b.onclick = () => guardarEsquina(e.k);
+    cal.appendChild(b);
+  });
+}
+
+/* ---------- Zonas ---------- */
+function pintarZonas(){
+  const list = $('zoneList'); list.innerHTML = '';
+  conf.grupos.forEach(g => {
+    const z = zona(g.id);
+    const d = document.createElement('div'); d.className = 'zone';
+    const sw = Object.keys(conf.colores).map(c =>
+      `<button class="sw${z.color === c && z.intensidad > 0 ? ' act' : ''}" data-c="${c}" title="${c}" style="background:${COLOR_CSS[c] || '#888'}"></button>`).join('');
+    const pos = g.tipo === 'cabeza' ? `<div class="row">${Object.keys(conf.posiciones).filter(p => !p.startsWith('_')).map(p =>
+      `<button class="chip${z.posicion === p ? ' act' : ''}" data-p="${p}">${p[0].toUpperCase() + p.slice(1)}</button>`).join('')}</div>` : '';
+    d.innerHTML = `<div class="top"><div><h3>${g.nombre}</h3><div class="meta">Escáner ${g.escaner} · DMX ${g.direccion}</div></div><div class="val">${z.intensidad}%</div></div>
+      <input type="range" min="0" max="100" value="${z.intensidad}">
+      <div class="swatches"><button class="sw off${!z.color || z.intensidad === 0 ? ' act' : ''}" data-c="">Off</button>${sw}</div>${pos}`;
+    const rng = d.querySelector('input'), val = d.querySelector('.val');
+    rng.oninput = () => {
+      z.intensidad = +rng.value; if (!z.color && z.intensidad > 0) z.color = 'blanco_calido';
+      val.textContent = z.intensidad + '%'; escenaActiva = -1;
+      limitar(g.id, () => enviarGrupos([g.id], 0));
+    };
+    rng.onchange = () => { pintarTodo(); if (efectoPared && idsPared().includes(g.id)) efectoParedOn(efectoPared); };
+    d.querySelectorAll('.sw').forEach(b => b.onclick = () => {
+      if (b.dataset.c){ z.color = b.dataset.c; if (z.intensidad === 0) z.intensidad = 100; } else z.intensidad = 0;
+      escenaActiva = -1; pintarTodo(); enviarGrupos([g.id], fade);
+      if (efectoPared && idsPared().includes(g.id)) efectoParedOn(efectoPared);
+    });
+    d.querySelectorAll('[data-p]').forEach(b => b.onclick = () => {
+      fijarPosicion(z, b.dataset.p); escenaActiva = -1; pintarTodo(); enviarGrupos([g.id], fade);
+      if (efectosActivos.includes('mover:' + g.id)) moverGrupo(g.id, true);
+    });
+    list.appendChild(d);
+  });
+}
+
+/* ---------- Probar canales ---------- */
+function pintarCanales(){
+  const inicio = Math.max(1, Math.min(497, +$('addr').value || 1));
+  const g = conf.grupos.find(x => x.direccion === inicio);
+  const nombres = {};
+  if (g) for (const [rol, c] of Object.entries(g.canales || {})) nombres[c] = rol;
+  const list = $('chanList'); list.innerHTML = '';
+  for (let i = 0; i < 16; i++){
+    const ch = inicio + i, v = canales[ch - 1] || 0;
+    const row = document.createElement('div'); row.className = 'chan';
+    row.innerHTML = `<div><b>Canal ${i + 1}</b><small>DMX ${ch}${nombres[i + 1] ? ' · ' + nombres[i + 1] : ''}</small></div>
+      <input type="range" min="0" max="255" value="${v}"><div class="v">${v}</div>`;
+    const r = row.querySelector('input'), t = row.querySelector('.v');
+    r.oninput = () => { t.textContent = r.value; canales[ch - 1] = +r.value; limitar('c' + ch, () => enviar({[ch]: +r.value}, 0)); };
+    list.appendChild(row);
+  }
+}
+function pintarDirecciones(){
+  const bar = $('addrBar');
+  conf.grupos.forEach(g => {
+    const b = document.createElement('button'); b.className = 'chip';
+    b.textContent = g.nombre.split(' ·')[0].split(' (')[0] + ' · ' + g.direccion;
+    b.onclick = () => { $('addr').value = g.direccion; pintarCanales(); };
+    bar.appendChild(b);
+  });
+}
+$('addr').onchange = pintarCanales;
+$('cero16').onclick = () => {
+  const inicio = +$('addr').value || 1, v = {};
+  for (let i = 0; i < 16; i++){ v[inicio + i] = 0; canales[inicio + i - 1] = 0; }
+  enviar(v, 0); pintarCanales();
+};
+
+/* ---------- Barra inferior ---------- */
+$('master').oninput = () => {
+  master = +$('master').value; $('masterTxt').textContent = master + '%';
+  limitar('master', () => enviarGrupos(todosLosIds(), 0));
+};
+$('master').onchange = () => { if (efectoPared) efectoParedOn(efectoPared); };
+document.querySelectorAll('#fadeBtns button').forEach(b => b.onclick = () => {
+  fade = +b.dataset.f; document.querySelectorAll('#fadeBtns button').forEach(x => x.classList.toggle('act', x === b));
+});
+$('blackout').onclick = async () => {
+  conf.grupos.forEach(g => { zona(g.id).intensidad = 0; });
+  escenaActiva = -1; efectoPared = null;
+  try { pintarEstado(await api('/api/apagar?f=' + fade)); toast('Todo apagado'); } catch(e){ sinConexion(); }
+  pintarTodo();
+};
+
+/* ---------- Pestanas ---------- */
+function abrirTab(id){
+  document.querySelectorAll('nav button').forEach(x => x.classList.toggle('act', x.dataset.t === id));
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('act', t.id === id));
+  if (id === 'probar') pintarCanales();
+  if (id === 'seguir') pintarSeguir();
+}
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => abrirTab(b.dataset.t));
+window.addEventListener('resize', () => pintarSeguir());
+function pintarTodo(){ pintarEscenas(); pintarFondo(); pintarZonas(); pintarSeguir(); pintarEfectos(); }
+
+/* ---------- Estado de la conexion ---------- */
+function pintarEstado(e){
+  if (e.canales) canales = e.canales;
+  if (e.salida){ V.salida = e.salida; V.sucio = true; }
+  if (e.efectos){ efectosActivos = e.efectos; pintarEfectos(); }
+  const dot = $('dot'), t = $('pillTxt');
+  if (e.tipo === 'simulacion'){ dot.className = 'dot warn'; t.textContent = 'Simulación (sin cable)'; }
+  else if (e.conectado){ dot.className = 'dot ok'; t.textContent = 'Cable DMX · ' + e.puerto; }
+  else { dot.className = 'dot'; t.textContent = 'Sin cable DMX · tocar para reintentar'; }
+  $('pill').title = e.error || '';
+}
+function sinConexion(){ $('dot').className = 'dot'; $('pillTxt').textContent = 'Sin conexión con el Dell'; }
+$('pill').onclick = async () => {
+  try { const e = await api('/api/reconectar'); pintarEstado(e); toast(e.conectado ? 'Cable conectado' : (e.error || 'No se encontró el cable')); }
+  catch(e){ sinConexion(); }
+};
+async function sondear(){ try { pintarEstado(await api('/api/estado')); } catch(e){ sinConexion(); } }
+function toast(t){ const e = $('toast'); e.textContent = t; e.classList.add('show'); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove('show'), 1800); }
+
+/* =====================================================================
+   VISTA PREVIA 3D del escenario de Mercado Kennedy (sin librerias).
+   Medidas en metros. x = derecha, y = arriba, z = hacia el publico.
+   El borde del escenario esta en z = 0; la pared del fondo en z = -4.
+   Muestra lo que de verdad sale por el cable (incluye efectos).
+   ===================================================================== */
+const V = { salida:null, sucio:true, yaw:0, pitch:0.18, dist:10, objetivo:[0, 1.7, -2], fov:52 * Math.PI / 180 };
+// Donde esta cada luz. Se puede cambiar en luces.json con "vista3d": [[x,y,z], ...] en cada grupo.
+const POS3D = {
+  seguidor1:    { pos:[[-6.2, 3.6, 1.6]] },
+  seguidor2:    { pos:[[ 6.2, 3.6, 5.0]] },
+  seguidor3:    { pos:[[ 0.0, 3.9, 10.0]] },
+  frontales:    { pos:[[-4.7, 4.1, 0.6], [4.7, 4.1, 0.6]] },
+  mini:         { pos:[[-2.4, 0.55, -3.2], [2.4, 0.55, -3.2]], piso:true },
+  perimetrales: { pos:[[-3.9, 0.45, -3.75], [-1.3, 0.45, -3.75], [1.3, 0.45, -3.75], [3.9, 0.45, -3.75]] },
+  fondo:        { pos:[[-4.7, 3.9, -3.4], [4.7, 3.9, -3.4]] }
+};
+const sub = (a, b) => [a[0]-b[0], a[1]-b[1], a[2]-b[2]], add = (a, b) => [a[0]+b[0], a[1]+b[1], a[2]+b[2]];
+const mul = (a, k) => [a[0]*k, a[1]*k, a[2]*k], dot = (a, b) => a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+const cross = (a, b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
+const norm = a => { const l = Math.hypot(...a) || 1; return mul(a, 1 / l); };
+
+function camara(){
+  const cp = Math.cos(V.pitch), sp = Math.sin(V.pitch);
+  V.ojo = add(V.objetivo, [Math.sin(V.yaw) * cp * V.dist, sp * V.dist, Math.cos(V.yaw) * cp * V.dist]);
+  V.fw = norm(sub(V.objetivo, V.ojo)); V.rt = norm(cross(V.fw, [0, 1, 0])); V.up = cross(V.rt, V.fw);
+  V.f = (V.h / 2) / Math.tan(V.fov / 2);
+}
+function P(p){
+  const d = sub(p, V.ojo), z = dot(d, V.fw);
+  if (z < 0.2) return null;
+  const k = V.f / z;
+  return [V.w / 2 + dot(d, V.rt) * k, V.h / 2 - dot(d, V.up) * k, z, k];
+}
+function poly(pts, fill, stroke){
+  const q = pts.map(P); if (q.some(x => !x)) return;
+  const c = V.ctx; c.beginPath(); q.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.closePath();
+  if (fill){ c.fillStyle = fill; c.fill(); } if (stroke){ c.strokeStyle = stroke; c.lineWidth = 1; c.stroke(); }
+}
+function caja(x0, x1, y0, y1, z0, z1, frente, lado, techo){
+  poly([[x0,y1,z0],[x1,y1,z0],[x1,y1,z1],[x0,y1,z1]], techo);
+  const caraX = V.ojo[0] < x0 ? x0 : (V.ojo[0] > x1 ? x1 : null);
+  if (caraX != null) poly([[caraX,y0,z0],[caraX,y0,z1],[caraX,y1,z1],[caraX,y1,z0]], lado);
+  poly([[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]], frente);
+}
+function linea(a, b, color, ancho){
+  const p = P(a), q = P(b); if (!p || !q) return;
+  const c = V.ctx; c.strokeStyle = color; c.lineWidth = ancho || 1; c.beginPath(); c.moveTo(p[0], p[1]); c.lineTo(q[0], q[1]); c.stroke();
+}
+
+/* Color real de un grupo segun los canales que salen por el cable */
+function colorGrupo(g){
+  const s = V.salida; if (!s) return null;
+  const ch = g.canales || {}, b = g.direccion - 1, v = n => n ? (s[b + n - 1] || 0) : 0;
+  const dim = ch.dimmer ? v(ch.dimmer) / 255 : 1, w = v(ch.w);
+  const r = Math.min(255, v(ch.r) + w), gg = Math.min(255, v(ch.g) + w * 0.9), bb = Math.min(255, v(ch.b) + w * 0.75);
+  const i = dim * Math.max(r, gg, bb) / 255;
+  return { r, g:gg, b:bb, i, pan: ch.pan ? v(ch.pan) : null, tilt: ch.tilt ? v(ch.tilt) : null };
+}
+const rgba = (c, a) => `rgba(${c.r|0},${c.g|0},${c.b|0},${a})`;
+
+function brillo(punto, radio, c, fuerza, aplastar){
+  const p = P(punto); if (!p || c.i <= 0.01) return;
+  const ctx = V.ctx, R = radio * p[3];
+  ctx.save(); ctx.translate(p[0], p[1]); if (aplastar) ctx.scale(1, aplastar);
+  const gr = ctx.createRadialGradient(0, 0, 0, 0, 0, R);
+  gr.addColorStop(0, rgba(c, 0.85 * c.i * fuerza)); gr.addColorStop(0.45, rgba(c, 0.35 * c.i * fuerza)); gr.addColorStop(1, rgba(c, 0));
+  ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+}
+function haz(desde, hasta, c, apertura){
+  const a = P(desde), b = P(hasta); if (!a || !b || a[2] < 1 || c.i <= 0.01) return;
+  const largo = Math.hypot(...sub(hasta, desde)), rb = Math.max(4, apertura * largo * b[3]), ra = Math.max(1.5, 0.08 * a[3]);
+  const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1, nx = -dy / l, ny = dx / l;
+  const ctx = V.ctx, gr = ctx.createLinearGradient(a[0], a[1], b[0], b[1]);
+  gr.addColorStop(0, rgba(c, 0.5 * c.i)); gr.addColorStop(1, rgba(c, 0.08 * c.i));
+  ctx.fillStyle = gr; ctx.beginPath();
+  ctx.moveTo(a[0] + nx * ra, a[1] + ny * ra); ctx.lineTo(b[0] + nx * rb, b[1] + ny * rb);
+  ctx.lineTo(b[0] - nx * rb, b[1] - ny * rb); ctx.lineTo(a[0] - nx * ra, a[1] - ny * ra); ctx.closePath(); ctx.fill();
+}
+/* Donde choca un rayo: piso del salon, tarima, pared del fondo o techo */
+function choque(o, d){
+  let mejor = 16;
+  const prueba = (t, ok) => { if (t > 0.05 && t < mejor && ok) mejor = t; };
+  if (d[1] < 0){
+    const t1 = (0.4 - o[1]) / d[1], p1 = add(o, mul(d, t1)); prueba(t1, Math.abs(p1[0]) <= 5 && p1[2] >= -4 && p1[2] <= 0);
+    const t0 = (0 - o[1]) / d[1], p0 = add(o, mul(d, t0)); prueba(t0, !(Math.abs(p0[0]) <= 5 && p0[2] >= -4 && p0[2] <= 0));
+  }
+  if (d[2] < 0) prueba((-4 - o[2]) / d[2], true);
+  if (d[1] > 0) prueba((4.6 - o[1]) / d[1], true);
+  return { p: add(o, mul(d, mejor)), piso: d[1] < 0 && Math.abs(add(o, mul(d, mejor))[1]) < 0.45 };
+}
+/* Direccion aproximada de una cabeza movil a partir de pan y tilt */
+function direccion(pos, pan, tilt, piso){
+  const casa = Math.atan2(0 - pos[0], -1.5 - pos[2]);            // mira hacia el centro del escenario
+  const a = casa + (pan - 128) / 128 * (Math.PI / 2);
+  const th = tilt / 255 * Math.PI * 0.75;
+  return norm([Math.sin(a) * Math.sin(th), piso ? Math.cos(th) : -Math.cos(th), Math.cos(a) * Math.sin(th)]);
+}
+
+function dibujar3D(){
+  const cv = $('cv3d'); if (!cv || $('vista').classList.contains('oculta') || !conf) return;
+  const dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight;
+  if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)){ cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+  const ctx = V.ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  V.w = W; V.h = H; camara();
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = '#050608'; ctx.fillRect(0, 0, W, H);
+
+  // --- Sala ---
+  poly([[-8,0,0],[8,0,0],[8,0,12],[-8,0,12]], '#0d0e12');                       // piso del salon
+  poly([[-5,0.4,-4],[5,0.4,-4],[5,4.6,-4],[-5,4.6,-4]], '#15171d');               // pared del fondo
+  for (let x = -8.6; x < 5; x += 0.9){                                              // listones en diagonal
+    linea([Math.max(-5, x), 0.4 + Math.max(0, -5 - x), -3.99], [Math.min(5, x + 4.2), 0.4 + Math.min(4.2, 5 - x), -3.99], '#262a33', 1);
+    linea([Math.min(5, -x), 0.4 + Math.max(0, -5 - x), -3.99], [Math.max(-5, -x - 4.2), 0.4 + Math.min(4.2, 5 - x), -3.99], '#262a33', 1);
+  }
+  caja(-5, 5, 0, 0.4, -4, 0, '#1c1f27', '#16181e', '#22252e');                     // tarima
+  for (let x = -4.6; x <= 4.6; x += 0.55) linea([x, 4.6, -3.6], [x, 4.0 + 0.3 * Math.sin(x * 3), -3.6], '#3a3529', 1); // cuerdas con ampolletas
+  poly([[-1.3,1.6,-3.9],[1.3,1.6,-3.9],[1.3,3.0,-3.9],[-1.3,3.0,-3.9]], '#1d2b3a', '#3a4b60');  // pantalla karaoke
+  caja(-2.4, -0.9, 0.4, 1.3, -3.4, -2.6, '#191b22', '#14161b', '#20232b');         // bateria
+  caja(1.8, 3.8, 0.4, 1.5, -2.9, -2.2, '#1a1d25', '#14161b', '#2a2e38');           // cabina DJ
+  caja(-7.0, -6.0, 0, 4.6, -0.6, 0.6, '#14161c', '#101217', '#1b1e25');           // columna izquierda
+  caja(6.0, 7.0, 0, 4.6, -0.6, 0.6, '#14161c', '#101217', '#1b1e25');             // columna derecha
+  poly([[-6.9,1.4,0.61],[-6.1,1.4,0.61],[-6.1,3.0,0.61],[-6.9,3.0,0.61]], '#1b2a40'); // pantallas de las columnas
+  poly([[6.1,1.4,0.61],[6.9,1.4,0.61],[6.9,3.0,0.61],[6.1,3.0,0.61]], '#1b2a40');
+
+  // --- Luces (se suman como luz real) ---
+  ctx.globalCompositeOperation = 'lighter';
+  const marcas = [];
+  conf.grupos.forEach(g => {
+    const def = POS3D[g.id] || {}, posiciones = g.vista3d || def.pos || [], c = colorGrupo(g);
+    if (!c) return;
+    posiciones.forEach(pos => {
+      marcas.push({pos, c});
+      if (g.id === 'perimetrales'){                                       // PAR en el suelo: pintan la pared hacia arriba
+        haz(pos, [pos[0], 2.6, -3.95], c, 0.35);
+        brillo([pos[0], 1.9, -3.98], 1.9, c, 1);
+      } else if (g.id === 'fondo'){                                      // focos arriba que pintan la pared
+        haz(pos, [pos[0] * 0.55, 2.2, -3.95], c, 0.3);
+        brillo([pos[0] * 0.55, 2.3, -3.98], 2.8, c, 0.9);
+      } else if (g.id === 'frontales'){                                  // frontales: blanco de frente al escenario
+        const blanco = [pos[0] * 0.25, 0.4, -1.4];
+        haz(pos, blanco, c, 0.2); brillo(blanco, 2.2, c, 0.9, 0.35);
+      } else if (c.pan != null && c.tilt != null){                       // cabezas moviles
+        const d = direccion(pos, c.pan, c.tilt, def.piso), h = choque(pos, d);
+        haz(pos, h.p, c, 0.09); brillo(h.p, 0.9, c, 1.1, h.piso ? 0.38 : 1);
+      }
+    });
+  });
+
+  // --- Los equipos (puntitos) ---
+  ctx.globalCompositeOperation = 'source-over';
+  marcas.forEach(({pos, c}) => {
+    const p = P(pos); if (!p || p[2] < 2) return;
+    const r = Math.min(7, Math.max(3, 0.16 * p[3]));
+    ctx.fillStyle = c.i > 0.02 ? rgba({r:Math.max(c.r,60), g:Math.max(c.g,60), b:Math.max(c.b,60)}, 1) : '#3a3f4b';
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  });
+  if (!V.salida){ ctx.fillStyle = '#8a91a0'; ctx.font = '14px system-ui'; ctx.fillText('Esperando datos del Dell…', 14, H - 14); }
+  V.sucio = false;
+}
+
+/* Girar con el dedo, centrar, tamaño, ocultar */
+(() => {
+  const cv = $('cv3d'); let last = null;
+  cv.addEventListener('pointerdown', e => { last = [e.clientX, e.clientY]; cv.setPointerCapture(e.pointerId); });
+  cv.addEventListener('pointermove', e => {
+    if (!last) return;
+    V.yaw = Math.max(-1.1, Math.min(1.1, V.yaw - (e.clientX - last[0]) * 0.006));
+    V.pitch = Math.max(0.03, Math.min(0.9, V.pitch + (e.clientY - last[1]) * 0.004));
+    last = [e.clientX, e.clientY]; V.sucio = true;
+  });
+  const fin = () => last = null; cv.addEventListener('pointerup', fin); cv.addEventListener('pointercancel', fin);
+  cv.addEventListener('wheel', e => { e.preventDefault(); V.dist = Math.max(6, Math.min(22, V.dist + e.deltaY * 0.01)); V.sucio = true; }, {passive:false});
+  const vp = JSON.parse(localStorage.getItem('krb_vista') || '{"oculta":false,"grande":false}');
+  const aplicar = () => {
+    $('vista').classList.toggle('oculta', vp.oculta);
+    $('vista').style.setProperty('--vh', vp.grande ? 'min(60vh,560px)' : (window.innerWidth < 640 ? '200px' : '300px'));
+    $('vOcultar').textContent = vp.oculta ? 'Mostrar vista 3D' : 'Ocultar';
+    $('vTam').style.display = $('vReset').style.display = vp.oculta ? 'none' : '';
+    $('vTam').textContent = vp.grande ? 'Más chica' : 'Más grande';
+    localStorage.setItem('krb_vista', JSON.stringify(vp)); V.sucio = true;
+  };
+  $('vOcultar').onclick = () => { vp.oculta = !vp.oculta; aplicar(); };
+  $('vTam').onclick = () => { vp.grande = !vp.grande; aplicar(); };
+  $('vReset').onclick = () => { V.yaw = 0; V.pitch = 0.18; V.dist = 10; V.sucio = true; };
+  window.addEventListener('resize', aplicar);
+  aplicar();
+  (function cuadro(){ if (V.sucio) dibujar3D(); requestAnimationFrame(cuadro); })();
+})();
+/* Mientras la vista esta abierta, pide al Dell lo que sale por el cable ~7 veces por segundo */
+async function sondearVista(){
+  if (!$('vista').classList.contains('oculta') && !document.hidden && !pidiendo){
+    try { pintarEstado(await api('/api/estado')); } catch(e){}
+  }
+  setTimeout(sondearVista, 150);
+}
+
+/* ---------- Inicio ---------- */
+(async () => {
+  try { conf = await api('/luces.json'); }
+  catch(e){ if (!pidiendo) document.querySelector('main').innerHTML = '<p class="help">No se pudo leer luces.json desde el Dell. ¿Está abierto INICIAR.bat?</p>'; return; }
+  try { datos = await api('/api/datos'); if (!datos.calibracion) datos.calibracion = {}; } catch(e){}
+  conf.grupos.forEach(g => zonas[g.id] = {color:null, intensidad:0});
+  pintarDirecciones(); pintarTodo();
+  sondear(); setInterval(sondear, 3000); sondearVista(); V.sucio = true;
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+LUCES KRB - suite de iluminacion de Mercado Kennedy
+====================================================
+
+INSTALAR (una vez, en el Dell)
+  1. Doble clic en INSTALAR.bat
+     - Copia la suite a C:\Users\<usuario>\KRB_Luces
+     - Hace que arranque sola cada vez que se prende Windows
+     - La abre de inmediato (ventana minimizada)
+  2. Desde ahi en adelante se usa la carpeta C:\Users\<usuario>\KRB_Luces
+
+USAR
+  - En el iPad o el celular (mismo WiFi): abrir la direccion que muestra la
+    ventana de la suite, por ejemplo http://192.168.1.50:8080
+  - Safari > Compartir > "Agregar a inicio" deja un icono como una app.
+
+ACCESO DESDE INTERNET (una vez, en el Dell)
+  - Doble clic en CONFIGURAR_INTERNET.bat y seguir los pasos:
+    clave, programa de Cloudflare, iniciar sesion en Cloudflare,
+    direccion luces.krbstage.cl (basta presionar Enter).
+  - Despues el tunel se levanta solo junto con la suite.
+
+AJUSTES
+  - luces.json: luces, direcciones DMX, canales, colores, escenas, clave.
+    Editar con el Bloc de notas y luego cerrar y abrir INICIAR.bat.
+  - datos.json: calibracion del mapa (la crea la pestana Seguir). No borrar.
