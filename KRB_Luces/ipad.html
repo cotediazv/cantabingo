@@ -1611,9 +1611,10 @@ const JUEGOS = [
     { id:'rosko_30s', nombre:'Quedan 30 s', detalle:'Fondo rojo suave', g:() => ({...pared('rojo', 35), ...cab('escenario', 50)}) },
     { id:'rosko_10s', nombre:'Quedan 10 s', detalle:'El rojo parpadea (estrobo)', g:() => ({...pared('rojo', 35), ...cab('escenario', 50)}), estrobo:['perimetrales', 'fondo'] },
     // Correcta: verde 2 s y vuelve a como estaba (pregunta, 30 s o 10 s), porque el reloj sigue corriendo
-    { id:'rosko_correcta', nombre:'Correcta', detalle:'Pared verde 2 s y vuelve a como estaba', g:() => ({...BASE(), ...pared('verde', 100)}), luego:[2, 'previo'] },
-    { id:'rosko_incorrecta', nombre:'Incorrecta', detalle:'Pared roja 2 s', g:() => ({...BASE(), ...pared('rojo', 100)}), luego:[2, 'base_juegos'] },
-    { id:'rosko_pasa', nombre:'Pasa palabra', igual:'base_juegos' },
+    // Duracion de los colores del Rosko: 1 s (Cote, rev 219)
+    { id:'rosko_correcta', nombre:'Correcta', detalle:'Pared verde 1 s y vuelve a como estaba', g:() => ({...BASE(), ...pared('verde', 100)}), luego:[1, 'previo'] },
+    { id:'rosko_incorrecta', nombre:'Incorrecta', detalle:'Pared roja 1 s', g:() => ({...BASE(), ...pared('rojo', 100)}), luego:[1, 'base_juegos'] },
+    { id:'rosko_pasa', nombre:'Pasa palabra', detalle:'Pared blanca 1 s', g:() => ({...BASE(), ...pared('blanco', 100)}), luego:[1, 'base_juegos'] },
     { id:'rosko_puntajes', nombre:'Puntajes', detalle:'Todo abajo, pared en naranja; cabezas al escenario', g:() => ({...pared('ambar', 100), ...cab('escenario', 50)}) },
     { id:'rosko_tiempo', nombre:'Se acabó el reloj', detalle:'Escenario apagado, solo las cabezas móviles', g:() => cab('escenario', 50) },
     { id:'rosko_ganador', nombre:'Ganador (celebración)', igual:'celebracion_ganador' },
@@ -1868,8 +1869,8 @@ function recorridoDemo(n, encadenado){
   if (!encadenado){
     demoUltimo = n;
     if (ROSKO_ENTRA.includes(n)){ camDemo.cerca = true; camDemo.corte = true; camDemo.flashes = []; }
-    // incorrecta: la camara se queda 2 s en la cara para que se vea el rojo (Cote, rev 202) y despues los flashazos
-    else if (ROSKO_SALE.includes(n)){ if (camDemo.cerca) iniciarFlashazos(n === 'rosko_incorrecta' ? 2000 : 0); camDemo.cerca = false; }
+    // incorrecta / pasa: la camara se queda en la cara mientras dura el color (1 s, Cote rev 202 y 219) y despues los flashazos
+    else if (ROSKO_SALE.includes(n)){ if (camDemo.cerca) iniciarFlashazos(n === 'rosko_incorrecta' || n === 'rosko_pasa' ? 1000 : 0); camDemo.cerca = false; }
     else if (!ROSKO_SIGUE.includes(n)){ camDemo.cerca = false; }
   }
   let m = momentoPorId(n); const nombres = [n]; while (m && m.igual){ nombres.push(m.igual); m = momentoPorId(m.igual); }
