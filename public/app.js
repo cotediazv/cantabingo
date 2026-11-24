@@ -1269,7 +1269,7 @@ views.jugar = async (sid) => {
     roscoId = st.roscoId;
     drawRosco();
     roscoEs = new EventSource(`/api/wheels/${roscoId}/events`);
-    roscoEs.onmessage = (e) => { rosco = { ...JSON.parse(e.data), gotAt: Date.now() }; drawRosco(); crowdSoon(); };
+    roscoEs.onmessage = (e) => { const d = JSON.parse(e.data); if (d.closed || !d.players) { stopRosco(); return; } rosco = { ...d, gotAt: Date.now() }; drawRosco(); crowdSoon(); }; // un rosko borrado avisa «closed»
     // Tocar una alternativa: queda marcada al instante y se envía; solo se puede responder una vez por pregunta
     $('#prosco').onclick = async (e) => {
       const b = e.target.closest('[data-crowd]');
@@ -2191,6 +2191,7 @@ async function route() {
   app.onclick = null;
   const [name, arg] = location.hash.replace(/^#\/?/, '').split('/');
   const screen = !arg && (name === 'gc' || name === 'obs') ? 'escena' : name;
+  document.body.dataset.view = screen || 'home'; // qué vista es (el celular del público lleva el diseño nuevo: tema-celular.css)
   const view = views[screen || 'home'] || views.home;
   window.scrollTo(0, 0);
   try { cleanup = await view(arg); } catch (e) {
