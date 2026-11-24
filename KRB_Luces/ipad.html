@@ -112,12 +112,15 @@
   .vista{margin:0 20px 14px;position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#050608}
   .vista canvas{display:block;width:100%;height:var(--vh,300px);touch-action:none;cursor:grab}
   .vista.oculta canvas{display:none}
+  /* En Seguir: la vista 3D queda fija arriba mientras se usa el mapa, para ver las luces moverse en tiempo real */
+  body.en-seguir .vista{position:sticky;top:0;z-index:4;box-shadow:0 8px 20px #000c}
+  body.en-seguir .vista canvas{height:min(var(--vh,300px),34vh)}
   .vista .bar{position:absolute;top:8px;left:10px;right:8px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
   .vista .bar span{font-size:12px;color:#ffffffa0;background:#0008;padding:4px 8px;border-radius:8px}
   .vista .bar div{display:flex;gap:6px;pointer-events:auto}
   .vista .bar button{border:0;background:#000a;color:#fff;border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer}
   .vista.oculta .bar{position:static;padding:8px 10px}
-  @media (max-width:640px){.vista{margin:0 14px 10px}}
+  @media (max-width:640px){.vista{margin:0 14px 10px}.vista .bar span{display:none}.vista .bar{justify-content:flex-end}}
   .toast{position:fixed;left:50%;top:18px;transform:translate(-50%,-80px);background:#232733;border:1px solid var(--line);padding:10px 18px;border-radius:999px;font-size:15px;transition:.25s;opacity:0;z-index:9}
   .toast.show{transform:translate(-50%,0);opacity:1}
 </style>
@@ -634,6 +637,11 @@ $('blackout').onclick = async () => {
 
 /* ---------- Pestanas ---------- */
 function abrirTab(id){
+  const estabaEnSeguir = document.body.classList.contains('en-seguir');
+  document.body.classList.toggle('en-seguir', id === 'seguir');
+  if (id === 'seguir' && !estabaEnSeguir) $('vSalon').click();       // al entrar: ver todo el salon con las cabezas
+  if (id !== 'seguir' && estabaEnSeguir) $('vReset').click();        // al salir: volver a la vista del escenario
+  V.sucio = true;
   document.querySelectorAll('nav button').forEach(x => x.classList.toggle('act', x.dataset.t === id));
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('act', t.id === id));
   if (id === 'probar') pintarCanales();
@@ -1034,8 +1042,9 @@ function dibujar3D(){
   $('vTam').onclick = () => { vp.grande = !vp.grande; aplicar(); };
   $('vReset').onclick = () => { V.objetivo = [0, 1.7, -2]; V.yaw = giroSalon() * 0.6; V.pitch = 0.2; V.dist = 11; V.sucio = true; };
   $('vSalon').onclick = () => {                         // vista desde arriba de todo el salon, con las 3 columnas
-    V.objetivo = deSalon(-1, SALON.largo * 0.42);
-    V.yaw = giroSalon() + (giroSalon() < 0 ? 1.25 : -1.25); V.pitch = 0.75; V.dist = SALON.largo * 1.25; V.sucio = true;
+    // Misma orientacion que el mapa de Seguir: escenario a la izquierda, cocinas al fondo de la imagen, pasillo adelante.
+    V.objetivo = deSalon(0, SALON.largo * 0.4);
+    V.yaw = giroSalon() + (giroSalon() < 0 ? 1.4 : -1.4); V.pitch = 0.85; V.dist = SALON.largo * 0.85; V.sucio = true;
   };
   window.addEventListener('resize', aplicar);
   aplicar();
