@@ -997,8 +997,12 @@ views.jugar = async (sid) => {
     const c = rosco.players[rosco.turn];
     const reveal = ''; // en el celular no se muestra la respuesta correcta: solo si la propia alternativa fue verde o roja
     // Pedido de Cote (21 nov): el ganador de la Trivia del Rosko también en los celulares (y si es esta persona, ¡ganaste!)
-    const cw = rosco.crowdWinner;
-    const crowdWin = cw ? (cw.none ? '<div class="prosco-win">🏅 Trivia del Rosko<small>Esta vez nadie sumó puntos</small></div>'
+    const cw0 = rosco.crowdWinner;
+    // Mientras gira la «tómbola» del ganador de la Trivia en pantalla, el celular no adelanta el nombre (Cote, 24 nov)
+    const cwRollLeft = cw0 && !cw0.none && cw0.rollMs ? cw0.rollMs - ((rosco.now || Date.now()) - cw0.at) : 0;
+    if (cwRollLeft > 200) { clearTimeout(window.__pcwT); window.__pcwT = setTimeout(() => { if (rosco && rosco.crowdWinner === cw0) { rosco = { ...rosco, now: (rosco.now || Date.now()) + cwRollLeft + 100 }; drawRosco(); } }, cwRollLeft + 100); }
+    const cw = cwRollLeft > 200 ? null : cw0;
+    const crowdWin = cwRollLeft > 200 ? '<div class="prosco-win">🥁 Trivia del Rosko<small>¡Ya viene el ganador! Mira la pantalla</small></div>' : cw ? (cw.none ? '<div class="prosco-win">🏅 Trivia del Rosko<small>Esta vez nadie sumó puntos</small></div>'
       : `<div class="prosco-win">🏅 ${esc(cw.name)}<small>${String(cw.name).toLowerCase() === String(me.name || '').toLowerCase() ? '¡Ganaste la Trivia del Rosko!' : '¡Ganó la Trivia del Rosko!'} ${cw.score} puntos</small></div>`) : '';
     const body = crowdWin + (rosco.winner ? `<div class="prosco-win">🏆 ${esc(rosco.winner.name)}<small>${rosco.winner.full ? '¡Completó el rosko!' : '¡Ganó El Rosko!'}</small></div>`
       : rosco.tie ? `<div class="prosco-wait">Empate entre ${rosco.tie.names.map(esc).join(' y ')}. Se define por sorteo.</div>`

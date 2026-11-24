@@ -218,6 +218,8 @@
       $('#w-crowd').hidden = !!st.crowdWinner;
       $('#w-crowd-res').hidden = !st.crowdWinner;
       const many = (n, one, more) => `${n} ${n === 1 ? one : more}`; // «1 acierto», «2 aciertos»
+      const cwRoll = st.crowdWinner && !st.crowdWinner.none && st.crowdWinner.rollMs && Date.now() + (st.now ? st.now - Date.now() : 0) - st.crowdWinner.at < st.crowdWinner.rollMs;
+      if (cwRoll) { $('#w-crowd-res').innerHTML = window.annHtml('🥁 Trivia del Rosko', ['Sorteando en pantalla…'], ['El nombre sale aquí cuando se detiene']); clearTimeout(window.__cwT); window.__cwT = setTimeout(() => render(), st.crowdWinner.rollMs - (st.now - st.crowdWinner.at) + 300); } else
       if (st.crowdWinner) $('#w-crowd-res').innerHTML = st.crowdWinner.none ? window.annHtml('🏅 Trivia del Rosko', ['Nadie sumó puntos'], [`Jugaron ${many(st.crowdWinner.players, 'persona', 'personas')}`])
         : window.annHtml('🏅 Premio especial · Ganó la Trivia del Rosko', [st.crowdWinner.name], [`${many(st.crowdWinner.score, 'punto', 'puntos')} · ${many(st.crowdWinner.hits, 'acierto', 'aciertos')}`, `Jugaron ${many(st.crowdWinner.players, 'persona', 'personas')}`]);
       // Pedido de Cote (21 nov): al final, sí o sí se muestra el ganador de la Trivia antes de seguir con lo que viene
@@ -237,7 +239,8 @@
       $('#w-show').classList.toggle('on', !!st.onScreen);
       $('#w-show').disabled = step !== 1 || !!st.rankDue;
       // Ranking de la Trivia del Rosko (pedido de Cote): se despliega en la pantalla del local y a un costado del GC
-      $('#w-rank').textContent = st.rank ? '🏅 Recoger ranking (está en pantalla)' : st.rankDue ? `📊 Terminaron ${st.rankEvery || 2} rondas: despliega el ranking de la Trivia (obligatorio)` : '🏅 Desplegar ranking de la Trivia (top 10)';
+      $('#w-rank').disabled = !st.rank && !!st.rankLate; // últimos 60 s: el ranking se revela al final (Cote, 24 nov)
+      $('#w-rank').textContent = st.rank ? '🏅 Recoger ranking (está en pantalla)' : st.rankLate ? '🔒 Últimos 60 segundos: el ranking se revela al final' : st.rankDue ? `📊 Terminaron ${st.rankEvery || 2} rondas: despliega el ranking de la Trivia (obligatorio)` : '🏅 Desplegar ranking de la Trivia (top 10)';
       $('#w-rank').classList.toggle('on', !!st.rank);
       $('#w-rank').classList.toggle('due', !!st.rankDue); // paso obligatorio cada 2 rondas (pedido de Cote, 21 nov)
       if (st.rankDue && !st.runningSince) $('#w-question').innerHTML = `<b>📊 Terminaron ${st.rankEvery || 2} rondas.</b> Antes de la próxima pregunta, despliega el ranking de la Trivia del Rosko en pantalla (botón de abajo).`;
@@ -528,6 +531,26 @@
             <small>Escanea el código QR con tu celular y prepárate</small></div></div>` : '';
         };
         if (left <= 0) { if (wonBy !== `${key}|gone`) gone(); return; }
+        // La «tómbola» antes del nombre (pedido de Cote, 24 nov): redoble y los mejores pasando, cada vez más lento
+        const rollLeft = cw.none || !cw.roll ? 0 : (cw.rollMs || 0) - (st.now - cw.at);
+        if (rollLeft > 200) {
+          if (wonBy === `${key}|roll`) return;
+          wonBy = `${key}|roll`;
+          const names = cw.roll.length > 1 ? cw.roll : [cw.name, cw.name];
+          $('#pw').innerHTML = full ? `<div class="win-screen cw-roll"><div class="win-card"><span class="win-trophy">🥁</span><span class="win-text">Y el ganador de la Trivia del Rosko es…</span><span class="win-name cw-name"></span></div></div>`
+            : `<div class="rosco-winlow cw-roll"><span class="rosco-winlow-tag">${window.sinEmoji('🥁 La Trivia del Rosko')}</span><b class="cw-name"></b><small>Y el ganador es…</small></div>`;
+          if (full) sfx.roll(true);
+          let i = 0; let wait = 70; const t0 = Date.now();
+          const spin = () => {
+            const el = $('#pw .cw-name'); if (!el || wonBy !== `${key}|roll`) return;
+            const n = names[i++ % names.length]; el.textContent = n; el.style.setProperty('--n', n.length);
+            wait = Math.min(420, wait * 1.07);
+            if (Date.now() - t0 + wait < rollLeft) winTimer = setTimeout(spin, wait);
+          };
+          spin();
+          clearTimeout(shrinkTimer); shrinkTimer = setTimeout(() => { if (full) sfx.roll(false); onWheel({ ...st, now: st.now + rollLeft + 50 }); }, rollLeft + 50);
+          return;
+        }
         winTimer = setTimeout(gone, left);
         if (wonBy === key) return;
         wonBy = key;

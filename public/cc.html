@@ -535,7 +535,7 @@ function renderRosco(w) {
     if (!w.crowdWinner) o += btn('🏅 Mostrar ganador de la Trivia del Rosko', 'wheel', d('x', 'crowdwin'), 'big primary');
     else o += w.crowdWinner.none ? ann('🏅 Trivia del Rosko', ['Nadie sumó puntos'], ['Jugaron ' + many(w.crowdWinner.players, 'persona', 'personas')]) : ann('🏅 Premio especial · Ganó la Trivia del Rosko', [w.crowdWinner.name], [many(w.crowdWinner.score, 'punto', 'puntos') + ' · ' + many(w.crowdWinner.hits, 'acierto', 'aciertos'), 'Jugaron ' + many(w.crowdWinner.players, 'persona', 'personas')]);
   }
-  if (!(w.rankDue && !w.rank)) o += btn(w.rank ? '🏅 Recoger ranking (está en pantalla)' : '🏅 Desplegar ranking de la Trivia (top 10)', 'roscoRank', '', 'big' + (w.rank ? ' on' : '')); // con el ranking obligatorio, un solo botón (el de arriba)
+  if (!(w.rankDue && !w.rank)) o += btn(w.rank ? '🏅 Recoger ranking (está en pantalla)' : w.rankLate ? '🔒 Últimos 60 segundos: el ranking se revela al final' : '🏅 Desplegar ranking de la Trivia (top 10)', 'roscoRank', '', 'big' + (w.rank ? ' on' : ''), !w.rank && w.rankLate); // con el ranking obligatorio, un solo botón (el de arriba)
   if (w.rank && w.winAccepted) o += rankAnn(w.rank, w.rankPlayers || 0, true); // con el ganador aceptado, también al final
   // Pedido de Cote (21 nov): al final, sí o sí se muestra el ganador de la Trivia antes de seguir (sin menú hasta eso)
   o += '</div>' + (w.winAccepted && !w.crowdWinner ? '' : nav('rosco', started && !w.winAccepted)) + foot();
