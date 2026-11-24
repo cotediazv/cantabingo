@@ -68,3 +68,9 @@ html.t2 #figsplash .fs-grid i.x { background: var(--t-c, var(--t-foco)); box-sha
 html.t2 #vroll .vr-card { border-top-color: var(--t-c, var(--t-foco)); }
 html.t2 #vroll small { font-family: var(--t-mono); color: var(--t-foco); }
 html.t2 #vroll b, html.t2 #vroll li { font-family: var(--t-disp); font-weight: 800; letter-spacing: .01em; }
+
+/* «Cartón al centro» (Cote, 24 nov): letras y colores del diseño nuevo */
+html.t2 #carton .ct-card { border-top-color: var(--t-c, var(--t-foco)); clip-path: polygon(0 0, 100% 0, 100% calc(100% - 3vh), calc(100% - 3vh) 100%, 0 100%); }
+html.t2 #carton .ct-title { font-family: var(--t-mono); font-weight: 700; color: var(--t-foco); letter-spacing: .12em; }
+html.t2 #carton .ct-small, html.t2 #carton .ct-lines p { font-family: var(--t-txt); }
+html.t2 #carton .ct-big { font-family: var(--t-disp); font-weight: 800; letter-spacing: .01em; }

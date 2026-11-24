@@ -2132,12 +2132,38 @@ views.escena = async () => {
         joinQr({ sorteo: 'br', rueda: 'bl', show: 'above', votojuego: 'br', enpie: 'above' }[show]);
         document.body.classList.add('obs');
       }
+      if (sr) carton(!!sr.carton);
     } finally { busy = false; if (again) { again = false; apply(); } }
+  };
+  // «Cartón al centro» (pregunta 20 de Cote, 24 nov): en una pausa, la franja de abajo se cambia por un cartón mediano al
+  // centro con la información del juego en ese momento, el QR y el nombre del juego
+  let cartonT = null;
+  const carton = (on) => {
+    let el = document.getElementById('carton');
+    if (!on) { if (el) el.remove(); document.body.classList.remove('carton-on'); clearInterval(cartonT); cartonT = null; return; }
+    if (!el) {
+      el = document.createElement('div'); el.id = 'carton';
+      el.innerHTML = `<div class="ct-card"><div class="ct-info"><small class="ct-title"></small><span class="ct-small"></span><b class="ct-big"></b><div class="ct-lines"></div></div><div class="ct-qr">${qr(joinUrl())}<span>Escanea el código QR con tu celular</span></div></div>`;
+      document.body.appendChild(el); document.body.classList.add('carton-on');
+    }
+    const paint = async () => {
+      const c = await api('GET', '/api/carton').catch(() => null);
+      const box = document.getElementById('carton');
+      if (!c || !box) return;
+      box.className = `th-${c.venue}`;
+      const set = (sel, t) => { const x = box.querySelector(sel); if (x && x.textContent !== t) x.textContent = t; };
+      set('.ct-title', window.sinEmoji(c.title)); set('.ct-small', c.small || ''); set('.ct-big', c.big || '');
+      const lines = c.lines.map((l) => `<p>${esc(l)}</p>`).join('');
+      const lb = box.querySelector('.ct-lines'); if (lb.innerHTML !== lines) lb.innerHTML = lines;
+      box.querySelectorAll('.ct-title, .ct-big').forEach((x) => window.fitOneLine(x));
+    };
+    paint();
+    if (!cartonT) cartonT = setInterval(paint, 1500);
   };
   await apply();
   const timer = setInterval(apply, 2000);
   const offAviso = window.onAviso(apply);
-  return () => { clearInterval(timer); offAviso(); if (typeof stop === 'function') stop(); joinQr(); document.body.classList.remove('obs'); };
+  return () => { clearInterval(timer); offAviso(); if (typeof stop === 'function') stop(); joinQr(); carton(false); document.body.classList.remove('obs'); };
 };
 
 // Red de seguridad para los nombres en pantalla: el CSS ya calcula la letra según el largo, pero si un
@@ -2499,6 +2525,30 @@ if (new URLSearchParams(location.search).has('diag')) {
   };
   window.addEventListener('hashchange', () => setTimeout(sync, 300));
   setTimeout(sync, 600);
+})();
+
+// «Cartón al centro» (pregunta 20 de Cote, 24 nov): botón en los paneles de los juegos (arriba, junto a «Refrescar»):
+// en una pausa cambia la franja del GC de OBS por un cartón al centro con la información del juego, el QR y su nombre;
+// el mismo botón lo quita y sale solo cuando cambia lo que está en pantalla
+(() => {
+  const GAMES = /^#\/?(juegos|anfitrion|admin|votoctl|enpiectl|ruedactl|ruedas|sorteoctl)/;
+  let on = false;
+  const paint = () => { const b = document.getElementById('ctl-carton'); if (b) { b.classList.toggle('on', on); b.textContent = on ? '🗂️ Cartón al centro: quitar' : '🗂️ Cartón al centro'; } };
+  const sync = async () => {
+    let b = document.getElementById('ctl-carton');
+    const show = GAMES.test(location.hash || '') && !document.body.classList.contains('full') && !document.body.classList.contains('obs') && !!store.get('adminToken');
+    if (!show) { if (b) b.remove(); return; }
+    if (!b) {
+      b = document.createElement('button'); b.id = 'ctl-carton'; b.type = 'button'; b.className = 'ctl-reload ctl-carton';
+      b.onclick = async () => { try { const r = await api('POST', '/api/carton', { on: !on }); on = !!r.on; paint(); toast(on ? '🗂️ Cartón al centro en el GC' : 'Volvió la franja del GC'); } catch (err) { fail(err); } };
+      document.body.appendChild(b);
+    }
+    const r = await api('GET', '/api/stage').catch(() => null);
+    if (r) on = !!r.carton;
+    paint();
+  };
+  window.addEventListener('hashchange', () => setTimeout(sync, 300));
+  setTimeout(sync, 700); setInterval(() => { if (document.getElementById('ctl-carton') && !document.hidden) sync(); }, 4000);
 })();
 
 // ---------- El botón que sigue: siempre verde y siempre en el mismo lugar ----------

@@ -181,7 +181,11 @@ function d(k, v) { return ' data-' + k + '="' + h(v) + '"'; }
 function howto(title, lines) { var o = '<div class="howto"><b class="t">📢 Instrucciones · ' + h(title) + '</b><ul style="margin:0;padding-left:22px">'; for (var i = 0; i < lines.length; i++) o += '<li>' + lines[i] + '</li>'; return o + '</ul></div>'; }
 function clock(ms) { ms = Math.max(0, ms); var s = Math.ceil(ms / 1000); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
 function ord(n) { return n + '.º lugar'; }
-function topBar(back) { return '<div class="top">' + (back ? '<a href="' + back[0] + '">← ' + back[1] + '</a>' : '') + '<button type="button" onclick="location.reload()">↻ Refrescar</button></div>'; }
+function topBar(back, ct) { return '<div class="top">' + (back ? '<a href="' + back[0] + '">← ' + back[1] + '</a>' : '') + (ct ? cartonBtn() : '') + '<button type="button" onclick="location.reload()">↻ Refrescar</button></div>'; }
+// «Cartón al centro» (pregunta 20 de Cote, 24 nov): en una pausa, el GC de OBS cambia la franja por un cartón al centro
+function cartonBtn() { return '<button type="button" id="ctBtn" data-a="carton">' + (S.carton ? '🗂️ Cartón al centro: quitar' : '🗂️ Cartón al centro') + '</button>'; }
+function paintCt() { var b = $('ctBtn'); if (b) b.innerHTML = S.carton ? '🗂️ Cartón al centro: quitar' : '🗂️ Cartón al centro'; }
+setInterval(function () { if ($('ctBtn')) api('GET', '/api/stage', null, function (e, r) { if (r) { S.carton = !!r.carton; paintCt(); } }); }, 4000);
 function foot() { return '<p class="center" style="margin-top:22px"><a class="btn" href="#/control">🎛️ Centro de control</a></p>'; }
 function bingoName(n) { return String(n || '').replace(/^Los Juegos de /, 'El Bingo de '); }
 function letra(st, v) { var hs = String(st.headers || 'BINGO'); for (var c = 0; c < 5; c++) if (v <= Math.floor(((c + 1) * st.values) / 5)) return hs.charAt(c); return hs.charAt(4); }
@@ -375,7 +379,7 @@ views.bingo = function () {
       api('GET', '/api/sessions/' + s.id + '/host/state', null, function (e2, st) {
         if (e2 || !st || location.hash !== '#/bingo') return;
         if (!st.started && !st.winConfirmed) { go('#/figura'); return; } // el bingo empieza eligiendo la figura
-        var o = topBar(['#/', 'Inicio']);
+        var o = topBar(['#/', 'Inicio'], 1);
         if (st.winConfirmed) { // con el ganador aceptado: el ganador para anunciarlo y lo que viene
           var wn = []; var wc = []; var wp = '';
           for (var wi = 0; wi < (st.results || []).length; wi++) { var rr = st.results[wi]; if (rr.validated && !rr.dismissed && rr.confirmed) { wn.push(rr.name || 'Participante'); wc.push('#' + (st.startNumber + rr.cardNo - 1)); wp = rr.place || ''; } }
@@ -482,7 +486,7 @@ views.sorteoctl = function () {
         var free = 0; for (var i = 0; i < p.connected.length; i++) if (picked.indexOf(p.connected[i]) < 0 && dec.indexOf(p.connected[i]) < 0) free++;
         var lastP = picked[picked.length - 1];
         var rollingR = r.mode !== 'tie' && r.roll && new Date().getTime() + offset < r.roll.at + (r.rollMs || 6000);
-        var o = topBar(['#/', 'Inicio']) + '<h1>Sorteo de concursantes</h1>' +
+        var o = topBar(['#/', 'Inicio'], 1) + '<h1>Sorteo de concursantes</h1>' +
           (rollingR ? '<div class="panel ann"><small>📣 PARA ANUNCIAR</small><span class="ann-t">🎲 Sorteando en pantalla…</span></div>' : picked.length ? ann('🎲 Salió sorteado · ' + picked.length + '.º de 3 para El Rosko', [lastP], [cf[lastP] === 'ok' ? '✅ ¡Confirmó! Que se acerque a nuestro escenario' : '⏳ Esperando que confirme en su celular si quiere jugar']) : '') +
           (!rollingR && dec.length ? '<p class="muted" style="text-align:center">🙅 Prefirieron jugar online (no entran al sorteo): ' + h(dec.join(', ')) + '</p>' : '') +
           '<div class="panel">' +
@@ -510,7 +514,7 @@ function renderRosco(w) {
   W = w;
   var c = w.players[w.turn]; var step = stepOf(w);
   var started = !!w.runningSince; for (var i = 0; i < w.players.length; i++) for (var j = 0; j < w.players[i].status.length; j++) if (w.players[i].status[j] !== 'pending') started = true;
-  var o = topBar(['#/', 'Inicio']);
+  var o = topBar(['#/', 'Inicio'], 1);
   if (!started && !w.winAccepted) o += howto('El Rosko', ROSCO_HOWTO);
   o += '<div class="panel">';
   if (!w.winAccepted) {
@@ -568,7 +572,7 @@ function votoView(want) {
       if (!checked && st.mode !== mode && !st.players.length && st.phase === 'voting') { checked = true; api('POST', '/api/vote/host', { action: 'mode', mode: mode }, function () { load(); }); return; }
       checked = true;
       var isK = mode === 'karaoke'; var name = isK ? festName() : 'El objeto más extraño';
-      var o = topBar(['#/', 'Inicio']);
+      var o = topBar(['#/', 'Inicio'], 1);
       if (st.phase === 'winner' && st.mode === mode) { // con ganador: el ganador para anunciarlo y lo que viene
         o += ann('🏆 Ganó ' + name, [st.winner ? st.winner.name : ''], [st.winner && st.winner.thing ? st.winner.thing : '', st.tie ? st.tie.title + '. ' + st.tie.why : '', isK && st.winner && st.winner.score != null ? 'Nota ' + noteOf(st.winner.score, st.winner.dec) : '', st.second ? '2.º lugar: ' + st.second.name + ' · nota ' + noteOf(st.second.score, st.second.dec) : '']);
         o += nav(want, false) + foot(); render(o); return;
@@ -707,6 +711,7 @@ A.drawMode = function (el) {
 };
 A.gvStart = function () { clearTimeout(goTimer); api('POST', '/api/gamevote/start', null, function (err, r) { if (err) { toast(err); return; } S.gv = r; S.gvVoting = r.id; toast('🗳️ Votación abierta: 30 segundos para votar desde el celular'); refresh(); gvPoll(); }); };
 A.gvReset = function () { clearTimeout(goTimer); api('POST', '/api/gamevote/reset', null, function (err, r) { if (err) { toast(err); return; } S.gv = r; toast('Votación cancelada'); refresh(); }); };
+A.carton = function () { api('POST', '/api/carton', { on: !S.carton }, function (err, r) { if (err) { toast(err); return; } S.carton = !!r.on; paintCt(); toast(S.carton ? '🗂️ Cartón al centro en el GC' : 'Volvió la franja del GC'); }); };
 A.gvGo = function (el) { clearTimeout(goTimer); toGame(el.getAttribute('data-g')); };
 A.gvIntro = function () { clearTimeout(goTimer); act('POST', '/api/gamevote/intro', null, '📢 En pantalla: las reglas y cada juego, antes de votar'); };
 A.gvNext = function () { act('POST', '/api/gamevote/next', null, ''); };

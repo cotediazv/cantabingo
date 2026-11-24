@@ -766,7 +766,7 @@ const setStage = (show) => {
   if (roscoLock(show)) { if (db.stage !== 'rueda') { db.stage = 'rueda'; save(); for (const s of Object.values(db.sessions)) broadcast(s); aviso(); } return false; }
   const changed = db.stage !== show;
   db.stage = show;
-  if (changed) perOff(); // un juego tomó la pantalla: el GC PER sale
+  if (changed) { perOff(); if (db.carton) db.carton.on = false; } // un juego tomó la pantalla: el GC PER y el cartón salen
   save();
   if (changed) for (const s of Object.values(db.sessions)) broadcast(s); // los celulares se enteran del cambio de juego
   if (changed) aviso(); // y las pantallas, al instante
@@ -1158,7 +1158,63 @@ app.post('/api/pub', requireAdmin, async (req, res) => {
   db.pubUrl = url; save(); aviso();
   res.json({ pub: url });
 });
-app.get('/api/stage', (_req, res) => res.json({ show: roscoLock(db.stage) ? 'rueda' : STAGES.includes(db.stage) ? db.stage : 'bingo', per: perMain() }));
+app.get('/api/stage', (_req, res) => res.json({ show: roscoLock(db.stage) ? 'rueda' : STAGES.includes(db.stage) ? db.stage : 'bingo', per: perMain(), carton: !!(db.carton && db.carton.on) }));
+// «Cartón al centro» (pregunta 20 de Cote, 24 nov: «1 lo que recomienda, 2 siempre el QR y el nombre del juego»): en una
+// pausa, el GC de OBS cambia la franja de abajo por un cartón mediano al centro con la información del juego en ese
+// momento, el QR y el nombre del juego. Se pone y se quita con el mismo botón; sale solo cuando cambia lo que está en
+// pantalla. Lo que muestra lo arma cartonInfo() según el juego en pantalla.
+db.carton ||= { on: false };
+const cartonInfo = () => {
+  const s = Object.values(db.sessions)[0];
+  const st = roscoLock(db.stage) ? 'rueda' : db.stage;
+  const out = { on: !!db.carton.on, stage: st, venue: s ? s.theme || 'frida' : 'frida', title: s ? s.name : 'Sala de juegos', lines: [], big: '', small: '' };
+  if (!s) return out;
+  if (st === 'bingo') {
+    const p = db.projects[s.projectId] || {};
+    out.title = String(s.name || '').replace(/^Los Juegos de /, 'El Bingo de ');
+    const v = s.drawn[s.drawn.length - 1];
+    const per = (p.values || 75) / 5;
+    const letter = (x) => (p.format === 'numbers' && p.headers ? String(p.headers)[Math.min(4, Math.floor((x - 1) / per))] || '' : '');
+    out.big = v != null ? `${letter(v)} ${v}`.trim() : '¡Ya comienza!';
+    out.small = v != null ? 'Último número' : 'Pon tu nombre y apellido y participa';
+    if (s.drawn.length > 1) out.lines.push(`Anteriores: ${s.drawn.slice(-6, -1).reverse().join(' · ')}`);
+    const pat = (PATTERNS.byId || {})[(s.patterns || [])[0]];
+    if (pat) out.lines.push(`Figura: ${pat.name}`);
+    out.lines.push(`Van ${s.drawn.length} de ${p.values || 75} · ${Object.keys(s.players || {}).length} participantes`);
+  } else if (st === 'rueda') {
+    out.title = 'El Rosko';
+    const w = Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0];
+    if (w) {
+      const c = w.players[w.turn];
+      out.big = c ? c.name : 'El Rosko'; out.small = c ? 'Es el turno de' : '';
+      for (const x of w.players) out.lines.push(`${x.name}: ${x.status.filter((y) => y === 'hit').length} aciertos · ${Math.ceil(Math.max(0, x.remainingMs) / 1000)} s`);
+    }
+  } else if (st === 'voto') {
+    const v = db.vote || {};
+    out.title = v.mode === 'karaoke' ? (v.title || `El Festival de ${({ kennedy: 'Mercado Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' })[out.venue] || ''}`) : (v.title || 'El objeto más extraño');
+    const id = v.open || v.onstage; const p = (v.players || []).find((x) => x.id === id);
+    out.big = p ? p.name : v.winner ? v.winner.name : '¡Participa!'; out.small = p ? (v.mode === 'karaoke' ? 'En el escenario' : 'Presenta su objeto') : v.winner ? 'Ganó' : '';
+    if (p && p.thing) out.lines.push(p.thing);
+    const done = (v.players || []).filter((x) => x.done).length;
+    if ((v.players || []).length) out.lines.push(`${done} de ${v.players.length} participantes ya pasaron`);
+  } else if (st === 'enpie') {
+    const e = db.enpie || {};
+    out.title = 'El último en pie';
+    const pl = Object.values(e.players || {}); const up = pl.filter((x) => x.up).length;
+    out.big = `${up} de pie`; out.small = e.n ? `Pregunta ${e.n}` : '';
+    out.lines.push(`${pl.length - up} en la banca`);
+  } else {
+    out.title = st === 'juego' ? 'El próximo juego' : st === 'votojuego' ? 'Votación del próximo juego' : st === 'sorteo' ? 'Sorteo de concursantes' : s.name;
+    out.big = 'Escanea el código QR'; out.small = 'con tu celular y participa';
+  }
+  return out;
+};
+app.get('/api/carton', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json(cartonInfo()); });
+app.post('/api/carton', requireAdmin, (req, res) => {
+  db.carton.on = (req.body || {}).on !== false;
+  save(); aviso();
+  res.json(cartonInfo());
+});
 app.post('/api/gcper', requireAdmin, (req, res) => {
   const b = req.body || {};
   const text = b.text != null ? perClean(b.text) : perMain().text;
