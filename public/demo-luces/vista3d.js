@@ -9,7 +9,8 @@ import * as THREE from './lib/three.module.min.js';
 
 let renderer, scene, camera, construido = false;
 const focos = [];            // un foco por equipo: { g, tipo, pos, spot, haz, lente, cuerpo }
-let anilloMarca, animadorObj, artistaObj;
+let anilloMarca, animadorObj, artistaObj, roskoObj;
+const PANT = { tv:null, vert:[], h42:[] };   // pantallas del escenario (para mostrar las de la Sala en el demo)
 
 /* ---------- utilidades ---------- */
 function azar(semilla){ let s = semilla >>> 0; return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -210,7 +211,7 @@ function construir(){
   scene.add(sombra(new THREE.Mesh(geoT, [mat.tarima, mat.madera])));
   const fondo = new THREE.Mesh(new THREE.PlaneGeometry(10, 4.6), mat.fondo); fondo.position.set(0, 2.3, -4); fondo.receiveShadow = true; scene.add(fondo);
   const tv = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 1.25), new THREE.MeshBasicMaterial({ map: texBingo(), color: 0xc8c8c8 }));   // muestra: Bingo
-  tv.position.set(0, 1.97, -3.93); scene.add(tv);
+  tv.position.set(0, 1.97, -3.93); scene.add(tv); PANT.tv = tv;
   // bateria electronica armada, delante de la pantalla (Cote, 24 nov)
   {
     const bat = new THREE.Group(), cromo = new THREE.MeshStandardMaterial({ color: 0x9aa0a8, metalness: 0.9, roughness: 0.3 });
@@ -242,10 +243,11 @@ function construir(){
   [-5.8, 5.8].forEach(x => {
     caja(1.0, 4.3, 1.2, mat.listones, x, 2.15, 0);
     const pant = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 1.4), new THREE.MeshBasicMaterial({ map: texRosko(), color: 0xc8c8c8 }));   // muestra: El Rosko
-    pant.position.set(x, 3.0, 0.61); scene.add(pant);
+    pant.position.set(x, 3.0, 0.61); scene.add(pant); PANT.vert.push(pant);
     // debajo, en las DOS columnas: pantalla de 42" (unos 93 x 52 cm), del ancho del pilar
     const marco = new THREE.Mesh(new THREE.BoxGeometry(0.97, 0.56, 0.05), mat.negro); marco.position.set(x, 1.95, 0.625); scene.add(marco);
-    const t2 = new THREE.Mesh(new THREE.PlaneGeometry(0.93, 0.52), new THREE.MeshBasicMaterial({ map: texKaraoke(), color: 0xc8c8c8 }));  // muestra: Karaoke t2.position.set(x, 1.95, 0.652); scene.add(t2);
+    const t2 = new THREE.Mesh(new THREE.PlaneGeometry(0.93, 0.52), new THREE.MeshBasicMaterial({ map: texKaraoke(), color: 0xc8c8c8 }));  // muestra: Karaoke
+    t2.position.set(x, 1.95, 0.652); scene.add(t2); PANT.h42.push(t2);
   });
   // marco azul, red de cuerdas y lamparas hexagonales
   const barra = (a, b) => { const d = v3(b).sub(v3(a)), m = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, d.length(), 10), mat.azul);
@@ -350,6 +352,32 @@ function construir(){
   const micro = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.2, 8), mat.negro); micro.position.set(0.18, 1.45, 0.15); micro.rotation.x = 0.6; animadorObj.add(micro);
   animadorObj.visible = false; scene.add(animadorObj);
 
+  // --- El Rosko en el escenario (Cote, 24 nov): concursante al centro mirando adelante, atril de microfono,
+  //     pantalla de 20" en un atril con sus preguntas y piso alto del animador al costado derecho (mirando desde el frente) ---
+  roskoObj = new THREE.Group();
+  const conc = new THREE.Group();
+  const ropaC = new THREE.MeshStandardMaterial({ color: 0x17305a, roughness: 0.9 });
+  const cC = sombra(new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 0.85, 6, 12), ropaC)); cC.position.y = 0.62; conc.add(cC);
+  const hC = sombra(new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 12), mat.piel)); hC.position.y = 1.33; conc.add(hC);
+  conc.position.set(0, 0.45, -1.2); roskoObj.add(conc);
+  const palo = (x, z, alto, r) => { const m = sombra(new THREE.Mesh(new THREE.CylinderGeometry(r || 0.015, r || 0.015, alto, 10), mat.negro)); m.position.set(x, 0.45 + alto / 2, z); roskoObj.add(m); return m; };
+  // atril del microfono: el pie va al costado y el brazo llega a la boca (asi no tapa la cara en el plano cerrado)
+  palo(-0.32, -0.8, 1.1);
+  const tramo = (a, b, r) => { const d = v3(b).sub(v3(a)), m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, d.length(), 8), mat.negro);
+    m.position.copy(v3(a).add(d.clone().multiplyScalar(0.5))); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); roskoObj.add(m); };
+  tramo([-0.32, 0.45 + 1.1, -0.8], [-0.07, 0.45 + 1.25, -0.95], 0.011);                   // brazo
+  tramo([-0.07, 0.45 + 1.25, -0.95], [-0.01, 0.45 + 1.28, -1.03], 0.021);                 // microfono
+  palo(0.55, -0.85, 1.0);                                                                  // atril de la pantalla de 20"
+  const p20 = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.28, 0.03), mat.negro);
+  p20.position.set(0.55, 0.45 + 1.12, -0.85); p20.rotation.order = 'YXZ'; p20.rotation.y = Math.atan2(-0.55, -0.35); p20.rotation.x = -0.35; roskoObj.add(p20);
+  const luzP = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.24), new THREE.MeshBasicMaterial({ color: 0x3b6fd8 }));
+  luzP.position.set(0, 0, 0.016); p20.add(luzP);
+  const asiento = sombra(new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.06, 20), mat.negro)); asiento.position.set(3.0, 0.45 + 0.76, -1.3); roskoObj.add(asiento);
+  palo(3.0, -1.3, 0.74, 0.03);                                                             // piso alto del animador
+  const aro = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.012, 6, 20), mat.negro); aro.position.set(3.0, 0.45 + 0.3, -1.3); aro.rotation.x = Math.PI / 2; roskoObj.add(aro);
+  roskoObj.visible = false; scene.add(roskoObj);
+  if (VIVO.activo) prepararPantallasVivo();
+
   // anillo del punto tocado en el mapa de Seguir
   anilloMarca = new THREE.Mesh(new THREE.RingGeometry(0.45, 0.58, 48), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, depthWrite: false }));
   anilloMarca.rotation.x = -Math.PI / 2; anilloMarca.visible = false; scene.add(anilloMarca);
@@ -410,21 +438,93 @@ function render(){
   const enSeguir = document.body.classList.contains('en-seguir');
   const an = V.animador;
   animadorObj.visible = !!an; artistaObj.visible = !an;          // mientras camina el animador, la artista fija no se muestra
+  roskoObj.visible = !!V.rosko;
   if (an){                                                     // camina: posicion, rumbo y piernas en movimiento
     animadorObj.position.set(an.p[0], an.p[1] + Math.abs(Math.sin(an.t * 6)) * 0.03, an.p[2]);
     animadorObj.rotation.y = an.rumbo;
     const sw = an.quieto ? 0 : Math.sin(an.t * 6) * 0.4;            // quieto (hablando en una mesa o en el escenario): piernas juntas
-    const [pi, pd] = animadorObj.userData.piernas; pi.rotation.x = sw; pd.rotation.x = -sw;
-    if (an.quieto) animadorObj.position.y = an.p[1];
+    const [pi, pd] = animadorObj.userData.piernas;
+    if (an.sentado){                                            // sentado en el piso alto (El Rosko): muslos hacia adelante
+      animadorObj.position.y = an.p[1] + 0.19;
+      pi.position.set(-0.1, 0.62, 0.26); pd.position.set(0.1, 0.62, 0.26); pi.rotation.x = pd.rotation.x = Math.PI / 2;
+    } else {
+      pi.position.set(-0.1, 0.42, 0); pd.position.set(0.1, 0.42, 0); pi.rotation.x = sw; pd.rotation.x = -sw;
+      if (an.quieto) animadorObj.position.y = an.p[1];
+    }
   }
   anilloMarca.visible = !!(V.marca && enSeguir);
   if (anilloMarca.visible) anilloMarca.position.set(V.marca[0], V.marca[1] + 0.02, V.marca[2]);
   renderer.render(scene, camera);
+  if (VIVO.activo) moverPantallasVivo(cv);
+}
+
+/* ---------- Pantallas de la Sala en vivo dentro de la 3D (solo demo) ----------
+   Cote (24 nov): pantalla del fondo = pantalla 2; pantallas verticales de las columnas azules = pantalla 3;
+   pantallas de 42" debajo = la transmision (pantalla 1: esta misma vista + el GC encima).
+   Las paginas van en iframes detras del lienzo 3D; la pantalla 3D "abre un hueco" transparente donde se ven,
+   asi lo que esta delante (personas, columnas) las tapa bien. Las direcciones llegan en la direccion de la pagina:
+   ?demo=tv&p2=<pagina pantalla 2>&p3=<pagina pantalla 3>&gc=<pagina del GC> (cada una es opcional). */
+const PQ = new URLSearchParams(location.search);
+// Dentro de la Sala (/demo-luces/) se usan sus paginas (Code 1, rev 188): pantalla 2 y 3 = /#/tablero, GC = /#/escena.
+// "p2=no" (o p3/gc) deja la imagen de muestra.
+const EN_SALA = location.pathname.indexOf('/demo-luces/') >= 0;
+const pag = (k, def) => { const v = PQ.get(k); return v === 'no' ? null : (v || (EN_SALA ? def : null)); };
+const VIVO = { activo: PQ.has('demo'), p2: pag('p2', '/#/tablero'), p3: pag('p3', '/#/tablero'), gc: pag('gc', '/#/escena'), lista: [], cuadro: 0, feeds: [] };
+function prepararPantallasVivo(){
+  const cv = document.getElementById('cv3dgl');
+  const capa = document.createElement('div'); capa.className = 'capa3d'; cv.parentNode.insertBefore(capa, cv);
+  const hueco = new THREE.MeshBasicMaterial({ color: 0x000000, opacity: 0, blending: THREE.NoBlending, fog: false, toneMapped: false });
+  const marco = (mesh, el, w, h) => {
+    el.style.position = 'absolute'; el.style.left = '0'; el.style.top = '0'; el.style.width = w + 'px'; el.style.height = h + 'px';
+    el.style.transformOrigin = '0 0'; el.style.display = 'none';
+    capa.appendChild(el); mesh.material = hueco; VIVO.lista.push({ mesh, el, w, h });
+  };
+  const iframe = (url, w, h) => { const f = document.createElement('iframe'); f.src = url; f.setAttribute('allowtransparency', 'true'); f.tabIndex = -1;
+    f.style.border = '0'; f.style.background = 'transparent'; f.style.width = w + 'px'; f.style.height = h + 'px'; return f; };
+  if (VIVO.p2) marco(PANT.tv, iframe(VIVO.p2, 1920, 1043), 1920, 1043);
+  if (VIVO.p3) PANT.vert.forEach(m => marco(m, iframe(VIVO.p3, 720, 1280), 720, 1280));      // tablero en vertical (720x1280)
+  PANT.h42.forEach(m => {                                     // la transmision: esta vista (copiada cada pocos cuadros) + el GC encima
+    const caja = document.createElement('div'); caja.style.background = '#000'; caja.style.overflow = 'hidden';
+    const c = document.createElement('canvas'); c.width = 384; c.height = 216; c.style.cssText = 'position:absolute;inset:0;width:100%;height:100%'; caja.appendChild(c);
+    if (VIVO.gc){ const f = iframe(VIVO.gc, 1920, 1080); f.style.position = 'absolute'; f.style.left = '0'; f.style.top = '0';
+      f.style.transform = 'scale(' + (640 / 1920) + ')'; f.style.transformOrigin = '0 0'; caja.appendChild(f); }
+    VIVO.feeds.push(c.getContext('2d')); marco(m, caja, 640, 360);
+  });
+}
+const _v = new THREE.Vector3(), _n = new THREE.Vector3(), _c = new THREE.Vector3();
+function moverPantallasVivo(cv){
+  if (VIVO.feeds.length && ++VIVO.cuadro % 3 === 0){            // copia de la transmision para las pantallas de 42"
+    VIVO.feeds.forEach(x => { x.fillStyle = '#000'; x.fillRect(0, 0, 384, 216); x.drawImage(renderer.domElement, 0, 0, 384, 216); });
+  }
+  const W = cv.clientWidth, H = cv.clientHeight, ox = cv.offsetLeft, oy = cv.offsetTop;
+  VIVO.lista.forEach(v => {
+    const g = v.mesh.geometry.parameters, w2 = g.width / 2, h2 = g.height / 2, pts = [];
+    _n.set(0, 0, 1).transformDirection(v.mesh.matrixWorld); v.mesh.getWorldPosition(_c);
+    let ver = _n.dot(_v.copy(camera.position).sub(_c)) > 0;     // de frente a la camara
+    for (const [x, y] of [[-w2, h2], [w2, h2], [w2, -h2], [-w2, -h2]]){
+      if (!ver) break;
+      _v.set(x, y, 0).applyMatrix4(v.mesh.matrixWorld).applyMatrix4(camera.matrixWorldInverse);
+      if (_v.z > -0.05){ ver = false; break; }                  // detras de la camara
+      _v.applyMatrix4(camera.projectionMatrix);
+      pts.push([ox + (_v.x + 1) / 2 * W, oy + (1 - _v.y) / 2 * H]);
+    }
+    if (!ver){ v.el.style.display = 'none'; return; }
+    v.el.style.display = '';
+    v.el.style.transform = homografia(v.w, v.h, pts);
+  });
+}
+// Transformacion CSS que lleva el rectangulo (0,0)-(w,h) a los 4 puntos de la pantalla vista por la camara
+function homografia(w, h, [[x0, y0], [x1, y1], [x2, y2], [x3, y3]]){
+  const dx1 = x1 - x2, dx2 = x3 - x2, dy1 = y1 - y2, dy2 = y3 - y2, sx = x0 - x1 + x2 - x3, sy = y0 - y1 + y2 - y3;
+  const den = dx1 * dy2 - dx2 * dy1 || 1e-9;
+  const g = (sx * dy2 - dx2 * sy) / den, k = (dx1 * sy - sx * dy1) / den;
+  const a = x1 - x0 + g * x1, b = x3 - x0 + k * x3, d = y1 - y0 + g * y1, e = y3 - y0 + k * y3;
+  return 'matrix3d(' + [a / w, d / w, 0, g / w, b / h, e / h, 0, k / h, 0, 0, 1, 0, x0, y0, 0, 1].join(',') + ')';
 }
 
 try {
   const cv = document.getElementById('cv3dgl');
-  renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: 'high-performance' });
+  renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true, preserveDrawingBuffer: VIVO.activo, powerPreference: 'high-performance' });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.35;
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;

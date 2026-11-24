@@ -127,6 +127,10 @@
   // de la zona de las pantallas, por encima de las otras y sin tapar los botones; «✕» la devuelve a su lugar.
   const TOOLS = (n, snd) => `<div class="gm-tools">${snd ? `<button type="button" class="gm-tool" data-snd="${n}" aria-pressed="false"><span>🔇</span><b>Sonido</b></button>` : ''}<button type="button" class="gm-tool" data-big="${n}" aria-pressed="false"><span>⛶</span><b>Grande</b></button></div>`;
   const tabSrc = (mute) => `/?${mute ? 'mudo=1&' : ''}mon=1#/tablero`;
+  // El demo de luces de Code 4 (copia en /demo-luces/): la vista 3D del salón con las pantallas del local en vivo
+  // (fondo del escenario = pantalla 2, columnas = pantalla 3, las de 42" = la transmisión con el GC). Las páginas van
+  // en su versión liviana y sin sonido, como los monitores del GC Master
+  const DEMO3D = () => `/demo-luces/ipad.html?demo=tv&p2=${encodeURIComponent(page('#/tablero'))}&p3=${encodeURIComponent(page('#/tablero'))}&gc=${encodeURIComponent(page('#/escena'))}`;
   const monCtl = (fit) => {
     let snd = null; let big = null; let zone = null; let sig = null;
     const paint = () => {
@@ -347,7 +351,7 @@
       const box = left.querySelector('[data-k="p1box"]'); if (!box) return;
       // Por defecto, la copia del demo de luces de Code 4 que está en la Sala (/demo-luces/, modo «tv»: solo la vista 3D
       // con la cámara sobre el animador); se puede cambiar por otra dirección en «Vista 3D de Code 4»
-      const v3d = vista || '/demo-luces/ipad.html?demo=tv';
+      const v3d = vista || DEMO3D();
       box.innerHTML = `${v3d ? `<iframe class="dm-v3d" title="Vista 3D del salón (Code 4)" src="${esc(v3d)}" onload="this.dataset.ok=1"></iframe>` : '<div class="dm-stage"><span>La cámara simulada (la vista 3D del salón con las luces y el animador, de Code 4) aparece aquí cuando esté lista. Mientras tanto se ve solo el GC.</span></div>'}<iframe class="dm-gc" title="GC de la sala de juegos" tabindex="-1" src="${page('#/escena')}"></iframe>`;
       const vi = left.querySelector('[data-k="vista"]'); if (vi) vi.value = vista;
       fit();
@@ -481,7 +485,7 @@
       if (!venue) { area.innerHTML = `<p class="gp-none">${demo ? 'Crea la sala simulada en el GC Master (pestaña Demo).' : 'No hay sala de juegos abierta. Cuando se abra, aquí aparecen sus pantallas.'}</p>`; return; }
       const scr = (n, name, inner, cls = '') => `<div class="gp-scr th-${venue}" data-n="${n}"><small data-drag="${n}">${n} · <span data-k="name${n}">${name}</span></small><div class="gp-box ${cls}">${inner}</div><i class="gp-resize" data-resize="${n}" title="Agrandar o achicar"></i></div>`;
       area.innerHTML = scr(1, demo ? 'Cámara · demo' : 'GC', demo
-        ? `<iframe class="dm-v3d" title="Vista 3D del salón" src="${esc(vistaDemo || '/demo-luces/ipad.html?demo=tv')}"></iframe><iframe class="dm-gc" title="GC de la sala de juegos" tabindex="-1" src="${page('#/escena')}"></iframe>`
+        ? `<iframe class="dm-v3d" title="Vista 3D del salón" src="${esc(vistaDemo || DEMO3D())}"></iframe><iframe class="dm-gc" title="GC de la sala de juegos" tabindex="-1" src="${page('#/escena')}"></iframe>`
         : '', demo ? 'dm-cam' : '')
         + scr(2, 'Tablero', `<iframe title="Tablero de la sala de juegos" tabindex="-1" src="${tabSrc(true)}"></iframe>`)
         + scr(3, 'De pie', `<iframe title="Pantalla de pie de la sala de juegos" tabindex="-1" src="${page('#/tablero')}"></iframe>`);
