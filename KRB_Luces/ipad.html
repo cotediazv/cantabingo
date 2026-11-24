@@ -165,6 +165,15 @@
   body.tv .vista{position:fixed;inset:0;margin:0;border:0;border-radius:0}
   body.tv .vista canvas{height:100vh !important;cursor:default}
   body.tv .toast{display:none}
+  /* Solo el mapa (?demo=mapa): para seguir al animador con el dedo o el mouse dentro del GC Master */
+  body.solo-mapa header, body.solo-mapa nav, body.solo-mapa .vista, body.solo-mapa footer, body.solo-mapa main > .tab:not(#seguir){display:none !important}
+  body.solo-mapa main{padding:6px}
+  body.solo-mapa #seguir{display:block !important}
+  body.solo-mapa #seguir > *:not(#panelMapa):not(#cabezas){display:none !important}
+  body.solo-mapa #panelMapa .help{display:none}
+  body.solo-mapa .map{max-height:none !important;width:100% !important;margin:0}
+  body.solo-mapa #cabezas{margin-top:6px}
+  body.solo-mapa .map .warn{display:none}
   .toast.show{transform:translate(-50%,0);opacity:1}
 </style>
 </head>
@@ -328,7 +337,10 @@ const $ = id => document.getElementById(id);
 // ?demo=tv = solo la vista 3D a pantalla completa, con la camara sobre el animador (para el demo del GC Master).
 // ?demo=control = el iPad completo manejando el demo abierto en el mismo navegador (para seguir al animador a mano en el bingo).
 const PARAMS = new URLSearchParams(location.search), DEMO = PARAMS.has('demo'), TV = DEMO && PARAMS.get('demo') === 'tv';
-const CONTROL = DEMO && PARAMS.get('demo') === 'control';
+// ?demo=mapa = solo el mapa del salon (y las cabezas a elegir), para el espacio libre de la pestana Demo del GC Master.
+const MAPA_SOLO = DEMO && PARAMS.get('demo') === 'mapa';
+const CONTROL = DEMO && (PARAMS.get('demo') === 'control' || MAPA_SOLO);
+if (MAPA_SOLO) document.body.classList.add('solo-mapa');
 if (TV) document.body.classList.add('tv');
 const COLOR_CSS = {blanco_calido:'#ffd9a0',blanco:'#ffffff',azul:'#2b55ff',rojo:'#ff2a2a',verde:'#22dd55',amarillo:'#ffbe00',ambar:'#ff8a00',morado:'#9b3cff',rosa:'#ff3fa0',cian:'#22e5ff'};
 const ESQUINAS = [
@@ -415,6 +427,9 @@ function enviarGrupos(ids, f){
   enviar(todo, f);
 }
 const todosLosIds = () => conf.grupos.map(g => g.id);
+// Grupos que copian a otro ("igual_que" en luces.json): las mini cabezas de las columnas hacen lo mismo que las del escenario
+const espejos = id => conf.grupos.filter(g => g.igual_que === id).map(g => g.id);
+const conEspejos = ids => ids.concat(...ids.map(espejos)).filter((x, i, a) => a.indexOf(x) === i);
 const ESC_PECHO = [0, 1.5, -1.8];                                    // pecho de quien esta al centro del escenario
 // Tamano del foco (0-100) para que la mancha tenga "radio" metros a esa distancia.
 // Misma regla que la vista 3D: medio angulo = 0,05 + 0,22 x zoom/100 (radianes).
@@ -482,8 +497,9 @@ $('fxParpadeo').onclick = () => efectoPared === 'parpadeo' ? efectoParedOff() : 
 $('fxAlternar').onclick = () => efectoPared === 'alternar' ? efectoParedOff() : efectoParedOn('alternar');
 $('fxMini').onclick = () => {
   const on = !efectosActivos.includes('mover:mini');
-  if (on){ const z = zona('mini'); if (!z.color) z.color = 'rojo'; if (!(z.intensidad > 0)) z.intensidad = 100; if (z.pan == null) fijarPosicion(z, 'escenario'); enviarGrupos(['mini'], fade); }
-  moverGrupo('mini', on);
+  const ids = conEspejos(['mini']);
+  if (on){ ids.forEach(id => { const z = zona(id); if (!z.color) z.color = 'rojo'; if (!(z.intensidad > 0)) z.intensidad = 100; if (z.pan == null) fijarPosicion(z, 'escenario'); }); enviarGrupos(ids, fade); }
+  ids.forEach(id => moverGrupo(id, on));
 };
 document.querySelectorAll('[data-vel]').forEach(b => b.onclick = () => {
   velEf = +b.dataset.vel; document.querySelectorAll('[data-vel]').forEach(x => x.classList.toggle('act', x === b)); refrescarEfectos();
@@ -672,7 +688,7 @@ async function aplicarEscena(i){
   const e = conf.escenas[i];
   const anteriores = zonas; zonas = {};
   conf.grupos.forEach(g => {
-    const s = e.grupos[g.id], prev = anteriores[g.id] || {};
+    const s = e.grupos[g.id] || (g.igual_que && e.grupos[g.igual_que]), prev = anteriores[g.id] || {};
     const z = s ? {...s} : {color:null, intensidad:0};
     if (s && s.posicion) fijarPosicion(z, s.posicion, g.id);
     else { z.posicion = prev.posicion; z.pan = prev.pan; z.tilt = prev.tilt; }
@@ -683,7 +699,7 @@ async function aplicarEscena(i){
   enviarGrupos(todosLosIds(), fade);
   (e.efectos || []).forEach(x => {
     const [tipo, id] = x.split(':');
-    if (tipo === 'mover') moverGrupo(id, true);
+    if (tipo === 'mover') conEspejos([id]).forEach(x => moverGrupo(x, true));
     if (tipo === 'parpadeo' || tipo === 'alternar') efectoParedOn(tipo);
   });
   pintarTodo(); toast(e.nombre);
@@ -1050,6 +1066,7 @@ const POS3D = {
   seguidor3:    { columna:2 },
   frontales:    { pos:[[-4.7, 4.1, 0.6], [4.7, 4.1, 0.6]] },
   mini:         { pos:[[-1.15, 0.6, -3.0], [1.15, 0.6, -3.0]], piso:true },   // justo al costado de la bateria (Cote, 24 nov)
+  mini_columnas:{ pos:[[-5.8, 4.45, -0.3], [5.8, 4.45, -0.3]], piso:true },   // arriba de las columnas azules (Cote, 24 nov)
   perimetrales: { pos:[[-3.9, 0.45, -3.75], [-1.3, 0.45, -3.75], [1.3, 0.45, -3.75], [3.9, 0.45, -3.75]] },
   fondo:        { pos:[[-5.8, 4.35, 0.0], [5.8, 4.35, 0.0]] }   // arriba de las columnas azules
 };
@@ -1211,7 +1228,8 @@ function choque(o, d){
     const t0 = (0 - o[1]) / d[1], p0 = add(o, mul(d, t0)); prueba(t0, !(Math.abs(p0[0]) <= 5 && p0[2] >= -4 && p0[2] <= 0));
   }
   if (d[2] < 0) prueba((-4 - o[2]) / d[2], true);
-  if (d[1] > 0) prueba((4.6 - o[1]) / d[1], true);
+  // techo del local: alto y oscuro (fotos y capturas de Twitch); antes 4,6 m, y las mini de arriba de las columnas casi lo tocaban
+  if (d[1] > 0) prueba((7 - o[1]) / d[1], true);
   return { p: add(o, mul(d, mejor)), piso: d[1] < 0 && Math.abs(add(o, mul(d, mejor))[1]) < 0.45 };
 }
 /* Direccion aproximada de una cabeza movil a partir de pan y tilt */
@@ -1609,9 +1627,16 @@ const JUEGOS = [
     { id:'objeto_celebracion', nombre:'Celebración', igual:'celebracion_ganador' },
     { id:'objeto_premio', nombre:'Entrega del premio', igual:'entrega_premio' } ]},
   { juego:'El Festival', momentos:[
-    { id:'festival_cancion', nombre:'Canción', detalle:'Pared a 100 BPM, el resto blanco cálido a las caras',
-      g:() => ({...BASE(), ...cab(CARA, 50)}), pared:{colores:null, t:0.6} },
+    // Cancion (Cote, rev 216): la pared cambia de color a 60 BPM (1 s) con fundido de 1 s
+    { id:'festival_cancion', nombre:'Canción', detalle:'Pared a 60 BPM con fundido, el resto blanco cálido a las caras',
+      g:() => ({...BASE(), ...cab(CARA, 50)}), pared:{colores:null, t:1, fx:1} },
     { id:'festival_presenta', nombre:'Presenta / despide', igual:'base_juegos' },
+    // Al terminar la cancion y la votacion, y antes de revelar cada lugar (Cote, rev 217-218): tension como el interrogatorio,
+    // fondo apagado y mini cabezas en diagonal hacia atras con estrobo blanco
+    { id:'festival_tension', nombre:'Tensión (fin de canción / antes de cada lugar)', igual:'objeto_votacion' },
+    // Al revelar un lugar: un pestaneo de colores atras (2 s) y vuelve a la tension para el lugar siguiente
+    { id:'festival_revela', nombre:'Revela un lugar', detalle:'Pestañeo de colores en la pared 2 s y vuelve a la tensión',
+      g:() => ({...pared('azul', 100), ...cab('escenario', 50)}), pared:{colores:null, t:0.12, fx:0}, luego:[2, 'previo'] },
     { id:'festival_redoble', nombre:'Redoble finalistas', igual:'tombola_gira' },
     { id:'festival_ganador', nombre:'Ganador', igual:'objeto_ganador' },
     { id:'festival_celebracion', nombre:'Celebración', igual:'celebracion_ganador' },
@@ -1629,7 +1654,8 @@ const ALIAS_SALA = {
   bingo_ganador_aparece:'ganador_al_escenario', bingo_ganador_confirmado:'celebracion_ganador', bingo_vuelve_escenario:'base_juegos',
   premio_entrega:'entrega_premio', rosko_ranking:'rosko_puntajes', rosko_ranking_fin:'base_juegos',
   objeto_votacion_fin:'base_juegos', objeto_final:'objeto_votacion', festival_despide:'base_juegos',
-  festival_canta:'festival_cancion', festival_termina:'base_juegos'
+  festival_canta:'festival_cancion', festival_termina:'festival_tension',
+  festival_lugar_suspenso:'festival_tension', festival_lugar_revela:'festival_revela'   // nombres propuestos a Code 1
 };
 const todosMomentos = () => JUEGOS.flatMap(j => j.momentos).concat(
   Object.entries(ALIAS_SALA).map(([id, a]) => a === 'nada' ? {id, nombre:id, nada:true, oculto:true} : {id, nombre:id, igual:a, oculto:true}));
@@ -1637,6 +1663,7 @@ const momentoPorId = id => todosMomentos().find(m => m.id === id);
 // Valores de canales de un momento (siempre con master al 100: el master del iPad no cambia lo que dispara el GC)
 function zonasDe(m){
   const spec = m.g(), out = {};
+  conf.grupos.forEach(g => { if (g.igual_que && spec[g.id] == null && spec[g.igual_que]) spec[g.id] = {...spec[g.igual_que]}; });   // mini de las columnas = mini del escenario
   conf.grupos.forEach(g => {
     const s = spec[g.id], z = s ? {color:s.color, intensidad:s.intensidad, zoom:s.zoom} : {color:null, intensidad:0};
     if (s && Array.isArray(s.posicion)) apuntarGeo(g.id, s.posicion, z);
@@ -1665,7 +1692,7 @@ function compilarMomento(m){
     const ids = idsPared().filter(id => grupo(id));
     if (m.pared){                                                               // pared cambiando de color al ritmo
       const pasos = (m.pared.colores || PARED_COLORES()).map(c => { const s = {}; ids.forEach(id => Object.assign(s, valoresGrupo(grupo(id), {...zs[id], color:c}))); return s; });
-      ef('alternar', {tipo:'sec', pasos:pasosTxt(pasos), t:m.pared.t, fx:0.1});
+      ef('alternar', {tipo:'sec', pasos:pasosTxt(pasos), t:m.pared.t, fx:m.pared.fx != null ? m.pared.fx : 0.1});
     }
     if (m.rosco){                                                               // arriba (fondo) y abajo (perimetrales) distintos, fundido lento
       const pares = [['azul', 'morado'], ['morado', 'cian'], ['cian', 'azul'], ['rosa', 'azul'], ['azul', 'rosa']];
@@ -1674,7 +1701,7 @@ function compilarMomento(m){
     }
     if (m.estrobo){
       const on = {}, off = {};
-      m.estrobo.forEach(id => { const g = grupo(id); if (!g) return; Object.assign(on, valoresGrupo(g, zs[id])); Object.assign(off, valoresGrupo(g, {...zs[id], intensidad:0})); });
+      conEspejos(m.estrobo).forEach(id => { const g = grupo(id); if (!g) return; Object.assign(on, valoresGrupo(g, zs[id])); Object.assign(off, valoresGrupo(g, {...zs[id], intensidad:0})); });
       ef('estrobo', {tipo:'sec', pasos:pasosTxt([on, off]), t:0.06, fx:0});
     }
     if (m.luego){ L.push('espera:' + m.luego[0]); L.push('@' + m.luego[1]); }
@@ -1713,7 +1740,7 @@ function momentoRecibido(e){
   const primero = momentoVisto === null; momentoVisto = e.momentoN;
   pintarJuegos(e.momento);
   // Si el iPad se abre cuando el animador ya esta en el publico, tambien abre el mapa (Code 1, rev 205)
-  if (primero && e.momento === 'bingo_al_publico' && !TV) abrirTab('seguir');
+  if (primero && e.momento === 'bingo_al_publico' && !TV && !MAPA_SOLO) abrirTab('seguir');
   if (primero || !e.momento) return;
   escenaActiva = -1; efectoPared = null; progActivo = null;
   let m = momentoPorId(e.momento);
@@ -1722,7 +1749,7 @@ function momentoRecibido(e){
     const z = zonasDe(m); Object.keys(z).forEach(id => zonas[id] = {color:z[id].color, intensidad:z[id].intensidad, pan:z[id].pan, tilt:z[id].tilt, zoom:z[id].zoom, posicion:z[id].posicion});
     pintarTodo(); pintarProgramas(); toast('▶ ' + m.nombre);
   }
-  if (e.momento === 'bingo_al_publico' && !TV) abrirTab('seguir');
+  if (e.momento === 'bingo_al_publico' && !TV && !MAPA_SOLO) abrirTab('seguir');
 }
 
 /* ---------- MODO DEMO: el Dell simulado dentro del navegador ----------
@@ -1886,15 +1913,8 @@ function bucleDemo(){
     const a = demoAn;
     V.animador = { p:a.p, rumbo:a.rumbo, t:a.paso, quieto:a.quieto, sentado:a.sentado };
     V.rosko = a.rosko;
-    // En el demo las cabezas siguen solas al animador mientras esta en el publico
-    // (si alguien lo esta siguiendo a mano desde el iPad de control, se deja de seguir solo)
-    if (SIM.momento === 'bingo_al_publico' && demoAn.ruta && !(SIM.control && performance.now() - SIM.control < 4000)){
-      segIds().forEach(id => {
-        const g = grupo(id); if (!g || !g.canales.pan) return;
-        const z = {}; apuntarGeo(id, [a.p[0], 1.2, a.p[2]], z); if (z.pan == null) return;
-        const b = g.direccion - 1; simSet(b + g.canales.pan, Math.round(z.pan), 0.25); simSet(b + g.canales.tilt, Math.round(z.tilt), 0.25);
-      });
-    }
+    // Las cabezas NO siguen solas al animador (Cote, rev 215): en el demo se le sigue a mano con el mapa
+    // (?demo=mapa o ?demo=control), como lo hara el DJ en el show.
     if (TV) camaraDemo(dt, a);
   }
   simTick(); V.salida = SIM.salida; V.sucio = true;

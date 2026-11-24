@@ -92,6 +92,14 @@
       "fijos": {}
     },
     {
+      "id": "mini_columnas", "nombre": "Mini cabezas (2) · arriba de las columnas azules", "escaner": 11, "direccion": 161, "tipo": "cabeza",
+      "igual_que": "mini",
+      "_ayuda": "Pedido de Cote (24 nov): hacen lo mismo que las mini cabezas del escenario (mismo color y mismo movimiento). Canales POR CONFIRMAR: se asume el mismo modelo que las mini del escenario. Las dos van con la direccion 161.",
+      "canales": { "pan": 1, "tilt": 3, "dimmer": 6, "r": 8, "g": 9, "b": 10, "w": 11 },
+      "mover": { "amp_pan": 110, "amp_tilt": 18, "tilt_centro": 30 },
+      "fijos": {}
+    },
+    {
       "id": "perimetrales", "nombre": "Perimetrales PAR (4)", "escaner": 9, "direccion": 129, "tipo": "par",
       "canales": { "dimmer": 1, "r": 2, "g": 3, "b": 4, "w": 5 },
       "fijos": {}

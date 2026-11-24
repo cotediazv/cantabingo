@@ -329,7 +329,7 @@ function construir(){
     const def = POS3D[g.id] || {};
     const posiciones = g.vista3d || (def.columna != null ? [posCabeza(g.id)] : (def.pos || []));
     posiciones.forEach(pos => {
-      const tipo = def.columna != null || g.id === 'mini' ? 'cabeza' : g.id;
+      const tipo = def.columna != null || g.id === 'mini' || g.igual_que === 'mini' ? 'cabeza' : g.id;
       const spot = new THREE.SpotLight(0xffffff, 0, 0, 0.3, 0.5, 2);
       spot.position.copy(v3(pos)); scene.add(spot); scene.add(spot.target);
       if (tipo === 'cabeza' && def.columna != null || g.id === 'frontales'){
@@ -538,7 +538,7 @@ try {
   renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.35;
   renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   camera = new THREE.PerspectiveCamera(52, 16 / 9, 0.1, 400);
-  window.Vista3D = { ok: true, render };
+  window.Vista3D = { ok: true, render, focos };                    // focos: para revisar desde la consola
   document.getElementById('vista').classList.add('gl');
   try { V.sucio = true; } catch (e) {}
 } catch (e) {
