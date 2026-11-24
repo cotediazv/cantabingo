@@ -463,10 +463,20 @@
     const libre = { ...LIBRE0, ...memGet('gpLibre', {}) };
     app.innerHTML = `<div id="gp" class="gp-${vista}">
       <div class="gp-bar">${VISTAS.map(([k, t, d]) => `<button type="button" data-vista="${k}" title="${esc(d)}" class="${k === vista ? 'on' : ''}">${esc(t)}</button>`).join('')}
-        <button type="button" data-full="1" title="Toda la ventana en pantalla completa">⛶ Pantalla completa</button><span data-k="info"></span></div>
+        <button type="button" data-full="1" title="Toda la ventana en pantalla completa">⛶ Pantalla completa</button>
+        ${demo ? '' : '<button type="button" data-snd="1" title="Escuchar la señal 1 (transmisión)">🔇 Sonido 1</button>'}<button type="button" data-snd="2" title="Escuchar el tablero (los sonidos de los juegos)">🔇 Sonido 2</button><span data-k="info"></span></div>
       <div class="gp-hot" title="Acerca el mouse aquí para ver las opciones"></div><div class="gp-area" data-k="area"></div></div>`;
     const root = $('#gp'); const area = root.querySelector('[data-k="area"]');
     let alive = true; let venue = null; let sigStop = null; let momSeq = null;
+    // Sonido (pedido de Cote, 24 nov: «en pantalla completa no se puede activar el sonido»): la 1 (señal) o la 2 (tablero),
+    // una a la vez; tocar la que suena deja todo en silencio
+    let snd = 0;
+    const paintSnd = () => {
+      root.querySelectorAll('[data-snd]').forEach((x) => { const on = Number(x.dataset.snd) === snd; x.classList.toggle('on', on); x.textContent = `${on ? '🔊' : '🔇'} Sonido ${x.dataset.snd}`; });
+      const f2 = area.querySelector('.gp-scr[data-n="2"] iframe'); const src = tabSrc(snd !== 2);
+      if (f2 && f2.getAttribute('src') !== src) f2.setAttribute('src', src);
+      if (sigStop && sigStop.sound) sigStop.sound(snd === 1);
+    };
     // Cada pantalla mide lo más que cabe en su espacio sin deformarse; la página real va adentro, achicada
     const fit = () => area.querySelectorAll('.gp-scr').forEach((c) => {
       const [w, h] = SCR[c.dataset.n]; const box = c.querySelector('.gp-box');
@@ -495,7 +505,7 @@
         + scr(2, 'Tablero', `<iframe title="Tablero de la sala de juegos" tabindex="-1" src="${tabSrc(true)}"></iframe>`)
         + scr(3, 'De pie', `<iframe title="Pantalla de pie de la sala de juegos" tabindex="-1" src="${page('#/tablero')}"></iframe>`);
       if (!demo) sigStop = signal1(area.querySelector('[data-n="1"] .gp-box'), venue, { fit, label: (t) => { const el = area.querySelector('[data-k="name1"]'); if (el) el.textContent = t; } });
-      fit();
+      paintSnd(); fit();
     };
     let vistaDemo = '';
     if (demo) vistaDemo = ((await api('GET', '/api/sim').catch(() => null)) || {}).vista || '';
@@ -520,6 +530,7 @@
     root.querySelector('.gp-bar').onclick = (e) => {
       const b = e.target.closest('button'); if (!b) return;
       if (b.dataset.full) { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); else document.documentElement.requestFullscreen().catch(() => {}); return; }
+      if (b.dataset.snd) { const n = Number(b.dataset.snd); snd = snd === n ? 0 : n; paintSnd(); return; }
       vista = b.dataset.vista; memSet('gpVista', vista);
       root.className = `gp-${vista}`;
       root.querySelectorAll('[data-vista]').forEach((x) => x.classList.toggle('on', x === b));

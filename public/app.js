@@ -1473,7 +1473,8 @@ const sfx = (() => {
     // Acierto: campanita brillante de dos notas
     hit: () => { note(1319, 0, 0.5, 'sine', 0.35); note(2637, 0, 0.35, 'sine', 0.12); note(1760, 0.12, 0.8, 'sine', 0.35); note(3520, 0.12, 0.5, 'sine', 0.1); },
     // Fallo: zumbador grave
-    miss: () => { note(160, 0, 0.6, 'sawtooth', 0.28); note(113, 0, 0.6, 'square', 0.16); },
+    // Incorrecta (Cote, 24 nov: no se oía): zumbido de dos tonos que bajan, en tonos medios para que suene en cualquier parlante
+    miss: () => { note(415, 0, 0.3, 'sawtooth', 0.3, 370); note(830, 0, 0.3, 'square', 0.07, 740); note(311, 0.32, 0.6, 'sawtooth', 0.32, 262); note(622, 0.32, 0.6, 'square', 0.08, 523); },
     // Paso: nota corta que baja
     pass: () => { note(660, 0, 0.22, 'triangle', 0.25, 330); },
     // Bolita del bingo: campanita tipo triángulo, muy suave y con cola larga

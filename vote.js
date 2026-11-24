@@ -283,12 +283,15 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       s.revealed = 0;
       s.phase = 'results';
       s.final = { ids: s.rank.slice(0, 2), votes: {}, open: false, closed: false };
+      // Luces (pedido de Cote, 24 nov): antes de revelar cada lugar, tensión; al revelarlo, un destello (lo hace Code 4)
+      require('./momentos.js').emit(karaoke() ? 'festival_resultados' : 'objeto_resultados');
       return null;
     },
     reveal: (s) => {
       if (s.phase !== 'results') return 'Primero pasa a los resultados';
       if (s.revealed >= s.rank.length - 2) return 'Solo quedan los dos finalistas';
       s.revealed++;
+      require('./momentos.js').emit(karaoke() ? 'festival_lugar' : 'objeto_lugar'); // luces: el destello al revelar un lugar
       return null;
     },
     final: (s) => {
