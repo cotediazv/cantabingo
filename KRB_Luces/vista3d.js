@@ -163,8 +163,25 @@ function construir(){
   const fondo = new THREE.Mesh(new THREE.PlaneGeometry(10, 4.6), mat.fondo); fondo.position.set(0, 2.3, -4); fondo.receiveShadow = true; scene.add(fondo);
   const tv = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 1.25), new THREE.MeshStandardMaterial({ color: 0x05070c, emissive: 0x0b1a33, emissiveIntensity: 1, roughness: 0.2 }));
   tv.position.set(0, 1.97, -3.93); scene.add(tv);
-  caja(2.2, 0.8, 0.6, mat.negro, -0.5, 0.85, -3.4);                                  // mesa con pano negro
-  [[-1.0, -2.5], [-0.4, -2.3], [0.1, -2.6]].forEach(([x, z]) => { const t = sombra(new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.25, 20), mat.gris)); t.position.set(x, 0.85, z); scene.add(t); }); // bateria
+  // bateria electronica armada, delante de la pantalla (Cote, 24 nov)
+  {
+    const bat = new THREE.Group(), cromo = new THREE.MeshStandardMaterial({ color: 0x9aa0a8, metalness: 0.9, roughness: 0.3 });
+    const pad = new THREE.MeshStandardMaterial({ color: 0x15161a, roughness: 0.9 }), platillo = new THREE.MeshStandardMaterial({ color: 0x26282d, metalness: 0.6, roughness: 0.4 });
+    const tubo = (a, b) => { const d = v3(b).sub(v3(a)), m = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, d.length(), 8), cromo);
+      m.position.copy(v3(a).add(d.clone().multiplyScalar(0.5))); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); bat.add(m); };
+    tubo([-0.7, 0, 0], [-0.7, 1.0, 0]); tubo([0.7, 0, 0], [0.7, 1.0, 0]); tubo([-0.7, 0.85, 0], [0.7, 0.85, 0]);   // rack
+    const tambor = (x, y, z, r, inc) => { const t = sombra(new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.07, 24), pad)); t.position.set(x, y, z); t.rotation.x = inc; bat.add(t); };
+    tambor(-0.3, 0.92, 0.18, 0.16, 0.35); tambor(0.3, 0.92, 0.18, 0.16, 0.35);   // toms
+    tambor(-0.45, 0.62, 0.45, 0.17, 0.2);                                       // caja
+    tambor(0.55, 0.55, 0.4, 0.2, 0.25);                                         // tom de piso
+    const bombo = sombra(new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.38, 0.22), pad)); bombo.position.set(0, 0.19, 0.1); bat.add(bombo);
+    [[-0.75, 1.25, 0.05, 0.22], [0.8, 1.3, 0.0, 0.24], [-0.85, 0.95, 0.45, 0.17]].forEach(([x, y, z, r]) => {  // platillos y hi-hat
+      const p = sombra(new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.015, 28), platillo)); p.position.set(x, y, z); p.rotation.x = 0.15; bat.add(p); tubo([x, 0, z], [x, y, z]);
+    });
+    const modulo = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.14, 0.05), new THREE.MeshStandardMaterial({ color: 0x111111, emissive: 0x1a3a6a, emissiveIntensity: 0.8 })); modulo.position.set(0.72, 1.0, 0.08); bat.add(modulo);
+    const banqueta = sombra(new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.08, 20), pad)); banqueta.position.set(0, 0.5, 0.75); bat.add(banqueta); tubo([0, 0, 0.75], [0, 0.46, 0.75]);
+    bat.position.set(0, 0.45, -3.25); scene.add(bat);
+  }
   caja(0.9, 1.3, 0.6, mat.gris, 1.35, 1.1, -3.0);                                     // case
   caja(0.7, 0.75, 0.5, mat.negro, -2.25, 0.82, -3.15);                               // parlante
   // columnas azules del escenario con su pantalla vertical (y la TV en la derecha)

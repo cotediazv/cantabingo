@@ -808,7 +808,7 @@ const POS3D = {
   seguidor2:    { columna:1 },
   seguidor3:    { columna:2 },
   frontales:    { pos:[[-4.7, 4.1, 0.6], [4.7, 4.1, 0.6]] },
-  mini:         { pos:[[-2.4, 0.55, -3.2], [2.4, 0.55, -3.2]], piso:true },
+  mini:         { pos:[[-1.8, 0.6, -0.05], [1.8, 0.6, -0.05]], piso:true },   // en la punta, adelante del escenario (Cote, 24 nov)
   perimetrales: { pos:[[-3.9, 0.45, -3.75], [-1.3, 0.45, -3.75], [1.3, 0.45, -3.75], [3.9, 0.45, -3.75]] },
   fondo:        { pos:[[-5.8, 4.35, 0.0], [5.8, 4.35, 0.0]] }   // arriba de las columnas azules
 };
@@ -1044,8 +1044,7 @@ function dibujar3D(){
     if (z0 >= -1.6 || z1 >= -1.6) poly([[x0,0,z0],[x1,0,z1],[x1,ht,z1],[x0,ht,z0]], '#6b4a26', '#7d5a30');
   }
   poly([[-1.15,1.35,-3.95],[1.15,1.35,-3.95],[1.15,2.6,-3.95],[-1.15,2.6,-3.95]], '#0b0d12', '#2a2f3a'); // televisor
-  caja(-1.6, 0.6, ht, 1.25, -3.7, -3.1, '#121317', '#0e0f12', '#17181d');       // mesa con pano negro
-  caja(-1.4, 0.2, ht, 0.95, -3.0, -2.2, '#1a1c22', '#14161b', '#2a2d35');       // bateria
+  caja(-0.75, 0.75, ht, 1.4, -3.5, -2.4, '#1a1c22', '#14161b', '#2a2d35');      // bateria electronica, delante de la pantalla
   caja(0.9, 1.8, ht, 1.75, -3.3, -2.7, '#2b2e36', '#22252c', '#3a3e48');        // case (flight case)
   caja(-2.6, -1.9, ht, 1.2, -3.4, -2.9, '#141519', '#101114', '#1b1c21');       // parlante
   // Columnas azules de listones en las esquinas, con paneles de luz
