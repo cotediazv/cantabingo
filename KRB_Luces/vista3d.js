@@ -181,8 +181,13 @@ function construir(){
     const modulo = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.14, 0.05), new THREE.MeshStandardMaterial({ color: 0x111111, emissive: 0x1a3a6a, emissiveIntensity: 0.8 })); modulo.position.set(0.72, 1.0, 0.08); bat.add(modulo);
     const banqueta = sombra(new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.08, 20), pad)); banqueta.position.set(0, 0.5, 0.75); bat.add(banqueta); tubo([0, 0, 0.75], [0, 0.46, 0.75]);
     bat.position.set(0, 0.45, -3.25); scene.add(bat);
+    // alfombra bajo la bateria: unos 1,5 m de profundidad
+    const alf = new THREE.Mesh(new THREE.PlaneGeometry(2.0, 1.5), new THREE.MeshStandardMaterial({ map: textura(128, 96, (c, w, h, r) => {
+      c.fillStyle = '#3c3a3e'; c.fillRect(0, 0, w, h); c.strokeStyle = '#55525a'; c.lineWidth = 3; c.strokeRect(6, 6, w - 12, h - 12); grano(c, w, h, 22, r);
+    }), roughness: 1 }));
+    alf.rotation.x = -Math.PI / 2; alf.position.set(0, 0.452, -2.95); alf.receiveShadow = true; scene.add(alf);
   }
-  caja(0.9, 1.3, 0.6, mat.gris, 1.35, 1.1, -3.0);                                     // case
+  caja(0.9, 1.3, 0.6, mat.gris, 2.15, 1.1, -3.0);                                     // case (a la derecha de la mini cabeza)
   caja(0.7, 0.75, 0.5, mat.negro, -2.25, 0.82, -3.15);                               // parlante
   // columnas azules del escenario con su pantalla vertical (y la TV en la derecha)
   [-5.8, 5.8].forEach(x => {
