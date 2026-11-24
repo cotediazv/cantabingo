@@ -15,6 +15,11 @@
     "pedir_en_wifi_local": false
   },
 
+  "momentos": {
+    "_ayuda": "Esta iluminacion es SOLO para la Sala de juegos de Mercado Kennedy. Si un aviso de momento trae &sala=..., solo se acepta cuando contiene esta palabra; los de otras salas (o la sala simulada) se ignoran.",
+    "sala": "kennedy"
+  },
+
   "colores": {
     "blanco_calido": { "r": 255, "g": 170, "b": 70,  "w": 255 },
     "blanco":        { "r": 255, "g": 255, "b": 255, "w": 255 },

@@ -194,6 +194,7 @@ namespace KRB {
     public static string ConfigPath;
     public static string Clave = "";               // vacia = sin clave
     public static bool PedirEnWifiLocal = false;    // false = en el WiFi del local no se pide clave
+    public static string Sala = "kennedy";          // los momentos que traen &sala= solo se aceptan si es esta sala (Mercado Kennedy)
     static HashSet<string> sesiones = new HashSet<string>();
     static readonly object SL = new object();
     static int fallosLogin = 0;
@@ -329,6 +330,11 @@ namespace KRB {
       }
       if (ruta == "/api/momento") {                        // ejecutar un momento: /api/momento?nombre=base_juegos
         string n = Arg(query, "nombre") ?? "";
+        // Solo la Sala de juegos de Mercado Kennedy (Cote, 24 nov): si el aviso dice de que sala viene y no es esta, no se toca nada
+        string sala = Arg(query, "sala");
+        if (sala != null && sala.ToLower().IndexOf(Sala.ToLower()) < 0) {
+          Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":false,\"ignorado\":\"otra sala\",\"sala\":\"" + Esc(sala) + "\"}")); return;
+        }
         if (!EjecutarMomento(n)) { Enviar(s, "404 Not Found", "application/json", Encoding.UTF8.GetBytes("{\"error\":\"momento desconocido\",\"nombre\":\"" + Esc(n) + "\"}")); return; }
         Estado(s); return;
       }
@@ -530,6 +536,8 @@ if ($cfg.servidor -and $cfg.servidor.puerto) { $puertoWeb = [int]$cfg.servidor.p
 if ($cfg.acceso) {
   if ($cfg.acceso.clave) { [KRB.Web]::Clave = [string]$cfg.acceso.clave }
   [KRB.Web]::PedirEnWifiLocal = [bool]$cfg.acceso.pedir_en_wifi_local
+}
+if ($cfg.momentos -and $cfg.momentos.sala) { [KRB.Web]::Sala = [string]$cfg.momentos.sala
 }
 [KRB.Web]::CargarSesiones()
 [KRB.Web]::CargarMomentos()
