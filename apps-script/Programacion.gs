@@ -11,7 +11,7 @@
 // También escribe el mes en B8 y el monto de cada show en la columna siguiente a la del show.
 // llenarMes (el archivo de antes) no se usa ni se toca.
 const CLAVE_PROGRAMACION = '__CLAVE__';
-const PROG_VERSION = 10;
+const PROG_VERSION = 11;
 
 const PR_PRIMERA = 12, PR_ALTO = 39, PR_BLOQUES = 20, PR_RESUMEN = 835;
 const PR_COL = { MK: 3, KENNEDY: 3, EV: 12, EVENTOS: 12, KR: 22, KARAROCK: 22, TOB: 32, TOBALABA: 32, FRI: 42, FRIDA: 42, PAN: 52, PANORAMICO: 52 };
@@ -46,6 +46,10 @@ function doPost(e) {
       if (!ant) return respuestaProg_({ error: 'No encuentro la pestaña ' + b.pestana + ' ni la del mes anterior (' + b.anterior + ')' });
       sh = ant.copyTo(ss).setName(b.pestana);
       creada = true;
+      // Al crear la pestaña se borran los anticipos que vienen del mes anterior (Cote, 24 nov): anticipos finales de
+      // cada persona (BU793 a BU823) y anticipos de los pagos mensuales (BK864 a BK874). Las fórmulas se mantienen.
+      limpiarProg_(sh.getRange('BU793:BU823'));
+      limpiarProg_(sh.getRange('BK864:BK874'));
     }
     // B8: el mes y el año como texto (si no, la planilla lo toma como fecha y muestra «noviembre 26» a la derecha)
     sh.getRange('B8').setNumberFormat('@').setValue(String(b.b8).toUpperCase()).setHorizontalAlignment('left');

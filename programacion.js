@@ -243,7 +243,7 @@ module.exports = function programacion({ app, dir }) {
     else if (s.tipo === 'doble') t = `Doble de ${s.nombre}`;
     else if (s.tipo === 'bingo') t = losJuegos(local);
     else t = [s.nombre, s.artista ? `(${s.artista})` : ''].filter(Boolean).join(' ');
-    return local === 'TOB' ? `BINGO + ${t} + Karaoke` : t;
+    return local === 'TOB' ? `BINGO + ${t}` : t; // sin «+ Karaoke» (Cote, 24 nov)
   }
   const interno = (s) => Boolean(s) && (s.tipo === 'bingo' || /bingo|juego/i.test(`${s.nombre || ''}`));
   const showVacio = (s) => !s || (!['piano', 'bingo'].includes(s.tipo) && !clean(s.nombre));
@@ -764,7 +764,7 @@ module.exports = function programacion({ app, dir }) {
       .then((r) => r.text()).then((t) => {
         let j; try { j = JSON.parse(t); } catch { throw new Error('La GLOSA no respondió como se esperaba (revisa que el script esté publicado como aplicación web)'); }
         if (j.error) throw new Error(j.error);
-        const viejo = !(Number(j.version) >= 10);
+        const viejo = !(Number(j.version) >= 11);
         envio = { estado: 'listo', mes: a.mes, a: Date.now(), creada: Boolean(j.creada), aviso: [j.aviso || '', viejo ? 'El script de la GLOSA es una versión anterior: le faltan los últimos cambios (por ejemplo, poner a cada persona en su sección y limpiar las filas repetidas). Actualiza el script (pestaña GLOSA, «Actualizar el script») y vuelve a enviar.' : ''].filter(Boolean).join(' ') };
       })
       .catch((e) => { envio = { estado: 'error', mes: a.mes, a: Date.now(), error: clean(e && e.message, 300) || 'No se pudo enviar' }; })
