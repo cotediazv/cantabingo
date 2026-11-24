@@ -287,24 +287,29 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
     if (!sel) {
       var gran = 0;
       h += '<div class="panel"><h2 class="solo-imp">Resumen del equipo · ' + esc(S.data.nombre) + '</h2><table class="pers"><tr><th>Persona</th><th class="n">Días</th><th class="n">Turnos</th><th class="n">Total</th></tr>' +
-        nombres.map(function (n) { var t = tot(T[n], n); gran += t; return '<tr data-ver="' + esc(n) + '"><td>' + esc(n) + (fijoDe(n) ? ' <small class="vacio">(sueldo fijo)</small>' : '') + '</td><td class="n">' + dias(T[n]) + '</td><td class="n">' + T[n].length + '</td><td class="n">' + plata(t) + (T[n].some(function (z) { return z.falta; }) ? ' <span class="faltan">*</span>' : '') + '</td></tr>'; }).join('') +
+        nombres.map(function (n) { var t = tot(T[n], n); gran += t; return '<tr data-ver="' + esc(n) + '"><td>' + esc(n) + (fijoDe(n) ? ' <small class="vacio">(sueldo fijo' + ((S.data.ajustes || {})[n] ? ', ' + S.data.ajustes[n].menos + ' sin trabajar' : '') + ')</small>' : '') + '</td><td class="n">' + dias(T[n]) + '</td><td class="n">' + T[n].length + '</td><td class="n">' + plata(t) + (T[n].some(function (z) { return z.falta; }) ? ' <span class="faltan">*</span>' : '') + '</td></tr>'; }).join('') +
         '<tr class="tot"><td>Total</td><td></td><td></td><td class="n">' + plata(gran) + '</td></tr></table>' +
         (nombres.some(function (n) { return T[n].some(function (z) { return z.falta; }); }) ? '<p class="faltan">* Hay turnos sin tarifa: revisa Archivos.</p>' : '') + '<p class="no-imp vacio">Toca un nombre para ver su detalle.</p></div>';
       return h;
     }
-    var xs = T[sel];
-    h += '<div class="panel"><h2>' + esc(sel) + ' · ' + esc(S.data.nombre) + '</h2><p>' + dias(xs) + ' ' + (dias(xs) === 1 ? 'día' : 'días') + ' · ' + xs.length + ' ' + (xs.length === 1 ? 'turno' : 'turnos') + '</p>' +
+    var xs = T[sel]; var aj = S.data.ajustes || {};
+    h += '<div class="panel"><h2>' + esc(sel) + ' · ' + esc(S.data.nombre) + '</h2><p>' + dias(xs) + ' ' + (dias(xs) === 1 ? 'día' : 'días') + ' · ' + xs.length + ' ' + (xs.length === 1 ? 'turno' : 'turnos') + (aj[sel] ? ' · <b>' + aj[sel].menos + ' ' + (aj[sel].menos === 1 ? 'día' : 'días') + ' sin trabajar, ' + (aj[sel].cubre === 'extra' ? 'cubierto con turno extra' : 'descontado de vacaciones') + '</b>' : '') + '</p>' +
       '<table class="pers"><tr><th>Fecha</th><th>Local</th><th>Qué hizo</th><th class="n">Monto</th></tr>' +
       xs.map(function (t) { var d = Number(t.fecha.slice(8)); return '<tr><td>' + DIAS[t.x.wd] + ' ' + d + '</td><td>' + NL[t.l] + '</td><td>' + ROL_TXT[t.rol] + '</td><td class="n">' + (t.falta ? '<span class="faltan">sin tarifa</span>' : t.monto == null ? 'sin pago aparte' : plata(t.monto)) + '</td></tr>'; }).join('') +
       (fijoDe(sel) ? '<tr><td colspan="3">Suma de los valores por día (referencia del costo)</td><td class="n">' + plata(diario(xs)) + '</td></tr><tr class="tot"><td colspan="3">Sueldo fijo mensual</td><td class="n">' + plata(fijoDe(sel)) + '</td></tr>'
         : '<tr class="tot"><td colspan="3">Total del mes</td><td class="n">' + plata(diario(xs)) + '</td></tr>') + '</table>' +
       '<div class="fila no-imp" style="margin-top:12px"><div class="campo" style="flex:0 1 220px"><small>Sueldo fijo mensual (vacío si no tiene)</small><input type="number" inputmode="numeric" min="0" step="1" id="pfijo" value="' + (fijoDe(sel) || '') + '"></div><button class="btn chico" id="pfijog" style="align-self:flex-end">Guardar</button></div>' +
-      (fijoDe(sel) ? '<p class="vacio no-imp">Con sueldo fijo, los montos de cada día son solo de referencia del costo por día.</p>' : '') + '</div>';
+      (fijoDe(sel) ? '<p class="vacio no-imp">Con sueldo fijo, los montos de cada día son solo de referencia del costo por día.</p>' +
+        '<div class="fila no-imp" style="margin-top:12px"><div class="campo" style="flex:0 1 160px"><small>Días que no trabajó este mes</small><input type="number" inputmode="numeric" min="0" max="31" id="pmenos" value="' + ((aj[sel] || {}).menos || '') + '"></div>' +
+        '<div class="campo" style="flex:0 1 220px"><small>Se descuenta de</small><select id="pcubre"><option value="vacaciones"' + ((aj[sel] || {}).cubre === 'extra' ? '' : ' selected') + '>Vacaciones</option><option value="extra"' + ((aj[sel] || {}).cubre === 'extra' ? ' selected' : '') + '>Turno extra (lo cubre con un domingo)</option></select></div>' +
+        '<button class="btn chico" id="pajg" style="align-self:flex-end">Guardar</button></div>' : '') + '</div>';
     return h;
   }
   function enlazarPersonas() {
     document.getElementById('psel').onchange = function () { S.persona = this.value; pintar(); };
     document.getElementById('pimp').onclick = function () { window.print(); };
+    var ga = document.getElementById('pajg');
+    if (ga) ga.onclick = function () { api('POST', '/api/prog/ajuste', { mes: S.mes, nombre: S.persona, menos: document.getElementById('pmenos').value, cubre: document.getElementById('pcubre').value }).then(function (j) { S.data.ajustes = j.ajustes; aviso('Guardado'); pintar(); }).catch(function (e) { aviso(e.message); }); };
     var g = document.getElementById('pfijog');
     if (g) g.onclick = function () { api('POST', '/api/prog/fijo', { nombre: S.persona, fijo: document.getElementById('pfijo').value }).then(function (j) { S.data.personas = j.personas; aviso('Guardado'); pintar(); }).catch(function (e) { aviso(e.message); }); };
     document.querySelectorAll('tr[data-ver]').forEach(function (tr) { tr.onclick = function () { S.persona = tr.dataset.ver; window.scrollTo(0, 0); pintar(); }; });
@@ -331,7 +336,8 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
   function interno(sh) { return sh.tipo === 'bingo' || /bingo|juego/i.test(sh.nombre || ''); }
   // A nombre de quién se paga el show (va entre paréntesis en la GLOSA, para la contadora) y su monto
   function camposPago(f, l, sh) {
-    return '<div class="fila" style="margin-top:6px"><div class="campo"><small>A nombre de (para la contadora)</small><input type="text" list="u-persona" value="' + esc(sh.persona) + '" data-f="' + f + '" data-l="' + l + '" data-sk="persona"></div>' +
+    var per = sh.persona || (l === 'TOB' ? sh.artista || '' : ''); // en Tobalaba, la persona del paréntesis del especial
+    return '<div class="fila" style="margin-top:6px"><div class="campo"><small>A nombre de (para la contadora)</small><input type="text" list="u-persona" value="' + esc(per) + '" data-f="' + f + '" data-l="' + l + '" data-sk="persona"></div>' +
       '<div class="campo" style="flex:0 1 140px"><small>Monto del show</small><input type="number" inputmode="numeric" min="0" step="1000" value="' + (sh.monto != null ? sh.monto : '') + '" data-f="' + f + '" data-l="' + l + '" data-sk="monto"' + (sh.monto == null ? ' style="border-color:var(--mal)"' : '') + '></div></div>';
   }
   function datalistPersonas() {

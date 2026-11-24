@@ -45,7 +45,7 @@ module.exports = function programacion({ app, dir }) {
   const FILE = process.env.PROG_FILE || path.join(dir, 'programacion.json');
   let P = {};
   try { P = JSON.parse(fs.readFileSync(FILE, 'utf8')); } catch { /* primera vez */ }
-  P.dias ||= {}; P.personas ||= []; P.tarifas ||= []; P.horarios ||= {}; P.glosa ||= {}; P.asist ||= {};
+  P.ajustes ||= {}; P.dias ||= {}; P.personas ||= []; P.tarifas ||= []; P.horarios ||= {}; P.glosa ||= {}; P.asist ||= {};
   // Semana tipo (criterio de noviembre que dijo Cote, 23 nov): con qué se prellena cada día y local. Cote la confirma o
   // la cambia al empezar cada mes. Solo nombres cortos; los montos nunca van aquí.
   P.plantilla ||= {
@@ -227,7 +227,11 @@ module.exports = function programacion({ app, dir }) {
     return [s.nombre, s.artista ? `(${s.artista})` : ''].filter(Boolean).join(' ');
   }
   // En la GLOSA el show lleva entre paréntesis el nombre de la persona a quien se le paga (Cote, 23 nov)
-  const showGlosaPago = (s, local) => [showGlosa(s, local), s && s.persona ? `(${s.persona})` : ''].filter(Boolean).join(' ');
+  // En Tobalaba, el nombre entre paréntesis del especial ya es la persona a quien se le paga (Cote, 24 nov): no se repite
+  const showGlosaPago = (s, local) => {
+    const per = s && s.persona && s.persona !== s.artista ? s.persona : '';
+    return [showGlosa(s, local), per ? `(${per})` : ''].filter(Boolean).join(' ');
+  };
   function showCartelera(s, local) {
     if (!s) return '';
     let t;
@@ -573,7 +577,7 @@ module.exports = function programacion({ app, dir }) {
       mes: `${y}-${pad(m)}`, nombre: `${titulo(MESES[m - 1])} ${y}`, fechas, personas: P.personas, tarifas: P.tarifas, horarios: P.horarios,
       tipos: TIPOS, usados: Object.fromEntries(Object.entries(usados).map(([k, v]) => [k, [...v].sort()])), locales: NOMBRE_LOCAL,
       glosa: { url: P.glosa.url || '', ultimo: P.glosa.ultimo || null },
-      plantilla: P.plantilla, asist: P.asist[`${y}-${pad(m)}`] || {}, pasos: PASOS,
+      ajustes: P.ajustes[`${y}-${pad(m)}`] || {}, plantilla: P.plantilla, asist: P.asist[`${y}-${pad(m)}`] || {}, pasos: PASOS,
     };
   }
   app.get('/api/prog/mes', auth, (req, res) => { const { y, m } = mesDe(req.query.m); res.json(estadoMes(y, m)); });
@@ -705,6 +709,16 @@ module.exports = function programacion({ app, dir }) {
     const f = Math.round(Number(String(b.fijo == null ? '' : b.fijo).replace(/[^\d]/g, '')) || 0);
     if (f > 0) p.fijo = f; else delete p.fijo;
     save(); res.json({ ok: true, personas: P.personas });
+  });
+  // Días que no trabajó alguien con sueldo fijo en el mes y con qué se cubren (Cote, 24 nov: Oscar pide días que
+  // después cubre con un domingo; se descuentan de las vacaciones o del turno extra)
+  app.post('/api/prog/ajuste', auth, (req, res) => {
+    const b = req.body || {}; const { y, m } = mesDe(b.mes); const k = `${y}-${pad(m)}`;
+    const n = clean(b.nombre, 40); if (!n) return fail(res, 400, 'Falta el nombre');
+    const menos = Math.max(0, Math.min(31, Math.round(Number(b.menos) || 0)));
+    P.ajustes[k] ||= {};
+    if (menos) P.ajustes[k][n] = { menos, cubre: b.cubre === 'extra' ? 'extra' : 'vacaciones' }; else delete P.ajustes[k][n];
+    save(); res.json({ ok: true, ajustes: P.ajustes[k] });
   });
   app.post('/api/prog/tarifas', auth, (req, res) => {
     const xs = Array.isArray((req.body || {}).tarifas) ? req.body.tarifas : [];

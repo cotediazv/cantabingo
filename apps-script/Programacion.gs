@@ -11,7 +11,7 @@
 // También escribe el mes en B8 y el monto de cada show en la columna siguiente a la del show.
 // llenarMes (el archivo de antes) no se usa ni se toca.
 const CLAVE_PROGRAMACION = '__CLAVE__';
-const PROG_VERSION = 8;
+const PROG_VERSION = 9;
 
 const PR_PRIMERA = 12, PR_ALTO = 39, PR_BLOQUES = 20, PR_RESUMEN = 835;
 const PR_COL = { MK: 3, KENNEDY: 3, EV: 12, EVENTOS: 12, KR: 22, KARAROCK: 22, TOB: 32, TOBALABA: 32, FRI: 42, FRIDA: 42, PAN: 52, PANORAMICO: 52 };
@@ -19,6 +19,9 @@ const PR_COLS = [3, 12, 22, 32, 42, 52];
 const PR_ANTICIPO = [6, 15, 25, 35, 45, 55];
 const PR_DIA_RESUMEN = [2, 11, 21, 31, 41, 51];
 const PR_NOMBRE_DIA = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
+// Locales que maneja la plataforma: Kennedy (C), Tobalaba (AF) y Frida (AP). Eventos, Kararock y Panorámico los llena
+// Cote a mano (Cote, 24 nov): el script no borra ni escribe sus montos, presupuestos ni resumen de shows
+const PR_PROPIOS = [3, 32, 42];
 const PR_CERRADOS = ['24-12', '25-12', '31-12', '1-1'];
 
 function doGet(e) {
@@ -130,12 +133,14 @@ function llenarProg_(ss, sh, b) {
     const rg = sh.getRange(PR_RESUMEN, c, PR_BLOQUES, 1);
     const f = rg.getFormulas();
     rg.setValues(f.map(function (r, i) { return [r[0] || (dias[i] ? PR_NOMBRE_DIA[dias[i].wd] + ' ' + dias[i].d : '')]; }));
-    limpiarProg_(sh.getRange(PR_RESUMEN, c + 1, PR_BLOQUES, 2));
-    limpiarProg_(sh.getRange(PR_RESUMEN, c + 5, PR_BLOQUES, 1));
+    if (PR_PROPIOS.indexOf(c + 1) < 0) return;
+    limpiarProg_(sh.getRange(PR_RESUMEN, c + 1, PR_BLOQUES, 2)); // show y su monto (Kennedy C y D)
+    limpiarProg_(sh.getRange(PR_RESUMEN, c + 5, PR_BLOQUES, 1)); // anticipo del show (Kennedy G)
   });
   for (let k = 0; k < PR_BLOQUES; k++) {
     const top = PR_PRIMERA + k * PR_ALTO;
-    PR_COLS.concat(PR_ANTICIPO).forEach(function (c) { limpiarProg_(sh.getRange(top + 3, c, 30, 1)); });
+    // Pagos (Kennedy C) y anticipos (Kennedy F) de toda la lista, de Nicolás Lavé a Dani González, solo de los locales de la plataforma
+    PR_COLS.forEach(function (c, i) { if (PR_PROPIOS.indexOf(c) < 0) return; limpiarProg_(sh.getRange(top + 3, c, 30, 1)); limpiarProg_(sh.getRange(top + 3, PR_ANTICIPO[i], 30, 1)); });
   }
 
   // Nombres cortos → nombres de la planilla (hoja EQUIPO)
@@ -240,7 +245,7 @@ function llenarProg_(ss, sh, b) {
   for (let k = 0; k < PR_BLOQUES; k++) {
     const fila = PR_PRIMERA + k * PR_ALTO + 34;
     const x = dias[k];
-    PR_COLS.forEach(function (c) {
+    PR_PROPIOS.forEach(function (c) {
       const celda = sh.getRange(fila, c);
       if (!x || cerrado(x.d) || !activo[k + '|' + c]) { celda.setValue(0); return; }
       celda.setFormula('=' + letraProg_(c + OFF_DIA[x.wd]) + '$3' + (banda[k + '|' + c] ? '+35000' : ''));
@@ -255,7 +260,7 @@ function llenarProg_(ss, sh, b) {
   });
 
   // Diseños de Rodrigo: un flyer por show; Piano Man y Los juegos (antes Bingo de Frida), uno al mes; más la cartelera
-  const FILA_DISENO = { MK: 877, PAN: 878, TOB: 879, FRIDA: 880 };
+  const FILA_DISENO = { MK: 877, TOB: 879, FRIDA: 880 }; // Panorámico (878) lo maneja Cote
   const dis = {};
   filas.forEach(function (r) {
     if (!esShow(r)) return;
