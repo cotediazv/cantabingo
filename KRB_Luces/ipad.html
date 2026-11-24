@@ -118,7 +118,11 @@
   .nav3d{position:absolute;right:8px;bottom:8px;display:grid;grid-template-columns:repeat(3,32px);gap:4px;z-index:2}
   .nav3d button{width:32px;height:32px;border:0;border-radius:8px;background:#000a;color:#fff;font-size:14px;cursor:pointer;touch-action:none;padding:0}
   .nav3d button:active{background:var(--acc)}
-  .vista.oculta .nav3d{display:none}
+  .vista.oculta .nav3d, .vista.oculta .vistas3d{display:none}
+  .vistas3d{position:absolute;left:8px;bottom:8px;right:120px;display:flex;flex-wrap:wrap-reverse;gap:4px;z-index:2;pointer-events:none}
+  .vistas3d button{pointer-events:auto;border:0;border-radius:8px;background:#000b;color:#fff;font-size:12px;padding:6px 9px;cursor:pointer}
+  .vistas3d button.guardar{background:#1f3b6e}
+  .vistas3d button.x{padding:6px 7px;color:#ff9a9a;margin-left:-4px;border-radius:0 8px 8px 0}
   /* Vista realista (three.js) si esta disponible; si no, la vista simple */
   .vista.gl #cv3d{display:none} .vista:not(.gl) #cv3dgl{display:none}
   /* En Seguir: la vista 3D queda fija arriba mientras se usa el mapa, para ver las luces moverse en tiempo real */
@@ -170,6 +174,7 @@
 <section class="vista" id="vista">
   <canvas id="cv3dgl"></canvas>
   <canvas id="cv3d"></canvas>
+  <div class="vistas3d" id="vistas3d"></div>
   <div class="nav3d" title="Moverse por el salón">
     <button data-nav="giraI" title="Girar">⟲</button><button data-nav="adelante" title="Adelante">▲</button><button data-nav="giraD" title="Girar">⟳</button>
     <button data-nav="izq" title="Izquierda">◀</button><button data-nav="atras" title="Atrás">▼</button><button data-nav="der" title="Derecha">▶</button>
@@ -455,6 +460,33 @@ async function postApi(ruta, params){
 }
 async function efectoPost(id, params){ try { pintarEstado(await postApi('/api/efecto', {id, ...params})); } catch(e){ sinConexion(); } }
 async function guardarDatos(){ return postApi('/api/guardar', {d: JSON.stringify(datos)}); }
+
+/* ---------- Vistas guardadas de la camara 3D (una para cada lugar), guardadas en el Dell ---------- */
+function pintarVistas(){
+  const cont = $('vistas3d'); if (!cont) return; cont.innerHTML = '';
+  const g = document.createElement('button'); g.className = 'guardar'; g.textContent = '＋ Guardar vista'; g.title = 'Guardar el ángulo actual de la cámara';
+  g.onclick = async () => {
+    datos.vistas = datos.vistas || [];
+    const nombre = (prompt('Nombre de la vista (por ejemplo: Escenario, Bingo, Mesas del fondo)', 'Vista ' + (datos.vistas.length + 1)) || '').trim();
+    if (!nombre) return;
+    datos.vistas.push({ nombre, yaw: V.yaw, pitch: V.pitch, dist: V.dist, objetivo: [...V.objetivo] });
+    try { await guardarDatos(); toast('Vista guardada: ' + nombre); } catch(e){ toast('No se pudo guardar en el Dell'); }
+    pintarVistas();
+  };
+  cont.appendChild(g);
+  (datos.vistas || []).forEach((v, i) => {
+    const b = document.createElement('button'); b.textContent = v.nombre; b.title = 'Ir a esta vista';
+    b.onclick = () => { V.yaw = v.yaw; V.pitch = v.pitch; V.dist = v.dist; V.objetivo = [...v.objetivo]; V.sucio = true; };
+    const x = document.createElement('button'); x.className = 'x'; x.textContent = '×'; x.title = 'Borrar la vista ' + v.nombre;
+    x.onclick = async () => {
+      if (!confirm('¿Borrar la vista "' + v.nombre + '"?')) return;
+      datos.vistas.splice(i, 1);
+      try { await guardarDatos(); } catch(e){ toast('No se pudo guardar en el Dell'); }
+      pintarVistas();
+    };
+    cont.appendChild(b); cont.appendChild(x);
+  });
+}
 
 /* ---------- Programas en movimiento (corren en el Dell, como los efectos) ---------- */
 const CICLO = ['azul', 'rojo', 'verde', 'amarillo'];
@@ -1169,7 +1201,7 @@ function dibujar3D(){
   caja(-2.6, -1.9, ht, 1.2, -3.4, -2.9, '#141519', '#101114', '#1b1c21');       // parlante
   // Columnas azules de listones en las esquinas, con paneles de luz
   [[-6.3, -5.3], [5.3, 6.3]].forEach(([x0, x1]) => {
-    caja(x0, x1, 0, 4.3, -0.6, 0.6, '#2f5f9e', '#264f86', '#3a6fb5');
+    caja(x0, x1, 0, 4.3, -0.6, 0.6, 'rgba(47,95,158,.12)', 'rgba(38,79,134,.12)', 'rgba(58,111,181,.15)');   // casi invisibles
     for (let x = x0 + 0.12; x < x1; x += 0.16) linea([x, 0, 0.61], [x, 4.3, 0.61], '#24497d', 1);
     poly([[x0+0.15,2.3,0.62],[x1-0.15,2.3,0.62],[x1-0.15,3.7,0.62],[x0+0.15,3.7,0.62]], '#56698a', '#7d8ba3'); // pantalla vertical (mira al publico)
     poly([[x0+0.03,1.67,0.64],[x1-0.03,1.67,0.64],[x1-0.03,2.23,0.64],[x0+0.03,2.23,0.64]], '#4d6890', '#111'); // pantalla de 42" debajo (las dos columnas)
@@ -1231,7 +1263,7 @@ function dibujar3D(){
   colsSalon().forEach((_, n) => {                                                    // los 6 pilares del salon
     const c = columnaSalon(n), [cu, cv] = colsSalon()[n];
     objetos.push({ d: Math.hypot(...sub(c, V.ojo)), f: () => {
-      cajaS(cu, cv, 0.6, 0.6, 0, 5.5, '#34373d', '#2a2d32', '#3c3f45');            // columna de piedra, alineada al salon
+      cajaS(cu, cv, 0.6, 0.6, 0, 5.5, 'rgba(120,125,135,.08)', 'rgba(120,125,135,.06)', 'rgba(140,145,155,.1)');   // pilar casi invisible
       if (n === 0){                                                                  // letrero de neon EAT FISH (cara hacia las mesas)
         const p = P(deSalon(cu + 0.62, cv, 3.3));
         if (p && p[2] > 2){
@@ -1436,7 +1468,7 @@ function dibujarPlano(){
   catch(e){ if (!pidiendo) document.querySelector('main').innerHTML = '<p class="help">No se pudo leer luces.json desde el Dell. ¿Está abierto INICIAR.bat?</p>'; return; }
   try { datos = await api('/api/datos'); if (!datos.calibracion) datos.calibracion = {}; } catch(e){}
   conf.grupos.forEach(g => zonas[g.id] = {color:null, intensidad:0});
-  pintarDirecciones(); dibujarPlano(); pintarTodo(); pintarProgramas();
+  pintarDirecciones(); dibujarPlano(); pintarTodo(); pintarProgramas(); pintarVistas();
   V.yaw = giroSalon() * 0.6; V.dist = 11; V.pitch = 0.2;   // vista inicial: desde el salon, en diagonal
   sondear(); setInterval(sondear, 3000); sondearVista(); V.sucio = true;
 })();

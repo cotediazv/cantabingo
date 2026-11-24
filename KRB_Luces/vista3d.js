@@ -190,8 +190,10 @@ function construir(){
   caja(0.9, 1.3, 0.6, mat.gris, 4.45, 1.1, -2.05);                                    // case: al borde, detras de la columna azul derecha
   caja(0.7, 0.75, 0.5, mat.negro, -2.25, 0.82, -3.15);                               // parlante
   // columnas azules del escenario con su pantalla vertical (y la TV en la derecha)
+  // columnas azules casi invisibles (Cote: que no tapen); las pantallas se siguen viendo como referencia
+  const listonesTransp = mat.listones.clone(); listonesTransp.transparent = true; listonesTransp.opacity = 0.12; listonesTransp.depthWrite = false;
   [-5.8, 5.8].forEach(x => {
-    caja(1.0, 4.3, 1.2, mat.listones, x, 2.15, 0);
+    const col = caja(1.0, 4.3, 1.2, listonesTransp, x, 2.15, 0); col.castShadow = false;
     const pant = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 1.4), new THREE.MeshStandardMaterial({ color: 0x101826, emissive: 0x3a5a90, emissiveIntensity: 0.6 }));
     pant.position.set(x, 3.0, 0.61); scene.add(pant);
     // debajo, en las DOS columnas: pantalla de 42" (unos 93 x 52 cm), del ancho del pilar
@@ -228,8 +230,12 @@ function construir(){
   const acceso = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 2.6), new THREE.MeshStandardMaterial({ color: 0x14181e })); acceso.position.set(-7.3, 1.3, -1.2); scene.add(acceso);
 
   // --- pilares de piedra (alineados al salon), letrero EAT FISH ---
+  // pilares del salon casi invisibles (Cote: para ver bien donde esta parada la persona y seguirla)
+  const piedraTransp = mat.piedra.clone(); piedraTransp.transparent = true; piedraTransp.opacity = 0.08; piedraTransp.depthWrite = false;
+  const bordePilar = new THREE.LineBasicMaterial({ color: 0x8a8f98, transparent: true, opacity: 0.35 });
   colsSalon().forEach(([u, v], n) => {
-    const p = sombra(new THREE.Mesh(new THREE.BoxGeometry(1.2, 5.5, 1.2), mat.piedra)); enSalon(p, u, v, 2.75); scene.add(p);
+    const p = new THREE.Mesh(new THREE.BoxGeometry(1.2, 5.5, 1.2), piedraTransp); enSalon(p, u, v, 2.75); scene.add(p);
+    const borde = new THREE.LineSegments(new THREE.EdgesGeometry(p.geometry), bordePilar); enSalon(borde, u, v, 2.75); scene.add(borde);   // solo el contorno
     if (n === 0){
       const l = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.62), new THREE.MeshBasicMaterial({ map: texLetrero(['EAT', 'FISH'], '#7ff6ff'), transparent: true }));
       const g = new THREE.Group(); l.rotation.y = Math.PI / 2; l.position.x = 0.62; g.add(l); enSalon(g, u, v, 3.2); scene.add(g);
