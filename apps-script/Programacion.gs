@@ -11,7 +11,7 @@
 // También escribe el mes en B8 y el monto de cada show en la columna siguiente a la del show.
 // llenarMes (el archivo de antes) no se usa ni se toca.
 const CLAVE_PROGRAMACION = '__CLAVE__';
-const PROG_VERSION = 6;
+const PROG_VERSION = 7;
 
 const PR_PRIMERA = 12, PR_ALTO = 39, PR_BLOQUES = 20, PR_RESUMEN = 835;
 const PR_COL = { MK: 3, KENNEDY: 3, EV: 12, EVENTOS: 12, KR: 22, KARAROCK: 22, TOB: 32, TOBALABA: 32, FRI: 42, FRIDA: 42, PAN: 52, PANORAMICO: 52 };
@@ -72,6 +72,25 @@ function limpiarProg_(rg) {
   rg.setValues(f.map(function (fila) { return fila.map(function (x) { return x || ''; }); }));
 }
 
+// Normaliza un nombre para compararlo: sin tildes, en mayúsculas, sin números al final y sin letras repetidas seguidas
+// (LORETTO y LORETO quedan iguales)
+function normProg_(s) {
+  return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/\s*[X×*]?\s*\d+(?:[.,]\d+)?\s*$/, '')
+    .replace(/[^A-ZÑ ]/g, ' ').replace(/(.)\1+/g, '$1').replace(/\s+/g, ' ').trim();
+}
+// Fila de una persona en la lista de nombres de la pestaña: primero el nombre de EQUIPO, después el nombre igual y al
+// final el que empieza con ese nombre (LORETTO → LORETO CANALES). -1 si no está; -2 si hay más de una posible.
+function filaDe_(nombres, nombre, corto) {
+  const n = nombres.map(normProg_);
+  let i = n.indexOf(normProg_(nombre)); if (i >= 0 && n[i]) return i;
+  i = n.indexOf(normProg_(corto)); if (i >= 0 && n[i]) return i;
+  const pri = normProg_(nombre).split(' ')[0] || normProg_(corto).split(' ')[0];
+  const cand = [];
+  n.forEach(function (x, j) { if (x && x.split(' ')[0] === pri) cand.push(j); });
+  if (cand.length === 1) return cand[0];
+  return cand.length > 1 ? -2 : -1;
+}
+
 function letraProg_(n) {
   let s = '';
   while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); }
@@ -114,7 +133,7 @@ function llenarProg_(ss, sh, b) {
     });
   }
   const nombres = sh.getRange(PR_PRIMERA + 3, 2, 30, 1).getValues().map(function (r) { return String(r[0]).trim().toUpperCase(); });
-  const agregados = [], suma = {}, activo = {}, banda = {};
+  const agregados = [], faltan = [], suma = {}, activo = {}, banda = {};
 
   filas.forEach(function (r) {
     const k = bloqueDe[Number(r[0])];
@@ -133,14 +152,11 @@ function llenarProg_(ss, sh, b) {
       if (!m) return;
       const corto = m[1].trim().toUpperCase();
       const nombre = alias[corto] || corto;
-      let off = nombres.indexOf(nombre);
-      if (off < 0) {
-        off = nombres.indexOf('');
-        if (off < 0) { avisos.push('Sin fila vacía para ' + nombre); return; }
-        nombres[off] = nombre;
-        agregados.push(nombre);
-        for (let x = 0; x < PR_BLOQUES; x++) sh.getRange(PR_PRIMERA + x * PR_ALTO + 3 + off, 2).setValue(nombre);
-      }
+      // Busca su fila (Cote, 24 nov: no crear filas repetidas de personas que ya están, como «Loreto» si ya está
+      // «Loreto Canales»). Si no la encuentra, no agrega nada: avisa para que Cote la ponga a mano.
+      const off = filaDe_(nombres, nombre, corto);
+      if (off === -2) { avisos.push('Hay más de una fila que puede ser ' + corto + ': revisa los nombres en la pestaña o en EQUIPO'); return; }
+      if (off < 0) { if (faltan.indexOf(corto) < 0) faltan.push(corto); return; }
       const key = k + '|' + col + '|' + off;
       suma[key] = (suma[key] || 0) + Number(m[2]);
     });
@@ -266,6 +282,6 @@ function llenarProg_(ss, sh, b) {
     sh.getRange(827 + i, 73).setNumberFormat('dd-mm-yyyy');
   });
 
-  if (agregados.length) avisos.unshift('Agregué: ' + agregados.join(', '));
+  if (faltan.length) avisos.unshift('No encontré en la pestaña a: ' + faltan.join(', ') + '. Agrégalos a mano en su fila (o en la hoja EQUIPO) y vuelve a enviar; sus montos de esos días no se escribieron');
   return avisos;
 }

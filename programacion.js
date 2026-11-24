@@ -732,8 +732,8 @@ module.exports = function programacion({ app, dir }) {
       .then((r) => r.text()).then((t) => {
         let j; try { j = JSON.parse(t); } catch { throw new Error('La GLOSA no respondió como se esperaba (revisa que el script esté publicado como aplicación web)'); }
         if (j.error) throw new Error(j.error);
-        const viejo = !(Number(j.version) >= 6);
-        envio = { estado: 'listo', mes: a.mes, a: Date.now(), creada: Boolean(j.creada), aviso: [j.aviso || '', viejo ? 'El script de la GLOSA es una versión anterior: le faltan los últimos cambios (por ejemplo, sin anticipo desde diciembre). Actualiza el script (pestaña GLOSA, «Actualizar el script») y vuelve a enviar.' : ''].filter(Boolean).join(' ') };
+        const viejo = !(Number(j.version) >= 7);
+        envio = { estado: 'listo', mes: a.mes, a: Date.now(), creada: Boolean(j.creada), aviso: [j.aviso || '', viejo ? 'El script de la GLOSA es una versión anterior: le faltan los últimos cambios (por ejemplo, no crear filas repetidas de personas). Actualiza el script (pestaña GLOSA, «Actualizar el script») y vuelve a enviar.' : ''].filter(Boolean).join(' ') };
       })
       .catch((e) => { envio = { estado: 'error', mes: a.mes, a: Date.now(), error: clean(e && e.message, 300) || 'No se pudo enviar' }; })
       .finally(() => { P.glosa.ultimo = envio; save(); });
