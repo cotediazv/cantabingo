@@ -1894,8 +1894,9 @@ function plano(cam, obj){                                             // corte a
 }
 // Camara del escenario (Cote, rev 195): siempre la misma toma fija, como la camara de las transmisiones de Twitch,
 // un poco mas abierta para que entren las dos columnas azules con sus pantallas verticales y las de 42".
-// PROVISORIA: falta la captura de Twitch para ponerla exactamente en ese lugar (pregunta en el registro).
-const PLANO_ESC = { cam: [0.2, 2.4, 9.3], mira: [0, 1.95, -1.0] };
+// Segun las capturas de Twitch (Cote, 24 nov): de frente, al centro, a la altura del pecho de quien esta en el escenario,
+// mirando derecho. Mas abierta que Twitch porque en la 3D las columnas quedan mas separadas que en el local (falta medirlas).
+const PLANO_ESC = { cam: [0, 1.95, 8.8], mira: [0, 1.85, -1.0] };
 function iniciarFlashazos(retardo){
   // Tres tomas rapidas, SIEMPRE del escenario desde distintos angulos (Cote, rev 197); despues vuelve a la camara fija
   camDemo.flashes = [
