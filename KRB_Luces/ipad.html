@@ -167,6 +167,7 @@
 </header>
 <nav>
   <button data-t="escenas" class="act">Escenas</button>
+  <button data-t="juegos">Juegos</button>
   <button data-t="seguir">Seguir</button>
   <button data-t="zonas">Zonas</button>
   <button data-t="probar">Probar canales</button>
@@ -215,6 +216,13 @@
       <span class="help" style="margin:0;white-space:nowrap" id="progVelTxt">1.5 s por color</span>
     </div>
     <div class="row" id="progGrabados"></div>
+  </section>
+
+  <!-- ===== JUEGOS: momentos que cambian las luces solas a medida que avanza el juego ===== -->
+  <section class="tab" id="juegos">
+    <p class="help">Cada botón es un momento del juego. Más adelante el GC Master los dispara solo (Code 1); mientras tanto se pueden tocar aquí.
+      <br>Momento actual: <b id="momActual">—</b></p>
+    <div id="juegosLista"></div>
   </section>
 
   <!-- ===== SEGUIR ===== -->
@@ -983,6 +991,7 @@ function pintarEstado(e){
   else if (e.conectado){ dot.className = 'dot ok'; t.textContent = 'Cable DMX · ' + e.puerto; }
   else { dot.className = 'dot'; t.textContent = 'Sin cable DMX · tocar para reintentar'; }
   $('pill').title = e.error || '';
+  momentoRecibido(e);
 }
 function sinConexion(){ $('dot').className = 'dot'; $('pillTxt').textContent = 'Sin conexión con el Dell'; }
 $('pill').onclick = async () => {
@@ -1510,13 +1519,160 @@ function dibujarPlano(){
   $('plano').innerHTML = s;
 }
 
+/* ---------- Momentos de los juegos (decisiones de Cote en el registro) ----------
+   Cada momento se "compila" a acciones del Dell (canales + efectos) y se guarda alli en momentos.txt,
+   para que el Dell lo ejecute solo cuando lo pida el iPad o el GC Master: /api/momento?nombre=...
+   Cabezas siempre en blanco calido. Pared = perimetrales (abajo) + fondo (arriba). */
+const CARA = [0, 1.6, -1.8];                                               // la cara del animador en el escenario
+const PARED_COLORES = () => (conf.fondo_enlazado && conf.fondo_enlazado.colores) || CICLO;
+// Piezas para armar los momentos
+const cab = (donde, zoom, ids) => { const o = {}; (ids || segIds().slice(0, 2)).forEach(id => o[id] = {color:'blanco_calido', intensidad:100, posicion:donde, zoom}); return o; };
+const pared = (color, intensidad) => ({perimetrales:{color, intensidad}, fondo:{color, intensidad}});
+const frente = intensidad => ({frontales:{color:'blanco_calido', intensidad}});
+const miniRoja = {mini:{color:'rojo', intensidad:100, posicion:'escenario', mover:true}};
+const BASE = () => ({...pared('azul', 100), ...frente(100), ...cab('escenario', 50), ...miniRoja});
+const JUEGOS = [
+  { juego:'Inicio y base', momentos:[
+    { id:'base_juegos', nombre:'Base juegos', detalle:'Pared azul, frente y cabezas al escenario, mini rojas', g:BASE },
+    { id:'inicio_noche', nombre:'Inicio de la noche', igual:'base_juegos' },
+    { id:'siguiente_juego', nombre:'Siguiente juego', igual:'base_juegos' } ]},
+  { juego:'Bingo', momentos:[
+    { id:'bingo_qr', nombre:'QR en pantalla', igual:'base_juegos' },
+    { id:'bingo_bolitas', nombre:'Primeras bolitas', igual:'base_juegos' },
+    { id:'bingo_al_publico', nombre:'Al público', detalle:'Escenario más bajo, 3 cabezas al público (abre Seguir)',
+      g:() => ({...pared('azul', 50), ...frente(40), ...cab('publico', 40, segIds()), ...miniRoja}) },
+    { id:'ganador_al_escenario', nombre:'Ganador al escenario', igual:'base_juegos' },
+    { id:'celebracion_ganador', nombre:'Celebración', detalle:'Pared cambiando de color a 148 BPM', g:BASE, pared:{colores:CICLO, t:0.41} },
+    { id:'entrega_premio', nombre:'Entrega del premio', detalle:'Pared roja, todo bien iluminado', g:() => ({...BASE(), ...pared('rojo', 100)}) } ]},
+  { juego:'Tómbolas', momentos:[
+    { id:'tombola_gira', nombre:'Tómbola girando', detalle:'Cabezas a la cara del animador, el resto en estrobo',
+      g:() => ({...pared('blanco', 100), ...frente(100), ...cab(CARA, 15), mini:{color:'blanco', intensidad:100, posicion:'escenario', mover:true}}),
+      estrobo:['perimetrales', 'fondo', 'frontales', 'mini'] },
+    { id:'tombola_resultado', nombre:'Resultado', igual:'base_juegos' } ]},
+  { juego:'El Rosko', momentos:[
+    { id:'rosko_pregunta', nombre:'Base rosco (pregunta)', detalle:'Pared más baja, arriba y abajo de distinto color, cambio lento',
+      g:() => ({...BASE(), ...pared('azul', 55)}), rosco:true },
+    { id:'rosko_correcta', nombre:'Correcta', detalle:'Pared verde 2 s', g:() => ({...BASE(), ...pared('verde', 100)}), luego:[2, 'base_juegos'] },
+    { id:'rosko_incorrecta', nombre:'Incorrecta', detalle:'Pared roja 2 s', g:() => ({...BASE(), ...pared('rojo', 100)}), luego:[2, 'base_juegos'] },
+    { id:'rosko_pasa', nombre:'Pasa palabra', igual:'base_juegos' },
+    { id:'rosko_puntajes', nombre:'Puntajes', detalle:'Todo abajo, solo la pared en naranja', g:() => pared('ambar', 100) },
+    { id:'rosko_ganador', nombre:'Ganador (celebración)', igual:'celebracion_ganador' },
+    { id:'rosko_premio', nombre:'Entrega del premio', igual:'entrega_premio' } ]},
+  { juego:'El objeto más extraño', momentos:[
+    { id:'objeto_votacion', nombre:'Anuncio y votación', detalle:'Interrogatorio: solo cabezas al escenario; mini a la pared con estrobo',
+      g:() => ({...cab('escenario', 25), mini:{color:'blanco', intensidad:100, pan:213, tilt:85}}), estrobo:['mini'] },
+    { id:'objeto_ganador', nombre:'Ganador', detalle:'Estrobo blanco en la pared del fondo',
+      g:() => ({...pared('blanco', 100), ...frente(100), ...cab('escenario', 50)}), estrobo:['perimetrales', 'fondo'] },
+    { id:'objeto_celebracion', nombre:'Celebración', igual:'celebracion_ganador' },
+    { id:'objeto_premio', nombre:'Entrega del premio', igual:'entrega_premio' } ]},
+  { juego:'El Festival', momentos:[
+    { id:'festival_cancion', nombre:'Canción', detalle:'Pared a 100 BPM, el resto blanco cálido a las caras',
+      g:() => ({...BASE(), ...cab(CARA, 50)}), pared:{colores:null, t:0.6} },
+    { id:'festival_votacion', nombre:'Votación', igual:'objeto_votacion' },
+    { id:'festival_ganador', nombre:'Ganador', igual:'objeto_ganador' },
+    { id:'festival_celebracion', nombre:'Celebración', igual:'celebracion_ganador' },
+    { id:'festival_premio', nombre:'Entrega del premio', igual:'entrega_premio' } ]},
+  { juego:'Trivia', momentos:[
+    { id:'trivia_ganador', nombre:'Ganador (celebración)', igual:'celebracion_ganador' },
+    { id:'trivia_premio', nombre:'Entrega del premio', igual:'entrega_premio' } ]}
+];
+const todosMomentos = () => JUEGOS.flatMap(j => j.momentos);
+const momentoPorId = id => todosMomentos().find(m => m.id === id);
+// Valores de canales de un momento (siempre con master al 100: el master del iPad no cambia lo que dispara el GC)
+function zonasDe(m){
+  const spec = m.g(), out = {};
+  conf.grupos.forEach(g => {
+    const s = spec[g.id], z = s ? {color:s.color, intensidad:s.intensidad, zoom:s.zoom} : {color:null, intensidad:0};
+    if (s && Array.isArray(s.posicion)) apuntarGeo(g.id, s.posicion, z);
+    else if (s && s.posicion) fijarPosicion(z, s.posicion, g.id);
+    if (s && s.pan != null){ z.pan = s.pan; z.tilt = s.tilt; }
+    z.mover = !!(s && s.mover);
+    out[g.id] = z;
+  });
+  return out;
+}
+function compilarMomento(m){
+  if (m.igual) return compilarMomento(momentoPorId(m.igual));
+  const mGuard = master; master = 100;
+  try {
+    const zs = zonasDe(m), todo = {}, L = ['/api/efecto?todos=off'];
+    conf.grupos.forEach(g => Object.assign(todo, valoresGrupo(g, zs[g.id])));
+    L.push('/api/set?d=' + serial(todo) + '&f=1');
+    const ef = (id, p) => L.push('/api/efecto?id=' + encodeURIComponent(id) + '&' + new URLSearchParams(p));
+    conf.grupos.forEach(g => {                                                  // mini (u otras cabezas) en movimiento, mirando al techo
+      if (!zs[g.id].mover || !g.canales.pan) return;
+      const b = g.direccion - 1, mv = g.mover || {};
+      ef('mover:' + g.id, {tipo:'seno', ch:[b + g.canales.pan, b + g.canales.tilt].join(','),
+        centro:[128, mv.tilt_centro != null ? mv.tilt_centro : 30].join(','), amp:[mv.amp_pan || 110, mv.amp_tilt || 18].join(','), periodo:mv.periodo || 8});
+    });
+    const ids = idsPared().filter(id => grupo(id));
+    if (m.pared){                                                               // pared cambiando de color al ritmo
+      const pasos = (m.pared.colores || PARED_COLORES()).map(c => { const s = {}; ids.forEach(id => Object.assign(s, valoresGrupo(grupo(id), {...zs[id], color:c}))); return s; });
+      ef('alternar', {tipo:'sec', pasos:pasosTxt(pasos), t:m.pared.t, fx:0.1});
+    }
+    if (m.rosco){                                                               // arriba (fondo) y abajo (perimetrales) distintos, fundido lento
+      const pares = [['azul', 'morado'], ['morado', 'cian'], ['cian', 'azul'], ['rosa', 'azul'], ['azul', 'rosa']];
+      const pasos = pares.map(([arriba, abajo]) => ({...valoresGrupo(grupo('fondo'), {...zs.fondo, color:arriba}), ...valoresGrupo(grupo('perimetrales'), {...zs.perimetrales, color:abajo})}));
+      ef('alternar', {tipo:'sec', pasos:pasosTxt(pasos), t:6, fx:1});
+    }
+    if (m.estrobo){
+      const on = {}, off = {};
+      m.estrobo.forEach(id => { const g = grupo(id); if (!g) return; Object.assign(on, valoresGrupo(g, zs[id])); Object.assign(off, valoresGrupo(g, {...zs[id], intensidad:0})); });
+      ef('estrobo', {tipo:'sec', pasos:pasosTxt([on, off]), t:0.06, fx:0});
+    }
+    if (m.luego){ L.push('espera:' + m.luego[0]); L.push('@' + m.luego[1]); }
+    return L;
+  } finally { master = mGuard; }
+}
+async function publicarMomentos(){
+  const txt = todosMomentos().map(m => '#' + m.id + '\n' + compilarMomento(m).join('\n')).join('\n\n');
+  try { await postApi('/api/momentos', {d: txt}); } catch(e){}
+}
+async function dispararMomento(id){
+  try { pintarEstado(await api('/api/momento?nombre=' + encodeURIComponent(id))); }
+  catch(e){ toast('El Dell no conoce ese momento: reinicia INICIAR.bat'); }
+}
+let momentoVisto = null;
+function pintarJuegos(nombre){
+  const cont = $('juegosLista'); if (!cont) return;
+  if (!cont.childElementCount) JUEGOS.forEach(j => {
+    const h = document.createElement('h2'); h.className = 'sec'; h.textContent = j.juego; cont.appendChild(h);
+    const row = document.createElement('div'); row.className = 'fxrow';
+    j.momentos.forEach(m => {
+      const b = document.createElement('button'); b.className = 'big'; b.dataset.mom = m.id;
+      const det = m.igual ? 'Igual que «' + momentoPorId(m.igual).nombre + '»' : m.detalle;
+      b.innerHTML = m.nombre + '<small>' + det + '<br><code>' + m.id + '</code></small>';
+      b.onclick = () => dispararMomento(m.id);
+      row.appendChild(b);
+    });
+    cont.appendChild(row);
+  });
+  cont.querySelectorAll('[data-mom]').forEach(b => b.classList.toggle('act', b.dataset.mom === nombre));
+  const m = momentoPorId(nombre); $('momActual').textContent = m ? m.nombre + ' (' + nombre + ')' : '—';
+}
+// Cuando llega un momento nuevo (del iPad o del GC Master), el iPad se acomoda solo
+function momentoRecibido(e){
+  if (e.momentoN == null || e.momentoN === momentoVisto) return;
+  const primero = momentoVisto === null; momentoVisto = e.momentoN;
+  pintarJuegos(e.momento);
+  if (primero || !e.momento) return;
+  escenaActiva = -1; efectoPared = null; progActivo = null;
+  const m = momentoPorId(e.momento);
+  if (m){
+    const z = zonasDe(m.igual ? momentoPorId(m.igual) : m); Object.keys(z).forEach(id => zonas[id] = {color:z[id].color, intensidad:z[id].intensidad, pan:z[id].pan, tilt:z[id].tilt, zoom:z[id].zoom, posicion:z[id].posicion});
+    pintarTodo(); pintarProgramas(); toast('▶ ' + m.nombre);
+  }
+  if (e.momento === 'bingo_al_publico') abrirTab('seguir');
+}
+
 /* ---------- Inicio ---------- */
 (async () => {
   try { conf = await api('/luces.json'); }
   catch(e){ if (!pidiendo) document.querySelector('main').innerHTML = '<p class="help">No se pudo leer luces.json desde el Dell. ¿Está abierto INICIAR.bat?</p>'; return; }
   try { datos = await api('/api/datos'); if (!datos.calibracion) datos.calibracion = {}; } catch(e){}
   conf.grupos.forEach(g => zonas[g.id] = {color:null, intensidad:0});
-  pintarDirecciones(); dibujarPlano(); pintarTodo(); pintarProgramas(); pintarVistas();
+  pintarDirecciones(); dibujarPlano(); pintarTodo(); pintarProgramas(); pintarVistas(); pintarJuegos();
+  await publicarMomentos();
   V.yaw = giroSalon() * 0.6; V.dist = 11; V.pitch = 0.2;   // vista inicial: desde el salon, en diagonal
   sondear(); setInterval(sondear, 3000); sondearVista(); V.sucio = true;
 })();

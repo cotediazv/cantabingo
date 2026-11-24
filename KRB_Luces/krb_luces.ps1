@@ -318,6 +318,47 @@ namespace KRB {
       if (ruta == "/vista3d.js") { Archivo(s, Path.Combine(Root, "vista3d.js"), "text/javascript; charset=utf-8"); return; }
       if (ruta == "/lib/three.module.min.js") { Archivo(s, Path.Combine(Root, "lib", "three.module.min.js"), "text/javascript; charset=utf-8"); return; }
 
+      if (Accion(ruta, query)) { Estado(s); return; }
+
+      // ---- Momentos de los juegos (los dispara el iPad o, mas adelante, el GC Master / la Sala de juegos) ----
+      if (ruta == "/api/momentos") {                       // guardar la lista de momentos (texto)
+        string d = Arg(query, "d");
+        if (d != null) { File.WriteAllText(Path.Combine(Root, "momentos.txt"), d, new UTF8Encoding(false)); ParseMomentos(d); }
+        Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":true,\"momentos\":" + ContarMomentos() + "}"));
+        return;
+      }
+      if (ruta == "/api/momento") {                        // ejecutar un momento: /api/momento?nombre=base_juegos
+        string n = Arg(query, "nombre") ?? "";
+        if (!EjecutarMomento(n)) { Enviar(s, "404 Not Found", "application/json", Encoding.UTF8.GetBytes("{\"error\":\"momento desconocido\",\"nombre\":\"" + Esc(n) + "\"}")); return; }
+        Estado(s); return;
+      }
+      if (ruta == "/api/lista-momentos") {                 // nombres disponibles (para Code 1 / GC Master)
+        StringBuilder b = new StringBuilder("[");
+        lock (ML) { int i = 0; foreach (string k in momentos.Keys) { if (i++ > 0) b.Append(','); b.Append('"').Append(Esc(k)).Append('"'); } }
+        b.Append(']');
+        Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes(b.ToString()));
+        return;
+      }
+
+      // Datos guardados en el Dell (calibracion de las cabezas, etc.)
+      if (ruta == "/api/datos") {
+        string p = Path.Combine(Root, "datos.json");
+        Enviar(s, "200 OK", "application/json; charset=utf-8", File.Exists(p) ? File.ReadAllBytes(p) : Encoding.UTF8.GetBytes("{}"));
+        return;
+      }
+      if (ruta == "/api/guardar") {
+        string d = Arg(query, "d");
+        if (d != null && d.StartsWith("{")) File.WriteAllText(Path.Combine(Root, "datos.json"), d, new UTF8Encoding(false));
+        Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":true}"));
+        return;
+      }
+      if (ruta == "/api/reconectar") { Dmx.Abrir(); Estado(s); return; }
+      if (ruta == "/api/estado") { Estado(s); return; }
+      Enviar(s, "404 Not Found", "text/plain", Encoding.UTF8.GetBytes("No encontrado"));
+    }
+
+    /* Acciones sobre las luces: las usa la red (/api/...) y tambien los momentos guardados */
+    static bool Accion(string ruta, string query) {
       if (ruta == "/api/set") {
         // d=canal:valor,canal:valor   f=segundos de fundido
         double f = Num(Arg(query, "f"), 0);
@@ -329,10 +370,9 @@ namespace KRB {
             if (kv.Length == 2 && int.TryParse(kv[0], out ch) && int.TryParse(kv[1], out v)) Dmx.Set(ch, v, f);
           }
         }
-        Estado(s); return;
+        return true;
       }
-      if (ruta == "/api/apagar") { Dmx.QuitarEfectos(); Dmx.Todo(0, Num(Arg(query, "f"), 0)); Estado(s); return; }
-
+      if (ruta == "/api/apagar") { Dmx.QuitarEfectos(); Dmx.Todo(0, Num(Arg(query, "f"), 0)); return true; }
       if (ruta == "/api/efecto") {
         // id=nombre  off=1 | todos=off
         // tipo=seno&ch=113,115&centro=128,100&amp=60,30&periodo=8
@@ -364,24 +404,48 @@ namespace KRB {
           }
           Dmx.PonerEfecto(id, e);
         }
-        Estado(s); return;
+        return true;
       }
+      return false;
+    }
 
-      // Datos guardados en el Dell (calibracion de las cabezas, etc.)
-      if (ruta == "/api/datos") {
-        string p = Path.Combine(Root, "datos.json");
-        Enviar(s, "200 OK", "application/json; charset=utf-8", File.Exists(p) ? File.ReadAllBytes(p) : Encoding.UTF8.GetBytes("{}"));
-        return;
+    /* Momentos: momentos.txt tiene bloques "#nombre" seguidos de acciones ("/api/set?...", "/api/efecto?...", "espera:2").
+       Un momento nuevo cancela lo que quedaba pendiente del anterior (por ejemplo, la vuelta a la base despues de 2 s). */
+    static Dictionary<string, List<string>> momentos = new Dictionary<string, List<string>>();
+    static readonly object ML = new object();
+    static int genMomento = 0;
+    public static string MomentoActual = "";
+    public static int MomentoN = 0;
+    public static void CargarMomentos() {
+      try { string p = Path.Combine(Root, "momentos.txt"); if (File.Exists(p)) ParseMomentos(File.ReadAllText(p)); } catch {}
+    }
+    static void ParseMomentos(string txt) {
+      Dictionary<string, List<string>> d = new Dictionary<string, List<string>>();
+      List<string> cur = null;
+      foreach (string linea in txt.Split('\n')) {
+        string l = linea.Trim(); if (l.Length == 0) continue;
+        if (l.StartsWith("#")) { cur = new List<string>(); d[l.Substring(1).Trim()] = cur; }
+        else if (cur != null) cur.Add(l);
       }
-      if (ruta == "/api/guardar") {
-        string d = Arg(query, "d");
-        if (d != null && d.StartsWith("{")) File.WriteAllText(Path.Combine(Root, "datos.json"), d, new UTF8Encoding(false));
-        Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":true}"));
-        return;
-      }
-      if (ruta == "/api/reconectar") { Dmx.Abrir(); Estado(s); return; }
-      if (ruta == "/api/estado") { Estado(s); return; }
-      Enviar(s, "404 Not Found", "text/plain", Encoding.UTF8.GetBytes("No encontrado"));
+      lock (ML) { momentos = d; }
+    }
+    static int ContarMomentos() { lock (ML) { return momentos.Count; } }
+    static bool EjecutarMomento(string nombre) {
+      List<string> acc;
+      lock (ML) { if (!momentos.TryGetValue(nombre, out acc)) return false; }
+      int gen = Interlocked.Increment(ref genMomento);
+      MomentoActual = nombre; MomentoN++;
+      Thread t = new Thread(() => {
+        foreach (string l in acc) {
+          if (gen != genMomento) return;                                   // llego otro momento: se cancela este
+          if (l.StartsWith("espera:")) { Thread.Sleep((int)(Num(l.Substring(7), 0) * 1000)); continue; }
+          if (l.StartsWith("@")) { if (gen == genMomento) EjecutarMomento(l.Substring(1).Trim()); return; }   // pasar a otro momento
+          int q = l.IndexOf('?');
+          try { Accion(q >= 0 ? l.Substring(0, q) : l, q >= 0 ? l.Substring(q + 1) : ""); } catch {}
+        }
+      });
+      t.IsBackground = true; t.Start();
+      return true;
     }
 
     static int[] Enteros(string t) {
@@ -405,6 +469,7 @@ namespace KRB {
       b.Append(",\"conectado\":").Append(Dmx.Conectado ? "true" : "false");
       b.Append(",\"error\":\"").Append(Esc(Dmx.Error)).Append("\"");
       b.Append(",\"tramas\":").Append(Dmx.Tramas);
+      b.Append(",\"momento\":\"").Append(Esc(MomentoActual)).Append("\",\"momentoN\":").Append(MomentoN);
       b.Append(",\"efectos\":[");
       string[] ef = Dmx.Efectos();
       for (int i = 0; i < ef.Length; i++) { if (i > 0) b.Append(','); b.Append('"').Append(Esc(ef[i])).Append('"'); }
@@ -466,6 +531,7 @@ if ($cfg.acceso) {
   [KRB.Web]::PedirEnWifiLocal = [bool]$cfg.acceso.pedir_en_wifi_local
 }
 [KRB.Web]::CargarSesiones()
+[KRB.Web]::CargarMomentos()
 [KRB.Web]::Start($puertoWeb)
 
 Write-Host ""
