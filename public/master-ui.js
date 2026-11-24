@@ -307,7 +307,7 @@
             <div class="gm-scr gm-tall" data-n="3"><small>3 · De pie</small>${TOOLS(3, false)}<div class="gm-box" data-w="720"><iframe title="Pantalla de pie de la sala de juegos" tabindex="-1" src="${page('#/tablero')}"></iframe></div></div>${demo ? `<div class="gm-scr gm-tall dm-phone" data-n="4"><small>Celular</small>${TOOLS(4, false)}<div class="gm-box" data-w="390"><iframe title="Celular de la persona protagonista" tabindex="-1"></iframe></div></div>` : ''}
           </div>
           ${demo ? `<div class="dm-ctl"><label>Celular de <select data-k="who"><option value="">Automático: quien está en el escenario</option></select></label><span class="dm-who" data-k="whoName"></span>
-            <label class="dm-vista">Vista 3D de Code 4 <input data-k="vista" type="url" placeholder="Dirección de la vista 3D (la entrega Code 4)"><button type="button" data-k="vistaSave">Guardar</button></label></div>` : ''}
+            <label class="dm-vista">Vista 3D de Code 4 <input data-k="vista" type="url" placeholder="Vacío: la copia de la Sala (/demo-luces/)"><button type="button" data-k="vistaSave">Guardar</button></label></div>` : ''}
           </section>`
         : `<section class="gm-venue gm-none"><header class="gm-head"><b>${demo ? 'Demo · sala simulada' : 'Sala de juegos'}</b></header>
           <p>${demo ? 'Crea la sala simulada en el panel de al lado: elige el local y cuántas personas virtuales. Cuando esté lista, aquí aparecen la cámara simulada, las pantallas y el celular.' : 'No hay sala de juegos abierta. Créala en el panel de al lado («Crear sala de juegos»); cuando esté abierta, aquí aparecen sus pantallas y sus botones.'}</p></section>`;
@@ -327,11 +327,22 @@
     // Pantalla 1: la vista 3D de Code 4 (con las luces y el animador virtual) y, encima, el GC real de la sala
     function demoCam() {
       const box = left.querySelector('[data-k="p1box"]'); if (!box) return;
-      const mom = `${location.origin}/api/momentos`;
-      const v3d = vista ? `${vista}${vista.includes('?') ? '&' : '?'}momentos=${encodeURIComponent(mom)}` : '';
-      box.innerHTML = `${v3d ? `<iframe class="dm-v3d" title="Vista 3D del salón (Code 4)" src="${esc(v3d)}"></iframe>` : '<div class="dm-stage"><span>La cámara simulada (la vista 3D del salón con las luces y el animador, de Code 4) aparece aquí cuando esté lista. Mientras tanto se ve solo el GC.</span></div>'}<iframe class="dm-gc" title="GC de la sala de juegos" tabindex="-1" src="${page('#/escena')}"></iframe>`;
+      // Por defecto, la copia del demo de luces de Code 4 que está en la Sala (/demo-luces/, modo «tv»: solo la vista 3D
+      // con la cámara sobre el animador); se puede cambiar por otra dirección en «Vista 3D de Code 4»
+      const v3d = vista || '/demo-luces/ipad.html?demo=tv';
+      box.innerHTML = `${v3d ? `<iframe class="dm-v3d" title="Vista 3D del salón (Code 4)" src="${esc(v3d)}" onload="this.dataset.ok=1"></iframe>` : '<div class="dm-stage"><span>La cámara simulada (la vista 3D del salón con las luces y el animador, de Code 4) aparece aquí cuando esté lista. Mientras tanto se ve solo el GC.</span></div>'}<iframe class="dm-gc" title="GC de la sala de juegos" tabindex="-1" src="${page('#/escena')}"></iframe>`;
       const vi = left.querySelector('[data-k="vista"]'); if (vi) vi.value = vista;
       fit();
+    }
+    // Los momentos de los juegos llegan a la vista 3D como en el escenario real (Code 4: postMessage({momento}))
+    let momSeq = null;
+    async function demoMom() {
+      const r = await api('GET', `/api/momentos?desde=${momSeq == null ? 0 : momSeq}`).catch(() => null);
+      if (!alive || !r) return;
+      const first = momSeq == null; momSeq = r.seq;
+      if (first) return; // al abrir no se repiten los momentos viejos
+      const f = left.querySelector('.dm-v3d');
+      if (f && f.contentWindow) for (const m of r.momentos) f.contentWindow.postMessage({ momento: m.name }, '*');
     }
     // El celular: el de quien está en el escenario (automático) o el que se elige
     async function demoWho() {
@@ -358,7 +369,7 @@
       const v = loc ? loc.venue : null;
       const st = loc ? loc.main.stage : '';
       if (v !== venue) { venue = v; stage = st; paintLeft(); } else if (st !== stage) { stage = st; paintKeys(); }
-      if (demo && venue) demoWho();
+      if (demo && venue) { demoWho(); demoMom(); }
       const sala = left.querySelector('[data-k="sala"]');
       if (sala && loc) sala.textContent = `En pantalla: ${loc.main.stageName}`;
       const ti = ctlBox.querySelector('[data-k="text"]'); if (ti && loc && loc.main.perText && !ti.value && document.activeElement !== ti) ti.value = loc.main.perText; // el último texto del GC PER queda a mano

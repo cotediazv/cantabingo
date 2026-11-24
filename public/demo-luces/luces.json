@@ -1,0 +1,164 @@
+{
+  "_ayuda": "Archivo de configuracion de las luces de KRB (Mercado Kennedy). Se puede editar con el Bloc de notas. Despues de guardar, cerrar y volver a abrir INICIAR.bat.",
+
+  "salida": {
+    "_ayuda": "tipo: opendmx (cable FTDI comun, el que trae Freestyler), enttec (DMX USB Pro) o simulacion (sin cable). puerto: auto o el COM que muestre Windows, por ejemplo COM3.",
+    "tipo": "opendmx",
+    "puerto": "auto"
+  },
+
+  "servidor": { "puerto": 8080 },
+
+  "acceso": {
+    "_ayuda": "clave: la clave para entrar desde el celular o el iPad (vacia = sin clave). pedir_en_wifi_local: false = dentro del WiFi del local no se pide; true = se pide siempre. Fuera del WiFi (internet) siempre se pide.",
+    "clave": "",
+    "pedir_en_wifi_local": false
+  },
+
+  "colores": {
+    "blanco_calido": { "r": 255, "g": 170, "b": 70,  "w": 255 },
+    "blanco":        { "r": 255, "g": 255, "b": 255, "w": 255 },
+    "azul":          { "r": 0,   "g": 0,   "b": 255, "w": 0 },
+    "rojo":          { "r": 255, "g": 0,   "b": 0,   "w": 0 },
+    "verde":         { "r": 0,   "g": 255, "b": 0,   "w": 0 },
+    "amarillo":      { "r": 255, "g": 190, "b": 0,   "w": 0 },
+    "ambar":         { "r": 255, "g": 110, "b": 0,   "w": 0 },
+    "morado":        { "r": 160, "g": 0,   "b": 255, "w": 0 },
+    "rosa":          { "r": 255, "g": 30,  "b": 140, "w": 0 },
+    "cian":          { "r": 0,   "g": 255, "b": 255, "w": 0 }
+  },
+
+  "posiciones": {
+    "_ayuda": "pan y tilt de 0 a 255 para las cabezas moviles. Ajustar en terreno con la pestana Seguir (A mano) o Probar canales.",
+    "escenario": { "pan": 128, "tilt": 100 },
+    "publico":   { "pan": 128, "tilt": 60 },
+    "izquierda": { "pan": 85,  "tilt": 100 },
+    "derecha":   { "pan": 170, "tilt": 100 }
+  },
+
+  "vista3d": {
+    "_ayuda": "Segun el plano dibujado por Cote. salon_hacia: mirando el escenario desde las mesas, hacia donde se extiende el salon (derecha = lado cocinas). angulo_escenario: grados que el escenario esta girado respecto al largo del salon (unos 30). columnas_salon: las 3 columnas del lado pasillo, en metros [de lado, a lo largo] (de lado: 0 = centro, negativo = hacia el pasillo; a lo largo: 0 = frente al escenario).",
+    "salon_hacia": "derecha",
+    "angulo_escenario": 30,
+    "columnas_salon": [[-6.2, 0], [-6.0, 13.5], [-6.0, 23]]
+  },
+
+  "fondo_enlazado": {
+    "_ayuda": "Botones grandes que pintan la pared: cambian juntos los perimetrales y los focos de fondo. Tambien se usan en Parpadeo pared y Alternar colores.",
+    "grupos": ["perimetrales", "fondo"],
+    "colores": ["azul", "rojo", "verde", "amarillo"]
+  },
+
+  "seguir": {
+    "_ayuda": "Pestana Seguir: cabezas moviles que siguen a la persona por el salon. La calibracion del mapa se guarda en datos.json.",
+    "grupos": ["seguidor1", "seguidor2", "seguidor3"],
+    "color": "blanco_calido"
+  },
+
+  "grupos": [
+    {
+      "id": "seguidor1", "nombre": "Cabeza móvil 1 · pilar cercano", "escaner": 1, "direccion": 1, "tipo": "cabeza",
+      "_canales": "POR CONFIRMAR. Numeros relativos a la direccion (1 = primer canal). zoom = tamano del foco (si al subir el valor el foco se achica, poner zoom_invertido en true).",
+      "canales": { "pan": 1, "tilt": 3, "dimmer": 6, "r": 8, "g": 9, "b": 10, "w": 11, "zoom": 12 },
+      "zoom_invertido": false,
+      "fijos": {}
+    },
+    {
+      "id": "seguidor2", "nombre": "Cabeza móvil 2 · segunda columna", "escaner": 2, "direccion": 17, "tipo": "cabeza",
+      "canales": { "pan": 1, "tilt": 3, "dimmer": 6, "r": 8, "g": 9, "b": 10, "w": 11, "zoom": 12 },
+      "zoom_invertido": false,
+      "fijos": {}
+    },
+    {
+      "id": "seguidor3", "nombre": "Cabeza móvil 3 · fondo", "escaner": 3, "direccion": 33, "tipo": "cabeza",
+      "canales": { "pan": 1, "tilt": 3, "dimmer": 6, "r": 8, "g": 9, "b": 10, "w": 11, "zoom": 12 },
+      "zoom_invertido": false,
+      "fijos": {}
+    },
+    {
+      "id": "frontales", "nombre": "Frontales RGBW (2)", "escaner": 7, "direccion": 97, "tipo": "par",
+      "canales": { "dimmer": 1, "r": 2, "g": 3, "b": 4, "w": 5 },
+      "fijos": {}
+    },
+    {
+      "id": "mini", "nombre": "Mini cabezas (2) · escenario", "escaner": 8, "direccion": 113, "tipo": "cabeza",
+      "canales": { "pan": 1, "tilt": 3, "dimmer": 6, "r": 8, "g": 9, "b": 10, "w": 11 },
+      "mover": { "_ayuda": "Movimiento automatico: las dos iguales, girando y apuntando al techo. amp_pan/amp_tilt: amplitud (0-127). tilt_centro: inclinacion de base (0 = hacia arriba).", "amp_pan": 110, "amp_tilt": 18, "tilt_centro": 30 },
+      "fijos": {}
+    },
+    {
+      "id": "perimetrales", "nombre": "Perimetrales PAR (4)", "escaner": 9, "direccion": 129, "tipo": "par",
+      "canales": { "dimmer": 1, "r": 2, "g": 3, "b": 4, "w": 5 },
+      "fijos": {}
+    },
+    {
+      "id": "fondo", "nombre": "Fondo (2) · pintan la pared", "escaner": 10, "direccion": 145, "tipo": "par",
+      "_canales": "Es otro modelo que los perimetrales: confirmar sus canales por separado.",
+      "canales": { "dimmer": 1, "r": 2, "g": 3, "b": 4, "w": 5 },
+      "fijos": {}
+    }
+  ],
+
+  "escenas": [
+    {
+      "nombre": "Show · Azul", "muestra": "#2b55ff", "detalle": "Frente blanco cálido, pared azul",
+      "efectos": ["mover:mini"],
+      "grupos": {
+        "frontales":    { "color": "blanco_calido", "intensidad": 100 },
+        "seguidor1":    { "color": "blanco_calido", "intensidad": 100, "posicion": "escenario" },
+        "seguidor2":    { "color": "blanco_calido", "intensidad": 100, "posicion": "escenario" },
+        "mini":         { "color": "rojo", "intensidad": 100, "posicion": "escenario" },
+        "perimetrales": { "color": "azul", "intensidad": 100 },
+        "fondo":        { "color": "azul", "intensidad": 100 }
+      }
+    },
+    {
+      "nombre": "Show · Rojo", "muestra": "#ff2a2a", "detalle": "Frente blanco cálido, pared roja",
+      "efectos": ["mover:mini"],
+      "grupos": {
+        "frontales":    { "color": "blanco_calido", "intensidad": 100 },
+        "seguidor1":    { "color": "blanco_calido", "intensidad": 100, "posicion": "escenario" },
+        "seguidor2":    { "color": "blanco_calido", "intensidad": 100, "posicion": "escenario" },
+        "mini":         { "color": "rojo", "intensidad": 100, "posicion": "escenario" },
+        "perimetrales": { "color": "rojo", "intensidad": 100 },
+        "fondo":        { "color": "rojo", "intensidad": 100 }
+      }
+    },
+    {
+      "nombre": "Show · Verde", "muestra": "#22dd55", "detalle": "Frente blanco cálido, pared verde",
+      "efectos": ["mover:mini"],
+      "grupos": {
+        "frontales":    { "color": "blanco_calido", "intensidad": 100 },
+        "seguidor1":    { "color": "blanco_calido", "intensidad": 100, "posicion": "escenario" },
+        "seguidor2":    { "color": "blanco_calido", "intensidad": 100, "posicion": "escenario" },
+        "mini":         { "color": "rojo", "intensidad": 100, "posicion": "escenario" },
+        "perimetrales": { "color": "verde", "intensidad": 100 },
+        "fondo":        { "color": "verde", "intensidad": 100 }
+      }
+    },
+    {
+      "nombre": "Show · Amarillo", "muestra": "#ffbe00", "detalle": "Frente blanco cálido, pared amarilla",
+      "efectos": ["mover:mini"],
+      "grupos": {
+        "frontales":    { "color": "blanco_calido", "intensidad": 100 },
+        "seguidor1":    { "color": "blanco_calido", "intensidad": 100, "posicion": "escenario" },
+        "seguidor2":    { "color": "blanco_calido", "intensidad": 100, "posicion": "escenario" },
+        "mini":         { "color": "rojo", "intensidad": 100, "posicion": "escenario" },
+        "perimetrales": { "color": "amarillo", "intensidad": 100 },
+        "fondo":        { "color": "amarillo", "intensidad": 100 }
+      }
+    },
+    {
+      "nombre": "Bingo", "muestra": "#ffb35c", "detalle": "Cabezas 1 y 2 al público; abre Seguir", "abrir": "seguir",
+      "efectos": ["mover:mini"],
+      "grupos": {
+        "seguidor1":    { "color": "blanco_calido", "intensidad": 100, "posicion": "publico" },
+        "seguidor2":    { "color": "blanco_calido", "intensidad": 100, "posicion": "publico" },
+        "frontales":    { "color": "blanco_calido", "intensidad": 40 },
+        "mini":         { "color": "rojo", "intensidad": 100, "posicion": "escenario" },
+        "perimetrales": { "color": "azul", "intensidad": 50 },
+        "fondo":        { "color": "azul", "intensidad": 50 }
+      }
+    }
+  ]
+}

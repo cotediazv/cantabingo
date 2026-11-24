@@ -68,7 +68,7 @@ module.exports = function simulador({ app, db, save, requireAdmin, fail, port, p
   // Dirección de la vista 3D de Code 4 (la copia que calcula las luces en el navegador, sin tocar las luces reales)
   app.post('/api/sim/vista', requireAdmin, (req, res) => {
     const url = String((req.body || {}).url || '').trim();
-    if (url && !/^https:\/\/[^\s"'<>]+$/.test(url)) return fail(res, 400, 'La dirección tiene que empezar con https://');
+    if (url && !/^(https:\/\/|\/)[^\s"'<>]+$/.test(url)) return fail(res, 400, 'La dirección tiene que empezar con https:// o con /');
     db.demoVista = url.slice(0, 400);
     save();
     res.json({ vista: db.demoVista });
