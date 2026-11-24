@@ -9,7 +9,7 @@ import * as THREE from './lib/three.module.min.js';
 
 let renderer, scene, camera, construido = false;
 const focos = [];            // un foco por equipo: { g, tipo, pos, spot, haz, lente, cuerpo }
-let anilloMarca;
+let anilloMarca, animadorObj, artistaObj;
 
 /* ---------- utilidades ---------- */
 function azar(semilla){ let s = semilla >>> 0; return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
@@ -190,10 +190,9 @@ function construir(){
   caja(0.9, 1.3, 0.6, mat.gris, 4.45, 1.1, -2.05);                                    // case: al borde, detras de la columna azul derecha
   caja(0.7, 0.75, 0.5, mat.negro, -2.25, 0.82, -3.15);                               // parlante
   // columnas azules del escenario con su pantalla vertical (y la TV en la derecha)
-  // columnas azules casi invisibles (Cote: que no tapen); las pantallas se siguen viendo como referencia
-  const listonesTransp = mat.listones.clone(); listonesTransp.transparent = true; listonesTransp.opacity = 0.12; listonesTransp.depthWrite = false;
+  // columnas azules del escenario: SIEMPRE visibles (Cote). Las casi invisibles son solo los pilares del salon.
   [-5.8, 5.8].forEach(x => {
-    const col = caja(1.0, 4.3, 1.2, listonesTransp, x, 2.15, 0); col.castShadow = false;
+    caja(1.0, 4.3, 1.2, mat.listones, x, 2.15, 0);
     const pant = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 1.4), new THREE.MeshStandardMaterial({ color: 0x101826, emissive: 0x3a5a90, emissiveIntensity: 0.6 }));
     pant.position.set(x, 3.0, 0.61); scene.add(pant);
     // debajo, en las DOS columnas: pantalla de 42" (unos 93 x 52 cm), del ancho del pilar
@@ -269,7 +268,7 @@ function construir(){
   const art = new THREE.Group();
   const cuerpo = sombra(new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 0.85, 6, 12), mat.ropa)); cuerpo.position.y = 0.45 + 0.62; art.add(cuerpo);
   const cab = sombra(new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 12), mat.piel)); cab.position.y = 0.45 + 1.33; art.add(cab);
-  art.position.set(0.3, 0, -1.6); scene.add(art);
+  art.position.set(0.3, 0, -1.6); scene.add(art); artistaObj = art;
   const rnd = azar(42), sentados = [];
   mesas.filter(m => m.v < 28).forEach(m => m.sillas.forEach(s => { if (rnd() < 0.45) sentados.push([m.u + s * 0.6, m.v]); }));
   inst(new THREE.CapsuleGeometry(0.17, 0.42, 4, 10), mat.ropaPublico, sentados.map(([u, v]) => [u, v, 0.85]));
@@ -292,6 +291,16 @@ function construir(){
       focos.push({ g, def, tipo, pos, spot, haz, lente });
     });
   });
+
+  // animador virtual (para practicar el seguimiento): chaqueta amarilla, aparece solo cuando se activa en Seguir
+  animadorObj = new THREE.Group();
+  const chaqueta = new THREE.MeshStandardMaterial({ color: 0xffc21a, roughness: 0.6 });
+  const tronco = sombra(new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 0.62, 6, 12), chaqueta)); tronco.position.y = 1.1; animadorObj.add(tronco);
+  const cabeza = sombra(new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 12), mat.piel)); cabeza.position.y = 1.62; animadorObj.add(cabeza);
+  const pierna = (x) => { const p = sombra(new THREE.Mesh(new THREE.CapsuleGeometry(0.08, 0.6, 4, 8), mat.negro)); p.position.set(x, 0.42, 0); animadorObj.add(p); return p; };
+  animadorObj.userData.piernas = [pierna(-0.1), pierna(0.1)];
+  const micro = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.2, 8), mat.negro); micro.position.set(0.18, 1.45, 0.15); micro.rotation.x = 0.6; animadorObj.add(micro);
+  animadorObj.visible = false; scene.add(animadorObj);
 
   // anillo del punto tocado en el mapa de Seguir
   anilloMarca = new THREE.Mesh(new THREE.RingGeometry(0.45, 0.58, 48), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, depthWrite: false }));
@@ -350,6 +359,13 @@ function render(){
   camera.lookAt(v3(V.objetivo));
   actualizarFocos();
   const enSeguir = document.body.classList.contains('en-seguir');
+  const an = V.animador;
+  animadorObj.visible = !!an; artistaObj.visible = !an;          // mientras camina el animador, la artista fija no se muestra
+  if (an){                                                     // camina: posicion, rumbo y piernas en movimiento
+    animadorObj.position.set(an.p[0], an.p[1] + Math.abs(Math.sin(an.t * 6)) * 0.03, an.p[2]);
+    animadorObj.rotation.y = an.rumbo;
+    const [pi, pd] = animadorObj.userData.piernas; pi.rotation.x = Math.sin(an.t * 6) * 0.4; pd.rotation.x = -Math.sin(an.t * 6) * 0.4;
+  }
   anilloMarca.visible = !!(V.marca && enSeguir);
   if (anilloMarca.visible) anilloMarca.position.set(V.marca[0], V.marca[1] + 0.02, V.marca[2]);
   renderer.render(scene, camera);

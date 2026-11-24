@@ -119,6 +119,7 @@
   .nav3d button{width:32px;height:32px;border:0;border-radius:8px;background:#000a;color:#fff;font-size:14px;cursor:pointer;touch-action:none;padding:0}
   .nav3d button:active{background:var(--acc)}
   .vista.oculta .nav3d, .vista.oculta .vistas3d{display:none}
+  #animMarca{position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:#ffcc00;border:2px solid #000;box-shadow:0 0 8px #ffcc00;pointer-events:none;display:none;z-index:2}
   .vistas3d{position:absolute;left:8px;bottom:8px;right:120px;display:flex;flex-wrap:wrap-reverse;gap:4px;z-index:2;pointer-events:none}
   .vistas3d button{pointer-events:auto;border:0;border-radius:8px;background:#000b;color:#fff;font-size:12px;padding:6px 9px;cursor:pointer}
   .vistas3d button.guardar{background:#1f3b6e}
@@ -223,6 +224,7 @@
       <div class="map" id="map">
         <svg id="plano" viewBox="0 0 580 160" preserveAspectRatio="none"></svg>
         <div class="target" id="target"></div>
+        <div id="animMarca" title="Animador virtual"></div>
         <div class="warn" id="mapWarn"></div>
       </div>
       <p class="help" style="margin-top:10px">Plano del salón según el dibujo de Cote. Toca o arrastra el dedo donde está la persona: las cabezas elegidas apuntan a ese punto.</p>
@@ -242,6 +244,10 @@
         <span class="help" style="margin:0">Úsalo si se calibró sin las luces reales (por ejemplo, en el Dell de prueba).</span></div>
     </div>
 
+    <div class="row" style="margin-top:8px">
+      <button class="chip" id="animBtn">🚶 Animador virtual (práctica)</button>
+      <span class="help" style="margin:0">Camina por el salón para practicar el seguimiento con las cabezas.</span>
+    </div>
     <!-- Tamano del foco de las cabezas 1, 2 y 3: botones rapidos pegados al mapa -->
     <div class="row" id="focoFila" style="margin-top:8px;gap:8px;flex-wrap:nowrap">
       <span class="help" style="margin:0;white-space:nowrap">Foco</span>
@@ -460,6 +466,48 @@ async function postApi(ruta, params){
 }
 async function efectoPost(id, params){ try { pintarEstado(await postApi('/api/efecto', {id, ...params})); } catch(e){ sinConexion(); } }
 async function guardarDatos(){ return postApi('/api/guardar', {d: JSON.stringify(datos)}); }
+
+/* ---------- Animador virtual para practicar el seguimiento (Cote, 24 nov) ----------
+   Camina suave (1 m/s): baja del escenario, pasa entre las mesas y sigue hasta el fondo; despues vuelve. */
+const animador = { activo: false, t0: 0, vel: 1.0, ruta: null, largos: null, total: 0 };
+function prepararRuta(){
+  const pts = [[0.3, 0.45, -1.6], [-1.2, 0.45, -0.1], [-1.3, 0, 1.1]];                          // en el escenario y bajando
+  // pasillo entre sillones y mesas sueltas, cruce por el espacio libre entre dos filas, y pasillo de las cocinas hasta el fondo
+  [[-3.2, 1.0], [-3.2, 15.7], [2.8, 15.7], [2.8, SALON.largo - 4]].forEach(([u, v]) => pts.push(deSalon(u, v, 0)));
+  animador.ruta = pts;
+  animador.largos = pts.slice(1).map((p, i) => Math.hypot(p[0] - pts[i][0], p[2] - pts[i][2]) || 0.01);
+  animador.total = animador.largos.reduce((a, b) => a + b, 0);
+}
+function posAnimador(t){
+  const L = animador.total; let s = (t * animador.vel) % (2 * L); const vuelta = s > L; if (vuelta) s = 2 * L - s;   // ida y vuelta
+  const r = animador.ruta;
+  for (let i = 0; i < animador.largos.length; i++){
+    if (s <= animador.largos[i] || i === animador.largos.length - 1){
+      const f = Math.min(1, s / animador.largos[i]), a = r[i], b = r[i + 1];
+      const p = [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f];
+      let rumbo = Math.atan2(b[0] - a[0], b[2] - a[2]); if (vuelta) rumbo += Math.PI;
+      return { p, rumbo, t };
+    }
+    s -= animador.largos[i];
+  }
+}
+function tickAnimador(){
+  if (!animador.activo) return;
+  const a = posAnimador((performance.now() - animador.t0) / 1000);
+  V.animador = a; V.sucio = true;
+  const map = $('map'), m = $('animMarca'), [u, v] = aSalon(a.p);
+  m.style.display = 'block';
+  m.style.left = ((v - MAPA.v0) / (MAPA.v1 - MAPA.v0) * map.clientWidth) + 'px';
+  m.style.top = ((MAPA.u0 - u) / (MAPA.u0 - MAPA.u1) * map.clientHeight) + 'px';
+  requestAnimationFrame(tickAnimador);
+}
+$('animBtn').onclick = () => {
+  animador.activo = !animador.activo;
+  $('animBtn').classList.toggle('act', animador.activo);
+  $('animBtn').textContent = animador.activo ? '■ Detener animador' : '🚶 Animador virtual (práctica)';
+  if (animador.activo){ prepararRuta(); animador.t0 = performance.now(); tickAnimador(); toast('El animador camina: síguelo con las cabezas'); }
+  else { V.animador = null; $('animMarca').style.display = 'none'; V.sucio = true; }
+};
 
 /* ---------- Vistas guardadas de la camara 3D (una para cada lugar), guardadas en el Dell ---------- */
 function pintarVistas(){
@@ -1201,7 +1249,7 @@ function dibujar3D(){
   caja(-2.6, -1.9, ht, 1.2, -3.4, -2.9, '#141519', '#101114', '#1b1c21');       // parlante
   // Columnas azules de listones en las esquinas, con paneles de luz
   [[-6.3, -5.3], [5.3, 6.3]].forEach(([x0, x1]) => {
-    caja(x0, x1, 0, 4.3, -0.6, 0.6, 'rgba(47,95,158,.12)', 'rgba(38,79,134,.12)', 'rgba(58,111,181,.15)');   // casi invisibles
+    caja(x0, x1, 0, 4.3, -0.6, 0.6, '#2f5f9e', '#264f86', '#3a6fb5');                  // columnas azules: siempre visibles
     for (let x = x0 + 0.12; x < x1; x += 0.16) linea([x, 0, 0.61], [x, 4.3, 0.61], '#24497d', 1);
     poly([[x0+0.15,2.3,0.62],[x1-0.15,2.3,0.62],[x1-0.15,3.7,0.62],[x0+0.15,3.7,0.62]], '#56698a', '#7d8ba3'); // pantalla vertical (mira al publico)
     poly([[x0+0.03,1.67,0.64],[x1-0.03,1.67,0.64],[x1-0.03,2.23,0.64],[x0+0.03,2.23,0.64]], '#4d6890', '#111'); // pantalla de 42" debajo (las dos columnas)
