@@ -224,7 +224,9 @@ module.exports = function programacion({ app, dir }) {
     if (s.tipo === 'standup') return `Stand Up: ${plain(s.nombre) ? s.nombre.toUpperCase() : ''}`.trim();
     if (s.tipo === 'piano') return 'Piano Man';
     if (s.tipo === 'bingo') return losJuegos(local);
-    return [s.nombre, s.artista ? `(${s.artista})` : ''].filter(Boolean).join(' ');
+    // En la GLOSA el artista va entre comillas (Cote, 24 nov: su script del GC lo muestra; lo que va entre paréntesis
+    // es la cuenta a transferir y no sale en pantalla)
+    return [s.nombre, s.artista ? `"${s.artista}"` : ''].filter(Boolean).join(' ');
   }
   // En la GLOSA el show lleva entre paréntesis el nombre de la persona a quien se le paga (Cote, 23 nov)
   // En Tobalaba, el nombre entre paréntesis del especial ya es la persona a quien se le paga (Cote, 24 nov): no se repite
@@ -449,14 +451,20 @@ module.exports = function programacion({ app, dir }) {
   function leerShowGlosa(t, banda, local, wd) {
     t = String(t || '').trim();
     let x;
-    if ((x = t.match(/^Stand Up:\s*(.+)$/i))) return { tipo: 'standup', nombre: x[1].trim() };
+    // Formato nuevo (Cote, 24 nov): «Especial Salsa "Miguel Ángel Caballero" (cuenta a transferir)»
+    let persona = '';
+    if ((x = t.match(/^(.*?)\s*\(([^()]+)\)\s*$/)) && (/"[^"]+"/.test(x[1]) || local !== 'TOB')) { persona = x[2].trim(); t = x[1].trim(); }
+    const q = t.match(/^(.*?)\s*["“”«]([^"“”»]+)["“”»]\s*$/);
+    if (q) { const o = { tipo: 'otro', nombre: q[1].trim(), artista: q[2].trim() }; if (persona) o.persona = persona; return o; }
+    const con = (o) => (persona ? { ...o, persona } : o);
+    if ((x = t.match(/^Stand Up:\s*(.+)$/i))) return con({ tipo: 'standup', nombre: x[1].trim() });
     if (/^piano man$/i.test(t)) return { tipo: 'piano' };
     if (/^(bingo de frida|los juegos de .+)$/i.test(t)) return { tipo: 'bingo' };
-    if (banda) return { tipo: 'tributo', nombre: t, banda: true };
+    if (banda) return con({ tipo: 'tributo', nombre: t, banda: true });
     if (/^especial/i.test(t) || local === 'TOB') { x = t.match(/^(.+?)\s*\(([^)]+)\)\s*$/); return x ? { tipo: 'otro', nombre: x[1].trim(), artista: x[2].trim() } : { tipo: 'otro', nombre: t }; }
-    if (local === 'FRIDA' && (wd === 5 || wd === 6)) return { tipo: 'doble', nombre: t };
-    if (local === 'MK' && wd === 6) return { tipo: 'tributo', nombre: t };
-    return { tipo: 'otro', nombre: t };
+    if (local === 'FRIDA' && (wd === 5 || wd === 6)) return con({ tipo: 'doble', nombre: t });
+    if (local === 'MK' && wd === 6) return con({ tipo: 'tributo', nombre: t });
+    return con({ tipo: 'otro', nombre: t });
   }
   // Filas de la hoja TURNOS: [día, local, lista | 'SHOW', show, 'BANDA']
   const filasDeBloque = (txt) => String(txt || '').split('\n').map((s) => s.trim()).filter((s) => /^\d{1,2}-/.test(s)).map((s) => {
