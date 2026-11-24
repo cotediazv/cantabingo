@@ -1568,9 +1568,14 @@ const JUEGOS = [
       estrobo:['perimetrales', 'fondo', 'frontales', 'mini'] },
     { id:'tombola_resultado', nombre:'Resultado', igual:'base_juegos' } ]},
   { juego:'El Rosko', momentos:[
-    { id:'rosko_pregunta', nombre:'Base rosco (pregunta)', detalle:'Pared más baja, arriba y abajo de distinto color, cambio lento',
-      g:() => ({...BASE(), ...pared('azul', 55)}), rosco:true },
-    { id:'rosko_correcta', nombre:'Correcta', detalle:'Pared verde 2 s', g:() => ({...BASE(), ...pared('verde', 100)}), luego:[2, 'base_juegos'] },
+    // Pregunta (Cote, rev 184): fondo mucho mas oscuro, casi interrogatorio. Solo las cabezas al escenario y la pared muy baja.
+    { id:'rosko_pregunta', nombre:'Pregunta (interrogatorio)', detalle:'Pared muy oscura con colores lentos; solo cabezas al escenario',
+      g:() => ({...pared('azul', 15), ...cab('escenario', 50)}), rosco:true },
+    // Reloj (Cote, rev 187): con 30 s el fondo rojo suave; en los ultimos 10 s ese rojo parpadea como estroboscopica
+    { id:'rosko_30s', nombre:'Quedan 30 s', detalle:'Fondo rojo suave', g:() => ({...pared('rojo', 35), ...cab('escenario', 50)}) },
+    { id:'rosko_10s', nombre:'Quedan 10 s', detalle:'El rojo parpadea (estrobo)', g:() => ({...pared('rojo', 35), ...cab('escenario', 50)}), estrobo:['perimetrales', 'fondo'] },
+    // Correcta: verde 2 s y vuelve a como estaba (pregunta, 30 s o 10 s), porque el reloj sigue corriendo
+    { id:'rosko_correcta', nombre:'Correcta', detalle:'Pared verde 2 s y vuelve a como estaba', g:() => ({...BASE(), ...pared('verde', 100)}), luego:[2, 'previo'] },
     { id:'rosko_incorrecta', nombre:'Incorrecta', detalle:'Pared roja 2 s', g:() => ({...BASE(), ...pared('rojo', 100)}), luego:[2, 'base_juegos'] },
     { id:'rosko_pasa', nombre:'Pasa palabra', igual:'base_juegos' },
     { id:'rosko_puntajes', nombre:'Puntajes', detalle:'Todo abajo, pared en naranja; cabezas al escenario', g:() => ({...pared('ambar', 100), ...cab('escenario', 50)}) },
@@ -1602,6 +1607,7 @@ const JUEGOS = [
 // Respuestas de Cote a la pregunta 18 (registro rev 172) ya incluidas.
 const ALIAS_SALA = {
   sala_abierta:'base_juegos', juego_siguiente:'base_juegos', bingo_numero:'nada',
+  rosko_pantalla:'nada', rosko_pantalla_fin:'base_juegos',     // el rosco entra / sale de pantalla (la camara del demo cambia)
   bingo_ganador_aparece:'ganador_al_escenario', bingo_ganador_confirmado:'celebracion_ganador', bingo_vuelve_escenario:'base_juegos',
   premio_entrega:'entrega_premio', rosko_ranking:'rosko_puntajes', rosko_ranking_fin:'base_juegos',
   objeto_votacion_fin:'base_juegos', objeto_final:'objeto_votacion', festival_despide:'base_juegos',
@@ -1630,7 +1636,7 @@ function compilarMomento(m){
   try {
     const zs = zonasDe(m), todo = {}, L = ['/api/efecto?todos=off'];
     conf.grupos.forEach(g => Object.assign(todo, valoresGrupo(g, zs[g.id])));
-    L.push('/api/set?d=' + serial(todo) + '&f=1');
+    L.push('/api/set?d=' + serial(todo) + '&f=0');                           // cambios inmediatos, sin fundido (Cote, rev 185)
     const ef = (id, p) => L.push('/api/efecto?id=' + encodeURIComponent(id) + '&' + new URLSearchParams(p));
     conf.grupos.forEach(g => {                                                  // mini (u otras cabezas) en movimiento, mirando al techo
       if (!zs[g.id].mover || !g.canales.pan) return;
@@ -1753,17 +1759,19 @@ function simAccion(ruta, q){
 }
 function simMomento(n, encadenado){
   const acc = SIM.momentos[n]; if (!acc) return false;
+  recorridoDemo(n, encadenado);                                         // animador y camara (tambien con momentos sin luces, como rosko_pantalla)
   if (!acc.length) return true;                                         // bingo_numero: no cambia nada
   const gen = ++SIM.gen; SIM.momento = n; SIM.momentoN++;
+  if (!acc.includes('@previo')) SIM.estable = n;
   (async () => {
     for (const l of acc){
       if (gen !== SIM.gen) return;
       if (l.startsWith('espera:')){ await new Promise(r => setTimeout(r, +l.slice(7) * 1000)); continue; }
+      if (l === '@previo'){ if (gen === SIM.gen && SIM.estable){ simMomento(SIM.estable, true); pintarEstado(simEstado()); } return; }
       if (l.startsWith('@')){ if (gen === SIM.gen){ simMomento(l.slice(1).trim(), true); pintarEstado(simEstado()); } return; }
       const i = l.indexOf('?'); simAccion(i >= 0 ? l.slice(0, i) : l, new URLSearchParams(i >= 0 ? l.slice(i + 1) : ''));
     }
   })();
-  recorridoDemo(n, encadenado);
   return true;
 }
 const simEstado = () => ({ tipo:'demo', puerto:'', conectado:false, error:'', efectos:[...SIM.ef.keys()],
@@ -1790,7 +1798,11 @@ const DEMO_ESC = [0.3, 0.45, -1.6];
 // El Rosko (Cote, 24 nov): el animador sentado en un piso alto al costado derecho (mirando el escenario desde el frente);
 // el concursante al centro con su atril. Con la pregunta en pantalla, la camara va a un plano cerrado del concursante.
 const DEMO_PISO = [3.0, 0.45, -1.3];
-const ROSKO_CERCA = ['rosko_pregunta', 'rosko_correcta', 'rosko_incorrecta', 'rosko_pasa', 'rosko_tiempo'];
+// Camaras de El Rosko (Cote rev 183 y 186; momentos de Code 1 rev 188): el rosco ENTRA en pantalla -> corte a la cara de frente;
+// mientras sigue (correcta, reloj) se queda; SALE -> tres "flashazos" rapidos (publico y otras tomas) y vuelve al escenario.
+const ROSKO_ENTRA = ['rosko_pregunta', 'rosko_pantalla'], ROSKO_SIGUE = ['rosko_correcta', 'rosko_30s', 'rosko_10s'];
+const ROSKO_SALE = ['rosko_incorrecta', 'rosko_pasa', 'rosko_tiempo', 'rosko_pantalla_fin'];
+const camDemo = { cerca:false, corte:false, flashes:[], hasta:0 };
 const FUERA_ROSKO = /^(sala_abierta|juego_siguiente|siguiente_juego|inicio_noche|bingo_|objeto_|festival_)/;
 const demoAn = { ruta:null, i:0, s:0, espera:0, p:[...DEMO_ESC], rumbo:0, paso:0, quieto:true, mira:null, tour:false, rosko:false, sentado:false };
 let demoUltimo = '';                                                  // ultimo momento que llego de la Sala (no los encadenados)
@@ -1805,7 +1817,12 @@ function rutaDemo(paradas){
   return pts;
 }
 function recorridoDemo(n, encadenado){
-  if (!encadenado) demoUltimo = n;
+  if (!encadenado){
+    demoUltimo = n;
+    if (ROSKO_ENTRA.includes(n)){ camDemo.cerca = true; camDemo.corte = true; camDemo.flashes = []; }
+    else if (ROSKO_SALE.includes(n)){ if (camDemo.cerca) iniciarFlashazos(); camDemo.cerca = false; }
+    else if (!ROSKO_SIGUE.includes(n)){ camDemo.cerca = false; }
+  }
   let m = momentoPorId(n); const nombres = [n]; while (m && m.igual){ nombres.push(m.igual); m = momentoPorId(m.igual); }
   const antes = demoAn.rosko;
   if (n.startsWith('rosko_')) demoAn.rosko = true; else if (FUERA_ROSKO.test(n)) demoAn.rosko = false;
@@ -1855,19 +1872,45 @@ function bucleDemo(){
         const b = g.direccion - 1; simSet(b + g.canales.pan, Math.round(z.pan), 0.25); simSet(b + g.canales.tilt, Math.round(z.tilt), 0.25);
       });
     }
-    if (TV){                                                          // camara de transmision: sigue al animador, suave
-      // El Rosko con la pregunta en pantalla: plano cerrado del concursante, del pecho a la cabeza, de frente (queda dentro del rosco)
-      const cerca = a.rosko && ROSKO_CERCA.includes(demoUltimo);
-      const enEsc = a.p[1] > 0.2 && a.p[2] < 0;
-      const obj = cerca ? [0, 1.66, -1.2] : [a.p[0], a.p[1] + (a.sentado ? 1.1 : 1.3), a.p[2]];
-      const dist = cerca ? 1.2 : (enEsc ? 8 : 6.5), yaw = cerca ? 0 : giroSalon() * 0.6, pitch = cerca ? 0.02 : 0.22;
-      const k = Math.min(1, dt * (cerca ? 2.5 : 1.5));
-      V.objetivo = V.objetivo.map((x, i) => x + (obj[i] - x) * k);
-      V.dist += (dist - V.dist) * k; V.pitch += (pitch - V.pitch) * k; V.yaw += (yaw - V.yaw) * k;
-    }
+    if (TV) camaraDemo(dt, a);
   }
   simTick(); V.salida = SIM.salida; V.sucio = true;
   requestAnimationFrame(bucleDemo);
+}
+// Camara de transmision del demo
+function plano(cam, obj){                                             // corte a una toma: camara en "cam" mirando a "obj"
+  const d = [cam[0] - obj[0], cam[1] - obj[1], cam[2] - obj[2]], L = Math.hypot(...d);
+  V.objetivo = [...obj]; V.dist = L; V.pitch = Math.asin(d[1] / L); V.yaw = Math.atan2(d[0], d[2]);
+}
+function iniciarFlashazos(){
+  // Tres tomas rapidas: el publico desde el escenario, el salon desde el fondo y mesas de cerca; despues vuelve al escenario
+  camDemo.flashes = [
+    [[0.6, 2.3, 0.4], deSalon(0.5, 7, 1.0)],
+    [deSalon(-2.5, 19, 3.2), [0, 1.4, -1.6]],
+    [deSalon(4.2, 2.5, 1.7), deSalon(-1.5, 7.5, 0.9)]
+  ];
+  camDemo.hasta = 0;
+}
+function camaraDemo(dt, a){
+  const ahora = performance.now();
+  if (camDemo.flashes.length || camDemo.hasta){
+    if (ahora < camDemo.hasta) return;                                  // la toma se queda fija hasta el siguiente corte
+    const t = camDemo.flashes.shift();
+    if (t){ plano(t[0], t[1]); camDemo.hasta = ahora + 1100; return; }
+    camDemo.hasta = 0;                                                  // fin: corte de vuelta al escenario
+    V.yaw = giroSalon() * 0.6; V.dist = 8; V.pitch = 0.22; V.objetivo = [a.p[0], a.p[1] + 1.3, a.p[2]]; return;
+  }
+  if (camDemo.cerca){                                                   // rosco en pantalla: la cara de frente, del pecho a la cabeza
+    const obj = [0, 1.66, -1.2];
+    if (camDemo.corte){ V.objetivo = obj; V.dist = 1.2; V.yaw = 0; V.pitch = 0.02; camDemo.corte = false; }
+    return;
+  }
+  // sigue al animador, suave
+  const enEsc = a.p[1] > 0.2 && a.p[2] < 0;
+  const obj = [a.p[0], a.p[1] + (a.sentado ? 1.1 : 1.3), a.p[2]];
+  const dist = enEsc ? 8 : 6.5, yaw = giroSalon() * 0.6, k = Math.min(1, dt * 1.5);
+  V.objetivo = V.objetivo.map((x, i) => x + (obj[i] - x) * k);
+  V.dist += (dist - V.dist) * k; V.pitch += (0.22 - V.pitch) * k; V.yaw += (yaw - V.yaw) * k;
 }
 function iniciarDemo(){
   if (TV){ V.yaw = giroSalon() * 0.6; V.dist = 8; V.objetivo = [0.3, 1.75, -1.6]; }

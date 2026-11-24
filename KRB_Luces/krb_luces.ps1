@@ -426,6 +426,7 @@ namespace KRB {
     static int genMomento = 0;
     public static string MomentoActual = "";
     public static int MomentoN = 0;
+    static string MomentoEstable = "";
     public static void CargarMomentos() {
       try { string p = Path.Combine(Root, "momentos.txt"); if (File.Exists(p)) ParseMomentos(File.ReadAllText(p)); } catch {}
     }
@@ -444,12 +445,17 @@ namespace KRB {
       List<string> acc;
       lock (ML) { if (!momentos.TryGetValue(nombre, out acc)) return false; }
       if (acc.Count == 0) return true;                                     // momento sin acciones (p. ej. bingo_numero): no cambia nada
+      // "@previo" = volver al ultimo momento estable (p. ej. despues del verde de una correcta, al rojo del reloj).
+      // Los momentos que terminan en "@previo" son de paso y no cuentan como estables.
+      bool dePaso = acc.Contains("@previo");
       int gen = Interlocked.Increment(ref genMomento);
       MomentoActual = nombre; MomentoN++;
+      if (!dePaso) MomentoEstable = nombre;
       Thread t = new Thread(() => {
         foreach (string l in acc) {
           if (gen != genMomento) return;                                   // llego otro momento: se cancela este
           if (l.StartsWith("espera:")) { Thread.Sleep((int)(Num(l.Substring(7), 0) * 1000)); continue; }
+          if (l == "@previo") { if (gen == genMomento && MomentoEstable != "") EjecutarMomento(MomentoEstable); return; }
           if (l.StartsWith("@")) { if (gen == genMomento) EjecutarMomento(l.Substring(1).Trim()); return; }   // pasar a otro momento
           int q = l.IndexOf('?');
           try { Accion(q >= 0 ? l.Substring(0, q) : l, q >= 0 ? l.Substring(q + 1) : ""); } catch {}

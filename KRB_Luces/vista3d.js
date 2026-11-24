@@ -465,7 +465,11 @@ function render(){
    asi lo que esta delante (personas, columnas) las tapa bien. Las direcciones llegan en la direccion de la pagina:
    ?demo=tv&p2=<pagina pantalla 2>&p3=<pagina pantalla 3>&gc=<pagina del GC> (cada una es opcional). */
 const PQ = new URLSearchParams(location.search);
-const VIVO = { activo: PQ.has('demo'), p2: PQ.get('p2'), p3: PQ.get('p3'), gc: PQ.get('gc'), lista: [], cuadro: 0, feeds: [] };
+// Dentro de la Sala (/demo-luces/) se usan sus paginas (Code 1, rev 188): pantalla 2 y 3 = /#/tablero, GC = /#/escena.
+// "p2=no" (o p3/gc) deja la imagen de muestra.
+const EN_SALA = location.pathname.indexOf('/demo-luces/') >= 0;
+const pag = (k, def) => { const v = PQ.get(k); return v === 'no' ? null : (v || (EN_SALA ? def : null)); };
+const VIVO = { activo: PQ.has('demo'), p2: pag('p2', '/#/tablero'), p3: pag('p3', '/#/tablero'), gc: pag('gc', '/#/escena'), lista: [], cuadro: 0, feeds: [] };
 function prepararPantallasVivo(){
   const cv = document.getElementById('cv3dgl');
   const capa = document.createElement('div'); capa.className = 'capa3d'; cv.parentNode.insertBefore(capa, cv);
@@ -478,7 +482,7 @@ function prepararPantallasVivo(){
   const iframe = (url, w, h) => { const f = document.createElement('iframe'); f.src = url; f.setAttribute('allowtransparency', 'true'); f.tabIndex = -1;
     f.style.border = '0'; f.style.background = 'transparent'; f.style.width = w + 'px'; f.style.height = h + 'px'; return f; };
   if (VIVO.p2) marco(PANT.tv, iframe(VIVO.p2, 1920, 1043), 1920, 1043);
-  if (VIVO.p3) PANT.vert.forEach(m => marco(m, iframe(VIVO.p3, 1080, 2160), 1080, 2160));
+  if (VIVO.p3) PANT.vert.forEach(m => marco(m, iframe(VIVO.p3, 720, 1280), 720, 1280));      // tablero en vertical (720x1280)
   PANT.h42.forEach(m => {                                     // la transmision: esta vista (copiada cada pocos cuadros) + el GC encima
     const caja = document.createElement('div'); caja.style.background = '#000'; caja.style.overflow = 'hidden';
     const c = document.createElement('canvas'); c.width = 384; c.height = 216; c.style.cssText = 'position:absolute;inset:0;width:100%;height:100%'; caja.appendChild(c);
