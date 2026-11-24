@@ -124,16 +124,16 @@
   .vista .bar button{border:0;background:#000a;color:#fff;border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer}
   .vista.oculta .bar{position:static;padding:8px 10px}
   @media (max-width:640px){.vista{margin:0 14px 10px}.vista .bar span{display:none}.vista .bar{justify-content:flex-end}}
-  /* Seguir en pantalla horizontal (celular acostado, computador): todo en una sola pantalla.
-     Vista 3D a la izquierda (todo el alto), mapa y botones a la derecha. */
+  /* Seguir en pantalla horizontal (celular acostado, computador): vista 3D ARRIBA y mapa ABAJO, juntos en la pantalla
+     (pedido de Cote: como el salon es largo, asi caben los dos). Los botones quedan debajo del mapa. */
   @media (orientation: landscape) and (min-width: 600px){
     body.en-seguir header{padding:6px 14px 2px} body.en-seguir h1{font-size:18px}
     body.en-seguir .pill{padding:5px 10px;font-size:12px}
     body.en-seguir nav{margin:4px 14px 6px;padding:3px} body.en-seguir nav button{padding:7px 4px;font-size:15px}
-    body.en-seguir .vista{position:fixed;left:14px;width:calc(50% - 21px);top:var(--arriba,96px);bottom:var(--abajo,78px);margin:0;box-shadow:none}
-    body.en-seguir .vista canvas{height:100%}
-    body.en-seguir main{margin-left:50%;padding:0 14px 0 7px}
-    body.en-seguir .map{max-height:calc(100vh - var(--arriba,96px) - var(--abajo,78px) - 120px)}
+    body.en-seguir .vista{position:static;margin:0 14px 6px;box-shadow:none}
+    body.en-seguir .vista canvas{height:calc(var(--disp,500px) * 0.47)}
+    body.en-seguir main{padding:0 14px 0}
+    body.en-seguir .map{max-height:calc(var(--disp,500px) * 0.53 - 8px);width:min(100%, calc((var(--disp,500px) * 0.53 - 8px) * 2.125));margin:0 auto}
     body.en-seguir .map .warn{font-size:10px;bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     body.en-seguir .vista .bar span{display:none} body.en-seguir .vista .bar{justify-content:flex-end}
     body.en-seguir .master label, body.en-seguir .fade label{display:none}
@@ -141,7 +141,7 @@
     body.en-seguir #seguir .help, body.en-seguir #readout{display:none}
     body.en-seguir #seguir .row{margin-top:6px} body.en-seguir #seguir .chip{padding:7px 11px;font-size:13px}
     body.en-seguir .seg.chico{margin:6px 0 0} body.en-seguir .seg.chico button{padding:7px 4px;font-size:13px}
-    body.en-seguir .pad{height:calc(100vh - var(--arriba,96px) - var(--abajo,78px) - 54px)}
+    body.en-seguir .pad{height:calc(var(--disp,500px) * 0.53 - 8px)}
     body.en-seguir footer{padding-top:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom))}
     body.en-seguir .blackout{padding:12px 16px;font-size:15px}
   }
@@ -214,6 +214,12 @@
 
     <div class="seg chico" id="cabezas" style="margin-top:12px">
       <button data-s="0">Cabeza 1</button><button data-s="1">Cabeza 2</button><button data-s="2">Cabeza 3</button><button data-s="both" class="act">Las 3 juntas</button>
+    </div>
+    <div class="row" style="margin-top:2px;gap:10px;flex-wrap:nowrap">
+      <span class="help" style="margin:0;white-space:nowrap">Tamaño del foco</span>
+      <span class="help" style="margin:0">angosto</span>
+      <input type="range" id="zoom" min="0" max="100" value="50" style="flex:1;height:34px;margin:0">
+      <span class="help" style="margin:0">ancho</span>
     </div>
     <div class="seg chico" id="modoSeguir">
       <button data-m="mapa" class="act">Mapa del salón</button>
@@ -336,6 +342,10 @@ function valoresGrupo(g, zOverride){
     if (ch.pan) out[base + ch.pan] = Math.round(z.pan);
     if (ch.tilt) out[base + ch.tilt] = Math.round(z.tilt);
   }
+  if (z && z.zoom != null && ch.zoom){                                   // tamano del foco (0 = angosto, 100 = ancho)
+    const v = Math.round(z.zoom * 2.55);
+    out[base + ch.zoom] = g.zoom_invertido ? 255 - v : v;
+  }
   for (const [c, v] of Object.entries(g.fijos || {})) out[base + (+c)] = v;
   return out;
 }
@@ -345,7 +355,12 @@ function enviarGrupos(ids, f){
   enviar(todo, f);
 }
 const todosLosIds = () => conf.grupos.map(g => g.id);
-function fijarPosicion(z, nombre){
+function fijarPosicion(z, nombre, id){
+  // Cabezas del salon (miran a las cocinas): "escenario" y "publico" se calculan por geometria hacia esos lugares
+  if (id && (POS3D[id] || {}).columna != null && (nombre === 'escenario' || nombre === 'publico')){
+    apuntarGeo(id, nombre === 'escenario' ? [0, 0.45, -1.8] : puntoPiso(0, 12), z);
+    z.posicion = nombre; return;
+  }
   const p = conf.posiciones[nombre]; if (!p) return;
   z.posicion = nombre; z.pan = p.pan; z.tilt = p.tilt;
 }
@@ -419,7 +434,7 @@ async function aplicarEscena(i){
   conf.grupos.forEach(g => {
     const s = e.grupos[g.id], prev = anteriores[g.id] || {};
     const z = s ? {...s} : {color:null, intensidad:0};
-    if (s && s.posicion) fijarPosicion(z, s.posicion);
+    if (s && s.posicion) fijarPosicion(z, s.posicion, g.id);
     else { z.posicion = prev.posicion; z.pan = prev.pan; z.tilt = prev.tilt; }
     zonas[g.id] = z;
   });
@@ -496,13 +511,18 @@ function dentroPoligono(x, z, pol){
   return dentro;
 }
 /* Sin calibracion: pan y tilt calculados desde la posicion de la cabeza hacia el punto (el inverso exacto de la vista 3D) */
-function apuntarGeo(id, punto){
+function apuntarGeo(id, punto, zz){
   const pos = posCabeza(id); if (!pos) return;
-  const d = sub(punto, pos), casa = casaDe(pos);
+  const def = POS3D[id] || {};
+  if (def.columna != null){                                        // solo alcanzan el lado interno (hacia las cocinas)
+    const [u, v] = aSalon(punto), uMin = (colsSalon()[def.columna] || colsSalon()[0])[0] + 1.0;
+    if (u < uMin) punto = puntoPiso(uMin, v);
+  }
+  const d = sub(punto, pos), casa = casaDe(pos, id);
   let a = Math.atan2(d[0], d[2]) - casa;
   while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI;
   const th = Math.atan2(Math.hypot(d[0], d[2]), -d[1]);                 // angulo desde la vertical hacia abajo
-  const z = zona(id);
+  const z = zz || zona(id);
   z.pan = Math.max(0, Math.min(255, 128 + a / RANGO_PAN * 128));
   z.tilt = Math.max(0, Math.min(255, th / RANGO_TILT * 255));
   z.posicion = null;
@@ -571,6 +591,13 @@ async function guardarEsquina(k){
   pintarSeguir();
 }
 
+/* Tamano del foco: angosto = luz mas concentrada y potente */
+$('zoom').oninput = () => {
+  const val = +$('zoom').value;
+  segActivos().forEach(id => { encenderSiApagada(id); zona(id).zoom = val; });
+  V.sucio = true;
+  limitar('zoom', () => enviarGrupos(segActivos(), 0));
+};
 $('borrarCal').onclick = async () => {
   if (!confirm('¿Borrar la calibración de las 3 cabezas? Después habrá que calibrar de nuevo en Kennedy.')) return;
   datos.calibracion = {};
@@ -580,15 +607,16 @@ $('borrarCal').onclick = async () => {
 };
 
 /* Acciones rapidas */
-function accionSeguir(fn){ segActivos().forEach(id => fn(zona(id))); escenaActiva = -1; pintarTodo(); enviarGrupos(segActivos(), fade); }
+function accionSeguir(fn){ segActivos().forEach(id => fn(zona(id), id)); escenaActiva = -1; pintarTodo(); enviarGrupos(segActivos(), fade); }
 $('segOn').onclick = () => accionSeguir(z => { z.color = (conf.seguir && conf.seguir.color) || 'blanco_calido'; z.intensidad = 100; });
 $('segOff').onclick = () => accionSeguir(z => { z.intensidad = 0; });
-$('segPublico').onclick = () => accionSeguir(z => fijarPosicion(z, 'publico'));
-$('segEscenario').onclick = () => accionSeguir(z => fijarPosicion(z, 'escenario'));
+$('segPublico').onclick = () => accionSeguir((z, id) => { encenderSiApagada(id); fijarPosicion(z, 'publico', id); });
+$('segEscenario').onclick = () => accionSeguir((z, id) => { encenderSiApagada(id); fijarPosicion(z, 'escenario', id); });
 
 function pintarSeguir(){
   if (!conf) return;
   document.querySelectorAll('#cabezas button').forEach(b => b.classList.toggle('act', b.dataset.s === seleccion));
+  const zPrim = zona(segActivos()[0]); $('zoom').value = zPrim.zoom != null ? zPrim.zoom : 50;
   document.querySelectorAll('#modoSeguir button').forEach(b => b.classList.toggle('act', b.dataset.m === modoSeguir));
   $('panelMapa').style.display = modoSeguir === 'mapa' ? '' : 'none';
   $('panelMano').style.display = modoSeguir === 'mano' ? '' : 'none';
@@ -650,7 +678,7 @@ function pintarZonas(){
       if (efectoPared && idsPared().includes(g.id)) efectoParedOn(efectoPared);
     });
     d.querySelectorAll('[data-p]').forEach(b => b.onclick = () => {
-      fijarPosicion(z, b.dataset.p); escenaActiva = -1; pintarTodo(); enviarGrupos([g.id], fade);
+      fijarPosicion(z, b.dataset.p, g.id); escenaActiva = -1; pintarTodo(); enviarGrupos([g.id], fade);
       if (efectosActivos.includes('mover:' + g.id)) moverGrupo(g.id, true);
     });
     list.appendChild(d);
@@ -712,6 +740,8 @@ function medirSeguir(){
   const nav = document.querySelector('nav').getBoundingClientRect(), pie = document.querySelector('footer').getBoundingClientRect();
   document.body.style.setProperty('--arriba', Math.round(nav.bottom + 4) + 'px');
   document.body.style.setProperty('--abajo', Math.round(window.innerHeight - pie.top + 6) + 'px');
+  // alto disponible para la vista 3D + el mapa (los botones quedan debajo)
+  document.body.style.setProperty('--disp', Math.max(220, Math.round(pie.top - nav.bottom - 14)) + 'px');
   V.sucio = true;
 }
 window.addEventListener('resize', () => { if (document.body.classList.contains('en-seguir')) medirSeguir(); });
@@ -886,7 +916,11 @@ function colorGrupo(g){
   const dim = ch.dimmer ? v(ch.dimmer) / 255 : 1, w = v(ch.w);
   const r = Math.min(255, v(ch.r) + w), gg = Math.min(255, v(ch.g) + w * 0.9), bb = Math.min(255, v(ch.b) + w * 0.75);
   const i = dim * Math.max(r, gg, bb) / 255;
-  return { r, g:gg, b:bb, i, pan: ch.pan ? v(ch.pan) : null, tilt: ch.tilt ? v(ch.tilt) : null };
+  // zoom: del canal si existe (lo que de verdad sale por el cable); si no, el valor elegido en la pantalla
+  let zoom = 50;
+  if (ch.zoom){ const zv = v(ch.zoom); zoom = (g.zoom_invertido ? 255 - zv : zv) / 2.55; }
+  else if (zonas[g.id] && zonas[g.id].zoom != null) zoom = zonas[g.id].zoom;
+  return { r, g:gg, b:bb, i, pan: ch.pan ? v(ch.pan) : null, tilt: ch.tilt ? v(ch.tilt) : null, zoom };
 }
 const rgba = (c, a) => `rgba(${c.r|0},${c.g|0},${c.b|0},${a})`;
 
@@ -923,15 +957,20 @@ function choque(o, d){
 /* Direccion aproximada de una cabeza movil a partir de pan y tilt */
 // Modelo generico de cabeza movil: pan 0-255 = 540 grados (+-270 desde "casa"), tilt 0-255 = 0 a 135 grados desde la vertical.
 const RANGO_PAN = Math.PI * 1.5, RANGO_TILT = Math.PI * 0.75;
-const casaDe = pos => Math.atan2(0 - pos[0], -1.5 - pos[2]);        // pan 128 = mirando al centro del escenario
+// pan 128 = "casa". Las cabezas del salon cuelgan en la columna con la base vertical mirando a las COCINAS
+// (Cote, 24 nov): su casa es hacia las cocinas y solo alcanzan el lado interno del salon. Las demas miran al escenario.
+function casaDe(pos, id){
+  if (id && (POS3D[id] || {}).columna != null){ const d = rotY([1, 0, 0], giroSalon()); return Math.atan2(d[0], d[2]); }
+  return Math.atan2(0 - pos[0], -1.5 - pos[2]);
+}
 function posCabeza(id){                                            // donde esta montada cada cabeza (igual que en la vista 3D)
   const g = grupo(id), def = POS3D[id] || {};
   if (g && g.vista3d) return g.vista3d[0];
-  if (def.columna != null) return add(columnaSalon(def.columna), [0, 4.0, 0]);
+  if (def.columna != null){ const [cu, cv] = colsSalon()[def.columna] || colsSalon()[0]; return deSalon(cu + 0.75, cv, 4.0); } // costado hacia las cocinas
   return def.pos ? def.pos[0] : null;
 }
-function direccion(pos, pan, tilt, piso){
-  const casa = casaDe(pos);
+function direccion(pos, pan, tilt, piso, id){
+  const casa = casaDe(pos, id);
   const a = casa + (pan - 128) / 128 * RANGO_PAN;
   const th = tilt / 255 * RANGO_TILT;
   return norm([Math.sin(a) * Math.sin(th), piso ? Math.cos(th) : -Math.cos(th), Math.cos(a) * Math.sin(th)]);
@@ -1088,8 +1127,10 @@ function dibujar3D(){
         const blanco = [pos[0] * 0.25, 0.4, -1.4];
         haz(pos, blanco, c, 0.2); brillo(blanco, 2.2, c, 0.9, 0.35);
       } else if (c.pan != null && c.tilt != null){                       // cabezas moviles
-        const d = direccion(pos, c.pan, c.tilt, def.piso), h = choque(pos, d);
-        haz(pos, h.p, c, 0.09); brillo(h.p, 0.9, c, 1.1, h.piso ? 0.38 : 1);
+        const d = direccion(pos, c.pan, c.tilt, def.piso, g.id), h = choque(pos, d);
+        const zf = (c.zoom != null ? c.zoom : 50) / 100;                    // 0 = foco angosto y potente, 1 = ancho y suave
+        const ck = {...c, i: Math.min(1, c.i * (1.35 - 0.6 * zf))};
+        haz(pos, h.p, ck, 0.03 + 0.13 * zf); brillo(h.p, 0.35 + 1.4 * zf, ck, 1.1, h.piso ? 0.38 : 1);
       }
     });
   });

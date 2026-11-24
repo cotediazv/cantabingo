@@ -58,18 +58,21 @@
   "grupos": [
     {
       "id": "seguidor1", "nombre": "Cabeza móvil 1 · pilar cercano", "escaner": 1, "direccion": 1, "tipo": "cabeza",
-      "_canales": "POR CONFIRMAR. Numeros relativos a la direccion (1 = primer canal).",
-      "canales": { "pan": 1, "tilt": 3, "dimmer": 6, "r": 8, "g": 9, "b": 10, "w": 11 },
+      "_canales": "POR CONFIRMAR. Numeros relativos a la direccion (1 = primer canal). zoom = tamano del foco (si al subir el valor el foco se achica, poner zoom_invertido en true).",
+      "canales": { "pan": 1, "tilt": 3, "dimmer": 6, "r": 8, "g": 9, "b": 10, "w": 11, "zoom": 12 },
+      "zoom_invertido": false,
       "fijos": {}
     },
     {
       "id": "seguidor2", "nombre": "Cabeza móvil 2 · segunda columna", "escaner": 2, "direccion": 17, "tipo": "cabeza",
-      "canales": { "pan": 1, "tilt": 3, "dimmer": 6, "r": 8, "g": 9, "b": 10, "w": 11 },
+      "canales": { "pan": 1, "tilt": 3, "dimmer": 6, "r": 8, "g": 9, "b": 10, "w": 11, "zoom": 12 },
+      "zoom_invertido": false,
       "fijos": {}
     },
     {
       "id": "seguidor3", "nombre": "Cabeza móvil 3 · fondo", "escaner": 3, "direccion": 33, "tipo": "cabeza",
-      "canales": { "pan": 1, "tilt": 3, "dimmer": 6, "r": 8, "g": 9, "b": 10, "w": 11 },
+      "canales": { "pan": 1, "tilt": 3, "dimmer": 6, "r": 8, "g": 9, "b": 10, "w": 11, "zoom": 12 },
+      "zoom_invertido": false,
       "fijos": {}
     },
     {
