@@ -187,14 +187,16 @@ function construir(){
     }), roughness: 1 }));
     alf.rotation.x = -Math.PI / 2; alf.position.set(0, 0.452, -2.95); alf.receiveShadow = true; scene.add(alf);
   }
-  caja(0.9, 1.3, 0.6, mat.gris, 2.15, 1.1, -3.0);                                     // case (a la derecha de la mini cabeza)
+  caja(0.9, 1.3, 0.6, mat.gris, 4.45, 1.1, -2.05);                                    // case: al borde, detras de la columna azul derecha
   caja(0.7, 0.75, 0.5, mat.negro, -2.25, 0.82, -3.15);                               // parlante
   // columnas azules del escenario con su pantalla vertical (y la TV en la derecha)
   [-5.8, 5.8].forEach(x => {
     caja(1.0, 4.3, 1.2, mat.listones, x, 2.15, 0);
     const pant = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 1.4), new THREE.MeshStandardMaterial({ color: 0x101826, emissive: 0x3a5a90, emissiveIntensity: 0.6 }));
     pant.position.set(x, 3.0, 0.61); scene.add(pant);
-    if (x > 0){ const t2 = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 0.8), new THREE.MeshStandardMaterial({ color: 0x101826, emissive: 0x2c4a7a, emissiveIntensity: 0.6 })); t2.position.set(x, 1.65, 0.66); scene.add(t2); }
+    // debajo, en las DOS columnas: pantalla de 42" (unos 93 x 52 cm), del ancho del pilar
+    const marco = new THREE.Mesh(new THREE.BoxGeometry(0.97, 0.56, 0.05), mat.negro); marco.position.set(x, 1.95, 0.625); scene.add(marco);
+    const t2 = new THREE.Mesh(new THREE.PlaneGeometry(0.93, 0.52), new THREE.MeshStandardMaterial({ color: 0x101826, emissive: 0x2c4a7a, emissiveIntensity: 0.7 })); t2.position.set(x, 1.95, 0.652); scene.add(t2);
   });
   // marco azul, red de cuerdas y lamparas hexagonales
   const barra = (a, b) => { const d = v3(b).sub(v3(a)), m = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, d.length(), 10), mat.azul);

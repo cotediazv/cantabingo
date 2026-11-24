@@ -1046,14 +1046,14 @@ function dibujar3D(){
   poly([[-1.15,1.35,-3.95],[1.15,1.35,-3.95],[1.15,2.6,-3.95],[-1.15,2.6,-3.95]], '#0b0d12', '#2a2f3a'); // televisor
   poly([[-1,ht+0.005,-3.7],[1,ht+0.005,-3.7],[1,ht+0.005,-2.2],[-1,ht+0.005,-2.2]], '#3c3a3e');          // alfombra (1,5 m)
   caja(-0.75, 0.75, ht, 1.4, -3.5, -2.4, '#1a1c22', '#14161b', '#2a2d35');      // bateria electronica, delante de la pantalla
-  caja(1.7, 2.6, ht, 1.75, -3.3, -2.7, '#2b2e36', '#22252c', '#3a3e48');        // case (flight case)
+  caja(4.0, 4.9, ht, 1.75, -2.35, -1.75, '#2b2e36', '#22252c', '#3a3e48');      // case: al borde, detras de la columna azul derecha
   caja(-2.6, -1.9, ht, 1.2, -3.4, -2.9, '#141519', '#101114', '#1b1c21');       // parlante
   // Columnas azules de listones en las esquinas, con paneles de luz
   [[-6.3, -5.3], [5.3, 6.3]].forEach(([x0, x1]) => {
     caja(x0, x1, 0, 4.3, -0.6, 0.6, '#2f5f9e', '#264f86', '#3a6fb5');
     for (let x = x0 + 0.12; x < x1; x += 0.16) linea([x, 0, 0.61], [x, 4.3, 0.61], '#24497d', 1);
     poly([[x0+0.15,2.3,0.62],[x1-0.15,2.3,0.62],[x1-0.15,3.7,0.62],[x0+0.15,3.7,0.62]], '#56698a', '#7d8ba3'); // pantalla vertical (mira al publico)
-    if (x0 > 0) poly([[x0-0.35,1.25,0.66],[x1+0.35,1.25,0.66],[x1+0.35,2.05,0.66],[x0-0.35,2.05,0.66]], '#5d78a8', '#222'); // TV mas abajo (columna derecha)
+    poly([[x0+0.03,1.67,0.64],[x1-0.03,1.67,0.64],[x1-0.03,2.23,0.64],[x0+0.03,2.23,0.64]], '#4d6890', '#111'); // pantalla de 42" debajo (las dos columnas)
   });
   // Lamparas hexagonales y sombreros de paja colgando sobre el salon
   [[-2.5, 5], [1.5, 6.5], [-1, 9.5], [3, 11], [-3.5, 13], [1, 15.5]].forEach(([su, sv]) => {
