@@ -744,6 +744,17 @@ function caja(x0, x1, y0, y1, z0, z1, frente, lado, techo){
   if (caraX != null) poly([[caraX,y0,z0],[caraX,y0,z1],[caraX,y1,z1],[caraX,y1,z0]], lado);
   poly([[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]], frente);
 }
+/* Caja alineada con el SALON (no con el escenario): centro (u, v) en metros del salon, medio ancho hu (de lado) y hv (a lo largo). */
+function cajaS(u, v, hu, hv, y0, y1, frente, lado, techo){
+  const P4 = [[u-hu, v-hv], [u+hu, v-hv], [u+hu, v+hv], [u-hu, v+hv]];
+  const caras = [];
+  for (let i = 0; i < 4; i++){
+    const a = P4[i], b = P4[(i + 1) % 4], m = deSalon((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (y0 + y1) / 2);
+    caras.push({ d: Math.hypot(...sub(m, V.ojo)), pts: [deSalon(a[0], a[1], y0), deSalon(b[0], b[1], y0), deSalon(b[0], b[1], y1), deSalon(a[0], a[1], y1)], col: i % 2 ? lado : frente });
+  }
+  caras.sort((p, q) => q.d - p.d).slice(2).forEach(c => poly(c.pts, c.col));     // solo las 2 caras que miran a la camara
+  poly(P4.map(([uu, vv]) => deSalon(uu, vv, y1)), techo);
+}
 function linea(a, b, color, ancho){
   let ca = aCam(a), cb = aCam(b);
   if (ca[2] < CERCA && cb[2] < CERCA) return;
@@ -887,32 +898,30 @@ function dibujar3D(){
     if (c[2] < 1.6 && c[0] > -6.5) continue;                                         // no encima de la tarima
     if ([0, 1, 2].some(n => { const q = columnaSalon(n); return Math.hypot(q[0] - c[0], q[2] - c[2]) < 1.8; })) continue;
     objetos.push({ d: Math.hypot(...sub(c, V.ojo)), f: () => {
-      [-1, 1].forEach(s => {                                                       // sillas amarillas (asiento + respaldo)
-        const x = c[0] + s * 0.62;
-        caja(x - 0.2, x + 0.2, 0.42, 0.47, c[2] - 0.2, c[2] + 0.2, '#c9a227', '#a8861d', '#d8b437');
-        const xr = x + s * 0.2;
-        caja(Math.min(xr, xr + s * 0.04), Math.max(xr, xr + s * 0.04), 0.47, 0.9, c[2] - 0.2, c[2] + 0.2, '#c9a227', '#a8861d', '#d8b437');
+      [-1, 1].forEach(s => {                                                       // sillas amarillas (asiento + respaldo), alineadas al salon
+        cajaS(su + s * 0.62, sv, 0.2, 0.2, 0.42, 0.47, '#c9a227', '#a8861d', '#d8b437');
+        cajaS(su + s * 0.82, sv, 0.02, 0.2, 0.47, 0.9, '#c9a227', '#a8861d', '#d8b437');
       });
-      caja(c[0] - 0.04, c[0] + 0.04, 0, 0.72, c[2] - 0.04, c[2] + 0.04, '#3b3f46', '#30333a', '#3b3f46'); // pata
-      caja(c[0] - 0.4, c[0] + 0.4, 0.72, 0.77, c[2] - 0.4, c[2] + 0.4, '#7a5a38', '#6a4d30', '#9a7a50'); // cubierta de madera
+      cajaS(su, sv, 0.04, 0.04, 0, 0.72, '#3b3f46', '#30333a', '#3b3f46');          // pata
+      cajaS(su, sv, 0.4, 0.4, 0.72, 0.77, '#7a5a38', '#6a4d30', '#9a7a50');          // cubierta de madera
     }});
     velas.push([c[0], 0.82, c[2]]);
   }
   tramosMaceteros().forEach(([a, b]) => {                                            // maceteros con plantas
-    for (let v = a; v <= b; v += 0.55){
-      const c = deSalon(U_MACETEROS, v), alto = 0.95 + 0.25 * Math.abs(Math.sin(v * 2.3));
+    for (let v = a + 0.3; v <= b; v += 0.6){                                        // tramos de 0.6 m, alineados al salon; 1 m de alto en total
+      const c = deSalon(U_MACETEROS, v), alto = 0.88 + 0.12 * Math.abs(Math.sin(v * 2.3));
       objetos.push({ d: Math.hypot(...sub(c, V.ojo)), f: () => {
-        caja(c[0] - 0.28, c[0] + 0.28, 0, 0.55, c[2] - 0.28, c[2] + 0.28, '#3a3430', '#2e2925', '#4a433d'); // macetero
-        caja(c[0] - 0.24, c[0] + 0.24, 0.55, alto, c[2] - 0.24, c[2] + 0.24, '#2f5d34', '#264d2b', '#3f7a45'); // plantas
+        cajaS(U_MACETEROS, v, 0.28, 0.3, 0, 0.6, '#3a3430', '#2e2925', '#4a433d');   // macetero
+        cajaS(U_MACETEROS, v, 0.22, 0.27, 0.6, alto, '#2f5d34', '#264d2b', '#3f7a45'); // plantas
       }});
     }
   });
   [0, 1, 2].forEach(n => {
-    const c = columnaSalon(n);
+    const c = columnaSalon(n), [cu, cv] = colsSalon()[n];
     objetos.push({ d: Math.hypot(...sub(c, V.ojo)), f: () => {
-      caja(c[0] - 0.6, c[0] + 0.6, 0, 5.5, c[2] - 0.6, c[2] + 0.6, '#34373d', '#2a2d32', '#3c3f45');
-      if (n === 0){                                                                  // letrero de neon EAT FISH
-        const p = P([c[0], 3.3, c[2] + 0.62]);
+      cajaS(cu, cv, 0.6, 0.6, 0, 5.5, '#34373d', '#2a2d32', '#3c3f45');            // columna de piedra, alineada al salon
+      if (n === 0){                                                                  // letrero de neon EAT FISH (cara hacia las mesas)
+        const p = P(deSalon(cu + 0.62, cv, 3.3));
         if (p && p[2] > 2){
           const ctx = V.ctx, s = Math.max(7, Math.min(22, 0.32 * p[3]));
           ctx.save(); ctx.font = `bold ${s}px system-ui`; ctx.textAlign = 'center';
