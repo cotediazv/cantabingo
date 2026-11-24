@@ -311,6 +311,9 @@ namespace KRB {
     static void Responder(NetworkStream s, string ruta, string query) {
       if (ruta == "/" || ruta == "/index.html") { Archivo(s, Path.Combine(Root, "ipad.html"), "text/html; charset=utf-8"); return; }
       if (ruta == "/luces.json") { Archivo(s, ConfigPath, "application/json; charset=utf-8"); return; }
+      // Vista 3D realista (three.js). Solo estos archivos, nada mas de la carpeta.
+      if (ruta == "/vista3d.js") { Archivo(s, Path.Combine(Root, "vista3d.js"), "text/javascript; charset=utf-8"); return; }
+      if (ruta == "/lib/three.module.min.js") { Archivo(s, Path.Combine(Root, "lib", "three.module.min.js"), "text/javascript; charset=utf-8"); return; }
 
       if (ruta == "/api/set") {
         // d=canal:valor,canal:valor   f=segundos de fundido

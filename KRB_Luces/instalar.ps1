@@ -22,7 +22,8 @@ Write-Host ""
 New-Item -ItemType Directory -Force -Path $Destino | Out-Null
 
 # Archivos del programa: siempre se actualizan
-$programa = @("INICIAR.bat", "krb_luces.ps1", "ipad.html", "instalar.ps1", "INSTALAR.bat", "internet.ps1", "CONFIGURAR_INTERNET.bat", "LEEME.txt")
+$programa = @("INICIAR.bat", "krb_luces.ps1", "ipad.html", "vista3d.js", "instalar.ps1", "INSTALAR.bat", "internet.ps1", "CONFIGURAR_INTERNET.bat", "LEEME.txt", "lib\three.module.min.js", "lib\three-LICENSE.txt")
+New-Item -ItemType Directory -Force -Path (Join-Path $Destino "lib") | Out-Null
 foreach ($f in $programa) {
   $src = Join-Path $origen $f
   if ((Test-Path $src) -and ((Resolve-Path $src).Path -ne (Join-Path $Destino $f))) { Copy-Item $src (Join-Path $Destino $f) -Force }

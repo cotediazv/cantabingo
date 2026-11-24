@@ -115,6 +115,8 @@
   .vista{margin:0 20px 14px;position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#050608}
   .vista canvas{display:block;width:100%;height:var(--vh,300px);touch-action:none;cursor:grab}
   .vista.oculta canvas{display:none}
+  /* Vista realista (three.js) si esta disponible; si no, la vista simple */
+  .vista.gl #cv3d{display:none} .vista:not(.gl) #cv3dgl{display:none}
   /* En Seguir: la vista 3D queda fija arriba mientras se usa el mapa, para ver las luces moverse en tiempo real */
   body.en-seguir .vista{position:sticky;top:0;z-index:4;box-shadow:0 8px 20px #000c}
   body.en-seguir .vista canvas{height:min(var(--vh,300px),34vh)}
@@ -162,6 +164,7 @@
 </nav>
 
 <section class="vista" id="vista">
+  <canvas id="cv3dgl"></canvas>
   <canvas id="cv3d"></canvas>
   <div class="bar"><span>Vista previa 3D · aproximada · arrastra para girar</span>
     <div><button id="vReset">Centrar</button><button id="vSalon">Ver salón</button><button id="vTam">Más grande</button><button id="vOcultar">Ocultar</button></div></div>
@@ -989,6 +992,10 @@ function direccion(pos, pan, tilt, piso, id){
 
 function dibujar3D(){
   const cv = $('cv3d'); if (!cv || $('vista').classList.contains('oculta') || !conf) return;
+  if (window.Vista3D && Vista3D.ok){                                    // vista realista (vista3d.js, three.js)
+    try { Vista3D.render(); V.sucio = false; return; }
+    catch(e){ console.warn('Vista realista fallo, se usa la simple', e); Vista3D.ok = false; $('vista').classList.remove('gl'); }
+  }
   const dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight;
   if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)){ cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
   const ctx = V.ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1171,8 +1178,9 @@ function dibujar3D(){
 
 /* Girar con el dedo, centrar, tamaño, ocultar */
 (() => {
-  const cv = $('cv3d'); let last = null;
-  cv.addEventListener('pointerdown', e => { last = [e.clientX, e.clientY]; cv.setPointerCapture(e.pointerId); });
+  const cv = $('vista'); let last = null;                       // sirve para la vista simple y la realista
+  cv.style.touchAction = 'none';
+  cv.addEventListener('pointerdown', e => { if (e.target.closest('button')) return; last = [e.clientX, e.clientY]; cv.setPointerCapture(e.pointerId); });
   cv.addEventListener('pointermove', e => {
     if (!last) return;
     V.yaw = Math.max(giroSalon() - 1.3, Math.min(giroSalon() + 1.3, V.yaw - (e.clientX - last[0]) * 0.006));
@@ -1262,5 +1270,7 @@ function dibujarPlano(){
   sondear(); setInterval(sondear, 3000); sondearVista(); V.sucio = true;
 })();
 </script>
+<!-- Vista 3D realista (three.js incluido en la suite, no usa internet). Si falla, sigue la vista simple. -->
+<script type="module" src="vista3d.js"></script>
 </body>
 </html>
