@@ -86,7 +86,8 @@
       "fijos": {}
     },
     {
-      "id": "mini", "nombre": "Mini cabezas (2) · escenario", "escaner": 8, "direccion": 113, "tipo": "cabeza",
+      "id": "mini", "nombre": "Mini cabezas (2) · escenario", "escaner": 5, "direccion": 65, "tipo": "cabeza",
+      "_direccion": "65 = lo que muestra la mini cabeza en Kennedy (foto de Cote, 24 nov: d065). La tabla de la consola decia 113.",
       "canales": { "pan": 1, "tilt": 3, "dimmer": 6, "r": 8, "g": 9, "b": 10, "w": 11 },
       "mover": { "_ayuda": "Movimiento automatico: las dos iguales, girando y apuntando al techo. amp_pan/amp_tilt: amplitud (0-127). tilt_centro: inclinacion de base (0 = hacia arriba).", "amp_pan": 110, "amp_tilt": 18, "tilt_centro": 30 },
       "fijos": {}

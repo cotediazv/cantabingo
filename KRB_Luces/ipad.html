@@ -338,7 +338,8 @@ const $ = id => document.getElementById(id);
 // ?demo=control = el iPad completo manejando el demo abierto en el mismo navegador (para seguir al animador a mano en el bingo).
 const PARAMS = new URLSearchParams(location.search), DEMO = PARAMS.has('demo'), TV = DEMO && PARAMS.get('demo') === 'tv';
 // ?demo=mapa = solo el mapa del salon (y las cabezas a elegir), para el espacio libre de la pestana Demo del GC Master.
-const MAPA_SOLO = DEMO && PARAMS.get('demo') === 'mapa';
+// (Code 1 lo incrusta como ?demo=control&mapa=1: tambien vale)
+const MAPA_SOLO = DEMO && (PARAMS.get('demo') === 'mapa' || PARAMS.get('mapa') === '1');
 const CONTROL = DEMO && (PARAMS.get('demo') === 'control' || MAPA_SOLO);
 if (MAPA_SOLO) document.body.classList.add('solo-mapa');
 if (TV) document.body.classList.add('tv');
@@ -1656,7 +1657,10 @@ const ALIAS_SALA = {
   premio_entrega:'entrega_premio', rosko_ranking:'rosko_puntajes', rosko_ranking_fin:'base_juegos',
   objeto_votacion_fin:'base_juegos', objeto_final:'objeto_votacion', festival_despide:'base_juegos',
   festival_canta:'festival_cancion', festival_termina:'festival_tension',
-  festival_lugar_suspenso:'festival_tension', festival_lugar_revela:'festival_revela'   // nombres propuestos a Code 1
+  festival_lugar_suspenso:'festival_tension', festival_lugar_revela:'festival_revela',
+  // nombres que manda la Sala (Code 1, rev 223): al pasar a los resultados = tension; cada lugar revelado = pestaneo y vuelve la tension
+  festival_resultados:'festival_tension', objeto_resultados:'festival_tension',
+  festival_lugar:'festival_revela', objeto_lugar:'festival_revela'
 };
 const todosMomentos = () => JUEGOS.flatMap(j => j.momentos).concat(
   Object.entries(ALIAS_SALA).map(([id, a]) => a === 'nada' ? {id, nombre:id, nada:true, oculto:true} : {id, nombre:id, igual:a, oculto:true}));
