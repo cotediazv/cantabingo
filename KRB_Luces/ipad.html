@@ -698,6 +698,29 @@ const aSalon = p => { const a = giroSalon(); return [p[0] * Math.cos(a) - p[2] *
 const SALON = { largo: 27, cocinas: 5.6, pasillo: -8.8 };
 // Columnas del salon (lado pasillo), en metros del salon [u, v]. Se pueden cambiar en luces.json > vista3d > columnas_salon.
 const colsSalon = () => ((conf && conf.vista3d && conf.vista3d.columnas_salon) || [[-6.2, 0], [-6.0, 13.5], [-6.0, 23]]);
+/* Distribucion de mesas segun Cote (desde los maceteros hacia las cocinas):
+   1) sillones de espaldas a los maceteros, desde la 3a mesa contando desde el escenario, con sus mesas;
+   2) pasillo; 3) corrida de una mesa; 4) corrida de dos mesas (juntas); 5) pasillo hacia las cocinas. */
+const FILAS = { sillon: -4.75, simple: -1.7, doble: [0.15, 0.95] };
+function mesasSalon(){
+  const mesas = [], sillones = [];
+  const enTarima = (u, v) => { const c = deSalon(u, v); return c[2] < 1.6 && c[0] > -6.5; };
+  const cercaColumna = v => colsSalon().some(c => Math.abs(c[1] - v) < 1.6);
+  let nA = 0;
+  for (let v = 2.5; v <= SALON.largo - 1.5; v += 2.4){
+    if (!enTarima(FILAS.sillon, v)){
+      nA++;
+      if (nA >= 3 && !cercaColumna(v)){ sillones.push(v); mesas.push({ u: FILAS.sillon, v, sillas: [1] }); }
+      else mesas.push({ u: FILAS.sillon, v, sillas: [-1, 1] });
+    }
+    if (!enTarima(FILAS.simple, v)) mesas.push({ u: FILAS.simple, v, sillas: [-1, 1] });
+    if (!enTarima(FILAS.doble[0], v) && !enTarima(FILAS.doble[1], v)){
+      mesas.push({ u: FILAS.doble[0], v, sillas: [-1] });
+      mesas.push({ u: FILAS.doble[1], v, sillas: [1] });
+    }
+  }
+  return { mesas, sillones };
+}
 // Maceteros largos con plantas entre el pasillo y las mesas (cierran el salon), en la linea de las columnas, cortados por ellas.
 const U_MACETEROS = -6.0;
 function tramosMaceteros(){
@@ -893,12 +916,18 @@ function dibujar3D(){
 
   // --- Salon: mesas con velas y sillas amarillas, y columnas de piedra (de lejos a cerca) ---
   const objetos = [], velas = [];
-  for (let su = -4.6; su <= 4.6; su += 2.3) for (let sv = 2.5; sv <= SALON.largo - 1.5; sv += 2.5){
-    const c = deSalon(su, sv);
-    if (c[2] < 1.6 && c[0] > -6.5) continue;                                         // no encima de la tarima
-    if ([0, 1, 2].some(n => { const q = columnaSalon(n); return Math.hypot(q[0] - c[0], q[2] - c[2]) < 1.8; })) continue;
+  const dist = mesasSalon();
+  dist.sillones.forEach(sv => {                                                     // sillones de espaldas a los maceteros
+    const c = deSalon(FILAS.sillon - 0.75, sv);
     objetos.push({ d: Math.hypot(...sub(c, V.ojo)), f: () => {
-      [-1, 1].forEach(s => {                                                       // sillas amarillas (asiento + respaldo), alineadas al salon
+      cajaS(FILAS.sillon - 0.7, sv, 0.3, 1.1, 0, 0.42, '#5b3a32', '#4a2f29', '#6e463c');     // asiento
+      cajaS(FILAS.sillon - 0.95, sv, 0.07, 1.1, 0.42, 0.95, '#5b3a32', '#4a2f29', '#6e463c'); // respaldo
+    }});
+  });
+  dist.mesas.forEach(({ u: su, v: sv, sillas }) => {
+    const c = deSalon(su, sv);
+    objetos.push({ d: Math.hypot(...sub(c, V.ojo)), f: () => {
+      sillas.forEach(s => {                                                       // sillas amarillas (asiento + respaldo), alineadas al salon
         cajaS(su + s * 0.62, sv, 0.2, 0.2, 0.42, 0.47, '#c9a227', '#a8861d', '#d8b437');
         cajaS(su + s * 0.82, sv, 0.02, 0.2, 0.47, 0.9, '#c9a227', '#a8861d', '#d8b437');
       });
@@ -906,7 +935,7 @@ function dibujar3D(){
       cajaS(su, sv, 0.4, 0.4, 0.72, 0.77, '#7a5a38', '#6a4d30', '#9a7a50');          // cubierta de madera
     }});
     velas.push([c[0], 0.82, c[2]]);
-  }
+  });
   tramosMaceteros().forEach(([a, b]) => {                                            // maceteros con plantas
     for (let v = a + 0.3; v <= b; v += 0.6){                                        // tramos de 0.6 m, alineados al salon; 1 m de alto en total
       const c = deSalon(U_MACETEROS, v), alto = 0.88 + 0.12 * Math.abs(Math.sin(v * 2.3));
@@ -1033,11 +1062,12 @@ function dibujarPlano(){
   const ce = aSalon([0.5, 0, -2]);
   s += `<text x="${X(ce[1])}" y="${Y(ce[0])}" fill="#e8d3b0" font-size="6" text-anchor="middle" font-weight="700">ESCENARIO</text>`;
   [[-5.8, 0], [5.8, 0]].forEach(([x, z]) => { const p = pt([x, 0, z]).split(','); s += `<rect x="${p[0]-3}" y="${p[1]-3}" width="6" height="6" fill="#3a6fb5"/>`; });
-  // mesas (igual que en la vista 3D)
-  for (let su = -4.6; su <= 4.6; su += 2.3) for (let sv = 2.5; sv <= SALON.largo - 1.5; sv += 2.5){
-    const c = deSalon(su, sv); if (c[2] < 1.6 && c[0] > -6.5) continue;
-    s += `<rect x="${X(sv) - 3.5}" y="${Y(su) - 3.5}" width="7" height="7" fill="none" stroke="#c98a3a" stroke-width="0.9"/>`;
-  }
+  // mesas y sillones (igual que en la vista 3D)
+  const dm = mesasSalon();
+  dm.sillones.forEach(sv => { s += `<rect x="${X(sv) - 11}" y="${Y(FILAS.sillon - 0.75) - 3}" width="22" height="6" rx="1.5" fill="#5b3a32"/>`; });
+  dm.mesas.forEach(({ u: su, v: sv }) => {
+    s += `<rect x="${X(sv) - 4}" y="${Y(su) - 4}" width="8" height="8" fill="none" stroke="#c98a3a" stroke-width="0.9"/>`;
+  });
   // maceteros con plantas entre el pasillo y las mesas
   tramosMaceteros().forEach(([a, b]) => {
     s += `<rect x="${X(a)}" y="${Y(U_MACETEROS) - 2.5}" width="${X(b) - X(a)}" height="5" rx="2" fill="#2f5d34" stroke="#3f7a45" stroke-width="0.8"/>`;
