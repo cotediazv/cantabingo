@@ -20,7 +20,7 @@ function send(name) {
   const url = process.env.LUCES_URL; const key = process.env.LUCES_CLAVE;
   const s = sala();
   if (!url || !key || !s || s.sim || (s.theme || 'frida') !== 'kennedy') return;
-  fetch(`${url.replace(/\/$/, '')}/api/momento?nombre=${encodeURIComponent(name)}`, { headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(2000) }).catch(() => {});
+  fetch(`${url.replace(/\/$/, '')}/api/momento?nombre=${encodeURIComponent(name)}&sala=kennedy`, { headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(2000) }).catch(() => {});
 }
 
 // Anuncia un momento. `kind` agrupa los que se reemplazan: un momento nuevo cancela los diferidos pendientes

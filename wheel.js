@@ -14,6 +14,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
   db.bankUsed ||= {}; // cuántas veces se ha usado cada pregunta del banco
   const clients = {}; // id -> Set<res>
   const timers = {}; // id -> temporizador de fin de reloj
+  const warns = {}; // id -> avisos de 30 y 10 s del reloj (luces)
   const showTimers = {}; // id -> temporizador del botón «Rosko en pantalla»
   const SHOW_MS = 6000; // 6 s (pedido de Cote)
   for (const w of Object.values(db.wheels)) { w.runningSince = null; w.history = []; } // tras reiniciar, el reloj queda en pausa
@@ -57,6 +58,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
   // Detiene el reloj y descuenta el tiempo transcurrido
   function settle(w) {
     clearTimeout(timers[w.id]);
+    (warns[w.id] || []).forEach(clearTimeout); delete warns[w.id];
     if (w.runningSince) { w.players[w.turn].remainingMs = liveRemaining(w, w.turn); w.runningSince = null; }
   }
   function run(w) {
@@ -64,6 +66,10 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     if (w.runningSince || !active(c)) return;
     w.runningSince = Date.now();
     timers[w.id] = setTimeout(() => { settle(w); w.onScreen = false; passTurn(w); rankSeen(w); broadcast(w); require('./momentos.js').emit('rosko_tiempo'); }, c.remainingMs + 30); // se acabó el reloj (luces)
+    // Luces (Cote, 24 nov): con 30 s por delante el fondo pasa a rojo suave y en los últimos 10 s parpadea. Si el reloj
+    // parte con menos, el aviso sale apenas después de «rosko_pregunta», para no quedar debajo de él
+    const r = c.remainingMs;
+    warns[w.id] = [[30000, 'rosko_30s', 300], [10000, 'rosko_10s', 600]].map(([ms, name, min]) => setTimeout(() => { if (w.runningSince) require('./momentos.js').emit(name); }, Math.max(r - ms, min)));
   }
   // Avanza a la siguiente letra abierta del concursante; false si ya no le quedan
   function nextLetter(c) {
@@ -236,7 +242,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
         clearTimeout(showTimers[w.id]);
         if (w.onScreen) {
           const at = w.onScreenAt = Date.now();
-          showTimers[w.id] = setTimeout(() => { if (db.wheels[w.id] && w.onScreen && !w.runningSince && w.onScreenAt === at) { w.onScreen = false; broadcast(w); } }, SHOW_MS);
+          showTimers[w.id] = setTimeout(() => { if (db.wheels[w.id] && w.onScreen && !w.runningSince && w.onScreenAt === at) { w.onScreen = false; broadcast(w); require('./momentos.js').emit('rosko_pantalla_fin'); } }, SHOW_MS);
         }
         return null;
       }
@@ -417,11 +423,14 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     if (db.stage === 'qr') setStage('rueda'); // cualquier acción del rosko retira el QR a pantalla completa
     rankSeen(w);
     const had = winnerOf(w) >= 0; const hadCrowd = !!((w.crowd || {}).winner);
+    const wasOn = !!w.onScreen;
     const error = act(w, String((req.body || {}).action), req.body || {});
     // Luces (lista acordada con Code 4): el momento de cada botón del panel
     if (!error) {
       const act2 = String((req.body || {}).action); const on = (req.body || {}).on !== false;
-      const name = { start: 'rosko_pregunta', hit: 'rosko_correcta', miss: 'rosko_incorrecta', pass: 'rosko_pasa' }[act2] || (act2 === 'rank' ? (on ? 'rosko_ranking' : 'rosko_ranking_fin') : '');
+      // el rosko entra o sale de pantalla con su botón o con «Cambiar turno» (cámaras del demo)
+      const name = { start: 'rosko_pregunta', hit: 'rosko_correcta', miss: 'rosko_incorrecta', pass: 'rosko_pasa' }[act2] || (act2 === 'rank' ? (on ? 'rosko_ranking' : 'rosko_ranking_fin') : '')
+        || (act2 === 'show' ? (on ? 'rosko_pantalla' : 'rosko_pantalla_fin') : '') || (act2 === 'turn' && wasOn ? 'rosko_pantalla_fin' : '');
       if (act2 === 'start' && !w.runningSince) { /* no partió (sin letras): nada */ } else if (name) require('./momentos.js').emit(name);
       if (act2 === 'acceptwin') { require('./momentos.js').emit('rosko_ganador'); require('./momentos.js').emitLater('premio_entrega', 9000); }
       if (act2 === 'crowdwin' && (w.crowd || {}).winner && !w.crowd.winner.none) { require('./momentos.js').emit('trivia_ganador'); require('./momentos.js').emitLater('premio_entrega', 9000); }
@@ -487,7 +496,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     let removed = 0;
     for (const w of Object.values(db.wheels)) {
       if (w.created >= before) continue;
-      clearTimeout(timers[w.id]);
+      clearTimeout(timers[w.id]); (warns[w.id] || []).forEach(clearTimeout); delete warns[w.id];
       for (const res of clients[w.id] || []) res.end();
       delete clients[w.id];
       delete db.wheels[w.id];
