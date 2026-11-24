@@ -361,12 +361,12 @@ function construir(){
   const hC = sombra(new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 12), mat.piel)); hC.position.y = 1.33; conc.add(hC);
   conc.position.set(0, 0.45, -1.2); roskoObj.add(conc);
   const palo = (x, z, alto, r) => { const m = sombra(new THREE.Mesh(new THREE.CylinderGeometry(r || 0.015, r || 0.015, alto, 10), mat.negro)); m.position.set(x, 0.45 + alto / 2, z); roskoObj.add(m); return m; };
-  // atril del microfono: el pie va al costado y el brazo llega a la boca (asi no tapa la cara en el plano cerrado)
-  palo(-0.32, -0.8, 1.1);
+  // atril del microfono: recto y vertical (Cote, rev 196), delante del concursante, con el microfono arriba apuntando a la boca
+  palo(0, -0.9, 1.17);
   const tramo = (a, b, r) => { const d = v3(b).sub(v3(a)), m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, d.length(), 8), mat.negro);
     m.position.copy(v3(a).add(d.clone().multiplyScalar(0.5))); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); roskoObj.add(m); };
-  tramo([-0.32, 0.45 + 1.1, -0.8], [-0.07, 0.45 + 1.25, -0.95], 0.011);                   // brazo
-  tramo([-0.07, 0.45 + 1.25, -0.95], [-0.01, 0.45 + 1.28, -1.03], 0.021);                 // microfono
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.02, 20), mat.negro); base.position.set(0, 0.46, -0.9); roskoObj.add(base);
+  tramo([0, 0.45 + 1.17, -0.9], [0, 0.45 + 1.27, -0.98], 0.021);                          // microfono
   palo(0.55, -0.85, 1.0);                                                                  // atril de la pantalla de 20"
   const p20 = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.28, 0.03), mat.negro);
   p20.position.set(0.55, 0.45 + 1.12, -0.85); p20.rotation.order = 'YXZ'; p20.rotation.y = Math.atan2(-0.55, -0.35); p20.rotation.x = -0.35; roskoObj.add(p20);
@@ -487,7 +487,11 @@ function prepararPantallasVivo(){
     const caja = document.createElement('div'); caja.style.background = '#000'; caja.style.overflow = 'hidden';
     const c = document.createElement('canvas'); c.width = 384; c.height = 216; c.style.cssText = 'position:absolute;inset:0;width:100%;height:100%'; caja.appendChild(c);
     if (VIVO.gc){ const f = iframe(VIVO.gc, 1920, 1080); f.style.position = 'absolute'; f.style.left = '0'; f.style.top = '0';
-      f.style.transform = 'scale(' + (640 / 1920) + ')'; f.style.transformOrigin = '0 0'; caja.appendChild(f); }
+      f.style.transform = 'scale(' + (640 / 1920) + ')'; f.style.transformOrigin = '0 0'; caja.appendChild(f);
+      // el GC va ENCIMA de la transmision: su fondo tiene que ser transparente (Cote, rev 198: se veia el GC sobre negro)
+      const transparente = () => { try { const d = f.contentDocument; if (!d || !d.head) return;
+        const s = d.createElement('style'); s.textContent = 'html,body{background:transparent !important}'; d.head.appendChild(s); } catch (e) {} };
+      f.addEventListener('load', transparente); }
     VIVO.feeds.push(c.getContext('2d')); marco(m, caja, 640, 360);
   });
 }

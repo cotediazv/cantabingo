@@ -1889,39 +1889,46 @@ function plano(cam, obj){                                             // corte a
   const d = [cam[0] - obj[0], cam[1] - obj[1], cam[2] - obj[2]], L = Math.hypot(...d);
   V.objetivo = [...obj]; V.dist = L; V.pitch = Math.asin(d[1] / L); V.yaw = Math.atan2(d[0], d[2]);
 }
+// Camara del escenario (Cote, rev 195): siempre la misma toma fija, como la camara de las transmisiones de Twitch,
+// un poco mas abierta para que entren las dos columnas azules con sus pantallas verticales y las de 42".
+// PROVISORIA: falta la captura de Twitch para ponerla exactamente en ese lugar (pregunta en el registro).
+const PLANO_ESC = { cam: [0.2, 2.4, 9.3], mira: [0, 1.95, -1.0] };
 function iniciarFlashazos(){
-  // Tres tomas rapidas: el publico desde el escenario, el salon desde el fondo y mesas de cerca; despues vuelve al escenario
+  // Tres tomas rapidas, SIEMPRE del escenario desde distintos angulos (Cote, rev 197); despues vuelve a la camara fija
   camDemo.flashes = [
-    [[0.6, 2.3, 0.4], deSalon(0.5, 7, 1.0)],
-    [deSalon(-2.5, 19, 3.2), [0, 1.4, -1.6]],
-    [deSalon(4.2, 2.5, 1.7), deSalon(-1.5, 7.5, 0.9)]
+    [[-4.6, 1.7, 5.2], [0.2, 1.6, -1.6]],                              // desde el publico, a la izquierda y baja
+    [[7.4, 2.8, 2.6], [-0.6, 1.5, -1.8]],                               // desde el costado derecho
+    [[1.6, 4.2, 10.5], [0, 1.4, -1.6]]                                  // alta y abierta, por encima de las mesas
   ];
   camDemo.hasta = 0;
 }
+function tomaFija(){ plano(PLANO_ESC.cam, PLANO_ESC.mira); }
 function camaraDemo(dt, a){
   const ahora = performance.now();
   if (camDemo.flashes.length || camDemo.hasta){
     if (ahora < camDemo.hasta) return;                                  // la toma se queda fija hasta el siguiente corte
     const t = camDemo.flashes.shift();
     if (t){ plano(t[0], t[1]); camDemo.hasta = ahora + 1100; return; }
-    camDemo.hasta = 0;                                                  // fin: corte de vuelta al escenario
-    V.yaw = giroSalon() * 0.6; V.dist = 8; V.pitch = 0.22; V.objetivo = [a.p[0], a.p[1] + 1.3, a.p[2]]; return;
+    camDemo.hasta = 0; tomaFija(); return;                              // fin: corte de vuelta a la camara del escenario
   }
   if (camDemo.cerca){                                                   // rosco en pantalla: la cara de frente, del pecho a la cabeza
-    const obj = [0, 1.66, -1.2];
-    if (camDemo.corte){ V.objetivo = obj; V.dist = 1.2; V.yaw = 0; V.pitch = 0.02; camDemo.corte = false; }
+    if (camDemo.corte){ V.objetivo = [0, 1.66, -1.2]; V.dist = 1.2; V.yaw = 0; V.pitch = 0.02; camDemo.corte = false; }
     return;
   }
-  // sigue al animador, suave
-  const enEsc = a.p[1] > 0.2 && a.p[2] < 0;
-  const obj = [a.p[0], a.p[1] + (a.sentado ? 1.1 : 1.3), a.p[2]];
-  const dist = enEsc ? 8 : 6.5, yaw = giroSalon() * 0.6, k = Math.min(1, dt * 1.5);
-  V.objetivo = V.objetivo.map((x, i) => x + (obj[i] - x) * k);
-  V.dist += (dist - V.dist) * k; V.pitch += (0.22 - V.pitch) * k; V.yaw += (yaw - V.yaw) * k;
+  // En el publico (bingo) la camara sigue al animador; si no, vuelve suave a la toma fija del escenario
+  const guarda = {objetivo:V.objetivo, dist:V.dist, pitch:V.pitch, yaw:V.yaw};
+  let meta;
+  if (a.tour || a.p[1] < 0.2){
+    meta = { objetivo:[a.p[0], a.p[1] + 1.3, a.p[2]], dist:6.5, pitch:0.22, yaw:giroSalon() * 0.6 };
+  } else { tomaFija(); meta = {objetivo:V.objetivo, dist:V.dist, pitch:V.pitch, yaw:V.yaw}; }
+  const k = Math.min(1, dt * 1.5);
+  V.objetivo = guarda.objetivo.map((x, i) => x + (meta.objetivo[i] - x) * k);
+  V.dist = guarda.dist + (meta.dist - guarda.dist) * k; V.pitch = guarda.pitch + (meta.pitch - guarda.pitch) * k;
+  V.yaw = guarda.yaw + (meta.yaw - guarda.yaw) * k;
 }
 function iniciarDemo(){
   if (CONTROL) return;                                                  // el control no simula: maneja el demo que esta abierto (pantalla 1)
-  if (TV){ V.yaw = giroSalon() * 0.6; V.dist = 8; V.objetivo = [0.3, 1.75, -1.6]; }
+  if (TV) tomaFija();
   const recibir = d => { const n = typeof d === 'string' ? d : d && (d.momento || d.nombre); if (n && SIM.momentos[n]) { simMomento(n); pintarEstado(simEstado()); } };
   window.addEventListener('message', ev => recibir(ev.data));
   if (CANAL) CANAL.onmessage = async ev => {
