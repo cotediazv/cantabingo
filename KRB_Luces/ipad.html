@@ -1699,6 +1699,8 @@ function momentoRecibido(e){
   if (e.momentoN == null || e.momentoN === momentoVisto) return;
   const primero = momentoVisto === null; momentoVisto = e.momentoN;
   pintarJuegos(e.momento);
+  // Si el iPad se abre cuando el animador ya esta en el publico, tambien abre el mapa (Code 1, rev 205)
+  if (primero && e.momento === 'bingo_al_publico' && !TV) abrirTab('seguir');
   if (primero || !e.momento) return;
   escenaActiva = -1; efectoPared = null; progActivo = null;
   let m = momentoPorId(e.momento);
@@ -1826,7 +1828,8 @@ function recorridoDemo(n, encadenado){
   if (!encadenado){
     demoUltimo = n;
     if (ROSKO_ENTRA.includes(n)){ camDemo.cerca = true; camDemo.corte = true; camDemo.flashes = []; }
-    else if (ROSKO_SALE.includes(n)){ if (camDemo.cerca) iniciarFlashazos(); camDemo.cerca = false; }
+    // incorrecta: la camara se queda 2 s en la cara para que se vea el rojo (Cote, rev 202) y despues los flashazos
+    else if (ROSKO_SALE.includes(n)){ if (camDemo.cerca) iniciarFlashazos(n === 'rosko_incorrecta' ? 2000 : 0); camDemo.cerca = false; }
     else if (!ROSKO_SIGUE.includes(n)){ camDemo.cerca = false; }
   }
   let m = momentoPorId(n); const nombres = [n]; while (m && m.igual){ nombres.push(m.igual); m = momentoPorId(m.igual); }
@@ -1893,14 +1896,14 @@ function plano(cam, obj){                                             // corte a
 // un poco mas abierta para que entren las dos columnas azules con sus pantallas verticales y las de 42".
 // PROVISORIA: falta la captura de Twitch para ponerla exactamente en ese lugar (pregunta en el registro).
 const PLANO_ESC = { cam: [0.2, 2.4, 9.3], mira: [0, 1.95, -1.0] };
-function iniciarFlashazos(){
+function iniciarFlashazos(retardo){
   // Tres tomas rapidas, SIEMPRE del escenario desde distintos angulos (Cote, rev 197); despues vuelve a la camara fija
   camDemo.flashes = [
     [[-4.6, 1.7, 5.2], [0.2, 1.6, -1.6]],                              // desde el publico, a la izquierda y baja
     [[7.4, 2.8, 2.6], [-0.6, 1.5, -1.8]],                               // desde el costado derecho
     [[1.6, 4.2, 10.5], [0, 1.4, -1.6]]                                  // alta y abierta, por encima de las mesas
   ];
-  camDemo.hasta = 0;
+  camDemo.hasta = retardo ? performance.now() + retardo : 0;          // mientras espera, la camara se queda donde estaba
 }
 function tomaFija(){ plano(PLANO_ESC.cam, PLANO_ESC.mira); }
 function camaraDemo(dt, a){

@@ -369,7 +369,8 @@ function construir(){
   tramo([0, 0.45 + 1.17, -0.9], [0, 0.45 + 1.27, -0.98], 0.021);                          // microfono
   palo(0.55, -0.85, 1.0);                                                                  // atril de la pantalla de 20"
   const p20 = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.28, 0.03), mat.negro);
-  p20.position.set(0.55, 0.45 + 1.12, -0.85); p20.rotation.order = 'YXZ'; p20.rotation.y = Math.atan2(-0.55, -0.35); p20.rotation.x = -0.35; roskoObj.add(p20);
+  // la pantalla de 20" va derecha en su atril recto (Cote, rev 204), mirando al concursante
+  p20.position.set(0.55, 0.45 + 1.14, -0.85); p20.rotation.y = Math.atan2(-0.55, -0.35); roskoObj.add(p20);
   const luzP = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.24), new THREE.MeshBasicMaterial({ color: 0x3b6fd8 }));
   luzP.position.set(0, 0, 0.016); p20.add(luzP);
   const asiento = sombra(new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.06, 20), mat.negro)); asiento.position.set(3.0, 0.45 + 0.76, -1.3); roskoObj.add(asiento);
@@ -488,10 +489,14 @@ function prepararPantallasVivo(){
     const c = document.createElement('canvas'); c.width = 384; c.height = 216; c.style.cssText = 'position:absolute;inset:0;width:100%;height:100%'; caja.appendChild(c);
     if (VIVO.gc){ const f = iframe(VIVO.gc, 1920, 1080); f.style.position = 'absolute'; f.style.left = '0'; f.style.top = '0';
       f.style.transform = 'scale(' + (640 / 1920) + ')'; f.style.transformOrigin = '0 0'; caja.appendChild(f);
-      // el GC va ENCIMA de la transmision: su fondo tiene que ser transparente (Cote, rev 198: se veia el GC sobre negro)
-      const transparente = () => { try { const d = f.contentDocument; if (!d || !d.head) return;
-        const s = d.createElement('style'); s.textContent = 'html,body{background:transparent !important}'; d.head.appendChild(s); } catch (e) {} };
-      f.addEventListener('load', transparente); }
+      // el GC va ENCIMA de la transmision: su fondo tiene que ser transparente (Cote, rev 198: se veia el GC sobre negro).
+      // Ojo: si la pagina del GC dice color-scheme "dark" y esta no, el navegador le pinta un fondo opaco detras;
+      // por eso se iguala el color-scheme, ademas de quitarle el fondo a html y body.
+      const transparente = () => { try { const d = f.contentDocument; if (!d || !d.body) return;
+        const cs = getComputedStyle(document.documentElement).colorScheme || 'normal';
+        [d.documentElement, d.body].forEach(e => e.style.setProperty('background', 'transparent', 'important'));
+        d.documentElement.style.setProperty('color-scheme', cs, 'important'); } catch (e) {} };
+      f.addEventListener('load', () => { transparente(); setTimeout(transparente, 1000); setTimeout(transparente, 4000); }); }
     VIVO.feeds.push(c.getContext('2d')); marco(m, caja, 640, 360);
   });
 }
