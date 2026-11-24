@@ -132,8 +132,8 @@
   // en su versión liviana y sin sonido, como los monitores del GC Master
   // El mapa del salón bajo las pantallas del Demo (pedido de Cote, 24 nov: «para poder seguir al animador con el dedo o
   // con el mouse… como lo va a hacer el DJ»): el iPad de luces de Code 4 en modo control, que maneja el demo de este
-  // navegador; con «Anda al público» abre solo el mapa de Seguir. Con «&mapa=1», Code 4 puede dejar solo el mapa
-  const MAPA = '<div class="dm-map"><small>Mapa del salón · sigue al animador con el dedo o el mouse</small><iframe title="Mapa del salón para seguir al animador" src="/demo-luces/ipad.html?demo=control&mapa=1"></iframe></div>';
+  // navegador; `?demo=mapa` es su página de solo el mapa y los botones de las cabezas (las cabezas ya no siguen solas)
+  const MAPA = '<div class="dm-map"><small>Mapa del salón · sigue al animador con el dedo o el mouse</small><iframe title="Mapa del salón para seguir al animador" src="/demo-luces/ipad.html?demo=mapa"></iframe></div>';
   const DEMO3D = () => `/demo-luces/ipad.html?demo=tv&p2=${encodeURIComponent(page('#/tablero'))}&p3=${encodeURIComponent(page('#/tablero'))}&gc=${encodeURIComponent(page('#/escena'))}`;
   const monCtl = (fit) => {
     let snd = null; let big = null; let zone = null; let sig = null;
