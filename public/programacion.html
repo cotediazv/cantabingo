@@ -1,0 +1,581 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Programación KRB">
+<meta name="theme-color" content="#0c0b12">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>Programación KRB</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Manrope:wght@500;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root { --noche: #0c0b12; --panel: #17151f; --panel2: #201d2a; --linea: #2f2b3b; --texto: #f3f0f7; --suave: #a7a1b5; --foco: #f4bf5a; --mal: #ff7a6e; --bien: #6fd49a;
+  --MK: #47b8e6; --FRIDA: #e0338f; --TOB: #e5413a; }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--noche); color: var(--texto); font: 500 15px/1.4 Manrope, system-ui, sans-serif; }
+body { padding: env(safe-area-inset-top) 0 calc(70px + env(safe-area-inset-bottom)); }
+h1, h2, h3 { font-family: 'Big Shoulders Display', sans-serif; text-transform: uppercase; letter-spacing: .02em; margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.wrap { max-width: 1100px; margin: 0 auto; padding: 12px 16px; }
+.top { position: sticky; top: 0; z-index: 5; background: var(--noche); border-bottom: 1px solid var(--linea); }
+.top .wrap { display: flex; align-items: center; gap: 10px; padding-top: 10px; padding-bottom: 10px; }
+.top h1 { font-size: 22px; color: var(--foco); flex: 1; }
+.mes { display: flex; align-items: center; gap: 6px; }
+.mes b { font-family: 'Big Shoulders Display'; font-size: 20px; text-transform: uppercase; min-width: 140px; text-align: center; }
+.btn { background: var(--panel2); border: 1px solid var(--linea); border-radius: 8px; padding: 8px 12px; }
+.btn.foco { background: var(--foco); color: #1a1408; border-color: var(--foco); font-weight: 800; }
+.btn.chico { padding: 4px 9px; font-size: 13px; }
+.btn:disabled { opacity: .45; cursor: default; }
+.tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; display: flex; background: #12101a; border-top: 1px solid var(--linea); padding-bottom: env(safe-area-inset-bottom); }
+.tabs button { flex: 1 1 auto; background: none; border: 0; padding: 12px 3px; color: var(--suave); font-weight: 800; font-size: 12px; }
+@media (max-width: 480px) { .tabs button { font-size: 10.5px; padding: 12px 1px; } }
+.pers td, .pers th { border-bottom: 1px solid var(--linea); padding: 6px 4px; }
+.pers td.n, .pers th.n { text-align: right; font-family: 'JetBrains Mono', monospace; white-space: nowrap; }
+.pers tr.tot td { font-weight: 800; border-top: 2px solid var(--foco); }
+.pers tr[data-ver] { cursor: pointer; }
+.solo-imp { display: none; }
+@media print {
+  html, body { background: #fff !important; color: #000 !important; }
+  .top, .tabs, .no-imp, .aviso { display: none !important; }
+  .solo-imp { display: block; }
+  .panel { border: 0 !important; background: #fff !important; padding: 0 !important; }
+  .panel, .panel * { color: #000 !important; }
+  .pers tr.tot td { border-top-color: #000 !important; }
+  .pers td, .pers th { border-color: #999; font-size: 12px; }
+  body { padding: 0; }
+}
+.chk { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--linea); }
+.chk input { width: 20px; height: 20px; flex: none; }
+.paso h3 { font-size: 18px; color: var(--foco); margin: 0 0 6px; }
+.tabs button.on { color: var(--foco); box-shadow: inset 0 3px 0 var(--foco); }
+.semana { margin: 18px 0 6px; display: flex; align-items: center; gap: 10px; }
+.semana h2 { font-size: 15px; color: var(--suave); flex: 1; }
+.dia { background: var(--panel); border: 1px solid var(--linea); border-radius: 12px; margin: 10px 0; overflow: hidden; }
+.dia > header { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: var(--panel2); }
+.dia > header h3 { font-size: 20px; flex: 1; }
+.tag { font: 700 11px 'JetBrains Mono', monospace; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; background: var(--linea); color: var(--suave); }
+.tag.mal { background: #4a1f1c; color: var(--mal); }
+.locs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+.loc { padding: 12px 14px 14px; border-top: 1px solid var(--linea); border-left: 4px solid var(--c); }
+@media (min-width: 700px) { .loc { border-top: 0; border-right: 1px solid var(--linea); } }
+.loc h4 { margin: 0 0 8px; display: flex; align-items: center; gap: 8px; font: 800 17px 'Big Shoulders Display'; text-transform: uppercase; color: var(--c); }
+.loc h4 span { flex: 1; }
+.loc.cerrado { opacity: .55; }
+.grupo { margin-top: 10px; }
+.grupo > label { display: block; font: 700 11px 'JetBrains Mono', monospace; text-transform: uppercase; color: var(--suave); margin-bottom: 4px; }
+.fila { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.campo { display: flex; flex-direction: column; gap: 2px; flex: 1 1 130px; min-width: 0; }
+.campo small { color: var(--suave); font-size: 11px; }
+select, input[type=text], input[type=number], textarea { width: 100%; background: #0f0d16; border: 1px solid var(--linea); border-radius: 7px; padding: 8px 9px; min-width: 0; }
+select:focus, input:focus, textarea:focus { outline: 2px solid var(--foco); outline-offset: -1px; }
+.vacio { color: var(--suave); }
+.chips { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 6px; }
+.chip { border: 1px solid var(--linea); background: #0f0d16; border-radius: 99px; padding: 5px 11px; font-size: 13px; }
+.chip.on { background: var(--c, var(--foco)); border-color: var(--c, var(--foco)); color: #fff; font-weight: 800; }
+.pagos { margin-top: 10px; font: 500 12px 'JetBrains Mono', monospace; color: var(--suave); }
+.pagos .falta { color: var(--mal); font-weight: 700; }
+.panel { background: var(--panel); border: 1px solid var(--linea); border-radius: 12px; padding: 14px; margin: 12px 0; }
+.panel h2 { font-size: 20px; margin-bottom: 8px; color: var(--foco); }
+.panel p { margin: 6px 0; color: var(--suave); }
+textarea.salida { font: 500 13px/1.45 'JetBrains Mono', monospace; min-height: 220px; white-space: pre; }
+.faltan { color: var(--mal); margin: 0; padding-left: 18px; }
+.ok { color: var(--bien); }
+table { width: 100%; border-collapse: collapse; }
+td, th { padding: 4px; text-align: left; font-size: 13px; }
+td input[type=checkbox] { width: 20px; height: 20px; }
+tr[data-p] td:nth-child(n+3):nth-child(-n+6), tr[data-p] td:last-child { width: 1%; text-align: center; }
+th { font: 700 11px 'JetBrains Mono', monospace; text-transform: uppercase; color: var(--suave); }
+.aviso { position: fixed; left: 50%; bottom: calc(80px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: var(--foco); color: #1a1408; font-weight: 800; padding: 8px 16px; border-radius: 99px; z-index: 9; opacity: 0; transition: opacity .2s; pointer-events: none; }
+.aviso.on { opacity: 1; }
+.login { max-width: 360px; margin: 18vh auto; padding: 0 16px; display: flex; flex-direction: column; gap: 10px; }
+.login h1 { color: var(--foco); font-size: 34px; }
+ol.pasos li { margin: 6px 0; }
+code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="aviso" id="aviso"></div>
+<script>
+(function () {
+  var TOKEN = ''; try { TOKEN = localStorage.getItem('progToken') || ''; } catch (e) {}
+  var S = { vista: 'mes', mes: '', data: null };
+  try { S.vista = localStorage.getItem('progVista') || 'mes'; } catch (e) {}
+  var LOCS = ['MK', 'TOB', 'FRIDA'];
+  var NL = { MK: 'Mercado Kennedy', TOB: 'Tobalaba', FRIDA: 'Frida Kahlo' };
+  var DIAS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+  var MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  var ROLN = { ent: 'Entretención', cam: 'Cámara', edi: 'Edición' };
+  var $app = document.getElementById('app');
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  var plata = function (n) { return '$' + Number(n || 0).toLocaleString('es-CL'); };
+  function aviso(t) { var a = document.getElementById('aviso'); a.textContent = t; a.classList.add('on'); clearTimeout(aviso.t); aviso.t = setTimeout(function () { a.classList.remove('on'); }, 1800); }
+  function api(met, url, body) {
+    return fetch(url, { method: met, headers: { 'Content-Type': 'application/json', 'x-prog': TOKEN }, body: body ? JSON.stringify(body) : undefined })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (r.status === 401 && url !== '/api/prog/login') { TOKEN = ''; login(); throw new Error('Entra de nuevo'); } if (!r.ok) throw new Error(j.error || 'Error'); return j; }); });
+  }
+  function mesActual() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+  function moverMes(n) { var p = S.mes.split('-').map(Number); var d = new Date(p[0], p[1] - 1 + n, 1); S.mes = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); try { localStorage.setItem('progMes', S.mes); } catch (e) {} cargar(); }
+
+  function login() {
+    $app.innerHTML = '<form class="login"><h1>Programación KRB</h1><p class="vacio">Cartelera y turnos de los locales</p>' +
+      '<input type="text" name="u" placeholder="Usuario" autocomplete="username" autocapitalize="none"><input type="password" name="p" placeholder="Clave" autocomplete="current-password" style="width:100%;background:#0f0d16;border:1px solid var(--linea);border-radius:7px;padding:8px 9px">' +
+      '<button class="btn foco">Entrar</button><p class="faltan" id="err"></p></form>';
+    $app.querySelector('form').onsubmit = function (e) {
+      e.preventDefault();
+      api('POST', '/api/prog/login', { user: this.u.value.trim(), pass: this.p.value }).then(function (j) { TOKEN = j.token; try { localStorage.setItem('progToken', TOKEN); } catch (x) {} cargar(); })
+        .catch(function (x) { document.getElementById('err').textContent = x.message; });
+    };
+  }
+
+  function marco(contenido) {
+    var tabs = [['mes', 'Programación'], ['prellenar', 'Prellenar'], ['shows', 'Shows'], ['personas', 'Personas'], ['archivos', 'Archivos'], ['equipo', 'Equipo'], ['glosa', 'GLOSA']];
+    return '<div class="top"><div class="wrap"><h1>Programación</h1><div class="mes"><button class="btn chico" data-mes="-1">◀</button><b>' + esc(S.data.nombre) + '</b><button class="btn chico" data-mes="1">▶</button></div></div></div>' +
+      '<div class="wrap" id="cont">' + contenido + '</div>' +
+      '<nav class="tabs">' + tabs.map(function (t) { return '<button data-vista="' + t[0] + '" class="' + (S.vista === t[0] ? 'on' : '') + '">' + t[1] + '</button>'; }).join('') + '</nav>';
+  }
+  function cargar() {
+    if (!TOKEN) return login();
+    if (!S.mes) { try { S.mes = localStorage.getItem('progMes') || ''; } catch (e) {} S.mes = S.mes || mesActual(); }
+    api('GET', '/api/prog/mes?m=' + S.mes).then(function (d) { S.data = d; pintar(); }).catch(function (e) { if (TOKEN) aviso(e.message); });
+  }
+  function pintar() {
+    var y = window.scrollY;
+    var html = S.vista === 'archivos' ? '<div id="arch"><p class="vacio">Armando los archivos…</p></div>' + vistaImportar() : S.vista === 'shows' ? vistaShows() : S.vista === 'prellenar' ? vistaPrellenar() : S.vista === 'personas' ? vistaPersonas() : S.vista === 'equipo' ? vistaEquipo() : S.vista === 'glosa' ? vistaGlosa() : vistaMes();
+    $app.innerHTML = marco(html);
+    $app.querySelectorAll('[data-vista]').forEach(function (b) { b.onclick = function () { S.vista = b.dataset.vista; try { localStorage.setItem('progVista', S.vista); } catch (e) {} window.scrollTo(0, 0); pintar(); }; });
+    $app.querySelectorAll('[data-mes]').forEach(function (b) { b.onclick = function () { moverMes(Number(b.dataset.mes)); }; });
+    if (S.vista === 'mes' || S.vista === 'shows') enlazarMes();
+    if (S.vista === 'prellenar') enlazarPrellenar();
+    if (S.vista === 'personas') enlazarPersonas();
+    if (S.vista === 'archivos') { cargarArchivos(); enlazarImportar(); }
+    if (S.vista === 'equipo') enlazarEquipo();
+    if (S.vista === 'glosa') enlazarGlosa();
+    window.scrollTo(0, y);
+  }
+
+  // ---------- Programación del mes ----------
+  function personasDe(rol) { return S.data.personas.filter(function (p) { return p.roles.indexOf(rol) >= 0; }).map(function (p) { return p.nombre; }); }
+  function selPersona(f, l, campo, valor, rol, etiqueta) {
+    var pref = personasDe(rol); var otros = S.data.personas.map(function (p) { return p.nombre; }).filter(function (n) { return pref.indexOf(n) < 0; });
+    if (valor && pref.indexOf(valor) < 0 && otros.indexOf(valor) < 0) pref.push(valor);
+    var o = function (n) { return '<option' + (n === valor ? ' selected' : '') + '>' + esc(n) + '</option>'; };
+    return '<div class="campo"><small>' + etiqueta + '</small><select data-f="' + f + '" data-l="' + l + '" data-k="' + campo + '" class="' + (valor ? '' : 'vacio') + '"><option value="">—</option>' +
+      pref.sort().map(o).join('') + (otros.length ? '<optgroup label="Otras personas">' + otros.sort().map(o).join('') + '</optgroup>' : '') + '<option value="+">＋ Otra persona…</option></select></div>';
+  }
+  // ---------- Prellenar el mes: semana tipo y preguntas en orden (Cote, 23 nov) ----------
+  var CAMPOS = [['dj', 'DJ', 'ent'], ['extra', 'Técnico o capacitación', 'ent'], ['cantante', 'Animador cantante', 'ent'], ['animador', 'Animador', 'ent'],
+    ['camH', 'Cámara en vivo', 'cam'], ['camHx', 'Entre paréntesis, junto a la de en vivo', 'cam'], ['camV', 'Cámara vertical', 'cam'], ['camVx', 'Entre paréntesis, junto a la vertical', 'cam'], ['editor', 'Editor', 'edi']];
+  var NOMBRE_CAMPO = {}; CAMPOS.forEach(function (c) { NOMBRE_CAMPO[c[0]] = c[0] === 'dj' ? 'DJ' : c[1].toLowerCase(); });
+  var SLOTS = [['4|MK', 'Jueves · Mercado Kennedy'], ['5|MK', 'Viernes · Mercado Kennedy'], ['5|TOB', 'Viernes · Tobalaba'], ['5|FRIDA', 'Viernes · Frida Kahlo'], ['6|MK', 'Sábado · Mercado Kennedy'], ['6|FRIDA', 'Sábado · Frida Kahlo'], ['0|FRIDA', 'Domingo · Frida Kahlo']];
+  function selPT(clave, campo, valor, rol, etiqueta) {
+    return selPersona('', '', campo, valor, rol, etiqueta).replace('data-f="" data-l=""', 'data-pt="' + clave + '"');
+  }
+  // Sin los días que no se trabaja (Cote, 23 nov), salvo en la lista para marcarlos
+  function fechasDe(wds, conCerrados) { return S.data.fechas.filter(function (x) { return !x.cortesia && wds.indexOf(x.wd) >= 0 && (conCerrados || !x.cerrado); }); }
+  function etqDia(x) { return DIAS[x.wd] + ' ' + Number(x.fecha.slice(8)); }
+  function vistaPrellenar() {
+    var d = S.data; var A = d.asist || {}; var P = d.plantilla || {};
+    var h = '<div class="panel"><h2>Prellenar ' + esc(d.nombre) + '</h2><p>Revisa los pasos en orden, toca «Prellenar el mes» y después ajusta lo que quieras en la pestaña Programación. El prellenado <b>solo llena lo vacío</b>: nunca borra lo que ya marcaste. Cuando esté aprobado, se envía a la GLOSA.</p></div>';
+    // Paso 1: días que no se trabaja este mes
+    var cer = A.cerrados || d.fechas.filter(function (x) { return x.cerrado; }).map(function (x) { return x.fecha; });
+    h += '<div class="panel paso"><h3>1 · Días que no se trabaja</h3><p>¿Hay días de ' + esc(d.nombre) + ' en que no se va a trabajar (feriados u otros)? Márcalos. Esos días quedan cerrados en todos los locales y esa semana no corre la regla de los tres días.</p>' +
+      fechasDe([4, 5, 6, 0], true).map(function (x) { return '<label class="chk"><input type="checkbox" data-si="cerrados" value="' + x.fecha + '"' + (cer.indexOf(x.fecha) >= 0 ? ' checked' : '') + '>' + etqDia(x) + '</label>'; }).join('') + '</div>';
+    // Paso 2: semana tipo
+    h += '<div class="panel paso"><h3>2 · Semana tipo</h3><p>Con esto se llena cada día. Confírmala o cámbiala antes de partir el mes. Los cantantes que se reparten (viernes en Kennedy y viernes y sábado en Frida) van vacíos.</p>' +
+      '<details><summary class="btn chico" style="display:inline-block;margin:6px 0">Ver y cambiar la semana tipo</summary>' +
+      SLOTS.map(function (s) {
+        var c = P[s[0]] || {}; var l = s[0].split('|')[1];
+        return '<div class="loc" style="--c:var(--' + l + ');background:var(--panel2);border-radius:10px;margin:8px 0"><h4><span>' + s[1] + '</span></h4><div class="fila">' +
+          CAMPOS.map(function (k) { return selPT(s[0], k[0], c[k[0]], k[2], k[1]); }).join('') +
+          '<div class="campo" style="flex:0 1 110px"><small>Horario de cámara</small><input type="text" value="' + esc(c.camNota) + '" data-pt="' + s[0] + '" data-k="camNota"></div></div></div>';
+      }).join('') + '</details></div>';
+    // Pasos de las personas
+    var n = 3;
+    (d.pasos || []).forEach(function (p) {
+      var sel = A[p.tipo === 'fijo' ? 'no' + p.id : p.id] || [];
+      h += '<div class="panel paso"><h3>' + (n++) + ' · ' + esc(p.nombre) + '</h3>';
+      if (p.tipo === 'fijo') {
+        h += '<p>Los turnos de ' + esc(p.nombre) + ' según la semana tipo. Desmarca los días que no hace.</p>';
+        var items = [];
+        d.fechas.forEach(function (x) {
+          if (x.cortesia) return;
+          LOCS.forEach(function (l) {
+            var c = P[x.wd + '|' + l]; if (!c || !x.locales[l].abierto) return;
+            CAMPOS.forEach(function (k) { if (c[k[0]] === p.nombre && k[0] !== 'camHx' && k[0] !== 'camVx') items.push({ id: x.fecha + '|' + l + '|' + k[0], t: etqDia(x) + ' · ' + NL[l] + ' · ' + NOMBRE_CAMPO[k[0]] }); });
+          });
+        });
+        h += items.map(function (it) { return '<label class="chk"><input type="checkbox" data-no="no' + p.id + '" value="' + it.id + '"' + (sel.indexOf(it.id) >= 0 ? '' : ' checked') + '>' + esc(it.t) + '</label>'; }).join('') || '<p class="vacio">No tiene turnos en la semana tipo.</p>';
+        if (p.id === 'Oscar') {
+          var doms = A.domOscar || [];
+          h += '<p style="margin-top:10px">Domingos en Frida: marca los que hace Oscar como DJ (los otros, el de la semana tipo).</p>' +
+            fechasDe([0]).filter(function (x) { return x.locales.FRIDA.abierto; }).map(function (x) { return '<label class="chk"><input type="checkbox" data-si="domOscar" value="' + x.fecha + '"' + (doms.indexOf(x.fecha) >= 0 ? ' checked' : '') + '>' + etqDia(x) + '</label>'; }).join('');
+        }
+      } else if (p.tipo === 'viernes') {
+        h += '<p>Marca los dos viernes que dio ' + esc(p.nombre) + '. Va como animador cantante en Mercado Kennedy.</p>' +
+          fechasDe([5]).map(function (x) { return '<label class="chk"><input type="checkbox" data-si="' + p.id + '" value="' + x.fecha + '"' + (sel.indexOf(x.fecha) >= 0 ? ' checked' : '') + '>' + etqDia(x) + '</label>'; }).join('');
+      } else {
+        h += '<p>Marca los días que tiene disponibles ' + esc(p.nombre) + '. Los cantantes que quedan se reparten parejo entre Priss y Kony.</p>' +
+          fechasDe([5, 6]).map(function (x) { return '<label class="chk"><input type="checkbox" data-si="' + p.id + '" value="' + x.fecha + '"' + (sel.indexOf(x.fecha) >= 0 ? ' checked' : '') + '>' + etqDia(x) + '</label>'; }).join('');
+      }
+      h += '</div>';
+    });
+    h += '<div class="panel"><div class="fila"><button class="btn" id="asave">Guardar respuestas</button><button class="btn foco" id="aprell">Prellenar el mes</button></div><div id="ares"></div></div>';
+    return h;
+  }
+  function leerAsist() {
+    var a = {};
+    (S.data.pasos || []).forEach(function (p) { a[p.tipo === 'fijo' ? 'no' + p.id : p.id] = []; }); a.domOscar = []; a.cerrados = [];
+    document.querySelectorAll('[data-no]').forEach(function (c) { if (!c.checked) a[c.dataset.no].push(c.value); });
+    document.querySelectorAll('[data-si]').forEach(function (c) { if (c.checked) a[c.dataset.si].push(c.value); });
+    return a;
+  }
+  function enlazarPrellenar() {
+    var guardarA = function () { return api('POST', '/api/prog/asist', { mes: S.mes, asist: leerAsist() }).then(function (j) { S.data.asist = j.asist; return api('GET', '/api/prog/mes?m=' + S.mes); }).then(function (d) { S.data = d; }); };
+    document.getElementById('asave').onclick = function () { guardarA().then(function () { aviso('Respuestas guardadas'); pintar(); }).catch(function (e) { aviso(e.message); }); };
+    document.getElementById('aprell').onclick = function () {
+      if (!confirm('¿Prellenar ' + S.data.nombre + '? Solo se llena lo que está vacío.')) return;
+      guardarA().then(function () { return api('POST', '/api/prog/prellenar', { mes: S.mes }); }).then(function (j) {
+        document.getElementById('ares').innerHTML = '<p class="ok">✔ Listo: ' + j.celdas + ' locales y días prellenados; ' + j.repartidos + ' cantantes repartidos entre Priss y Kony.</p>' +
+          (j.sinNadie.length ? '<p>Quedaron sin cantante (nadie disponible), para completar a mano:</p><ul class="faltan">' + j.sinNadie.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') +
+          '<p>Revisa y ajusta en la pestaña Programación. Los avisos de lo obligado (Oscar, Fer y Matías) salen en Archivos.</p>';
+        return api('GET', '/api/prog/mes?m=' + S.mes).then(function (d) { S.data = d; });
+      }).catch(function (e) { aviso(e.message); });
+    };
+    document.querySelectorAll('[data-si=cerrados]').forEach(function (c) { c.onchange = function () { guardarA().then(function () { aviso('Guardado'); pintar(); }).catch(function (e) { aviso(e.message); }); }; });
+    document.querySelectorAll('select[data-pt], input[data-pt]').forEach(function (el) {
+      el.onchange = function () {
+        var v = el.value;
+        if (v === '+') { v = (prompt('Nombre corto de la persona:') || '').trim(); if (!v) { pintar(); return; } }
+        var c = Object.assign({}, S.data.plantilla[el.dataset.pt] || {});
+        if (v) c[el.dataset.k] = v.trim(); else delete c[el.dataset.k];
+        api('POST', '/api/prog/plantilla', { clave: el.dataset.pt, celda: c }).then(function (j) { S.data.plantilla = j.plantilla; aviso('Semana tipo guardada'); }).catch(function (e) { aviso(e.message); });
+      };
+    });
+  }
+  // ---------- Personas: detalle de cada una en el mes, para contrastar las transferencias (Cote, 23 nov) ----------
+  var ROL_TXT = { dj: 'DJ', extra: 'Técnico o capacitación', cantante: 'Animador cantante', animador: 'Animador', camH: 'Cámara en vivo', camHx: 'Cámara (turno extra)', camV: 'Cámara vertical', camVx: 'Cámara (turno extra)', editor: 'Edición' };
+  // Una fila por cada vez que la persona aparece en un día y local, con lo que cobra (o «sin pago aparte»)
+  function turnosDelMes() {
+    var out = {};
+    S.data.fechas.forEach(function (x) {
+      if (x.cortesia) return;
+      LOCS.forEach(function (l) {
+        var c = x.locales[l]; if (!c.abierto) return;
+        Object.keys(ROL_TXT).forEach(function (k) {
+          var n = c[k]; if (!n) return;
+          var pg = (c.pagos || []).filter(function (p) { return p.rol === k; })[0];
+          (out[n] = out[n] || []).push({ fecha: x.fecha, x: x, l: l, rol: k, monto: pg ? pg.monto : null, falta: pg && pg.falta });
+        });
+      });
+    });
+    return out;
+  }
+  function vistaPersonas() {
+    var T = turnosDelMes(); var nombres = Object.keys(T).sort(function (a, b) { return a.localeCompare(b, 'es'); });
+    var sel = S.persona && T[S.persona] ? S.persona : '';
+    var diario = function (xs) { return xs.reduce(function (s, t) { return s + (t.monto || 0); }, 0); };
+    var fijoDe = function (n) { var p = S.data.personas.filter(function (q) { return q.nombre.toLowerCase() === n.toLowerCase(); })[0]; return p && p.fijo ? p.fijo : 0; };
+    // Con sueldo fijo mensual, el total es el sueldo; los valores por día quedan como referencia del costo de cada día
+    var tot = function (xs, n) { return fijoDe(n) || diario(xs); };
+    var dias = function (xs) { return xs.map(function (t) { return t.fecha; }).filter(function (v, i, a) { return a.indexOf(v) === i; }).length; };
+    var h = '<div class="panel no-imp"><h2>Personas · ' + esc(S.data.nombre) + '</h2><p>Elige a una persona para ver todas sus fechas del mes, con el local, lo que hizo y el monto. Sirve para contrastar las transferencias. Se puede imprimir o guardar como PDF.</p>' +
+      '<div class="fila"><div class="campo"><small>Persona</small><select id="psel"><option value="">— Todas (resumen) —</option>' + nombres.map(function (n) { return '<option' + (n === sel ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('') + '</select></div>' +
+      '<button class="btn foco" id="pimp" style="align-self:flex-end">Imprimir o guardar PDF</button></div></div>';
+    if (!sel) {
+      var gran = 0;
+      h += '<div class="panel"><h2 class="solo-imp">Resumen del equipo · ' + esc(S.data.nombre) + '</h2><table class="pers"><tr><th>Persona</th><th class="n">Días</th><th class="n">Turnos</th><th class="n">Total</th></tr>' +
+        nombres.map(function (n) { var t = tot(T[n], n); gran += t; return '<tr data-ver="' + esc(n) + '"><td>' + esc(n) + (fijoDe(n) ? ' <small class="vacio">(sueldo fijo' + ((S.data.ajustes || {})[n] ? ', ' + S.data.ajustes[n].menos + ' sin trabajar' : '') + ')</small>' : '') + '</td><td class="n">' + dias(T[n]) + '</td><td class="n">' + T[n].length + '</td><td class="n">' + plata(t) + (T[n].some(function (z) { return z.falta; }) ? ' <span class="faltan">*</span>' : '') + '</td></tr>'; }).join('') +
+        '<tr class="tot"><td>Total</td><td></td><td></td><td class="n">' + plata(gran) + '</td></tr></table>' +
+        (nombres.some(function (n) { return T[n].some(function (z) { return z.falta; }); }) ? '<p class="faltan">* Hay turnos sin tarifa: revisa Archivos.</p>' : '') + '<p class="no-imp vacio">Toca un nombre para ver su detalle.</p></div>';
+      return h;
+    }
+    var xs = T[sel]; var aj = S.data.ajustes || {};
+    h += '<div class="panel"><h2>' + esc(sel) + ' · ' + esc(S.data.nombre) + '</h2><p>' + dias(xs) + ' ' + (dias(xs) === 1 ? 'día' : 'días') + ' · ' + xs.length + ' ' + (xs.length === 1 ? 'turno' : 'turnos') + (aj[sel] ? ' · <b>' + aj[sel].menos + ' ' + (aj[sel].menos === 1 ? 'día' : 'días') + ' sin trabajar, ' + (aj[sel].cubre === 'extra' ? 'cubierto con turno extra' : 'descontado de vacaciones') + '</b>' : '') + '</p>' +
+      '<table class="pers"><tr><th>Fecha</th><th>Local</th><th>Qué hizo</th><th class="n">Monto</th></tr>' +
+      xs.map(function (t) { var d = Number(t.fecha.slice(8)); return '<tr><td>' + DIAS[t.x.wd] + ' ' + d + '</td><td>' + NL[t.l] + '</td><td>' + ROL_TXT[t.rol] + '</td><td class="n">' + (t.falta ? '<span class="faltan">sin tarifa</span>' : t.monto == null ? 'sin pago aparte' : plata(t.monto)) + '</td></tr>'; }).join('') +
+      (fijoDe(sel) ? '<tr><td colspan="3">Suma de los valores por día (referencia del costo)</td><td class="n">' + plata(diario(xs)) + '</td></tr><tr class="tot"><td colspan="3">Sueldo fijo mensual</td><td class="n">' + plata(fijoDe(sel)) + '</td></tr>'
+        : '<tr class="tot"><td colspan="3">Total del mes</td><td class="n">' + plata(diario(xs)) + '</td></tr>') + '</table>' +
+      '<div class="fila no-imp" style="margin-top:12px"><div class="campo" style="flex:0 1 220px"><small>Sueldo fijo mensual (vacío si no tiene)</small><input type="number" inputmode="numeric" min="0" step="1" id="pfijo" value="' + (fijoDe(sel) || '') + '"></div><button class="btn chico" id="pfijog" style="align-self:flex-end">Guardar</button></div>' +
+      (fijoDe(sel) ? '<p class="vacio no-imp">Con sueldo fijo, los montos de cada día son solo de referencia del costo por día.</p>' +
+        '<div class="fila no-imp" style="margin-top:12px"><div class="campo" style="flex:0 1 160px"><small>Días que no trabajó este mes</small><input type="number" inputmode="numeric" min="0" max="31" id="pmenos" value="' + ((aj[sel] || {}).menos || '') + '"></div>' +
+        '<div class="campo" style="flex:0 1 220px"><small>Se descuenta de</small><select id="pcubre"><option value="vacaciones"' + ((aj[sel] || {}).cubre === 'extra' ? '' : ' selected') + '>Vacaciones</option><option value="extra"' + ((aj[sel] || {}).cubre === 'extra' ? ' selected' : '') + '>Turno extra (lo cubre con un domingo)</option></select></div>' +
+        '<button class="btn chico" id="pajg" style="align-self:flex-end">Guardar</button></div>' : '') + '</div>';
+    return h;
+  }
+  function enlazarPersonas() {
+    document.getElementById('psel').onchange = function () { S.persona = this.value; pintar(); };
+    document.getElementById('pimp').onclick = function () { window.print(); };
+    var ga = document.getElementById('pajg');
+    if (ga) ga.onclick = function () { api('POST', '/api/prog/ajuste', { mes: S.mes, nombre: S.persona, menos: document.getElementById('pmenos').value, cubre: document.getElementById('pcubre').value }).then(function (j) { S.data.ajustes = j.ajustes; aviso('Guardado'); pintar(); }).catch(function (e) { aviso(e.message); }); };
+    var g = document.getElementById('pfijog');
+    if (g) g.onclick = function () { api('POST', '/api/prog/fijo', { nombre: S.persona, fijo: document.getElementById('pfijo').value }).then(function (j) { S.data.personas = j.personas; aviso('Guardado'); pintar(); }).catch(function (e) { aviso(e.message); }); };
+    document.querySelectorAll('tr[data-ver]').forEach(function (tr) { tr.onclick = function () { S.persona = tr.dataset.ver; window.scrollTo(0, 0); pintar(); }; });
+  }
+  var TIPOS_LOC = { MK: { 4: ['standup'], 5: ['piano'], 6: ['tributo', 'otro'] }, TOB: { 5: ['otro'] }, FRIDA: { 5: ['doble', 'otro'], 6: ['doble', 'otro'], 0: ['bingo'] } };
+  function bloqueShow(f, l, wd, c) {
+    var sh = c.show || {}; var tipos = (TIPOS_LOC[l] || {})[wd] || [];
+    var todos = Object.keys(S.data.tipos);
+    var lista = tipos.concat(todos.filter(function (t) { return tipos.indexOf(t) < 0 && t === sh.tipo; }));
+    var h = '<div class="grupo"><label>Show</label><div class="chips">' + lista.map(function (t) { return '<button class="chip' + (sh.tipo === t ? ' on' : '') + '" data-show="' + t + '" data-f="' + f + '" data-l="' + l + '">' + esc(S.data.tipos[t]) + '</button>'; }).join('') +
+      '<button class="chip" data-otros="1" data-f="' + f + '" data-l="' + l + '" title="Otros tipos">…</button></div>';
+    if (sh.tipo && sh.tipo !== 'piano' && sh.tipo !== 'bingo') {
+      var dl = 'u-' + sh.tipo;
+      h += '<div class="fila"><div class="campo"><small>' + (sh.tipo === 'standup' ? 'Comediante' : sh.tipo === 'doble' ? 'Doble de' : sh.tipo === 'tributo' ? 'Tributo a' : 'Nombre del show') + '</small><input type="text" list="' + dl + '" value="' + esc(sh.nombre) + '" data-f="' + f + '" data-l="' + l + '" data-sk="nombre"></div>';
+      if (sh.tipo === 'otro') h += '<div class="campo"><small>Artista (opcional)</small><input type="text" list="u-artista" value="' + esc(sh.artista) + '" data-f="' + f + '" data-l="' + l + '" data-sk="artista"></div>';
+      if (sh.tipo === 'tributo') h += '<label class="chip' + (sh.banda ? ' on' : '') + '" style="cursor:pointer"><input type="checkbox" hidden data-f="' + f + '" data-l="' + l + '" data-sk="banda"' + (sh.banda ? ' checked' : '') + '>Con banda (batería)</label>';
+      h += '</div>';
+    }
+    if (sh.tipo && !interno(sh)) h += camposPago(f, l, sh);
+
+    return h + '</div>';
+  }
+  // El bingo y los juegos son internos: no llevan monto ni persona (Cote, 23 nov)
+  function interno(sh) { return sh.tipo === 'bingo' || /bingo|juego/i.test(sh.nombre || ''); }
+  // A nombre de quién se paga el show (va entre paréntesis en la GLOSA, para la contadora) y su monto
+  function camposPago(f, l, sh) {
+    var per = sh.persona || (l === 'TOB' ? sh.artista || '' : ''); // en Tobalaba, la persona del paréntesis del especial
+    return '<div class="fila" style="margin-top:6px"><div class="campo"><small>A nombre de (para la contadora)</small><input type="text" list="u-persona" value="' + esc(per) + '" data-f="' + f + '" data-l="' + l + '" data-sk="persona"></div>' +
+      '<div class="campo" style="flex:0 1 140px"><small>Monto del show</small><input type="number" inputmode="numeric" min="0" step="1000" value="' + (sh.monto != null ? sh.monto : '') + '" data-f="' + f + '" data-l="' + l + '" data-sk="monto"' + (sh.monto == null ? ' style="border-color:var(--mal)"' : '') + '></div></div>';
+  }
+  function datalistPersonas() {
+    var xs = [];
+    S.data.fechas.forEach(function (x) { LOCS.forEach(function (l) { var p = (x.locales[l].show || {}).persona; if (p && xs.indexOf(p) < 0) xs.push(p); }); });
+    return '<datalist id="u-persona">' + xs.sort().map(function (n) { return '<option value="' + esc(n) + '">'; }).join('') + '</datalist>';
+  }
+  // ---------- Shows: monto tras monto ----------
+  function vistaShows() {
+    var h = '<div class="panel"><h2>Shows de ' + esc(S.data.nombre) + '</h2><p>A nombre de quién se paga cada show y su monto. Se guarda al pasar al siguiente. En la GLOSA el nombre va entre paréntesis junto al show y el monto en la columna siguiente.</p></div>';
+    var n = 0;
+    S.data.fechas.forEach(function (x) {
+      var p = x.fecha.split('-').map(Number);
+      LOCS.forEach(function (l) {
+        var c = x.locales[l]; var sh = c.show; if (!c.abierto || !sh || !sh.tipo || interno(sh)) return; n++;
+        var nombre = sh.tipo === 'piano' ? 'Piano Man' : sh.tipo === 'bingo' ? 'Los juegos de ' + ({ MK: 'Mercado Kennedy', TOB: 'Tobalaba', FRIDA: 'Frida' })[l] : (sh.tipo === 'standup' ? 'Stand Up: ' : sh.tipo === 'doble' ? 'Doble de ' : sh.tipo === 'tributo' ? 'Tributo a ' : '') + (sh.nombre || '') + (sh.artista ? ' (' + sh.artista + ')' : '');
+        h += '<div class="loc" style="--c:var(--' + l + ');background:var(--panel);border-radius:10px;margin:8px 0"><h4><span>' + DIAS[x.wd].slice(0, 3) + ' ' + p[2] + ' · ' + NL[l] + '</span></h4><div>' + esc(nombre) + '</div>' + camposPago(x.fecha, l, sh) + '</div>';
+      });
+    });
+    return datalistPersonas() + h + (n ? '' : '<p class="vacio">Este mes todavía no tiene shows.</p>');
+  }
+  function bloqueLocal(x, l) {
+    var c = x.locales[l]; var f = x.fecha;
+    var h = '<div class="loc' + (c.abierto ? '' : ' cerrado') + '" style="--c:var(--' + l + ')"><h4><span>' + NL[l] + '</span>' +
+      '<button class="btn chico" data-abrir="' + (c.abierto ? 0 : 1) + '" data-f="' + f + '" data-l="' + l + '">' + (c.abierto ? 'Cerrar este día' : 'Abrir este día') + '</button></h4>';
+    if (!c.abierto) return h + '</div>';
+    h += bloqueShow(f, l, x.wd, c);
+    h += '<div class="grupo"><label>Entretención</label><div class="fila">' + selPersona(f, l, 'dj', c.dj, 'ent', 'DJ') + selPersona(f, l, 'extra', c.extra, 'ent', 'Capacitación o técnico') + '</div><div class="fila" style="margin-top:6px">' +
+      selPersona(f, l, 'cantante', c.cantante, 'ent', 'Animador cantante') + selPersona(f, l, 'animador', c.animador, 'ent', 'Animador') + '</div><div class="fila" style="margin-top:6px">' + selPersona(f, l, 'showPor', c.showPor, 'ent', 'Hace el show (si es del equipo)') + '</div></div>';
+    h += '<div class="grupo"><label>Cámaras</label><div class="fila">' + selPersona(f, l, 'camH', c.camH, 'cam', 'En vivo horizontal') + selPersona(f, l, 'camV', c.camV, 'cam', 'Vertical para redes') +
+      (c.camH ? selPersona(f, l, 'camHx', c.camHx, 'cam', 'Turno extra con la horizontal') : '') + (c.camV ? selPersona(f, l, 'camVx', c.camVx, 'cam', 'Turno extra con la vertical') : '') +
+      '<div class="campo" style="flex:0 1 110px"><small>Horario (opcional)</small><input type="text" placeholder="21 a 22" value="' + esc(c.camNota) + '" data-f="' + f + '" data-l="' + l + '" data-k="camNota"></div></div></div>';
+    h += '<div class="grupo"><label>Edición</label><div class="fila">' + selPersona(f, l, 'editor', c.editor, 'edi', 'Editor') + '</div></div>';
+    if (c.pagos && c.pagos.length) h += '<div class="pagos">' + c.pagos.map(function (p) { return p.falta ? '<span class="falta">' + esc(p.codigo) + ' sin tarifa</span>' : esc(p.codigo) + ' ' + plata(p.monto); }).join(' · ') + ' <button class="btn chico" data-montos="' + f + '|' + l + '">Cambiar montos</button></div>';
+    return h + '</div>';
+  }
+  function vistaMes() {
+    var d = S.data; var h = ''; var sem = '';
+    var dls = Object.keys(d.usados).map(function (t) { return '<datalist id="u-' + t + '">' + d.usados[t].map(function (n) { return '<option value="' + esc(n) + '">'; }).join('') + '</datalist>'; }).join('');
+    d.fechas.forEach(function (x, i) {
+      var p = x.fecha.split('-').map(Number); var dt = new Date(p[0], p[1] - 1, p[2]); var lunes = new Date(dt); lunes.setDate(dt.getDate() - ((dt.getDay() + 6) % 7));
+      var k = lunes.toDateString();
+      if (k !== sem) { sem = k; h += '<div class="semana"><h2>Semana del ' + lunes.getDate() + ' de ' + MESES[lunes.getMonth()] + '</h2><button class="btn chico" data-repetir="' + x.fecha + '">Repetir el equipo de la semana anterior</button></div>'; }
+      h += '<section class="dia"><header><h3>' + DIAS[x.wd] + ' ' + p[2] + (x.cortesia ? ' de ' + MESES[p[1] - 1] : '') + '</h3>' + (x.cortesia ? '<span class="tag">Cortesía · mes anterior</span>' : '') + (x.cerrado ? '<span class="tag mal">Cerrado</span>' : '') + '</header><div class="locs">' +
+        LOCS.filter(function (l) { return x.locales[l].abierto || x.locales[l].abreDefault || hayDatos(x.locales[l]); }).map(function (l) { return bloqueLocal(x, l); }).join('') +
+        (LOCS.some(function (l) { return !(x.locales[l].abierto || x.locales[l].abreDefault || hayDatos(x.locales[l])); }) ? '<div class="loc" style="--c:var(--linea)"><button class="btn chico" data-otro="' + x.fecha + '">＋ Abrir otro local este día</button></div>' : '') + '</div></section>';
+    });
+    return dls + datalistPersonas() + '<datalist id="u-artista">' + [].concat.apply([], d.fechas.map(function (x) { return LOCS.map(function (l) { return (x.locales[l].show || {}).artista || ''; }); })).filter(function (v, i, a) { return v && a.indexOf(v) === i; }).map(function (n) { return '<option value="' + esc(n) + '">'; }).join('') + '</datalist>' + h;
+  }
+  function hayDatos(c) { return ['show', 'dj', 'cantante', 'animador', 'camH', 'camV', 'editor'].some(function (k) { return c[k]; }); }
+  function buscar(f) { for (var i = 0; i < S.data.fechas.length; i++) if (S.data.fechas[i].fecha === f) return S.data.fechas[i]; return null; }
+  function sinPagos(c) { var o = {}; Object.keys(c).forEach(function (k) { if (k !== 'pagos' && k !== 'abreDefault') o[k] = c[k]; }); return o; }
+  function guardar(f, l, cambio, repintar) {
+    var x = buscar(f); if (!x) return Promise.resolve();
+    var c = sinPagos(x.locales[l]); cambio(c);
+    x.locales[l] = Object.assign({ abreDefault: x.locales[l].abreDefault }, c);
+    return api('POST', '/api/prog/celda', { fecha: f, local: l, celda: c }).then(function (j) {
+      x.locales[l] = Object.assign({ abreDefault: x.locales[l].abreDefault }, j.celda);
+      ['dj', 'extra', 'cantante', 'animador', 'showPor', 'camH', 'camV', 'camHx', 'camVx', 'editor'].forEach(function (k) {
+        var n = j.celda[k]; if (!n) return; var rol = k === 'editor' ? 'edi' : k.indexOf('cam') === 0 ? 'cam' : 'ent';
+        var p = S.data.personas.filter(function (q) { return q.nombre.toLowerCase() === n.toLowerCase(); })[0];
+        if (!p) S.data.personas.push({ nombre: n, codigo: n.toUpperCase(), roles: [rol] }); else if (p.roles.indexOf(rol) < 0) p.roles.push(rol);
+      });
+      if (repintar === 'no') { /* sigue escribiendo: no se redibuja */ } else if (repintar !== false) pintar(); else actualizarPagos(f, l);
+      aviso('Guardado');
+    }).catch(function (e) { aviso(e.message); });
+  }
+  function actualizarPagos(f, l) { pintar(); }
+  function enlazarMes() {
+    var c = document.getElementById('cont');
+    c.querySelectorAll('select[data-k]').forEach(function (s) {
+      s.onchange = function () {
+        var v = s.value;
+        if (v === '+') { v = (prompt('Nombre corto de la persona (como va en los turnos):') || '').trim(); if (!v) { pintar(); return; } }
+        guardar(s.dataset.f, s.dataset.l, function (x) { if (v) x[s.dataset.k] = v; else delete x[s.dataset.k]; });
+      };
+    });
+    c.querySelectorAll('input[data-k]').forEach(function (i) { i.onchange = function () { guardar(i.dataset.f, i.dataset.l, function (x) { var v = i.value.trim(); if (v) x[i.dataset.k] = v; else delete x[i.dataset.k]; }); }; });
+    c.querySelectorAll('[data-show]').forEach(function (b) { b.onclick = function () { var t = b.dataset.show; guardar(b.dataset.f, b.dataset.l, function (x) { if (x.show && x.show.tipo === t) delete x.show; else x.show = { tipo: t, nombre: x.show && x.show.tipo !== 'piano' && x.show.tipo !== 'bingo' ? x.show.nombre : '', banda: t === 'tributo' }; }); }; });
+    c.querySelectorAll('[data-otros]').forEach(function (b) {
+      b.onclick = function () {
+        var ks = Object.keys(S.data.tipos); var r = prompt('Tipo de show:\n' + ks.map(function (k, i) { return (i + 1) + '. ' + S.data.tipos[k]; }).join('\n') + '\n\nEscribe el número'); var k = ks[Number(r) - 1];
+        if (k) guardar(b.dataset.f, b.dataset.l, function (x) { x.show = { tipo: k, nombre: (x.show || {}).nombre || '' }; });
+      };
+    });
+    c.querySelectorAll('input[data-sk]').forEach(function (i) {
+      i.onchange = function () { var sk = i.dataset.sk; if (sk === 'monto') i.style.borderColor = i.value === '' ? 'var(--mal)' : ''; guardar(i.dataset.f, i.dataset.l, function (x) { x.show = Object.assign({}, x.show); x.show[sk] = i.type === 'checkbox' ? i.checked : i.value.trim(); }, sk === 'monto' || sk === 'persona' ? 'no' : undefined); };
+    });
+    c.querySelectorAll('[data-abrir]').forEach(function (b) { b.onclick = function () { guardar(b.dataset.f, b.dataset.l, function (x) { x.abierto = b.dataset.abrir === '1'; }); }; });
+    c.querySelectorAll('[data-otro]').forEach(function (b) {
+      b.onclick = function () {
+        var x = buscar(b.dataset.otro); var ls = LOCS.filter(function (l) { return !(x.locales[l].abierto || x.locales[l].abreDefault || hayDatos(x.locales[l])); });
+        var r = prompt('¿Qué local abre este día?\n' + ls.map(function (l, i) { return (i + 1) + '. ' + NL[l]; }).join('\n')); var l = ls[Number(r) - 1];
+        if (l) guardar(x.fecha, l, function (y) { y.abierto = true; });
+      };
+    });
+    c.querySelectorAll('[data-montos]').forEach(function (b) {
+      b.onclick = function () {
+        var p = b.dataset.montos.split('|'); var x = buscar(p[0]); var cel = x.locales[p[1]];
+        var ms = Object.assign({}, cel.montos || {});
+        (cel.pagos || []).forEach(function (pg) {
+          var r = prompt('Monto de ' + pg.nombre + ' (' + (pg.rol === 'editor' ? 'edición' : pg.rol.indexOf('cam') === 0 ? (pg.rol.length > 4 ? 'turno extra de cámara' : 'cámara') : 'entretención') + ') este día.\nDéjalo vacío para usar su tarifa.', ms[pg.rol] != null ? ms[pg.rol] : '');
+          if (r === null) return; r = r.replace(/[^\d]/g, ''); if (r === '') delete ms[pg.rol]; else ms[pg.rol] = Number(r);
+        });
+        guardar(p[0], p[1], function (y) { y.montos = ms; });
+      };
+    });
+    c.querySelectorAll('[data-repetir]').forEach(function (b) {
+      b.onclick = function () {
+        if (!confirm('Copiar el equipo (entretención, cámaras y edición) de la semana anterior en los días vacíos de esta semana. Los shows no se copian.')) return;
+        var f0 = b.dataset.repetir; var p = f0.split('-').map(Number); var d0 = new Date(p[0], p[1] - 1, p[2]); var lunes = new Date(d0); lunes.setDate(d0.getDate() - ((d0.getDay() + 6) % 7));
+        var hechos = []; var cola = Promise.resolve(); var n = 0;
+        S.data.fechas.forEach(function (x) {
+          var q = x.fecha.split('-').map(Number); var dt = new Date(q[0], q[1] - 1, q[2]);
+          if (dt < lunes || dt - lunes >= 7 * 864e5) return;
+          var ant = new Date(dt); ant.setDate(dt.getDate() - 7); var fa = ant.getFullYear() + '-' + String(ant.getMonth() + 1).padStart(2, '0') + '-' + String(ant.getDate()).padStart(2, '0');
+          hechos.push(api('GET', '/api/prog/mes?m=' + fa.slice(0, 7)).then(function (dm) {
+            var xa = dm.fechas.filter(function (z) { return z.fecha === fa; })[0]; if (!xa) return;
+            LOCS.forEach(function (l) {
+              if (!x.locales[l].abierto || !xa.locales[l].abierto) return;
+              var ya = ['dj', 'cantante', 'animador', 'camH', 'camV', 'editor'].some(function (k) { return x.locales[l][k]; }); if (ya) return;
+              cola = cola.then(function () { n++; return guardar(x.fecha, l, function (y) { ['dj', 'extra', 'cantante', 'animador', 'camH', 'camHx', 'camV', 'camVx', 'camNota', 'editor'].forEach(function (k) { if (xa.locales[l][k]) y[k] = xa.locales[l][k]; }); }, false); });
+            });
+          }));
+        });
+        Promise.all(hechos).then(function () { return cola; }).then(function () { aviso(n ? 'Copiado en ' + n + ' locales' : 'No había días vacíos para copiar'); pintar(); });
+      };
+    });
+  }
+
+  // ---------- Archivos ----------
+  function caja(id, titulo, texto, nombre) {
+    return '<div class="panel"><div class="fila" style="margin-bottom:8px"><h2 style="flex:1;margin:0">' + titulo + '</h2><button class="btn foco chico" data-copiar="' + id + '">Copiar</button><button class="btn chico" data-bajar="' + id + '" data-nombre="' + esc(nombre) + '">Descargar</button></div><textarea class="salida" id="' + id + '" readonly>' + esc(texto) + '</textarea></div>';
+  }
+  function cargarArchivos() {
+    api('GET', '/api/prog/archivos?m=' + S.mes).then(function (a) {
+      var mes = S.data.nombre.split(' ')[0]; var y = S.data.nombre.split(' ')[1]; var mm = S.mes.slice(5);
+      var h = a.faltan.length ? '<div class="panel"><h2>Falta completar</h2><ul class="faltan">' + a.faltan.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></div>' : '<p class="ok">Todo completo.</p>';
+      h += caja('a-cart', 'Cartelera', a.cartelera, mm + ' CARTELERA ' + mes.toUpperCase() + ' ' + y) + caja('a-ent', 'Turnos Entretención', a.entretencion, mm + ' Turnos Entretención ' + mes + ' ' + y) +
+        caja('a-cam', 'Turnos Cámaras y Editores', a.camaras, mm + ' Turnos Cámaras y Editores ' + mes + ' ' + y.slice(2)) + caja('a-tur', 'Hoja TURNOS de la GLOSA', a.turnos, 'TURNOS ' + mes + ' ' + y);
+      var el = document.getElementById('arch'); if (!el) return; el.innerHTML = h;
+      el.querySelectorAll('textarea.salida').forEach(function (t) { t.style.height = Math.min(600, Math.max(220, t.scrollHeight + 4)) + 'px'; });
+      el.querySelectorAll('[data-copiar]').forEach(function (b) { b.onclick = function () { var t = document.getElementById(b.dataset.copiar); t.select(); var ok = false; try { navigator.clipboard.writeText(t.value); ok = true; } catch (e) { ok = document.execCommand('copy'); } aviso(ok ? 'Copiado' : 'Selecciona y copia'); }; });
+      el.querySelectorAll('[data-bajar]').forEach(function (b) { b.onclick = function () { var t = document.getElementById(b.dataset.bajar).value; var a2 = document.createElement('a'); a2.href = URL.createObjectURL(new Blob([t], { type: 'text/plain;charset=utf-8' })); a2.download = b.dataset.nombre + '.txt'; a2.click(); }; });
+    }).catch(function (e) { aviso(e.message); });
+  }
+  function vistaImportar() {
+    return '<div class="panel"><h2>Cargar un mes ya hecho</h2><p>Pega los textos de siempre de ' + esc(S.data.nombre) + ' (los que tengas) y toca «Cargar». Con el bloque de TURNOS se aprenden también las tarifas.</p>' +
+      ['cartelera|Cartelera', 'entretencion|Turnos Entretención', 'camaras|Turnos Cámaras y Editores', 'turnos|Bloque de la hoja TURNOS'].map(function (s) { var p = s.split('|'); return '<div class="campo" style="margin:8px 0"><small>' + p[1] + '</small><textarea rows="4" data-imp="' + p[0] + '"></textarea></div>'; }).join('') +
+      '<button class="btn foco" id="imp">Cargar</button></div>';
+  }
+  function enlazarImportar() {
+    document.getElementById('imp').onclick = function () {
+      var b = { mes: S.mes }; document.querySelectorAll('[data-imp]').forEach(function (t) { if (t.value.trim()) b[t.dataset.imp] = t.value; });
+      if (Object.keys(b).length < 2) return aviso('Pega al menos un texto');
+      api('POST', '/api/prog/importar', b).then(function (j) { aviso('Listo: ' + j.celdas + ' locales y días' + (j.tarifas ? ', ' + j.tarifas + ' tarifas' : '')); cargar(); }).catch(function (e) { aviso(e.message); });
+    };
+  }
+
+  // ---------- Equipo, tarifas y horarios ----------
+  function vistaEquipo() {
+    var d = S.data;
+    var pers = '<div class="panel"><h2>Equipo</h2><p>El nombre es como va en los turnos; el código es como va en la GLOSA (hoja EQUIPO).</p><table><tr><th>Nombre</th><th>Código GLOSA</th><th title="Entretención">Ent</th><th title="Cámara">Cám</th><th title="Edición">Edi</th><th></th></tr>' +
+      d.personas.map(function (p, i) { return '<tr data-p="' + i + '"><td><input type="text" data-pk="nombre" value="' + esc(p.nombre) + '"></td><td><input type="text" data-pk="codigo" value="' + esc(p.codigo) + '"></td>' + ['ent', 'cam', 'edi'].map(function (r) { return '<td><input type="checkbox" data-pr="' + r + '"' + (p.roles.indexOf(r) >= 0 ? ' checked' : '') + '></td>'; }).join('') + '<td><button class="btn chico" data-pdel="' + i + '">✕</button></td></tr>'; }).join('') +
+      '</table><div class="fila" style="margin-top:8px"><button class="btn chico" id="padd">＋ Persona</button><button class="btn foco chico" id="psave">Guardar equipo</button></div></div>';
+    var codigos = d.personas.map(function (p) { return p.codigo; });
+    var opt = function (vals, v) { return vals.map(function (x) { return '<option value="' + esc(x[0]) + '"' + (String(x[0]) === String(v) ? ' selected' : '') + '>' + esc(x[1]) + '</option>'; }).join(''); };
+    var tar = '<div class="panel"><h2>Tarifas (neto por turno)</h2><p>Vale la más específica: primero el día, después el local y después la persona. «Todos» sirve para cualquiera; por ejemplo, «Todos · Cámara · Kennedy · Viernes» vale para todas las cámaras del karaoke de Kennedy, salvo quien tenga una tarifa propia de ese mismo día y local. Se guardan solo en los datos de la plataforma.</p><table><tr><th>Persona</th><th>Rol</th><th>Local</th><th>Día</th><th>Monto</th><th></th></tr>' +
+      d.tarifas.map(function (t, i) {
+        return '<tr data-t="' + i + '"><td><select data-tk="persona">' + opt([['*', 'Todos']].concat(codigos.concat(codigos.indexOf(t.persona) < 0 && t.persona !== '*' ? [t.persona] : []).map(function (c) { return [c, c]; })), t.persona) + '</select></td>' +
+          '<td><select data-tk="rol">' + opt([['ent', 'Entretención'], ['cam', 'Cámara'], ['edi', 'Edición']], t.rol) + '</select></td>' +
+          '<td><select data-tk="local">' + opt([['*', 'Todos'], ['MK', 'Kennedy'], ['TOB', 'Tobalaba'], ['FRIDA', 'Frida']], t.local) + '</select></td>' +
+          '<td><select data-tk="dia">' + opt([['*', 'Todos'], ['4', 'Jueves'], ['5', 'Viernes'], ['6', 'Sábado'], ['0', 'Domingo']], t.dia) + '</select></td>' +
+          '<td><input type="number" data-tk="monto" value="' + t.monto + '" step="5000" min="0"></td><td><button class="btn chico" data-tdel="' + i + '">✕</button></td></tr>';
+      }).join('') + '</table><div class="fila" style="margin-top:8px"><button class="btn chico" id="tadd">＋ Tarifa</button><button class="btn foco chico" id="tsave">Guardar tarifas</button></div></div>';
+    var hor = '<div class="panel"><h2>Horarios de la cartelera</h2><p>Lo que va bajo el nombre de cada local en la cartelera.</p>' + LOCS.map(function (l) { return '<div class="campo" style="margin:8px 0"><small>' + NL[l] + '</small><textarea rows="5" data-h="' + l + '">' + esc(d.horarios[l] || '') + '</textarea></div>'; }).join('') + '<button class="btn foco chico" id="hsave">Guardar horarios</button></div>';
+    return pers + tar + hor;
+  }
+  function leerPersonas() { return Array.prototype.map.call(document.querySelectorAll('tr[data-p]'), function (tr) { return { nombre: tr.querySelector('[data-pk=nombre]').value, codigo: tr.querySelector('[data-pk=codigo]').value, roles: Array.prototype.filter.call(tr.querySelectorAll('[data-pr]'), function (c) { return c.checked; }).map(function (c) { return c.dataset.pr; }) }; }); }
+  function leerTarifas() { return Array.prototype.map.call(document.querySelectorAll('tr[data-t]'), function (tr) { var o = {}; tr.querySelectorAll('[data-tk]').forEach(function (e) { o[e.dataset.tk] = e.value; }); return o; }); }
+  function enlazarEquipo() {
+    document.getElementById('padd').onclick = function () { S.data.personas = leerPersonas(); S.data.personas.push({ nombre: '', codigo: '', roles: [] }); pintar(); };
+    document.querySelectorAll('[data-pdel]').forEach(function (b) { b.onclick = function () { S.data.personas = leerPersonas(); S.data.personas.splice(Number(b.dataset.pdel), 1); pintar(); }; });
+    document.getElementById('psave').onclick = function () { api('POST', '/api/prog/personas', { personas: leerPersonas() }).then(function (j) { S.data.personas = j.personas; aviso('Equipo guardado'); cargar(); }).catch(function (e) { aviso(e.message); }); };
+    document.getElementById('tadd').onclick = function () { S.data.tarifas = leerTarifas(); S.data.tarifas.push({ persona: '*', rol: 'ent', local: '*', dia: '*', monto: 0 }); pintar(); };
+    document.querySelectorAll('[data-tdel]').forEach(function (b) { b.onclick = function () { S.data.tarifas = leerTarifas(); S.data.tarifas.splice(Number(b.dataset.tdel), 1); pintar(); }; });
+    document.getElementById('tsave').onclick = function () { api('POST', '/api/prog/tarifas', { tarifas: leerTarifas() }).then(function (j) { S.data.tarifas = j.tarifas; aviso('Tarifas guardadas'); cargar(); }).catch(function (e) { aviso(e.message); }); };
+    document.getElementById('hsave').onclick = function () { var b = {}; document.querySelectorAll('[data-h]').forEach(function (t) { b[t.dataset.h] = t.value; }); api('POST', '/api/prog/horarios', b).then(function () { aviso('Horarios guardados'); cargar(); }).catch(function (e) { aviso(e.message); }); };
+  }
+
+  // ---------- GLOSA ----------
+  function vistaGlosa() {
+    var g = S.data.glosa; var u = g.ultimo;
+    var h = '<div class="panel"><h2>Enviar ' + esc(S.data.nombre) + ' a la GLOSA</h2>';
+    if (!g.url) h += '<p>Primero conecta la GLOSA (abajo).</p>';
+    else h += '<p>Escribe la hoja TURNOS con lo de este mes y llena la pestaña del mes: semanas de jueves a domingo, presupuesto neto solo los días con actividad (los demás en cero), montos de los shows y el mes en B8. Si falta la pestaña del mes, se crea duplicando la del mes anterior.</p><div class="fila"><button class="btn foco" id="genv">Enviar y llenar el mes</button><button class="btn" id="gcmp">Comparar con la GLOSA</button><button class="btn" id="gtraer">Traer los shows de la GLOSA</button></div>';
+    h += '<p id="gest">' + (u ? estadoTxt(u) : '') + '</p><div id="gres"></div></div>';
+    h += '<div class="panel"><h2>Conectar la GLOSA</h2><ol class="pasos">' +
+      '<li>Abre la planilla <b>GLOSA KRB STAGE OFICIAL 2026</b> con la cuenta dueña (la de Kennedy).</li>' +
+      '<li>Extensiones → Apps Script. A la izquierda, junto a «Archivos», toca <b>＋ → Secuencia de comandos</b> y llámalo <code>Programacion</code>.</li>' +
+      '<li>Borra lo que traiga, pega el script (botón de abajo) y guarda con el disquete. No toques el archivo de llenarMes.</li>' +
+      '<li>Arriba a la derecha: <b>Implementar → Nueva implementación</b>. En el engranaje elige <b>Aplicación web</b>. Ejecutar como: <b>Yo</b>. Quién tiene acceso: <b>Cualquier persona</b>. Toca Implementar y acepta los permisos.</li>' +
+      '<li>Copia la <b>URL de la aplicación web</b> (termina en /exec) y pégala aquí.</li></ol>' +
+      '<p><b>Actualizar el script</b> (cuando Code 3 lo pida): copia el script, ábrelo en Apps Script en el archivo <code>Programacion</code>, borra todo, pega y guarda. Después <b>Implementar → Administrar implementaciones</b>, toca el lápiz, en Versión elige <b>Nueva versión</b> y toca Implementar. La URL no cambia.</p>' +
+      '<div class="fila"><button class="btn foco chico" id="gscript">Copiar el script</button></div>' +
+      '<div class="fila" style="margin-top:10px"><div class="campo"><small>URL de la aplicación web</small><input type="text" id="gurl" value="' + esc(g.url) + '" placeholder="https://script.google.com/macros/s/…/exec"></div><button class="btn chico" id="gsave">Guardar</button></div></div>';
+    return h;
+  }
+  function estadoTxt(u) {
+    if (u.estado === 'enviando') return 'Enviando ' + u.mes + '… (puede tardar unos minutos)';
+    if (u.estado === 'listo') return '<span class="ok">✔ ' + u.mes + ' enviado a la GLOSA' + (u.creada ? ' (se creó la pestaña del mes)' : '') + '.</span>' + (u.aviso ? ' <span class="faltan">' + esc(u.aviso) + '</span>' : '');
+    if (u.estado === 'error') return '<span class="faltan">No se pudo enviar ' + esc(u.mes) + ': ' + esc(u.error) + '</span>';
+    return '';
+  }
+  function seguir() { api('GET', '/api/prog/glosa/estado').then(function (u) { var e = document.getElementById('gest'); if (e) e.innerHTML = estadoTxt(u); if (u.estado === 'enviando') setTimeout(seguir, 3000); else S.data.glosa.ultimo = u; }); }
+  function enlazarGlosa() {
+    var $ = function (id) { return document.getElementById(id); };
+    $('gscript').onclick = function () { fetch('/api/prog/glosa/script', { headers: { 'x-prog': TOKEN } }).then(function (r) { return r.text(); }).then(function (t) { var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); try { navigator.clipboard.writeText(t); } catch (e) { document.execCommand('copy'); } document.execCommand('copy'); ta.remove(); aviso('Script copiado'); }); };
+    $('gsave').onclick = function () { api('POST', '/api/prog/glosa', { url: $('gurl').value }).then(function (j) { S.data.glosa.url = j.url; aviso('Guardado'); pintar(); }).catch(function (e) { aviso(e.message); }); };
+    if ($('genv')) $('genv').onclick = function () {
+      if (!confirm('¿Enviar ' + S.data.nombre + ' a la GLOSA? Se reemplaza lo que haya en la hoja TURNOS y se llena la pestaña del mes.')) return;
+      api('POST', '/api/prog/glosa/enviar', { mes: S.mes }).then(function (u) { $('gest').innerHTML = estadoTxt(u); setTimeout(seguir, 3000); }).catch(function (e) { aviso(e.message); });
+    };
+    if ($('gcmp')) $('gcmp').onclick = function () {
+      $('gres').innerHTML = '<p>Leyendo la GLOSA…</p>';
+      api('GET', '/api/prog/glosa/leer?m=' + S.mes).then(function (r) {
+        var h = '<p>La hoja TURNOS tiene <b>' + esc(r.pestana || '(sin pestaña)') + '</b>.' + (r.mismoMes ? '' : ' <span class="faltan">No es el mes que estás viendo.</span>') + '</p>';
+        if (!r.soloGlosa.length && !r.soloAca.length) h += '<p class="ok">✔ Igual a la plataforma (' + r.iguales + ' líneas).</p>';
+        else h += (r.soloAca.length ? '<p>Solo en la plataforma:</p><ul class="faltan">' + r.soloAca.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') + (r.soloGlosa.length ? '<p>Solo en la GLOSA:</p><ul>' + r.soloGlosa.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '');
+        $('gres').innerHTML = h;
+      }).catch(function (e) { $('gres').innerHTML = '<p class="faltan">' + esc(e.message) + '</p>'; });
+    };
+    if ($('gtraer')) $('gtraer').onclick = function () { api('POST', '/api/prog/glosa/traer').then(function (j) { aviso(j.shows + ' shows traídos (' + j.mes + ')'); cargar(); }).catch(function (e) { aviso(e.message); }); };
+    if (S.data.glosa.ultimo && S.data.glosa.ultimo.estado === 'enviando') seguir();
+  }
+
+  cargar();
+})();
+</script>
+</body>
+</html>

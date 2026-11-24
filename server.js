@@ -296,6 +296,8 @@ setInterval(() => {
 const app = express();
 app.set('trust proxy', 1); // detrás del proxy del hosting, para ver la IP real
 app.use(express.json({ limit: '1mb' }));
+// Programación KRB (Code 3): plataforma aparte para la cartelera y los turnos (va antes de las páginas de la sala)
+require('./programacion.js')({ app, dir: path.dirname(DATA_FILE) });
 // Sin caché: así cada celular recibe siempre la última versión publicada
 app.use(express.static(path.join(__dirname, 'public'), { setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache') }));
 // Enlace corto de la pantalla vertical de Kennedy (pedido de Cote: fácil de escribir con el control del decodificador;
