@@ -80,6 +80,12 @@
         // (instrucciones y cupos) se ve solo antes de abrir las inscripciones.
         const next = st.players.find((p) => !p.done);
         const voted = st.players.some((p) => p.done) || st.onstage || st.open;
+        // Mientras gira la tómbola del sorteo en pantalla, el panel no adelanta a los sorteados (Cote, 24 nov)
+        const dr = st.drawRoll;
+        if (dr && window.__vrKey !== dr.at) { window.__vrKey = dr.at; window.__vrEnd = Date.now() + dr.ms - (st.now - dr.at); } // fin, en la hora de este equipo
+        const rollLeft = dr ? window.__vrEnd - Date.now() : 0;
+        const rolling = rollLeft > 300;
+        if (rolling) { clearTimeout(window.__vrT); window.__vrT = setTimeout(() => { last = ''; paint(); }, rollLeft + 200); }
         const who = (p, label) => `<div class="vc-now"><small>${label}</small><b>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}</div>`;
         // Pedido de Cote (24 nov): el animador ve lo mismo que está en pantalla; el siguiente participante aparece en el
         // panel recién cuando sube (así no lee el nombre del que viene en lugar del que está en el escenario)
@@ -100,7 +106,8 @@
           ${st.sample ? `<div class="vc-read"><small>Notas al azar en pantalla (sin el promedio)</small>${notesHTML(st, 'vc-notes')}</div>` : ''}
           <div class="vc-step">${step}</div>
           ${st.players.length && !voted && !st.signup ? '<button class="vc-again" data-act="signup" data-on="1">Abrir inscripciones otra vez</button>' : ''}
-          ${st.players.length ? `<div class="vc-list vc-mini">${st.players.map((p) => {
+          ${rolling ? '<div class="vc-read"><small>🎲 Sorteando en pantalla…</small><span>Los sorteados aparecen aquí cuando termina la tómbola</span></div>' : ''}
+          ${st.players.length && !rolling ? `<div class="vc-list vc-mini">${st.players.map((p) => {
     const on = st.open && st.open.id === p.id;
     const up = st.onstage && st.onstage.id === p.id;
     return `<div class="vc-row ${on || up ? 'on' : ''}"><p><b>${nm(p)}</b>${thing(p)}</p><em>${on ? '🗳️' : up ? '🎤' : p.done ? `✔ ${st.counts[p.id]} votos` : ''}</em>${!p.done && !on && !up ? `<button class="vc-x" data-act="remove" data-id="${p.id}" aria-label="Quitar a ${esc(p.name)}">✕</button>` : ''}</div>`;
@@ -243,6 +250,36 @@
   };
 
   // ---------- Pantallas ----------
+  // Tómbola del sorteo de participantes (pedido de Cote, 24 nov: «al momento de sortear los participantes tiene que haber
+  // un sorteo en pantalla, con el redoble de tambores»; en El Festival «que vaya sacando a los sorteados de a uno, pero
+  // rápido»): una capa encima de la pantalla que saca un nombre cada 1,3 s; mientras gira, la lista final queda oculta
+  let rollAt = 0;
+  const voteRoll = (st) => {
+    const r = st.drawRoll;
+    if (!r || rollAt === r.at) return;
+    const left = r.ms - (st.now - r.at);
+    if (left < 400) return;
+    rollAt = r.at;
+    const step = (r.ms - 900) / r.picks.length;
+    const t0 = Date.now() - (r.ms - left); // el comienzo de la tómbola en la hora de este equipo
+    const full = document.body.classList.contains('full');
+    const el = document.createElement('div');
+    el.id = 'vroll'; el.className = `th-${st.venue} ${full ? 'vr-full' : 'vr-gc'}`;
+    el.innerHTML = `<div class="vr-card"><small>${esc(title(st))} · Sorteo de participantes</small><b>${window.sinEmoji(isK(st) ? '🎲 ¿Quiénes cantan?' : '🎲 ¿Quiénes participan?')}</b><ol>${r.picks.map(() => '<li>·</li>').join('')}</ol></div>`;
+    document.body.appendChild(el); document.body.classList.add('vroll-on');
+    if (full) { sfx.unlock(); sfx.roll(true); }
+    const lis = el.querySelectorAll('li');
+    const spin = setInterval(() => {
+      const t = Date.now() - t0; const k = Math.min(r.picks.length, Math.floor(t / step));
+      lis.forEach((li, i) => {
+        if (i < k) { if (!li.classList.contains('ok')) { li.classList.add('ok'); li.textContent = r.picks[i]; } } else if (i === k) { li.className = 'spin'; li.textContent = r.pool[Math.floor(Math.random() * r.pool.length)]; }
+      });
+      if (t >= r.ms) {
+        clearInterval(spin); if (full) { sfx.roll(false); sfx.play('win'); }
+        el.classList.add('vr-out'); document.body.classList.remove('vroll-on'); setTimeout(() => el.remove(), 450);
+      }
+    }, 70);
+  };
   const follow = (paint) => {
     let last = '';
     let alive = true;
@@ -250,6 +287,7 @@
       const st = await api('GET', '/api/vote').catch(() => null);
       if (!alive || !st) return;
       setClock(st);
+      voteRoll(st);
       const celebrating = st.winner && st.now - st.winAt < CELEBRATE_MS;
       const s = JSON.stringify([st.rev, celebrating]);
       if (s === last) return;

@@ -592,7 +592,9 @@ function votoView(want) {
         else if (st.players.length >= 2) o += btn('🏁 Pasar a los resultados', 'vote', d('x', 'results'), 'big primary paso');
         else o += '<p class="muted">Se necesitan al menos 2 participantes.</p>' + btn('📲 Abrir inscripciones otra vez', 'vote', d('x', 'signup') + d('on', '1'), 'big');
         if (st.players.length && !voted && !st.signup) o += '<div class="center">' + btn('Abrir inscripciones otra vez', 'vote', d('x', 'signup') + d('on', '1')) + '</div>';
-        for (var k = 0; k < st.players.length; k++) { var p = st.players[k]; var on = st.open && st.open.id === p.id; var up = st.onstage && st.onstage.id === p.id; o += '<div class="item"><span class="r">' + (on ? '🗳️' : up ? '🎤' : p.done ? '<b style="color:#3fe08f">✔ ' + st.counts[p.id] + ' votos</b>' : btn('✕', 'vote', d('x', 'remove') + d('id', p.id))) + '</span><b>' + h(p.name) + '</b><br><span class="muted">' + h(p.thing) + '</span></div>'; }
+        var dr = st.drawRoll; var rolling = dr && dr.ms - (new Date().getTime() + offset - dr.at) > 300; // tómbola del sorteo en pantalla (Cote, 24 nov)
+        if (rolling) o += '<div class="now"><small>🎲 Sorteando en pantalla…</small><span class="muted">Los sorteados aparecen aquí cuando termina la tómbola</span></div>';
+        else for (var k = 0; k < st.players.length; k++) { var p = st.players[k]; var on = st.open && st.open.id === p.id; var up = st.onstage && st.onstage.id === p.id; o += '<div class="item"><span class="r">' + (on ? '🗳️' : up ? '🎤' : p.done ? '<b style="color:#3fe08f">✔ ' + st.counts[p.id] + ' votos</b>' : btn('✕', 'vote', d('x', 'remove') + d('id', p.id))) + '</span><b>' + h(p.name) + '</b><br><span class="muted">' + h(p.thing) + '</span></div>'; }
       } else if (st.phase === 'results') {
         o += '<h2>Resultados</h2>';
         if (st.next) o += '<div class="now"><small>Lo que viene (el nombre sale al revelarlo)</small><b>' + ord(st.next.place) + '</b></div>' + btn('Revelar ' + ord(st.next.place), 'vote', d('x', 'reveal'), 'big primary paso');
