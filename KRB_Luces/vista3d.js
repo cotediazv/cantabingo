@@ -413,7 +413,9 @@ function render(){
   if (an){                                                     // camina: posicion, rumbo y piernas en movimiento
     animadorObj.position.set(an.p[0], an.p[1] + Math.abs(Math.sin(an.t * 6)) * 0.03, an.p[2]);
     animadorObj.rotation.y = an.rumbo;
-    const [pi, pd] = animadorObj.userData.piernas; pi.rotation.x = Math.sin(an.t * 6) * 0.4; pd.rotation.x = -Math.sin(an.t * 6) * 0.4;
+    const sw = an.quieto ? 0 : Math.sin(an.t * 6) * 0.4;            // quieto (hablando en una mesa o en el escenario): piernas juntas
+    const [pi, pd] = animadorObj.userData.piernas; pi.rotation.x = sw; pd.rotation.x = -sw;
+    if (an.quieto) animadorObj.position.y = an.p[1];
   }
   anilloMarca.visible = !!(V.marca && enSeguir);
   if (anilloMarca.visible) anilloMarca.position.set(V.marca[0], V.marca[1] + 0.02, V.marca[2]);
