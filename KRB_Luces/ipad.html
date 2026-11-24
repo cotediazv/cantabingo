@@ -65,6 +65,9 @@
   .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px;margin-bottom:12px}
   .seg button{border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:12px;padding:14px 8px;font-size:17px;font-weight:600;cursor:pointer}
   .seg button.act{background:var(--acc);border-color:var(--acc)}
+  .seg.chico{margin-bottom:8px}.seg.chico button{padding:9px 6px;font-size:15px}
+  body.en-seguir .vista{margin-bottom:8px}
+  #seguir .help{margin-top:6px}
   .map,.pad{position:relative;height:min(50vh,460px);border-radius:var(--r);border:1px solid var(--line);touch-action:none;overflow:hidden;background:#121419}
   .map{background:linear-gradient(#ffffff08 1px,transparent 1px) 0 0/100% 25%,linear-gradient(90deg,#ffffff08 1px,transparent 1px) 0 0/25% 100%,#121419}
   .map{height:auto;aspect-ratio:34/16}
@@ -164,14 +167,7 @@
 
   <!-- ===== SEGUIR ===== -->
   <section class="tab" id="seguir">
-    <div class="seg" id="modoSeguir">
-      <button data-m="mapa" class="act">Mapa del salón</button>
-      <button data-m="mano">A mano · calibrar</button>
-    </div>
-    <div class="seg" id="cabezas">
-      <button data-s="0">Cabeza 1</button><button data-s="1">Cabeza 2</button><button data-s="2">Cabeza 3</button><button data-s="both" class="act">Las 3 juntas</button>
-    </div>
-
+    <!-- Primero el control (mapa o pad), pegado a la vista 3D; los botones van abajo -->
     <div id="panelMapa">
       <div class="map" id="map">
         <svg id="plano" viewBox="0 0 340 160" preserveAspectRatio="none"></svg>
@@ -189,12 +185,19 @@
         <button class="chip" id="invX">Invertir ↔</button><button class="chip" id="invY">Invertir ↕</button>
       </div>
       <h2 class="sec">Calibrar el mapa (una sola vez)</h2>
-      <p class="help">Para cada esquina del salón: elige <b>Cabeza 1</b>, apúntala al suelo en esa esquina y toca la esquina. Luego haz lo mismo con <b>Cabeza 2</b>. Las 4 esquinas son las de la zona de mesas, marcadas con números en el mapa (escenario a la izquierda, cocinas arriba, columnas y pasillo abajo).</p>
+      <p class="help">Para cada esquina del salón: elige <b>Cabeza 1</b>, apúntala al suelo en esa esquina y toca la esquina. Luego haz lo mismo con <b>Cabeza 2</b> y <b>Cabeza 3</b>. Las 4 esquinas son las de la zona de mesas, marcadas con números en el mapa (escenario a la izquierda, cocinas arriba, columnas y pasillo abajo).</p>
       <div class="calib" id="calib"></div>
       <div class="row"><button class="chip" id="borrarCal">Borrar calibración</button>
         <span class="help" style="margin:0">Úsalo si se calibró sin las luces reales (por ejemplo, en el Dell de prueba).</span></div>
     </div>
 
+    <div class="seg chico" id="cabezas" style="margin-top:12px">
+      <button data-s="0">Cabeza 1</button><button data-s="1">Cabeza 2</button><button data-s="2">Cabeza 3</button><button data-s="both" class="act">Las 3 juntas</button>
+    </div>
+    <div class="seg chico" id="modoSeguir">
+      <button data-m="mapa" class="act">Mapa del salón</button>
+      <button data-m="mano">A mano · calibrar</button>
+    </div>
     <div class="readout" id="readout"></div>
     <div class="row">
       <button class="chip" id="segOn">Encender (blanco cálido)</button>
@@ -451,6 +454,11 @@ function apuntar(id, u, v){
   const c = datos.calibracion[id], lerp = key => (1-u)*(1-v)*c.ei[key] + u*(1-v)*c.ed[key] + (1-u)*v*c.fi[key] + u*v*c.fd[key];
   const z = zona(id); z.pan = Math.max(0, Math.min(255, lerp('pan'))); z.tilt = Math.max(0, Math.min(255, lerp('tilt'))); z.posicion = null;
 }
+/* Al dirigir una cabeza con el mapa o a mano, si estaba apagada se enciende (blanco calido), para que se vea moverse */
+function encenderSiApagada(id){
+  const z = zona(id);
+  if (!(z.intensidad > 0) || !z.color){ z.color = (conf.seguir && conf.seguir.color) || 'blanco_calido'; z.intensidad = 100; }
+}
 /* Punto del piso (en metros del escenario) a partir de un punto del salon; si cae sobre la tarima, a su altura */
 function puntoPiso(u, v){
   const p = deSalon(u, v, 0);
@@ -491,6 +499,7 @@ function apuntarGeo(id, punto){
     V.marca = punto; V.sucio = true;
     // Todas las cabezas elegidas apuntan al MISMO punto: con calibracion (luces reales) o por geometria (igual que la vista 3D).
     const ids = segActivos();
+    ids.forEach(encenderSiApagada);
     ids.forEach(id => calibrada(id) ? apuntar(id, s, t) : apuntarGeo(id, punto));
     pintarSeguir();
     limitar('mapa', () => enviarGrupos(ids, 0));
@@ -514,6 +523,7 @@ $('invY').onclick = () => { prefs.invY = !prefs.invY; guardarPrefs(); pintarSegu
     const dy = (e.clientY - last.y) * prefs.vel * (prefs.invY ? -1 : 1);
     last = {x: e.clientX, y: e.clientY};
     segActivos().forEach(id => {
+      encenderSiApagada(id);
       const z = zona(id);
       z.pan = Math.max(0, Math.min(255, (z.pan != null ? z.pan : 128) + dx));
       z.tilt = Math.max(0, Math.min(255, (z.tilt != null ? z.tilt : 128) + dy));
