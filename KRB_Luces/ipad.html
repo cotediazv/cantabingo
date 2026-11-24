@@ -698,6 +698,15 @@ const aSalon = p => { const a = giroSalon(); return [p[0] * Math.cos(a) - p[2] *
 const SALON = { largo: 27, cocinas: 5.6, pasillo: -8.8 };
 // Columnas del salon (lado pasillo), en metros del salon [u, v]. Se pueden cambiar en luces.json > vista3d > columnas_salon.
 const colsSalon = () => ((conf && conf.vista3d && conf.vista3d.columnas_salon) || [[-6.2, 0], [-6.0, 13.5], [-6.0, 23]]);
+// Maceteros largos con plantas entre el pasillo y las mesas (cierran el salon), en la linea de las columnas, cortados por ellas.
+const U_MACETEROS = -6.0;
+function tramosMaceteros(){
+  const cortes = colsSalon().map(c => c[1]).sort((a, b) => a - b), tramos = [];
+  let desde = 0.8;
+  cortes.forEach(v => { if (v - 0.9 > desde) tramos.push([desde, v - 0.9]); desde = Math.max(desde, v + 0.9); });
+  if (SALON.largo - 0.3 > desde) tramos.push([desde, SALON.largo - 0.3]);
+  return tramos;
+}
 function columnaSalon(n){ const c = colsSalon()[n] || colsSalon()[0]; return deSalon(c[0], c[1]); }
 
 function camara(){
@@ -889,6 +898,15 @@ function dibujar3D(){
     }});
     velas.push([c[0], 0.82, c[2]]);
   }
+  tramosMaceteros().forEach(([a, b]) => {                                            // maceteros con plantas
+    for (let v = a; v <= b; v += 0.55){
+      const c = deSalon(U_MACETEROS, v), alto = 0.95 + 0.25 * Math.abs(Math.sin(v * 2.3));
+      objetos.push({ d: Math.hypot(...sub(c, V.ojo)), f: () => {
+        caja(c[0] - 0.28, c[0] + 0.28, 0, 0.55, c[2] - 0.28, c[2] + 0.28, '#3a3430', '#2e2925', '#4a433d'); // macetero
+        caja(c[0] - 0.24, c[0] + 0.24, 0.55, alto, c[2] - 0.24, c[2] + 0.24, '#2f5d34', '#264d2b', '#3f7a45'); // plantas
+      }});
+    }
+  });
   [0, 1, 2].forEach(n => {
     const c = columnaSalon(n);
     objetos.push({ d: Math.hypot(...sub(c, V.ojo)), f: () => {
@@ -1011,6 +1029,10 @@ function dibujarPlano(){
     const c = deSalon(su, sv); if (c[2] < 1.6 && c[0] > -6.5) continue;
     s += `<rect x="${X(sv) - 3.5}" y="${Y(su) - 3.5}" width="7" height="7" fill="none" stroke="#c98a3a" stroke-width="0.9"/>`;
   }
+  // maceteros con plantas entre el pasillo y las mesas
+  tramosMaceteros().forEach(([a, b]) => {
+    s += `<rect x="${X(a)}" y="${Y(U_MACETEROS) - 2.5}" width="${X(b) - X(a)}" height="5" rx="2" fill="#2f5d34" stroke="#3f7a45" stroke-width="0.8"/>`;
+  });
   // columnas del salon con las cabezas 1, 2 y 3
   colsSalon().forEach(([u, v], i) => {
     s += `<rect x="${X(v) - 5}" y="${Y(u) - 5}" width="10" height="10" fill="#34373d" stroke="#6b7079"/>`;
