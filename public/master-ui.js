@@ -288,6 +288,7 @@
     app.innerHTML = `<div id="gm" class="gm-all gm-jg ${demo ? 'gm-demo' : ''}">${navHTML(demo ? 'demo' : 'juegos')}
       <a class="gm-movil" href="/sala">📱 Abrir la versión para el teléfono</a>
       <button type="button" class="gm-fuerabtn" data-k="fuera">🖥️ Pantallas en otra ventana</button>
+      ${demo ? '<button type="button" class="gm-fuerabtn" data-k="luces" title="El iPad de las luces de Code 4, manejando el demo de este navegador: con «Anda al público» se abre el mapa para seguir al animador a mano">💡 Luces del demo</button>' : ''}
       <div class="gm-grid"><div class="gm-jgleft" data-k="left"></div>
         <div class="gm-jgright"><div class="gm-panel"><iframe title="Panel de la sala de juegos" src="${location.pathname}${demo && !open0 ? '#/simulada' : '#/juegos'}"></iframe></div><div class="gm-jgctl" data-k="ctl"></div></div></div></div>`;
     const root = $('#gm');
@@ -303,6 +304,10 @@
       away = window.open(`${location.pathname}#/master/pantallas${demo ? '-demo' : ''}`, 'gmPantallas', 'popup,width=1600,height=900');
       if (away) { root.classList.add('gm-fuera'); paintLeft(); }
     };
+    // Luces del demo (Code 4, 24 nov): su iPad de las luces en modo «control», que maneja el demo abierto en este mismo
+    // navegador (la pantalla 1); en otro equipo no funciona, porque se hablan dentro del navegador
+    const lucesBtn = root.querySelector('[data-k="luces"]');
+    if (lucesBtn) lucesBtn.onclick = () => { const w = window.open('/demo-luces/ipad.html?demo=control', 'gmLuces', 'popup,width=1100,height=820'); if (w) w.focus(); };
     const tAway = setInterval(() => { if (away && away.closed) { away = null; root.classList.remove('gm-fuera'); paintLeft(); } }, 1000);
     const fit = () => root.querySelectorAll('.gm-box').forEach((box) => { const k = `scale(${box.clientWidth / Number(box.dataset.w || 1280)})`; if (box.classList.contains('dm-cam')) box.querySelectorAll('iframe').forEach((f) => { f.style.transform = k; }); else { const f = box.querySelector('iframe:not([data-full])'); if (f) f.style.transform = k; } });
     const ro = new ResizeObserver(fit);
