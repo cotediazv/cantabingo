@@ -158,7 +158,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       s.sample.gone = true;
       // El Festival (pedido de Cote, 23 nov: «al terminar la votación… que pase directamente al siguiente participante,
       // sin un botón intermedio»): cuando salen de pantalla las 5 notas, sube solo el siguiente participante
-      if (s.phase === 'voting' && !s.open && !s.onstage) { const nx = s.players.find((p) => !p.done); if (nx) s.onstage = nx.id; }
+      if (s.phase === 'voting' && !s.open && !s.onstage) { const nx = s.players.find((p) => !p.done); if (nx) { s.onstage = nx.id; if (!karaoke()) require('./momentos.js').emit('objeto_presenta'); } }
       changed();
     }
     // La votación de cada participante se cierra sola al agotarse sus 10 segundos
@@ -232,6 +232,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       if (!p) return 'Ya participaron todos';
       s.onstage = p.id;
       s.signup = false;
+      if (!karaoke()) require('./momentos.js').emit('objeto_presenta'); // luces: muestra su objeto
       return null;
     },
     open: (s, b) => {
@@ -245,6 +246,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       // animador toca «Terminó la canción · Terminar votación». El objeto más extraño sigue con sus 8 segundos.
       s.openUntil = karaoke() ? 0 : Date.now() + openMs();
       s.signup = false; // al empezar a votar se cierran las inscripciones
+      require('./momentos.js').emit(karaoke() ? 'festival_canta' : 'objeto_votacion'); // luces
       return null;
     },
     close: (s) => {
@@ -259,6 +261,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       by(s.open).done = true;
       s.last = s.open;
       s.open = null;
+      require('./momentos.js').emit(karaoke() ? 'festival_termina' : 'objeto_votacion_fin'); // luces
       // El siguiente participante sube solo cuando salen de pantalla las 5 notas (8 s), en los dos juegos: ver el repaso
       return null;
     },
@@ -286,11 +289,12 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       if (s.phase !== 'results' && s.phase !== 'final') return 'Primero pasa a los resultados';
       if (s.revealed < s.rank.length - 2) return 'Primero revela los lugares anteriores';
       // Concurso de karaoke: sin votación nueva; redoble de tambores con los dos finalistas
-      if (s.mode === 'karaoke') { s.phase = 'final'; Object.assign(s.final, { drum: true, open: false, closed: true, at: Date.now() }); return null; }
+      if (s.mode === 'karaoke') { s.phase = 'final'; Object.assign(s.final, { drum: true, open: false, closed: true, at: Date.now() }); require('./momentos.js').emit('festival_redoble'); return null; }
       s.phase = 'final';
       s.final.open = true;
       s.final.until = Date.now() + FINAL_MS;
       s.final.closed = false;
+      require('./momentos.js').emit('objeto_final'); // luces
       return null;
     },
     closefinal: (s) => {
@@ -323,6 +327,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       s.phase = 'winner';
       s.winAt = Date.now();
       festejo(); // confeti en el GC de OBS (pedido de Cote, 23 nov)
+      require('./momentos.js').emit(karaoke() ? 'festival_ganador' : 'objeto_ganador'); require('./momentos.js').emitLater('premio_entrega', 9000); // luces
       return null;
     },
     reset: (s) => { db.vote = blank(s.mode); return null; }, // el concurso nuevo es del mismo tipo

@@ -136,7 +136,9 @@
     };
     // Sigue siempre a la sesión activa más reciente; sin sesión, la gráfica queda vacía (transparente)
     const follow = async () => {
+      if (!$('#gc')) { clearInterval(poll); return; } // ya se salió de esta pantalla
       const list = (await api('GET', '/api/current').catch(() => ({}))).sessions || [];
+      if (!$('#gc')) return;
       const next = list.length ? list[0].id : null;
       if (next === sid) return;
       leave();

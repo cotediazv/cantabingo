@@ -50,6 +50,7 @@
         ${ORDER.map((v) => `<a class="gm-tab ${on === v ? 'on' : ''}" href="#/master/${v}">${esc(VENUES[v])}</a>`).join('')}
         <a class="gm-tab ${on === 'todos' ? 'on' : ''}" href="#/master">Los 3 locales</a>
         <a class="gm-tab ${on === 'juegos' ? 'on' : ''}" href="#/master/juegos">Sala de juegos</a>
+        <a class="gm-tab ${on === 'demo' ? 'on' : ''}" href="#/master/demo">Demo</a>
         <a class="gm-tab ${on === 'conectados' ? 'on' : ''}" href="#/master/conectados">Conectados</a>
         <span class="gm-clock" data-k="clock"><b></b><i></i></span></nav>`;
   // Arriba, la fecha con el año y la hora local de los locales (hora de Chile), al segundo (pedido de Cote, 22 nov)
@@ -270,18 +271,25 @@
   // poder tener todos los botones y todas las interacciones»): a la izquierda, las 3 pantallas de la sala de juegos abierta
   // (1 GC de OBS, 2 tablero, 3 pantalla de pie), los botones del GC y los de la capa gráfica; a la derecha, el panel real
   // de la sala (crear sala, elegir el juego y manejar cada juego), para hacer todo sin salir de esta página.
-  const juegos = async () => {
+  // Demo (pedido de Cote, 23 y 24 nov): la misma pestaña «Sala de juegos», pero con la sala simulada (personas virtuales),
+  // una «cámara» simulada en la pantalla 1 (la vista 3D de Code 4, que calcula las luces en el navegador sin tocar las
+  // luces reales y muestra al animador virtual, con el GC real de la sala encima) y la vista previa del celular de la
+  // persona protagonista: automático (quien está en el escenario) o la que se elija.
+  const juegos = async (demo = false) => {
     if (!(await isAdmin())) return viewLogin();
     document.body.classList.add('gm-on');
-    app.innerHTML = `<div id="gm" class="gm-all gm-jg">${navHTML('juegos')}
+    const sim0 = demo ? await api('GET', '/api/sim').catch(() => null) : null;
+    const open0 = demo ? ((await api('GET', '/api/current').catch(() => ({}))).sessions || [])[0] : null;
+    if (demo && !location.hash.startsWith('#/master/demo')) return undefined; // ya se cambió de pestaña mientras se esperaba
+    app.innerHTML = `<div id="gm" class="gm-all gm-jg ${demo ? 'gm-demo' : ''}">${navHTML(demo ? 'demo' : 'juegos')}
       <a class="gm-movil" href="/sala">📱 Abrir la versión para el teléfono</a>
       <div class="gm-grid"><div class="gm-jgleft" data-k="left"></div>
-        <div class="gm-jgright"><div class="gm-panel"><iframe title="Panel de la sala de juegos" src="${location.pathname}#/juegos"></iframe></div><div class="gm-jgctl" data-k="ctl"></div></div></div></div>`;
+        <div class="gm-jgright"><div class="gm-panel"><iframe title="Panel de la sala de juegos" src="${location.pathname}${demo && !open0 ? '#/simulada' : '#/juegos'}"></iframe></div><div class="gm-jgctl" data-k="ctl"></div></div></div></div>`;
     const root = $('#gm');
     const left = root.querySelector('[data-k="left"]');
     const ctlBox = root.querySelector('[data-k="ctl"]'); // los botones del GC y de los efectos van a la derecha, debajo del panel de los juegos (pedido de Cote, 23 nov), para que las pantallas queden más grandes
     let alive = true; let venue = null; let stage = ''; let sigStop = null;
-    const fit = () => root.querySelectorAll('.gm-box').forEach((box) => { const f = box.querySelector('iframe:not([data-full])'); if (f) f.style.transform = `scale(${box.clientWidth / Number(box.dataset.w || 1280)})`; });
+    const fit = () => root.querySelectorAll('.gm-box').forEach((box) => { const k = `scale(${box.clientWidth / Number(box.dataset.w || 1280)})`; if (box.classList.contains('dm-cam')) box.querySelectorAll('iframe').forEach((f) => { f.style.transform = k; }); else { const f = box.querySelector('iframe:not([data-full])'); if (f) f.style.transform = k; } });
     const ro = new ResizeObserver(fit);
     const ctl = monCtl(fit);
     const key = (k, icon, text, on) => `<button type="button" class="gm-key ${on ? 'on' : ''}" data-main="${k}"><i></i><span>${icon}</span><b>${text}</b></button>`;
@@ -293,24 +301,56 @@
           <header class="gm-head"><b>Sala de juegos · ${esc(VENUES[venue])}</b><span class="gm-sala" data-k="sala"></span></header>
           <div class="gm-screens">
             <div class="gm-left">
-              <div class="gm-scr" data-n="1"><small>1 · <span data-k="p1name">GC</span></small>${TOOLS(1, true)}<div class="gm-box" data-w="1280" data-k="p1box"></div></div>
+              <div class="gm-scr" data-n="1"><small>1 · <span data-k="p1name">${demo ? 'Cámara · demo' : 'GC'}</span></small>${TOOLS(1, !demo)}<div class="gm-box ${demo ? 'dm-cam' : ''}" data-w="1280" data-k="p1box"></div></div>
               <div class="gm-scr" data-n="2"><small>2 · Tablero</small>${TOOLS(2, true)}<div class="gm-box" data-w="1280"><iframe title="Tablero de la sala de juegos" tabindex="-1" data-tab="1" src="${tabSrc(true)}"></iframe></div></div>
             </div>
-            <div class="gm-scr gm-tall" data-n="3"><small>3 · De pie</small>${TOOLS(3, false)}<div class="gm-box" data-w="720"><iframe title="Pantalla de pie de la sala de juegos" tabindex="-1" src="${page('#/tablero')}"></iframe></div></div>
+            <div class="gm-scr gm-tall" data-n="3"><small>3 · De pie</small>${TOOLS(3, false)}<div class="gm-box" data-w="720"><iframe title="Pantalla de pie de la sala de juegos" tabindex="-1" src="${page('#/tablero')}"></iframe></div></div>${demo ? `<div class="gm-scr gm-tall dm-phone" data-n="4"><small>Celular</small>${TOOLS(4, false)}<div class="gm-box" data-w="390"><iframe title="Celular de la persona protagonista" tabindex="-1"></iframe></div></div>` : ''}
           </div>
+          ${demo ? `<div class="dm-ctl"><label>Celular de <select data-k="who"><option value="">Automático: quien está en el escenario</option></select></label><span class="dm-who" data-k="whoName"></span>
+            <label class="dm-vista">Vista 3D de Code 4 <input data-k="vista" type="url" placeholder="Dirección de la vista 3D (la entrega Code 4)"><button type="button" data-k="vistaSave">Guardar</button></label></div>` : ''}
           </section>`
-        : `<section class="gm-venue gm-none"><header class="gm-head"><b>Sala de juegos</b></header>
-          <p>No hay sala de juegos abierta. Créala en el panel de al lado («Crear sala de juegos»); cuando esté abierta, aquí aparecen sus pantallas y sus botones.</p></section>`;
+        : `<section class="gm-venue gm-none"><header class="gm-head"><b>${demo ? 'Demo · sala simulada' : 'Sala de juegos'}</b></header>
+          <p>${demo ? 'Crea la sala simulada en el panel de al lado: elige el local y cuántas personas virtuales. Cuando esté lista, aquí aparecen la cámara simulada, las pantallas y el celular.' : 'No hay sala de juegos abierta. Créala en el panel de al lado («Crear sala de juegos»); cuando esté abierta, aquí aparecen sus pantallas y sus botones.'}</p></section>`;
       ctlBox.className = venue ? `gm-jgctl gm-venue th-${venue}` : 'gm-jgctl'; ctlBox.hidden = !venue;
       ctlBox.innerHTML = venue ? `<div class="gm-keys" data-k="keys"></div>
           <div class="gm-txtrow">
             <input class="gm-text" data-k="text" type="text" maxlength="120" autocomplete="off" placeholder='Texto para el GC PER y el texto 3D · "entre comillas" sale destacado'>
             <div class="gm-capa" title="Capa gráfica sobre la cámara">${CAPA.map(([k, i, t, full]) => `<button type="button" class="gm-ckey" data-capa="${k}" title="${full}" aria-label="${full}"><span>${i}</span><b>${t}</b></button>`).join('')}</div></div>` : '';
-      if (venue) sigStop = signal1(left.querySelector('[data-k="p1box"]'), venue, { fit, label: (t) => { const el = left.querySelector('[data-k="p1name"]'); if (el) el.textContent = t; } });
+      if (venue && demo) demoCam(); else if (venue) sigStop = signal1(left.querySelector('[data-k="p1box"]'), venue, { fit, label: (t) => { const el = left.querySelector('[data-k="p1name"]'); if (el) el.textContent = t; } });
       root.querySelectorAll('.gm-box').forEach((b) => ro.observe(b));
       ctl.attach(venue ? left.querySelector('.gm-screens') : null, sigStop);
+      if (demo && venue) { phoneSrc = ''; whoList = ''; demoWho(); }
       paintKeys(); fit();
     };
+    // ---------- Demo ----------
+    let vista = (sim0 && sim0.vista) || ''; let phoneSrc = ''; let whoList = ''; let who = '';
+    // Pantalla 1: la vista 3D de Code 4 (con las luces y el animador virtual) y, encima, el GC real de la sala
+    function demoCam() {
+      const box = left.querySelector('[data-k="p1box"]'); if (!box) return;
+      const mom = `${location.origin}/api/momentos`;
+      const v3d = vista ? `${vista}${vista.includes('?') ? '&' : '?'}momentos=${encodeURIComponent(mom)}` : '';
+      box.innerHTML = `${v3d ? `<iframe class="dm-v3d" title="Vista 3D del salón (Code 4)" src="${esc(v3d)}"></iframe>` : '<div class="dm-stage"><span>La cámara simulada (la vista 3D del salón con las luces y el animador, de Code 4) aparece aquí cuando esté lista. Mientras tanto se ve solo el GC.</span></div>'}<iframe class="dm-gc" title="GC de la sala de juegos" tabindex="-1" src="${page('#/escena')}"></iframe>`;
+      const vi = left.querySelector('[data-k="vista"]'); if (vi) vi.value = vista;
+      fit();
+    }
+    // El celular: el de quien está en el escenario (automático) o el que se elige
+    async function demoWho() {
+      const r = await api('GET', `/api/sim/protagonista${who ? `?token=${encodeURIComponent(who)}` : ''}`).catch(() => null);
+      if (!alive || !r) return;
+      const sel = left.querySelector('[data-k="who"]');
+      const listKey = (r.people || []).map((x) => x.token).join(',');
+      if (sel && listKey !== whoList) { whoList = listKey; sel.innerHTML = `<option value="">Automático: quien está en el escenario</option>${(r.people || []).map((x) => `<option value="${esc(x.token)}">${esc(x.name)}</option>`).join('')}`; sel.value = who; }
+      const nm = left.querySelector('[data-k="whoName"]'); if (nm) nm.textContent = r.token ? `${r.name}${r.why ? ` · ${r.why}` : ''}` : 'nadie en la sala';
+      const f = left.querySelector('.dm-phone iframe');
+      const src = r.token && r.sid ? `${location.pathname}?como=${encodeURIComponent(r.token)}&mudo=1&mon=1#/jugar/${r.sid}` : '';
+      if (f && src !== phoneSrc) { phoneSrc = src; f.src = src || 'about:blank'; }
+    }
+    left.addEventListener('change', (e) => { if (e.target.matches('[data-k="who"]')) { who = e.target.value; demoWho(); } });
+    left.addEventListener('click', async (e) => {
+      if (!e.target.matches('[data-k="vistaSave"]')) return;
+      const v = left.querySelector('[data-k="vista"]').value.trim();
+      try { const r = await api('POST', '/api/sim/vista', { url: v }); vista = r.vista || ''; demoCam(); toast(vista ? 'Vista 3D guardada' : 'Vista 3D quitada'); } catch (err) { fail(err); }
+    });
     const load = async () => {
       const r = await api('GET', '/api/consola').catch(() => null);
       if (!alive || !r) return;
@@ -318,6 +358,7 @@
       const v = loc ? loc.venue : null;
       const st = loc ? loc.main.stage : '';
       if (v !== venue) { venue = v; stage = st; paintLeft(); } else if (st !== stage) { stage = st; paintKeys(); }
+      if (demo && venue) demoWho();
       const sala = left.querySelector('[data-k="sala"]');
       if (sala && loc) sala.textContent = `En pantalla: ${loc.main.stageName}`;
       const ti = ctlBox.querySelector('[data-k="text"]'); if (ti && loc && loc.main.perText && !ti.value && document.activeElement !== ti) ti.value = loc.main.perText; // el último texto del GC PER queda a mano
@@ -715,5 +756,5 @@
     return () => { alive = false; clearInterval(t1); clearInterval(t3); clearTimeout(tq); document.body.classList.remove('gm-on'); };
   };
 
-  views.master = (v) => (v === 'movil' ? movil() : v === 'clientes' ? clientes() : v === 'conectados' ? conectados() : v === 'juegos' ? juegos() : VENUES[v] ? master([v], true) : master(ORDER, false));
+  views.master = (v) => (v === 'movil' ? movil() : v === 'clientes' ? clientes() : v === 'conectados' ? conectados() : v === 'juegos' ? juegos() : v === 'demo' ? juegos(true) : VENUES[v] ? master([v], true) : master(ORDER, false));
 })();

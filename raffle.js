@@ -95,6 +95,7 @@ module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, 
     r.picked.push(winner);
     conf()[winner] = 'pending'; // espera que confirme desde su celular
     setStage('sorteo');
+    require('./momentos.js').emit('tombola_gira'); require('./momentos.js').emitLater('tombola_resultado', ROLL_MS); // luces: todas las tómbolas
     save();
     res.json({ winner, picked: r.picked });
   });
@@ -123,6 +124,7 @@ module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, 
     r.mode = 'tie';
     s.tieWinner = { name: pick.name, cardNo: pick.cardNo, at: r.tie.at };
     setStage('sorteo');
+    require('./momentos.js').emit('tombola_gira'); require('./momentos.js').emitLater('tombola_resultado', ROLL_MS); // luces: desempate del bingo
     save();
     refreshAll();
     res.json({ winner: pick.name });

@@ -63,7 +63,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     const c = w.players[w.turn];
     if (w.runningSince || !active(c)) return;
     w.runningSince = Date.now();
-    timers[w.id] = setTimeout(() => { settle(w); w.onScreen = false; passTurn(w); rankSeen(w); broadcast(w); }, c.remainingMs + 30);
+    timers[w.id] = setTimeout(() => { settle(w); w.onScreen = false; passTurn(w); rankSeen(w); broadcast(w); require('./momentos.js').emit('rosko_tiempo'); }, c.remainingMs + 30); // se acabó el reloj (luces)
   }
   // Avanza a la siguiente letra abierta del concursante; false si ya no le quedan
   function nextLetter(c) {
@@ -418,6 +418,14 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     rankSeen(w);
     const had = winnerOf(w) >= 0; const hadCrowd = !!((w.crowd || {}).winner);
     const error = act(w, String((req.body || {}).action), req.body || {});
+    // Luces (lista acordada con Code 4): el momento de cada botón del panel
+    if (!error) {
+      const act2 = String((req.body || {}).action); const on = (req.body || {}).on !== false;
+      const name = { start: 'rosko_pregunta', hit: 'rosko_correcta', miss: 'rosko_incorrecta', pass: 'rosko_pasa' }[act2] || (act2 === 'rank' ? (on ? 'rosko_ranking' : 'rosko_ranking_fin') : '');
+      if (act2 === 'start' && !w.runningSince) { /* no partió (sin letras): nada */ } else if (name) require('./momentos.js').emit(name);
+      if (act2 === 'acceptwin') { require('./momentos.js').emit('rosko_ganador'); require('./momentos.js').emitLater('premio_entrega', 9000); }
+      if (act2 === 'crowdwin' && (w.crowd || {}).winner && !w.crowd.winner.none) { require('./momentos.js').emit('trivia_ganador'); require('./momentos.js').emitLater('premio_entrega', 9000); }
+    }
     rankSeen(w);
     if (error) return fail(res, 400, error);
     // Confeti en el GC cuando aparece el ganador de El Rosko o el de la Trivia (pedido de Cote, 23 nov)
@@ -447,7 +455,8 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     db.raffle.mode = 'tie';
     setStage('sorteo');
     broadcast(w);
-    setTimeout(() => { broadcast(w); festejo(); }, TIE_ROLL_MS + 200); // al terminar la tómbola, el panel recibe al ganador
+    setTimeout(() => { broadcast(w); festejo(); }, TIE_ROLL_MS + 200);
+    require('./momentos.js').emit('tombola_gira'); require('./momentos.js').emitLater('tombola_resultado', TIE_ROLL_MS); // al terminar la tómbola, el panel recibe al ganador
     res.json({ ok: true });
   });
 

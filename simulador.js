@@ -62,7 +62,55 @@ module.exports = function simulador({ app, db, save, requireAdmin, fail, port, p
     for (const b of bots) fakeConnect(sid, b.token);
     return res.json({ ok: true, n: bots.length });
   });
-  app.get('/api/sim', (_req, res) => { const m = sim(); res.json(m ? { on: true, sid: m.sid, n: m.bots.length } : { on: false }); });
+  app.get('/api/sim', (_req, res) => { const m = sim(); res.json(m ? { on: true, sid: m.sid, n: m.bots.length, vista: db.demoVista || '' } : { on: false, vista: db.demoVista || '' }); });
+
+  // ---------- Demo del GC Master (pedido de Cote, 23 y 24 nov) ----------
+  // Dirección de la vista 3D de Code 4 (la copia que calcula las luces en el navegador, sin tocar las luces reales)
+  app.post('/api/sim/vista', requireAdmin, (req, res) => {
+    const url = String((req.body || {}).url || '').trim();
+    if (url && !/^https:\/\/[^\s"'<>]+$/.test(url)) return fail(res, 400, 'La dirección tiene que empezar con https://');
+    db.demoVista = url.slice(0, 400);
+    save();
+    res.json({ vista: db.demoVista });
+  });
+  // La persona protagonista: quien está en el escenario según el juego en pantalla (o la que se eligió)
+  const byName = (s, name) => { if (!name) return null; const t = Object.keys(s.players).find((k) => s.players[k].name === name); return t || null; };
+  function protagonist(s) {
+    const st = db.stage;
+    if (st === 'rueda') {
+      const w = Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0];
+      const c = w && w.players && w.players[w.turn];
+      const t = c && byName(s, c.name); if (t) return { token: t, why: 'su turno en El Rosko' };
+    }
+    if (st === 'voto' && db.vote) {
+      const v = db.vote; const id = v.open || v.onstage || (v.winner && v.winner.id);
+      const p = (v.players || []).find((x) => x.id === id);
+      if (p && p.by && s.players[p.by]) return { token: p.by, why: v.mode === 'karaoke' ? 'en El Festival' : 'muestra su objeto' };
+    }
+    if (st === 'enpie' && db.enpie) {
+      const e = db.enpie; const f = e.fin;
+      if (f && f.players && f.players[f.turn] && s.players[f.players[f.turn].token]) return { token: f.players[f.turn].token, why: 'su turno en la final' };
+      const t = byName(s, e.winner && e.winner.name); if (t) return { token: t, why: 'ganó El último en pie' };
+    }
+    if (st === 'sorteo') {
+      const r = db.raffle || {};
+      const t = byName(s, s.tieWinner && s.tieWinner.name) || byName(s, (r.picked || [])[(r.picked || []).length - 1]);
+      if (t) return { token: t, why: 'salió en el sorteo' };
+    }
+    const res = (s.results || []).filter((r) => r.validated && !r.dismissed);
+    const w = res[res.length - 1]; const t = w && byName(s, w.name);
+    if (t) return { token: t, why: 'ganó el bingo' };
+    return null;
+  }
+  app.get('/api/sim/protagonista', requireAdmin, (req, res) => {
+    const s = Object.values(db.sessions)[0];
+    if (!s) return res.json({ sid: null, token: null, people: [] });
+    const people = Object.entries(s.players).map(([token, p]) => ({ token, name: p.name })).sort((a, b) => a.name.localeCompare(b.name, 'es'));
+    const asked = String(req.query.token || '');
+    let r = asked && s.players[asked] ? { token: asked, why: 'elegida' } : protagonist(s);
+    if (!r && people.length) r = { token: people[0].token, why: 'nadie en el escenario todavía' };
+    res.json({ sid: s.id, token: r ? r.token : null, name: r ? s.players[r.token].name : '', why: r ? r.why : '', people });
+  });
 
   // ---------- Cada segundo: las personas virtuales miran lo que está pasando y actúan, cada una a su ritmo ----------
   const delay = (b, lo, hi) => rnd(lo, hi) * 1000 * b.speed;

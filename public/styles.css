@@ -3332,3 +3332,23 @@ body.con-paso #ctl-reload-fixed { top: calc(var(--paso-h, 64px) + 20px); }
 .home-sim { margin-top: 10px; opacity: .9; }
 .home-simtag { display: block; margin-top: 6px; font-size: .85rem; font-weight: 700; opacity: .9; }
 .sim-bar { margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; background: rgba(255, 196, 0, .12); border: 2px dashed #ffc400; color: #ffe08a; }
+
+/* «Anda al público» en el panel del bingo (pedido de Cote, 24 nov, para las luces) */
+.publico-hint { margin: 10px auto 0; max-width: 560px; padding: 10px 14px; border-radius: 12px; background: rgba(22, 163, 74, .14); border: 2px solid #16a34a; color: #d1fae5; text-align: center; font-weight: 600; }
+
+/* Demo del GC Master (pedido de Cote, 23 y 24 nov): cámara simulada con el GC encima y el celular de la persona protagonista */
+.gm-demo .dm-cam { position: relative; background: #0c0b12; }
+.gm-demo .dm-cam iframe { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; border: 0; transform-origin: 0 0; }
+.gm-demo .dm-cam .dm-gc { background: transparent; pointer-events: none; }
+.gm-demo .dm-stage { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 8%; text-align: center; color: #b9b4c9; font-size: 13px; background: radial-gradient(ellipse at 50% 30%, #2a2340 0%, #0c0b12 70%); }
+.gm-demo .dm-phone .gm-box { aspect-ratio: 390 / 760; background: #000; border-radius: 14px; }
+.gm-demo .dm-phone .gm-box iframe { width: 390px; height: 760px; }
+.gm-demo .dm-ctl { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-top: 8px; font-size: 13px; }
+.gm-demo .dm-ctl select, .gm-demo .dm-ctl input { margin-left: 6px; max-width: 260px; }
+.gm-demo .dm-vista { display: flex; align-items: center; gap: 6px; flex: 1 1 320px; }
+.gm-demo .dm-vista input { flex: 1; min-width: 0; }
+/* Demo: el celular va como tercera columna, del mismo alto que la pantalla de pie */
+.gm-demo .gm-screens { grid-template-columns: minmax(0, 1fr) minmax(0, .6328fr) minmax(0, .577fr); gap: 0 8px; }
+.gm-demo .dm-phone .gm-box { aspect-ratio: 390 / 760; max-width: none; }
+@media (max-width: 700px) { .gm-demo .gm-screens { grid-template-columns: minmax(0, 1fr); } .gm-demo .dm-phone .gm-box { max-width: 300px; } }
+.gm-demo .dm-who { color: #f4bf5a; font-weight: 700; }

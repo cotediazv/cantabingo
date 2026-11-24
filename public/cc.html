@@ -397,7 +397,9 @@ views.bingo = function () {
           o += '</div>';
         }
         o += '<div class="center">' + btn(st.bigQr ? '📱 QR grande en pantalla: quitar' : '📱 Mostrar QR grande en pantalla', 'bigqr', d('on', st.bigQr ? '' : '1')) + '</div>';
-        o += btn('Generar un número', 'host', d('x', 'draw'), 'big primary paso', w.length > 0);
+        // «Anda al público» (pedido de Cote, 24 nov, para las luces): después de los primeros ocho números
+        if (st.publico && st.publico.due) o += btn('🚶 Anda al público', 'host', d('x', 'publico'), 'big primary paso', w.length > 0) + '<p class="muted center">Baja al público: anda mesa por mesa preguntando los números.</p>';
+        else o += btn('Generar un número', 'host', d('x', 'draw'), 'big primary paso', w.length > 0);
         o += '<div class="center">' + btn('Selección manual', 'manual', '', manual ? 'on' : '') + '</div>';
         if (manual) {
           o += '<div class="grid75">';

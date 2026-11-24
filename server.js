@@ -182,7 +182,7 @@ const currentGame = (s) => {
   if (st === 'bingo') return bingoStarted(s) && !roundOver(s) ? { game: 'bingo' } : null;
   return null;
 };
-function publicState(s, full = false) {
+function publicState(s, full = false) { // eslint-disable-line complexity
   const p = db.projects[s.projectId];
   const results = full ? s.results : s.results.filter((r) => r.validated && !r.dismissed).map((r) => ({ cardNo: r.cardNo, pattern: r.pattern, validated: true, name: r.name }));
   return {
@@ -202,7 +202,8 @@ function publicState(s, full = false) {
     // El juego en pantalla ya terminó (concurso con ganador o rosco con ganador aceptado): los celulares no muestran sus instrucciones
     stageDone: db.stage === 'enpie' ? (db.enpie || {}).phase === 'done' : db.stage === 'voto' ? !!(db.vote || {}).winner : db.stage === 'rueda' ? !!(Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).winAccepted : false,
     winConfirmed: roundOver(s), winConfirmedAt: s.confirmedAt || 0, now: Date.now(),
-    started: bingoStarted(s), // el bingo de esta ronda empezó (figura elegida o ya hay números); antes, la sala espera el primer juego
+    started: bingoStarted(s),
+    publico: { at: PUBLICO_AT, due: needsPublico(s), done: s.publicoRound === s.round }, // «Anda al público» (luces) // el bingo de esta ronda empezó (figura elegida o ya hay números); antes, la sala espera el primer juego
     patterns: s.patterns, drawn: s.drawn, results, finalists: s.finalists || null,
     auto: s.auto, cardsPerPlayer: s.cardsPerPlayer, totalCards: p.cards.length,
     players: Object.values(s.players).length,
@@ -231,8 +232,13 @@ function broadcast(s, now = false) {
 function stopAuto(s) { clearInterval(timers[s.id]); delete timers[s.id]; s.auto.on = false; }
 // Con el ganador confirmado el sorteo terminó: no salen más números hasta la siguiente ronda
 const roundOver = (s) => s.results.some((r) => r.confirmed && !r.dismissed);
+// «Anda al público» (pedido de Cote, 24 nov, para las luces): después de los primeros ocho números del bingo, el
+// animador tiene que bajar al público antes de seguir; el panel no deja sacar el noveno número hasta que lo acepta.
+const PUBLICO_AT = 8;
+const needsPublico = (s) => s.drawn.length >= PUBLICO_AT && s.publicoRound !== s.round && !roundOver(s);
 function draw(s, value) {
   if (roundOver(s)) return false;
+  if (needsPublico(s)) { stopAuto(s); return false; }
   const p = db.projects[s.projectId];
   if (value == null) {
     const drawn = new Set(s.drawn);
@@ -242,9 +248,11 @@ function draw(s, value) {
     value = left[crypto.randomInt(left.length)];
   } else if (!(value >= 1 && value <= p.values) || s.drawn.includes(value)) return false;
   s.drawn.push(value);
+  require('./momentos.js').emit('bingo_numero');
   if (db.stage === 'qr') setStage('bingo');
   s.bigQr = false; // al salir el primer número se retira el QR grande de la pantalla
   const added = evaluate(s);
+  if (added) require('./momentos.js').emit('bingo_ganador_aparece'); // hay ganador: las luces vuelven al escenario
   if ((added && s.auto.stopOnWin) || s.drawn.length >= p.values) stopAuto(s);
   return true;
 }
@@ -479,7 +487,9 @@ app.post('/api/projects/:id/session', (req, res) => {
   // Una sola sala a la vez: mientras haya una abierta no se puede activar otra
   const open = Object.values(db.sessions)[0];
   if (open) return fail(res, 409, `Ya hay una sala abierta (${open.name}). Ciérrala en el Centro de control para crear otra.`);
-  res.json({ id: startSession(p, req.body || {}).id });
+  const started = startSession(p, req.body || {});
+  require('./momentos.js').emit('sala_abierta');
+  res.json({ id: started.id });
 });
 function startSession(p, b) {
   const s = {
@@ -510,7 +520,13 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
   switch (req.params.action) {
     case 'draw':
       if (roundOver(s)) return fail(res, 400, 'El ganador ya fue confirmado: para seguir hay que iniciar la siguiente ronda');
+      if (needsPublico(s)) return fail(res, 409, 'Primero anda al público: toca «Anda al público»');
       if (!draw(s, b.value == null ? null : parseInt(b.value, 10))) return fail(res, 400, 'No se pudo generar ese valor');
+      break;
+    case 'publico': // el animador acepta bajar al público: las luces pasan a seguirlo
+      if (s.drawn.length < PUBLICO_AT) return fail(res, 409, `Todavía no: se baja al público después de los primeros ${PUBLICO_AT} números`);
+      s.publicoRound = s.round;
+      require('./momentos.js').emit('bingo_al_publico');
       break;
     case 'auto':
       stopAuto(s);
@@ -539,6 +555,7 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
       stopAuto(s);
       s.confirmedAt = Date.now();
       festejo(); // confeti en el GC
+      require('./momentos.js').emit('bingo_ganador_confirmado'); require('./momentos.js').emitLater('premio_entrega', PREMIO_MS);
       // Quien no fue confirmado queda fuera: el cartel muestra solo al ganador aceptado
       for (const r of s.results) if (!r.confirmed) r.dismissed = true;
       if (tied) { s.hideWin = false; setStage('bingo'); } // vuelve la gráfica del bingo, con la celebración del ganador único
@@ -755,7 +772,11 @@ const setStage = (show) => {
 // que haya un ganador»): bingo (ganador confirmado), El Rosko y su Trivia, El Festival y El objeto más extraño. Es el
 // mismo efecto «Confeti» de la capa gráfica, disparado solo, en el local de la sala abierta.
 let capaFire = () => {};
+// Luces: después de la secuencia del ganador viene la entrega del premio (Cote, 24 nov: «después de la celebración, sube
+// el ganador y le entregan el vino: fondo rojo»; y «puede ser en el botón cuando se acepta el ganador»)
+const PREMIO_MS = 9000;
 const festejo = () => { const s = Object.values(db.sessions)[0]; if (s) capaFire(s.theme || 'frida', 'confeti'); };
+require('./momentos.js').init({ app, db, aviso }); // momentos de los juegos para las luces (lista acordada con Code 4)
 const wheel = require('./wheel.js')({ app, db, save, requireAdmin, fail, setStage, festejo, findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null });
 roscoRef = wheel;
 // Tras corregir un nombre, se vuelve a enviar el estado a todas las pantallas abiertas
@@ -932,6 +953,7 @@ app.post('/api/gamedraw/ready', requireAdmin, (_req, res) => {
   drawSnap(g);
   g.ready = { at: Date.now(), pool: DRAW_GAMES.filter((x) => !(g.last && g.last.game === x)) };
   save();
+  require('./momentos.js').emit('juego_siguiente');
   if (setStage('juego') === false) return fail(res, 409, 'El Rosko está en juego: el sorteo se verá cuando termine la partida');
   res.json(db.gameDraw);
 });
@@ -944,6 +966,7 @@ app.post('/api/gamedraw/pick', requireAdmin, (req, res) => {
   drawSnap(g);
   g.played = [game]; g.list.push(game); g.ready = null; g.seq = (g.seq || 0) + 1;
   g.last = { game, pool: [game], at: Date.now(), direct: true };
+  require('./momentos.js').emit('juego_siguiente');
   if (game === 'festival' || game === 'objeto') startContest(game);
   save();
   setStage('juego');
@@ -962,6 +985,7 @@ app.post('/api/gamedraw', requireAdmin, (_req, res) => {
   g.last = { game, pool, at: Date.now() };
   if (game === 'festival' || game === 'objeto') startContest(game); // la votación queda lista con su título
   save();
+  require('./momentos.js').emit('tombola_gira'); require('./momentos.js').emitLater('tombola_resultado', 4800);
   if (setStage('juego') === false) return fail(res, 409, 'El Rosko está en juego: el sorteo se verá cuando termine la partida');
   res.json(db.gameDraw);
 });

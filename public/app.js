@@ -10,7 +10,15 @@ window.rankAnnHtml = (rank, players, final) => `<div class="panel ann rank-ann">
   ${rank.length ? `<ol class="rank-ann-list">${rank.map((t, i) => `<li class="${i < 3 ? 'top' : ''}"><em>${i + 1}.º</em><b>${esc(t.name)}</b><i>${t.score} pts</i></li>`).join('')}</ol>` : '<span class="ann-l">Todavía nadie suma puntos</span>'}
   <span class="ann-l">${players} ${players === 1 ? 'persona jugando' : 'personas jugando'}</span></div>`;
 window.annHtml = (title, names, lines = []) => `<div class="panel ann"><small>📣 Para anunciar</small><span class="ann-t">${esc(title)}</span>${names.map((n) => `<b class="ann-n">${esc(n)}</b>`).join('')}${lines.filter(Boolean).map((l) => `<span class="ann-l">${esc(l)}</span>`).join('')}</div>`;
-const store = {
+// Demo del GC Master: `?como=<token>` muestra el celular de esa persona (de la sala simulada) con una memoria aparte,
+// sin tocar la del navegador del moderador
+const COMO = new URLSearchParams(location.search).get('como');
+const memo = {};
+const store = COMO ? {
+  get: (k) => (k.startsWith('tok_') ? COMO : k in memo ? memo[k] : null),
+  set: (k, v) => { memo[k] = String(v); },
+  del: (k) => { delete memo[k]; },
+} : {
   get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
   set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* sin almacenamiento */ } },
   del: (k) => { try { localStorage.removeItem(k); } catch { /* sin almacenamiento */ } },
@@ -688,6 +696,7 @@ async function hostConsole(p) {
           </div>
           <div class="row" style="justify-content:center;margin-top:16px"><button id="bigqr"></button></div>
           <div class="row" style="justify-content:center;margin-top:12px"><button class="primary big paso" id="gen">Generar un número</button></div>
+          <p class="publico-hint" id="publico-hint" hidden>Llevas los primeros números desde el escenario. Ahora baja al público: anda mesa por mesa preguntando los números y vuelve al escenario cuando haya ganador.</p>
           <div class="row" style="justify-content:center;margin-top:14px">
             <label class="small" hidden>Pausa <input type="number" id="interval" min="5" max="60" value="10" style="width:70px"> s</label>
             <label class="check" hidden><input type="checkbox" id="stop" checked> Detener al completarse un cartón</label>
@@ -716,9 +725,14 @@ async function hostConsole(p) {
     $('#count').style.display = manual ? '' : 'none';
     $('#board').style.display = manual ? '' : 'none';
     $('#history').innerHTML = st.drawn.map((v) => `<span>${esc(plain(st, v))}</span>`).join('') || '<span class="muted">Aún no se ha generado ningún valor.</span>';
-    $('#gen').disabled = st.drawn.length >= st.values || st.auto.on || st.winConfirmed; // ganador confirmado = sorteo terminado
+    $('#gen').disabled = st.drawn.length >= st.values || (st.auto.on && !(st.publico && st.publico.due)) || st.winConfirmed; // ganador confirmado = sorteo terminado
     $('#auto').disabled = !!st.winConfirmed;
-    $('#gen').textContent = st.winConfirmed ? 'Sorteo terminado' : 'Generar un número';
+    // «Anda al público» (pedido de Cote, 24 nov, para las luces): después de los primeros ocho números, el mismo botón verde
+    // pide bajar al público y no deja seguir hasta aceptarlo; las luces pasan a seguir al animador por el salón
+    const publico = !!(st.publico && st.publico.due);
+    $('#gen').dataset.publico = publico ? '1' : '';
+    $('#publico-hint').hidden = !publico;
+    $('#gen').textContent = st.winConfirmed ? 'Sorteo terminado' : publico ? '🚶 Anda al público' : 'Generar un número';
     $('#gen').classList.toggle('paso', !st.winConfirmed); // con el ganador confirmado ya no es el paso que sigue
     $('#auto').textContent = st.auto.on ? '⏸ Detener automático' : '▶ Modo automático';
     $('#auto').classList.toggle('on', st.auto.on);
@@ -771,7 +785,7 @@ async function hostConsole(p) {
     $('#final').innerHTML = st.finalists ? `<p><b>Selección final:</b> ${st.finalists.map((c) => '#' + (p.startNumber + c - 1)).join(', ') || 'no hay cartones validados'}</p>` : '';
     if (st.drawn.length !== spoken) { if (spoken >= 0 && st.drawn.length > spoken) speak(speakText(st, st.drawn.at(-1))); spoken = st.drawn.length; }
   };
-  $('#gen').onclick = () => act('draw');
+  $('#gen').onclick = () => act($('#gen').dataset.publico ? 'publico' : 'draw');
   $('#confirmwin').onclick = () => act('confirmwin');
   $('#keepplaying').onclick = () => act('keepplaying');
   $('#tiebreak').onclick = () => api('POST', '/api/raffle/tiebreak', { sid }).catch(fail);
