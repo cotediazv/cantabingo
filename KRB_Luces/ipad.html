@@ -187,6 +187,19 @@
     <div class="row"><span class="help" style="margin:0 6px 0 0">Velocidad de los efectos:</span>
       <button class="chip" data-vel="0">Lenta</button><button class="chip act" data-vel="1">Media</button><button class="chip" data-vel="2">Rápida</button>
     </div>
+
+    <h2 class="sec">Programas en movimiento</h2>
+    <div class="fxrow">
+      <button class="big" data-prog="colores">Cabezas al escenario · colores<small>Cabezas 1 y 2 al escenario, sin blanco: azul, rojo, verde, amarillo</small></button>
+      <button class="big" data-prog="pared">Colores + pared que se apaga<small>Igual, y la pared: azul, apagado, rojo, apagado, verde, apagado, amarillo, apagado</small></button>
+      <button class="big" id="grabar">● Grabar programa<small>Graba lo que hagas con las luces (hasta 2 min) para repetirlo con un botón</small></button>
+    </div>
+    <div class="row" style="flex-wrap:nowrap">
+      <span class="help" style="margin:0;white-space:nowrap">Velocidad de cambio</span>
+      <input type="range" id="progVel" min="0.3" max="4" step="0.1" value="1.5" style="flex:1;height:34px;margin:0">
+      <span class="help" style="margin:0;white-space:nowrap" id="progVelTxt">1.5 s por color</span>
+    </div>
+    <div class="row" id="progGrabados"></div>
   </section>
 
   <!-- ===== SEGUIR ===== -->
@@ -424,6 +437,97 @@ function pintarEfectos(){
   $('fxMini').classList.toggle('act', efectosActivos.includes('mover:mini'));
 }
 
+/* ---------- Envios grandes por POST (programas, datos guardados) ---------- */
+async function postApi(ruta, params){
+  const r = await fetch(ruta, {method:'POST', body:new URLSearchParams(params), credentials:'same-origin', cache:'no-store'});
+  if (r.status === 401){ pedirClave(); throw new Error('clave'); }
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+async function efectoPost(id, params){ try { pintarEstado(await postApi('/api/efecto', {id, ...params})); } catch(e){ sinConexion(); } }
+async function guardarDatos(){ return postApi('/api/guardar', {d: JSON.stringify(datos)}); }
+
+/* ---------- Programas en movimiento (corren en el Dell, como los efectos) ---------- */
+const CICLO = ['azul', 'rojo', 'verde', 'amarillo'];
+let progActivo = null, grab = null;
+const cabezasProg = () => segIds().slice(0, 2);                       // cabezas 1 y 2
+function valoresCon(ids, color, on){
+  const s = {}; ids.forEach(id => { const g = grupo(id); if (g) Object.assign(s, valoresGrupo(g, {...zona(id), color, intensidad: on ? 100 : 0})); }); return s;
+}
+function iniciarListo(tipo){
+  const T = +$('progVel').value, heads = cabezasProg();
+  heads.forEach(id => { const z = zona(id); fijarPosicion(z, 'escenario', id); z.intensidad = 100; z.color = 'azul'; });  // mirando al escenario, sin blanco
+  enviarGrupos(heads, 0);
+  const pasos = [];
+  if (tipo === 'colores'){
+    CICLO.forEach(c => pasos.push(valoresCon(heads, c, true)));
+    efectoPost('programa', {tipo:'sec', pasos:pasosTxt(pasos), t:T, fx:0.12});
+  } else {                                                            // la pared se apaga entre colores; lo demas sigue
+    if (efectoPared) efectoParedOff();
+    CICLO.forEach(c => {
+      pasos.push({...valoresCon(heads, c, true), ...valoresCon(idsPared(), c, true)});
+      pasos.push({...valoresCon(heads, c, true), ...valoresCon(idsPared(), c, false)});
+    });
+    efectoPost('programa', {tipo:'sec', pasos:pasosTxt(pasos), t:T / 2, fx:0});
+  }
+  progActivo = tipo; pintarProgramas(); pintarZonas();
+}
+function iniciarGrabado(i){
+  const p = (datos.programas || [])[i]; if (!p) return;
+  const pasos = p.pasos.map(fila => p.ch.map((c, k) => (c + 1) + ':' + fila[k]).join(',')).join('|');
+  efectoPost('programa', {tipo:'sec', pasos, t:p.t || 0.1, fx:1});
+  progActivo = 'g' + i; pintarProgramas(); toast('▶ ' + p.nombre);
+}
+function detenerPrograma(){ if (progActivo){ efecto('programa', {off:1}); progActivo = null; pintarProgramas(); } }
+document.querySelectorAll('[data-prog]').forEach(b => b.onclick = () => progActivo === b.dataset.prog ? detenerPrograma() : iniciarListo(b.dataset.prog));
+$('progVel').oninput = () => { $('progVelTxt').textContent = (+$('progVel').value).toFixed(1) + ' s por color'; };
+$('progVel').onchange = () => { if (progActivo === 'colores' || progActivo === 'pared') iniciarListo(progActivo); };
+
+/* Grabar: captura 10 veces por segundo lo que sale por el cable (todo lo que se haga: mapa, colores, escenas) */
+async function empezarGrabacion(){
+  detenerPrograma();
+  grab = { muestras: [] }; pintarProgramas(); toast('Grabando: mueve las luces como quieras');
+  while (grab){
+    const t = performance.now();
+    try { const e = await api('/api/estado'); if (grab) grab.muestras.push(e.salida); } catch(e){}
+    if (grab && grab.muestras.length >= 1200){ await terminarGrabacion(); break; }  // maximo 2 minutos
+    if (grab) $('grabar').firstChild.textContent = '■ Detener grabación (' + Math.round(grab.muestras.length / 10) + ' s)';
+    const resto = 100 - (performance.now() - t); if (resto > 0) await new Promise(r => setTimeout(r, resto));
+  }
+}
+async function terminarGrabacion(){
+  const m = grab ? grab.muestras : []; grab = null; pintarProgramas();
+  if (m.length < 5) return toast('Grabación muy corta');
+  const ch = []; for (let c = 0; c < 512; c++) if (m.some(f => f[c] !== m[0][c])) ch.push(c);
+  if (!ch.length) return toast('No hubo cambios en las luces');
+  const nombre = (prompt('Nombre del programa', 'Programa ' + ((datos.programas || []).length + 1)) || '').trim() || ('Programa ' + ((datos.programas || []).length + 1));
+  datos.programas = datos.programas || [];
+  datos.programas.push({ nombre, t: 0.1, ch, pasos: m.map(f => ch.map(c => f[c])) });
+  try { await guardarDatos(); toast('Programa guardado: ' + nombre); } catch(e){ toast('No se pudo guardar en el Dell'); }
+  pintarProgramas();
+}
+$('grabar').onclick = () => grab ? terminarGrabacion() : empezarGrabacion();
+function pintarProgramas(){
+  document.querySelectorAll('[data-prog]').forEach(b => b.classList.toggle('act', progActivo === b.dataset.prog));
+  $('grabar').classList.toggle('act', !!grab);
+  if (!grab) $('grabar').firstChild.textContent = '● Grabar programa';
+  const cont = $('progGrabados'); cont.innerHTML = '';
+  (datos.programas || []).forEach((p, i) => {
+    const b = document.createElement('button'); b.className = 'chip' + (progActivo === 'g' + i ? ' act' : '');
+    b.textContent = (progActivo === 'g' + i ? '■ ' : '▶ ') + p.nombre + ' · ' + Math.round(p.pasos.length * (p.t || 0.1)) + ' s';
+    b.onclick = () => progActivo === 'g' + i ? detenerPrograma() : iniciarGrabado(i);
+    const x = document.createElement('button'); x.className = 'chip'; x.textContent = '🗑'; x.title = 'Borrar ' + p.nombre;
+    x.onclick = async () => {
+      if (!confirm('¿Borrar el programa "' + p.nombre + '"?')) return;
+      if (progActivo === 'g' + i) detenerPrograma();
+      datos.programas.splice(i, 1);
+      try { await guardarDatos(); } catch(e){ toast('No se pudo guardar en el Dell'); }
+      pintarProgramas();
+    };
+    cont.appendChild(b); cont.appendChild(x);
+  });
+}
+
 /* ---------- Escenas ---------- */
 function pintarEscenas(){
   const grid = $('sceneGrid'); grid.innerHTML = '';
@@ -447,7 +551,7 @@ async function aplicarEscena(i){
     zonas[g.id] = z;
   });
   escenaActiva = i; efectoPared = null;
-  await efecto('todos', {todos:'off'});
+  await efecto('todos', {todos:'off'}); progActivo = null; pintarProgramas();   // una escena detiene los programas
   enviarGrupos(todosLosIds(), fade);
   (e.efectos || []).forEach(x => {
     const [tipo, id] = x.split(':');
@@ -594,7 +698,7 @@ async function guardarEsquina(k){
     (datos.calibracion[id] = datos.calibracion[id] || {})[k] = {pan: Math.round(z.pan != null ? z.pan : 128), tilt: Math.round(z.tilt != null ? z.tilt : 128)};
     nombres.push(segIds().indexOf(id) + 1);
   });
-  try { await api('/api/guardar?d=' + encodeURIComponent(JSON.stringify(datos))); toast('Esquina guardada para cabeza ' + nombres.join(' y ')); }
+  try { await guardarDatos(); toast('Esquina guardada para cabeza ' + nombres.join(' y ')); }
   catch(e){ toast('No se pudo guardar en el Dell'); }
   pintarSeguir();
 }
@@ -609,7 +713,7 @@ $('zoom').oninput = () => {
 $('borrarCal').onclick = async () => {
   if (!confirm('¿Borrar la calibración de las 3 cabezas? Después habrá que calibrar de nuevo en Kennedy.')) return;
   datos.calibracion = {};
-  try { await api('/api/guardar?d=' + encodeURIComponent(JSON.stringify(datos))); toast('Calibración borrada'); }
+  try { await guardarDatos(); toast('Calibración borrada'); }
   catch(e){ toast('No se pudo guardar en el Dell'); }
   pintarSeguir();
 };
@@ -737,7 +841,7 @@ document.querySelectorAll('#fadeBtns button').forEach(b => b.onclick = () => {
 });
 $('blackout').onclick = async () => {
   conf.grupos.forEach(g => { zona(g.id).intensidad = 0; });
-  escenaActiva = -1; efectoPared = null;
+  escenaActiva = -1; efectoPared = null; progActivo = null; pintarProgramas();
   try { pintarEstado(await api('/api/apagar?f=' + fade)); toast('Todo apagado'); } catch(e){ sinConexion(); }
   pintarTodo();
 };
@@ -1270,7 +1374,7 @@ function dibujarPlano(){
   catch(e){ if (!pidiendo) document.querySelector('main').innerHTML = '<p class="help">No se pudo leer luces.json desde el Dell. ¿Está abierto INICIAR.bat?</p>'; return; }
   try { datos = await api('/api/datos'); if (!datos.calibracion) datos.calibracion = {}; } catch(e){}
   conf.grupos.forEach(g => zonas[g.id] = {color:null, intensidad:0});
-  pintarDirecciones(); dibujarPlano(); pintarTodo();
+  pintarDirecciones(); dibujarPlano(); pintarTodo(); pintarProgramas();
   V.yaw = giroSalon() * 0.6; V.dist = 11; V.pitch = 0.2;   // vista inicial: desde el salon, en diagonal
   sondear(); setInterval(sondear, 3000); sondearVista(); V.sucio = true;
 })();

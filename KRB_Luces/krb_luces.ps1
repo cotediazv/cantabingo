@@ -264,12 +264,15 @@ namespace KRB {
           if (k == "content-length") int.TryParse(v, out largo);
         }
         string cuerpo = "";
-        if (largo > 0 && largo < 4096) { char[] buf = new char[largo]; int n = 0; while (n < largo) { int x = r.Read(buf, n, largo - n); if (x <= 0) break; n += x; } cuerpo = new string(buf, 0, n); }
+        /* cuerpo de hasta ~8 MB (programas grabados) */
+        if (largo > 0 && largo < 8000000) { char[] buf = new char[largo]; int n = 0; while (n < largo) { int x = r.Read(buf, n, largo - n); if (x <= 0) break; n += x; } cuerpo = new string(buf, 0, n); }
         string[] partes = linea.Split(' ');
         string url = partes.Length > 1 ? partes[1] : "/";
         string ruta = url, query = "";
         int q = url.IndexOf('?');
         if (q >= 0) { ruta = url.Substring(0, q); query = url.Substring(q + 1); }
+        // POST: los parametros pueden venir en el cuerpo (secuencias largas, datos guardados)
+        if (partes[0] == "POST" && cuerpo.Length > 0 && ruta != "/api/login") query = query.Length > 0 ? query + "&" + cuerpo : cuerpo;
 
         // ---- Clave ----
         if (ruta == "/api/login") { Login(s, cuerpo); return; }
