@@ -1535,7 +1535,9 @@ function dibujarPlano(){
 /* ---------- Momentos de los juegos (decisiones de Cote en el registro) ----------
    Cada momento se "compila" a acciones del Dell (canales + efectos) y se guarda alli en momentos.txt,
    para que el Dell lo ejecute solo cuando lo pida el iPad o el GC Master: /api/momento?nombre=...
-   Cabezas siempre en blanco calido. Pared = perimetrales (abajo) + fondo (arriba). */
+   Cabezas siempre en blanco calido. Pared = perimetrales (abajo) + fondo (arriba).
+   Regla de Cote (registro rev 175): las cabezas 1 y 2 estan SIEMPRE sobre el escenario como luz base;
+   solo salen cuando el animador camina por las mesas (bingo_al_publico). */
 const CARA = [0, 1.6, -1.8];                                               // la cara del animador en el escenario
 const PARED_COLORES = () => (conf.fondo_enlazado && conf.fondo_enlazado.colores) || CICLO;
 // Piezas para armar los momentos
@@ -1568,7 +1570,7 @@ const JUEGOS = [
     { id:'rosko_correcta', nombre:'Correcta', detalle:'Pared verde 2 s', g:() => ({...BASE(), ...pared('verde', 100)}), luego:[2, 'base_juegos'] },
     { id:'rosko_incorrecta', nombre:'Incorrecta', detalle:'Pared roja 2 s', g:() => ({...BASE(), ...pared('rojo', 100)}), luego:[2, 'base_juegos'] },
     { id:'rosko_pasa', nombre:'Pasa palabra', igual:'base_juegos' },
-    { id:'rosko_puntajes', nombre:'Puntajes', detalle:'Todo abajo, solo la pared en naranja', g:() => pared('ambar', 100) },
+    { id:'rosko_puntajes', nombre:'Puntajes', detalle:'Todo abajo, pared en naranja; cabezas al escenario', g:() => ({...pared('ambar', 100), ...cab('escenario', 50)}) },
     { id:'rosko_tiempo', nombre:'Se acabó el reloj', detalle:'Escenario apagado, solo las cabezas móviles', g:() => cab('escenario', 50) },
     { id:'rosko_ganador', nombre:'Ganador (celebración)', igual:'celebracion_ganador' },
     { id:'rosko_premio', nombre:'Entrega del premio', igual:'entrega_premio' } ]},
