@@ -283,12 +283,23 @@
     if (demo && !location.hash.startsWith('#/master/demo')) return undefined; // ya se cambió de pestaña mientras se esperaba
     app.innerHTML = `<div id="gm" class="gm-all gm-jg ${demo ? 'gm-demo' : ''}">${navHTML(demo ? 'demo' : 'juegos')}
       <a class="gm-movil" href="/sala">📱 Abrir la versión para el teléfono</a>
+      <button type="button" class="gm-fuerabtn" data-k="fuera">🖥️ Pantallas en otra ventana</button>
       <div class="gm-grid"><div class="gm-jgleft" data-k="left"></div>
         <div class="gm-jgright"><div class="gm-panel"><iframe title="Panel de la sala de juegos" src="${location.pathname}${demo && !open0 ? '#/simulada' : '#/juegos'}"></iframe></div><div class="gm-jgctl" data-k="ctl"></div></div></div></div>`;
     const root = $('#gm');
     const left = root.querySelector('[data-k="left"]');
     const ctlBox = root.querySelector('[data-k="ctl"]'); // los botones del GC y de los efectos van a la derecha, debajo del panel de los juegos (pedido de Cote, 23 nov), para que las pantallas queden más grandes
     let alive = true; let venue = null; let stage = ''; let sigStop = null;
+    // Pantallas en otra ventana (pedido de Cote, 24 nov): mientras esté abierta, aquí no se repiten las pantallas
+    // (en el demo queda el celular) y el panel tiene más espacio; al cerrarla vuelven solas
+    let away = null;
+    const fueraBtn = root.querySelector('[data-k="fuera"]');
+    fueraBtn.onclick = () => {
+      if (away && !away.closed) { away.close(); away = null; root.classList.remove('gm-fuera'); paintLeft(); return; } // traerlas de vuelta
+      away = window.open(`${location.pathname}#/master/pantallas${demo ? '-demo' : ''}`, 'gmPantallas', 'popup,width=1600,height=900');
+      if (away) { root.classList.add('gm-fuera'); paintLeft(); }
+    };
+    const tAway = setInterval(() => { if (away && away.closed) { away = null; root.classList.remove('gm-fuera'); paintLeft(); } }, 1000);
     const fit = () => root.querySelectorAll('.gm-box').forEach((box) => { const k = `scale(${box.clientWidth / Number(box.dataset.w || 1280)})`; if (box.classList.contains('dm-cam')) box.querySelectorAll('iframe').forEach((f) => { f.style.transform = k; }); else { const f = box.querySelector('iframe:not([data-full])'); if (f) f.style.transform = k; } });
     const ro = new ResizeObserver(fit);
     const ctl = monCtl(fit);
@@ -297,7 +308,14 @@
     const paintLeft = () => {
       ro.disconnect();
       if (sigStop) { sigStop(); sigStop = null; }
-      left.innerHTML = venue ? `<section class="gm-venue th-${venue}" data-v="${venue}">
+      fueraBtn.textContent = away ? '🖥️ Las pantallas están en la otra ventana · traerlas aquí' : '🖥️ Pantallas en otra ventana';
+      left.innerHTML = venue && away ? `<section class="gm-venue th-${venue}" data-v="${venue}">
+          <header class="gm-head"><b>Sala de juegos · ${esc(VENUES[venue])}</b><span class="gm-sala" data-k="sala"></span></header>
+          <p class="gm-fueranote">Las pantallas se ven en la otra ventana.</p>
+          ${demo ? `<div class="gm-screens dm-solo"><div class="gm-scr gm-tall dm-phone" data-n="4"><small>Celular</small><div class="gm-box" data-w="390"><iframe title="Celular de la persona protagonista" tabindex="-1"></iframe></div></div></div>
+          <div class="dm-ctl"><label>Celular de <select data-k="who"><option value="">Automático: quien está en el escenario</option></select></label><span class="dm-who" data-k="whoName"></span></div>` : ''}
+          </section>`
+        : venue ? `<section class="gm-venue th-${venue}" data-v="${venue}">
           <header class="gm-head"><b>Sala de juegos · ${esc(VENUES[venue])}</b><span class="gm-sala" data-k="sala"></span></header>
           <div class="gm-screens">
             <div class="gm-left">
@@ -316,9 +334,9 @@
           <div class="gm-txtrow">
             <input class="gm-text" data-k="text" type="text" maxlength="120" autocomplete="off" placeholder='Texto para el GC PER y el texto 3D · "entre comillas" sale destacado'>
             <div class="gm-capa" title="Capa gráfica sobre la cámara">${CAPA.map(([k, i, t, full]) => `<button type="button" class="gm-ckey" data-capa="${k}" title="${full}" aria-label="${full}"><span>${i}</span><b>${t}</b></button>`).join('')}</div></div>` : '';
-      if (venue && demo) demoCam(); else if (venue) sigStop = signal1(left.querySelector('[data-k="p1box"]'), venue, { fit, label: (t) => { const el = left.querySelector('[data-k="p1name"]'); if (el) el.textContent = t; } });
+      if (venue && away) { /* las pantallas están en la otra ventana */ } else if (venue && demo) demoCam(); else if (venue) sigStop = signal1(left.querySelector('[data-k="p1box"]'), venue, { fit, label: (t) => { const el = left.querySelector('[data-k="p1name"]'); if (el) el.textContent = t; } });
       root.querySelectorAll('.gm-box').forEach((b) => ro.observe(b));
-      ctl.attach(venue ? left.querySelector('.gm-screens') : null, sigStop);
+      ctl.attach(venue && !away ? left.querySelector('.gm-screens') : null, sigStop);
       if (demo && venue) { phoneSrc = ''; whoList = ''; demoWho(); }
       paintKeys(); fit();
     };
@@ -407,7 +425,127 @@
     const t1 = setInterval(load, 3000);
     const offAviso = window.onAviso(load); // el botón encendido y los monitores cambian al instante (aviso del servidor)
     const t4 = setInterval(fitPanel, 400);
-    return () => { alive = false; offAviso(); if (sigStop) sigStop(); clearInterval(t1); clearInterval(t3); clearInterval(t4); window.removeEventListener('resize', fitPanel); ro.disconnect(); document.body.classList.remove('gm-on'); };
+    return () => { alive = false; offAviso(); if (sigStop) sigStop(); clearInterval(t1); clearInterval(t3); clearInterval(t4); clearInterval(tAway); window.removeEventListener('resize', fitPanel); ro.disconnect(); document.body.classList.remove('gm-on'); };
+  };
+
+  // Pantallas en otra ventana (pedido de Cote, 24 nov: «poder abrir una pantalla secundaria, para que las pantallas estén
+  // en una pantalla y el control en otra… con distintas vistas, por lo menos unas cinco versiones… y una sexta para
+  // personalizar: poder agrandar o achicar manualmente las pantallas»). Las 3 pantallas de la sala de juegos abierta
+  // (en el demo, la 1 es la cámara simulada) en una ventana aparte, con 6 vistas; la elegida y la personalizada quedan
+  // guardadas en este computador. La barra de arriba se esconde sola si no se mueve el mouse.
+  const VISTAS = [
+    ['p1', '1 grande', 'La pantalla 1 protagonista y las otras más pequeñas'],
+    ['iguales', 'Iguales', 'La 1, la 2 y la 3 del mismo alto'],
+    ['p2', '2 grande', 'La pantalla 2 protagonista'],
+    ['p3', '3 grande', 'La pantalla 3 (de pie) protagonista'],
+    ['mosaico', '1 y 2 apiladas', 'La 1 arriba, la 2 abajo y la 3 a la derecha'],
+    ['libre', 'Personalizada', 'Arrastra cada pantalla por su nombre y agrándala o achícala desde la esquina'],
+  ];
+  const SCR = { 1: [1280, 720], 2: [1280, 720], 3: [720, 1280] };
+  const LIBRE0 = { 1: { x: 1, y: 2, w: 60 }, 2: { x: 1, y: 52, w: 38 }, 3: { x: 70, y: 2, w: 27 } };
+  const memGet = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) || d; } catch { return d; } };
+  const memSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* sin memoria */ } };
+  const pantallas = async (demo) => {
+    if (!(await isAdmin())) return viewLogin();
+    document.body.classList.add('gp-on');
+    document.title = demo ? 'Pantallas · Demo' : 'Pantallas · Sala de juegos';
+    let vista = memGet('gpVista', 'p1');
+    if (!VISTAS.some(([k]) => k === vista)) vista = 'p1';
+    const libre = { ...LIBRE0, ...memGet('gpLibre', {}) };
+    app.innerHTML = `<div id="gp" class="gp-${vista}">
+      <div class="gp-bar">${VISTAS.map(([k, t, d]) => `<button type="button" data-vista="${k}" title="${esc(d)}" class="${k === vista ? 'on' : ''}">${esc(t)}</button>`).join('')}
+        <button type="button" data-full="1" title="Toda la ventana en pantalla completa">⛶ Pantalla completa</button><span data-k="info"></span></div>
+      <div class="gp-hot" title="Acerca el mouse aquí para ver las opciones"></div><div class="gp-area" data-k="area"></div></div>`;
+    const root = $('#gp'); const area = root.querySelector('[data-k="area"]');
+    let alive = true; let venue = null; let sigStop = null; let momSeq = null;
+    // Cada pantalla mide lo más que cabe en su espacio sin deformarse; la página real va adentro, achicada
+    const fit = () => area.querySelectorAll('.gp-scr').forEach((c) => {
+      const [w, h] = SCR[c.dataset.n]; const box = c.querySelector('.gp-box');
+      if (vista === 'libre') {
+        const L = libre[c.dataset.n]; const bw = area.clientWidth * L.w / 100;
+        Object.assign(c.style, { left: `${L.x}%`, top: `${L.y}%`, width: `${bw}px`, height: `${bw * h / w}px` });
+        Object.assign(box.style, { width: `${bw}px`, height: `${bw * h / w}px` });
+      } else {
+        c.removeAttribute('style');
+        const k = Math.min(c.clientWidth / w, c.clientHeight / h);
+        Object.assign(box.style, { width: `${w * k}px`, height: `${h * k}px` });
+      }
+      const k = box.clientWidth / w;
+      box.querySelectorAll('iframe:not([data-full])').forEach((f) => { f.style.transform = `scale(${k})`; });
+    });
+    const ro = new ResizeObserver(fit); ro.observe(area);
+    const paint = () => {
+      if (sigStop) { sigStop(); sigStop = null; }
+      momSeq = null;
+      root.querySelector('[data-k="info"]').textContent = venue ? `${demo ? 'Demo · ' : ''}Sala de juegos · ${VENUES[venue]}` : 'No hay sala de juegos abierta';
+      if (!venue) { area.innerHTML = `<p class="gp-none">${demo ? 'Crea la sala simulada en el GC Master (pestaña Demo).' : 'No hay sala de juegos abierta. Cuando se abra, aquí aparecen sus pantallas.'}</p>`; return; }
+      const scr = (n, name, inner, cls = '') => `<div class="gp-scr th-${venue}" data-n="${n}"><small data-drag="${n}">${n} · <span data-k="name${n}">${name}</span></small><div class="gp-box ${cls}">${inner}</div><i class="gp-resize" data-resize="${n}" title="Agrandar o achicar"></i></div>`;
+      area.innerHTML = scr(1, demo ? 'Cámara · demo' : 'GC', demo
+        ? `<iframe class="dm-v3d" title="Vista 3D del salón" src="${esc(vistaDemo || '/demo-luces/ipad.html?demo=tv')}"></iframe><iframe class="dm-gc" title="GC de la sala de juegos" tabindex="-1" src="${page('#/escena')}"></iframe>`
+        : '', demo ? 'dm-cam' : '')
+        + scr(2, 'Tablero', `<iframe title="Tablero de la sala de juegos" tabindex="-1" src="${tabSrc(true)}"></iframe>`)
+        + scr(3, 'De pie', `<iframe title="Pantalla de pie de la sala de juegos" tabindex="-1" src="${page('#/tablero')}"></iframe>`);
+      if (!demo) sigStop = signal1(area.querySelector('[data-n="1"] .gp-box'), venue, { fit, label: (t) => { const el = area.querySelector('[data-k="name1"]'); if (el) el.textContent = t; } });
+      fit();
+    };
+    let vistaDemo = '';
+    if (demo) vistaDemo = ((await api('GET', '/api/sim').catch(() => null)) || {}).vista || '';
+    // En el demo, los momentos de los juegos llegan a la vista 3D (igual que en la pestaña Demo)
+    const pump = async () => {
+      if (!demo || !venue) return;
+      const r = await api('GET', `/api/momentos?desde=${momSeq == null ? 0 : momSeq}`).catch(() => null);
+      if (!alive || !r) return;
+      const first = momSeq == null; momSeq = r.seq;
+      const f = area.querySelector('.dm-v3d');
+      if (!first && f && f.contentWindow) for (const m of r.momentos) f.contentWindow.postMessage({ momento: m.name }, '*');
+    };
+    const load = async () => {
+      const r = await api('GET', '/api/consola').catch(() => null);
+      if (!alive || !r) return;
+      const loc = (r.locales || []).find((x) => x.main);
+      const v = loc ? loc.venue : null;
+      if (v !== venue) { venue = v; paint(); }
+      pump();
+    };
+    // Barra: elegir la vista y pantalla completa
+    root.querySelector('.gp-bar').onclick = (e) => {
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.full) { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); else document.documentElement.requestFullscreen().catch(() => {}); return; }
+      vista = b.dataset.vista; memSet('gpVista', vista);
+      root.className = `gp-${vista}`;
+      root.querySelectorAll('[data-vista]').forEach((x) => x.classList.toggle('on', x === b));
+      fit();
+    };
+    // Personalizada: mover por el nombre y agrandar o achicar desde la esquina (en % del espacio, se guarda)
+    let drag = null;
+    area.addEventListener('pointerdown', (e) => {
+      if (vista !== 'libre') return;
+      const t = e.target.closest('[data-drag], [data-resize]'); if (!t) return;
+      e.preventDefault();
+      const n = t.dataset.drag || t.dataset.resize;
+      drag = { n, kind: t.dataset.drag ? 'move' : 'size', x: e.clientX, y: e.clientY, L: { ...libre[n] } };
+      area.classList.add('gp-dragging');
+      t.setPointerCapture(e.pointerId);
+    });
+    area.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      const dx = (e.clientX - drag.x) / area.clientWidth * 100; const dy = (e.clientY - drag.y) / area.clientHeight * 100;
+      const L = libre[drag.n];
+      if (drag.kind === 'move') { L.x = Math.max(-5, Math.min(95, drag.L.x + dx)); L.y = Math.max(0, Math.min(95, drag.L.y + dy)); } else L.w = Math.max(8, Math.min(100, drag.L.w + dx));
+      fit();
+    });
+    const end = () => { if (drag) { drag = null; area.classList.remove('gp-dragging'); memSet('gpLibre', libre); } };
+    area.addEventListener('pointerup', end); area.addEventListener('pointercancel', end);
+    // La barra se esconde sola cuando no se mueve el mouse; aparece al acercarlo al borde de arriba (sobre las pantallas el
+    // movimiento no llega a esta página) y no se esconde mientras el mouse está encima
+    let hideT = null;
+    const wake = () => { root.classList.add('gp-awake'); clearTimeout(hideT); hideT = setTimeout(() => { if (!root.querySelector('.gp-bar:hover')) root.classList.remove('gp-awake'); else wake(); }, 3000); };
+    document.addEventListener('pointermove', wake); wake();
+    paint();
+    await load();
+    const t1 = setInterval(load, 3000);
+    const offAviso = window.onAviso(load);
+    return () => { alive = false; offAviso(); if (sigStop) sigStop(); clearInterval(t1); clearTimeout(hideT); document.removeEventListener('pointermove', wake); ro.disconnect(); document.body.classList.remove('gp-on'); };
   };
 
   // Una página del GC Master: uno o los tres locales
@@ -767,5 +905,5 @@
     return () => { alive = false; clearInterval(t1); clearInterval(t3); clearTimeout(tq); document.body.classList.remove('gm-on'); };
   };
 
-  views.master = (v) => (v === 'movil' ? movil() : v === 'clientes' ? clientes() : v === 'conectados' ? conectados() : v === 'juegos' ? juegos() : v === 'demo' ? juegos(true) : VENUES[v] ? master([v], true) : master(ORDER, false));
+  views.master = (v) => (v === 'movil' ? movil() : v === 'clientes' ? clientes() : v === 'conectados' ? conectados() : v === 'juegos' ? juegos() : v === 'demo' ? juegos(true) : v === 'pantallas' ? pantallas(false) : v === 'pantallas-demo' ? pantallas(true) : VENUES[v] ? master([v], true) : master(ORDER, false));
 })();
