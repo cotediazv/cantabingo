@@ -37,9 +37,9 @@
   },
 
   "vista3d": {
-    "_ayuda": "Segun el plano dibujado por Cote. salon_hacia: mirando el escenario desde las mesas, hacia donde se extiende el salon (derecha = lado cocinas). angulo: grados entre el escenario y el largo del salon. columnas_salon: las 3 columnas del lado pasillo, en metros [de lado, a lo largo] (de lado: 0 = centro, negativo = hacia el pasillo; a lo largo: 0 = frente al escenario).",
+    "_ayuda": "Segun el plano dibujado por Cote. salon_hacia: mirando el escenario desde las mesas, hacia donde se extiende el salon (derecha = lado cocinas). angulo_escenario: grados que el escenario esta girado respecto al largo del salon (unos 30). columnas_salon: las 3 columnas del lado pasillo, en metros [de lado, a lo largo] (de lado: 0 = centro, negativo = hacia el pasillo; a lo largo: 0 = frente al escenario).",
     "salon_hacia": "derecha",
-    "angulo": 55,
+    "angulo_escenario": 30,
     "columnas_salon": [[-6.2, 0], [-6.0, 13.5], [-6.0, 23]]
   },
 
