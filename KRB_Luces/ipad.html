@@ -137,7 +137,7 @@
 <section class="vista" id="vista">
   <canvas id="cv3d"></canvas>
   <div class="bar"><span>Vista previa 3D · aproximada · arrastra para girar</span>
-    <div><button id="vReset">Centrar</button><button id="vTam">Más grande</button><button id="vOcultar">Ocultar</button></div></div>
+    <div><button id="vReset">Centrar</button><button id="vSalon">Ver salón</button><button id="vTam">Más grande</button><button id="vOcultar">Ocultar</button></div></div>
 </section>
 
 <main>
@@ -664,10 +664,11 @@ function toast(t){ const e = $('toast'); e.textContent = t; e.classList.add('sho
 const V = { salida:null, sucio:true, yaw:0, pitch:0.18, dist:10, objetivo:[0, 1.7, -2], fov:52 * Math.PI / 180 };
 // Donde esta cada luz. Se puede cambiar en luces.json con "vista3d": [[x,y,z], ...] en cada grupo.
 const POS3D = {
-  // Las cabezas 1, 2 y 3 estan en pilares del salon: se giran junto con el salon (giro_salon).
-  seguidor1:    { pos:[[-4.5, 3.6, 3.0]], salon:true },
-  seguidor2:    { pos:[[ 4.5, 3.6, 6.0]], salon:true },
-  seguidor3:    { pos:[[ 0.0, 3.9, 11.0]], salon:true },
+  // Las cabezas 1, 2 y 3 van en las columnas del salon (a la derecha, mirando el escenario):
+  // la 1 casi a la altura de la columna derecha del escenario; las otras, cada "distancia_columnas" metros hacia el fondo del salon.
+  seguidor1:    { columna:0 },
+  seguidor2:    { columna:1 },
+  seguidor3:    { columna:2 },
   frontales:    { pos:[[-4.7, 4.1, 0.6], [4.7, 4.1, 0.6]] },
   mini:         { pos:[[-2.4, 0.55, -3.2], [2.4, 0.55, -3.2]], piso:true },
   perimetrales: { pos:[[-3.9, 0.45, -3.75], [-1.3, 0.45, -3.75], [1.3, 0.45, -3.75], [3.9, 0.45, -3.75]] },
@@ -678,8 +679,18 @@ const mul = (a, k) => [a[0]*k, a[1]*k, a[2]*k], dot = (a, b) => a[0]*b[0] + a[1]
 const cross = (a, b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
 const norm = a => { const l = Math.hypot(...a) || 1; return mul(a, 1 / l); };
 // El escenario mira en diagonal hacia el salon. giro_salon (grados) en luces.json > vista3d; positivo = salon hacia la derecha.
-const giroSalon = () => (((conf && conf.vista3d && conf.vista3d.giro_salon != null) ? conf.vista3d.giro_salon : 45) * Math.PI / 180);
+// vista3d.salon_hacia: "izquierda" o "derecha" (mirando el escenario desde el salon); vista3d.angulo: grados (45 = diagonal).
+const giroSalon = () => {
+  const v = (conf && conf.vista3d) || {}, ang = v.angulo != null ? +v.angulo : 45;
+  return (v.salon_hacia === 'derecha' ? ang : -ang) * Math.PI / 180;
+};
 const rotY = (p, a) => [p[0] * Math.cos(a) + p[2] * Math.sin(a), p[1], -p[0] * Math.sin(a) + p[2] * Math.cos(a)];
+const distCol = () => ((conf && conf.vista3d && conf.vista3d.distancia_columnas) || 35);
+// Columna n del salon: la primera junto a la columna derecha del escenario; las siguientes hacia el fondo del salon.
+function columnaSalon(n){
+  const dir = rotY([0, 0, 1], giroSalon());
+  return add([8.5, 0, 0.5], mul(dir, distCol() * n));
+}
 
 function camara(){
   const cp = Math.cos(V.pitch), sp = Math.sin(V.pitch);
@@ -755,7 +766,7 @@ function haz(desde, hasta, c, apertura){
 }
 /* Donde choca un rayo: piso del salon, tarima, pared del fondo o techo */
 function choque(o, d){
-  let mejor = 16;
+  let mejor = 120;
   const prueba = (t, ok) => { if (t > 0.05 && t < mejor && ok) mejor = t; };
   if (d[1] < 0){
     const t1 = (0.4 - o[1]) / d[1], p1 = add(o, mul(d, t1)); prueba(t1, Math.abs(p1[0]) <= 5 && p1[2] >= -4 && p1[2] <= 0);
@@ -784,11 +795,14 @@ function dibujar3D(){
 
   // --- Sala (segun las fotos del escenario de Mercado Kennedy) ---
   const gs = giroSalon();
-  poly([[-9,0,-5],[11,0,-5],[11,0,14],[-9,0,14]].map(p => rotY(p, gs)), '#0d0e12'); // piso del salon (girado)
-  for (let k = -8; k <= 10; k += 2){                                                // baldosas: muestran hacia donde va el salon
-    linea(rotY([k, 0.01, 0.5], gs), rotY([k, 0.01, 14], gs), '#15171c', 1);
-    linea(rotY([-9, 0.01, k + 4], gs), rotY([11, 0.01, k + 4], gs), '#15171c', 1);
-  }
+  const largoSalon = distCol() * 2 + 15;
+  poly([[-14,0,-5],[12,0,-5],[12,0,largoSalon],[-14,0,largoSalon]].map(p => rotY(p, gs)), '#0d0e12'); // piso del salon (girado)
+  for (let k = -14; k <= 12; k += 2) linea(rotY([k, 0.01, 0.5], gs), rotY([k, 0.01, largoSalon], gs), '#15171c', 1); // baldosas
+  for (let k = 2; k <= largoSalon; k += 2) linea(rotY([-14, 0.01, k], gs), rotY([12, 0.01, k], gs), '#15171c', 1);
+  [0, 1, 2].forEach(n => {                                                          // columnas del salon
+    const c = columnaSalon(n);
+    caja(c[0] - 0.4, c[0] + 0.4, 0, 4.6, c[2] - 0.4, c[2] + 0.4, '#1d2027', '#171a20', '#23262e');
+  });
   poly([[-8.2,0,-1.2],[-6.4,0,-1.2],[-6.4,2.6,-1.2],[-8.2,2.6,-1.2]], '#1a1f26', '#2a313b'); // acceso a estacionamientos (lado izquierdo, abierto)
   poly([[-8.0,2.0,-1.19],[-6.6,2.0,-1.19],[-6.6,2.5,-1.19],[-8.0,2.5,-1.19]], '#e8eaee');    // letrero del acceso
   poly([[-5,0,-4],[5,0,-4],[5,4.6,-4],[-5,4.6,-4]], '#17191e');                   // pared del fondo (oscura)
@@ -839,7 +853,7 @@ function dibujar3D(){
   const marcas = [];
   conf.grupos.forEach(g => {
     const def = POS3D[g.id] || {}, c = colorGrupo(g);
-    const posiciones = g.vista3d || (def.pos || []).map(p => def.salon ? rotY(p, gs) : p);
+    const posiciones = g.vista3d || (def.columna != null ? [add(columnaSalon(def.columna), [0, 4.0, 0])] : (def.pos || []));
     if (!c) return;
     posiciones.forEach(pos => {
       marcas.push({pos, c});
@@ -884,19 +898,23 @@ function dibujar3D(){
     last = [e.clientX, e.clientY]; V.sucio = true;
   });
   const fin = () => last = null; cv.addEventListener('pointerup', fin); cv.addEventListener('pointercancel', fin);
-  cv.addEventListener('wheel', e => { e.preventDefault(); V.dist = Math.max(6, Math.min(22, V.dist + e.deltaY * 0.01)); V.sucio = true; }, {passive:false});
+  cv.addEventListener('wheel', e => { e.preventDefault(); V.dist = Math.max(6, Math.min(110, V.dist * (1 + e.deltaY * 0.001))); V.sucio = true; }, {passive:false});
   const vp = JSON.parse(localStorage.getItem('krb_vista') || '{"oculta":false,"grande":false}');
   const aplicar = () => {
     $('vista').classList.toggle('oculta', vp.oculta);
     $('vista').style.setProperty('--vh', vp.grande ? 'min(60vh,560px)' : (window.innerWidth < 640 ? '200px' : '300px'));
     $('vOcultar').textContent = vp.oculta ? 'Mostrar vista 3D' : 'Ocultar';
-    $('vTam').style.display = $('vReset').style.display = vp.oculta ? 'none' : '';
+    $('vTam').style.display = $('vReset').style.display = $('vSalon').style.display = vp.oculta ? 'none' : '';
     $('vTam').textContent = vp.grande ? 'Más chica' : 'Más grande';
     localStorage.setItem('krb_vista', JSON.stringify(vp)); V.sucio = true;
   };
   $('vOcultar').onclick = () => { vp.oculta = !vp.oculta; aplicar(); };
   $('vTam').onclick = () => { vp.grande = !vp.grande; aplicar(); };
-  $('vReset').onclick = () => { V.yaw = giroSalon() * 0.6; V.pitch = 0.2; V.dist = 11; V.sucio = true; };
+  $('vReset').onclick = () => { V.objetivo = [0, 1.7, -2]; V.yaw = giroSalon() * 0.6; V.pitch = 0.2; V.dist = 11; V.sucio = true; };
+  $('vSalon').onclick = () => {                         // vista desde arriba de todo el salon, con las 3 columnas
+    const m = columnaSalon(1), lado = rotY([-6, 0, 0], giroSalon()); V.objetivo = add(m, lado);
+    V.yaw = giroSalon() + (giroSalon() < 0 ? 1.25 : -1.25); V.pitch = 0.62; V.dist = distCol() * 1.75; V.sucio = true;
+  };
   window.addEventListener('resize', aplicar);
   aplicar();
   (function cuadro(){ if (V.sucio) dibujar3D(); requestAnimationFrame(cuadro); })();

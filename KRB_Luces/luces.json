@@ -37,8 +37,10 @@
   },
 
   "vista3d": {
-    "_ayuda": "giro_salon: cuantos grados mira el escenario hacia el salon (45 = en diagonal). Positivo = el salon queda hacia la derecha del escenario; negativo = hacia la izquierda.",
-    "giro_salon": 45
+    "_ayuda": "salon_hacia: hacia donde se abre el salon, mirando el escenario desde el salon (izquierda o derecha). angulo: cuantos grados mira el escenario hacia el salon (45 = en diagonal). distancia_columnas: metros entre las columnas del salon donde van las cabezas 1, 2 y 3 (aprox. 30 a 40).",
+    "salon_hacia": "izquierda",
+    "angulo": 45,
+    "distancia_columnas": 35
   },
 
   "fondo_enlazado": {
