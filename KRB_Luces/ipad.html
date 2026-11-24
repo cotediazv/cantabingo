@@ -70,7 +70,7 @@
   .map{height:auto;aspect-ratio:34/16}
   .map svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
   .map .target{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:radial-gradient(#ffe2b0,#ffb35c80 55%,transparent 70%);pointer-events:none;display:none}
-  .map .warn{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:var(--warn);font-size:16px;padding:20px;pointer-events:none}
+  .map .warn{position:absolute;left:0;right:0;bottom:14px;text-align:center;color:var(--warn);font-size:12px;padding:0 10px;pointer-events:none;text-shadow:0 1px 3px #000}
   .pad{background:radial-gradient(circle at center,#ffffff10 0 2px,transparent 3px) 0 0/40px 40px,#121419}
   .pad .lbl{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;color:var(--mut);font-size:17px;pointer-events:none}
   .pt{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;border:3px solid #fff;pointer-events:none;display:grid;place-items:center;font-size:12px;font-weight:800}
@@ -191,6 +191,8 @@
       <h2 class="sec">Calibrar el mapa (una sola vez)</h2>
       <p class="help">Para cada esquina del salón: elige <b>Cabeza 1</b>, apúntala al suelo en esa esquina y toca la esquina. Luego haz lo mismo con <b>Cabeza 2</b>. Las 4 esquinas son las de la zona de mesas, marcadas con números en el mapa (escenario a la izquierda, cocinas arriba, columnas y pasillo abajo).</p>
       <div class="calib" id="calib"></div>
+      <div class="row"><button class="chip" id="borrarCal">Borrar calibración</button>
+        <span class="help" style="margin:0">Úsalo si se calibró sin las luces reales (por ejemplo, en el Dell de prueba).</span></div>
     </div>
 
     <div class="readout" id="readout"></div>
@@ -447,7 +449,34 @@ document.querySelectorAll('#modoSeguir button').forEach(b => b.onclick = () => {
 const calibrada = id => { const c = (datos.calibracion || {})[id]; return c && ESQUINAS.every(e => c[e.k]); };
 function apuntar(id, u, v){
   const c = datos.calibracion[id], lerp = key => (1-u)*(1-v)*c.ei[key] + u*(1-v)*c.ed[key] + (1-u)*v*c.fi[key] + u*v*c.fd[key];
-  const z = zona(id); z.pan = lerp('pan'); z.tilt = lerp('tilt'); z.posicion = null;
+  const z = zona(id); z.pan = Math.max(0, Math.min(255, lerp('pan'))); z.tilt = Math.max(0, Math.min(255, lerp('tilt'))); z.posicion = null;
+}
+/* Punto del piso (en metros del escenario) a partir de un punto del salon; si cae sobre la tarima, a su altura */
+function puntoPiso(u, v){
+  const p = deSalon(u, v, 0);
+  p[1] = dentroPoligono(p[0], p[2], TARIMA) ? 0.45 : 0;
+  return p;
+}
+const TARIMA = [[-5,-4],[5,-4],[5,-1.6],[3.2,0.3],[-5,0.3]];          // forma de la tarima (x, z)
+function dentroPoligono(x, z, pol){
+  let dentro = false;
+  for (let i = 0, j = pol.length - 1; i < pol.length; j = i++){
+    const [xi, zi] = pol[i], [xj, zj] = pol[j];
+    if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) dentro = !dentro;
+  }
+  return dentro;
+}
+/* Sin calibracion: pan y tilt calculados desde la posicion de la cabeza hacia el punto (el inverso exacto de la vista 3D) */
+function apuntarGeo(id, punto){
+  const pos = posCabeza(id); if (!pos) return;
+  const d = sub(punto, pos), casa = casaDe(pos);
+  let a = Math.atan2(d[0], d[2]) - casa;
+  while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI;
+  const th = Math.atan2(Math.hypot(d[0], d[2]), -d[1]);                 // angulo desde la vertical hacia abajo
+  const z = zona(id);
+  z.pan = Math.max(0, Math.min(255, 128 + a / RANGO_PAN * 128));
+  z.tilt = Math.max(0, Math.min(255, th / RANGO_TILT * 255));
+  z.posicion = null;
 }
 (() => {
   const map = $('map'); let activo = false;
@@ -458,10 +487,13 @@ function apuntar(id, u, v){
     objetivo = {fx, fy};
     const vS = MAPA.v0 + fx * (MAPA.v1 - MAPA.v0), uS = MAPA.u0 + fy * (MAPA.u1 - MAPA.u0);   // punto del salon (metros)
     const s = (vS - CAL.v0) / (CAL.v1 - CAL.v0), t = (uS - CAL.u0) / (CAL.u1 - CAL.u0);         // relativo a las 4 esquinas
-    const ok = segActivos().filter(calibrada);
-    ok.forEach(id => apuntar(id, s, t));
+    const punto = puntoPiso(uS, vS);                                                              // el mismo punto, en metros del escenario
+    V.marca = punto; V.sucio = true;
+    // Todas las cabezas elegidas apuntan al MISMO punto: con calibracion (luces reales) o por geometria (igual que la vista 3D).
+    const ids = segActivos();
+    ids.forEach(id => calibrada(id) ? apuntar(id, s, t) : apuntarGeo(id, punto));
     pintarSeguir();
-    if (ok.length) limitar('mapa', () => enviarGrupos(ok, 0));
+    limitar('mapa', () => enviarGrupos(ids, 0));
   };
   map.addEventListener('pointerdown', e => { activo = true; map.setPointerCapture(e.pointerId); map.classList.add('drag'); mover(e); });
   map.addEventListener('pointermove', e => { if (activo) mover(e); });
@@ -508,6 +540,14 @@ async function guardarEsquina(k){
   pintarSeguir();
 }
 
+$('borrarCal').onclick = async () => {
+  if (!confirm('¿Borrar la calibración de las 3 cabezas? Después habrá que calibrar de nuevo en Kennedy.')) return;
+  datos.calibracion = {};
+  try { await api('/api/guardar?d=' + encodeURIComponent(JSON.stringify(datos))); toast('Calibración borrada'); }
+  catch(e){ toast('No se pudo guardar en el Dell'); }
+  pintarSeguir();
+};
+
 /* Acciones rapidas */
 function accionSeguir(fn){ segActivos().forEach(id => fn(zona(id))); escenaActiva = -1; pintarTodo(); enviarGrupos(segActivos(), fade); }
 $('segOn').onclick = () => accionSeguir(z => { z.color = (conf.seguir && conf.seguir.color) || 'blanco_calido'; z.intensidad = 100; });
@@ -524,7 +564,7 @@ function pintarSeguir(){
 
   // mapa
   const faltan = segActivos().filter(id => !calibrada(id)).map(id => segIds().indexOf(id) + 1);
-  $('mapWarn').textContent = faltan.length ? `Cabeza ${faltan.join(' y ')} sin calibrar. Ve a "A mano · calibrar" y guarda las 4 esquinas.` : '';
+  $('mapWarn').textContent = faltan.length ? `Cabeza ${faltan.join(', ')} sin calibrar: apunta según la vista 3D (aproximado). Calibrar en Kennedy con las luces reales.` : '';
   const t = $('target'), map = $('map');
   if (objetivo){ t.style.display = 'block'; t.style.left = (objetivo.fx * map.clientWidth) + 'px'; t.style.top = (objetivo.fy * map.clientHeight) + 'px'; }
 
@@ -840,10 +880,19 @@ function choque(o, d){
   return { p: add(o, mul(d, mejor)), piso: d[1] < 0 && Math.abs(add(o, mul(d, mejor))[1]) < 0.45 };
 }
 /* Direccion aproximada de una cabeza movil a partir de pan y tilt */
+// Modelo generico de cabeza movil: pan 0-255 = 540 grados (+-270 desde "casa"), tilt 0-255 = 0 a 135 grados desde la vertical.
+const RANGO_PAN = Math.PI * 1.5, RANGO_TILT = Math.PI * 0.75;
+const casaDe = pos => Math.atan2(0 - pos[0], -1.5 - pos[2]);        // pan 128 = mirando al centro del escenario
+function posCabeza(id){                                            // donde esta montada cada cabeza (igual que en la vista 3D)
+  const g = grupo(id), def = POS3D[id] || {};
+  if (g && g.vista3d) return g.vista3d[0];
+  if (def.columna != null) return add(columnaSalon(def.columna), [0, 4.0, 0]);
+  return def.pos ? def.pos[0] : null;
+}
 function direccion(pos, pan, tilt, piso){
-  const casa = Math.atan2(0 - pos[0], -1.5 - pos[2]);            // mira hacia el centro del escenario
-  const a = casa + (pan - 128) / 128 * (Math.PI / 2);
-  const th = tilt / 255 * Math.PI * 0.75;
+  const casa = casaDe(pos);
+  const a = casa + (pan - 128) / 128 * RANGO_PAN;
+  const th = tilt / 255 * RANGO_TILT;
   return norm([Math.sin(a) * Math.sin(th), piso ? Math.cos(th) : -Math.cos(th), Math.cos(a) * Math.sin(th)]);
 }
 
@@ -983,7 +1032,7 @@ function dibujar3D(){
   const marcas = [];
   conf.grupos.forEach(g => {
     const def = POS3D[g.id] || {}, c = colorGrupo(g);
-    const posiciones = g.vista3d || (def.columna != null ? [add(columnaSalon(def.columna), [0, 4.0, 0])] : (def.pos || []));
+    const posiciones = g.vista3d || (def.columna != null ? [posCabeza(g.id)] : (def.pos || []));
     if (!c) return;
     posiciones.forEach(pos => {
       marcas.push({pos, c});
@@ -1004,6 +1053,16 @@ function dibujar3D(){
     });
   });
 
+  // --- Punto tocado en el mapa de Seguir (anillo en el piso) ---
+  if (V.marca && document.body.classList.contains('en-seguir')){
+    const p = P(V.marca);
+    if (p){
+      const r = Math.max(6, 0.7 * p[3]);
+      ctx.save(); ctx.translate(p[0], p[1]); ctx.scale(1, 0.45);
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.setLineDash([5, 4]);
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+    }
+  }
   // --- Los equipos (puntitos) ---
   ctx.globalCompositeOperation = 'source-over';
   marcas.forEach(({pos, c}) => {
