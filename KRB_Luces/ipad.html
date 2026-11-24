@@ -326,7 +326,9 @@
 const $ = id => document.getElementById(id);
 // MODO DEMO (Cote, 24 nov): ?demo = todo el iPad sin el Dell: las luces se calculan en el navegador y NO se tocan las reales.
 // ?demo=tv = solo la vista 3D a pantalla completa, con la camara sobre el animador (para el demo del GC Master).
+// ?demo=control = el iPad completo manejando el demo abierto en el mismo navegador (para seguir al animador a mano en el bingo).
 const PARAMS = new URLSearchParams(location.search), DEMO = PARAMS.has('demo'), TV = DEMO && PARAMS.get('demo') === 'tv';
+const CONTROL = DEMO && PARAMS.get('demo') === 'control';
 if (TV) document.body.classList.add('tv');
 const COLOR_CSS = {blanco_calido:'#ffd9a0',blanco:'#ffffff',azul:'#2b55ff',rojo:'#ff2a2a',verde:'#22dd55',amarillo:'#ffbe00',ambar:'#ff8a00',morado:'#9b3cff',rosa:'#ff3fa0',cian:'#22e5ff'};
 const ESQUINAS = [
@@ -345,6 +347,7 @@ let canales = new Array(512).fill(0), efectosActivos = [], efectoPared = null, v
 
 /* ---------- Comunicacion con el Dell ---------- */
 async function api(path){
+  if (CONTROL) return canalApi(path);
   if (DEMO) return simApi(path);
   const r = await fetch(path, {cache:'no-store', credentials:'same-origin'});
   if (r.status === 401){ pedirClave(); throw new Error('clave'); }
@@ -480,6 +483,7 @@ function pintarEfectos(){
 
 /* ---------- Envios grandes por POST (programas, datos guardados) ---------- */
 async function postApi(ruta, params){
+  if (CONTROL) return canalApi(ruta, params);
   if (DEMO) return simApi(ruta, params);
   const r = await fetch(ruta, {method:'POST', body:new URLSearchParams(params), credentials:'same-origin', cache:'no-store'});
   if (r.status === 401){ pedirClave(); throw new Error('clave'); }
@@ -1006,9 +1010,10 @@ function pintarEstado(e){
   else if (e.conectado){ dot.className = 'dot ok'; t.textContent = 'Cable DMX · ' + e.puerto; }
   else { dot.className = 'dot'; t.textContent = 'Sin cable DMX · tocar para reintentar'; }
   $('pill').title = e.error || '';
+  if (CONTROL){ V.animador = e.animador || null; V.rosko = !!e.rosko; V.sucio = true; marcaAnimador(e.animador); }
   momentoRecibido(e);
 }
-function sinConexion(){ $('dot').className = 'dot'; $('pillTxt').textContent = 'Sin conexión con el Dell'; }
+function sinConexion(){ $('dot').className = 'dot'; $('pillTxt').textContent = CONTROL ? 'Sin demo: abre la pantalla 1 del demo' : 'Sin conexión con el Dell'; }
 $('pill').onclick = async () => {
   try { const e = await api('/api/reconectar'); pintarEstado(e); toast(e.conectado ? 'Cable conectado' : (e.error || 'No se encontró el cable')); }
   catch(e){ sinConexion(); }
@@ -1487,7 +1492,7 @@ function dibujar3D(){
 })();
 /* Mientras la vista esta abierta, pide al Dell lo que sale por el cable ~7 veces por segundo */
 async function sondearVista(){
-  if (DEMO) return;                                   // en el demo la vista se actualiza en cada cuadro (bucleDemo)
+  if (DEMO && !CONTROL) return;                       // en el demo la vista se actualiza en cada cuadro (bucleDemo); el control pregunta al demo
   if (!$('vista').classList.contains('oculta') && !document.hidden && !pidiendo){
     try { pintarEstado(await api('/api/estado')); } catch(e){}
   }
@@ -1775,7 +1780,8 @@ function simMomento(n, encadenado){
   return true;
 }
 const simEstado = () => ({ tipo:'demo', puerto:'', conectado:false, error:'', efectos:[...SIM.ef.keys()],
-  canales:Array.from(SIM.tgt.slice(1), Math.round), salida:SIM.salida, momento:SIM.momento, momentoN:SIM.momentoN });
+  canales:Array.from(SIM.tgt.slice(1), Math.round), salida:SIM.salida, momento:SIM.momento, momentoN:SIM.momentoN,
+  animador:V.animador || null, rosko:!!V.rosko });
 async function simApi(path, params){
   const [ruta, qs] = path.split('?'), q = new URLSearchParams(params || qs || '');
   if (ruta.endsWith('luces.json')){ const r = await fetch(path, {cache:'no-store'}); if (!r.ok) throw new Error(r.status); return r.json(); }
@@ -1865,7 +1871,8 @@ function bucleDemo(){
     V.animador = { p:a.p, rumbo:a.rumbo, t:a.paso, quieto:a.quieto, sentado:a.sentado };
     V.rosko = a.rosko;
     // En el demo las cabezas siguen solas al animador mientras esta en el publico
-    if (SIM.momento === 'bingo_al_publico' && demoAn.ruta){
+    // (si alguien lo esta siguiendo a mano desde el iPad de control, se deja de seguir solo)
+    if (SIM.momento === 'bingo_al_publico' && demoAn.ruta && !(SIM.control && performance.now() - SIM.control < 4000)){
       segIds().forEach(id => {
         const g = grupo(id); if (!g || !g.canales.pan) return;
         const z = {}; apuntarGeo(id, [a.p[0], 1.2, a.p[2]], z); if (z.pan == null) return;
@@ -1913,12 +1920,52 @@ function camaraDemo(dt, a){
   V.dist += (dist - V.dist) * k; V.pitch += (0.22 - V.pitch) * k; V.yaw += (yaw - V.yaw) * k;
 }
 function iniciarDemo(){
+  if (CONTROL) return;                                                  // el control no simula: maneja el demo que esta abierto (pantalla 1)
   if (TV){ V.yaw = giroSalon() * 0.6; V.dist = 8; V.objetivo = [0.3, 1.75, -1.6]; }
   const recibir = d => { const n = typeof d === 'string' ? d : d && (d.momento || d.nombre); if (n && SIM.momentos[n]) { simMomento(n); pintarEstado(simEstado()); } };
   window.addEventListener('message', ev => recibir(ev.data));
-  try { new BroadcastChannel('krb-luces').onmessage = ev => recibir(ev.data); } catch(e){}
+  if (CANAL) CANAL.onmessage = async ev => {
+    const d = ev.data;
+    if (d && d.api){                                                    // pedido de un iPad de control (?demo=control): se atiende como el Dell
+      let res = null, error = null;
+      try { res = await simApi(d.ruta, d.params); if (/^\/api\/(set|efecto|apagar)/.test(d.ruta)) SIM.control = performance.now(); }
+      catch(e){ error = String(e.message || e); }
+      CANAL.postMessage({resp:d.id, res, error}); return;
+    }
+    if (d && !d.resp) recibir(d);
+  };
   simMomento(PARAMS.get('momento') || 'base_juegos'); pintarEstado(simEstado());
   bucleDemo();
+}
+
+/* ---------- iPad de control del demo (?demo=control, Cote rev 192) ----------
+   Es el iPad completo, pero en vez de hablar con el Dell maneja el demo abierto en el mismo navegador
+   (la pantalla 1 del GC Master), por BroadcastChannel. Con bingo_al_publico se abre solo el mapa de Seguir
+   y la persona sigue al animador a mano: mientras mueve las cabezas, el demo deja de seguirlo solo. */
+const CANAL = DEMO ? (() => { try { return new BroadcastChannel('krb-luces'); } catch(e){ return null; } })() : null;
+const pedidos = new Map(); let nPedido = 0;
+if (CONTROL && CANAL) CANAL.onmessage = ev => {
+  const d = ev.data; if (!d || !d.resp || !pedidos.has(d.resp)) return;
+  const p = pedidos.get(d.resp); pedidos.delete(d.resp);
+  if (d.error) p.no(new Error(d.error)); else p.si(d.res);
+};
+function canalApi(path, params){
+  if (path.endsWith('luces.json')) return fetch(path, {cache:'no-store'}).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+  if (!CANAL) return Promise.reject(new Error('sin canal'));
+  return new Promise((si, no) => {
+    const id = 'c' + (++nPedido) + '-' + Math.random().toString(36).slice(2, 7);
+    pedidos.set(id, {si, no});
+    CANAL.postMessage({api:true, id, ruta:path, params: params || null});
+    setTimeout(() => { if (pedidos.delete(id)) no(new Error('sin demo')); }, 2000);
+  });
+}
+function marcaAnimador(a){                                              // el animador del demo en el mapa de Seguir
+  const map = $('map'), m = $('animMarca'); if (!map || !m || animador.activo) return;
+  if (!a){ m.style.display = 'none'; return; }
+  const [u, v] = aSalon(a.p);
+  m.style.display = 'block';
+  m.style.left = ((v - MAPA.v0) / (MAPA.v1 - MAPA.v0) * map.clientWidth) + 'px';
+  m.style.top = ((MAPA.u0 - u) / (MAPA.u0 - MAPA.u1) * map.clientHeight) + 'px';
 }
 
 /* ---------- Inicio ---------- */
