@@ -124,6 +124,27 @@
   .vista .bar button{border:0;background:#000a;color:#fff;border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer}
   .vista.oculta .bar{position:static;padding:8px 10px}
   @media (max-width:640px){.vista{margin:0 14px 10px}.vista .bar span{display:none}.vista .bar{justify-content:flex-end}}
+  /* Seguir en pantalla horizontal (celular acostado, computador): todo en una sola pantalla.
+     Vista 3D a la izquierda (todo el alto), mapa y botones a la derecha. */
+  @media (orientation: landscape) and (min-width: 600px){
+    body.en-seguir header{padding:6px 14px 2px} body.en-seguir h1{font-size:18px}
+    body.en-seguir .pill{padding:5px 10px;font-size:12px}
+    body.en-seguir nav{margin:4px 14px 6px;padding:3px} body.en-seguir nav button{padding:7px 4px;font-size:15px}
+    body.en-seguir .vista{position:fixed;left:14px;width:calc(50% - 21px);top:var(--arriba,96px);bottom:var(--abajo,78px);margin:0;box-shadow:none}
+    body.en-seguir .vista canvas{height:100%}
+    body.en-seguir main{margin-left:50%;padding:0 14px 0 7px}
+    body.en-seguir .map{max-height:calc(100vh - var(--arriba,96px) - var(--abajo,78px) - 120px)}
+    body.en-seguir .map .warn{font-size:10px;bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    body.en-seguir .vista .bar span{display:none} body.en-seguir .vista .bar{justify-content:flex-end}
+    body.en-seguir .master label, body.en-seguir .fade label{display:none}
+    body.en-seguir .master input[type=range]{height:32px;margin:0}
+    body.en-seguir #seguir .help, body.en-seguir #readout{display:none}
+    body.en-seguir #seguir .row{margin-top:6px} body.en-seguir #seguir .chip{padding:7px 11px;font-size:13px}
+    body.en-seguir .seg.chico{margin:6px 0 0} body.en-seguir .seg.chico button{padding:7px 4px;font-size:13px}
+    body.en-seguir .pad{height:calc(100vh - var(--arriba,96px) - var(--abajo,78px) - 54px)}
+    body.en-seguir footer{padding-top:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom))}
+    body.en-seguir .blackout{padding:12px 16px;font-size:15px}
+  }
   .toast{position:fixed;left:50%;top:18px;transform:translate(-50%,-80px);background:#232733;border:1px solid var(--line);padding:10px 18px;border-radius:999px;font-size:15px;transition:.25s;opacity:0;z-index:9}
   .toast.show{transform:translate(-50%,0);opacity:1}
 </style>
@@ -200,10 +221,10 @@
     </div>
     <div class="readout" id="readout"></div>
     <div class="row">
-      <button class="chip" id="segOn">Encender (blanco cálido)</button>
-      <button class="chip" id="segPublico">Ir al público</button>
-      <button class="chip" id="segEscenario">Volver al escenario</button>
-      <button class="chip" id="segOff">Apagar cabezas</button>
+      <button class="chip" id="segOn" title="Encender en blanco cálido">Encender</button>
+      <button class="chip" id="segPublico">Al público</button>
+      <button class="chip" id="segEscenario">Al escenario</button>
+      <button class="chip" id="segOff">Apagar</button>
     </div>
   </section>
 
@@ -574,7 +595,7 @@ function pintarSeguir(){
 
   // mapa
   const faltan = segActivos().filter(id => !calibrada(id)).map(id => segIds().indexOf(id) + 1);
-  $('mapWarn').textContent = faltan.length ? `Cabeza ${faltan.join(', ')} sin calibrar: apunta según la vista 3D (aproximado). Calibrar en Kennedy con las luces reales.` : '';
+  $('mapWarn').textContent = faltan.length ? `Sin calibrar (cabeza ${faltan.join(', ')}): apuntan según la vista 3D. Calibrar en Kennedy.` : '';
   const t = $('target'), map = $('map');
   if (objetivo){ t.style.display = 'block'; t.style.left = (objetivo.fx * map.clientWidth) + 'px'; t.style.top = (objetivo.fy * map.clientHeight) + 'px'; }
 
@@ -686,9 +707,18 @@ $('blackout').onclick = async () => {
 };
 
 /* ---------- Pestanas ---------- */
+/* Mide el espacio entre las pestanas y la barra de abajo (para la vista lado a lado en horizontal) */
+function medirSeguir(){
+  const nav = document.querySelector('nav').getBoundingClientRect(), pie = document.querySelector('footer').getBoundingClientRect();
+  document.body.style.setProperty('--arriba', Math.round(nav.bottom + 4) + 'px');
+  document.body.style.setProperty('--abajo', Math.round(window.innerHeight - pie.top + 6) + 'px');
+  V.sucio = true;
+}
+window.addEventListener('resize', () => { if (document.body.classList.contains('en-seguir')) medirSeguir(); });
 function abrirTab(id){
   const estabaEnSeguir = document.body.classList.contains('en-seguir');
   document.body.classList.toggle('en-seguir', id === 'seguir');
+  if (id === 'seguir') requestAnimationFrame(() => { window.scrollTo(0, 0); medirSeguir(); pintarSeguir(); });
   if (id === 'seguir' && !estabaEnSeguir) $('vSalon').click();       // al entrar: ver todo el salon con las cabezas
   if (id !== 'seguir' && estabaEnSeguir) $('vReset').click();        // al salir: volver a la vista del escenario
   V.sucio = true;
