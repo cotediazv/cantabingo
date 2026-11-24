@@ -11,7 +11,7 @@
 // También escribe el mes en B8 y el monto de cada show en la columna siguiente a la del show.
 // llenarMes (el archivo de antes) no se usa ni se toca.
 const CLAVE_PROGRAMACION = '__CLAVE__';
-const PROG_VERSION = 9;
+const PROG_VERSION = 10;
 
 const PR_PRIMERA = 12, PR_ALTO = 39, PR_BLOQUES = 20, PR_RESUMEN = 835;
 const PR_COL = { MK: 3, KENNEDY: 3, EV: 12, EVENTOS: 12, KR: 22, KARAROCK: 22, TOB: 32, TOBALABA: 32, FRI: 42, FRIDA: 42, PAN: 52, PANORAMICO: 52 };
@@ -194,7 +194,9 @@ function llenarProg_(ss, sh, b) {
     }
     const sec = SEC[area] || [];
     for (let q = 0; q < sec.length; q++) if (!nombres[sec[q]] && !formB[sec[q]]) { escribirNombre(sec[q], nombre); agregados.push(nombre); return sec[q]; }
-    return -1;
+    // Sin espacio libre en su sección: va a la fila que ya tiene en otra parte de la lista (Cote, 24 nov: Guille como
+    // animador en Tobalaba cae en su fila de cámaras)
+    return filaEn_(nombres, todas, nombre, corto);
   };
   const agregados = [], faltan = [], suma = {}, activo = {}, banda = {};
 
