@@ -794,7 +794,7 @@ const connectedNames = () => {
   }
   return out;
 };
-require('./raffle.js')({ app, db, save, requireAdmin, fail, setStage, refreshAll, connectedNames });
+require('./raffle.js')({ app, db, save, requireAdmin, fail, setStage, refreshAll, connectedNames, festejo });
 
 let lightApi = null; // sala light (light.js): se conecta más abajo
 const karaoke = require('./karaoke.js')({ app, db, save, requireAdmin, requireLocal, fail, salaVenue: () => (Object.values(db.sessions)[0] || {}).theme || '',

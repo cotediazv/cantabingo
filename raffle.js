@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const ROLL_MS = 6500; // cuánto dura la animación antes de revelar el nombre
 const MAX_PICKS = 4; // un rosko admite hasta 4 concursantes
 
-module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, refreshAll, connectedNames }) {
+module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, refreshAll, connectedNames, festejo = () => {} }) {
   const key = (name) => String(name).trim().toLowerCase().replace(/\s+/g, ' ');
   db.people ||= {}; // clave normalizada -> { name, at }
   db.raffle ||= { picked: [], roll: null };
@@ -139,7 +139,7 @@ module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, 
     const name = r.picked.find((n) => key(n) === key(pl.name));
     if (!name) return fail(res, 409, 'No estás entre los sorteados');
     if (r.roll && r.roll.winner === name && Date.now() - r.roll.at < ROLL_MS) return fail(res, 409, 'Espera a que termine el sorteo en pantalla');
-    if (b.play) conf()[name] = 'ok';
+    if (b.play) { if (conf()[name] !== 'ok') festejo(); conf()[name] = 'ok'; } // acepta jugar: confeti en el GC (pedido de Cote, 24 nov)
     else {
       r.picked = r.picked.filter((n) => n !== name);
       delete conf()[name];
