@@ -664,18 +664,22 @@ function toast(t){ const e = $('toast'); e.textContent = t; e.classList.add('sho
 const V = { salida:null, sucio:true, yaw:0, pitch:0.18, dist:10, objetivo:[0, 1.7, -2], fov:52 * Math.PI / 180 };
 // Donde esta cada luz. Se puede cambiar en luces.json con "vista3d": [[x,y,z], ...] en cada grupo.
 const POS3D = {
-  seguidor1:    { pos:[[-6.2, 3.6, 1.6]] },
-  seguidor2:    { pos:[[ 6.2, 3.6, 5.0]] },
-  seguidor3:    { pos:[[ 0.0, 3.9, 10.0]] },
+  // Las cabezas 1, 2 y 3 estan en pilares del salon: se giran junto con el salon (giro_salon).
+  seguidor1:    { pos:[[-4.5, 3.6, 3.0]], salon:true },
+  seguidor2:    { pos:[[ 4.5, 3.6, 6.0]], salon:true },
+  seguidor3:    { pos:[[ 0.0, 3.9, 11.0]], salon:true },
   frontales:    { pos:[[-4.7, 4.1, 0.6], [4.7, 4.1, 0.6]] },
   mini:         { pos:[[-2.4, 0.55, -3.2], [2.4, 0.55, -3.2]], piso:true },
   perimetrales: { pos:[[-3.9, 0.45, -3.75], [-1.3, 0.45, -3.75], [1.3, 0.45, -3.75], [3.9, 0.45, -3.75]] },
-  fondo:        { pos:[[-4.7, 3.9, -3.4], [4.7, 3.9, -3.4]] }
+  fondo:        { pos:[[-5.8, 4.35, 0.0], [5.8, 4.35, 0.0]] }   // arriba de las columnas azules
 };
 const sub = (a, b) => [a[0]-b[0], a[1]-b[1], a[2]-b[2]], add = (a, b) => [a[0]+b[0], a[1]+b[1], a[2]+b[2]];
 const mul = (a, k) => [a[0]*k, a[1]*k, a[2]*k], dot = (a, b) => a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
 const cross = (a, b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
 const norm = a => { const l = Math.hypot(...a) || 1; return mul(a, 1 / l); };
+// El escenario mira en diagonal hacia el salon. giro_salon (grados) en luces.json > vista3d; positivo = salon hacia la derecha.
+const giroSalon = () => (((conf && conf.vista3d && conf.vista3d.giro_salon != null) ? conf.vista3d.giro_salon : 45) * Math.PI / 180);
+const rotY = (p, a) => [p[0] * Math.cos(a) + p[2] * Math.sin(a), p[1], -p[0] * Math.sin(a) + p[2] * Math.cos(a)];
 
 function camara(){
   const cp = Math.cos(V.pitch), sp = Math.sin(V.pitch);
@@ -689,9 +693,21 @@ function P(p){
   const k = V.f / z;
   return [V.w / 2 + dot(d, V.rt) * k, V.h / 2 - dot(d, V.up) * k, z, k];
 }
+/* Recorte contra el plano cercano de la camara (para pisos y lineas que pasan por detras) */
+const CERCA = 0.25;
+const aCam = p => { const d = sub(p, V.ojo); return [dot(d, V.rt), dot(d, V.up), dot(d, V.fw)]; };
+const aPantalla = c => [V.w / 2 + c[0] * V.f / c[2], V.h / 2 - c[1] * V.f / c[2]];
+const cortar = (a, b) => { const t = (CERCA - a[2]) / (b[2] - a[2]); return [a[0] + (b[0]-a[0]) * t, a[1] + (b[1]-a[1]) * t, CERCA]; };
 function poly(pts, fill, stroke){
-  const q = pts.map(P); if (q.some(x => !x)) return;
-  const c = V.ctx; c.beginPath(); q.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.closePath();
+  const cs = pts.map(aCam), out = [];
+  for (let i = 0; i < cs.length; i++){
+    const a = cs[i], b = cs[(i + 1) % cs.length], ai = a[2] >= CERCA, bi = b[2] >= CERCA;
+    if (ai) out.push(a);
+    if (ai !== bi) out.push(cortar(a, b));
+  }
+  if (out.length < 3) return;
+  const q = out.map(aPantalla), c = V.ctx;
+  c.beginPath(); q.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.closePath();
   if (fill){ c.fillStyle = fill; c.fill(); } if (stroke){ c.strokeStyle = stroke; c.lineWidth = 1; c.stroke(); }
 }
 function caja(x0, x1, y0, y1, z0, z1, frente, lado, techo){
@@ -701,7 +717,10 @@ function caja(x0, x1, y0, y1, z0, z1, frente, lado, techo){
   poly([[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]], frente);
 }
 function linea(a, b, color, ancho){
-  const p = P(a), q = P(b); if (!p || !q) return;
+  let ca = aCam(a), cb = aCam(b);
+  if (ca[2] < CERCA && cb[2] < CERCA) return;
+  if (ca[2] < CERCA) ca = cortar(ca, cb); else if (cb[2] < CERCA) cb = cortar(ca, cb);
+  const p = aPantalla(ca), q = aPantalla(cb);
   const c = V.ctx; c.strokeStyle = color; c.lineWidth = ancho || 1; c.beginPath(); c.moveTo(p[0], p[1]); c.lineTo(q[0], q[1]); c.stroke();
 }
 
@@ -763,28 +782,64 @@ function dibujar3D(){
   ctx.globalCompositeOperation = 'source-over';
   ctx.fillStyle = '#050608'; ctx.fillRect(0, 0, W, H);
 
-  // --- Sala ---
-  poly([[-8,0,0],[8,0,0],[8,0,12],[-8,0,12]], '#0d0e12');                       // piso del salon
-  poly([[-5,0.4,-4],[5,0.4,-4],[5,4.6,-4],[-5,4.6,-4]], '#15171d');               // pared del fondo
-  for (let x = -8.6; x < 5; x += 0.9){                                              // listones en diagonal
-    linea([Math.max(-5, x), 0.4 + Math.max(0, -5 - x), -3.99], [Math.min(5, x + 4.2), 0.4 + Math.min(4.2, 5 - x), -3.99], '#262a33', 1);
-    linea([Math.min(5, -x), 0.4 + Math.max(0, -5 - x), -3.99], [Math.max(-5, -x - 4.2), 0.4 + Math.min(4.2, 5 - x), -3.99], '#262a33', 1);
+  // --- Sala (segun las fotos del escenario de Mercado Kennedy) ---
+  const gs = giroSalon();
+  poly([[-9,0,-5],[11,0,-5],[11,0,14],[-9,0,14]].map(p => rotY(p, gs)), '#0d0e12'); // piso del salon (girado)
+  for (let k = -8; k <= 10; k += 2){                                                // baldosas: muestran hacia donde va el salon
+    linea(rotY([k, 0.01, 0.5], gs), rotY([k, 0.01, 14], gs), '#15171c', 1);
+    linea(rotY([-9, 0.01, k + 4], gs), rotY([11, 0.01, k + 4], gs), '#15171c', 1);
   }
-  caja(-5, 5, 0, 0.4, -4, 0, '#1c1f27', '#16181e', '#22252e');                     // tarima
-  for (let x = -4.6; x <= 4.6; x += 0.55) linea([x, 4.6, -3.6], [x, 4.0 + 0.3 * Math.sin(x * 3), -3.6], '#3a3529', 1); // cuerdas con ampolletas
-  poly([[-1.3,1.6,-3.9],[1.3,1.6,-3.9],[1.3,3.0,-3.9],[-1.3,3.0,-3.9]], '#1d2b3a', '#3a4b60');  // pantalla karaoke
-  caja(-2.4, -0.9, 0.4, 1.3, -3.4, -2.6, '#191b22', '#14161b', '#20232b');         // bateria
-  caja(1.8, 3.8, 0.4, 1.5, -2.9, -2.2, '#1a1d25', '#14161b', '#2a2e38');           // cabina DJ
-  caja(-7.0, -6.0, 0, 4.6, -0.6, 0.6, '#14161c', '#101217', '#1b1e25');           // columna izquierda
-  caja(6.0, 7.0, 0, 4.6, -0.6, 0.6, '#14161c', '#101217', '#1b1e25');             // columna derecha
-  poly([[-6.9,1.4,0.61],[-6.1,1.4,0.61],[-6.1,3.0,0.61],[-6.9,3.0,0.61]], '#1b2a40'); // pantallas de las columnas
-  poly([[6.1,1.4,0.61],[6.9,1.4,0.61],[6.9,3.0,0.61],[6.1,3.0,0.61]], '#1b2a40');
+  poly([[-8.2,0,-1.2],[-6.4,0,-1.2],[-6.4,2.6,-1.2],[-8.2,2.6,-1.2]], '#1a1f26', '#2a313b'); // acceso a estacionamientos (lado izquierdo, abierto)
+  poly([[-8.0,2.0,-1.19],[-6.6,2.0,-1.19],[-6.6,2.5,-1.19],[-8.0,2.5,-1.19]], '#e8eaee');    // letrero del acceso
+  poly([[-5,0,-4],[5,0,-4],[5,4.6,-4],[-5,4.6,-4]], '#17191e');                   // pared del fondo (oscura)
+  [-3.3, 0, 3.3].forEach(cx => {                                                    // dibujo de X turquesa
+    [[-1.6, 0.8, 1.6, 4.0], [1.6, 0.8, -1.6, 4.0], [-1.6, 1.2, 1.6, 4.4], [1.6, 1.2, -1.6, 4.4]].forEach(([x0, y0, x1, y1]) =>
+      linea([cx + x0, y0, -3.99], [cx + x1, y1, -3.99], '#2c4f55', 1.4));
+  });
+  [-1.8, -1.65, 1.65, 1.8].forEach(x => linea([x, 0.5, -3.99], [x, 4.6, -3.99], '#2c4f55', 1)); // lineas verticales
+  // Tarima: frente de madera y esquina derecha en diagonal
+  const tar = [[-5,-4],[5,-4],[5,-1.6],[3.2,0.3],[-5,0.3]], ht = 0.45;
+  poly(tar.map(([x, z]) => [x, ht, z]), '#24201b');
+  for (let i = 0; i < tar.length; i++){
+    const [x0, z0] = tar[i], [x1, z1] = tar[(i + 1) % tar.length];
+    if (z0 >= -1.6 || z1 >= -1.6) poly([[x0,0,z0],[x1,0,z1],[x1,ht,z1],[x0,ht,z0]], '#6b4a26', '#7d5a30');
+  }
+  poly([[-1.15,1.35,-3.95],[1.15,1.35,-3.95],[1.15,2.6,-3.95],[-1.15,2.6,-3.95]], '#0b0d12', '#2a2f3a'); // televisor
+  caja(-1.6, 0.6, ht, 1.25, -3.7, -3.1, '#121317', '#0e0f12', '#17181d');       // mesa con pano negro
+  caja(-1.4, 0.2, ht, 0.95, -3.0, -2.2, '#1a1c22', '#14161b', '#2a2d35');       // bateria
+  caja(0.9, 1.8, ht, 1.75, -3.3, -2.7, '#2b2e36', '#22252c', '#3a3e48');        // case (flight case)
+  caja(-2.6, -1.9, ht, 1.2, -3.4, -2.9, '#141519', '#101114', '#1b1c21');       // parlante
+  // Columnas azules de listones en las esquinas, con paneles de luz
+  [[-6.3, -5.3], [5.3, 6.3]].forEach(([x0, x1]) => {
+    caja(x0, x1, 0, 4.3, -0.6, 0.6, '#2f5f9e', '#264f86', '#3a6fb5');
+    for (let x = x0 + 0.12; x < x1; x += 0.16) linea([x, 0, 0.61], [x, 4.3, 0.61], '#24497d', 1);
+    const xp = x0 < 0 ? x1 + 0.005 : x0 - 0.005;
+    poly([[xp,1.9,-0.25],[xp,1.9,0.25],[xp,3.1,0.25],[xp,3.1,-0.25]], '#e9edf2');   // panel de luz
+  });
+  // Marco azul arriba
+  linea([-5.8, 4.5, 0.3], [5.8, 4.5, 0.3], '#3a6fb5', 4);
+  linea([-5.8, 4.5, 0.3], [-5.8, 4.5, -3.6], '#3a6fb5', 4);
+  linea([5.8, 4.5, 0.3], [5.8, 4.5, -3.6], '#3a6fb5', 4);
+  // Red de cuerdas sobre el escenario (del marco del frente hacia atras) y cuerdas colgando
+  linea([-5.8, 4.5, -2.6], [5.8, 4.5, -2.6], '#3a6fb5', 3);
+  for (let x = -5.4; x <= 5.4; x += 0.42) linea([x, 4.5, 0.3], [x, 4.35, -2.6], '#8f7d5c', 1);
+  for (let z = 0; z >= -2.4; z -= 0.6) linea([-5.8, 4.42, z], [5.8, 4.42, z], '#8f7d5c', 1);
+  for (let x = -5.4; x <= 5.4; x += 0.42){
+    const largo = 1.0 + 0.5 * Math.abs(Math.sin(x * 1.7));
+    linea([x, 4.5, 0.3], [x + 0.15, 4.5 - largo, -0.6], '#b8a27a', 1);
+  }
+  // Tres lamparas hexagonales de madera
+  [-1.5, 0, 1.5].forEach((cx, i) => {
+    const cy = 3.55 + (i === 1 ? -0.1 : 0.05), r = 0.62, cz = -1.1;
+    poly([0,1,2,3,4,5].map(k => [cx + r * Math.cos(k * Math.PI / 3), cy + r * Math.sin(k * Math.PI / 3) * 0.85, cz]), '#b08a52', '#d0aa6a');
+  });
 
   // --- Luces (se suman como luz real) ---
   ctx.globalCompositeOperation = 'lighter';
   const marcas = [];
   conf.grupos.forEach(g => {
-    const def = POS3D[g.id] || {}, posiciones = g.vista3d || def.pos || [], c = colorGrupo(g);
+    const def = POS3D[g.id] || {}, c = colorGrupo(g);
+    const posiciones = g.vista3d || (def.pos || []).map(p => def.salon ? rotY(p, gs) : p);
     if (!c) return;
     posiciones.forEach(pos => {
       marcas.push({pos, c});
@@ -792,8 +847,9 @@ function dibujar3D(){
         haz(pos, [pos[0], 2.6, -3.95], c, 0.35);
         brillo([pos[0], 1.9, -3.98], 1.9, c, 1);
       } else if (g.id === 'fondo'){                                      // focos arriba que pintan la pared
-        haz(pos, [pos[0] * 0.55, 2.2, -3.95], c, 0.3);
-        brillo([pos[0] * 0.55, 2.3, -3.98], 2.8, c, 0.9);
+        const muro = [Math.sign(pos[0]) * 2.4, 2.4, -3.97];
+        haz(pos, muro, c, 0.3);
+        brillo(muro, 2.9, c, 0.9);
       } else if (g.id === 'frontales'){                                  // frontales: blanco de frente al escenario
         const blanco = [pos[0] * 0.25, 0.4, -1.4];
         haz(pos, blanco, c, 0.2); brillo(blanco, 2.2, c, 0.9, 0.35);
@@ -823,7 +879,7 @@ function dibujar3D(){
   cv.addEventListener('pointerdown', e => { last = [e.clientX, e.clientY]; cv.setPointerCapture(e.pointerId); });
   cv.addEventListener('pointermove', e => {
     if (!last) return;
-    V.yaw = Math.max(-1.1, Math.min(1.1, V.yaw - (e.clientX - last[0]) * 0.006));
+    V.yaw = Math.max(giroSalon() - 1.3, Math.min(giroSalon() + 1.3, V.yaw - (e.clientX - last[0]) * 0.006));
     V.pitch = Math.max(0.03, Math.min(0.9, V.pitch + (e.clientY - last[1]) * 0.004));
     last = [e.clientX, e.clientY]; V.sucio = true;
   });
@@ -840,7 +896,7 @@ function dibujar3D(){
   };
   $('vOcultar').onclick = () => { vp.oculta = !vp.oculta; aplicar(); };
   $('vTam').onclick = () => { vp.grande = !vp.grande; aplicar(); };
-  $('vReset').onclick = () => { V.yaw = 0; V.pitch = 0.18; V.dist = 10; V.sucio = true; };
+  $('vReset').onclick = () => { V.yaw = giroSalon() * 0.6; V.pitch = 0.2; V.dist = 11; V.sucio = true; };
   window.addEventListener('resize', aplicar);
   aplicar();
   (function cuadro(){ if (V.sucio) dibujar3D(); requestAnimationFrame(cuadro); })();
@@ -860,6 +916,7 @@ async function sondearVista(){
   try { datos = await api('/api/datos'); if (!datos.calibracion) datos.calibracion = {}; } catch(e){}
   conf.grupos.forEach(g => zonas[g.id] = {color:null, intensidad:0});
   pintarDirecciones(); pintarTodo();
+  V.yaw = giroSalon() * 0.6; V.dist = 11; V.pitch = 0.2;   // vista inicial: desde el salon, en diagonal
   sondear(); setInterval(sondear, 3000); sondearVista(); V.sucio = true;
 })();
 </script>

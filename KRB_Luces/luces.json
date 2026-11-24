@@ -36,6 +36,11 @@
     "derecha":   { "pan": 170, "tilt": 100 }
   },
 
+  "vista3d": {
+    "_ayuda": "giro_salon: cuantos grados mira el escenario hacia el salon (45 = en diagonal). Positivo = el salon queda hacia la derecha del escenario; negativo = hacia la izquierda.",
+    "giro_salon": 45
+  },
+
   "fondo_enlazado": {
     "_ayuda": "Botones grandes que pintan la pared: cambian juntos los perimetrales y los focos de fondo. Tambien se usan en Parpadeo pared y Alternar colores.",
     "grupos": ["perimetrales", "fondo"],
