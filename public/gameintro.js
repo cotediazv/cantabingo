@@ -1,6 +1,6 @@
 // Presentación de los juegos antes de votar (pedido de Cote, 21 nov): al entrar en «Por votación», primero salen las
 // reglas para el público y después cada juego, uno por uno, con un dibujo simple de cómo funciona; al final, «¡A votar!».
-// Pasan solas cada 10 segundos (el animador puede adelantar con «Siguiente» o iniciar la votación cuando quiera).
+// Las pasa el animador, paso a paso (pedido de Cote, 24 nov), con «Siguiente»; después de la última parte la votación.
 // Escrito en JavaScript antiguo (ES5): lo usan la plataforma completa y la pantalla liviana (pv.html) de los navegadores
 // antiguos. Los dibujos son SVG; en la plataforma completa se mueven con las animaciones de styles.css (.gi …).
 (function (root) {
@@ -70,6 +70,7 @@
   // Lámina que toca según el tiempo: parte en «step» y avanza sola cada MS; la última queda hasta que parte la votación
   function stepOf(intro, now) {
     if (!intro) return 0;
+    if (intro.current != null) return intro.current; // paso a paso: la que eligió el animador (Cote, 24 nov)
     var n = (intro.step || 0) + Math.floor(Math.max(0, now - intro.at) / MS);
     return Math.min(n, 5);
   }

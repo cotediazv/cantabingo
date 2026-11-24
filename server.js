@@ -1006,7 +1006,8 @@ const GV_MS = 30000;
 // Presentación antes de votar (pedido de Cote, 21 nov): las reglas para el público y cada juego con su dibujo, una lámina
 // cada 10 s (public/gameintro.js); el animador puede adelantar («Siguiente») o iniciar la votación cuando quiera
 const INTRO_MS = 10000; const INTRO_LAST = 5;
-const introStep = (g) => (g.intro ? Math.min(INTRO_LAST, (g.intro.step || 0) + Math.floor(Math.max(0, Date.now() - g.intro.at) / INTRO_MS)) : 0);
+// Paso a paso (pedido de Cote, 24 nov: «que las maneje el animador, para que sea fluido»): ya no avanzan solas
+const introStep = (g) => (g.intro ? Math.min(INTRO_LAST, g.intro.step || 0) : 0);
 function gvBlank() {
   const old = db.gameVote || {};
   return { id: old.id || 0, rev: (old.rev || 0) + 1, phase: 'idle', round: 0, options: [], votes: {}, until: 0, counts: null, total: 0, runoff: null, tie2: false, winner: null, tie: false, empty: false, decidedAt: 0 };

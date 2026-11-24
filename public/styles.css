@@ -3437,3 +3437,19 @@ html[data-stage]:not([data-stage="rueda"]) #w-accepted .w-ann { display: none !i
 @keyframes vrPop { from { transform: scale(1.08); } to { transform: none; } }
 body.vroll-on .vk-list, body.vroll-on .vf-list { visibility: hidden; }
 body.vroll-on .vk-card:has(> .vk-list) { visibility: hidden; }
+/* La votación del juego en el GC de OBS, en franja baja (pedido de Cote, 24 nov: «tiene que ir con GC en todo momento,
+   porque el cartón en pantalla completa está tapando al animador»): texto a la izquierda y los círculos o el dibujo al lado */
+#gv.gv-gc { padding: 0 0 4vh; }
+#gv.gv-gc .gv-card { width: 92vw; max-width: none; padding: 1.8vh 2.4vw; }
+#gv.gv-gc .gv-card:not(.gv-intro) .gv-main { grid-template-columns: minmax(0, 34%) minmax(0, 1fr); justify-items: start; align-items: center; text-align: left; column-gap: 3vw; row-gap: .6vh; }
+#gv.gv-gc .gv-card:not(.gv-intro) .gv-main > * { grid-column: 1; }
+#gv.gv-gc .gv-card:not(.gv-intro) .gv-rings { grid-column: 2; grid-row: 1 / span 5; margin: 0; gap: 2vw; }
+#gv.gv-gc .gv-ring, #gv.gv-gc .gv-rings.n2 .gv-ring { width: 10vw; width: min(13vh, 10vw); }
+#gv.gv-gc .gv-name { font-size: 1.8vh; }
+#gv.gv-gc .gv-intro .gv-main { grid-template-columns: 16vh minmax(0, 1fr); justify-items: start; text-align: left; column-gap: 2.6vw; row-gap: .6vh; }
+#gv.gv-gc .gv-intro .gv-main > * { grid-column: 2; }
+#gv.gv-gc .gv-intro .gv-introbody { display: contents; }
+#gv.gv-gc .gv-intro .gv-art { grid-column: 1; grid-row: 1 / span 3; width: 16vh; }
+#gv.gv-gc .gv-intro .gv-lines { columns: 2; column-gap: 3vw; font-size: 2vh; }
+#gv.gv-gc .gv-intro .gv-dots { display: none; }
+#gv.gv-gc .gv-card { width: 80vw; justify-self: start; margin-left: 4vw; } /* deja libre el QR de la esquina */

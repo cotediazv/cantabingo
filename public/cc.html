@@ -257,14 +257,16 @@ function gvHtml() {
     // Presentación antes de votar (pedido de Cote): las reglas y cada juego pasan solos cada 10 s en la pantalla
     var k = window.GAME_INTRO && g.intro ? window.GAME_INTRO.stepOf(g.intro, new Date().getTime() + offset) : 0;
     var sl = window.GAME_INTRO ? window.GAME_INTRO.slides(V[(sala() || {}).theme] || 'Frida')[k] : null;
-    return '<p class="gvnow">📢 En pantalla: ' + (sl ? sl.icon + ' ' + h(sl.title) : '') + ' (' + (k + 1) + ' de 6)</p><p class="gvhelp">Las reglas y cada juego pasan solos cada 10 segundos. Cuando quieras, inicia la votación.</p>' +
-      btn('🗳️ Iniciar votación (30 s)', 'gvStart', '', 'big primary paso') + '<div class="center">' + btn('⏭ Siguiente', 'gvNext', '', '', k >= 5) + '</div>' + cancel;
+    var nx = window.GAME_INTRO ? window.GAME_INTRO.slides(V[(sala() || {}).theme] || 'Frida')[k + 1] : null; // paso a paso (Cote, 24 nov)
+    return '<p class="gvnow">📢 En pantalla: ' + (sl ? sl.icon + ' ' + h(sl.title) : '') + ' (' + (k + 1) + ' de 6)</p>' +
+      (k < 5 ? btn('▶ Siguiente: ' + (nx ? nx.icon + ' ' + h(nx.title) : ''), 'gvNext', '', 'big primary paso') + '<div class="center">' + btn('🗳️ Saltar a la votación', 'gvStart', '', '') + '</div>'
+        : btn('🗳️ Iniciar votación (30 s)', 'gvStart', '', 'big primary paso')) + cancel;
   }
   if (g.phase === 'voting') return '<p class="gvnow">🗳️ ' + (g.round === 2 ? 'Segunda vuelta' : 'Votación abierta') + ' · quedan ' + clock(g.until - (new Date().getTime() + offset)) + ' · ' + votos(g.total) + '</p>' + rows + btn('🗳️ Votando…', 'none', '', 'big primary paso', true) + cancel;
   if (g.phase === 'result' && g.empty) return '<p class="gvnow">Nadie votó.</p>' + btn('🗳️ Repetir votación (30 s)', 'gvStart', '', 'big primary paso') + cancel;
   if (g.phase === 'result' && g.runoff) return '<p class="gvnow">Nadie superó el 50%. Segunda vuelta: ' + gameIcon(g.runoff[0]) + ' ' + h(gameName(g.runoff[0])) + ' y ' + gameIcon(g.runoff[1]) + ' ' + h(gameName(g.runoff[1])) + (g.tie2 ? ' (empate en el 2.º lugar: se sorteó)' : '') + '.</p>' + rows + btn('🗳️ Iniciar segunda vuelta (30 s)', 'gvStart', '', 'big primary paso') + cancel;
   if (g.phase === 'done' && g.winner) return '<p class="gvwin">🏆 Ganó ' + gameIcon(g.winner) + ' ' + h(gameName(g.winner)) + (g.tie ? ' (empate: se decidió por sorteo)' : '') + '</p>' + rows + btn('▶ Ir a ' + gameIcon(g.winner) + ' ' + h(gameName(g.winner)), 'gvGo', d('g', g.winner), 'big primary paso') + introBtn + '<div class="center">' + btn('🗳️ Nueva votación (30 s)', 'gvStart', '', '') + '</div>';
-  return '<p class="gvhelp">El público elige el próximo juego desde su celular, en 30 segundos. Gana el juego con más de la mitad de los votos; si ninguno lo logra, hay segunda vuelta entre los 2 primeros.</p>' + btn('🗳️ Iniciar votación (30 s)', 'gvStart', '', 'big primary paso') + introBtn;
+  return '<p class="gvhelp">El público elige el próximo juego desde su celular, en 30 segundos. Gana el juego con más de la mitad de los votos; si ninguno lo logra, hay segunda vuelta entre los 2 primeros. Primero, las instrucciones de cada juego en pantalla, paso a paso.</p>' + btn('📢 Iniciar instrucciones', 'gvIntro', '', 'big primary paso') + '<div class="center">' + btn('🗳️ Iniciar votación sin instrucciones (30 s)', 'gvStart', '', '') + '</div>';
 }
 // Menú de juegos (pedido de Cote, 21 nov): tres botones grandes, «Manual», «Por sorteo» y «Por votación», y nada más;
 // al tocar uno se despliega lo de esa modalidad en su momento. En el lobby (lobby = true) no van las otras actividades.

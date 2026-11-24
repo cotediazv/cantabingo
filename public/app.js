@@ -1941,7 +1941,7 @@ document.addEventListener('click', async (e) => {
   applyNavOpen(false); // se despliega al instante, sin esperar al servidor
   const g = await api('GET', '/api/gamedraw').catch(() => null);
   if (!g || (g.how || (g.free ? 'manual' : 'sorteo')) !== how) { try { await api('POST', '/api/gamedraw/mode', { how }); } catch (err) { fail(err); } }
-  if (how === 'votacion' && window.startGvIntro) await window.startGvIntro(); // primero, en pantalla, las reglas y cada juego (pedido de Cote)
+  // «Por votación» ya no parte sola la presentación (Cote, 24 nov): el animador toca «Iniciar instrucciones»
   paintGameNav();
 });
 // Deshacer (pedido de Cote): vuelve el sorteo de juegos al paso anterior (antes de «Iniciar sorteo», de la tómbola
