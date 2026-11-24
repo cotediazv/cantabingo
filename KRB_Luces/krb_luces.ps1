@@ -433,6 +433,7 @@ namespace KRB {
     static bool EjecutarMomento(string nombre) {
       List<string> acc;
       lock (ML) { if (!momentos.TryGetValue(nombre, out acc)) return false; }
+      if (acc.Count == 0) return true;                                     // momento sin acciones (p. ej. bingo_numero): no cambia nada
       int gen = Interlocked.Increment(ref genMomento);
       MomentoActual = nombre; MomentoN++;
       Thread t = new Thread(() => {

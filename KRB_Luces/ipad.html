@@ -1576,7 +1576,18 @@ const JUEGOS = [
     { id:'trivia_ganador', nombre:'Ganador (celebración)', igual:'celebracion_ganador' },
     { id:'trivia_premio', nombre:'Entrega del premio', igual:'entrega_premio' } ]}
 ];
-const todosMomentos = () => JUEGOS.flatMap(j => j.momentos);
+// Nombres que usa la Sala de juegos (lista de Code 1, registro rev 165-166) -> momento de luces.
+// "nada" = no cambia las luces (por ejemplo cada bolita del bingo: si el animador esta en el publico, las luces se quedan).
+// Los marcados "provisorio" esperan la respuesta de Cote (pregunta 18 de la Sala).
+const ALIAS_SALA = {
+  sala_abierta:'base_juegos', juego_siguiente:'base_juegos', bingo_numero:'nada',
+  bingo_ganador_aparece:'ganador_al_escenario', bingo_ganador_confirmado:'celebracion_ganador', bingo_vuelve_escenario:'base_juegos',
+  premio_entrega:'entrega_premio', rosko_ranking:'rosko_puntajes', rosko_ranking_fin:'base_juegos',
+  objeto_presenta:'objeto_votacion', objeto_votacion_fin:'base_juegos', objeto_final:'objeto_votacion',   // provisorio
+  festival_canta:'festival_cancion', festival_termina:'base_juegos', festival_redoble:'objeto_votacion'      // provisorio
+};
+const todosMomentos = () => JUEGOS.flatMap(j => j.momentos).concat(
+  Object.entries(ALIAS_SALA).map(([id, a]) => a === 'nada' ? {id, nombre:id, nada:true, oculto:true} : {id, nombre:id, igual:a, oculto:true}));
 const momentoPorId = id => todosMomentos().find(m => m.id === id);
 // Valores de canales de un momento (siempre con master al 100: el master del iPad no cambia lo que dispara el GC)
 function zonasDe(m){
@@ -1592,6 +1603,7 @@ function zonasDe(m){
   return out;
 }
 function compilarMomento(m){
+  if (m.nada) return [];
   if (m.igual) return compilarMomento(momentoPorId(m.igual));
   const mGuard = master; master = 100;
   try {
@@ -1657,9 +1669,10 @@ function momentoRecibido(e){
   pintarJuegos(e.momento);
   if (primero || !e.momento) return;
   escenaActiva = -1; efectoPared = null; progActivo = null;
-  const m = momentoPorId(e.momento);
+  let m = momentoPorId(e.momento);
+  while (m && m.igual) m = momentoPorId(m.igual);
   if (m){
-    const z = zonasDe(m.igual ? momentoPorId(m.igual) : m); Object.keys(z).forEach(id => zonas[id] = {color:z[id].color, intensidad:z[id].intensidad, pan:z[id].pan, tilt:z[id].tilt, zoom:z[id].zoom, posicion:z[id].posicion});
+    const z = zonasDe(m); Object.keys(z).forEach(id => zonas[id] = {color:z[id].color, intensidad:z[id].intensidad, pan:z[id].pan, tilt:z[id].tilt, zoom:z[id].zoom, posicion:z[id].posicion});
     pintarTodo(); pintarProgramas(); toast('▶ ' + m.nombre);
   }
   if (e.momento === 'bingo_al_publico') abrirTab('seguir');
