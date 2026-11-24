@@ -27,6 +27,7 @@ const PASOS = [
   { id: 'Oscar', nombre: 'Oscar', tipo: 'fijo' }, { id: 'Fer', nombre: 'Fer', tipo: 'fijo' },
   { id: 'mati', nombre: 'Matías', tipo: 'viernes' }, { id: 'dispPriss', nombre: 'Priss', tipo: 'disp' }, { id: 'dispKony', nombre: 'Kony', tipo: 'disp' },
 ];
+const AREA = { dj: 'dj', extra: 'ent', cantante: 'ent', animador: 'ent', camH: 'camH', camHx: 'camH', camV: 'camV', camVx: 'camV', editor: 'edi' };
 const SIN_PAGO = ['COTE']; // Cote, 23 nov: «todo lo que sea Cote no se anota»
 const ROL_TARIFA = { dj: 'ent', extra: 'ent', cantante: 'ent', animador: 'ent', camH: 'cam', camHx: 'cam', camV: 'cam', camVx: 'cam', editor: 'edi' };
 
@@ -57,13 +58,19 @@ module.exports = function programacion({ app, dir }) {
     '0|FRIDA': { dj: 'Nico', cantante: 'Gonzalo', camH: 'Guille', camV: 'Liza', editor: 'Meni' },
   };
   if (!P.glosa.clave) P.glosa.clave = crypto.randomBytes(12).toString('hex');
-  let timer = null;
+  let timer = null; let pendiente = false;
   const save = () => {
-    clearTimeout(timer);
+    clearTimeout(timer); pendiente = true;
     timer = setTimeout(() => {
+      pendiente = false;
       fs.writeFile(`${FILE}.tmp`, JSON.stringify(P), (err) => { if (!err) fs.rename(`${FILE}.tmp`, FILE, () => {}); });
     }, 300);
   };
+  // Si el servidor se apaga (por ejemplo, al publicar) con un cambio recién hecho, se guarda antes de cerrar
+  process.on('exit', () => {
+    if (!pendiente) return;
+    try { fs.writeFileSync(`${FILE}.tmp`, JSON.stringify(P)); fs.renameSync(`${FILE}.tmp`, FILE); } catch (e) { console.error('Programación: no se pudo guardar al salir', e.message); }
+  });
   save();
 
   // ---------- Acceso (clave propia) ----------
@@ -345,12 +352,15 @@ module.exports = function programacion({ app, dir }) {
     // Bloque de la hoja TURNOS de la GLOSA (y las mismas filas ya separadas, para enviarlas por el script)
     const pest = `${MES}${String(y).slice(2)} MASTER TOTAL`;
     const filas = [['MES', String(m), 'AÑO', String(y), 'PESTAÑA', pest], [], ['DIA', 'LOCAL', 'TURNOS']];
+    const detalle = [];
     for (const { fecha } of delMes) {
       for (const l of ['MK', 'FRIDA', 'TOB']) {
         if (!abierto(fecha, l)) continue;
         const ps = pagos(fecha, l);
         ps.filter((p) => p.falta).forEach((p) => faltan.push(`${etiquetaTurno(fecha)} ${ETQ[l]}: falta la tarifa de ${p.nombre} (${ROL_TARIFA[p.rol] === 'ent' ? 'entretención' : ROL_TARIFA[p.rol] === 'cam' ? 'cámara' : 'edición'})`));
         if (ps.length) filas.push([String(parse(fecha).d), l, ps.map((p) => `${p.codigo} ${p.monto || 0}`).join(', ')]);
+        // Lo mismo con el área de cada uno, para que el script lo ponga en su sección de la lista (Cote, 24 nov)
+        ps.forEach((p) => detalle.push({ dia: parse(fecha).d, local: l, codigo: p.codigo, monto: p.monto || 0, area: AREA[p.rol] }));
       }
     }
     filas.push([]);
@@ -382,7 +392,7 @@ module.exports = function programacion({ app, dir }) {
     }
     return {
       mes: `${y}-${pad(m)}`, pestana: pest, anterior: `${MESES[(m + 10) % 12]}${String(m === 1 ? y - 1 : y).slice(2)} MASTER TOTAL`, b8: `${MES}${String(y).slice(2)}`,
-      cartelera: cart.join('\n'), entretencion: ent.join('\n'), camaras: cam.join('\n'), turnos, filas, shows, bloques, mesNum: m, anio: y, faltan: [...new Set(faltan)],
+      cartelera: cart.join('\n'), entretencion: ent.join('\n'), camaras: cam.join('\n'), turnos, filas, detalle, shows, bloques, mesNum: m, anio: y, faltan: [...new Set(faltan)],
     };
   }
 
@@ -727,13 +737,13 @@ module.exports = function programacion({ app, dir }) {
     const { y, m } = mesDe((req.body || {}).mes);
     const a = archivos(y, m);
     envio = { estado: 'enviando', mes: a.mes, desde: Date.now() };
-    const body = JSON.stringify({ clave: P.glosa.clave, pestana: a.pestana, anterior: a.anterior, b8: a.b8, filas: a.filas, shows: a.shows, bloques: a.bloques, mes: a.mesNum, anio: a.anio, llenar: (req.body || {}).llenar !== false });
+    const body = JSON.stringify({ clave: P.glosa.clave, pestana: a.pestana, anterior: a.anterior, b8: a.b8, filas: a.filas, detalle: a.detalle, shows: a.shows, bloques: a.bloques, mes: a.mesNum, anio: a.anio, llenar: (req.body || {}).llenar !== false });
     fetch(GLOSA_URL(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, redirect: 'follow', signal: AbortSignal.timeout(6 * 60e3) })
       .then((r) => r.text()).then((t) => {
         let j; try { j = JSON.parse(t); } catch { throw new Error('La GLOSA no respondió como se esperaba (revisa que el script esté publicado como aplicación web)'); }
         if (j.error) throw new Error(j.error);
-        const viejo = !(Number(j.version) >= 7);
-        envio = { estado: 'listo', mes: a.mes, a: Date.now(), creada: Boolean(j.creada), aviso: [j.aviso || '', viejo ? 'El script de la GLOSA es una versión anterior: le faltan los últimos cambios (por ejemplo, no crear filas repetidas de personas). Actualiza el script (pestaña GLOSA, «Actualizar el script») y vuelve a enviar.' : ''].filter(Boolean).join(' ') };
+        const viejo = !(Number(j.version) >= 8);
+        envio = { estado: 'listo', mes: a.mes, a: Date.now(), creada: Boolean(j.creada), aviso: [j.aviso || '', viejo ? 'El script de la GLOSA es una versión anterior: le faltan los últimos cambios (por ejemplo, poner a cada persona en su sección y limpiar las filas repetidas). Actualiza el script (pestaña GLOSA, «Actualizar el script») y vuelve a enviar.' : ''].filter(Boolean).join(' ') };
       })
       .catch((e) => { envio = { estado: 'error', mes: a.mes, a: Date.now(), error: clean(e && e.message, 300) || 'No se pudo enviar' }; })
       .finally(() => { P.glosa.ultimo = envio; save(); });

@@ -11,7 +11,7 @@
 // También escribe el mes en B8 y el monto de cada show en la columna siguiente a la del show.
 // llenarMes (el archivo de antes) no se usa ni se toca.
 const CLAVE_PROGRAMACION = '__CLAVE__';
-const PROG_VERSION = 7;
+const PROG_VERSION = 8;
 
 const PR_PRIMERA = 12, PR_ALTO = 39, PR_BLOQUES = 20, PR_RESUMEN = 835;
 const PR_COL = { MK: 3, KENNEDY: 3, EV: 12, EVENTOS: 12, KR: 22, KARAROCK: 22, TOB: 32, TOBALABA: 32, FRI: 42, FRIDA: 42, PAN: 52, PANORAMICO: 52 };
@@ -44,7 +44,8 @@ function doPost(e) {
       sh = ant.copyTo(ss).setName(b.pestana);
       creada = true;
     }
-    sh.getRange('B8').setValue(b.b8);
+    // B8: el mes y el año como texto (si no, la planilla lo toma como fecha y muestra «noviembre 26» a la derecha)
+    sh.getRange('B8').setNumberFormat('@').setValue(String(b.b8).toUpperCase()).setHorizontalAlignment('left');
     // La hoja TURNOS queda con el bloque del mes, como registro
     let t = ss.getSheetByName('TURNOS');
     if (!t) t = ss.insertSheet('TURNOS');
@@ -91,6 +92,19 @@ function filaDe_(nombres, nombre, corto) {
   return cand.length > 1 ? -2 : -1;
 }
 
+function rango_(a, b) { const r = []; for (let i = a; i <= b; i++) r.push(i); return r; }
+// Como filaDe_, pero solo entre algunas filas de la lista
+function filaEn_(nombres, idxs, nombre, corto) {
+  const n = nombres.map(normProg_);
+  const a = normProg_(nombre), c = normProg_(corto);
+  let hit = idxs.filter(function (j) { return n[j] && n[j] === a; });
+  if (!hit.length) hit = idxs.filter(function (j) { return n[j] && n[j] === c; });
+  if (!hit.length) { const pri = a.split(' ')[0] || c.split(' ')[0]; hit = idxs.filter(function (j) { return n[j] && n[j].split(' ')[0] === pri; }); }
+  // Nombre corto que es el comienzo del nombre (MATI → MATIAS FAJARDO)
+  if (!hit.length) { const pri = a.split(' ')[0] || c.split(' ')[0]; if (pri.length >= 3) hit = idxs.filter(function (j) { return n[j] && n[j].split(' ')[0].indexOf(pri) === 0; }); }
+  return hit.length === 1 ? hit[0] : hit.length > 1 ? -2 : -1;
+}
+
 function letraProg_(n) {
   let s = '';
   while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); }
@@ -132,7 +146,51 @@ function llenarProg_(ss, sh, b) {
       if (r[0]) alias[String(r[0]).trim().toUpperCase()] = String(r[1]).trim().toUpperCase();
     });
   }
-  const nombres = sh.getRange(PR_PRIMERA + 3, 2, 30, 1).getValues().map(function (r) { return String(r[0]).trim().toUpperCase(); });
+  // Lista de nombres de cada día (columna B, 30 filas; la misma en los 20 días). Secciones que dijo Cote (24 nov),
+  // contadas desde la primera fila de la lista (B15 en el primer día): DJ B15-B18, animadores y cantantes B19-B27,
+  // Kararock y Liza B28-B31, técnico B32, cámaras verticales B33-B37, cámaras en vivo B38-B41, editores B42-B43,
+  // extra (cámara en vivo) B44
+  const rgB = sh.getRange(PR_PRIMERA + 3, 2, 30, 1);
+  const nombres = rgB.getValues().map(function (r) { return String(r[0]).trim().toUpperCase(); });
+  const formB = rgB.getFormulas().map(function (r) { return r[0]; });
+  const SEC = { dj: rango_(0, 3), ent: rango_(4, 12), kara: rango_(13, 16), tec: [17], camV: rango_(18, 22), camH: rango_(23, 26), edi: [27, 28], extra: [29] };
+  const todas = rango_(0, 29);
+  const escribirNombre = function (off, valor) {
+    for (let x = 0; x < PR_BLOQUES; x++) {
+      const c = sh.getRange(PR_PRIMERA + x * PR_ALTO + 3 + off, 2);
+      if (!c.getFormula()) c.setValue(valor);
+    }
+    nombres[off] = String(valor).toUpperCase();
+  };
+  // Limpia las filas repetidas que agregaba el script antes (Cote, 24 nov: «Claudia 1.5» o «Loreto» cuando ya está
+  // «Loreto Canales»): una fila es repetida si es la misma persona que otra fila más completa de la lista
+  const limpiadas = [];
+  nombres.forEach(function (n, i) {
+    if (!n || formB[i]) return;
+    const ni = normProg_(n); const pi = ni.split(' ')[0];
+    const otra = nombres.some(function (m, j) {
+      if (j === i || !m) return false;
+      const nj = normProg_(m);
+      if (nj.split(' ')[0] !== pi) return false;
+      return nj.split(' ').length > ni.split(' ').length || (nj === ni && (j < i || /\d/.test(n)));
+    });
+    if (otra) { limpiadas.push(n); escribirNombre(i, ''); }
+  });
+  if (limpiadas.length) avisos.push('Saqué filas repetidas: ' + limpiadas.join(', '));
+  // Fila de una persona según lo que hizo: primero en su sección, después en las parecidas; si no está, en un espacio
+  // libre de su sección (por ejemplo, Jessica como cantante va en un espacio libre de animadores y cantantes)
+  const ORDEN = { dj: ['dj', 'ent', 'todas'], ent: ['ent', 'dj'], camV: ['camV', 'camH', 'extra', 'todas'], camH: ['camH', 'camV', 'extra', 'todas'], edi: ['edi', 'todas'] };
+  const filaArea = function (area, nombre, corto) {
+    const pasos = ORDEN[area] || ['todas'];
+    for (let p = 0; p < pasos.length; p++) {
+      const idx = pasos[p] === 'todas' ? todas : SEC[pasos[p]];
+      const f = filaEn_(nombres, idx, nombre, corto);
+      if (f !== -1) return f;
+    }
+    const sec = SEC[area] || [];
+    for (let q = 0; q < sec.length; q++) if (!nombres[sec[q]] && !formB[sec[q]]) { escribirNombre(sec[q], nombre); agregados.push(nombre); return sec[q]; }
+    return -1;
+  };
   const agregados = [], faltan = [], suma = {}, activo = {}, banda = {};
 
   filas.forEach(function (r) {
@@ -147,19 +205,29 @@ function llenarProg_(ss, sh, b) {
       sh.getRange(PR_RESUMEN + k, PR_DIA_RESUMEN[ci] + 1).setValue(String(r[3]).trim().toUpperCase());
       return;
     }
+    if (b.detalle) return; // los montos van abajo, con el área de cada uno
     String(r[2]).split(',').forEach(function (item) {
       const m = item.trim().match(/^(.+?)\s+(\d+)$/);
       if (!m) return;
       const corto = m[1].trim().toUpperCase();
       const nombre = alias[corto] || corto;
-      // Busca su fila (Cote, 24 nov: no crear filas repetidas de personas que ya están, como «Loreto» si ya está
-      // «Loreto Canales»). Si no la encuentra, no agrega nada: avisa para que Cote la ponga a mano.
       const off = filaDe_(nombres, nombre, corto);
       if (off === -2) { avisos.push('Hay más de una fila que puede ser ' + corto + ': revisa los nombres en la pestaña o en EQUIPO'); return; }
       if (off < 0) { if (faltan.indexOf(corto) < 0) faltan.push(corto); return; }
       const key = k + '|' + col + '|' + off;
       suma[key] = (suma[key] || 0) + Number(m[2]);
     });
+  });
+  (b.detalle || []).forEach(function (d) {
+    const k = bloqueDe[Number(d.dia)]; const col = PR_COL[String(d.local).toUpperCase()];
+    if (k == null || !col) return;
+    const corto = String(d.codigo).trim().toUpperCase();
+    const nombre = alias[corto] || corto;
+    const off = filaArea(d.area, nombre, corto);
+    if (off === -2) { avisos.push('Hay más de una fila que puede ser ' + corto + ': revisa los nombres en la pestaña o en EQUIPO'); return; }
+    if (off < 0) { if (faltan.indexOf(corto) < 0) faltan.push(corto); return; }
+    const key = k + '|' + col + '|' + off;
+    suma[key] = (suma[key] || 0) + Number(d.monto || 0);
   });
   Object.keys(suma).forEach(function (key) {
     const p = key.split('|').map(Number);
@@ -282,6 +350,7 @@ function llenarProg_(ss, sh, b) {
     sh.getRange(827 + i, 73).setNumberFormat('dd-mm-yyyy');
   });
 
+  if (agregados.length) avisos.unshift('Puse en un espacio libre de su sección a: ' + agregados.join(', '));
   if (faltan.length) avisos.unshift('No encontré en la pestaña a: ' + faltan.join(', ') + '. Agrégalos a mano en su fila (o en la hoja EQUIPO) y vuelve a enviar; sus montos de esos días no se escribieron');
   return avisos;
 }
