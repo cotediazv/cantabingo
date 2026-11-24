@@ -257,11 +257,13 @@ namespace KRB {
         StreamReader r = new StreamReader(s, Encoding.ASCII);
         string linea = r.ReadLine();
         if (linea == null) return;
-        string h, cookies = null; int largo = 0;
+        string h, cookies = null, autorizacion = null; int largo = 0; bool porTunel = false;
         while (!string.IsNullOrEmpty(h = r.ReadLine())) {
           int i = h.IndexOf(':'); if (i < 0) continue;
           string k = h.Substring(0, i).Trim().ToLower(), v = h.Substring(i + 1).Trim();
           if (k == "cookie") cookies = v;
+          if (k == "authorization") autorizacion = v;                      // Authorization: Bearer <clave> (la Sala de juegos en Render)
+          if (k == "cf-connecting-ip") porTunel = true;                    // viene de internet por el tunel de Cloudflare
           if (k == "content-length") int.TryParse(v, out largo);
         }
         string cuerpo = "";
@@ -284,10 +286,12 @@ namespace KRB {
           return;
         }
         IPAddress ip = ((IPEndPoint)c.Client.RemoteEndPoint).Address;
-        bool libre = Clave == "" || (!PedirEnWifiLocal && EsRedLocal(ip));
+        bool libre = Clave == "" || (!PedirEnWifiLocal && !porTunel && EsRedLocal(ip));
         if (!libre) {
           string tk = Cookie(cookies, "krb");
           bool ok; lock (SL) { ok = tk != null && sesiones.Contains(tk); }
+          if (!ok && autorizacion != null && autorizacion.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+            ok = IgualSeguro(autorizacion.Substring(7).Trim(), Clave);
           if (!ok && ruta != "/" && ruta != "/index.html") {
             Enviar(s, "401 Unauthorized", "application/json", Encoding.UTF8.GetBytes("{\"login\":true}"));
             return;

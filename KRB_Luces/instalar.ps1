@@ -22,7 +22,9 @@ Write-Host ""
 New-Item -ItemType Directory -Force -Path $Destino | Out-Null
 
 # Archivos del programa: siempre se actualizan
-$programa = @("INICIAR.bat", "krb_luces.ps1", "ipad.html", "vista3d.js", "instalar.ps1", "INSTALAR.bat", "internet.ps1", "CONFIGURAR_INTERNET.bat", "LEEME.txt", "lib\three.module.min.js", "lib\three-LICENSE.txt")
+# (momentos.txt = las luces de cada momento de los juegos, para que el GC Master funcione aunque nadie haya abierto el iPad;
+#  el iPad lo vuelve a generar desde luces.json cada vez que se abre)
+$programa = @("INICIAR.bat", "krb_luces.ps1", "ipad.html", "vista3d.js", "instalar.ps1", "INSTALAR.bat", "internet.ps1", "CONFIGURAR_INTERNET.bat", "LEEME.txt", "momentos.txt", "lib\three.module.min.js", "lib\three-LICENSE.txt")
 New-Item -ItemType Directory -Force -Path (Join-Path $Destino "lib") | Out-Null
 foreach ($f in $programa) {
   $src = Join-Path $origen $f
