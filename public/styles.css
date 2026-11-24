@@ -3453,3 +3453,8 @@ body.vroll-on .vk-card:has(> .vk-list) { visibility: hidden; }
 #gv.gv-gc .gv-intro .gv-lines { columns: 2; column-gap: 3vw; font-size: 2vh; }
 #gv.gv-gc .gv-intro .gv-dots { display: none; }
 #gv.gv-gc .gv-card { width: 80vw; justify-self: start; margin-left: 4vw; } /* deja libre el QR de la esquina */
+
+/* El mapa del salón bajo las pantallas del Demo (Cote, 24 nov) */
+.gm-demo .dm-map { margin-top: 10px; }
+.gm-demo .dm-map small { display: block; margin-bottom: 4px; font-size: 12px; color: #b9b4c9; }
+.gm-demo .dm-map iframe { display: block; width: 100%; height: 46vh; height: 46dvh; border: 1px solid #2b2838; border-radius: 8px; background: #0c0b12; }

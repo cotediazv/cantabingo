@@ -130,6 +130,10 @@
   // El demo de luces de Code 4 (copia en /demo-luces/): la vista 3D del salón con las pantallas del local en vivo
   // (fondo del escenario = pantalla 2, columnas = pantalla 3, las de 42" = la transmisión con el GC). Las páginas van
   // en su versión liviana y sin sonido, como los monitores del GC Master
+  // El mapa del salón bajo las pantallas del Demo (pedido de Cote, 24 nov: «para poder seguir al animador con el dedo o
+  // con el mouse… como lo va a hacer el DJ»): el iPad de luces de Code 4 en modo control, que maneja el demo de este
+  // navegador; con «Anda al público» abre solo el mapa de Seguir. Con «&mapa=1», Code 4 puede dejar solo el mapa
+  const MAPA = '<div class="dm-map"><small>Mapa del salón · sigue al animador con el dedo o el mouse</small><iframe title="Mapa del salón para seguir al animador" src="/demo-luces/ipad.html?demo=control&mapa=1"></iframe></div>';
   const DEMO3D = () => `/demo-luces/ipad.html?demo=tv&p2=${encodeURIComponent(page('#/tablero'))}&p3=${encodeURIComponent(page('#/tablero'))}&gc=${encodeURIComponent(page('#/escena'))}`;
   const monCtl = (fit) => {
     let snd = null; let big = null; let zone = null; let sig = null;
@@ -322,7 +326,7 @@
           <header class="gm-head"><b>Sala de juegos · ${esc(VENUES[venue])}</b><span class="gm-sala" data-k="sala"></span></header>
           <p class="gm-fueranote">Las pantallas se ven en la otra ventana.</p>
           ${demo ? `<div class="gm-screens dm-solo"><div class="gm-scr gm-tall dm-phone" data-n="4"><small>Celular</small><div class="gm-box" data-w="390"><iframe title="Celular de la persona protagonista" tabindex="-1"></iframe></div></div></div>
-          <div class="dm-ctl"><label>Celular de <select data-k="who"><option value="">Automático: quien está en el escenario</option></select></label><span class="dm-who" data-k="whoName"></span></div>` : ''}
+          <div class="dm-ctl"><label>Celular de <select data-k="who"><option value="">Automático: quien está en el escenario</option></select></label><span class="dm-who" data-k="whoName"></span></div>${MAPA}` : ''}
           </section>`
         : venue ? `<section class="gm-venue th-${venue}" data-v="${venue}">
           <header class="gm-head"><b>Sala de juegos · ${esc(VENUES[venue])}</b><span class="gm-sala" data-k="sala"></span></header>
@@ -334,7 +338,7 @@
             <div class="gm-scr gm-tall" data-n="3"><small>3 · De pie</small>${TOOLS(3, false)}<div class="gm-box" data-w="720"><iframe title="Pantalla de pie de la sala de juegos" tabindex="-1" src="${page('#/tablero')}"></iframe></div></div>${demo ? `<div class="gm-scr gm-tall dm-phone" data-n="4"><small>Celular</small>${TOOLS(4, false)}<div class="gm-box" data-w="390"><iframe title="Celular de la persona protagonista" tabindex="-1"></iframe></div></div>` : ''}
           </div>
           ${demo ? `<div class="dm-ctl"><label>Celular de <select data-k="who"><option value="">Automático: quien está en el escenario</option></select></label><span class="dm-who" data-k="whoName"></span>
-            <label class="dm-vista">Vista 3D de Code 4 <input data-k="vista" type="url" placeholder="Vacío: la copia de la Sala (/demo-luces/)"><button type="button" data-k="vistaSave">Guardar</button></label></div>` : ''}
+            <label class="dm-vista">Vista 3D de Code 4 <input data-k="vista" type="url" placeholder="Vacío: la copia de la Sala (/demo-luces/)"><button type="button" data-k="vistaSave">Guardar</button></label></div>${MAPA}` : ''}
           </section>`
         : `<section class="gm-venue gm-none"><header class="gm-head"><b>${demo ? 'Demo · sala simulada' : 'Sala de juegos'}</b></header>
           <p>${demo ? 'Crea la sala simulada en el panel de al lado: elige el local y cuántas personas virtuales. Cuando esté lista, aquí aparecen la cámara simulada, las pantallas y el celular.' : 'No hay sala de juegos abierta. Créala en el panel de al lado («Crear sala de juegos»); cuando esté abierta, aquí aparecen sus pantallas y sus botones.'}</p></section>`;
