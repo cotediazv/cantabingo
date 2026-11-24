@@ -374,9 +374,14 @@ function moverGrupo(id, on){
   if (!on) return efecto('mover:' + id, {off:1});
   const z = zona(id), ch = g.canales, base = g.direccion - 1, m = g.mover || {};
   if (!ch.pan || !ch.tilt) return toast('Falta pan/tilt en ' + g.nombre);
-  const centro = [z.pan != null ? z.pan : 128, z.tilt != null ? z.tilt : 110];
+  // Mini cabezas (Cote, 24 nov): las dos iguales, mas que todo GIRAN y apuntan al TECHO, no a las personas.
+  // Si luces.json no trae "tilt_centro" (configuracion antigua), se usa ese movimiento por defecto.
+  const techo = id === 'mini' && m.tilt_centro == null;
+  const tiltC = m.tilt_centro != null ? m.tilt_centro : (techo ? 30 : (z.tilt != null ? z.tilt : 110));
+  const centro = [z.pan != null ? z.pan : 128, tiltC];
+  const amp = techo ? [110, 18] : [m.amp_pan || 70, m.amp_tilt || 35];
   efecto('mover:' + id, {tipo:'seno', ch:[base + ch.pan, base + ch.tilt].join(','), centro:centro.join(','),
-    amp:[m.amp_pan || 70, m.amp_tilt || 35].join(','), periodo:(m.periodo || VEL.mover[velEf])});
+    amp:amp.join(','), periodo:(m.periodo || VEL.mover[velEf])});
 }
 const pasosTxt = pasos => pasos.map(serial).join('|');
 function idsPared(){ return (conf.fondo_enlazado && conf.fondo_enlazado.grupos) || ['perimetrales', 'fondo']; }
