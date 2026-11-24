@@ -51,7 +51,7 @@
 
   "seguir": {
     "_ayuda": "Pestana Seguir: cabezas moviles que siguen a la persona por el salon. La calibracion del mapa se guarda en datos.json.",
-    "grupos": ["seguidor1", "seguidor2"],
+    "grupos": ["seguidor1", "seguidor2", "seguidor3"],
     "color": "blanco_calido"
   },
 

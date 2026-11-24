@@ -74,7 +74,7 @@
   .pad{background:radial-gradient(circle at center,#ffffff10 0 2px,transparent 3px) 0 0/40px 40px,#121419}
   .pad .lbl{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;color:var(--mut);font-size:17px;pointer-events:none}
   .pt{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;border:3px solid #fff;pointer-events:none;display:grid;place-items:center;font-size:12px;font-weight:800}
-  .pt.p1{background:#ffb35c;color:#3a2200}.pt.p2{background:#4f8cff;color:#fff}
+  .pt.p1{background:#ffb35c;color:#3a2200}.pt.p2{background:#4f8cff;color:#fff}.pt.p3{background:#3ecf8e;color:#002a17}
   .drag{border-color:var(--acc)!important}
   .readout{color:var(--mut);font-size:14px;margin-top:10px;font-variant-numeric:tabular-nums}
   .calib{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
@@ -166,7 +166,7 @@
       <button data-m="mano">A mano · calibrar</button>
     </div>
     <div class="seg" id="cabezas">
-      <button data-s="0">Cabeza 1</button><button data-s="1">Cabeza 2</button><button data-s="both" class="act">Ambas</button>
+      <button data-s="0">Cabeza 1</button><button data-s="1">Cabeza 2</button><button data-s="2">Cabeza 3</button><button data-s="both" class="act">Las 3 juntas</button>
     </div>
 
     <div id="panelMapa">
@@ -179,7 +179,7 @@
     </div>
 
     <div id="panelMano" style="display:none">
-      <div class="pad" id="pad"><div class="lbl">Arrastra el dedo para mover la luz</div><div class="pt p1" id="pt0">1</div><div class="pt p2" id="pt1">2</div></div>
+      <div class="pad" id="pad"><div class="lbl">Arrastra el dedo para mover la luz</div><div class="pt p1" id="pt0">1</div><div class="pt p2" id="pt1">2</div><div class="pt p3" id="pt2">3</div></div>
       <div class="row">
         <span class="help" style="margin:0 6px 0 0">Velocidad:</span>
         <button class="chip" data-v="0.15">Fina</button><button class="chip act" data-v="0.4">Normal</button><button class="chip" data-v="1">Rápida</button>
@@ -430,7 +430,11 @@ function pintarFondo(){
 /* ---------- Seguir: seleccion de cabezas ---------- */
 const prefs = JSON.parse(localStorage.getItem('krb_seguir') || '{"vel":0.4,"invX":false,"invY":false}');
 let seleccion = 'both', modoSeguir = 'mapa', objetivo = null;
-const segIds = () => (conf.seguir && conf.seguir.grupos) || ['seguidor1', 'seguidor2'];
+// Las tres cabezas de las columnas del salon (1, 2 y 3). Un luces.json antiguo con solo 2 se completa con la 3.
+const segIds = () => {
+  const g = (conf.seguir && conf.seguir.grupos) || [];
+  return (g.length >= 3 ? g : ['seguidor1', 'seguidor2', 'seguidor3']).filter(id => conf.grupos.some(x => x.id === id)).slice(0, 3);
+};
 const segActivos = () => seleccion === 'both' ? segIds() : [segIds()[+seleccion]];
 function guardarPrefs(){ localStorage.setItem('krb_seguir', JSON.stringify(prefs)); }
 document.querySelectorAll('#cabezas button').forEach(b => b.onclick = () => { seleccion = b.dataset.s; pintarSeguir(); });
