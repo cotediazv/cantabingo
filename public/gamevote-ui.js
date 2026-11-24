@@ -180,6 +180,7 @@
   // ---------- Panel del animador: recuadro de la pestaña «Por votación» en el menú de juegos ----------
   let panelT = null; let lastSeen = null;
   window.addEventListener('hashchange', () => { lastSeen = null; }); // al cambiar de vista se olvida lo visto
+  window.addEventListener('hashchange', () => clearTimeout(window.gameDrawGo)); // al cambiar de vista se cancela el salto
   const goGame = (k, info) => { if (k === 'bingo') backToBingo(); else location.hash = info[k].href; };
   window.startGvIntro = async () => {
     const g = await api('GET', '/api/gamevote').catch(() => null);
@@ -227,7 +228,10 @@
     if (shown && lastSeen && lastSeen.id === g.id && lastSeen.phase === 'voting' && g.phase === 'done' && g.winner && Date.now() + off - g.decidedAt < 12000) {
       toast(`🗳️ Ganó ${info[g.winner].icon} ${info[g.winner].name}. En unos segundos pasamos al juego…`);
       clearTimeout(window.gameDrawGo);
-      window.gameDrawGo = setTimeout(() => goGame(g.winner, info), 8000);
+      // Si en esos segundos el animador ya eligió otra cosa (Cote, 24 nov: ganó El Rosko, eligió el bingo a mano y el
+      // panel lo sacó del bingo), no se salta: solo si sigue en la misma vista
+      const here = location.hash;
+      window.gameDrawGo = setTimeout(() => { if (location.hash === here) goGame(g.winner, info); }, 8000);
     }
     lastSeen = { id: g.id, phase: g.phase };
     // Reloj y votos en vivo cada segundo; fuera de la votación, cada 3 s (por si otro equipo la abre, p. ej. el iPad)

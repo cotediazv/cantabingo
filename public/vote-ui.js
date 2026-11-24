@@ -81,15 +81,18 @@
         const next = st.players.find((p) => !p.done);
         const voted = st.players.some((p) => p.done) || st.onstage || st.open;
         const who = (p, label) => `<div class="vc-now"><small>${label}</small><b>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}</div>`;
+        // Pedido de Cote (24 nov): el animador ve lo mismo que está en pantalla; el siguiente participante aparece en el
+        // panel recién cuando sube (así no lee el nombre del que viene en lugar del que está en el escenario)
+        const soon = (label) => `<div class="vc-now"><small>${label}</small><span>Su nombre sale en pantalla y aquí al tocar «Iniciar participante»</span></div>`;
         let step;
         if (st.open && isK(st)) step = `${who(st.open, `🎤 Cantando · 🗳️ votación abierta · ${st.counts[st.open.id] || 0} votos`)}<button class="primary big paso" data-act="close">🏁 Terminó la canción · Terminar votación</button>`; // El Festival (Cote, 23 nov): se vota durante la canción, sin tiempo
         else if (st.open) step = `${who(st.open, `🗳️ Votación abierta · <span class="v-clock">${clockText()}</span> · ${st.counts[st.open.id] || 0} votos`)}<button class="primary big paso" data-act="close">Cerrar votación</button>`;
         else if (st.signup) step = `<div class="vc-signup on"><p><b>📲 Inscripciones abiertas · <span class="v-clock">${clockText()}</span></b></p><button data-act="signup">Cerrar</button></div>`;
         else if (!st.players.length) step = '<button class="primary big paso" data-act="signup" data-on="1">📲 Abrir inscripciones</button>';
         else if (st.overflow) step = `<button class="primary big paso" data-act="draw">🎲 Sortear los ${st.max} que ${isK(st) ? 'cantan' : 'participan'} (se inscribieron ${st.players.length})</button>`;
-        else if (next && isK(st)) step = `${who(next, st.onstage && st.onstage.id === next.id ? '🎤 En el escenario' : voted ? 'Ya viene el siguiente participante' : 'Primer participante')}<button class="primary big paso" data-act="open" data-id="${next.id}">🎤 Iniciar participante</button>`; // un solo botón: parte la canción y la votación
+        else if (next && isK(st)) step = `${st.onstage && st.onstage.id === next.id ? who(next, '🎤 En el escenario') : soon(voted ? 'Ya viene el siguiente participante' : 'Primer participante')}<button class="primary big paso" data-act="open" data-id="${next.id}">🎤 Iniciar participante</button>`; // un solo botón: parte la canción y la votación
         else if (next && st.onstage && st.onstage.id === next.id) step = `${who(next, isK(st) ? '🎤 En el escenario' : '🗳️ Presentando su objeto')}<button class="primary big paso" data-act="open" data-id="${next.id}">🗳️ Iniciar votación</button>`;
-        else if (next) step = `${who(next, voted ? 'Ya viene el siguiente participante' : 'Primer participante')}<button class="primary big paso" data-act="present" data-id="${next.id}">🎤 Iniciar participante</button>`;
+        else if (next) step = `${soon(voted ? 'Ya viene el siguiente participante' : 'Primer participante')}<button class="primary big paso" data-act="present" data-id="${next.id}">🎤 Iniciar participante</button>`;
         else if (st.players.length >= 2) step = '<button class="primary big paso" data-act="results">🏁 Pasar a los resultados</button>';
         else step = '<p class="muted">Se necesitan al menos 2 participantes.</p><button class="big" data-act="signup" data-on="1">📲 Abrir inscripciones otra vez</button>';
         html = `${want && st.mode !== want ? `<div class="vc-read"><small>Hay un concurso de «${esc(st.title)}» en curso</small><button class="primary big paso" data-paso="1" data-act="reset">Empezar ${want === 'karaoke' ? esc(fest(st)) : 'El objeto más extraño'} (borra el anterior)</button></div>` : ''}
@@ -104,9 +107,9 @@
   }).join('')}</div>` : ''}`;
       } else if (st.phase === 'results') {
         html = `<h2>Resultados</h2>
-          ${st.next ? `<div class="vc-read"><small>Viene · solo lo ves tú, hasta que lo reveles</small><em>${ord(st.next.place)}</em><b>${esc(st.next.name)}</b>${st.next.thing ? `<span>${esc(st.next.thing)}</span>` : ''}<i>Nota ${note(st.next.score, st.next.dec)}</i></div>
+          ${st.next ? `<div class="vc-read"><small>Lo que viene (el nombre sale en pantalla y aquí al revelarlo, pedido de Cote)</small><em>${ord(st.next.place)}</em></div>
             <button class="primary big paso" data-act="reveal">Revelar ${ord(st.next.place)}</button>`
-    : `<div class="vc-read"><small>Quedan las dos finalistas</small>${st.final.players.map((p) => `<b>${esc(p.name)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}`).join('<em class="vs">y</em>')}</div>
+    : `<div class="vc-read"><small>Quedan los dos finalistas</small><span>Sus nombres salen en pantalla y aquí al tocar el botón</span></div>
             <button class="primary big paso" data-act="final">${isK(st) ? '🥁 Redoble de tambores: los dos finalistas' : '⚔️ Gran final: abrir votación'}</button>`}
           <div class="vc-list">${[...st.places].reverse().map((p) => `<div class="vc-row"><p><b>${ord(p.place)} · ${esc(p.name)}</b>${thing(p)}<small>Nota ${note(p.score, p.dec)}</small></p></div>`).join('')}</div>`;
       } else if (st.phase === 'final' && isK(st)) {

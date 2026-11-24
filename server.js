@@ -190,7 +190,7 @@ function publicState(s, full = false) { // eslint-disable-line complexity
     format: p.format, headers: p.headers, values: p.values, items: p.items, showName: s.showName,
     gc: s.gc || gcDefaults(), startNumber: p.startNumber, theme: s.theme || 'frida',
     // Celebración a pantalla completa mientras haya ganadores y el moderador no la haya quitado
-    bigQr: !!s.bigQr, tieWinner: s.tieWinner || null, rollMs: 6500,
+    bigQr: !!s.bigQr, tieWinner: s.tieWinner || null, rollMs: 6500, figAt: s.figAt || 0,
     celebrate: !s.hideWin && s.results.some((r) => r.validated && !r.dismissed),
     // Durante El Rosko los celulares cambian el cartón por las preguntas del rosko en curso
     stage: db.stage || 'bingo', roscoId: db.stage === 'rueda' ? (Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).id || null : null,
@@ -498,7 +498,7 @@ function startSession(p, b) {
     id: shortId(), projectId: p.id, name: str(b.name, 50, p.name), password: str(b.password, 40),
     cardsPerPlayer: clamp(b.cardsPerPlayer, 1, 4, 1),
     showName: b.showName !== false, isPublic: b.isPublic !== false, patterns: cleanPatterns(b.patterns),
-    bigQr: true, // la sesión parte mostrando el QR en grande para que la gente entre
+    bigQr: false, // el bingo parte con su GC (corrección de Cote, 24 nov); el QR grande se pone con su botón
     theme: ['frida', 'tobalaba', 'kennedy'].includes(b.theme) ? b.theme : 'frida', // colores de la gráfica según el local
     gc: { ...gcDefaults() }, // textos de la gráfica de OBS: se heredan de la última sesión
     round: 1, drawn: [], results: [], marks: {}, players: {}, finalists: null,
@@ -574,6 +574,7 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
       if (s.drawn.length || roundOver(s)) return fail(res, 400, 'El bingo ya empezó: la figura se cambia en la ronda siguiente');
       s.patterns = cleanPatterns(b.patterns);
       s.figRound = s.round; // figura elegida: el bingo de esta ronda empezó
+      s.figAt = Date.now(); // las pantallas y los celulares muestran la figura en grande unos segundos (Cote, 24 nov)
       break;
     case 'hidewin': s.hideWin = b.hide !== false; break; // quitar o volver a mostrar la celebración en pantalla
     case 'gc':
@@ -870,7 +871,7 @@ require('./agenda.js')({ app, db, save, requireAdmin, fail, currentVenue: () => 
 const DRAW_GAMES = ['bingo', 'rosco', 'festival', 'objeto'];
 db.gameDraw ||= { played: [], last: null };
 if (!db.gameDraw.rule2) { db.gameDraw.played = db.gameDraw.last ? [db.gameDraw.last.game] : []; db.gameDraw.rule2 = true; }
-const drawPub = () => ({ ...db.gameDraw, how: howOf(), free: howOf() === 'manual', undo: undefined, undoable: !!(db.gameDraw.undo || []).length, games: DRAW_GAMES, venue: (Object.values(db.sessions)[0] || {}).theme || 'frida', now: Date.now() });
+const drawPub = () => ({ ...db.gameDraw, total: Math.max(db.gameDraw.total || 3, (db.gameDraw.list || []).length + 1), how: howOf(), free: howOf() === 'manual', undo: undefined, undoable: !!(db.gameDraw.undo || []).length, games: DRAW_GAMES, venue: (Object.values(db.sessions)[0] || {}).theme || 'frida', now: Date.now() });
 app.get('/api/gamedraw', (_req, res) => res.json(drawPub()));
 // Cuántos juegos se sortean esa noche (pedido de Cote): 1.º, 2.º, 3.º… sorteados
 db.gameDraw.list ||= [];
@@ -951,7 +952,7 @@ app.post('/api/gamedraw/undo', requireAdmin, (_req, res) => {
 app.post('/api/gamedraw/ready', requireAdmin, (_req, res) => {
   if (!notFree(res)) return;
   const g = db.gameDraw;
-  if (g.list.length >= g.total) return fail(res, 409, `Ya se sortearon los ${g.total} juegos de la noche`);
+  if (g.list.length >= g.total) g.total = g.list.length + 1; // el sorteo nunca se bloquea (pedido de Cote, 24 nov): la noche suma un juego más
   drawSnap(g);
   g.ready = { at: Date.now(), pool: DRAW_GAMES.filter((x) => !(g.last && g.last.game === x)) };
   save();
@@ -964,9 +965,10 @@ app.post('/api/gamedraw/pick', requireAdmin, (req, res) => {
   const g = db.gameDraw;
   const game = String((req.body || {}).game);
   if (!DRAW_GAMES.includes(game)) return fail(res, 400, 'Juego no válido');
-  if (g.list.length >= g.total) return fail(res, 409, `Ya se sortearon los ${g.total} juegos de la noche`);
+  if (g.list.length >= g.total) g.total = g.list.length + 1; // el sorteo nunca se bloquea (pedido de Cote, 24 nov): la noche suma un juego más
   drawSnap(g);
   g.played = [game]; g.list.push(game); g.ready = null; g.seq = (g.seq || 0) + 1;
+  if (g.list.length >= g.total) g.total = g.list.length + 1;
   g.last = { game, pool: [game], at: Date.now(), direct: true };
   require('./momentos.js').emit('juego_siguiente');
   if (game === 'festival' || game === 'objeto') startContest(game);
@@ -977,12 +979,13 @@ app.post('/api/gamedraw/pick', requireAdmin, (req, res) => {
 app.post('/api/gamedraw', requireAdmin, (_req, res) => {
   if (!notFree(res)) return;
   const g = db.gameDraw;
-  if (g.list.length >= g.total) return fail(res, 409, `Ya se sortearon los ${g.total} juegos de la noche`);
+  if (g.list.length >= g.total) g.total = g.list.length + 1; // el sorteo nunca se bloquea (pedido de Cote, 24 nov): la noche suma un juego más
   const pool = DRAW_GAMES.filter((x) => !(g.last && g.last.game === x)); // el que salió recién queda fuera de este sorteo
   drawSnap(g);
   const game = pool[crypto.randomInt(pool.length)];
   g.played = [game]; // bloqueado solo para el sorteo siguiente
   g.list.push(game); // queda en su número (1.º, 2.º…) en la pantalla
+  if (g.list.length >= g.total) g.total = g.list.length + 1; // siempre queda el sorteo siguiente disponible
   g.ready = null; g.seq = (g.seq || 0) + 1;
   g.last = { game, pool, at: Date.now() };
   if (game === 'festival' || game === 'objeto') startContest(game); // la votación queda lista con su título

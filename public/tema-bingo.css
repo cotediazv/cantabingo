@@ -304,11 +304,3 @@ html.t2 .join-qr b { font: 800 1.55vh/1.2 var(--t-txt); letter-spacing: 0; text-
   html.t2 #gc .gc-winlow.hold { animation: none; }
 }
 
-/* El QR en versión GC (pregunta 19 de Cote, 24 nov): QR blanco a la izquierda con su frase y la franja «noche» al lado */
-html.t2 #gc .gc-qrgc { --qrgc-t: 6.4vh; }
-html.t2 #gc .gc-qrgc-qr { width: 22vh; padding: 1.2vh 1.2vh 1.4vh; border-radius: 0; font: 800 1.75vh/1.25 var(--t-txt); color: #0c0b12; }
-html.t2 #gc .gc-qrgc-band { border-radius: 0; background: rgba(12, 11, 18, .96); border-top: .5vh solid var(--t-c, var(--t-foco)); clip-path: polygon(0 0, 100% 0, calc(100% - 4vh) 100%, 0 100%); padding-right: 8vh; }
-html.t2 #gc .gc-qrgc-title { font-family: var(--t-disp); font-weight: 800; letter-spacing: .01em; color: var(--t-texto, #fff); }
-html.t2 #gc .gc-qrgc-band > span { font: 600 2.8vh/1.2 var(--t-txt); color: var(--t-texto, #fff); opacity: .85; }
-html.t2 #gc .gc-qrgc .gc-big-count { grid-area: auto; clip-path: none; font: 600 2vh/1.4 var(--t-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--t-foco); background: none; padding: 0; border-radius: 0; }
-html.t2 #gc.t2-entra .gc-qrgc { animation: t2sube .5s cubic-bezier(.2, .9, .2, 1) both; }

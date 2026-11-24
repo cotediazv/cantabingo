@@ -189,6 +189,8 @@ function conLetra(st, v) { return st.format === 'numbers' ? letra(st, v) + ' ' +
 function figName(id) { var all = LINES.concat(SHAPES, LETTERS); for (var i = 0; i < all.length; i++) if (all[i][0] === id) return all[i][1]; return id; }
 // Pedido de Cote (21 nov): en el iPad las figuras se ven dibujadas (como en la plataforma completa), no solo sus nombres.
 // FIGMASK: casillas de cada figura en el cartón de 5 x 5 (bit i = casilla i, por filas), sacadas de patterns.js
+// El siguiente participante aparece recién cuando sube (pedido de Cote, 24 nov: el animador ve lo mismo que la pantalla)
+function soonV(voted) { return '<div class="now"><small>' + (voted ? 'Ya viene el siguiente participante' : 'Primer participante') + '</small><span class="muted">Su nombre sale en pantalla y aquí al tocar «Iniciar participante»</span></div>'; }
 var FIGMASK = {"linea":31,"horizontal":31,"vertical":1082401,"diagonal":17043521,"dos-lineas":1023,"esquinas":17825809,"sello":99,"cruz":4357252,"marco":33080895,"cuadro":469440,"diamante":4539716,"piramide":32968704,"piramide-inv":4575,"reloj":32969183,"corazon":4685802,"estrella":18168804,"lleno":33554431,"a":18415150,"b":16301615,"c":32539711,"d":16303663,"e":32554047,"f":1096767,"g":33092671,"h":18415153,"i":32641183,"j":6594847,"k":18128177,"l":32539681,"m":18405233,"n":18667121,"o":15255086,"p":1097263,"q":23385646,"r":18136623,"s":33061951,"t":4329631,"u":33080881,"v":4539953,"w":18732593,"x":18157905,"y":4329809,"z":32575775};
 function mini(id) {
   var m = FIGMASK[id] || 0; var o = '<span class="mini">';
@@ -308,6 +310,7 @@ function nav(current, inGame, lobby) {
   return o;
 }
 var goTimer = null;
+window.addEventListener('hashchange', function () { clearTimeout(goTimer); }); // al cambiar de vista se cancela el salto al juego
 function toGame(k) {
   if (k === 'bingo') { var s = sala(); if (!s) { go('#/'); return; } api('GET', '/api/sessions/' + s.id + '/host/state', null, function (err, st) { if (!err && st && st.winConfirmed) go('#/ronda'); else if (!err && st && !st.started) go('#/figura'); else { api('POST', '/api/stage', { show: 'bingo' }); go('#/bingo'); } }); return; }
   if (k === 'rosco') { go('#/sorteoctl'); return; }
@@ -583,16 +586,16 @@ function votoView(want) {
         else if (st.signup) o += '<div class="now"><small>📲 Inscripciones abiertas</small>' + st.players.length + ' inscritos</div>' + btn('Cerrar', 'vote', d('x', 'signup'), 'big');
         else if (!st.players.length) o += btn('📲 Abrir inscripciones', 'vote', d('x', 'signup') + d('on', '1'), 'big primary paso');
         else if (st.overflow) o += btn('🎲 Sortear los ' + st.max + ' que ' + (isK ? 'cantan' : 'participan') + ' (se inscribieron ' + st.players.length + ')', 'vote', d('x', 'draw'), 'big warn');
-        else if (next && isK) o += '<div class="now"><small>' + (st.onstage && st.onstage.id === next.id ? '🎤 En el escenario' : voted ? 'Ya viene el siguiente participante' : 'Primer participante') + '</small><b>' + h(next.name) + '</b><br><span class="muted">' + h(next.thing) + '</span></div>' + btn('🎤 Iniciar participante', 'vote', d('x', 'open') + d('id', next.id), 'big primary paso');
+        else if (next && isK) o += (st.onstage && st.onstage.id === next.id ? '<div class="now"><small>🎤 En el escenario</small><b>' + h(next.name) + '</b><br><span class="muted">' + h(next.thing) + '</span></div>' : soonV(voted)) + btn('🎤 Iniciar participante', 'vote', d('x', 'open') + d('id', next.id), 'big primary paso');
         else if (next && st.onstage && st.onstage.id === next.id) o += '<div class="now"><small>' + (isK ? '🎤 En el escenario' : '🗳️ Presentando su objeto') + '</small><b>' + h(next.name) + '</b><br><span class="muted">' + h(next.thing) + '</span></div>' + btn('🗳️ Iniciar votación', 'vote', d('x', 'open') + d('id', next.id), 'big primary paso');
-        else if (next) o += '<div class="now"><small>' + (voted ? 'Ya viene el siguiente participante' : 'Primer participante') + '</small><b>' + h(next.name) + '</b><br><span class="muted">' + h(next.thing) + '</span></div>' + btn('🎤 Iniciar participante', 'vote', d('x', 'present') + d('id', next.id), 'big primary paso');
+        else if (next) o += soonV(voted) + btn('🎤 Iniciar participante', 'vote', d('x', 'present') + d('id', next.id), 'big primary paso');
         else if (st.players.length >= 2) o += btn('🏁 Pasar a los resultados', 'vote', d('x', 'results'), 'big primary paso');
         else o += '<p class="muted">Se necesitan al menos 2 participantes.</p>' + btn('📲 Abrir inscripciones otra vez', 'vote', d('x', 'signup') + d('on', '1'), 'big');
         if (st.players.length && !voted && !st.signup) o += '<div class="center">' + btn('Abrir inscripciones otra vez', 'vote', d('x', 'signup') + d('on', '1')) + '</div>';
         for (var k = 0; k < st.players.length; k++) { var p = st.players[k]; var on = st.open && st.open.id === p.id; var up = st.onstage && st.onstage.id === p.id; o += '<div class="item"><span class="r">' + (on ? '🗳️' : up ? '🎤' : p.done ? '<b style="color:#3fe08f">✔ ' + st.counts[p.id] + ' votos</b>' : btn('✕', 'vote', d('x', 'remove') + d('id', p.id))) + '</span><b>' + h(p.name) + '</b><br><span class="muted">' + h(p.thing) + '</span></div>'; }
       } else if (st.phase === 'results') {
         o += '<h2>Resultados</h2>';
-        if (st.next) o += '<div class="now"><small>Viene · solo lo ves tú, hasta que lo reveles</small><b>' + ord(st.next.place) + ' · ' + h(st.next.name) + '</b></div>' + btn('Revelar ' + ord(st.next.place), 'vote', d('x', 'reveal'), 'big primary paso');
+        if (st.next) o += '<div class="now"><small>Lo que viene (el nombre sale al revelarlo)</small><b>' + ord(st.next.place) + '</b></div>' + btn('Revelar ' + ord(st.next.place), 'vote', d('x', 'reveal'), 'big primary paso');
         else o += btn(isK ? '🥁 Redoble de tambores: los dos finalistas' : '⚔️ Gran final: abrir votación', 'vote', d('x', 'final'), 'big primary paso');
         for (var m = st.places.length - 1; m >= 0; m--) o += '<div class="item">' + ord(st.places[m].place) + ' · <b>' + h(st.places[m].name) + '</b></div>';
       } else if (st.phase === 'final') {
@@ -811,7 +814,8 @@ function gvPoll() {
         S.gvVoting = null;
         toast('🗳️ Ganó ' + gameIcon(r.winner) + ' ' + gameName(r.winner) + '. En unos segundos pasamos al juego…');
         clearTimeout(goTimer);
-        goTimer = setTimeout(function () { toGame(r.winner); }, 8000);
+        var here = location.hash; // si el animador ya eligió otra cosa, no se salta (Cote, 24 nov)
+        goTimer = setTimeout(function () { if (location.hash === here) toGame(r.winner); }, 8000);
       }
     }
     gvT = setTimeout(gvPoll, r && (r.phase === 'voting' || r.phase === 'intro') ? 1000 : 2500);

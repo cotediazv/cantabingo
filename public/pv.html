@@ -40,6 +40,14 @@
   #marks img { height: 3.2rem; vertical-align: middle; margin: 0 1rem; }
   #marks i { display: inline-block; width: .2rem; height: 3rem; background: rgba(255, 255, 255, .6); vertical-align: middle; }
   .abs { position: absolute; left: 3rem; right: 3rem; text-align: center; }
+  /* La figura del bingo en grande al elegirla (Cote, 24 nov) */
+  .pv-fs { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 50; background: #0c0b12; text-align: center; padding-top: 18rem; box-sizing: border-box; }
+  .pv-fs-t { font-size: 3.6rem; font-weight: 700; letter-spacing: .3rem; text-transform: uppercase; color: #f4bf5a; margin-bottom: 4rem; }
+  .pv-fs-g { display: inline-block; padding: 1.6rem; border: .3rem solid rgba(255,255,255,.3); }
+  .pv-fs-g div { height: 9.6rem; white-space: nowrap; }
+  .pv-fs-g i { display: inline-block; width: 8.4rem; height: 8.4rem; margin: .6rem; background: rgba(255,255,255,.14); }
+  .pv-fs-g i.x { background: #f4bf5a; }
+  .pv-fs-n { display: block; margin: 4rem 3rem 0; font-size: 8rem; font-weight: 900; text-transform: uppercase; color: #fff; }
   .fit { white-space: nowrap; overflow: hidden; }
   .gold { color: #ffc400; }
   .card { background: rgba(8, 6, 26, .78); border: .5rem solid #ffc400; border-radius: 3rem; }
@@ -371,6 +379,8 @@
   var VENUE = SCREENS[P][0];
   var NAMES = { kennedy: 'Mercado Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' }; // nombre del local (pedido de Cote, 21 nov)
   var SHORT = { kennedy: 'Mercado Kennedy', frida: 'Frida', tobalaba: 'Tobalaba' }; // en los juegos también «Mercado Kennedy» (pedido de Cote, 21 nov)
+  // Casillas de cada figura (las mismas de cc.html), para mostrar la figura en grande al elegirla (Cote, 24 nov)
+  var FIGMASK = {"linea":31,"horizontal":31,"vertical":1082401,"diagonal":17043521,"dos-lineas":1023,"esquinas":17825809,"sello":99,"cruz":4357252,"marco":33080895,"cuadro":469440,"diamante":4539716,"piramide":32968704,"piramide-inv":4575,"reloj":32969183,"corazon":4685802,"estrella":18168804,"lleno":33554431,"a":18415150,"b":16301615,"c":32539711,"d":16303663,"e":32554047,"f":1096767,"g":33092671,"h":18415153,"i":32641183,"j":6594847,"k":18128177,"l":32539681,"m":18405233,"n":18667121,"o":15255086,"p":1097263,"q":23385646,"r":18136623,"s":33061951,"t":4329631,"u":33080881,"v":4539953,"w":18732593,"x":18157905,"y":4329809,"z":32575775};
   var FIG = { linea: 'Línea (cualquiera)', horizontal: 'Línea horizontal', vertical: 'Línea vertical', diagonal: 'Diagonal', 'dos-lineas': 'Dos líneas', esquinas: 'Cuatro esquinas', sello: 'Sello (2×2 en una esquina)', cruz: 'Cruz', marco: 'Marco', cuadro: 'Cuadro central', diamante: 'Diamante', piramide: 'Pirámide', 'piramide-inv': 'Pirámide invertida', reloj: 'Reloj de arena', corazon: 'Corazón', estrella: 'Estrella', lleno: 'Cartón lleno' };
   var GAMES = { bingo: ['🎱', 'Bingo'], rosco: ['🎡', 'El Rosko'], festival: ['🎤', 'El Festival de ' + SHORT[VENUE]], objeto: ['🗳️', 'El objeto más extraño'] };
   var GVC = { bingo: '#ff2e93', rosco: '#9b6bff', festival: '#ffc400', objeto: '#19d6b0' };
@@ -783,9 +793,24 @@
       view.innerHTML = o;
       fitAll();
     }
+    // La figura del bingo en grande unos segundos al elegirla (pedido de Cote, 24 nov: «en todos los dispositivos»)
+    var figShown = 0;
+    function figSplash(st) {
+      if (!st.figAt || st.figAt === figShown) return;
+      var left = 3800 - ((st.now || new Date().getTime()) - st.figAt);
+      if (left < 600) return;
+      figShown = st.figAt;
+      var pid = (st.patterns || [])[0] || ''; var m = FIGMASK[pid] || 0;
+      var o = '<div class="pv-fs"><div class="pv-fs-t">La figura de este bingo</div><div class="pv-fs-g">';
+      for (var r = 0; r < 5; r++) { o += '<div>'; for (var c = 0; c < 5; c++) o += '<i class="' + (m & (1 << (r * 5 + c)) ? 'x' : '') + '"></i>'; o += '</div>'; }
+      o += '</div><b class="pv-fs-n fit">' + h(FIG[pid] || (pid.length === 1 ? 'Figura ' + pid.toUpperCase() : pid)) + '</b></div>';
+      var el = document.createElement('div'); el.innerHTML = o; el = el.firstChild;
+      view.appendChild(el); fitAll();
+      setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, left);
+    }
     function load() {
       if (!sid) { get('/api/current', function (r) { var s = r && r.sessions && r.sessions[0]; if (s) { sid = s.id; load(); } }); return; }
-      get('/api/sessions/' + sid + '/state', function (st) { if (st && cur === 'sala') paint(st); else if (!st) sid = ''; });
+      get('/api/sessions/' + sid + '/state', function (st) { if (st && cur === 'sala') { paint(st); figSplash(st); } else if (!st) sid = ''; });
     }
     load();
     every(stageTimers, 2000, load);

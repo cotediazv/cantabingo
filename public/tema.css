@@ -57,3 +57,9 @@ html.t2 #capa .cp-flat b { font-family: "Big Shoulders Display", "Arial Narrow",
 
 /* Botón «Activar sonido» de las pantallas: recto y oscuro, con el dorado de la marca (mismo tamaño y lugar de siempre) */
 html.t2 .sound-btn { border-radius: 0; background: #0c0b12; color: #f4bf5a; border: .3vh solid #f4bf5a; box-shadow: none; font-family: "Manrope", system-ui, sans-serif; }
+
+/* La figura del bingo en grande (Cote, 24 nov): letras y color del local del diseño nuevo */
+html.t2 #figsplash small { font-family: var(--t-mono); color: var(--t-foco); }
+html.t2 #figsplash b { font-family: var(--t-disp); font-weight: 800; letter-spacing: .01em; }
+html.t2 #figsplash .fs-grid { border-radius: 0; border-color: var(--t-c, var(--t-foco)); }
+html.t2 #figsplash .fs-grid i.x { background: var(--t-c, var(--t-foco)); box-shadow: 0 0 min(2vh, 3vw) color-mix(in srgb, var(--t-c, var(--t-foco)) 55%, transparent); }

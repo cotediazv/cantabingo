@@ -51,6 +51,21 @@ window.onAviso = (() => {
   };
   return (fn) => { fns.add(fn); sync(); return () => { fns.delete(fn); sync(); }; };
 })();
+// El ganador del juego anterior no se queda arriba del panel (pedido de Cote, 24 nov: «desde el momento en que ya está
+// la votación, no es necesario que arriba siga apareciendo el ganador del concurso anterior»): en los paneles del
+// animador se anota qué está en pantalla (<html data-stage>) y los recuadros de ganador de un juego se esconden cuando
+// la pantalla ya muestra otra cosa (estilos al final de styles.css). Solo con sesión de moderador: no en celulares.
+(() => {
+  if (window.__mon) return;
+  let cur = null; let live = false;
+  const tick = async () => {
+    if (document.hidden || !store.get('adminToken')) return; // el moderador puede entrar después de abrir la página
+    if (!live) { live = true; window.onAviso(tick); }
+    const r = await api('GET', '/api/stage').catch(() => null);
+    if (r && r.show !== cur) { cur = r.show; document.documentElement.dataset.stage = cur || 'none'; }
+  };
+  setInterval(tick, 3000); tick();
+})();
 // «GC PER» (pedido de Cote, 22 nov): el texto escrito en el GC Master. Lo que va entre comillas ("…", “…” o «…») sale
 // destacado en dorado y las comillas no se ven. `card` arma la misma franja del GC de la sala light; `over` la agrega
 // encima de una pantalla del local (tablero, de pie, verticales) sin quitar lo que muestra.
@@ -197,10 +212,31 @@ function speak(text) {
 function subscribe(sid, onState, onGone, asAdmin = false, token = '') {
   const query = asAdmin ? `?admin=${encodeURIComponent(store.get('adminToken') || '')}` : token ? `?token=${encodeURIComponent(token)}` : '';
   const es = new EventSource(`/api/sessions/${sid}/events${query}`);
-  es.onmessage = (e) => { const st = JSON.parse(e.data); if (st.closed) { es.close(); onGone(); } else onState(st); };
+  es.onmessage = (e) => { const st = JSON.parse(e.data); if (st.closed) { es.close(); onGone(); } else { onState(st); if (!asAdmin) window.figSplash(st); } };
   es.onerror = () => { fetch(`/api/sessions/${sid}`).then((r) => { if (r.status === 404) { es.close(); onGone(); } }).catch(() => {}); };
   return () => es.close();
 }
+// La figura del bingo en grande (pedido de Cote, 24 nov: «desde el momento en que se elige la figura, debería aparecer
+// en pantalla completa por unos 3 o 4 segundos, en todos los dispositivos, la figura completa que se va a hacer»): GC,
+// tablero, pantalla de pie y celulares (no el panel del animador). Se muestra una sola vez por figura elegida; si la
+// figura tiene varias formas (por ejemplo «Línea (cualquiera)»), van pasando
+window.figSplash = (st) => {
+  if (!st || !st.figAt || !st.patterns || !st.patterns[0] || window.__figShown === st.figAt) return;
+  const left = 3800 - ((st.now || Date.now()) - st.figAt);
+  if (left < 600) return;
+  const P = PATTERNS.byId[st.patterns[0]];
+  if (!P) return;
+  window.__figShown = st.figAt;
+  const grid = (m) => Array.from({ length: 25 }, (_, i) => `<i class="${m & (1 << i) ? 'x' : ''}"></i>`).join('');
+  const el = document.createElement('div');
+  el.id = 'figsplash'; el.className = `th-${st.theme || 'frida'}`;
+  el.innerHTML = `<div class="fs-card"><small>La figura de este bingo</small><div class="fs-grid">${grid(P.variants[0])}</div><b>${esc(P.name)}</b></div>`;
+  document.body.appendChild(el);
+  let k = 0;
+  const t = P.variants.length > 1 ? setInterval(() => { k = (k + 1) % P.variants.length; const g = el.querySelector('.fs-grid'); if (g) g.innerHTML = grid(P.variants[k]); }, 650) : null;
+  setTimeout(() => { el.classList.add('fs-out'); }, left - 400);
+  setTimeout(() => { clearInterval(t); el.remove(); }, left);
+};
 // Enlaces fijos: siempre llevan a la sesión activa, así el QR no cambia de una partida a otra
 // La sala se llama «Los Juegos de Frida»; dentro del bingo, el juego se llama «El Bingo de Frida»
 function bingoName(name) { return String(name || '').replace(/^Los Juegos de /, 'El Bingo de '); }
