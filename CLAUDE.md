@@ -137,7 +137,7 @@ Datos externos: la lista del karaoke sale del Apps Script de cada local (`?modo=
 
 - Cote: poner la clave de cada local; actualizar en OBS el GC de la sala light (`#/light-gc/kennedy`, `#/light-gc/frida`); pasar a cada equipo su enlace.
 - Logo de Tobalaba (Mall Plaza Tobalaba): falta; los de Mercado Kennedy y Frida Kahlo ya están. Esperar la imagen de Cote (la red de este entorno no deja bajarlos).
-- Juego de trivia con escalera de premios de Gabriel: nombre propio (no el del programa de TV); revisar e integrar cuando avise.
+- Juego de trivia con escalera de premios de Gabriel: lo publicó él en `main` el 25 nov como «¿Quién quiere ser billonario?» (antes «El Gran Desafío»; carga sin errores). Falta: que Cote decida el nombre (pregunta 21 del Registro: es casi el del programa de TV), el formato final, las luces con Code 4 y cerrar el diseño.
 - Página web: la trabajan Code 2 y Claude 2 (documento «Página web»: https://claude.ai/artifact/NVRyTTV3vG331n4G6TRA79).
 
 ## Coordinación
