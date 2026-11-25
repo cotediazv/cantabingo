@@ -62,11 +62,54 @@ namespace KRB {
     [DllImport("winusb.dll")] static extern bool WinUsb_Free(IntPtr iface);
     [DllImport("winusb.dll", SetLastError = true)] static extern bool WinUsb_ControlTransfer(IntPtr iface, SETUP setup, byte[] buf, uint largo, ref uint pasados, IntPtr ov);
 
-    static IntPtr archivo = IntPtr.Zero, iface = IntPtr.Zero;
-    public static bool Abierto { get { return iface != IntPtr.Zero; } }
+    // libusb-win32 (libusb0.dll): el driver que recomienda el fabricante del uDMX. Con WinUSB algunos uDMX
+    // quedan con "codigo 10" en Windows; con libusb-win32 funcionan. Se instala tambien con Zadig.
+    [DllImport("libusb0.dll", CallingConvention = CallingConvention.Cdecl)] static extern void usb_init();
+    [DllImport("libusb0.dll", CallingConvention = CallingConvention.Cdecl)] static extern int usb_find_busses();
+    [DllImport("libusb0.dll", CallingConvention = CallingConvention.Cdecl)] static extern int usb_find_devices();
+    [DllImport("libusb0.dll", CallingConvention = CallingConvention.Cdecl)] static extern IntPtr usb_get_busses();
+    [DllImport("libusb0.dll", CallingConvention = CallingConvention.Cdecl)] static extern IntPtr usb_open(IntPtr dev);
+    [DllImport("libusb0.dll", CallingConvention = CallingConvention.Cdecl)] static extern int usb_close(IntPtr h);
+    [DllImport("libusb0.dll", CallingConvention = CallingConvention.Cdecl)] static extern int usb_set_configuration(IntPtr h, int conf);
+    [DllImport("libusb0.dll", CallingConvention = CallingConvention.Cdecl)] static extern int usb_control_msg(IntPtr h, int tipo, int pedido, int valor, int indice, byte[] datos, int largo, int espera);
+    static IntPtr lusb = IntPtr.Zero;
 
-    // Abre el primer uDMX. Devuelve null si quedo listo, o el motivo si no.
+    // Busca el uDMX con libusb-win32. Estructuras de lusb0_usb.h (LIBUSB_PATH_MAX = 512):
+    // usb_bus { next, prev, dirname[512], devices, ... }   usb_device { next, prev, filename[512], bus, descriptor{...idVendor en +8, idProduct en +10} }
+    static string AbrirLibusb() {
+      try {
+        usb_init(); usb_find_busses(); usb_find_devices();
+        int P = IntPtr.Size, ofDevices = 2 * P + 512, ofDesc = 3 * P + 512;
+        int vistos = 0;
+        for (IntPtr bus = usb_get_busses(); bus != IntPtr.Zero; bus = Marshal.ReadIntPtr(bus)) {
+          for (IntPtr dev = Marshal.ReadIntPtr(bus, ofDevices); dev != IntPtr.Zero; dev = Marshal.ReadIntPtr(dev)) {
+            vistos++;
+            int vid = (ushort)Marshal.ReadInt16(dev, ofDesc + 8), pid = (ushort)Marshal.ReadInt16(dev, ofDesc + 10);
+            if (vid != 0x16C0 || pid != 0x05DC) continue;
+            IntPtr h = usb_open(dev);
+            if (h == IntPtr.Zero) return "libusb-win32 ve el uDMX pero no lo pudo abrir";
+            usb_set_configuration(h, 1);
+            lusb = h; return null;
+          }
+        }
+        return "libusb-win32 no ve un uDMX (" + vistos + " dispositivos con ese driver)";
+      } catch (DllNotFoundException) { return "libusb-win32 no esta instalado"; }
+      catch (Exception e) { return "libusb-win32: " + e.Message; }
+    }
+
+    static IntPtr archivo = IntPtr.Zero, iface = IntPtr.Zero;
+    public static bool Abierto { get { return iface != IntPtr.Zero || lusb != IntPtr.Zero; } }
+    public static string Driver { get { return lusb != IntPtr.Zero ? "libusb-win32" : "WinUSB"; } }
+
+    // Abre el primer uDMX: primero con WinUSB y, si no, con libusb-win32. Devuelve null si quedo listo, o el motivo si no.
     public static string Abrir() {
+      string w = AbrirWinUsb();
+      if (w == null) return null;
+      string l = AbrirLibusb();
+      if (l == null) return null;
+      return "WinUSB: " + w + " / " + l;
+    }
+    static string AbrirWinUsb() {
       Cerrar();
       Guid usb = new Guid("A5DCBF10-6530-11D2-901F-00C04FB951ED");     // interfaz de todos los dispositivos USB con driver
       IntPtr set = SetupDiGetClassDevs(ref usb, IntPtr.Zero, IntPtr.Zero, 0x12);   // PRESENT | DEVICEINTERFACE
@@ -89,7 +132,7 @@ namespace KRB {
           } finally { Marshal.FreeHGlobal(buf); }
         }
       } finally { SetupDiDestroyDeviceInfoList(set); }
-      if (ruta == null) return VistoSinDriver() ? "el uDMX esta enchufado pero sin driver: instalar WinUSB con Zadig" : "no hay un uDMX (" + revisados + " dispositivos USB revisados)";
+      if (ruta == null) return VistoSinDriver() ? "no lo usa (el uDMX esta enchufado pero sin WinUSB funcionando)" : "no hay un uDMX (" + revisados + " dispositivos USB revisados)";
       IntPtr h = CreateFileW(ruta, 0xC0000000, 3, IntPtr.Zero, 3, 0x40000080, IntPtr.Zero);   // lectura/escritura, OPEN_EXISTING, OVERLAPPED
       if (h == new IntPtr(-1)) return "no se pudo abrir el uDMX (error " + Marshal.GetLastWin32Error() + "; esta abierto en otro programa?)";
       IntPtr w = IntPtr.Zero;
@@ -103,12 +146,14 @@ namespace KRB {
     public static void Cerrar() {
       try { if (iface != IntPtr.Zero) WinUsb_Free(iface); } catch {}
       try { if (archivo != IntPtr.Zero) CloseHandle(archivo); } catch {}
-      iface = IntPtr.Zero; archivo = IntPtr.Zero;
+      try { if (lusb != IntPtr.Zero) usb_close(lusb); } catch {}
+      iface = IntPtr.Zero; archivo = IntPtr.Zero; lusb = IntPtr.Zero;
     }
     // Comando 2 del uDMX (SetChannelRange): Value = cantidad de canales, Index = primer canal (desde 0), datos = valores
     public static bool Enviar(byte[] frame) {
-      if (iface == IntPtr.Zero) return false;
       byte[] datos = new byte[512]; Array.Copy(frame, 1, datos, 0, 512);
+      if (lusb != IntPtr.Zero) return usb_control_msg(lusb, 0x40, 2, 512, 0, datos, 512, 500) >= 0;
+      if (iface == IntPtr.Zero) return false;
       SETUP s = new SETUP(); s.RequestType = 0x40; s.Request = 2; s.Value = 512; s.Index = 0; s.Length = 512;
       uint pasados = 0;
       return WinUsb_ControlTransfer(iface, s, datos, 512, ref pasados, IntPtr.Zero);
@@ -234,7 +279,7 @@ namespace KRB {
           // Sin puerto COM de un cable USB: primero un uDMX (el cable de Kennedy, 24 nov) y despues FTDI por su driver
           if (Tipo == "udmx" || Tipo != "enttec" && (p != null && (p.ToLower() == "ftdi" || p.ToLower() == "udmx") || auto && ComUsb() == null)) {
             string errU = (p != null && p.ToLower() == "ftdi") ? "no se busco" : UDmx.Abrir();
-            if (errU == null) { PuertoUsado = "uDMX"; Conectado = true; Error = ""; return; }
+            if (errU == null) { PuertoUsado = "uDMX (" + UDmx.Driver + ")"; Conectado = true; Error = ""; return; }
             string err = (Tipo == "udmx" || p != null && p.ToLower() == "udmx") ? "no se busco" : AbrirFtdi();
             if (err == null) { PuertoUsado = "FTDI (driver directo)"; Conectado = true; Error = ""; return; }
             err = "uDMX: " + errU + ". FTDI: " + err;
