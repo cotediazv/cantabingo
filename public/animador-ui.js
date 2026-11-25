@@ -71,6 +71,48 @@
     if (!confirm(hit[1])) { e.preventDefault(); e.stopImmediatePropagation(); }
   }, true);
 
+  // ---------- Instrucciones como aviso que se cierra tocando cualquier parte (pedido de Cote, 25 nov) ----------
+  // «las instrucciones se muestran como un pop-up, el cual él tiene que tocar en cualquier parte de la pantalla y avanza.
+  // No tienen que quedar todo el tiempo en pantalla». El recuadro «📢 Instrucciones» del panel no se ve en el modo
+  // animador; cuando aparece, sale encima una vez; si el recuadro se va (empezó el juego) y vuelve (otra ronda), sale otra vez.
+  const seen = new Set();
+  const howto = () => {
+    const live = new Set();
+    app.querySelectorAll('details.howto').forEach((d) => {
+      const key = `${location.hash}|${d.textContent}`; live.add(key);
+      if (seen.has(key) || document.getElementById('an-howto')) return;
+      seen.add(key);
+      const el = document.createElement('div'); el.id = 'an-howto';
+      const t = d.querySelector('summary'); const ul = d.querySelector('ul');
+      el.innerHTML = `<div class="an-card"><b>${t ? t.innerHTML : '📢 Instrucciones'}</b>${ul ? ul.outerHTML : ''}<small>Toca para seguir</small></div>`;
+      el.onclick = () => el.remove();
+      document.body.appendChild(el);
+    });
+    [...seen].forEach((k) => { if (!live.has(k)) seen.delete(k); });
+  };
+  setInterval(howto, 500);
+
+  // ---------- Opciones adicionales, arriba y lejos de los botones del juego (pedido de Cote, 25 nov) ----------
+  // «un paso atrás, cambio de turno, reiniciar, preguntas nuevas… como en opciones adicionales, como en una pestañita,
+  // cosa de que no moleste el juego». Se llevan a una pestaña arriba a la derecha (dentro de #app, para que sigan
+  // funcionando los botones de cada panel).
+  const OPTS = '#w-undo, #w-swap, #w-reset, #w-newq, #manual, #dc-reset, #vc-more, details.more';
+  const opts = () => {
+    const found = [...app.querySelectorAll(OPTS)].filter((b) => !b.closest('#an-opts'));
+    let box = document.getElementById('an-opts');
+    if (found.length && (!box || !app.contains(box))) {
+      box = document.createElement('div'); box.id = 'an-opts';
+      box.innerHTML = '<button type="button" class="an-opts-tab">⋯ Opciones</button><div class="an-opts-list"></div>';
+      box.querySelector('.an-opts-tab').onclick = () => box.classList.toggle('open');
+      box.querySelector('.an-opts-list').addEventListener('click', (e) => { if (e.target.closest('button') && !e.target.closest('summary')) setTimeout(() => box.classList.remove('open'), 0); });
+      app.appendChild(box);
+    }
+    if (box) found.forEach((b) => box.querySelector('.an-opts-list').appendChild(b));
+    if (box) box.hidden = !box.querySelector('.an-opts-list').children.length;
+  };
+  setInterval(opts, 400);
+  new MutationObserver(() => opts()).observe(app, { childList: true });
+
   // El nombre del juego grande arriba, siempre (lo saca del título del panel)
   setInterval(() => {
     const h = app.querySelector('h1');

@@ -3814,4 +3814,22 @@ body.anim #rosco-ctl.rosco-done .w-flow::before { display: none; }
 .an-login input { font-size: 1.3rem; padding: 14px; text-align: center; }
 .an-err { color: #ff8a80; min-height: 1.4em; }
 body.anim :is(.an-hide, #bigqr) { display: none !important; }
-body.anim #rosco-ctl :is(#w-reset, #w-newq), body.anim #rosco-ctl .w-keys ~ p.muted.small { display: none !important; }
+body.anim #rosco-ctl .w-keys ~ p.muted.small { display: none !important; }
+/* modo animador: instrucciones como aviso que se cierra tocando (no quedan en el panel) */
+body.anim #app details.howto { display: none !important; }
+#an-howto { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 210; background: rgba(6, 5, 10, .88); display: flex; align-items: center; justify-content: center; padding: 16px 12px; cursor: pointer; }
+#an-howto .an-card { width: 100%; max-width: 640px; background: #15131e; color: #f3eee6; border-top: 4px solid #f4bf5a; border-radius: 18px; padding: 22px 20px 18px; box-sizing: border-box; }
+#an-howto b { display: block; color: #f4bf5a; font-family: 'Big Shoulders Display', 'Manrope', sans-serif; font-weight: 800; text-transform: uppercase; font-size: 1.9rem; line-height: 1.05; margin-bottom: 10px; }
+#an-howto ul { margin: 0; padding-left: 1.2em; font-size: 1.3rem; line-height: 1.35; }
+#an-howto li { margin: 8px 0; }
+#an-howto small { display: block; text-align: center; margin-top: 18px; color: #a59fb0; font-size: 1rem; }
+/* modo animador: opciones adicionales en una pestaña arriba a la derecha */
+#an-opts { position: fixed; top: calc(8px + env(safe-area-inset-top)); right: 10px; z-index: 70; display: flex; flex-direction: column; align-items: flex-end; max-width: calc(100vw - 20px); }
+#an-opts[hidden] { display: none; }
+#an-opts .an-opts-tab { padding: 8px 14px; font-size: .95rem; border-radius: 999px; background: #2a2636; color: #f3eee6; border: 1px solid #3a3548; }
+#an-opts.open .an-opts-tab { background: #f4bf5a; color: #1a1407; }
+#an-opts .an-opts-list { display: none; margin-top: 8px; padding: 10px; gap: 8px; flex-direction: column; background: #15131e; border: 1px solid #3a3548; border-radius: 14px; box-shadow: 0 12px 30px rgba(0, 0, 0, .6); min-width: 220px; }
+#an-opts.open .an-opts-list { display: flex; }
+#an-opts .an-opts-list > button, #an-opts .an-opts-list summary { width: 100%; text-align: left; padding: 12px 14px; font-size: 1.05rem; }
+#an-opts .an-opts-list details { margin: 0; padding: 0; border: 0; background: none; }
+body.anim #app > p.back { padding-right: 130px; }
