@@ -436,7 +436,7 @@ function render(){
   camera.position.set(V.objetivo[0] + Math.sin(V.yaw) * cp * V.dist, V.objetivo[1] + sp * V.dist, V.objetivo[2] + Math.cos(V.yaw) * cp * V.dist);
   camera.lookAt(v3(V.objetivo));
   actualizarFocos();
-  const enSeguir = document.body.classList.contains('en-seguir');
+  const enSeguir = document.body.classList.contains('en-seguir') || document.body.classList.contains('dj-cabezas');
   const an = V.animador;
   animadorObj.visible = !!an; artistaObj.visible = !an;          // mientras camina el animador, la artista fija no se muestra
   roskoObj.visible = !!V.rosko;

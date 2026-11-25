@@ -201,6 +201,29 @@
   body.dj #djPillTxt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   body.dj #djAviso{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;min-height:13px}
   body.dj .djint input{height:24px}
+  /* Paginas del panel: Escenas / Cabezas (Cote, 25 nov) */
+  .djpag{display:flex;background:#121419;border-radius:10px;padding:3px;gap:3px}
+  .djpag button{border:0;background:transparent;color:var(--mut);font-size:13px;font-weight:700;padding:6px 10px;border-radius:8px;cursor:pointer}
+  .djpag button.act{background:var(--card);color:var(--txt);box-shadow:inset 0 0 0 1px var(--line)}
+  #djCab{display:none;flex:1;min-height:0;flex-direction:column;gap:6px}
+  body.dj-cabezas #djCab{display:flex}
+  body.dj-cabezas #djEsc, body.dj-cabezas .djctl, body.dj-cabezas .djent{display:none !important}
+  .djsel{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+  .djsel button{border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:10px;padding:7px 2px;font-size:13px;font-weight:700}
+  .djsel button.act{background:#2a3f6e;border-color:var(--acc)}
+  .djpad{position:relative;flex:1;min-height:120px;border-radius:14px;touch-action:none;cursor:crosshair;overflow:hidden;
+    background:radial-gradient(circle,#ffffff14 1px,transparent 1.5px) 0 0/22px 22px,#0f1116;box-shadow:inset 0 0 0 1px var(--line)}
+  .djpad.drag{box-shadow:inset 0 0 0 2px var(--acc)}
+  .djpad .ref{position:absolute;font-size:10px;letter-spacing:.12em;color:#ffffff55;font-weight:700;pointer-events:none}
+  .djpad .ref.a{top:6px;left:50%;transform:translateX(-50%)} .djpad .ref.b{bottom:6px;left:50%;transform:translateX(-50%)}
+  .djpad .ref.c{left:6px;top:50%;transform:translateY(-50%) rotate(-90deg);transform-origin:left top}
+  .djpad .ref.d{right:6px;top:50%;transform:translateY(-50%) rotate(90deg);transform-origin:right top}
+  #djPunto{position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 14px #ffd9a0;display:none;pointer-events:none;background:#ffd9a033}
+  .djancho{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mut)}
+  .djancho button{border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:9px;padding:6px 8px;font-size:12px;font-weight:700}
+  .djancho button.act{background:#2a3f6e;border-color:var(--acc)}
+  .djancho input{flex:1;min-width:0;height:24px;margin:0}
+  .djacc{display:grid;grid-template-columns:1fr 1fr;gap:6px}
   .djent{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mut)}
   .djent select{flex:1;min-width:0;background:#121419;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:8px;font-size:14px}
   .djnivel{width:70px;height:10px;border-radius:5px;background:#222;overflow:hidden}
@@ -231,10 +254,16 @@
 <body>
 <!-- Panel del DJ: se abre en /dj (o ?dj=1) -->
 <div id="dj">
-  <div class="djtop"><b>KRB · DJ</b><span id="djLatido" title="Ritmo"></span><span id="djBpm" style="font-size:13px;color:var(--mut);min-width:64px">—</span>
+  <div class="djtop"><b>KRB · DJ</b><div class="djpag"><button id="djPagEsc" class="act">Escenas</button><button id="djPagCab">Cabezas</button></div><span id="djLatido" title="Ritmo"></span><span id="djBpm" style="font-size:13px;color:var(--mut);min-width:64px">—</span>
     <div class="pill" id="djPill"><span class="dot" id="djDot"></span><span id="djPillTxt">…</span></div></div>
   <div class="djvista" id="djVista"><button id="djFrente">⟲ De frente</button></div>
   <div class="djesc" id="djEsc"></div>
+  <div id="djCab">
+    <div class="djsel" id="djSel"><button data-c="0">Cabeza 1</button><button data-c="1">Cabeza 2</button><button data-c="2">Cabeza 3</button><button data-c="todas" class="act">Las 3</button></div>
+    <div class="djpad" id="djPad"><span class="ref a">ESCENARIO</span><span class="ref b">FONDO</span><span class="ref c">PASILLO</span><span class="ref d">COCINAS</span><div id="djPunto"></div></div>
+    <div class="djancho">Ancho <button data-an="8">Angosto</button><button data-an="50" class="act">Medio</button><button data-an="92">Ancho</button><input type="range" id="djAncho" min="0" max="100" value="50"></div>
+    <div class="djacc"><button class="djc" id="djSegOn">💡 Encender cabezas</button><button class="djc" id="djSoltar">↩ Soltar · vuelven a la escena</button></div>
+  </div>
   <div class="djctl">
     <button class="djc" id="djAuto">🔀 Automático<small>cambia sola</small></button>
     <button class="djc" id="djMic">🎤 Ritmo<small>escuchar música</small></button>
@@ -2369,7 +2398,9 @@ const PUNTOS = {
   escenario: () => [azar(-3, 3), 1.2, azar(-3.2, -0.8)]
 };
 function apuntarCabeza(id, punto){ const zz = {}; if (!apuntarModelo(id, punto, zz)) apuntarGeo(id, punto, zz); return zz; }
-const djCabezas = () => segIds();
+const djSeg = { activo: false, sel: 'todas', ancho: 50, punto: null };
+const djSeguidas = () => djSeg.activo ? (djSeg.sel === 'todas' ? segIds() : [segIds()[+djSeg.sel]].filter(Boolean)) : [];
+const djCabezas = () => segIds().filter(id => !djSeguidas().includes(id));      // las que siguen la escena
 const djMini = () => conEspejos(['mini']);
 // Un paso de color: { grupo: color } (o null = apagado), con intensidad opcional por grupo
 function pasoColor(colores, intens){
@@ -2523,6 +2554,7 @@ async function djAplicar(i, auto){
   // lo que no tocan las capas queda apagado (y los canales fijos de cada equipo en su valor)
   const base = {}; conf.grupos.forEach(g => Object.assign(base, valoresGrupo(g, {color: null, intensidad: 0})));
   capas.forEach(c => Object.keys(c.pasos[0] || {}).forEach(k => delete base[k]));
+  djSeguidas().forEach(id => Object.assign(base, valoresGrupo(grupo(id))));   // las cabezas que sigue el DJ quedan como estan
   enviar(base, 0);
   capas.forEach(c => efecto(c.id, {tipo: 'sec', pasos: pasosTxt(c.pasos), t: (c.ritmo * seg).toFixed(3), fx: c.fx, ritmo: c.ritmo}));
 }
@@ -2752,6 +2784,78 @@ $('djEntrada').onchange = async () => {
   try { const o = $('djEntrada').selectedOptions[0]; localStorage.setItem('krb_dj_entrada2', JSON.stringify({ id: o.value, nombre: o.value ? o.textContent : '', manual: true })); } catch(e){}
   if (ritmo.mic){ ritmo.mic.stop(); ritmo.mic = null; try { ritmo.mic = await escucharMusica(); $('djAviso').textContent = 'Escuchando: ' + $('djEntrada').selectedOptions[0].textContent; } catch(e){ $('djMic').classList.remove('act'); $('djAviso').textContent = 'No se pudo usar esa entrada (' + (e.name || e.message) + ')'; } }
 };
+
+/* ---------- Pagina «Cabezas»: el DJ sigue a una persona por el salon con el dedo (Cote, 25 nov) ----------
+   La superficie es el salon sin dibujo: arriba el escenario, abajo el fondo; a los lados el pasillo y las cocinas.
+   Arriba se ve el salon completo desde arriba, con el anillo donde apuntan las cabezas. */
+const DJPAD = { v0: -2, v1: 30, u0: -6.5, u1: 5.2 };   // metros del salon que cubre la superficie (largo y ancho)
+function djPagina(cab){
+  document.body.classList.toggle('dj-cabezas', cab);
+  $('djPagEsc').classList.toggle('act', !cab); $('djPagCab').classList.toggle('act', cab);
+  if (cab) vistaSalonArriba(); else { tomaFija(); }
+  $('djFrente').textContent = cab ? '⟲ Salón' : '⟲ De frente';
+  V.sucio = true;
+}
+function vistaSalonArriba(){
+  // el salon visto desde arriba, con el escenario arriba de la pantalla (igual que la superficie)
+  V.objetivo = deSalon(-0.5, 14); V.dist = 34; V.pitch = 1.35;
+  const a = deSalon(0, 0), b = deSalon(0, 10);                       // direccion del largo del salon
+  V.yaw = Math.atan2(b[0] - a[0], b[2] - a[2]);
+}
+$('djPagEsc').onclick = () => djPagina(false);
+$('djPagCab').onclick = () => djPagina(true);
+function djEncender(ids){
+  ids.forEach(id => { const z = zona(id); z.color = (conf.seguir && conf.seguir.color) || 'blanco_calido'; z.intensidad = 100; z.zoom = djSeg.ancho; });
+}
+function djTomar(){
+  // al empezar a seguir, esas cabezas salen de la escena (si no, la escena las seguiria moviendo)
+  if (djSeg.activo) return;
+  djSeg.activo = true;
+  djEncender(djSeguidas());
+  if (djEstado.escena >= 0) djAplicar(djEstado.escena, true); else enviarGrupos(djSeguidas(), 0);
+}
+function djApuntar(fx, fy){
+  const v = DJPAD.v0 + fy * (DJPAD.v1 - DJPAD.v0), u = DJPAD.u0 + fx * (DJPAD.u1 - DJPAD.u0);   // izquierda pasillo, derecha cocinas
+  const punto = puntoPiso(u, v), ids = djSeguidas();
+  const s = (v - CAL.v0) / (CAL.v1 - CAL.v0), t = (u - CAL.u0) / (CAL.u1 - CAL.u0);
+  ids.forEach(id => { const z = zona(id); if (!(z.intensidad > 0)) djEncender([id]);
+    if (!apuntarModelo(id, punto)) { calibrada(id) ? apuntar(id, s, t) : apuntarGeo(id, punto); } });
+  V.marca = punto; V.sucio = true; djSeg.punto = {fx, fy};
+  const pt = $('djPunto'); pt.style.display = 'block'; pt.style.left = (fx * 100) + '%'; pt.style.top = (fy * 100) + '%';
+  limitar('djseg', () => enviarGrupos(ids, 0));
+}
+(() => {
+  const pad = $('djPad'); let activo = false;
+  const mover = e => { const r = pad.getBoundingClientRect();
+    djApuntar(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)), Math.max(0, Math.min(1, (e.clientY - r.top) / r.height))); };
+  pad.addEventListener('pointerdown', e => { activo = true; pad.setPointerCapture(e.pointerId); pad.classList.add('drag'); djTomar(); mover(e); });
+  pad.addEventListener('pointermove', e => { if (activo) mover(e); });
+  const fin = () => { activo = false; pad.classList.remove('drag'); };
+  pad.addEventListener('pointerup', fin); pad.addEventListener('pointercancel', fin);
+})();
+document.querySelectorAll('#djSel button').forEach(b => b.onclick = () => {
+  const antes = djSeguidas();
+  djSeg.sel = b.dataset.c; document.querySelectorAll('#djSel button').forEach(x => x.classList.toggle('act', x === b));
+  // si ya se estaba siguiendo, las que quedan fuera vuelven a la escena y las nuevas se suman
+  if (djSeg.activo){ djEncender(djSeguidas().filter(id => !antes.includes(id)));
+    if (djEstado.escena >= 0) djAplicar(djEstado.escena, true); if (djSeg.punto) djApuntar(djSeg.punto.fx, djSeg.punto.fy); }
+});
+function djFijarAncho(v){
+  djSeg.ancho = v; $('djAncho').value = v;
+  const bs = [...document.querySelectorAll('[data-an]')], cerca = bs.reduce((a, b) => Math.abs(+b.dataset.an - v) < Math.abs(+a.dataset.an - v) ? b : a);
+  bs.forEach(b => b.classList.toggle('act', b === cerca));
+  if (djSeg.activo){ djSeguidas().forEach(id => zona(id).zoom = v); V.sucio = true; limitar('djancho', () => enviarGrupos(djSeguidas(), 0)); }
+}
+document.querySelectorAll('[data-an]').forEach(b => b.onclick = () => djFijarAncho(+b.dataset.an));
+$('djAncho').oninput = () => djFijarAncho(+$('djAncho').value);
+$('djSegOn').onclick = () => { djTomar(); djEncender(djSeguidas()); if (djSeg.punto) djApuntar(djSeg.punto.fx, djSeg.punto.fy); else enviarGrupos(djSeguidas(), 0); };
+$('djSoltar').onclick = () => {
+  if (!djSeg.activo) return;
+  djSeg.activo = false; V.marca = null; $('djPunto').style.display = 'none'; V.sucio = true;
+  if (djEstado.escena >= 0) djAplicar(djEstado.escena, true);
+  else { segIds().forEach(id => zona(id).intensidad = 0); enviarGrupos(segIds(), 1); }
+  toast('Las cabezas volvieron a la escena');
+};
 function iniciarDJ(){
   // la vista 3D (lo que de verdad sale por el cable) arriba, con la toma fija del escenario de frente
   // (en la estacion de ritmo no: corre en el computador de OBS y no debe quitarle fuerza a la transmision)
@@ -2759,7 +2863,7 @@ function iniciarDJ(){
   else { $('djVista').insertBefore($('vista'), $('djFrente'));
     $('vista').classList.remove('oculta'); $('vista').style.setProperty('--vh', '100%'); }
   tomaFija(); V.sucio = true;
-  $('djFrente').onclick = () => { tomaFija(); V.sucio = true; };
+  $('djFrente').onclick = () => { document.body.classList.contains('dj-cabezas') ? vistaSalonArriba() : tomaFija(); V.sucio = true; };
   const cont = $('djEsc'); cont.innerHTML = '';
   DJ_ESCENAS.forEach((e, i) => { const b = document.createElement('button'); b.className = 'djb'; b.style.setProperty('--g', e.g);
     b.innerHTML = `<i>${e.i}</i><span>${e.n}</span>`; b.onclick = () => djAplicar(i); cont.appendChild(b); });
