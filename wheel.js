@@ -14,6 +14,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
   db.bankUsed ||= {}; // cuántas veces se ha usado cada pregunta del banco
   const clients = {}; // id -> Set<res>
   const timers = {}; // id -> temporizador de fin de reloj
+  const warns = {}; // id -> avisos de 30 y 10 s del reloj (luces)
   const showTimers = {}; // id -> temporizador del botón «Rosko en pantalla»
   const SHOW_MS = 6000; // 6 s (pedido de Cote)
   for (const w of Object.values(db.wheels)) { w.runningSince = null; w.history = []; } // tras reiniciar, el reloj queda en pausa
@@ -57,13 +58,18 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
   // Detiene el reloj y descuenta el tiempo transcurrido
   function settle(w) {
     clearTimeout(timers[w.id]);
+    (warns[w.id] || []).forEach(clearTimeout); delete warns[w.id];
     if (w.runningSince) { w.players[w.turn].remainingMs = liveRemaining(w, w.turn); w.runningSince = null; }
   }
   function run(w) {
     const c = w.players[w.turn];
     if (w.runningSince || !active(c)) return;
     w.runningSince = Date.now();
-    timers[w.id] = setTimeout(() => { settle(w); w.onScreen = false; passTurn(w); rankSeen(w); broadcast(w); }, c.remainingMs + 30);
+    timers[w.id] = setTimeout(() => { settle(w); w.onScreen = false; passTurn(w); rankSeen(w); broadcast(w); require('./momentos.js').emit('rosko_tiempo'); }, c.remainingMs + 30); // se acabó el reloj (luces)
+    // Luces (Cote, 24 nov): con 30 s por delante el fondo pasa a rojo suave y en los últimos 10 s parpadea. Si el reloj
+    // parte con menos, el aviso sale apenas después de «rosko_pregunta», para no quedar debajo de él
+    const r = c.remainingMs;
+    warns[w.id] = [[30000, 'rosko_30s', 300], [10000, 'rosko_10s', 600]].map(([ms, name, min]) => setTimeout(() => { if (w.runningSince) require('./momentos.js').emit(name); }, Math.max(r - ms, min)));
   }
   // Avanza a la siguiente letra abierta del concursante; false si ya no le quedan
   function nextLetter(c) {
@@ -101,8 +107,14 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     w.plays[w.turn] = (w.plays[w.turn] || 0) + 1;
     w.turnPlayed = false;
   }
+  // Los últimos 60 segundos (pedido de Cote, 24 nov: «cuando ya vayan quedando los últimos 60 segundos (la suma), ya no
+  // desplegar más el ranking ni mostrarlo en pantalla, para que podamos revelarlo al final»): la suma del tiempo que les
+  // queda a los que siguen jugando
+  const LATE_MS = 60000;
+  const CROWD_ROLL_MS = 5500; // la «tómbola» del ganador de la Trivia
+  const late = (w) => winnerOf(w) < 0 && w.players.reduce((t, c, i) => t + (active(c) ? liveRemaining(w, i) : 0), 0) <= LATE_MS;
   const rankDue = (w) => {
-    if (winnerOf(w) >= 0) return false;
+    if (winnerOf(w) >= 0 || late(w)) return false;
     const live = w.players.map((c, i) => (active(c) ? i : -1)).filter((i) => i >= 0);
     const plays = Array.isArray(w.plays) ? w.plays : [];
     return live.length > 0 && live.every((i) => (plays[i] || 0) >= RANK_EVERY);
@@ -218,7 +230,9 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
         if (!table.length) { crowdOf(w).winner = { none: true, name: '', score: 0, hits: 0, players: standings(w).length, at: Date.now() }; return null; }
         const top = table.filter((t) => t.score === table[0].score && t.hits === table[0].hits);
         const pick = top[crypto.randomInt(top.length)];
-        crowdOf(w).winner = { name: pick.name, score: pick.score, hits: pick.hits, players: standings(w).length, at: Date.now() };
+        // Con redoble y una «tómbola» que pasa por los mejores antes de detenerse en el ganador (pedido de Cote, 24 nov)
+        const roll = table.slice(0, 8).map((t) => t.name);
+        crowdOf(w).winner = { name: pick.name, score: pick.score, hits: pick.hits, players: standings(w).length, at: Date.now(), roll, rollMs: CROWD_ROLL_MS };
         return null;
       }
       case 'acceptwin': // el animador da por bueno al ganador: la felicitación se recoge abajo al centro
@@ -236,11 +250,13 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
         clearTimeout(showTimers[w.id]);
         if (w.onScreen) {
           const at = w.onScreenAt = Date.now();
-          showTimers[w.id] = setTimeout(() => { if (db.wheels[w.id] && w.onScreen && !w.runningSince && w.onScreenAt === at) { w.onScreen = false; broadcast(w); } }, SHOW_MS);
+          showTimers[w.id] = setTimeout(() => { if (db.wheels[w.id] && w.onScreen && !w.runningSince && w.onScreenAt === at) { w.onScreen = false; broadcast(w); require('./momentos.js').emit('rosko_pantalla_fin'); } }, SHOW_MS);
         }
         return null;
       }
-      case 'rank': w.rankShow = b.on !== false; if (w.rankShow) w.plays = []; return null; // botón «Desplegar ranking»: top 10 de la Trivia en pantalla y en el GC (cuenta 2 rondas de nuevo)
+      case 'rank':
+        if (b.on !== false && late(w)) return 'Quedan menos de 60 segundos en total: el ranking de la Trivia se revela al final';
+        w.rankShow = b.on !== false; if (w.rankShow) w.plays = []; return null; // botón «Desplegar ranking»: top 10 de la Trivia en pantalla y en el GC (cuenta 2 rondas de nuevo)
       case 'pause': settle(w); return null;
       case 'turn': remember(w); settle(w); w.onScreen = false; endTurn(w); w.turn = (w.turn + 1) % w.players.length; return null;
       case 'select': {
@@ -289,7 +305,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     rank: w.rankShow ? standings(w).filter((t) => t.score > 0).slice(0, 10).map((t) => ({ name: t.name, score: t.score, hits: t.hits })) : null,
     rankPlayers: w.rankShow ? standings(w).length : 0,
     // Ranking obligatorio cada 2 rondas (pedido de Cote): hay que desplegarlo antes de la próxima pregunta
-    rankDue: rankDue(w), rankEvery: RANK_EVERY,
+    rankDue: rankDue(w), rankEvery: RANK_EVERY, rankLate: late(w),
     players: w.players.map((c) => ({
       name: c.name, status: c.status, current: c.current, remainingMs: c.remainingMs, active: active(c),
       hits: c.status.filter((x) => x === 'hit').length, misses: c.status.filter((x) => x === 'miss').length,
@@ -417,12 +433,27 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     if (db.stage === 'qr') setStage('rueda'); // cualquier acción del rosko retira el QR a pantalla completa
     rankSeen(w);
     const had = winnerOf(w) >= 0; const hadCrowd = !!((w.crowd || {}).winner);
+    const wasOn = !!w.onScreen;
     const error = act(w, String((req.body || {}).action), req.body || {});
+    // Luces (lista acordada con Code 4): el momento de cada botón del panel
+    if (!error) {
+      const act2 = String((req.body || {}).action); const on = (req.body || {}).on !== false;
+      // el rosko entra o sale de pantalla con su botón o con «Cambiar turno» (cámaras del demo)
+      const name = { start: 'rosko_pregunta', hit: 'rosko_correcta', miss: 'rosko_incorrecta', pass: 'rosko_pasa' }[act2] || (act2 === 'rank' ? (on ? 'rosko_ranking' : 'rosko_ranking_fin') : '')
+        || (act2 === 'show' ? (on ? 'rosko_pantalla' : 'rosko_pantalla_fin') : '') || (act2 === 'turn' && wasOn ? 'rosko_pantalla_fin' : '');
+      if (act2 === 'start' && !w.runningSince) { /* no partió (sin letras): nada */ } else if (name) require('./momentos.js').emit(name);
+      if (act2 === 'acceptwin') { require('./momentos.js').emit('rosko_ganador'); require('./momentos.js').emitLater('premio_entrega', 9000); }
+      if (act2 === 'crowdwin' && (w.crowd || {}).winner && !w.crowd.winner.none) { // luces: la tómbola y, al detenerse, el ganador
+        require('./momentos.js').emit('tombola_gira');
+        setTimeout(() => { require('./momentos.js').emit('trivia_ganador'); require('./momentos.js').emitLater('premio_entrega', 9000); }, CROWD_ROLL_MS);
+      }
+    }
     rankSeen(w);
     if (error) return fail(res, 400, error);
     // Confeti en el GC cuando aparece el ganador de El Rosko o el de la Trivia (pedido de Cote, 23 nov)
     const cw = (w.crowd || {}).winner;
-    if ((!had && winnerOf(w) >= 0) || (!hadCrowd && cw && !cw.none)) festejo();
+    if (!had && winnerOf(w) >= 0) festejo();
+    if (!hadCrowd && cw && !cw.none) setTimeout(festejo, CROWD_ROLL_MS); // el de la Trivia, cuando la tómbola se detiene
     broadcast(w);
     // El estado completo en la respuesta: el panel del iPad se dibuja al instante, sin volver a leer (pedido de Cote, 21 nov)
     res.json({ ok: true, ...publicState(w), questions: w.questions, fromBank: !!w.bank });
@@ -447,7 +478,8 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     db.raffle.mode = 'tie';
     setStage('sorteo');
     broadcast(w);
-    setTimeout(() => { broadcast(w); festejo(); }, TIE_ROLL_MS + 200); // al terminar la tómbola, el panel recibe al ganador
+    setTimeout(() => { broadcast(w); festejo(); }, TIE_ROLL_MS + 200);
+    require('./momentos.js').emit('tombola_gira'); require('./momentos.js').emitLater('tombola_resultado', TIE_ROLL_MS); // al terminar la tómbola, el panel recibe al ganador
     res.json({ ok: true });
   });
 
@@ -478,13 +510,22 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     let removed = 0;
     for (const w of Object.values(db.wheels)) {
       if (w.created >= before) continue;
-      clearTimeout(timers[w.id]);
+      clearTimeout(timers[w.id]); (warns[w.id] || []).forEach(clearTimeout); delete warns[w.id];
       for (const res of clients[w.id] || []) res.end();
       delete clients[w.id];
       delete db.wheels[w.id];
       removed++;
     }
     return removed;
+  };
+  // Sala simulada (pedido de Cote, 23 nov): la pregunta del público que está en juego ahora, con su respuesta, para que las
+  // personas virtuales contesten como el público (la respuesta nunca sale del servidor)
+  api.crowdNow = () => {
+    const w = Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0];
+    if (!w) return null;
+    const key = liveKey(w);
+    const options = key ? optionsFor(w, key) : null;
+    return key && options ? { id: w.id, key, options, answer: answerOf(w, key) } : null;
   };
   return api;
 };

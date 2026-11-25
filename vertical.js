@@ -98,13 +98,15 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
   // Qué actividad hay ahora en el local: la sala de juegos completa de ese local abierta y con algo en juego
   // (pedido de Cote: si la sala está abierta pero sin bingo, El Rosko ni otro juego en curso, se ve la información
   // del local con los shows que vienen). En el bingo cuenta como «en juego» si ya salieron números, si está el QR
-  // grande para entrar o si hay ganador en pantalla.
+  // grande para entrar, si hay ganador en pantalla o si ya se eligió la figura.
   const activityOf = (v) => {
     const s = Object.values(db.sessions)[0];
     if (!s || (s.theme || 'frida') !== v || !db.stage || db.stage === 'none') return null;
     if (db.stage === 'bingo') {
       const celebrate = !s.hideWin && (s.results || []).some((r) => r.validated && !r.dismissed);
-      return (s.drawn || []).length || s.bigQr || celebrate ? 'sala' : null;
+      // también desde que se elige la figura (Cote, 24 nov: la figura se ve en grande «en todos los dispositivos»)
+      const started = s.figRound === s.round;
+      return (s.drawn || []).length || s.bigQr || celebrate || started ? 'sala' : null;
     }
     if (db.stage === 'rueda') return Object.keys(db.wheels || {}).length ? 'sala' : null;
     return 'sala'; // sorteo, votación, karaoke, show, Instagram o QR: el animador lo puso en pantalla

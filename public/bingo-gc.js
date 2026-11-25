@@ -8,7 +8,8 @@
   // En el texto inferior, lo escrito entre asteriscos se resalta en amarillo: *CONTRASEÑA: 1234*
   const rich = (text) => esc(text).replace(/\*([^*]+)\*/g, '<b>$1</b>');
 
-  // QR a pantalla completa, elegido a mano en el centro de control: cartel grande sobre fondo transparente
+  // QR a pantalla completa, elegido a mano en el centro de control: cartel grande sobre fondo transparente (corrección
+  // de Cote, 24 nov: tiene que ser un elemento importante, no un GC)
   views.qrBig = async () => {
     document.body.classList.add('obs', 'gc-screen');
     const s = ((await api('GET', '/api/current').catch(() => ({}))).sessions || [])[0];
@@ -53,6 +54,7 @@
     window.addEventListener('tema', onTema);
 
     const draw = (st) => {
+      if (!$('#gc')) return; // llegó un aviso justo después de salir de esta pantalla (otro juego en el GC)
       const current = st.drawn.at(-1);
       const fresh = st.drawn.length !== lastCount && lastCount >= 0 && st.drawn.length > 0;
       lastCount = st.drawn.length;
@@ -131,12 +133,15 @@
 
     // Sin sesión activa: queda solo el QR arriba a la derecha, sobre fondo transparente
     const idle = () => {
+      if (!$('#gc')) return;
       $('#gc').className = 'th-frida';
       $('#gc').innerHTML = `<div class="gc-qr">${qr(joinUrl())}</div><div class="gc-idle-label">Escanea el código QR con tu celular y prepárate</div>`;
     };
     // Sigue siempre a la sesión activa más reciente; sin sesión, la gráfica queda vacía (transparente)
     const follow = async () => {
+      if (!$('#gc')) { clearInterval(poll); return; } // ya se salió de esta pantalla
       const list = (await api('GET', '/api/current').catch(() => ({}))).sessions || [];
+      if (!$('#gc')) return;
       const next = list.length ? list[0].id : null;
       if (next === sid) return;
       leave();

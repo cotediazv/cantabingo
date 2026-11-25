@@ -3457,3 +3457,149 @@ body.con-paso #ctl-reload-fixed { top: calc(var(--paso-h, 64px) + 20px); }
 .dg-intro small { font-size: 3vh; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; }
 .dg-intro b { font-size: min(8vh, calc(70vw / (var(--n, 10) * .6))); font-weight: 900; text-transform: uppercase; color: var(--gc-yellow); text-shadow: .4vh .4vh 0 var(--gc-shade); }
 @media (prefers-reduced-motion: reduce) { .d-opts > div { transition: none; animation: none !important; } }
+/* Sala simulada (pedido de Cote, 23 nov) */
+.home-sim { margin-top: 10px; opacity: .9; }
+.home-simtag { display: block; margin-top: 6px; font-size: .85rem; font-weight: 700; opacity: .9; }
+.sim-bar { margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; background: rgba(255, 196, 0, .12); border: 2px dashed #ffc400; color: #ffe08a; }
+
+/* «Anda al público» en el panel del bingo (pedido de Cote, 24 nov, para las luces) */
+.publico-hint { margin: 10px auto 0; max-width: 560px; padding: 10px 14px; border-radius: 12px; background: rgba(22, 163, 74, .14); border: 2px solid #16a34a; color: #d1fae5; text-align: center; font-weight: 600; }
+
+/* Demo del GC Master (pedido de Cote, 23 y 24 nov): cámara simulada con el GC encima y el celular de la persona protagonista */
+.gm-demo .dm-cam { position: relative; background: #0c0b12; }
+.gm-demo .dm-cam iframe { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; border: 0; transform-origin: 0 0; }
+.gm-demo .dm-cam .dm-gc { background: transparent; pointer-events: none; }
+.gm-demo .dm-stage { position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: flex; align-items: center; justify-content: center; padding: 8%; text-align: center; color: #b9b4c9; font-size: 13px; background: radial-gradient(ellipse at 50% 30%, #2a2340 0%, #0c0b12 70%); }
+.gm-demo .dm-phone .gm-box { aspect-ratio: 390 / 760; background: #000; border-radius: 14px; }
+.gm-demo .dm-phone .gm-box iframe { width: 390px; height: 760px; }
+.gm-demo .dm-ctl { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-top: 8px; font-size: 13px; }
+.gm-demo .dm-ctl select, .gm-demo .dm-ctl input { margin-left: 6px; max-width: 260px; }
+.gm-demo .dm-vista { display: flex; align-items: center; gap: 6px; flex: 1 1 320px; }
+.gm-demo .dm-vista input { flex: 1; min-width: 0; }
+/* Demo: el celular va como tercera columna, del mismo alto que la pantalla de pie */
+.gm-demo .gm-screens { grid-template-columns: minmax(0, 1fr) minmax(0, .6328fr) minmax(0, .577fr); gap: 0 8px; }
+.gm-demo .dm-phone .gm-box { aspect-ratio: 390 / 760; max-width: none; }
+@media (max-width: 700px) { .gm-demo .gm-screens { grid-template-columns: minmax(0, 1fr); } .gm-demo .dm-phone .gm-box { max-width: 300px; } }
+.gm-demo .dm-who { color: #f4bf5a; font-weight: 700; }
+
+/* Pantallas en otra ventana (pedido de Cote, 24 nov): 6 vistas de las 3 pantallas de la sala de juegos */
+body.gp-on { background: #000; overflow: hidden; }
+body.gp-on main { max-width: none; padding: 0; margin: 0; }
+#gp { position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: #000; color: #e9e6f2; }
+#gp .gp-bar { position: absolute; z-index: 5; top: 0; left: 0; right: 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 10px; background: rgba(12, 11, 18, .92); border-bottom: 1px solid #2b2838; opacity: 0; transform: translateY(-100%); transition: opacity .25s, transform .25s; }
+#gp.gp-awake .gp-bar { opacity: 1; transform: none; }
+#gp .gp-bar button { padding: 6px 12px; font-size: 14px; border-radius: 6px; background: #1d1a29; color: #e9e6f2; border: 1px solid #3a3550; cursor: pointer; }
+#gp .gp-bar button.on { background: #f4bf5a; color: #0c0b12; border-color: #f4bf5a; font-weight: 700; }
+#gp .gp-bar span { margin-left: auto; font-size: 13px; color: #b9b4c9; }
+#gp .gp-area { position: absolute; top: 0; right: 0; bottom: 0; left: 0; display: grid; gap: 6px; padding: 6px; }
+#gp .gp-none { margin: auto; font-size: 20px; color: #b9b4c9; text-align: center; padding: 20px; }
+#gp .gp-scr { position: relative; min-width: 0; min-height: 0; display: flex; align-items: center; justify-content: center; }
+#gp .gp-box { position: relative; overflow: hidden; background: #0c0b12; }
+#gp .gp-box iframe { position: absolute; left: 0; top: 0; border: 0; transform-origin: 0 0; }
+#gp .gp-scr[data-n="1"] .gp-box iframe, #gp .gp-scr[data-n="2"] .gp-box iframe { width: 1280px; height: 720px; }
+#gp .gp-scr[data-n="3"] .gp-box iframe { width: 720px; height: 1280px; }
+#gp .gp-box iframe[data-full] { width: 100%; height: 100%; transform: none; }
+#gp .gp-box video { position: absolute; top: 0; right: 0; bottom: 0; left: 0; width: 100%; height: 100%; object-fit: contain; }
+#gp .gp-box .gm-p1in { position: absolute; top: 0; right: 0; bottom: 0; left: 0; }
+#gp .gp-box.gm-bg { background: #1b1626; }
+#gp .gp-box.dm-cam .dm-gc { background: transparent; pointer-events: none; }
+#gp .gp-scr > small { position: absolute; z-index: 2; left: 0; top: 0; padding: 2px 8px; font: 600 11px/1.6 "JetBrains Mono", monospace; letter-spacing: .08em; text-transform: uppercase; background: rgba(12, 11, 18, .8); color: #f4bf5a; opacity: 0; transition: opacity .25s; }
+#gp.gp-awake .gp-scr > small { opacity: 1; }
+#gp .gp-resize { display: none; }
+/* Las vistas */
+#gp.gp-p1 .gp-area { grid-template-columns: 72fr 28fr; grid-template-rows: 1fr 1fr; grid-template-areas: "a b" "a c"; }
+#gp.gp-p2 .gp-area { grid-template-columns: 72fr 28fr; grid-template-rows: 1fr 1fr; grid-template-areas: "b a" "b c"; }
+#gp.gp-p3 .gp-area { grid-template-columns: 1fr .9fr 1fr; grid-template-rows: 1fr; grid-template-areas: "a c b"; }
+#gp.gp-iguales .gp-area { grid-template-columns: 1.778fr 1.778fr .5625fr; grid-template-rows: 1fr; grid-template-areas: "a b c"; }
+#gp.gp-mosaico .gp-area { grid-template-columns: 1fr .6328fr; grid-template-rows: 1fr 1fr; grid-template-areas: "a c" "b c"; }
+#gp:not(.gp-libre) .gp-scr[data-n="1"] { grid-area: a; }
+#gp:not(.gp-libre) .gp-scr[data-n="2"] { grid-area: b; }
+#gp:not(.gp-libre) .gp-scr[data-n="3"] { grid-area: c; }
+#gp.gp-p2 .gp-scr[data-n="1"] { grid-area: b; }
+#gp.gp-p2 .gp-scr[data-n="2"] { grid-area: a; }
+#gp.gp-p1 .gp-scr[data-n="1"] .gp-box, #gp.gp-p2 .gp-scr[data-n="2"] .gp-box, #gp.gp-p3 .gp-scr[data-n="3"] .gp-box { box-shadow: 0 0 0 2px #f4bf5a; }
+/* Personalizada: cada pantalla se mueve por su nombre y se agranda desde la esquina */
+#gp.gp-libre .gp-area { display: block; }
+#gp.gp-libre .gp-scr { position: absolute; display: block; }
+#gp.gp-libre .gp-scr > small { opacity: 1; cursor: move; touch-action: none; }
+#gp.gp-libre .gp-resize { display: block; position: absolute; z-index: 3; right: 0; bottom: 0; width: 22px; height: 22px; cursor: nwse-resize; touch-action: none; background: linear-gradient(135deg, transparent 50%, #f4bf5a 50%); }
+#gp .gp-area.gp-dragging iframe { pointer-events: none; }
+/* La pestaña con las pantallas en la otra ventana */
+.gm-fuerabtn { margin: 0 0 8px 10px; padding: 6px 12px; font-size: 14px; }
+.gm-jg.gm-fuera .gm-grid { grid-template-columns: minmax(260px, 24%) minmax(0, 1fr); }
+.gm-fueranote { margin: 12px 0; color: #b9b4c9; }
+.gm-fuera .dm-solo { grid-template-columns: minmax(0, 1fr); max-width: 300px; }
+#gp .gp-hot { position: absolute; z-index: 4; top: 0; left: 0; right: 0; height: 44px; }
+
+
+/* La figura del bingo en grande al elegirla (pedido de Cote, 24 nov), en GC, tableros y celulares */
+#figsplash { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 9000; display: grid; place-items: center; background: rgba(12, 11, 18, .98); animation: fsIn .35s ease-out both; }
+#figsplash.fs-out { animation: fsOut .4s ease-in both; }
+#figsplash .fs-card { display: grid; justify-items: center; gap: min(3vh, 4vw); text-align: center; color: #fff; }
+#figsplash small { font: 700 min(3.2vh, 4.4vw)/1.2 system-ui, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: #f4bf5a; }
+#figsplash .fs-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: min(1.2vh, 1.6vw); width: min(56vh, 78vw); aspect-ratio: 1; padding: min(1.6vh, 2.2vw); background: rgba(255, 255, 255, .08); border: 2px solid rgba(255, 255, 255, .25); }
+#figsplash .fs-grid i { display: block; background: rgba(255, 255, 255, .12); transition: background .2s; }
+#figsplash .fs-grid i.x { background: #f4bf5a; box-shadow: 0 0 min(2vh, 3vw) rgba(244, 191, 90, .55); }
+#figsplash b { font: 900 min(7vh, 9vw)/1.05 system-ui, sans-serif; text-transform: uppercase; max-width: 92vw; }
+@keyframes fsIn { from { opacity: 0; transform: scale(1.04); } to { opacity: 1; transform: none; } }
+@keyframes fsOut { to { opacity: 0; } }
+
+/* El ganador del juego anterior se esconde cuando la pantalla ya muestra otra cosa (Cote, 24 nov) */
+html[data-stage]:not([data-stage="bingo"]) #win-ann,
+html[data-stage]:not([data-stage="voto"]) #vc-win,
+html[data-stage]:not([data-stage="rueda"]) #w-crowd-res,
+html[data-stage]:not([data-stage="rueda"]) #w-accepted .w-ann { display: none !important; }
+
+/* Tómbola del sorteo de participantes de El Festival y El objeto (pedido de Cote, 24 nov) */
+#vroll { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 8000; display: grid; place-items: center; pointer-events: none; animation: fsIn .3s ease-out both; }
+#vroll.vr-full { background: rgba(12, 11, 18, .9); }
+#vroll.vr-out { animation: fsOut .4s ease-in both; }
+#vroll .vr-card { box-sizing: border-box; min-width: 60vh; max-width: 92vw; padding: 3.5vh 5vh; background: rgba(12, 11, 18, .97); border-top: .6vh solid #f4bf5a; color: #fff; text-align: center; }
+#vroll small { display: block; font: 700 2.2vh/1.3 system-ui, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: #f4bf5a; }
+#vroll b { display: block; margin: 1vh 0 2.4vh; font: 900 5.6vh/1.1 system-ui, sans-serif; text-transform: uppercase; }
+#vroll ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 1.1vh; counter-reset: vr; }
+#vroll li { counter-increment: vr; padding: 1vh 3vh; font: 800 3.6vh/1.15 system-ui, sans-serif; white-space: nowrap; background: rgba(255, 255, 255, .06); color: rgba(255, 255, 255, .35); }
+#vroll li::before { content: counter(vr) ".  "; color: #f4bf5a; }
+#vroll li.spin { color: rgba(255, 255, 255, .8); background: rgba(244, 191, 90, .14); }
+#vroll li.ok { color: #fff; background: rgba(244, 191, 90, .28); animation: vrPop .35s ease-out; }
+#vroll.vr-gc .vr-card { min-width: 52vh; padding: 2.6vh 4vh; }
+@keyframes vrPop { from { transform: scale(1.08); } to { transform: none; } }
+body.vroll-on .vk-list, body.vroll-on .vf-list { visibility: hidden; }
+body.vroll-on .vk-card:has(> .vk-list) { visibility: hidden; }
+/* La votación del juego en el GC de OBS, en franja baja (pedido de Cote, 24 nov: «tiene que ir con GC en todo momento,
+   porque el cartón en pantalla completa está tapando al animador»): texto a la izquierda y los círculos o el dibujo al lado */
+#gv.gv-gc { padding: 0 0 4vh; }
+#gv.gv-gc .gv-card { width: 92vw; max-width: none; padding: 1.8vh 2.4vw; }
+#gv.gv-gc .gv-card:not(.gv-intro) .gv-main { grid-template-columns: minmax(0, 34%) minmax(0, 1fr); justify-items: start; align-items: center; text-align: left; column-gap: 3vw; row-gap: .6vh; }
+#gv.gv-gc .gv-card:not(.gv-intro) .gv-main > * { grid-column: 1; }
+#gv.gv-gc .gv-card:not(.gv-intro) .gv-rings { grid-column: 2; grid-row: 1 / span 5; margin: 0; gap: 2vw; }
+#gv.gv-gc .gv-ring, #gv.gv-gc .gv-rings.n2 .gv-ring { width: 10vw; width: min(13vh, 10vw); }
+#gv.gv-gc .gv-name { font-size: 1.8vh; }
+#gv.gv-gc .gv-intro .gv-main { grid-template-columns: 16vh minmax(0, 1fr); justify-items: start; text-align: left; column-gap: 2.6vw; row-gap: .6vh; }
+#gv.gv-gc .gv-intro .gv-main > * { grid-column: 2; }
+#gv.gv-gc .gv-intro .gv-introbody { display: contents; }
+#gv.gv-gc .gv-intro .gv-art { grid-column: 1; grid-row: 1 / span 3; width: 16vh; }
+#gv.gv-gc .gv-intro .gv-lines { columns: 2; column-gap: 3vw; font-size: 2vh; }
+#gv.gv-gc .gv-intro .gv-dots { display: none; }
+#gv.gv-gc .gv-card { width: 80vw; justify-self: start; margin-left: 4vw; } /* deja libre el QR de la esquina */
+
+/* El mapa del salón bajo las pantallas del Demo (Cote, 24 nov) */
+.gm-demo .dm-map { margin-top: 10px; }
+.gm-demo .dm-map small { display: block; margin-bottom: 4px; font-size: 12px; color: #b9b4c9; }
+.gm-demo .dm-map iframe { display: block; width: 100%; height: 46vh; height: 46dvh; border: 1px solid #2b2838; border-radius: 8px; background: #0c0b12; }
+
+/* «Cartón al centro» (pregunta 20 de Cote, 24 nov): en el GC de OBS, la franja de abajo se cambia por un cartón al centro */
+body.carton-on #app, body.carton-on #join-qr { visibility: hidden; }
+#carton { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 7000; display: grid; place-items: center; pointer-events: none; animation: fsIn .35s ease-out both; }
+#carton .ct-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4vh; box-sizing: border-box; width: 64vw; padding: 4vh 4.5vh; background: rgba(12, 11, 18, .96); border-top: .6vh solid #f4bf5a; color: #fff; }
+#carton .ct-info { display: grid; gap: 1vh; min-width: 0; }
+#carton .ct-title { font: 800 3vh/1.15 system-ui, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #f4bf5a; white-space: nowrap; overflow: hidden; }
+#carton .ct-small { font: 700 2.4vh/1.2 system-ui, sans-serif; color: rgba(255, 255, 255, .75); }
+#carton .ct-small:empty { display: none; }
+#carton .ct-big { font: 900 8vh/1.05 system-ui, sans-serif; text-transform: uppercase; white-space: nowrap; overflow: hidden; }
+#carton .ct-lines p { margin: .5vh 0 0; font: 600 2.4vh/1.3 system-ui, sans-serif; color: rgba(255, 255, 255, .85); }
+#carton .ct-qr { box-sizing: border-box; width: 26vh; padding: 1.4vh; background: #fff; color: #14121c; text-align: center; font: 800 1.8vh/1.2 system-ui, sans-serif; }
+#carton .ct-qr .qr { display: block; width: 100%; height: auto; aspect-ratio: 1; margin-bottom: .8vh; border: 0; padding: 0; }
+#ctl-carton { position: absolute; top: 8px; right: 112px; z-index: 60; padding: 4px 10px; font-size: .8rem; }
+body.con-paso #ctl-carton { top: calc(var(--paso-h, 64px) + 20px); }
+.ctl-carton.on { background: #f4bf5a; color: #14121c; }

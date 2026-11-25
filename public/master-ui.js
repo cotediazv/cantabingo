@@ -50,6 +50,7 @@
         ${ORDER.map((v) => `<a class="gm-tab ${on === v ? 'on' : ''}" href="#/master/${v}">${esc(VENUES[v])}</a>`).join('')}
         <a class="gm-tab ${on === 'todos' ? 'on' : ''}" href="#/master">Los 3 locales</a>
         <a class="gm-tab ${on === 'juegos' ? 'on' : ''}" href="#/master/juegos">Sala de juegos</a>
+        <a class="gm-tab ${on === 'demo' ? 'on' : ''}" href="#/master/demo">Demo</a>
         <a class="gm-tab ${on === 'conectados' ? 'on' : ''}" href="#/master/conectados">Conectados</a>
         <span class="gm-clock" data-k="clock"><b></b><i></i></span></nav>`;
   // Arriba, la fecha con el año y la hora local de los locales (hora de Chile), al segundo (pedido de Cote, 22 nov)
@@ -126,6 +127,14 @@
   // de la zona de las pantallas, por encima de las otras y sin tapar los botones; «✕» la devuelve a su lugar.
   const TOOLS = (n, snd) => `<div class="gm-tools">${snd ? `<button type="button" class="gm-tool" data-snd="${n}" aria-pressed="false"><span>🔇</span><b>Sonido</b></button>` : ''}<button type="button" class="gm-tool" data-big="${n}" aria-pressed="false"><span>⛶</span><b>Grande</b></button></div>`;
   const tabSrc = (mute) => `/?${mute ? 'mudo=1&' : ''}mon=1#/tablero`;
+  // El demo de luces de Code 4 (copia en /demo-luces/): la vista 3D del salón con las pantallas del local en vivo
+  // (fondo del escenario = pantalla 2, columnas = pantalla 3, las de 42" = la transmisión con el GC). Las páginas van
+  // en su versión liviana y sin sonido, como los monitores del GC Master
+  // El mapa del salón bajo las pantallas del Demo (pedido de Cote, 24 nov: «para poder seguir al animador con el dedo o
+  // con el mouse… como lo va a hacer el DJ»): el iPad de luces de Code 4 en modo control, que maneja el demo de este
+  // navegador; `?demo=mapa` es su página de solo el mapa y los botones de las cabezas (las cabezas ya no siguen solas)
+  const MAPA = '<div class="dm-map"><small>Mapa del salón · sigue al animador con el dedo o el mouse</small><iframe title="Mapa del salón para seguir al animador" src="/demo-luces/ipad.html?demo=mapa"></iframe></div>';
+  const DEMO3D = () => `/demo-luces/ipad.html?demo=tv&p2=${encodeURIComponent(page('#/tablero'))}&p3=${encodeURIComponent(page('#/tablero'))}&gc=${encodeURIComponent(page('#/escena'))}`;
   const monCtl = (fit) => {
     let snd = null; let big = null; let zone = null; let sig = null;
     const paint = () => {
@@ -270,18 +279,41 @@
   // poder tener todos los botones y todas las interacciones»): a la izquierda, las 3 pantallas de la sala de juegos abierta
   // (1 GC de OBS, 2 tablero, 3 pantalla de pie), los botones del GC y los de la capa gráfica; a la derecha, el panel real
   // de la sala (crear sala, elegir el juego y manejar cada juego), para hacer todo sin salir de esta página.
-  const juegos = async () => {
+  // Demo (pedido de Cote, 23 y 24 nov): la misma pestaña «Sala de juegos», pero con la sala simulada (personas virtuales),
+  // una «cámara» simulada en la pantalla 1 (la vista 3D de Code 4, que calcula las luces en el navegador sin tocar las
+  // luces reales y muestra al animador virtual, con el GC real de la sala encima) y la vista previa del celular de la
+  // persona protagonista: automático (quien está en el escenario) o la que se elija.
+  const juegos = async (demo = false) => {
     if (!(await isAdmin())) return viewLogin();
     document.body.classList.add('gm-on');
-    app.innerHTML = `<div id="gm" class="gm-all gm-jg">${navHTML('juegos')}
+    const sim0 = demo ? await api('GET', '/api/sim').catch(() => null) : null;
+    const open0 = demo ? ((await api('GET', '/api/current').catch(() => ({}))).sessions || [])[0] : null;
+    if (demo && !location.hash.startsWith('#/master/demo')) return undefined; // ya se cambió de pestaña mientras se esperaba
+    app.innerHTML = `<div id="gm" class="gm-all gm-jg ${demo ? 'gm-demo' : ''}">${navHTML(demo ? 'demo' : 'juegos')}
       <a class="gm-movil" href="/sala">📱 Abrir la versión para el teléfono</a>
+      <button type="button" class="gm-fuerabtn" data-k="fuera">🖥️ Pantallas en otra ventana</button>
+      ${demo ? '<button type="button" class="gm-fuerabtn" data-k="luces" title="El iPad de las luces de Code 4, manejando el demo de este navegador: con «Anda al público» se abre el mapa para seguir al animador a mano">💡 Luces del demo</button>' : ''}
       <div class="gm-grid"><div class="gm-jgleft" data-k="left"></div>
-        <div class="gm-jgright"><div class="gm-panel"><iframe title="Panel de la sala de juegos" src="${location.pathname}#/juegos"></iframe></div><div class="gm-jgctl" data-k="ctl"></div></div></div></div>`;
+        <div class="gm-jgright"><div class="gm-panel"><iframe title="Panel de la sala de juegos" src="${location.pathname}${demo && !open0 ? '#/simulada' : '#/juegos'}"></iframe></div><div class="gm-jgctl" data-k="ctl"></div></div></div></div>`;
     const root = $('#gm');
     const left = root.querySelector('[data-k="left"]');
     const ctlBox = root.querySelector('[data-k="ctl"]'); // los botones del GC y de los efectos van a la derecha, debajo del panel de los juegos (pedido de Cote, 23 nov), para que las pantallas queden más grandes
     let alive = true; let venue = null; let stage = ''; let sigStop = null;
-    const fit = () => root.querySelectorAll('.gm-box').forEach((box) => { const f = box.querySelector('iframe:not([data-full])'); if (f) f.style.transform = `scale(${box.clientWidth / Number(box.dataset.w || 1280)})`; });
+    // Pantallas en otra ventana (pedido de Cote, 24 nov): mientras esté abierta, aquí no se repiten las pantallas
+    // (en el demo queda el celular) y el panel tiene más espacio; al cerrarla vuelven solas
+    let away = null;
+    const fueraBtn = root.querySelector('[data-k="fuera"]');
+    fueraBtn.onclick = () => {
+      if (away && !away.closed) { away.close(); away = null; root.classList.remove('gm-fuera'); paintLeft(); return; } // traerlas de vuelta
+      away = window.open(`${location.pathname}#/master/pantallas${demo ? '-demo' : ''}`, 'gmPantallas', 'popup,width=1600,height=900');
+      if (away) { root.classList.add('gm-fuera'); paintLeft(); }
+    };
+    // Luces del demo (Code 4, 24 nov): su iPad de las luces en modo «control», que maneja el demo abierto en este mismo
+    // navegador (la pantalla 1); en otro equipo no funciona, porque se hablan dentro del navegador
+    const lucesBtn = root.querySelector('[data-k="luces"]');
+    if (lucesBtn) lucesBtn.onclick = () => { const w = window.open('/demo-luces/ipad.html?demo=control', 'gmLuces', 'popup,width=1100,height=820'); if (w) w.focus(); };
+    const tAway = setInterval(() => { if (away && away.closed) { away = null; root.classList.remove('gm-fuera'); paintLeft(); } }, 1000);
+    const fit = () => root.querySelectorAll('.gm-box').forEach((box) => { const k = `scale(${box.clientWidth / Number(box.dataset.w || 1280)})`; if (box.classList.contains('dm-cam')) box.querySelectorAll('iframe').forEach((f) => { f.style.transform = k; }); else { const f = box.querySelector('iframe:not([data-full])'); if (f) f.style.transform = k; } });
     const ro = new ResizeObserver(fit);
     const ctl = monCtl(fit);
     const key = (k, icon, text, on) => `<button type="button" class="gm-key ${on ? 'on' : ''}" data-main="${k}"><i></i><span>${icon}</span><b>${text}</b></button>`;
@@ -289,28 +321,78 @@
     const paintLeft = () => {
       ro.disconnect();
       if (sigStop) { sigStop(); sigStop = null; }
-      left.innerHTML = venue ? `<section class="gm-venue th-${venue}" data-v="${venue}">
+      fueraBtn.textContent = away ? '🖥️ Las pantallas están en la otra ventana · traerlas aquí' : '🖥️ Pantallas en otra ventana';
+      left.innerHTML = venue && away ? `<section class="gm-venue th-${venue}" data-v="${venue}">
+          <header class="gm-head"><b>Sala de juegos · ${esc(VENUES[venue])}</b><span class="gm-sala" data-k="sala"></span></header>
+          <p class="gm-fueranote">Las pantallas se ven en la otra ventana.</p>
+          ${demo ? `<div class="gm-screens dm-solo"><div class="gm-scr gm-tall dm-phone" data-n="4"><small>Celular</small><div class="gm-box" data-w="390"><iframe title="Celular de la persona protagonista" tabindex="-1"></iframe></div></div></div>
+          <div class="dm-ctl"><label>Celular de <select data-k="who"><option value="">Automático: quien está en el escenario</option></select></label><span class="dm-who" data-k="whoName"></span></div>${MAPA}` : ''}
+          </section>`
+        : venue ? `<section class="gm-venue th-${venue}" data-v="${venue}">
           <header class="gm-head"><b>Sala de juegos · ${esc(VENUES[venue])}</b><span class="gm-sala" data-k="sala"></span></header>
           <div class="gm-screens">
             <div class="gm-left">
-              <div class="gm-scr" data-n="1"><small>1 · <span data-k="p1name">GC</span></small>${TOOLS(1, true)}<div class="gm-box" data-w="1280" data-k="p1box"></div></div>
+              <div class="gm-scr" data-n="1"><small>1 · <span data-k="p1name">${demo ? 'Cámara · demo' : 'GC'}</span></small>${TOOLS(1, !demo)}<div class="gm-box ${demo ? 'dm-cam' : ''}" data-w="1280" data-k="p1box"></div></div>
               <div class="gm-scr" data-n="2"><small>2 · Tablero</small>${TOOLS(2, true)}<div class="gm-box" data-w="1280"><iframe title="Tablero de la sala de juegos" tabindex="-1" data-tab="1" src="${tabSrc(true)}"></iframe></div></div>
             </div>
-            <div class="gm-scr gm-tall" data-n="3"><small>3 · De pie</small>${TOOLS(3, false)}<div class="gm-box" data-w="720"><iframe title="Pantalla de pie de la sala de juegos" tabindex="-1" src="${page('#/tablero')}"></iframe></div></div>
+            <div class="gm-scr gm-tall" data-n="3"><small>3 · De pie</small>${TOOLS(3, false)}<div class="gm-box" data-w="720"><iframe title="Pantalla de pie de la sala de juegos" tabindex="-1" src="${page('#/tablero')}"></iframe></div></div>${demo ? `<div class="gm-scr gm-tall dm-phone" data-n="4"><small>Celular</small>${TOOLS(4, false)}<div class="gm-box" data-w="390"><iframe title="Celular de la persona protagonista" tabindex="-1"></iframe></div></div>` : ''}
           </div>
+          ${demo ? `<div class="dm-ctl"><label>Celular de <select data-k="who"><option value="">Automático: quien está en el escenario</option></select></label><span class="dm-who" data-k="whoName"></span>
+            <label class="dm-vista">Vista 3D de Code 4 <input data-k="vista" type="url" placeholder="Vacío: la copia de la Sala (/demo-luces/)"><button type="button" data-k="vistaSave">Guardar</button></label></div>${MAPA}` : ''}
           </section>`
-        : `<section class="gm-venue gm-none"><header class="gm-head"><b>Sala de juegos</b></header>
-          <p>No hay sala de juegos abierta. Créala en el panel de al lado («Crear sala de juegos»); cuando esté abierta, aquí aparecen sus pantallas y sus botones.</p></section>`;
+        : `<section class="gm-venue gm-none"><header class="gm-head"><b>${demo ? 'Demo · sala simulada' : 'Sala de juegos'}</b></header>
+          <p>${demo ? 'Crea la sala simulada en el panel de al lado: elige el local y cuántas personas virtuales. Cuando esté lista, aquí aparecen la cámara simulada, las pantallas y el celular.' : 'No hay sala de juegos abierta. Créala en el panel de al lado («Crear sala de juegos»); cuando esté abierta, aquí aparecen sus pantallas y sus botones.'}</p></section>`;
       ctlBox.className = venue ? `gm-jgctl gm-venue th-${venue}` : 'gm-jgctl'; ctlBox.hidden = !venue;
       ctlBox.innerHTML = venue ? `<div class="gm-keys" data-k="keys"></div>
           <div class="gm-txtrow">
             <input class="gm-text" data-k="text" type="text" maxlength="120" autocomplete="off" placeholder='Texto para el GC PER y el texto 3D · "entre comillas" sale destacado'>
             <div class="gm-capa" title="Capa gráfica sobre la cámara">${CAPA.map(([k, i, t, full]) => `<button type="button" class="gm-ckey" data-capa="${k}" title="${full}" aria-label="${full}"><span>${i}</span><b>${t}</b></button>`).join('')}</div></div>` : '';
-      if (venue) sigStop = signal1(left.querySelector('[data-k="p1box"]'), venue, { fit, label: (t) => { const el = left.querySelector('[data-k="p1name"]'); if (el) el.textContent = t; } });
+      if (venue && away) { /* las pantallas están en la otra ventana */ } else if (venue && demo) demoCam(); else if (venue) sigStop = signal1(left.querySelector('[data-k="p1box"]'), venue, { fit, label: (t) => { const el = left.querySelector('[data-k="p1name"]'); if (el) el.textContent = t; } });
       root.querySelectorAll('.gm-box').forEach((b) => ro.observe(b));
-      ctl.attach(venue ? left.querySelector('.gm-screens') : null, sigStop);
+      ctl.attach(venue && !away ? left.querySelector('.gm-screens') : null, sigStop);
+      if (demo && venue) { phoneSrc = ''; whoList = ''; demoWho(); }
       paintKeys(); fit();
     };
+    // ---------- Demo ----------
+    let vista = (sim0 && sim0.vista) || ''; let phoneSrc = ''; let whoList = ''; let who = '';
+    // Pantalla 1: la vista 3D de Code 4 (con las luces y el animador virtual) y, encima, el GC real de la sala
+    function demoCam() {
+      const box = left.querySelector('[data-k="p1box"]'); if (!box) return;
+      // Por defecto, la copia del demo de luces de Code 4 que está en la Sala (/demo-luces/, modo «tv»: solo la vista 3D
+      // con la cámara sobre el animador); se puede cambiar por otra dirección en «Vista 3D de Code 4»
+      const v3d = vista || DEMO3D();
+      box.innerHTML = `${v3d ? `<iframe class="dm-v3d" title="Vista 3D del salón (Code 4)" src="${esc(v3d)}" onload="this.dataset.ok=1"></iframe>` : '<div class="dm-stage"><span>La cámara simulada (la vista 3D del salón con las luces y el animador, de Code 4) aparece aquí cuando esté lista. Mientras tanto se ve solo el GC.</span></div>'}<iframe class="dm-gc" title="GC de la sala de juegos" tabindex="-1" src="${page('#/escena')}"></iframe>`;
+      const vi = left.querySelector('[data-k="vista"]'); if (vi) vi.value = vista;
+      fit();
+    }
+    // Los momentos de los juegos llegan a la vista 3D como en el escenario real (Code 4: postMessage({momento}))
+    let momSeq = null;
+    async function demoMom() {
+      const r = await api('GET', `/api/momentos?desde=${momSeq == null ? 0 : momSeq}`).catch(() => null);
+      if (!alive || !r) return;
+      const first = momSeq == null; momSeq = r.seq;
+      if (first) return; // al abrir no se repiten los momentos viejos
+      const f = left.querySelector('.dm-v3d');
+      if (f && f.contentWindow) for (const m of r.momentos) f.contentWindow.postMessage({ momento: m.name }, '*');
+    }
+    // El celular: el de quien está en el escenario (automático) o el que se elige
+    async function demoWho() {
+      const r = await api('GET', `/api/sim/protagonista${who ? `?token=${encodeURIComponent(who)}` : ''}`).catch(() => null);
+      if (!alive || !r) return;
+      const sel = left.querySelector('[data-k="who"]');
+      const listKey = (r.people || []).map((x) => x.token).join(',');
+      if (sel && listKey !== whoList) { whoList = listKey; sel.innerHTML = `<option value="">Automático: quien está en el escenario</option>${(r.people || []).map((x) => `<option value="${esc(x.token)}">${esc(x.name)}</option>`).join('')}`; sel.value = who; }
+      const nm = left.querySelector('[data-k="whoName"]'); if (nm) nm.textContent = r.token ? `${r.name}${r.why ? ` · ${r.why}` : ''}` : 'nadie en la sala';
+      const f = left.querySelector('.dm-phone iframe');
+      const src = r.token && r.sid ? `${location.pathname}?como=${encodeURIComponent(r.token)}&mudo=1&mon=1#/jugar/${r.sid}` : '';
+      if (f && src !== phoneSrc) { phoneSrc = src; f.src = src || 'about:blank'; }
+    }
+    left.addEventListener('change', (e) => { if (e.target.matches('[data-k="who"]')) { who = e.target.value; demoWho(); } });
+    left.addEventListener('click', async (e) => {
+      if (!e.target.matches('[data-k="vistaSave"]')) return;
+      const v = left.querySelector('[data-k="vista"]').value.trim();
+      try { const r = await api('POST', '/api/sim/vista', { url: v }); vista = r.vista || ''; demoCam(); toast(vista ? 'Vista 3D guardada' : 'Vista 3D quitada'); } catch (err) { fail(err); }
+    });
     const load = async () => {
       const r = await api('GET', '/api/consola').catch(() => null);
       if (!alive || !r) return;
@@ -318,6 +400,7 @@
       const v = loc ? loc.venue : null;
       const st = loc ? loc.main.stage : '';
       if (v !== venue) { venue = v; stage = st; paintLeft(); } else if (st !== stage) { stage = st; paintKeys(); }
+      if (demo && venue) { demoWho(); demoMom(); }
       const sala = left.querySelector('[data-k="sala"]');
       if (sala && loc) sala.textContent = `En pantalla: ${loc.main.stageName}`;
       const ti = ctlBox.querySelector('[data-k="text"]'); if (ti && loc && loc.main.perText && !ti.value && document.activeElement !== ti) ti.value = loc.main.perText; // el último texto del GC PER queda a mano
@@ -355,7 +438,138 @@
     const t1 = setInterval(load, 3000);
     const offAviso = window.onAviso(load); // el botón encendido y los monitores cambian al instante (aviso del servidor)
     const t4 = setInterval(fitPanel, 400);
-    return () => { alive = false; offAviso(); if (sigStop) sigStop(); clearInterval(t1); clearInterval(t3); clearInterval(t4); window.removeEventListener('resize', fitPanel); ro.disconnect(); document.body.classList.remove('gm-on'); };
+    return () => { alive = false; offAviso(); if (sigStop) sigStop(); clearInterval(t1); clearInterval(t3); clearInterval(t4); clearInterval(tAway); window.removeEventListener('resize', fitPanel); ro.disconnect(); document.body.classList.remove('gm-on'); };
+  };
+
+  // Pantallas en otra ventana (pedido de Cote, 24 nov: «poder abrir una pantalla secundaria, para que las pantallas estén
+  // en una pantalla y el control en otra… con distintas vistas, por lo menos unas cinco versiones… y una sexta para
+  // personalizar: poder agrandar o achicar manualmente las pantallas»). Las 3 pantallas de la sala de juegos abierta
+  // (en el demo, la 1 es la cámara simulada) en una ventana aparte, con 6 vistas; la elegida y la personalizada quedan
+  // guardadas en este computador. La barra de arriba se esconde sola si no se mueve el mouse.
+  const VISTAS = [
+    ['p1', '1 grande', 'La pantalla 1 protagonista y las otras más pequeñas'],
+    ['iguales', 'Iguales', 'La 1, la 2 y la 3 del mismo alto'],
+    ['p2', '2 grande', 'La pantalla 2 protagonista'],
+    ['p3', '3 grande', 'La pantalla 3 (de pie) protagonista'],
+    ['mosaico', '1 y 2 apiladas', 'La 1 arriba, la 2 abajo y la 3 a la derecha'],
+    ['libre', 'Personalizada', 'Arrastra cada pantalla por su nombre y agrándala o achícala desde la esquina'],
+  ];
+  const SCR = { 1: [1280, 720], 2: [1280, 720], 3: [720, 1280] };
+  const LIBRE0 = { 1: { x: 1, y: 2, w: 60 }, 2: { x: 1, y: 52, w: 38 }, 3: { x: 70, y: 2, w: 27 } };
+  const memGet = (k, d) => { try { return JSON.parse(localStorage.getItem(k)) || d; } catch { return d; } };
+  const memSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* sin memoria */ } };
+  const pantallas = async (demo) => {
+    if (!(await isAdmin())) return viewLogin();
+    document.body.classList.add('gp-on');
+    document.title = demo ? 'Pantallas · Demo' : 'Pantallas · Sala de juegos';
+    let vista = memGet('gpVista', 'p1');
+    if (!VISTAS.some(([k]) => k === vista)) vista = 'p1';
+    const libre = { ...LIBRE0, ...memGet('gpLibre', {}) };
+    app.innerHTML = `<div id="gp" class="gp-${vista}">
+      <div class="gp-bar">${VISTAS.map(([k, t, d]) => `<button type="button" data-vista="${k}" title="${esc(d)}" class="${k === vista ? 'on' : ''}">${esc(t)}</button>`).join('')}
+        <button type="button" data-full="1" title="Toda la ventana en pantalla completa">⛶ Pantalla completa</button>
+        ${demo ? '' : '<button type="button" data-snd="1" title="Escuchar la señal 1 (transmisión)">🔇 Sonido 1</button>'}<button type="button" data-snd="2" title="Escuchar el tablero (los sonidos de los juegos)">🔇 Sonido 2</button><span data-k="info"></span></div>
+      <div class="gp-hot" title="Acerca el mouse aquí para ver las opciones"></div><div class="gp-area" data-k="area"></div></div>`;
+    const root = $('#gp'); const area = root.querySelector('[data-k="area"]');
+    let alive = true; let venue = null; let sigStop = null; let momSeq = null;
+    // Sonido (pedido de Cote, 24 nov: «en pantalla completa no se puede activar el sonido»): la 1 (señal) o la 2 (tablero),
+    // una a la vez; tocar la que suena deja todo en silencio
+    let snd = 0;
+    const paintSnd = () => {
+      root.querySelectorAll('[data-snd]').forEach((x) => { const on = Number(x.dataset.snd) === snd; x.classList.toggle('on', on); x.textContent = `${on ? '🔊' : '🔇'} Sonido ${x.dataset.snd}`; });
+      const f2 = area.querySelector('.gp-scr[data-n="2"] iframe'); const src = tabSrc(snd !== 2);
+      if (f2 && f2.getAttribute('src') !== src) f2.setAttribute('src', src);
+      if (sigStop && sigStop.sound) sigStop.sound(snd === 1);
+    };
+    // Cada pantalla mide lo más que cabe en su espacio sin deformarse; la página real va adentro, achicada
+    const fit = () => area.querySelectorAll('.gp-scr').forEach((c) => {
+      const [w, h] = SCR[c.dataset.n]; const box = c.querySelector('.gp-box');
+      if (vista === 'libre') {
+        const L = libre[c.dataset.n]; const bw = area.clientWidth * L.w / 100;
+        Object.assign(c.style, { left: `${L.x}%`, top: `${L.y}%`, width: `${bw}px`, height: `${bw * h / w}px` });
+        Object.assign(box.style, { width: `${bw}px`, height: `${bw * h / w}px` });
+      } else {
+        c.removeAttribute('style');
+        const k = Math.min(c.clientWidth / w, c.clientHeight / h);
+        Object.assign(box.style, { width: `${w * k}px`, height: `${h * k}px` });
+      }
+      const k = box.clientWidth / w;
+      box.querySelectorAll('iframe:not([data-full])').forEach((f) => { f.style.transform = `scale(${k})`; });
+    });
+    const ro = new ResizeObserver(fit); ro.observe(area);
+    const paint = () => {
+      if (sigStop) { sigStop(); sigStop = null; }
+      momSeq = null;
+      root.querySelector('[data-k="info"]').textContent = venue ? `${demo ? 'Demo · ' : ''}Sala de juegos · ${VENUES[venue]}` : 'No hay sala de juegos abierta';
+      if (!venue) { area.innerHTML = `<p class="gp-none">${demo ? 'Crea la sala simulada en el GC Master (pestaña Demo).' : 'No hay sala de juegos abierta. Cuando se abra, aquí aparecen sus pantallas.'}</p>`; return; }
+      const scr = (n, name, inner, cls = '') => `<div class="gp-scr th-${venue}" data-n="${n}"><small data-drag="${n}">${n} · <span data-k="name${n}">${name}</span></small><div class="gp-box ${cls}">${inner}</div><i class="gp-resize" data-resize="${n}" title="Agrandar o achicar"></i></div>`;
+      area.innerHTML = scr(1, demo ? 'Cámara · demo' : 'GC', demo
+        ? `<iframe class="dm-v3d" title="Vista 3D del salón" src="${esc(vistaDemo || DEMO3D())}"></iframe><iframe class="dm-gc" title="GC de la sala de juegos" tabindex="-1" src="${page('#/escena')}"></iframe>`
+        : '', demo ? 'dm-cam' : '')
+        + scr(2, 'Tablero', `<iframe title="Tablero de la sala de juegos" tabindex="-1" src="${tabSrc(true)}"></iframe>`)
+        + scr(3, 'De pie', `<iframe title="Pantalla de pie de la sala de juegos" tabindex="-1" src="${page('#/tablero')}"></iframe>`);
+      if (!demo) sigStop = signal1(area.querySelector('[data-n="1"] .gp-box'), venue, { fit, label: (t) => { const el = area.querySelector('[data-k="name1"]'); if (el) el.textContent = t; } });
+      paintSnd(); fit();
+    };
+    let vistaDemo = '';
+    if (demo) vistaDemo = ((await api('GET', '/api/sim').catch(() => null)) || {}).vista || '';
+    // En el demo, los momentos de los juegos llegan a la vista 3D (igual que en la pestaña Demo)
+    const pump = async () => {
+      if (!demo || !venue) return;
+      const r = await api('GET', `/api/momentos?desde=${momSeq == null ? 0 : momSeq}`).catch(() => null);
+      if (!alive || !r) return;
+      const first = momSeq == null; momSeq = r.seq;
+      const f = area.querySelector('.dm-v3d');
+      if (!first && f && f.contentWindow) for (const m of r.momentos) f.contentWindow.postMessage({ momento: m.name }, '*');
+    };
+    const load = async () => {
+      const r = await api('GET', '/api/consola').catch(() => null);
+      if (!alive || !r) return;
+      const loc = (r.locales || []).find((x) => x.main);
+      const v = loc ? loc.venue : null;
+      if (v !== venue) { venue = v; paint(); }
+      pump();
+    };
+    // Barra: elegir la vista y pantalla completa
+    root.querySelector('.gp-bar').onclick = (e) => {
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.full) { if (document.fullscreenElement) document.exitFullscreen().catch(() => {}); else document.documentElement.requestFullscreen().catch(() => {}); return; }
+      if (b.dataset.snd) { const n = Number(b.dataset.snd); snd = snd === n ? 0 : n; paintSnd(); return; }
+      vista = b.dataset.vista; memSet('gpVista', vista);
+      root.className = `gp-${vista}`;
+      root.querySelectorAll('[data-vista]').forEach((x) => x.classList.toggle('on', x === b));
+      fit();
+    };
+    // Personalizada: mover por el nombre y agrandar o achicar desde la esquina (en % del espacio, se guarda)
+    let drag = null;
+    area.addEventListener('pointerdown', (e) => {
+      if (vista !== 'libre') return;
+      const t = e.target.closest('[data-drag], [data-resize]'); if (!t) return;
+      e.preventDefault();
+      const n = t.dataset.drag || t.dataset.resize;
+      drag = { n, kind: t.dataset.drag ? 'move' : 'size', x: e.clientX, y: e.clientY, L: { ...libre[n] } };
+      area.classList.add('gp-dragging');
+      t.setPointerCapture(e.pointerId);
+    });
+    area.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      const dx = (e.clientX - drag.x) / area.clientWidth * 100; const dy = (e.clientY - drag.y) / area.clientHeight * 100;
+      const L = libre[drag.n];
+      if (drag.kind === 'move') { L.x = Math.max(-5, Math.min(95, drag.L.x + dx)); L.y = Math.max(0, Math.min(95, drag.L.y + dy)); } else L.w = Math.max(8, Math.min(100, drag.L.w + dx));
+      fit();
+    });
+    const end = () => { if (drag) { drag = null; area.classList.remove('gp-dragging'); memSet('gpLibre', libre); } };
+    area.addEventListener('pointerup', end); area.addEventListener('pointercancel', end);
+    // La barra se esconde sola cuando no se mueve el mouse; aparece al acercarlo al borde de arriba (sobre las pantallas el
+    // movimiento no llega a esta página) y no se esconde mientras el mouse está encima
+    let hideT = null;
+    const wake = () => { root.classList.add('gp-awake'); clearTimeout(hideT); hideT = setTimeout(() => { if (!root.querySelector('.gp-bar:hover')) root.classList.remove('gp-awake'); else wake(); }, 3000); };
+    document.addEventListener('pointermove', wake); wake();
+    paint();
+    await load();
+    const t1 = setInterval(load, 3000);
+    const offAviso = window.onAviso(load);
+    return () => { alive = false; offAviso(); if (sigStop) sigStop(); clearInterval(t1); clearTimeout(hideT); document.removeEventListener('pointermove', wake); ro.disconnect(); document.body.classList.remove('gp-on'); };
   };
 
   // Una página del GC Master: uno o los tres locales
@@ -715,5 +929,5 @@
     return () => { alive = false; clearInterval(t1); clearInterval(t3); clearTimeout(tq); document.body.classList.remove('gm-on'); };
   };
 
-  views.master = (v) => (v === 'movil' ? movil() : v === 'clientes' ? clientes() : v === 'conectados' ? conectados() : v === 'juegos' ? juegos() : VENUES[v] ? master([v], true) : master(ORDER, false));
+  views.master = (v) => (v === 'movil' ? movil() : v === 'clientes' ? clientes() : v === 'conectados' ? conectados() : v === 'juegos' ? juegos() : v === 'demo' ? juegos(true) : v === 'pantallas' ? pantallas(false) : v === 'pantallas-demo' ? pantallas(true) : VENUES[v] ? master([v], true) : master(ORDER, false));
 })();

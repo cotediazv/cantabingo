@@ -143,7 +143,12 @@ test('sortear juego: total, iniciar, girar, elegir directo, deshacer', async () 
   g = await srv.admin.post('/api/gamedraw/pick', { game: 'festival' });
   assert.deepEqual(g.list, [firstGame, 'festival']);
   assert.equal((await srv.ok('GET', '/api/vote')).mode, 'karaoke'); // el Festival deja lista la votación en modo karaoke
-  assert.equal((await srv.admin.call('POST', '/api/gamedraw')).status, 409); // ya salieron los 2
+  // El sorteo nunca se bloquea (pedido de Cote, 24 nov): si ya salieron todos, la noche suma un juego más
+  g = await srv.admin.post('/api/gamedraw');
+  assert.equal(g.list.length, 3);
+  assert.ok(g.total > 3);
+  g = await srv.admin.post('/api/gamedraw/undo');
+  assert.deepEqual(g.list, [firstGame, 'festival']);
   g = await srv.admin.post('/api/gamedraw/undo');
   assert.deepEqual(g.list, [firstGame]);
   await srv.admin.post(`/api/sessions/${sid}/host/close`);

@@ -9,7 +9,8 @@ const acorn = require('acorn');
 
 const PUBLIC = path.join(__dirname, '..', 'public');
 const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((d) => (d.isDirectory() ? walk(path.join(dir, d.name)) : [path.join(dir, d.name)]));
-const files = walk(PUBLIC);
+// demo-luces/: copia del demo 3D de Code 4 para el PC del GC Master (no corre en los decodificadores)
+const files = walk(PUBLIC).filter((f) => !path.relative(PUBLIC, f).startsWith('demo-luces'));
 const rel = (f) => path.relative(PUBLIC, f);
 
 test('JavaScript del navegador: solo sintaxis de 2019', () => {

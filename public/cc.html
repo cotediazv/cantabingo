@@ -181,7 +181,11 @@ function d(k, v) { return ' data-' + k + '="' + h(v) + '"'; }
 function howto(title, lines) { var o = '<div class="howto"><b class="t">📢 Instrucciones · ' + h(title) + '</b><ul style="margin:0;padding-left:22px">'; for (var i = 0; i < lines.length; i++) o += '<li>' + lines[i] + '</li>'; return o + '</ul></div>'; }
 function clock(ms) { ms = Math.max(0, ms); var s = Math.ceil(ms / 1000); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
 function ord(n) { return n + '.º lugar'; }
-function topBar(back) { return '<div class="top">' + (back ? '<a href="' + back[0] + '">← ' + back[1] + '</a>' : '') + '<button type="button" onclick="location.reload()">↻ Refrescar</button></div>'; }
+function topBar(back, ct) { return '<div class="top">' + (back ? '<a href="' + back[0] + '">← ' + back[1] + '</a>' : '') + (ct ? cartonBtn() : '') + '<button type="button" onclick="location.reload()">↻ Refrescar</button></div>'; }
+// «Cartón al centro» (pregunta 20 de Cote, 24 nov): en una pausa, el GC de OBS cambia la franja por un cartón al centro
+function cartonBtn() { return '<button type="button" id="ctBtn" data-a="carton">' + (S.carton ? '🗂️ Cartón al centro: quitar' : '🗂️ Cartón al centro') + '</button>'; }
+function paintCt() { var b = $('ctBtn'); if (b) b.innerHTML = S.carton ? '🗂️ Cartón al centro: quitar' : '🗂️ Cartón al centro'; }
+setInterval(function () { if ($('ctBtn')) api('GET', '/api/stage', null, function (e, r) { if (r) { S.carton = !!r.carton; paintCt(); } }); }, 4000);
 function foot() { return '<p class="center" style="margin-top:22px"><a class="btn" href="#/control">🎛️ Centro de control</a></p>'; }
 function bingoName(n) { return String(n || '').replace(/^Los Juegos de /, 'El Bingo de '); }
 function letra(st, v) { var hs = String(st.headers || 'BINGO'); for (var c = 0; c < 5; c++) if (v <= Math.floor(((c + 1) * st.values) / 5)) return hs.charAt(c); return hs.charAt(4); }
@@ -189,6 +193,8 @@ function conLetra(st, v) { return st.format === 'numbers' ? letra(st, v) + ' ' +
 function figName(id) { var all = LINES.concat(SHAPES, LETTERS); for (var i = 0; i < all.length; i++) if (all[i][0] === id) return all[i][1]; return id; }
 // Pedido de Cote (21 nov): en el iPad las figuras se ven dibujadas (como en la plataforma completa), no solo sus nombres.
 // FIGMASK: casillas de cada figura en el cartón de 5 x 5 (bit i = casilla i, por filas), sacadas de patterns.js
+// El siguiente participante aparece recién cuando sube (pedido de Cote, 24 nov: el animador ve lo mismo que la pantalla)
+function soonV(voted) { return '<div class="now"><small>' + (voted ? 'Ya viene el siguiente participante' : 'Primer participante') + '</small><span class="muted">Su nombre sale en pantalla y aquí al tocar «Iniciar participante»</span></div>'; }
 var FIGMASK = {"linea":31,"horizontal":31,"vertical":1082401,"diagonal":17043521,"dos-lineas":1023,"esquinas":17825809,"sello":99,"cruz":4357252,"marco":33080895,"cuadro":469440,"diamante":4539716,"piramide":32968704,"piramide-inv":4575,"reloj":32969183,"corazon":4685802,"estrella":18168804,"lleno":33554431,"a":18415150,"b":16301615,"c":32539711,"d":16303663,"e":32554047,"f":1096767,"g":33092671,"h":18415153,"i":32641183,"j":6594847,"k":18128177,"l":32539681,"m":18405233,"n":18667121,"o":15255086,"p":1097263,"q":23385646,"r":18136623,"s":33061951,"t":4329631,"u":33080881,"v":4539953,"w":18732593,"x":18157905,"y":4329809,"z":32575775};
 function mini(id) {
   var m = FIGMASK[id] || 0; var o = '<span class="mini">';
@@ -255,14 +261,16 @@ function gvHtml() {
     // Presentación antes de votar (pedido de Cote): las reglas y cada juego pasan solos cada 10 s en la pantalla
     var k = window.GAME_INTRO && g.intro ? window.GAME_INTRO.stepOf(g.intro, new Date().getTime() + offset) : 0;
     var sl = window.GAME_INTRO ? window.GAME_INTRO.slides(V[(sala() || {}).theme] || 'Frida')[k] : null;
-    return '<p class="gvnow">📢 En pantalla: ' + (sl ? sl.icon + ' ' + h(sl.title) : '') + ' (' + (k + 1) + ' de 6)</p><p class="gvhelp">Las reglas y cada juego pasan solos cada 10 segundos. Cuando quieras, inicia la votación.</p>' +
-      btn('🗳️ Iniciar votación (30 s)', 'gvStart', '', 'big primary paso') + '<div class="center">' + btn('⏭ Siguiente', 'gvNext', '', '', k >= 5) + '</div>' + cancel;
+    var nx = window.GAME_INTRO ? window.GAME_INTRO.slides(V[(sala() || {}).theme] || 'Frida')[k + 1] : null; // paso a paso (Cote, 24 nov)
+    return '<p class="gvnow">📢 En pantalla: ' + (sl ? sl.icon + ' ' + h(sl.title) : '') + ' (' + (k + 1) + ' de 6)</p>' +
+      (k < 5 ? btn('▶ Siguiente: ' + (nx ? nx.icon + ' ' + h(nx.title) : ''), 'gvNext', '', 'big primary paso') + '<div class="center">' + btn('🗳️ Saltar a la votación', 'gvStart', '', '') + '</div>'
+        : btn('🗳️ Iniciar votación (30 s)', 'gvStart', '', 'big primary paso')) + cancel;
   }
   if (g.phase === 'voting') return '<p class="gvnow">🗳️ ' + (g.round === 2 ? 'Segunda vuelta' : 'Votación abierta') + ' · quedan ' + clock(g.until - (new Date().getTime() + offset)) + ' · ' + votos(g.total) + '</p>' + rows + btn('🗳️ Votando…', 'none', '', 'big primary paso', true) + cancel;
   if (g.phase === 'result' && g.empty) return '<p class="gvnow">Nadie votó.</p>' + btn('🗳️ Repetir votación (30 s)', 'gvStart', '', 'big primary paso') + cancel;
   if (g.phase === 'result' && g.runoff) return '<p class="gvnow">Nadie superó el 50%. Segunda vuelta: ' + gameIcon(g.runoff[0]) + ' ' + h(gameName(g.runoff[0])) + ' y ' + gameIcon(g.runoff[1]) + ' ' + h(gameName(g.runoff[1])) + (g.tie2 ? ' (empate en el 2.º lugar: se sorteó)' : '') + '.</p>' + rows + btn('🗳️ Iniciar segunda vuelta (30 s)', 'gvStart', '', 'big primary paso') + cancel;
   if (g.phase === 'done' && g.winner) return '<p class="gvwin">🏆 Ganó ' + gameIcon(g.winner) + ' ' + h(gameName(g.winner)) + (g.tie ? ' (empate: se decidió por sorteo)' : '') + '</p>' + rows + btn('▶ Ir a ' + gameIcon(g.winner) + ' ' + h(gameName(g.winner)), 'gvGo', d('g', g.winner), 'big primary paso') + introBtn + '<div class="center">' + btn('🗳️ Nueva votación (30 s)', 'gvStart', '', '') + '</div>';
-  return '<p class="gvhelp">El público elige el próximo juego desde su celular, en 30 segundos. Gana el juego con más de la mitad de los votos; si ninguno lo logra, hay segunda vuelta entre los 2 primeros.</p>' + btn('🗳️ Iniciar votación (30 s)', 'gvStart', '', 'big primary paso') + introBtn;
+  return '<p class="gvhelp">El público elige el próximo juego desde su celular, en 30 segundos. Gana el juego con más de la mitad de los votos; si ninguno lo logra, hay segunda vuelta entre los 2 primeros. Primero, las instrucciones de cada juego en pantalla, paso a paso.</p>' + btn('📢 Iniciar instrucciones', 'gvIntro', '', 'big primary paso') + '<div class="center">' + btn('🗳️ Iniciar votación sin instrucciones (30 s)', 'gvStart', '', '') + '</div>';
 }
 // Menú de juegos (pedido de Cote, 21 nov): tres botones grandes, «Manual», «Por sorteo» y «Por votación», y nada más;
 // al tocar uno se despliega lo de esa modalidad en su momento. En el lobby (lobby = true) no van las otras actividades.
@@ -308,6 +316,7 @@ function nav(current, inGame, lobby) {
   return o;
 }
 var goTimer = null;
+window.addEventListener('hashchange', function () { clearTimeout(goTimer); }); // al cambiar de vista se cancela el salto al juego
 function toGame(k) {
   if (k === 'bingo') { var s = sala(); if (!s) { go('#/'); return; } api('GET', '/api/sessions/' + s.id + '/host/state', null, function (err, st) { if (!err && st && st.winConfirmed) go('#/ronda'); else if (!err && st && !st.started) go('#/figura'); else { api('POST', '/api/stage', { show: 'bingo' }); go('#/bingo'); } }); return; }
   if (k === 'rosco') { go('#/sorteoctl'); return; }
@@ -370,7 +379,7 @@ views.bingo = function () {
       api('GET', '/api/sessions/' + s.id + '/host/state', null, function (e2, st) {
         if (e2 || !st || location.hash !== '#/bingo') return;
         if (!st.started && !st.winConfirmed) { go('#/figura'); return; } // el bingo empieza eligiendo la figura
-        var o = topBar(['#/', 'Inicio']);
+        var o = topBar(['#/', 'Inicio'], 1);
         if (st.winConfirmed) { // con el ganador aceptado: el ganador para anunciarlo y lo que viene
           var wn = []; var wc = []; var wp = '';
           for (var wi = 0; wi < (st.results || []).length; wi++) { var rr = st.results[wi]; if (rr.validated && !rr.dismissed && rr.confirmed) { wn.push(rr.name || 'Participante'); wc.push('#' + (st.startNumber + rr.cardNo - 1)); wp = rr.place || ''; } }
@@ -397,7 +406,9 @@ views.bingo = function () {
           o += '</div>';
         }
         o += '<div class="center">' + btn(st.bigQr ? '📱 QR grande en pantalla: quitar' : '📱 Mostrar QR grande en pantalla', 'bigqr', d('on', st.bigQr ? '' : '1')) + '</div>';
-        o += btn('Generar un número', 'host', d('x', 'draw'), 'big primary paso', w.length > 0);
+        // «Anda al público» (pedido de Cote, 24 nov, para las luces): después de los primeros ocho números
+        if (st.publico && st.publico.due) o += btn('🚶 Anda al público', 'host', d('x', 'publico'), 'big primary paso', w.length > 0) + '<p class="muted center">Baja al público: anda mesa por mesa preguntando los números.</p>';
+        else o += btn('Generar un número', 'host', d('x', 'draw'), 'big primary paso', w.length > 0);
         o += '<div class="center">' + btn('Selección manual', 'manual', '', manual ? 'on' : '') + '</div>';
         if (manual) {
           o += '<div class="grid75">';
@@ -475,7 +486,7 @@ views.sorteoctl = function () {
         var free = 0; for (var i = 0; i < p.connected.length; i++) if (picked.indexOf(p.connected[i]) < 0 && dec.indexOf(p.connected[i]) < 0) free++;
         var lastP = picked[picked.length - 1];
         var rollingR = r.mode !== 'tie' && r.roll && new Date().getTime() + offset < r.roll.at + (r.rollMs || 6000);
-        var o = topBar(['#/', 'Inicio']) + '<h1>Sorteo de concursantes</h1>' +
+        var o = topBar(['#/', 'Inicio'], 1) + '<h1>Sorteo de concursantes</h1>' +
           (rollingR ? '<div class="panel ann"><small>📣 PARA ANUNCIAR</small><span class="ann-t">🎲 Sorteando en pantalla…</span></div>' : picked.length ? ann('🎲 Salió sorteado · ' + picked.length + '.º de 3 para El Rosko', [lastP], [cf[lastP] === 'ok' ? '✅ ¡Confirmó! Que se acerque a nuestro escenario' : '⏳ Esperando que confirme en su celular si quiere jugar']) : '') +
           (!rollingR && dec.length ? '<p class="muted" style="text-align:center">🙅 Prefirieron jugar online (no entran al sorteo): ' + h(dec.join(', ')) + '</p>' : '') +
           '<div class="panel">' +
@@ -503,7 +514,7 @@ function renderRosco(w) {
   W = w;
   var c = w.players[w.turn]; var step = stepOf(w);
   var started = !!w.runningSince; for (var i = 0; i < w.players.length; i++) for (var j = 0; j < w.players[i].status.length; j++) if (w.players[i].status[j] !== 'pending') started = true;
-  var o = topBar(['#/', 'Inicio']);
+  var o = topBar(['#/', 'Inicio'], 1);
   if (!started && !w.winAccepted) o += howto('El Rosko', ROSCO_HOWTO);
   o += '<div class="panel">';
   if (!w.winAccepted) {
@@ -530,7 +541,7 @@ function renderRosco(w) {
     if (!w.crowdWinner) o += btn('🏅 Mostrar ganador de la Trivia del Rosko', 'wheel', d('x', 'crowdwin'), 'big primary');
     else o += w.crowdWinner.none ? ann('🏅 Trivia del Rosko', ['Nadie sumó puntos'], ['Jugaron ' + many(w.crowdWinner.players, 'persona', 'personas')]) : ann('🏅 Premio especial · Ganó la Trivia del Rosko', [w.crowdWinner.name], [many(w.crowdWinner.score, 'punto', 'puntos') + ' · ' + many(w.crowdWinner.hits, 'acierto', 'aciertos'), 'Jugaron ' + many(w.crowdWinner.players, 'persona', 'personas')]);
   }
-  if (!(w.rankDue && !w.rank)) o += btn(w.rank ? '🏅 Recoger ranking (está en pantalla)' : '🏅 Desplegar ranking de la Trivia (top 10)', 'roscoRank', '', 'big' + (w.rank ? ' on' : '')); // con el ranking obligatorio, un solo botón (el de arriba)
+  if (!(w.rankDue && !w.rank)) o += btn(w.rank ? '🏅 Recoger ranking (está en pantalla)' : w.rankLate ? '🔒 Últimos 60 segundos: el ranking se revela al final' : '🏅 Desplegar ranking de la Trivia (top 10)', 'roscoRank', '', 'big' + (w.rank ? ' on' : ''), !w.rank && w.rankLate); // con el ranking obligatorio, un solo botón (el de arriba)
   if (w.rank && w.winAccepted) o += rankAnn(w.rank, w.rankPlayers || 0, true); // con el ganador aceptado, también al final
   // Pedido de Cote (21 nov): al final, sí o sí se muestra el ganador de la Trivia antes de seguir (sin menú hasta eso)
   o += '</div>' + (w.winAccepted && !w.crowdWinner ? '' : nav('rosco', started && !w.winAccepted)) + foot();
@@ -561,7 +572,7 @@ function votoView(want) {
       if (!checked && st.mode !== mode && !st.players.length && st.phase === 'voting') { checked = true; api('POST', '/api/vote/host', { action: 'mode', mode: mode }, function () { load(); }); return; }
       checked = true;
       var isK = mode === 'karaoke'; var name = isK ? festName() : 'El objeto más extraño';
-      var o = topBar(['#/', 'Inicio']);
+      var o = topBar(['#/', 'Inicio'], 1);
       if (st.phase === 'winner' && st.mode === mode) { // con ganador: el ganador para anunciarlo y lo que viene
         o += ann('🏆 Ganó ' + name, [st.winner ? st.winner.name : ''], [st.winner && st.winner.thing ? st.winner.thing : '', st.tie ? st.tie.title + '. ' + st.tie.why : '', isK && st.winner && st.winner.score != null ? 'Nota ' + noteOf(st.winner.score, st.winner.dec) : '', st.second ? '2.º lugar: ' + st.second.name + ' · nota ' + noteOf(st.second.score, st.second.dec) : '']);
         o += nav(want, false) + foot(); render(o); return;
@@ -581,16 +592,18 @@ function votoView(want) {
         else if (st.signup) o += '<div class="now"><small>📲 Inscripciones abiertas</small>' + st.players.length + ' inscritos</div>' + btn('Cerrar', 'vote', d('x', 'signup'), 'big');
         else if (!st.players.length) o += btn('📲 Abrir inscripciones', 'vote', d('x', 'signup') + d('on', '1'), 'big primary paso');
         else if (st.overflow) o += btn('🎲 Sortear los ' + st.max + ' que ' + (isK ? 'cantan' : 'participan') + ' (se inscribieron ' + st.players.length + ')', 'vote', d('x', 'draw'), 'big warn');
-        else if (next && isK) o += '<div class="now"><small>' + (st.onstage && st.onstage.id === next.id ? '🎤 En el escenario' : voted ? 'Ya viene el siguiente participante' : 'Primer participante') + '</small><b>' + h(next.name) + '</b><br><span class="muted">' + h(next.thing) + '</span></div>' + btn('🎤 Iniciar participante', 'vote', d('x', 'open') + d('id', next.id), 'big primary paso');
+        else if (next && isK) o += (st.onstage && st.onstage.id === next.id ? '<div class="now"><small>🎤 En el escenario</small><b>' + h(next.name) + '</b><br><span class="muted">' + h(next.thing) + '</span></div>' : soonV(voted)) + btn('🎤 Iniciar participante', 'vote', d('x', 'open') + d('id', next.id), 'big primary paso');
         else if (next && st.onstage && st.onstage.id === next.id) o += '<div class="now"><small>' + (isK ? '🎤 En el escenario' : '🗳️ Presentando su objeto') + '</small><b>' + h(next.name) + '</b><br><span class="muted">' + h(next.thing) + '</span></div>' + btn('🗳️ Iniciar votación', 'vote', d('x', 'open') + d('id', next.id), 'big primary paso');
-        else if (next) o += '<div class="now"><small>' + (voted ? 'Ya viene el siguiente participante' : 'Primer participante') + '</small><b>' + h(next.name) + '</b><br><span class="muted">' + h(next.thing) + '</span></div>' + btn('🎤 Iniciar participante', 'vote', d('x', 'present') + d('id', next.id), 'big primary paso');
+        else if (next) o += soonV(voted) + btn('🎤 Iniciar participante', 'vote', d('x', 'present') + d('id', next.id), 'big primary paso');
         else if (st.players.length >= 2) o += btn('🏁 Pasar a los resultados', 'vote', d('x', 'results'), 'big primary paso');
         else o += '<p class="muted">Se necesitan al menos 2 participantes.</p>' + btn('📲 Abrir inscripciones otra vez', 'vote', d('x', 'signup') + d('on', '1'), 'big');
         if (st.players.length && !voted && !st.signup) o += '<div class="center">' + btn('Abrir inscripciones otra vez', 'vote', d('x', 'signup') + d('on', '1')) + '</div>';
-        for (var k = 0; k < st.players.length; k++) { var p = st.players[k]; var on = st.open && st.open.id === p.id; var up = st.onstage && st.onstage.id === p.id; o += '<div class="item"><span class="r">' + (on ? '🗳️' : up ? '🎤' : p.done ? '<b style="color:#3fe08f">✔ ' + st.counts[p.id] + ' votos</b>' : btn('✕', 'vote', d('x', 'remove') + d('id', p.id))) + '</span><b>' + h(p.name) + '</b><br><span class="muted">' + h(p.thing) + '</span></div>'; }
+        var dr = st.drawRoll; var rolling = dr && dr.ms - (new Date().getTime() + offset - dr.at) > 300; // tómbola del sorteo en pantalla (Cote, 24 nov)
+        if (rolling) o += '<div class="now"><small>🎲 Sorteando en pantalla…</small><span class="muted">Los sorteados aparecen aquí cuando termina la tómbola</span></div>';
+        else for (var k = 0; k < st.players.length; k++) { var p = st.players[k]; var on = st.open && st.open.id === p.id; var up = st.onstage && st.onstage.id === p.id; o += '<div class="item"><span class="r">' + (on ? '🗳️' : up ? '🎤' : p.done ? '<b style="color:#3fe08f">✔ ' + st.counts[p.id] + ' votos</b>' : btn('✕', 'vote', d('x', 'remove') + d('id', p.id))) + '</span><b>' + h(p.name) + '</b><br><span class="muted">' + h(p.thing) + '</span></div>'; }
       } else if (st.phase === 'results') {
         o += '<h2>Resultados</h2>';
-        if (st.next) o += '<div class="now"><small>Viene · solo lo ves tú, hasta que lo reveles</small><b>' + ord(st.next.place) + ' · ' + h(st.next.name) + '</b></div>' + btn('Revelar ' + ord(st.next.place), 'vote', d('x', 'reveal'), 'big primary paso');
+        if (st.next) o += '<div class="now"><small>Lo que viene (el nombre sale al revelarlo)</small><b>' + ord(st.next.place) + '</b></div>' + btn('Revelar ' + ord(st.next.place), 'vote', d('x', 'reveal'), 'big primary paso');
         else o += btn(isK ? '🥁 Redoble de tambores: los dos finalistas' : '⚔️ Gran final: abrir votación', 'vote', d('x', 'final'), 'big primary paso');
         for (var m = st.places.length - 1; m >= 0; m--) o += '<div class="item">' + ord(st.places[m].place) + ' · <b>' + h(st.places[m].name) + '</b></div>';
       } else if (st.phase === 'final') {
@@ -698,6 +711,7 @@ A.drawMode = function (el) {
 };
 A.gvStart = function () { clearTimeout(goTimer); api('POST', '/api/gamevote/start', null, function (err, r) { if (err) { toast(err); return; } S.gv = r; S.gvVoting = r.id; toast('🗳️ Votación abierta: 30 segundos para votar desde el celular'); refresh(); gvPoll(); }); };
 A.gvReset = function () { clearTimeout(goTimer); api('POST', '/api/gamevote/reset', null, function (err, r) { if (err) { toast(err); return; } S.gv = r; toast('Votación cancelada'); refresh(); }); };
+A.carton = function () { api('POST', '/api/carton', { on: !S.carton }, function (err, r) { if (err) { toast(err); return; } S.carton = !!r.on; paintCt(); toast(S.carton ? '🗂️ Cartón al centro en el GC' : 'Volvió la franja del GC'); }); };
 A.gvGo = function (el) { clearTimeout(goTimer); toGame(el.getAttribute('data-g')); };
 A.gvIntro = function () { clearTimeout(goTimer); act('POST', '/api/gamevote/intro', null, '📢 En pantalla: las reglas y cada juego, antes de votar'); };
 A.gvNext = function () { act('POST', '/api/gamevote/next', null, ''); };
@@ -809,7 +823,8 @@ function gvPoll() {
         S.gvVoting = null;
         toast('🗳️ Ganó ' + gameIcon(r.winner) + ' ' + gameName(r.winner) + '. En unos segundos pasamos al juego…');
         clearTimeout(goTimer);
-        goTimer = setTimeout(function () { toGame(r.winner); }, 8000);
+        var here = location.hash; // si el animador ya eligió otra cosa, no se salta (Cote, 24 nov)
+        goTimer = setTimeout(function () { if (location.hash === here) toGame(r.winner); }, 8000);
       }
     }
     gvT = setTimeout(gvPoll, r && (r.phase === 'voting' || r.phase === 'intro') ? 1000 : 2500);

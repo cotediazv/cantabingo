@@ -41,7 +41,10 @@ test('sorteo de concursantes: solo conectados, corregir nombre, quitar y reinici
 
 test('desempate del bingo: con dos ganadores, la tómbola elige uno y solo ese queda confirmado', async () => {
   await srv.admin.post('/api/stage', { show: 'bingo' });
-  for (let i = 0; i < 75; i++) await srv.admin.post(`/api/sessions/${sid}/host/draw`, {});
+  for (let i = 0; i < 75; i++) {
+    if (i === 8) await srv.admin.post(`/api/sessions/${sid}/host/publico`); // «Anda al público» después de 8 números
+    await srv.admin.post(`/api/sessions/${sid}/host/draw`, {});
+  }
   const st = await lives[0].next((m) => m.results.length >= 2);
   assert.ok(st.celebrate);
   assert.equal((await srv.admin.call('POST', `/api/sessions/${sid}/host/confirmwin`)).status, 400); // empate sin desempatar

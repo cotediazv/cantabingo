@@ -38,7 +38,14 @@ test('ganador del bingo: confeti en el GC del local', async () => {
   const live = srv.sse(`/api/sessions/${sid}/events?token=${p.token}`);
   await live.next();
   const before0 = (await srv.ok('GET', '/api/capa?local=kennedy')).id;
-  for (const v of p.cards[0].cells.filter((x) => x)) await srv.admin.post(`/api/sessions/${sid}/host/draw`, { value: v });
+  // «Anda al público» (pedido de Cote, 24 nov): después de 8 números el panel no saca el noveno hasta que el animador lo acepta
+  const cells = p.cards[0].cells.filter((x) => x);
+  for (const v of cells.slice(0, 8)) await srv.admin.post(`/api/sessions/${sid}/host/draw`, { value: v });
+  const stop = await srv.admin.call('POST', `/api/sessions/${sid}/host/draw`, { value: cells[8] });
+  assert.equal(stop.status, 409);
+  assert.match(stop.body.error, /Anda al público/);
+  await srv.admin.post(`/api/sessions/${sid}/host/publico`);
+  for (const v of cells.slice(8)) await srv.admin.post(`/api/sessions/${sid}/host/draw`, { value: v });
   await srv.admin.post(`/api/sessions/${sid}/host/confirmwin`);
   const capa = await srv.ok('GET', '/api/capa?local=kennedy');
   assert.equal(capa.kind, 'confeti');

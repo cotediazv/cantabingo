@@ -1,0 +1,2032 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Luces KRB">
+<title>Luces KRB</title>
+<style>
+  :root{--bg:#0c0d10;--card:#17191f;--line:#262932;--txt:#eceef2;--mut:#8a91a0;--acc:#4f8cff;--ok:#3ecf8e;--warn:#f5c542;--bad:#ff5c5c;--r:18px}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--txt);font-family:-apple-system,system-ui,"Segoe UI",Roboto,sans-serif;-webkit-user-select:none;user-select:none}
+  body{padding:env(safe-area-inset-top) 0 0}
+  header{display:flex;align-items:center;gap:14px;padding:16px 20px 8px}
+  h1{font-size:22px;margin:0;font-weight:700;flex:1}
+  .pill{display:flex;align-items:center;gap:8px;font-size:14px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 14px;cursor:pointer}
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--bad)}
+  .dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)}
+  nav{display:flex;gap:6px;margin:6px 20px 14px;background:#121419;border-radius:14px;padding:5px}
+  nav button{flex:1;border:0;background:transparent;color:var(--mut);font-size:17px;font-weight:600;padding:12px 6px;border-radius:10px;cursor:pointer}
+  nav button.act{background:var(--card);color:var(--txt);box-shadow:inset 0 0 0 1px var(--line)}
+  main{padding:0 20px 160px}
+  .tab{display:none}.tab.act{display:block}
+  h2.sec{font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin:26px 0 10px;font-weight:600}
+  .help{color:var(--mut);font-size:15px;line-height:1.45;margin:0 0 12px}
+  .chip{border:1px solid var(--line);background:#121419;color:var(--txt);border-radius:999px;padding:11px 16px;font-size:15px;cursor:pointer}
+  .chip.act{background:var(--acc);border-color:var(--acc)}
+  .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+
+  /* Escenas */
+  .scenes{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
+  .scene{position:relative;border:0;border-radius:var(--r);min-height:120px;padding:18px;text-align:left;cursor:pointer;color:#fff;
+         background:var(--card);box-shadow:inset 0 0 0 1px var(--line);font-size:20px;font-weight:700;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+  .scene .glow{position:absolute;inset:0;opacity:.35;transition:.2s}
+  .scene span,.scene small{position:relative}
+  .scene small{display:block;font-size:13px;font-weight:500;color:#ffffffb0;margin-top:4px}
+  .scene.act{box-shadow:inset 0 0 0 3px #fff}.scene.act .glow{opacity:.7}
+  .scene:active,.bg:active,.big:active{transform:scale(.97)}
+  .bgrow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .bg{border:0;border-radius:var(--r);height:92px;font-size:19px;font-weight:800;color:#fff;cursor:pointer;text-shadow:0 1px 3px #0009;box-shadow:inset 0 0 0 1px #ffffff22}
+  .bg.act{box-shadow:0 0 0 3px var(--bg),0 0 0 6px #fff}
+  .fxrow{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .big{border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:var(--r);padding:18px 14px;font-size:17px;font-weight:700;cursor:pointer;text-align:left}
+  .big small{display:block;font-weight:400;color:var(--mut);font-size:13px;margin-top:4px}
+  .big.act{background:#2a3f6e;border-color:var(--acc);box-shadow:inset 0 0 0 2px var(--acc)}
+
+  /* Zonas */
+  .zone{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;margin-bottom:12px}
+  .zone .top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .zone h3{margin:0;font-size:18px}
+  .zone .meta{font-size:13px;color:var(--mut)}
+  .zone .val{font-size:15px;color:var(--mut);min-width:48px;text-align:right}
+  .swatches{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+  .sw{width:46px;height:46px;border-radius:12px;border:0;cursor:pointer;box-shadow:inset 0 0 0 1px #ffffff22}
+  .sw.act{box-shadow:0 0 0 3px var(--bg),0 0 0 5px #fff}
+  .sw.off{background:#000;color:var(--mut);font-size:12px}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:44px;background:transparent;margin:6px 0 0}
+  input[type=range]::-webkit-slider-runnable-track{height:10px;border-radius:5px;background:#2a2e39}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:32px;height:32px;margin-top:-11px;border-radius:50%;background:#fff;box-shadow:0 2px 8px #0008}
+  input[type=range]::-moz-range-track{height:10px;border-radius:5px;background:#2a2e39}
+  input[type=range]::-moz-range-thumb{width:30px;height:30px;border-radius:50%;background:#fff;border:0}
+
+  /* Seguir */
+  .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px;margin-bottom:12px}
+  .seg button{border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:12px;padding:14px 8px;font-size:17px;font-weight:600;cursor:pointer}
+  .seg button.act{background:var(--acc);border-color:var(--acc)}
+  .seg.chico{margin-bottom:8px}.seg.chico button{padding:9px 6px;font-size:15px}
+  body.en-seguir .vista{margin-bottom:8px}
+  #seguir .help{margin-top:6px}
+  .map,.pad{position:relative;height:min(50vh,460px);border-radius:var(--r);border:1px solid var(--line);touch-action:none;overflow:hidden;background:#121419}
+  .map{background:linear-gradient(#ffffff08 1px,transparent 1px) 0 0/100% 25%,linear-gradient(90deg,#ffffff08 1px,transparent 1px) 0 0/25% 100%,#121419}
+  .map{height:auto;aspect-ratio:58/16}
+  .map svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+  .map .target{position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;background:radial-gradient(#ffe2b0,#ffb35c80 55%,transparent 70%);pointer-events:none;display:none}
+  .map .warn{position:absolute;left:0;right:0;bottom:14px;text-align:center;color:var(--warn);font-size:12px;padding:0 10px;pointer-events:none;text-shadow:0 1px 3px #000}
+  .pad{background:radial-gradient(circle at center,#ffffff10 0 2px,transparent 3px) 0 0/40px 40px,#121419}
+  .pad .lbl{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);text-align:center;color:var(--mut);font-size:17px;pointer-events:none}
+  .pt{position:absolute;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;border:3px solid #fff;pointer-events:none;display:grid;place-items:center;font-size:12px;font-weight:800}
+  .pt.p1{background:#ffb35c;color:#3a2200}.pt.p2{background:#4f8cff;color:#fff}.pt.p3{background:#3ecf8e;color:#002a17}
+  .drag{border-color:var(--acc)!important}
+  .readout{color:var(--mut);font-size:14px;margin-top:10px;font-variant-numeric:tabular-nums}
+  .calib{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px}
+  .calib button{border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:12px;padding:12px;font-size:15px;cursor:pointer;text-align:left}
+  .calib button small{display:block;color:var(--mut);font-size:12px;margin-top:3px}
+  .calib button.ok small{color:var(--ok)}
+
+  /* Probar canales */
+  .addr{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+  .addr input{width:90px;font-size:17px;padding:10px;border-radius:10px;border:1px solid var(--line);background:#121419;color:var(--txt)}
+  .chan{display:grid;grid-template-columns:120px 1fr 48px;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:4px 14px;margin-bottom:6px}
+  .chan b{font-size:16px}.chan small{display:block;color:var(--mut);font-size:12px;font-weight:400}
+  .chan .v{text-align:right;font-variant-numeric:tabular-nums;color:var(--mut)}
+
+  /* Barra inferior */
+  footer{position:fixed;left:0;right:0;bottom:0;background:#0c0d10f2;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+         border-top:1px solid var(--line);padding:12px 20px calc(12px + env(safe-area-inset-bottom));display:flex;gap:18px;align-items:center;z-index:5}
+  .master{flex:1;min-width:0}
+  .master label,.fade label{font-size:13px;color:var(--mut);display:flex;justify-content:space-between}
+  .fade{display:flex;flex-direction:column;gap:4px}
+  .fade div{display:flex;gap:4px}
+  .fade button{border:1px solid var(--line);background:#121419;color:var(--txt);border-radius:10px;padding:10px 12px;font-size:15px;cursor:pointer}
+  .fade button.act{background:var(--acc);border-color:var(--acc)}
+  .blackout{border:0;background:var(--bad);color:#fff;font-size:18px;font-weight:800;border-radius:14px;padding:18px 22px;cursor:pointer}
+  @media (max-width:640px){
+    header{padding:12px 14px 4px} nav{margin:6px 14px 10px} nav button{font-size:15px;padding:10px 4px} main{padding:0 14px 150px}
+    footer{flex-wrap:wrap;gap:8px 10px;padding:8px 14px calc(8px + env(safe-area-inset-bottom))}
+    .master{flex-basis:100%} .master input[type=range]{height:34px;margin:0}
+    .fade label{display:none} .fade button{padding:9px 10px}
+    .blackout{flex:1;padding:12px;font-size:16px}
+    .bgrow{grid-template-columns:repeat(2,1fr)} .bg{height:72px} .fxrow{grid-template-columns:1fr}
+    .scene{min-height:96px} .pad{height:56vh}
+  }
+  /* Vista previa 3D */
+  .vista{margin:0 20px 14px;position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--line);background:#050608}
+  .vista canvas{display:block;width:100%;height:var(--vh,300px);touch-action:none;cursor:grab}
+  /* demo: paginas de la Sala en las pantallas del escenario (iframes detras del lienzo 3D, que les abre un hueco) */
+  .capa3d{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+  .vista #cv3dgl{position:relative}
+  .vista.oculta canvas{display:none}
+  .nav3d{position:absolute;right:8px;bottom:8px;display:grid;grid-template-columns:repeat(3,32px);gap:4px;z-index:2}
+  .nav3d button{width:32px;height:32px;border:0;border-radius:8px;background:#000a;color:#fff;font-size:14px;cursor:pointer;touch-action:none;padding:0}
+  .nav3d button:active{background:var(--acc)}
+  .vista.oculta .nav3d, .vista.oculta .vistas3d{display:none}
+  #animMarca{position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;border-radius:50%;background:#ffcc00;border:2px solid #000;box-shadow:0 0 8px #ffcc00;pointer-events:none;display:none;z-index:2}
+  .vistas3d{position:absolute;left:8px;bottom:8px;right:120px;display:flex;flex-wrap:wrap-reverse;gap:4px;z-index:2;pointer-events:none}
+  .vistas3d button{pointer-events:auto;border:0;border-radius:8px;background:#000b;color:#fff;font-size:12px;padding:6px 9px;cursor:pointer}
+  .vistas3d button.guardar{background:#1f3b6e}
+  .vistas3d button.x{padding:6px 7px;color:#ff9a9a;margin-left:-4px;border-radius:0 8px 8px 0}
+  /* Vista realista (three.js) si esta disponible; si no, la vista simple */
+  .vista.gl #cv3d{display:none} .vista:not(.gl) #cv3dgl{display:none}
+  /* En Seguir: la vista 3D queda fija arriba mientras se usa el mapa, para ver las luces moverse en tiempo real */
+  body.en-seguir .vista{position:sticky;top:0;z-index:4;box-shadow:0 8px 20px #000c}
+  body.en-seguir .vista canvas{height:min(var(--vh,300px),34vh)}
+  .vista .bar{position:absolute;top:8px;left:10px;right:8px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
+  .vista .bar span{font-size:12px;color:#ffffffa0;background:#0008;padding:4px 8px;border-radius:8px}
+  .vista .bar div{display:flex;gap:6px;pointer-events:auto}
+  .vista .bar button{border:0;background:#000a;color:#fff;border-radius:8px;padding:6px 10px;font-size:13px;cursor:pointer}
+  .vista.oculta .bar{position:static;padding:8px 10px}
+  @media (max-width:640px){.vista{margin:0 14px 10px}.vista .bar span{display:none}.vista .bar{justify-content:flex-end}}
+  /* Seguir en pantalla horizontal (celular acostado, computador): vista 3D ARRIBA y mapa ABAJO, juntos en la pantalla
+     (pedido de Cote: como el salon es largo, asi caben los dos). Los botones quedan debajo del mapa. */
+  @media (orientation: landscape) and (min-width: 600px){
+    body.en-seguir header{padding:6px 14px 2px} body.en-seguir h1{font-size:18px}
+    body.en-seguir .pill{padding:5px 10px;font-size:12px}
+    body.en-seguir nav{margin:4px 14px 6px;padding:3px} body.en-seguir nav button{padding:7px 4px;font-size:15px}
+    body.en-seguir .vista{position:relative;margin:0 14px 6px;box-shadow:none}
+    body.en-seguir .vista canvas{height:calc(var(--disp,500px) * 0.47)}
+    body.en-seguir main{padding:0 14px 0}
+    body.en-seguir .map{max-height:calc(var(--disp,500px) * 0.53 - 8px);width:min(100%, calc((var(--disp,500px) * 0.53 - 8px) * 3.625));margin:0 auto}
+    body.en-seguir .map .warn{font-size:10px;bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    body.en-seguir .vista .bar span{display:none} body.en-seguir .vista .bar{justify-content:flex-end}
+    body.en-seguir .master label, body.en-seguir .fade label{display:none}
+    body.en-seguir .master input[type=range]{height:32px;margin:0}
+    body.en-seguir #seguir .help, body.en-seguir #readout{display:none}
+    body.en-seguir #seguir .row{margin-top:6px} body.en-seguir #seguir .chip{padding:7px 11px;font-size:13px}
+    body.en-seguir .seg.chico{margin:6px 0 0} body.en-seguir .seg.chico button{padding:7px 4px;font-size:13px}
+    body.en-seguir .pad{height:calc(var(--disp,500px) * 0.53 - 8px)}
+    body.en-seguir footer{padding-top:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom))}
+    body.en-seguir .blackout{padding:12px 16px;font-size:15px}
+  }
+  .toast{position:fixed;left:50%;top:18px;transform:translate(-50%,-80px);background:#232733;border:1px solid var(--line);padding:10px 18px;border-radius:999px;font-size:15px;transition:.25s;opacity:0;z-index:9}
+  /* Demo tipo transmision: solo la vista 3D, a pantalla completa */
+  body.tv header, body.tv nav, body.tv main, body.tv footer, body.tv .vista .bar, body.tv .nav3d, body.tv .vistas3d{display:none !important}
+  body.tv .vista{position:fixed;inset:0;margin:0;border:0;border-radius:0}
+  body.tv .vista canvas{height:100vh !important;cursor:default}
+  body.tv .toast{display:none}
+  /* Solo el mapa (?demo=mapa): para seguir al animador con el dedo o el mouse dentro del GC Master */
+  body.solo-mapa header, body.solo-mapa nav, body.solo-mapa .vista, body.solo-mapa footer, body.solo-mapa main > .tab:not(#seguir){display:none !important}
+  body.solo-mapa main{padding:6px}
+  body.solo-mapa #seguir{display:block !important}
+  body.solo-mapa #seguir > *:not(#panelMapa):not(#cabezas){display:none !important}
+  body.solo-mapa #panelMapa .help{display:none}
+  body.solo-mapa .map{max-height:none !important;width:100% !important;margin:0}
+  body.solo-mapa #cabezas{margin-top:6px}
+  body.solo-mapa .map .warn{display:none}
+  .toast.show{transform:translate(-50%,0);opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <h1>Luces KRB</h1>
+  <div class="pill" id="pill" title="Tocar para reconectar el cable"><span class="dot" id="dot"></span><span id="pillTxt">Conectando…</span></div>
+</header>
+<nav>
+  <button data-t="escenas" class="act">Escenas</button>
+  <button data-t="juegos">Juegos</button>
+  <button data-t="seguir">Seguir</button>
+  <button data-t="zonas">Zonas</button>
+  <button data-t="probar">Probar canales</button>
+</nav>
+
+<section class="vista" id="vista">
+  <canvas id="cv3dgl"></canvas>
+  <canvas id="cv3d"></canvas>
+  <div class="vistas3d" id="vistas3d"></div>
+  <div class="nav3d" title="Moverse por el salón">
+    <button data-nav="giraI" title="Girar">⟲</button><button data-nav="adelante" title="Adelante">▲</button><button data-nav="giraD" title="Girar">⟳</button>
+    <button data-nav="izq" title="Izquierda">◀</button><button data-nav="atras" title="Atrás">▼</button><button data-nav="der" title="Derecha">▶</button>
+    <button data-nav="mas" title="Acercar">＋</button><span></span><button data-nav="menos" title="Alejar">－</button>
+  </div>
+  <div class="bar"><span>Vista previa 3D · arrastra para girar · dos dedos o clic derecho para moverte</span>
+    <div><button id="vReset">Centrar</button><button id="vSalon">Ver salón</button><button id="vTam">Más grande</button><button id="vOcultar">Ocultar</button></div></div>
+</section>
+
+<main>
+  <!-- ===== ESCENAS ===== -->
+  <section class="tab act" id="escenas">
+    <div class="scenes" id="sceneGrid"></div>
+
+    <h2 class="sec">Color del fondo · perimetrales + focos de pared</h2>
+    <div class="bgrow" id="bgRow"></div>
+
+    <h2 class="sec">Efectos</h2>
+    <div class="fxrow">
+      <button class="big" id="fxParpadeo">Parpadeo pared<small>Prende y apaga la pared; frontales y cabezas siguen fijas</small></button>
+      <button class="big" id="fxAlternar">Alternar colores<small>Azul, rojo, verde y amarillo en la pared</small></button>
+      <button class="big" id="fxMini">Mini cabezas en movimiento<small>Se mueven solas en el escenario</small></button>
+    </div>
+    <div class="row"><span class="help" style="margin:0 6px 0 0">Velocidad de los efectos:</span>
+      <button class="chip" data-vel="0">Lenta</button><button class="chip act" data-vel="1">Media</button><button class="chip" data-vel="2">Rápida</button>
+    </div>
+
+    <h2 class="sec">Programas en movimiento</h2>
+    <div class="fxrow">
+      <button class="big" data-prog="colores">Cabezas al escenario · colores<small>Cabezas 1 y 2 al escenario, sin blanco: azul, rojo, verde, amarillo</small></button>
+      <button class="big" data-prog="pared">Colores + pared que se apaga<small>Igual, y la pared: azul, apagado, rojo, apagado, verde, apagado, amarillo, apagado</small></button>
+      <button class="big" id="grabar">● Grabar programa<small>Graba lo que hagas con las luces (hasta 2 min) para repetirlo con un botón</small></button>
+    </div>
+    <div class="row" style="flex-wrap:nowrap">
+      <span class="help" style="margin:0;white-space:nowrap">Velocidad de cambio</span>
+      <input type="range" id="progVel" min="0.3" max="4" step="0.1" value="1.5" style="flex:1;height:34px;margin:0">
+      <span class="help" style="margin:0;white-space:nowrap" id="progVelTxt">1.5 s por color</span>
+    </div>
+    <div class="row" id="progGrabados"></div>
+  </section>
+
+  <!-- ===== JUEGOS: momentos que cambian las luces solas a medida que avanza el juego ===== -->
+  <section class="tab" id="juegos">
+    <p class="help"><b>Solo para la Sala de juegos de Mercado Kennedy.</b> Cada botón es un momento del juego. Más adelante el GC Master los dispara solo (Code 1); mientras tanto se pueden tocar aquí.
+      <br>Momento actual: <b id="momActual">—</b></p>
+    <div id="juegosLista"></div>
+  </section>
+
+  <!-- ===== SEGUIR ===== -->
+  <section class="tab" id="seguir">
+    <!-- Primero el control (mapa o pad), pegado a la vista 3D; los botones van abajo -->
+    <div id="panelMapa">
+      <div class="map" id="map">
+        <svg id="plano" viewBox="0 0 580 160" preserveAspectRatio="none"></svg>
+        <div class="target" id="target"></div>
+        <div id="animMarca" title="Animador virtual"></div>
+        <div class="warn" id="mapWarn"></div>
+      </div>
+      <p class="help" style="margin-top:10px">Plano del salón según el dibujo de Cote. Toca o arrastra el dedo donde está la persona: las cabezas elegidas apuntan a ese punto.</p>
+    </div>
+
+    <div id="panelMano" style="display:none">
+      <div class="pad" id="pad"><div class="lbl">Arrastra el dedo para mover la luz</div><div class="pt p1" id="pt0">1</div><div class="pt p2" id="pt1">2</div><div class="pt p3" id="pt2">3</div></div>
+      <div class="row">
+        <span class="help" style="margin:0 6px 0 0">Velocidad:</span>
+        <button class="chip" data-v="0.15">Fina</button><button class="chip act" data-v="0.4">Normal</button><button class="chip" data-v="1">Rápida</button>
+        <button class="chip" id="invX">Invertir ↔</button><button class="chip" id="invY">Invertir ↕</button>
+      </div>
+      <h2 class="sec">Calibrar el mapa (una sola vez)</h2>
+      <p class="help">Para cada esquina del salón: elige <b>Cabeza 1</b>, apúntala al suelo en esa esquina y toca la esquina. Luego haz lo mismo con <b>Cabeza 2</b> y <b>Cabeza 3</b>. Las 4 esquinas son las de la zona de mesas, marcadas con números en el mapa (escenario a la izquierda, cocinas arriba, columnas y pasillo abajo).</p>
+      <div class="calib" id="calib"></div>
+      <div class="row"><button class="chip" id="borrarCal">Borrar calibración</button>
+        <span class="help" style="margin:0">Úsalo si se calibró sin las luces reales (por ejemplo, en el Dell de prueba).</span></div>
+    </div>
+
+    <div class="row" style="margin-top:8px">
+      <button class="chip" id="animBtn">🚶 Animador virtual (práctica)</button>
+      <span class="help" style="margin:0">Camina por el salón para practicar el seguimiento con las cabezas.</span>
+    </div>
+    <!-- Tamano del foco de las cabezas 1, 2 y 3: botones rapidos pegados al mapa -->
+    <div class="row" id="focoFila" style="margin-top:8px;gap:8px;flex-wrap:nowrap">
+      <span class="help" style="margin:0;white-space:nowrap">Foco</span>
+      <button class="chip" data-z="8">◉ Angosto</button><button class="chip act" data-z="50">◎ Medio</button><button class="chip" data-z="92">○ Ancho</button>
+      <input type="range" id="zoom" min="0" max="100" value="50" style="flex:1;height:34px;margin:0" title="Tamaño del foco: angosto ↔ ancho">
+    </div>
+    <div class="seg chico" id="cabezas" style="margin-top:8px">
+      <button data-s="0">Cabeza 1</button><button data-s="1">Cabeza 2</button><button data-s="2">Cabeza 3</button><button data-s="both" class="act">Las 3 juntas</button>
+    </div>
+    <div class="seg chico" id="modoSeguir">
+      <button data-m="mapa" class="act">Mapa del salón</button>
+      <button data-m="mano">A mano · calibrar</button>
+    </div>
+    <div class="readout" id="readout"></div>
+    <div class="row">
+      <button class="chip" id="segOn" title="Encender en blanco cálido">Encender</button>
+      <button class="chip" id="segPublico">Al público</button>
+      <button class="chip" id="segEscenario">Al escenario</button>
+      <button class="chip" id="segOff">Apagar</button>
+    </div>
+  </section>
+
+  <!-- ===== ZONAS ===== -->
+  <section class="tab" id="zonas"><div id="zoneList"></div></section>
+
+  <!-- ===== PROBAR CANALES ===== -->
+  <section class="tab" id="probar">
+    <p class="help">Para descubrir qué hace cada canal de una luz: elige su dirección y mueve los controles uno por uno. Anota qué canal es pan, tilt, dimmer, rojo, verde, azul y blanco, y cámbialo en <b>luces.json</b>.</p>
+    <div class="addr" id="addrBar"><span>Dirección inicial</span><input type="number" id="addr" min="1" max="497" value="1"></div>
+    <div id="chanList"></div>
+    <button class="chip" id="cero16" style="margin-top:8px">Poner estos 16 canales en 0</button>
+  </section>
+</main>
+
+<footer>
+  <div class="master">
+    <label><span>Intensidad general</span><span id="masterTxt">100%</span></label>
+    <input type="range" id="master" min="0" max="100" value="100">
+  </div>
+  <div class="fade">
+    <label>Fundido</label>
+    <div id="fadeBtns"><button data-f="0">0 s</button><button data-f="1" class="act">1 s</button><button data-f="3">3 s</button></div>
+  </div>
+  <button class="blackout" id="blackout">APAGAR TODO</button>
+</footer>
+<div class="toast" id="toast"></div>
+
+<div id="login" style="display:none;position:fixed;inset:0;z-index:20;background:var(--bg);place-items:center;padding:24px">
+  <form id="loginForm" style="width:min(100%,360px);text-align:center">
+    <h1 style="font-size:26px;margin-bottom:8px">Luces KRB</h1>
+    <p class="help">Escribe la clave para controlar las luces.</p>
+    <input type="password" id="clave" autocomplete="current-password" placeholder="Clave"
+      style="width:100%;font-size:20px;padding:16px;border-radius:14px;border:1px solid var(--line);background:#121419;color:var(--txt);text-align:center">
+    <button type="submit" class="blackout" style="width:100%;margin-top:14px;background:var(--acc)">Entrar</button>
+    <p class="help" id="loginErr" style="color:var(--bad);margin-top:12px;min-height:20px"></p>
+  </form>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+// MODO DEMO (Cote, 24 nov): ?demo = todo el iPad sin el Dell: las luces se calculan en el navegador y NO se tocan las reales.
+// ?demo=tv = solo la vista 3D a pantalla completa, con la camara sobre el animador (para el demo del GC Master).
+// ?demo=control = el iPad completo manejando el demo abierto en el mismo navegador (para seguir al animador a mano en el bingo).
+const PARAMS = new URLSearchParams(location.search), DEMO = PARAMS.has('demo'), TV = DEMO && PARAMS.get('demo') === 'tv';
+// ?demo=mapa = solo el mapa del salon (y las cabezas a elegir), para el espacio libre de la pestana Demo del GC Master.
+const MAPA_SOLO = DEMO && PARAMS.get('demo') === 'mapa';
+const CONTROL = DEMO && (PARAMS.get('demo') === 'control' || MAPA_SOLO);
+if (MAPA_SOLO) document.body.classList.add('solo-mapa');
+if (TV) document.body.classList.add('tv');
+const COLOR_CSS = {blanco_calido:'#ffd9a0',blanco:'#ffffff',azul:'#2b55ff',rojo:'#ff2a2a',verde:'#22dd55',amarillo:'#ffbe00',ambar:'#ff8a00',morado:'#9b3cff',rosa:'#ff3fa0',cian:'#22e5ff'};
+const ESQUINAS = [
+  {k:'ei', u:0, v:0, nombre:'1 · Mesas junto al escenario, lado cocinas'},
+  {k:'ed', u:1, v:0, nombre:'2 · Mesas del fondo, lado cocinas'},
+  {k:'fi', u:0, v:1, nombre:'3 · Mesas junto al escenario, lado columnas'},
+  {k:'fd', u:1, v:1, nombre:'4 · Mesas del fondo, lado columnas'}
+];
+// Mapa de Seguir: x = a lo largo del salon (escenario a la izquierda), y = de cocinas (arriba) a pasillo (abajo). En metros del salon.
+const MAPA = { v0:-7, v1:51, u0:6.5, u1:-9.5 };                      // todo el salon: 58 m de largo x 16 m de ancho
+const CAL = { v0:1.5, v1:25.5, u0:5, u1:-5.2 };      // zona de mesas donde se calibran las 4 esquinas
+const VEL = { parpadeo:[0.4, 0.2, 0.1], alternar:[4, 2, 1], mover:[12, 8, 4] };
+
+let conf = null, datos = {calibracion:{}}, master = 100, fade = 1, zonas = {}, escenaActiva = -1;
+let canales = new Array(512).fill(0), efectosActivos = [], efectoPared = null, velEf = 1;
+
+/* ---------- Comunicacion con el Dell ---------- */
+async function api(path){
+  if (CONTROL) return canalApi(path);
+  if (DEMO) return simApi(path);
+  const r = await fetch(path, {cache:'no-store', credentials:'same-origin'});
+  if (r.status === 401){ pedirClave(); throw new Error('clave'); }
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+let pidiendo = false;
+function pedirClave(){
+  if (pidiendo) return; pidiendo = true;
+  $('login').style.display = 'grid'; setTimeout(() => $('clave').focus(), 50);
+}
+$('loginForm').onsubmit = async ev => {
+  ev.preventDefault();
+  $('loginErr').textContent = 'Comprobando…';
+  try {
+    const r = await fetch('/api/login', {method:'POST', body:$('clave').value, credentials:'same-origin', cache:'no-store'});
+    if (r.ok){ location.reload(); return; }
+    $('loginErr').textContent = 'Clave incorrecta'; $('clave').select();
+  } catch(e){ $('loginErr').textContent = 'Sin conexión con el Dell'; }
+};
+const serial = vals => Object.entries(vals).map(([c, v]) => c + ':' + v).join(',');
+async function enviar(valores, f){
+  const d = serial(valores); if (!d) return;
+  try { pintarEstado(await api('/api/set?d=' + d + '&f=' + f)); } catch(e){ sinConexion(); }
+}
+async function efecto(id, params){
+  try { pintarEstado(await api('/api/efecto?id=' + encodeURIComponent(id) + '&' + new URLSearchParams(params))); } catch(e){ sinConexion(); }
+}
+const limitar = (() => { const t = {}; return (clave, fn) => {
+  const x = t[clave] || (t[clave] = {last:0, timer:null});
+  const ahora = Date.now(), espera = 90 - (ahora - x.last);
+  clearTimeout(x.timer);
+  if (espera <= 0){ x.last = ahora; fn(); } else x.timer = setTimeout(() => { x.last = Date.now(); fn(); }, espera);
+};})();
+
+/* ---------- Calculo de canales por grupo ---------- */
+const grupo = id => conf.grupos.find(g => g.id === id);
+const zona = id => zonas[id] || (zonas[id] = {color:null, intensidad:0});
+function valoresGrupo(g, zOverride){
+  const z = zOverride || zonas[g.id], ch = g.canales || {}, base = g.direccion - 1, out = {};
+  const on = z && z.color && z.intensidad > 0;
+  const col = on ? (conf.colores[z.color] || {}) : {};
+  const k = on ? (z.intensidad / 100) * (master / 100) : 0;
+  const rgbw = ['r','g','b','w'];
+  if (ch.dimmer){
+    out[base + ch.dimmer] = Math.round(255 * k);
+    rgbw.forEach(c => { if (ch[c]) out[base + ch[c]] = on ? (col[c] || 0) : 0; });
+  } else {
+    rgbw.forEach(c => { if (ch[c]) out[base + ch[c]] = Math.round((col[c] || 0) * k); });
+  }
+  if (z && z.pan != null){
+    if (ch.pan) out[base + ch.pan] = Math.round(z.pan);
+    if (ch.tilt) out[base + ch.tilt] = Math.round(z.tilt);
+  }
+  if (z && z.zoom != null && ch.zoom){                                   // tamano del foco (0 = angosto, 100 = ancho)
+    const v = Math.round(z.zoom * 2.55);
+    out[base + ch.zoom] = g.zoom_invertido ? 255 - v : v;
+  }
+  for (const [c, v] of Object.entries(g.fijos || {})) out[base + (+c)] = v;
+  return out;
+}
+function enviarGrupos(ids, f){
+  const todo = {};
+  ids.forEach(id => { const g = grupo(id); if (g) Object.assign(todo, valoresGrupo(g)); });
+  enviar(todo, f);
+}
+const todosLosIds = () => conf.grupos.map(g => g.id);
+// Grupos que copian a otro ("igual_que" en luces.json): las mini cabezas de las columnas hacen lo mismo que las del escenario
+const espejos = id => conf.grupos.filter(g => g.igual_que === id).map(g => g.id);
+const conEspejos = ids => ids.concat(...ids.map(espejos)).filter((x, i, a) => a.indexOf(x) === i);
+const ESC_PECHO = [0, 1.5, -1.8];                                    // pecho de quien esta al centro del escenario
+// Tamano del foco (0-100) para que la mancha tenga "radio" metros a esa distancia.
+// Misma regla que la vista 3D: medio angulo = 0,05 + 0,22 x zoom/100 (radianes).
+function zoomPara(id, punto, radio){
+  const pos = posCabeza(id); if (!pos) return null;
+  const ang = Math.atan(radio / Math.hypot(punto[0] - pos[0], punto[1] - pos[1], punto[2] - pos[2]));
+  return Math.max(3, Math.min(100, Math.round((ang - 0.05) / 0.22 * 100)));
+}
+function fijarPosicion(z, nombre, id){
+  // Cabezas del salon (miran a las cocinas): "escenario" y "publico" se calculan por geometria hacia esos lugares
+  if (id && (POS3D[id] || {}).columna != null && (nombre === 'escenario' || nombre === 'publico')){
+    // Escenario (Cote, rev 209): bien dirigidas y sin iluminar al publico. Apuntan al pecho de la persona (no al piso,
+    // asi el borde de abajo del haz no cae en las mesas de adelante) y el foco se cierra segun la distancia,
+    // para que la mancha de luz sea de unos 2,6 m (la persona y el atril).
+    const blanco = nombre === 'escenario' ? ESC_PECHO : puntoPiso(0, 12);
+    apuntarGeo(id, blanco, z);
+    if (nombre === 'escenario'){ const zz = zoomPara(id, blanco, 1.3); if (zz != null) z.zoom = z.zoom != null ? Math.min(z.zoom, zz) : zz; }
+    z.posicion = nombre; return;
+  }
+  const p = conf.posiciones[nombre]; if (!p) return;
+  z.posicion = nombre; z.pan = p.pan; z.tilt = p.tilt;
+}
+
+/* ---------- Efectos (corren en el Dell) ---------- */
+function moverGrupo(id, on){
+  const g = grupo(id); if (!g) return;
+  if (!on) return efecto('mover:' + id, {off:1});
+  const z = zona(id), ch = g.canales, base = g.direccion - 1, m = g.mover || {};
+  if (!ch.pan || !ch.tilt) return toast('Falta pan/tilt en ' + g.nombre);
+  // Mini cabezas (Cote, 24 nov): las dos iguales, mas que todo GIRAN y apuntan al TECHO, no a las personas.
+  // Si luces.json no trae "tilt_centro" (configuracion antigua), se usa ese movimiento por defecto.
+  const techo = id === 'mini' && m.tilt_centro == null;
+  const tiltC = m.tilt_centro != null ? m.tilt_centro : (techo ? 30 : (z.tilt != null ? z.tilt : 110));
+  const centro = [z.pan != null ? z.pan : 128, tiltC];
+  const amp = techo ? [110, 18] : [m.amp_pan || 70, m.amp_tilt || 35];
+  efecto('mover:' + id, {tipo:'seno', ch:[base + ch.pan, base + ch.tilt].join(','), centro:centro.join(','),
+    amp:amp.join(','), periodo:(m.periodo || VEL.mover[velEf])});
+}
+const pasosTxt = pasos => pasos.map(serial).join('|');
+function idsPared(){ return (conf.fondo_enlazado && conf.fondo_enlazado.grupos) || ['perimetrales', 'fondo']; }
+function asegurarPared(){
+  idsPared().forEach(id => { const z = zona(id); if (!z.color) z.color = 'azul'; if (!(z.intensidad > 0)) z.intensidad = 100; });
+}
+function efectoParedOn(tipo){
+  efectoPared = tipo; asegurarPared();
+  efecto(tipo === 'parpadeo' ? 'alternar' : 'parpadeo', {off:1});
+  if (tipo === 'parpadeo'){
+    const prendido = {}, apagado = {};
+    idsPared().forEach(id => { const g = grupo(id); Object.assign(prendido, valoresGrupo(g)); Object.assign(apagado, valoresGrupo(g, {...zona(id), intensidad:0})); });
+    efecto('parpadeo', {tipo:'sec', pasos:pasosTxt([prendido, apagado]), t:VEL.parpadeo[velEf], fx:0});
+  } else {
+    const pasos = conf.fondo_enlazado.colores.map(c => {
+      const s = {}; idsPared().forEach(id => Object.assign(s, valoresGrupo(grupo(id), {...zona(id), color:c}))); return s;
+    });
+    efecto('alternar', {tipo:'sec', pasos:pasosTxt(pasos), t:VEL.alternar[velEf], fx:0.25});
+  }
+  pintarEfectos(); pintarZonas();
+}
+function efectoParedOff(){ efectoPared = null; efecto('parpadeo', {off:1}); efecto('alternar', {off:1}); pintarEfectos(); }
+function refrescarEfectos(){
+  if (efectoPared) efectoParedOn(efectoPared);
+  conf.grupos.forEach(g => { if (efectosActivos.includes('mover:' + g.id)) moverGrupo(g.id, true); });
+}
+$('fxParpadeo').onclick = () => efectoPared === 'parpadeo' ? efectoParedOff() : efectoParedOn('parpadeo');
+$('fxAlternar').onclick = () => efectoPared === 'alternar' ? efectoParedOff() : efectoParedOn('alternar');
+$('fxMini').onclick = () => {
+  const on = !efectosActivos.includes('mover:mini');
+  const ids = conEspejos(['mini']);
+  if (on){ ids.forEach(id => { const z = zona(id); if (!z.color) z.color = 'rojo'; if (!(z.intensidad > 0)) z.intensidad = 100; if (z.pan == null) fijarPosicion(z, 'escenario'); }); enviarGrupos(ids, fade); }
+  ids.forEach(id => moverGrupo(id, on));
+};
+document.querySelectorAll('[data-vel]').forEach(b => b.onclick = () => {
+  velEf = +b.dataset.vel; document.querySelectorAll('[data-vel]').forEach(x => x.classList.toggle('act', x === b)); refrescarEfectos();
+});
+function pintarEfectos(){
+  $('fxParpadeo').classList.toggle('act', efectoPared === 'parpadeo');
+  $('fxAlternar').classList.toggle('act', efectoPared === 'alternar');
+  $('fxMini').classList.toggle('act', efectosActivos.includes('mover:mini'));
+}
+
+/* ---------- Envios grandes por POST (programas, datos guardados) ---------- */
+async function postApi(ruta, params){
+  if (CONTROL) return canalApi(ruta, params);
+  if (DEMO) return simApi(ruta, params);
+  const r = await fetch(ruta, {method:'POST', body:new URLSearchParams(params), credentials:'same-origin', cache:'no-store'});
+  if (r.status === 401){ pedirClave(); throw new Error('clave'); }
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+async function efectoPost(id, params){ try { pintarEstado(await postApi('/api/efecto', {id, ...params})); } catch(e){ sinConexion(); } }
+async function guardarDatos(){ return postApi('/api/guardar', {d: JSON.stringify(datos)}); }
+
+/* ---------- Animador virtual para practicar el seguimiento (Cote, 24 nov) ----------
+   Camina suave (1 m/s): baja del escenario, pasa entre las mesas y sigue hasta el fondo; despues vuelve. */
+const animador = { activo: false, t0: 0, vel: 1.0, ruta: null, largos: null, total: 0 };
+function prepararRuta(){
+  const pts = [[0.3, 0.45, -1.6], [-1.2, 0.45, -0.1], [-1.3, 0, 1.1]];                          // en el escenario y bajando
+  // pasillo entre sillones y mesas sueltas, cruce por el espacio libre entre dos filas, y pasillo de las cocinas hasta el fondo
+  [[-3.2, 1.0], [-3.2, 15.7], [2.8, 15.7], [2.8, SALON.largo - 4]].forEach(([u, v]) => pts.push(deSalon(u, v, 0)));
+  animador.ruta = pts;
+  animador.largos = pts.slice(1).map((p, i) => Math.hypot(p[0] - pts[i][0], p[2] - pts[i][2]) || 0.01);
+  animador.total = animador.largos.reduce((a, b) => a + b, 0);
+}
+function posAnimador(t){
+  const L = animador.total; let s = (t * animador.vel) % (2 * L); const vuelta = s > L; if (vuelta) s = 2 * L - s;   // ida y vuelta
+  const r = animador.ruta;
+  for (let i = 0; i < animador.largos.length; i++){
+    if (s <= animador.largos[i] || i === animador.largos.length - 1){
+      const f = Math.min(1, s / animador.largos[i]), a = r[i], b = r[i + 1];
+      const p = [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f];
+      let rumbo = Math.atan2(b[0] - a[0], b[2] - a[2]); if (vuelta) rumbo += Math.PI;
+      return { p, rumbo, t };
+    }
+    s -= animador.largos[i];
+  }
+}
+function tickAnimador(){
+  if (!animador.activo) return;
+  const a = posAnimador((performance.now() - animador.t0) / 1000);
+  V.animador = a; V.sucio = true;
+  const map = $('map'), m = $('animMarca'), [u, v] = aSalon(a.p);
+  m.style.display = 'block';
+  m.style.left = ((v - MAPA.v0) / (MAPA.v1 - MAPA.v0) * map.clientWidth) + 'px';
+  m.style.top = ((MAPA.u0 - u) / (MAPA.u0 - MAPA.u1) * map.clientHeight) + 'px';
+  requestAnimationFrame(tickAnimador);
+}
+$('animBtn').onclick = () => {
+  animador.activo = !animador.activo;
+  $('animBtn').classList.toggle('act', animador.activo);
+  $('animBtn').textContent = animador.activo ? '■ Detener animador' : '🚶 Animador virtual (práctica)';
+  if (animador.activo){ prepararRuta(); animador.t0 = performance.now(); tickAnimador(); toast('El animador camina: síguelo con las cabezas'); }
+  else { V.animador = null; $('animMarca').style.display = 'none'; V.sucio = true; }
+};
+
+/* ---------- Vistas guardadas de la camara 3D (una para cada lugar), guardadas en el Dell ---------- */
+function pintarVistas(){
+  const cont = $('vistas3d'); if (!cont) return; cont.innerHTML = '';
+  const g = document.createElement('button'); g.className = 'guardar'; g.textContent = '＋ Guardar vista'; g.title = 'Guardar el ángulo actual de la cámara';
+  g.onclick = async () => {
+    datos.vistas = datos.vistas || [];
+    const nombre = (prompt('Nombre de la vista (por ejemplo: Escenario, Bingo, Mesas del fondo)', 'Vista ' + (datos.vistas.length + 1)) || '').trim();
+    if (!nombre) return;
+    datos.vistas.push({ nombre, yaw: V.yaw, pitch: V.pitch, dist: V.dist, objetivo: [...V.objetivo] });
+    try { await guardarDatos(); toast('Vista guardada: ' + nombre); } catch(e){ toast('No se pudo guardar en el Dell'); }
+    pintarVistas();
+  };
+  cont.appendChild(g);
+  (datos.vistas || []).forEach((v, i) => {
+    const b = document.createElement('button'); b.textContent = v.nombre; b.title = 'Ir a esta vista';
+    b.onclick = () => { V.yaw = v.yaw; V.pitch = v.pitch; V.dist = v.dist; V.objetivo = [...v.objetivo]; V.sucio = true; };
+    const x = document.createElement('button'); x.className = 'x'; x.textContent = '×'; x.title = 'Borrar la vista ' + v.nombre;
+    x.onclick = async () => {
+      if (!confirm('¿Borrar la vista "' + v.nombre + '"?')) return;
+      datos.vistas.splice(i, 1);
+      try { await guardarDatos(); } catch(e){ toast('No se pudo guardar en el Dell'); }
+      pintarVistas();
+    };
+    cont.appendChild(b); cont.appendChild(x);
+  });
+}
+
+/* ---------- Programas en movimiento (corren en el Dell, como los efectos) ---------- */
+const CICLO = ['azul', 'rojo', 'verde', 'amarillo'];
+let progActivo = null, grab = null;
+const cabezasProg = () => segIds().slice(0, 2);                       // cabezas 1 y 2
+function valoresCon(ids, color, on){
+  const s = {}; ids.forEach(id => { const g = grupo(id); if (g) Object.assign(s, valoresGrupo(g, {...zona(id), color, intensidad: on ? 100 : 0})); }); return s;
+}
+function iniciarListo(tipo){
+  const T = +$('progVel').value, heads = cabezasProg();
+  heads.forEach(id => { const z = zona(id); fijarPosicion(z, 'escenario', id); z.intensidad = 100; z.color = 'azul'; });  // mirando al escenario, sin blanco
+  enviarGrupos(heads, 0);
+  const pasos = [];
+  if (tipo === 'colores'){
+    CICLO.forEach(c => pasos.push(valoresCon(heads, c, true)));
+    efectoPost('programa', {tipo:'sec', pasos:pasosTxt(pasos), t:T, fx:0.12});
+  } else {                                                            // la pared se apaga entre colores; lo demas sigue
+    if (efectoPared) efectoParedOff();
+    CICLO.forEach(c => {
+      pasos.push({...valoresCon(heads, c, true), ...valoresCon(idsPared(), c, true)});
+      pasos.push({...valoresCon(heads, c, true), ...valoresCon(idsPared(), c, false)});
+    });
+    efectoPost('programa', {tipo:'sec', pasos:pasosTxt(pasos), t:T / 2, fx:0});
+  }
+  progActivo = tipo; pintarProgramas(); pintarZonas();
+}
+function iniciarGrabado(i){
+  const p = (datos.programas || [])[i]; if (!p) return;
+  const pasos = p.pasos.map(fila => p.ch.map((c, k) => (c + 1) + ':' + fila[k]).join(',')).join('|');
+  efectoPost('programa', {tipo:'sec', pasos, t:p.t || 0.1, fx:1});
+  progActivo = 'g' + i; pintarProgramas(); toast('▶ ' + p.nombre);
+}
+function detenerPrograma(){ if (progActivo){ efecto('programa', {off:1}); progActivo = null; pintarProgramas(); } }
+document.querySelectorAll('[data-prog]').forEach(b => b.onclick = () => progActivo === b.dataset.prog ? detenerPrograma() : iniciarListo(b.dataset.prog));
+$('progVel').oninput = () => { $('progVelTxt').textContent = (+$('progVel').value).toFixed(1) + ' s por color'; };
+$('progVel').onchange = () => { if (progActivo === 'colores' || progActivo === 'pared') iniciarListo(progActivo); };
+
+/* Grabar: captura 10 veces por segundo lo que sale por el cable (todo lo que se haga: mapa, colores, escenas) */
+async function empezarGrabacion(){
+  detenerPrograma();
+  grab = { muestras: [] }; pintarProgramas(); toast('Grabando: mueve las luces como quieras');
+  while (grab){
+    const t = performance.now();
+    try { const e = await api('/api/estado'); if (grab) grab.muestras.push(e.salida); } catch(e){}
+    if (grab && grab.muestras.length >= 1200){ await terminarGrabacion(); break; }  // maximo 2 minutos
+    if (grab) $('grabar').firstChild.textContent = '■ Detener grabación (' + Math.round(grab.muestras.length / 10) + ' s)';
+    const resto = 100 - (performance.now() - t); if (resto > 0) await new Promise(r => setTimeout(r, resto));
+  }
+}
+async function terminarGrabacion(){
+  const m = grab ? grab.muestras : []; grab = null; pintarProgramas();
+  if (m.length < 5) return toast('Grabación muy corta');
+  const ch = []; for (let c = 0; c < 512; c++) if (m.some(f => f[c] !== m[0][c])) ch.push(c);
+  if (!ch.length) return toast('No hubo cambios en las luces');
+  const nombre = (prompt('Nombre del programa', 'Programa ' + ((datos.programas || []).length + 1)) || '').trim() || ('Programa ' + ((datos.programas || []).length + 1));
+  datos.programas = datos.programas || [];
+  datos.programas.push({ nombre, t: 0.1, ch, pasos: m.map(f => ch.map(c => f[c])) });
+  try { await guardarDatos(); toast('Programa guardado: ' + nombre); } catch(e){ toast('No se pudo guardar en el Dell'); }
+  pintarProgramas();
+}
+$('grabar').onclick = () => grab ? terminarGrabacion() : empezarGrabacion();
+function pintarProgramas(){
+  document.querySelectorAll('[data-prog]').forEach(b => b.classList.toggle('act', progActivo === b.dataset.prog));
+  $('grabar').classList.toggle('act', !!grab);
+  if (!grab) $('grabar').firstChild.textContent = '● Grabar programa';
+  const cont = $('progGrabados'); cont.innerHTML = '';
+  (datos.programas || []).forEach((p, i) => {
+    const b = document.createElement('button'); b.className = 'chip' + (progActivo === 'g' + i ? ' act' : '');
+    b.textContent = (progActivo === 'g' + i ? '■ ' : '▶ ') + p.nombre + ' · ' + Math.round(p.pasos.length * (p.t || 0.1)) + ' s';
+    b.onclick = () => progActivo === 'g' + i ? detenerPrograma() : iniciarGrabado(i);
+    const x = document.createElement('button'); x.className = 'chip'; x.textContent = '🗑'; x.title = 'Borrar ' + p.nombre;
+    x.onclick = async () => {
+      if (!confirm('¿Borrar el programa "' + p.nombre + '"?')) return;
+      if (progActivo === 'g' + i) detenerPrograma();
+      datos.programas.splice(i, 1);
+      try { await guardarDatos(); } catch(e){ toast('No se pudo guardar en el Dell'); }
+      pintarProgramas();
+    };
+    cont.appendChild(b); cont.appendChild(x);
+  });
+}
+
+/* ---------- Escenas ---------- */
+function pintarEscenas(){
+  const grid = $('sceneGrid'); grid.innerHTML = '';
+  conf.escenas.forEach((e, i) => {
+    const b = document.createElement('button');
+    b.className = 'scene' + (i === escenaActiva ? ' act' : '');
+    const extra = e.efectos && e.efectos.length ? ' · mini en movimiento' : '';
+    b.innerHTML = `<div class="glow" style="background:radial-gradient(120% 90% at 80% 0%, ${e.muestra || '#888'}, transparent 70%)"></div><span>${e.nombre}</span><small>${e.detalle || ''}${extra}</small>`;
+    b.onclick = () => aplicarEscena(i);
+    grid.appendChild(b);
+  });
+}
+async function aplicarEscena(i){
+  const e = conf.escenas[i];
+  const anteriores = zonas; zonas = {};
+  conf.grupos.forEach(g => {
+    const s = e.grupos[g.id] || (g.igual_que && e.grupos[g.igual_que]), prev = anteriores[g.id] || {};
+    const z = s ? {...s} : {color:null, intensidad:0};
+    if (s && s.posicion) fijarPosicion(z, s.posicion, g.id);
+    else { z.posicion = prev.posicion; z.pan = prev.pan; z.tilt = prev.tilt; }
+    zonas[g.id] = z;
+  });
+  escenaActiva = i; efectoPared = null;
+  await efecto('todos', {todos:'off'}); progActivo = null; pintarProgramas();   // una escena detiene los programas
+  enviarGrupos(todosLosIds(), fade);
+  (e.efectos || []).forEach(x => {
+    const [tipo, id] = x.split(':');
+    if (tipo === 'mover') conEspejos([id]).forEach(x => moverGrupo(x, true));
+    if (tipo === 'parpadeo' || tipo === 'alternar') efectoParedOn(tipo);
+  });
+  pintarTodo(); toast(e.nombre);
+  if (e.abrir) abrirTab(e.abrir);
+}
+
+/* ---------- Color del fondo (perimetrales + fondo juntos) ---------- */
+function pintarFondo(){
+  const fe = conf.fondo_enlazado; if (!fe) return;
+  const row = $('bgRow'); row.innerHTML = '';
+  const actual = zona(fe.grupos[0]);
+  fe.colores.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'bg' + (actual.color === c && actual.intensidad > 0 && efectoPared !== 'alternar' ? ' act' : '');
+    b.style.background = COLOR_CSS[c] || '#888';
+    b.textContent = c[0].toUpperCase() + c.slice(1);
+    b.onclick = () => {
+      fe.grupos.forEach(id => { const z = zona(id); z.color = c; if (!(z.intensidad > 0)) z.intensidad = 100; });
+      escenaActiva = -1;
+      if (efectoPared === 'alternar') efectoParedOff();
+      if (efectoPared === 'parpadeo') efectoParedOn('parpadeo'); else enviarGrupos(fe.grupos, fade);
+      pintarTodo(); toast('Fondo ' + c);
+    };
+    row.appendChild(b);
+  });
+}
+
+/* ---------- Seguir: seleccion de cabezas ---------- */
+const prefs = JSON.parse(localStorage.getItem('krb_seguir') || '{"vel":0.4,"invX":false,"invY":false}');
+let seleccion = 'both', modoSeguir = 'mapa', objetivo = null;
+// Las tres cabezas de las columnas del salon (1, 2 y 3). Un luces.json antiguo con solo 2 se completa con la 3.
+const segIds = () => {
+  const g = (conf.seguir && conf.seguir.grupos) || [];
+  return (g.length >= 3 ? g : ['seguidor1', 'seguidor2', 'seguidor3']).filter(id => conf.grupos.some(x => x.id === id)).slice(0, 3);
+};
+const segActivos = () => seleccion === 'both' ? segIds() : [segIds()[+seleccion]];
+function guardarPrefs(){ localStorage.setItem('krb_seguir', JSON.stringify(prefs)); }
+document.querySelectorAll('#cabezas button').forEach(b => b.onclick = () => { seleccion = b.dataset.s; pintarSeguir(); });
+document.querySelectorAll('#modoSeguir button').forEach(b => b.onclick = () => { modoSeguir = b.dataset.m; pintarSeguir(); });
+
+/* Mapa: interpolacion entre las 4 esquinas calibradas */
+const calibrada = id => { const c = (datos.calibracion || {})[id]; return c && ESQUINAS.every(e => c[e.k]); };
+function apuntar(id, u, v){
+  const c = datos.calibracion[id], lerp = key => (1-u)*(1-v)*c.ei[key] + u*(1-v)*c.ed[key] + (1-u)*v*c.fi[key] + u*v*c.fd[key];
+  const z = zona(id); z.pan = Math.max(0, Math.min(255, lerp('pan'))); z.tilt = Math.max(0, Math.min(255, lerp('tilt'))); z.posicion = null;
+}
+/* Al dirigir una cabeza con el mapa o a mano, si estaba apagada se enciende (blanco calido), para que se vea moverse */
+function encenderSiApagada(id){
+  const z = zona(id);
+  if (!(z.intensidad > 0) || !z.color){ z.color = (conf.seguir && conf.seguir.color) || 'blanco_calido'; z.intensidad = 100; }
+}
+/* Punto del piso (en metros del escenario) a partir de un punto del salon; si cae sobre la tarima, a su altura */
+function puntoPiso(u, v){
+  const p = deSalon(u, v, 0);
+  p[1] = dentroPoligono(p[0], p[2], TARIMA) ? 0.45 : 0;
+  return p;
+}
+const TARIMA = [[-5,-4],[5,-4],[5,-1.6],[3.2,0.3],[-5,0.3]];          // forma de la tarima (x, z)
+function dentroPoligono(x, z, pol){
+  let dentro = false;
+  for (let i = 0, j = pol.length - 1; i < pol.length; j = i++){
+    const [xi, zi] = pol[i], [xj, zj] = pol[j];
+    if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) dentro = !dentro;
+  }
+  return dentro;
+}
+/* Sin calibracion: pan y tilt calculados desde la posicion de la cabeza hacia el punto (el inverso exacto de la vista 3D) */
+function apuntarGeo(id, punto, zz){
+  const pos = posCabeza(id); if (!pos) return;
+  const def = POS3D[id] || {};
+  if (def.columna != null){                                        // solo alcanzan el lado interno (hacia las cocinas)
+    const [u, v] = aSalon(punto), uMin = (colsSalon()[def.columna] || colsSalon()[0])[0] + 1.0;
+    if (u < uMin) punto = puntoPiso(uMin, v);
+  }
+  const d = sub(punto, pos), casa = casaDe(pos, id);
+  let a = Math.atan2(d[0], d[2]) - casa;
+  while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI;
+  const th = Math.atan2(Math.hypot(d[0], d[2]), -d[1]);                 // angulo desde la vertical hacia abajo
+  const z = zz || zona(id);
+  z.pan = Math.max(0, Math.min(255, 128 + a / RANGO_PAN * 128));
+  z.tilt = Math.max(0, Math.min(255, th / RANGO_TILT * 255));
+  z.posicion = null;
+}
+(() => {
+  const map = $('map'); let activo = false;
+  const mover = e => {
+    const r = map.getBoundingClientRect();
+    const fx = Math.max(0, Math.min(1, (e.clientX - r.left) / r.width));
+    const fy = Math.max(0, Math.min(1, (e.clientY - r.top) / r.height));
+    objetivo = {fx, fy};
+    const vS = MAPA.v0 + fx * (MAPA.v1 - MAPA.v0), uS = MAPA.u0 + fy * (MAPA.u1 - MAPA.u0);   // punto del salon (metros)
+    const s = (vS - CAL.v0) / (CAL.v1 - CAL.v0), t = (uS - CAL.u0) / (CAL.u1 - CAL.u0);         // relativo a las 4 esquinas
+    const punto = puntoPiso(uS, vS);                                                              // el mismo punto, en metros del escenario
+    V.marca = punto; V.sucio = true;
+    // Todas las cabezas elegidas apuntan al MISMO punto: con calibracion (luces reales) o por geometria (igual que la vista 3D).
+    const ids = segActivos();
+    ids.forEach(encenderSiApagada);
+    ids.forEach(id => calibrada(id) ? apuntar(id, s, t) : apuntarGeo(id, punto));
+    pintarSeguir();
+    limitar('mapa', () => enviarGrupos(ids, 0));
+  };
+  map.addEventListener('pointerdown', e => { activo = true; map.setPointerCapture(e.pointerId); map.classList.add('drag'); mover(e); });
+  map.addEventListener('pointermove', e => { if (activo) mover(e); });
+  const fin = () => { activo = false; map.classList.remove('drag'); escenaActiva = -1; pintarEscenas(); };
+  map.addEventListener('pointerup', fin); map.addEventListener('pointercancel', fin);
+})();
+
+/* A mano: pad relativo */
+document.querySelectorAll('[data-v]').forEach(b => b.onclick = () => { prefs.vel = +b.dataset.v; guardarPrefs(); pintarSeguir(); });
+$('invX').onclick = () => { prefs.invX = !prefs.invX; guardarPrefs(); pintarSeguir(); };
+$('invY').onclick = () => { prefs.invY = !prefs.invY; guardarPrefs(); pintarSeguir(); };
+(() => {
+  const pad = $('pad'); let last = null;
+  pad.addEventListener('pointerdown', e => { last = {x: e.clientX, y: e.clientY}; pad.setPointerCapture(e.pointerId); pad.classList.add('drag'); });
+  pad.addEventListener('pointermove', e => {
+    if (!last) return;
+    const dx = (e.clientX - last.x) * prefs.vel * (prefs.invX ? -1 : 1);
+    const dy = (e.clientY - last.y) * prefs.vel * (prefs.invY ? -1 : 1);
+    last = {x: e.clientX, y: e.clientY};
+    segActivos().forEach(id => {
+      encenderSiApagada(id);
+      const z = zona(id);
+      z.pan = Math.max(0, Math.min(255, (z.pan != null ? z.pan : 128) + dx));
+      z.tilt = Math.max(0, Math.min(255, (z.tilt != null ? z.tilt : 128) + dy));
+      z.posicion = null;
+    });
+    pintarSeguir();
+    limitar('pad', () => enviarGrupos(segActivos(), 0));
+  });
+  const fin = () => { last = null; pad.classList.remove('drag'); escenaActiva = -1; pintarEscenas(); };
+  pad.addEventListener('pointerup', fin); pad.addEventListener('pointercancel', fin);
+})();
+
+/* Calibracion: guarda pan/tilt actuales de las cabezas elegidas en una esquina */
+async function guardarEsquina(k){
+  datos.calibracion = datos.calibracion || {};
+  const nombres = [];
+  segActivos().forEach(id => {
+    const z = zona(id);
+    (datos.calibracion[id] = datos.calibracion[id] || {})[k] = {pan: Math.round(z.pan != null ? z.pan : 128), tilt: Math.round(z.tilt != null ? z.tilt : 128)};
+    nombres.push(segIds().indexOf(id) + 1);
+  });
+  try { await guardarDatos(); toast('Esquina guardada para cabeza ' + nombres.join(' y ')); }
+  catch(e){ toast('No se pudo guardar en el Dell'); }
+  pintarSeguir();
+}
+
+/* Tamano del foco: angosto = luz mas concentrada y potente */
+$('zoom').oninput = () => {
+  const val = +$('zoom').value;
+  segActivos().forEach(id => { encenderSiApagada(id); zona(id).zoom = val; });
+  V.sucio = true; marcarFoco(val);
+  limitar('zoom', () => enviarGrupos(segActivos(), 0));
+};
+function marcarFoco(val){                                     // ilumina el boton rapido mas cercano
+  const bs = [...document.querySelectorAll('[data-z]')];
+  const cerca = bs.reduce((a, b) => Math.abs(+b.dataset.z - val) < Math.abs(+a.dataset.z - val) ? b : a);
+  bs.forEach(b => b.classList.toggle('act', b === cerca));
+}
+document.querySelectorAll('[data-z]').forEach(b => b.onclick = () => { $('zoom').value = b.dataset.z; $('zoom').oninput(); });
+$('borrarCal').onclick = async () => {
+  if (!confirm('¿Borrar la calibración de las 3 cabezas? Después habrá que calibrar de nuevo en Kennedy.')) return;
+  datos.calibracion = {};
+  try { await guardarDatos(); toast('Calibración borrada'); }
+  catch(e){ toast('No se pudo guardar en el Dell'); }
+  pintarSeguir();
+};
+
+/* Acciones rapidas */
+function accionSeguir(fn){ segActivos().forEach(id => fn(zona(id), id)); escenaActiva = -1; pintarTodo(); enviarGrupos(segActivos(), fade); }
+$('segOn').onclick = () => accionSeguir(z => { z.color = (conf.seguir && conf.seguir.color) || 'blanco_calido'; z.intensidad = 100; });
+$('segOff').onclick = () => accionSeguir(z => { z.intensidad = 0; });
+$('segPublico').onclick = () => accionSeguir((z, id) => { encenderSiApagada(id); fijarPosicion(z, 'publico', id); });
+$('segEscenario').onclick = () => accionSeguir((z, id) => { encenderSiApagada(id); fijarPosicion(z, 'escenario', id); });
+
+function pintarSeguir(){
+  if (!conf) return;
+  document.querySelectorAll('#cabezas button').forEach(b => b.classList.toggle('act', b.dataset.s === seleccion));
+  const zPrim = zona(segActivos()[0]); $('zoom').value = zPrim.zoom != null ? zPrim.zoom : 50; marcarFoco(+$('zoom').value);
+  document.querySelectorAll('#modoSeguir button').forEach(b => b.classList.toggle('act', b.dataset.m === modoSeguir));
+  $('panelMapa').style.display = modoSeguir === 'mapa' ? '' : 'none';
+  $('panelMano').style.display = modoSeguir === 'mano' ? '' : 'none';
+
+  // mapa
+  const faltan = segActivos().filter(id => !calibrada(id)).map(id => segIds().indexOf(id) + 1);
+  $('mapWarn').textContent = faltan.length ? `Sin calibrar (cabeza ${faltan.join(', ')}): apuntan según la vista 3D. Calibrar en Kennedy.` : '';
+  const t = $('target'), map = $('map');
+  if (objetivo){ t.style.display = 'block'; t.style.left = (objetivo.fx * map.clientWidth) + 'px'; t.style.top = (objetivo.fy * map.clientHeight) + 'px'; }
+
+  // pad
+  const pad = $('pad'), w = pad.clientWidth, h = pad.clientHeight, txt = [];
+  segIds().forEach((id, i) => {
+    const z = zona(id), pt = $('pt' + i);
+    const pan = z.pan != null ? z.pan : 128, tilt = z.tilt != null ? z.tilt : 128;
+    pt.style.left = (pan / 255 * w) + 'px'; pt.style.top = (tilt / 255 * h) + 'px';
+    pt.style.opacity = segActivos().includes(id) ? 1 : .35;
+    txt.push(`Cabeza ${i + 1}: pan ${Math.round(pan)} · tilt ${Math.round(tilt)} · ${z.intensidad > 0 ? 'encendida' : 'apagada'}`);
+  });
+  $('readout').textContent = txt.join('   |   ');
+  document.querySelectorAll('[data-v]').forEach(b => b.classList.toggle('act', +b.dataset.v === prefs.vel));
+  $('invX').classList.toggle('act', prefs.invX); $('invY').classList.toggle('act', prefs.invY);
+
+  // calibracion
+  const cal = $('calib'); cal.innerHTML = '';
+  ESQUINAS.forEach(e => {
+    const hechas = segIds().map((id, i) => ((datos.calibracion || {})[id] || {})[e.k] ? (i + 1) + ' ✓' : (i + 1) + ' –');
+    const b = document.createElement('button');
+    b.className = hechas.every(x => x.includes('✓')) ? 'ok' : '';
+    b.innerHTML = `Guardar ${e.nombre}<small>Cabeza ${hechas.join('  ·  ')}</small>`;
+    b.onclick = () => guardarEsquina(e.k);
+    cal.appendChild(b);
+  });
+}
+
+/* ---------- Zonas ---------- */
+function pintarZonas(){
+  const list = $('zoneList'); list.innerHTML = '';
+  conf.grupos.forEach(g => {
+    const z = zona(g.id);
+    const d = document.createElement('div'); d.className = 'zone';
+    const sw = Object.keys(conf.colores).map(c =>
+      `<button class="sw${z.color === c && z.intensidad > 0 ? ' act' : ''}" data-c="${c}" title="${c}" style="background:${COLOR_CSS[c] || '#888'}"></button>`).join('');
+    const pos = g.tipo === 'cabeza' ? `<div class="row">${Object.keys(conf.posiciones).filter(p => !p.startsWith('_')).map(p =>
+      `<button class="chip${z.posicion === p ? ' act' : ''}" data-p="${p}">${p[0].toUpperCase() + p.slice(1)}</button>`).join('')}</div>` : '';
+    d.innerHTML = `<div class="top"><div><h3>${g.nombre}</h3><div class="meta">Escáner ${g.escaner} · DMX ${g.direccion}</div></div><div class="val">${z.intensidad}%</div></div>
+      <input type="range" min="0" max="100" value="${z.intensidad}">
+      <div class="swatches"><button class="sw off${!z.color || z.intensidad === 0 ? ' act' : ''}" data-c="">Off</button>${sw}</div>${pos}`;
+    const rng = d.querySelector('input'), val = d.querySelector('.val');
+    rng.oninput = () => {
+      z.intensidad = +rng.value; if (!z.color && z.intensidad > 0) z.color = 'blanco_calido';
+      val.textContent = z.intensidad + '%'; escenaActiva = -1;
+      limitar(g.id, () => enviarGrupos([g.id], 0));
+    };
+    rng.onchange = () => { pintarTodo(); if (efectoPared && idsPared().includes(g.id)) efectoParedOn(efectoPared); };
+    d.querySelectorAll('.sw').forEach(b => b.onclick = () => {
+      if (b.dataset.c){ z.color = b.dataset.c; if (z.intensidad === 0) z.intensidad = 100; } else z.intensidad = 0;
+      escenaActiva = -1; pintarTodo(); enviarGrupos([g.id], fade);
+      if (efectoPared && idsPared().includes(g.id)) efectoParedOn(efectoPared);
+    });
+    d.querySelectorAll('[data-p]').forEach(b => b.onclick = () => {
+      fijarPosicion(z, b.dataset.p, g.id); escenaActiva = -1; pintarTodo(); enviarGrupos([g.id], fade);
+      if (efectosActivos.includes('mover:' + g.id)) moverGrupo(g.id, true);
+    });
+    list.appendChild(d);
+  });
+}
+
+/* ---------- Probar canales ---------- */
+function pintarCanales(){
+  const inicio = Math.max(1, Math.min(497, +$('addr').value || 1));
+  const g = conf.grupos.find(x => x.direccion === inicio);
+  const nombres = {};
+  if (g) for (const [rol, c] of Object.entries(g.canales || {})) nombres[c] = rol;
+  const list = $('chanList'); list.innerHTML = '';
+  for (let i = 0; i < 16; i++){
+    const ch = inicio + i, v = canales[ch - 1] || 0;
+    const row = document.createElement('div'); row.className = 'chan';
+    row.innerHTML = `<div><b>Canal ${i + 1}</b><small>DMX ${ch}${nombres[i + 1] ? ' · ' + nombres[i + 1] : ''}</small></div>
+      <input type="range" min="0" max="255" value="${v}"><div class="v">${v}</div>`;
+    const r = row.querySelector('input'), t = row.querySelector('.v');
+    r.oninput = () => { t.textContent = r.value; canales[ch - 1] = +r.value; limitar('c' + ch, () => enviar({[ch]: +r.value}, 0)); };
+    list.appendChild(row);
+  }
+}
+function pintarDirecciones(){
+  const bar = $('addrBar');
+  conf.grupos.forEach(g => {
+    const b = document.createElement('button'); b.className = 'chip';
+    b.textContent = g.nombre.split(' ·')[0].split(' (')[0] + ' · ' + g.direccion;
+    b.onclick = () => { $('addr').value = g.direccion; pintarCanales(); };
+    bar.appendChild(b);
+  });
+}
+$('addr').onchange = pintarCanales;
+$('cero16').onclick = () => {
+  const inicio = +$('addr').value || 1, v = {};
+  for (let i = 0; i < 16; i++){ v[inicio + i] = 0; canales[inicio + i - 1] = 0; }
+  enviar(v, 0); pintarCanales();
+};
+
+/* ---------- Barra inferior ---------- */
+$('master').oninput = () => {
+  master = +$('master').value; $('masterTxt').textContent = master + '%';
+  limitar('master', () => enviarGrupos(todosLosIds(), 0));
+};
+$('master').onchange = () => { if (efectoPared) efectoParedOn(efectoPared); };
+document.querySelectorAll('#fadeBtns button').forEach(b => b.onclick = () => {
+  fade = +b.dataset.f; document.querySelectorAll('#fadeBtns button').forEach(x => x.classList.toggle('act', x === b));
+});
+$('blackout').onclick = async () => {
+  conf.grupos.forEach(g => { zona(g.id).intensidad = 0; });
+  escenaActiva = -1; efectoPared = null; progActivo = null; pintarProgramas();
+  try { pintarEstado(await api('/api/apagar?f=' + fade)); toast('Todo apagado'); } catch(e){ sinConexion(); }
+  pintarTodo();
+};
+
+/* ---------- Pestanas ---------- */
+/* Camara para Seguir: zona de las cabezas 1-3 (primer restaurante), orientada igual que el mapa */
+function camSeguir(){
+  V.objetivo = deSalon(-0.5, 11.5);
+  V.yaw = giroSalon() + (giroSalon() < 0 ? 1.4 : -1.4); V.pitch = 0.85; V.dist = 26; V.sucio = true;
+}
+/* Mide el espacio entre las pestanas y la barra de abajo (para la vista lado a lado en horizontal) */
+function medirSeguir(){
+  const nav = document.querySelector('nav').getBoundingClientRect(), pie = document.querySelector('footer').getBoundingClientRect();
+  document.body.style.setProperty('--arriba', Math.round(nav.bottom + 4) + 'px');
+  document.body.style.setProperty('--abajo', Math.round(window.innerHeight - pie.top + 6) + 'px');
+  // alto disponible para la vista 3D + el mapa (los botones quedan debajo)
+  document.body.style.setProperty('--disp', Math.max(220, Math.round(pie.top - nav.bottom - 14)) + 'px');
+  V.sucio = true;
+}
+window.addEventListener('resize', () => { if (document.body.classList.contains('en-seguir')) medirSeguir(); });
+function abrirTab(id){
+  const estabaEnSeguir = document.body.classList.contains('en-seguir');
+  document.body.classList.toggle('en-seguir', id === 'seguir');
+  if (id === 'seguir') requestAnimationFrame(() => { window.scrollTo(0, 0); medirSeguir(); pintarSeguir(); });
+  if (id === 'seguir' && !estabaEnSeguir) camSeguir();               // al entrar: ver la zona del salon donde estan las cabezas
+  if (id !== 'seguir' && estabaEnSeguir) $('vReset').click();        // al salir: volver a la vista del escenario
+  V.sucio = true;
+  document.querySelectorAll('nav button').forEach(x => x.classList.toggle('act', x.dataset.t === id));
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('act', t.id === id));
+  if (id === 'probar') pintarCanales();
+  if (id === 'seguir') pintarSeguir();
+}
+document.querySelectorAll('nav button').forEach(b => b.onclick = () => abrirTab(b.dataset.t));
+window.addEventListener('resize', () => pintarSeguir());
+function pintarTodo(){ pintarEscenas(); pintarFondo(); pintarZonas(); pintarSeguir(); pintarEfectos(); }
+
+/* ---------- Estado de la conexion ---------- */
+function pintarEstado(e){
+  if (e.canales) canales = e.canales;
+  if (e.salida){ V.salida = e.salida; V.sucio = true; }
+  if (e.efectos){ efectosActivos = e.efectos; pintarEfectos(); }
+  const dot = $('dot'), t = $('pillTxt');
+  if (e.tipo === 'demo'){ dot.className = 'dot warn'; t.textContent = 'Demo · no toca las luces reales'; }
+  else if (e.tipo === 'simulacion'){ dot.className = 'dot warn'; t.textContent = 'Simulación (sin cable)'; }
+  else if (e.conectado){ dot.className = 'dot ok'; t.textContent = 'Cable DMX · ' + e.puerto; }
+  else { dot.className = 'dot'; t.textContent = 'Sin cable DMX · tocar para reintentar'; }
+  $('pill').title = e.error || '';
+  if (CONTROL){ V.animador = e.animador || null; V.rosko = !!e.rosko; V.sucio = true; marcaAnimador(e.animador); }
+  momentoRecibido(e);
+}
+function sinConexion(){ $('dot').className = 'dot'; $('pillTxt').textContent = CONTROL ? 'Sin demo: abre la pantalla 1 del demo' : 'Sin conexión con el Dell'; }
+$('pill').onclick = async () => {
+  try { const e = await api('/api/reconectar'); pintarEstado(e); toast(e.conectado ? 'Cable conectado' : (e.error || 'No se encontró el cable')); }
+  catch(e){ sinConexion(); }
+};
+async function sondear(){ try { pintarEstado(await api('/api/estado')); } catch(e){ sinConexion(); } }
+function toast(t){ const e = $('toast'); e.textContent = t; e.classList.add('show'); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove('show'), 1800); }
+
+/* =====================================================================
+   VISTA PREVIA 3D del escenario de Mercado Kennedy (sin librerias).
+   Medidas en metros. x = derecha, y = arriba, z = hacia el publico.
+   El borde del escenario esta en z = 0; la pared del fondo en z = -4.
+   Muestra lo que de verdad sale por el cable (incluye efectos).
+   ===================================================================== */
+const V = { salida:null, sucio:true, yaw:0, pitch:0.18, dist:10, objetivo:[0, 1.7, -2], fov:52 * Math.PI / 180 };
+// Donde esta cada luz. Se puede cambiar en luces.json con "vista3d": [[x,y,z], ...] en cada grupo.
+const POS3D = {
+  // Las cabezas 1, 2 y 3 van en las columnas del salon (a la derecha, mirando el escenario):
+  // la 1 casi a la altura de la columna derecha del escenario; las otras, cada "distancia_columnas" metros hacia el fondo del salon.
+  seguidor1:    { columna:0 },
+  seguidor2:    { columna:1 },
+  seguidor3:    { columna:2 },
+  frontales:    { pos:[[-4.7, 4.1, 0.6], [4.7, 4.1, 0.6]] },
+  mini:         { pos:[[-1.15, 0.6, -3.0], [1.15, 0.6, -3.0]], piso:true },   // justo al costado de la bateria (Cote, 24 nov)
+  mini_columnas:{ pos:[[-5.8, 4.45, -0.3], [5.8, 4.45, -0.3]], piso:true },   // arriba de las columnas azules (Cote, 24 nov)
+  perimetrales: { pos:[[-3.9, 0.45, -3.75], [-1.3, 0.45, -3.75], [1.3, 0.45, -3.75], [3.9, 0.45, -3.75]] },
+  fondo:        { pos:[[-5.8, 4.35, 0.0], [5.8, 4.35, 0.0]] }   // arriba de las columnas azules
+};
+const sub = (a, b) => [a[0]-b[0], a[1]-b[1], a[2]-b[2]], add = (a, b) => [a[0]+b[0], a[1]+b[1], a[2]+b[2]];
+const mul = (a, k) => [a[0]*k, a[1]*k, a[2]*k], dot = (a, b) => a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+const cross = (a, b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
+const norm = a => { const l = Math.hypot(...a) || 1; return mul(a, 1 / l); };
+// El escenario mira en diagonal hacia el salon. giro_salon (grados) en luces.json > vista3d; positivo = salon hacia la derecha.
+/* Plano del salon (segun el plano dibujado por Cote, 24 nov).
+   Ejes del salon: v = a lo largo (0 = frente al escenario, crece hacia el fondo);
+   u = de lado (positivo = lado cocinas, negativo = lado pasillo).
+   vista3d.salon_hacia: "derecha" = mirando el escenario desde las mesas, el salon se extiende hacia la derecha (lado cocinas).
+   vista3d.angulo: grados entre el escenario y el largo del salon (55 segun el plano). */
+const giroSalon = () => {
+  // Solo se usa la configuracion si ya viene en el formato del plano (con columnas_salon); si no, valores del plano.
+  // angulo_escenario: unos 30 grados segun Cote (24 nov). La clave antigua "angulo" (55) ya no se usa.
+  const c = (conf && conf.vista3d) || {}, v = c.columnas_salon ? c : {}, ang = v.angulo_escenario != null ? +v.angulo_escenario : 30;
+  return (v.salon_hacia === 'izquierda' ? -ang : ang) * Math.PI / 180;
+};
+const rotY = (p, a) => [p[0] * Math.cos(a) + p[2] * Math.sin(a), p[1], -p[0] * Math.sin(a) + p[2] * Math.cos(a)];
+const deSalon = (u, v, y) => rotY([u, y || 0, v], giroSalon());                   // salon -> metros del escenario
+const aSalon = p => { const a = giroSalon(); return [p[0] * Math.cos(a) - p[2] * Math.sin(a), p[0] * Math.sin(a) + p[2] * Math.cos(a)]; };
+// El salon sigue hasta el fondo con mesas iguales (tres restaurantes). Son 5 pilares (Cote, 24 nov: sobraba el mas lejano).
+const SALON = { largo: 50, cocinas: 5.6, pasillo: -8.8 };
+// Columnas del salon (lado pasillo), en metros del salon [u, v]. Las cabezas 1, 2 y 3 van en las tres primeras.
+// Se pueden cambiar en luces.json > vista3d > columnas_salon; si ahi hay menos de 5, se completan con estas.
+const COLS_DEF = [[-6.2, 0], [-6.0, 13.5], [-6.0, 23], [-6.0, 34], [-6.0, 45]];
+const colsSalon = () => {
+  const c = (conf && conf.vista3d && conf.vista3d.columnas_salon) || [];
+  return c.concat(COLS_DEF.slice(c.length));
+};
+/* Distribucion de mesas segun Cote (desde los maceteros hacia las cocinas):
+   1) sillones de espaldas a los maceteros, desde la 3a mesa contando desde el escenario, con sus mesas;
+   2) pasillo; 3) corrida de una mesa; 4) corrida de dos mesas (juntas); 5) pasillo hacia las cocinas. */
+const FILAS = { sillon: -4.75, simple: -1.7, doble: [0.15, 0.95] };
+function mesasSalon(){
+  const mesas = [], sillones = [];
+  const enTarima = (u, v) => { const c = deSalon(u, v); return c[2] < 1.6 && c[0] > -6.5; };
+  const cercaColumna = v => colsSalon().some(c => Math.abs(c[1] - v) < 1.6);
+  let nA = 0, nD = 0;
+  for (let v = 2.5; v <= SALON.largo - 1.5; v += 2.4){
+    if (!enTarima(FILAS.sillon, v)){
+      nA++;
+      if (nA >= 3 && !cercaColumna(v)){ sillones.push(v); mesas.push({ u: FILAS.sillon, v, sillas: [1] }); }
+      else mesas.push({ u: FILAS.sillon, v, sillas: [-1, 1] });
+    }
+    if (!enTarima(FILAS.simple, v)) mesas.push({ u: FILAS.simple, v, sillas: [-1, 1] });
+    if (!enTarima(FILAS.doble[0], v) && !enTarima(FILAS.doble[1], v) && ++nD > 1){   // las 2 mesas juntas mas cercanas al escenario no van (espacio libre)
+      mesas.push({ u: FILAS.doble[0], v, sillas: [-1] });
+      mesas.push({ u: FILAS.doble[1], v, sillas: [1] });
+    }
+  }
+  return { mesas, sillones };
+}
+// Maceteros largos con plantas entre el pasillo y las mesas (cierran el salon), en la linea de las columnas, cortados por ellas.
+const U_MACETEROS = -6.0;
+function tramosMaceteros(){
+  const cortes = colsSalon().map(c => c[1]).sort((a, b) => a - b), tramos = [];
+  let desde = 0.8;
+  cortes.forEach(v => { if (v - 0.9 > desde) tramos.push([desde, v - 0.9]); desde = Math.max(desde, v + 0.9); });
+  if (SALON.largo - 0.3 > desde) tramos.push([desde, SALON.largo - 0.3]);
+  return tramos;
+}
+function columnaSalon(n){ const c = colsSalon()[n] || colsSalon()[0]; return deSalon(c[0], c[1]); }
+
+function camara(){
+  const cp = Math.cos(V.pitch), sp = Math.sin(V.pitch);
+  V.ojo = add(V.objetivo, [Math.sin(V.yaw) * cp * V.dist, sp * V.dist, Math.cos(V.yaw) * cp * V.dist]);
+  V.fw = norm(sub(V.objetivo, V.ojo)); V.rt = norm(cross(V.fw, [0, 1, 0])); V.up = cross(V.rt, V.fw);
+  V.f = (V.h / 2) / Math.tan(V.fov / 2);
+}
+function P(p){
+  const d = sub(p, V.ojo), z = dot(d, V.fw);
+  if (z < 0.2) return null;
+  const k = V.f / z;
+  return [V.w / 2 + dot(d, V.rt) * k, V.h / 2 - dot(d, V.up) * k, z, k];
+}
+/* Recorte contra el plano cercano de la camara (para pisos y lineas que pasan por detras) */
+const CERCA = 0.25;
+const aCam = p => { const d = sub(p, V.ojo); return [dot(d, V.rt), dot(d, V.up), dot(d, V.fw)]; };
+const aPantalla = c => [V.w / 2 + c[0] * V.f / c[2], V.h / 2 - c[1] * V.f / c[2]];
+const cortar = (a, b) => { const t = (CERCA - a[2]) / (b[2] - a[2]); return [a[0] + (b[0]-a[0]) * t, a[1] + (b[1]-a[1]) * t, CERCA]; };
+function poly(pts, fill, stroke){
+  const cs = pts.map(aCam), out = [];
+  for (let i = 0; i < cs.length; i++){
+    const a = cs[i], b = cs[(i + 1) % cs.length], ai = a[2] >= CERCA, bi = b[2] >= CERCA;
+    if (ai) out.push(a);
+    if (ai !== bi) out.push(cortar(a, b));
+  }
+  if (out.length < 3) return;
+  const q = out.map(aPantalla), c = V.ctx;
+  c.beginPath(); q.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.closePath();
+  if (fill){ c.fillStyle = fill; c.fill(); } if (stroke){ c.strokeStyle = stroke; c.lineWidth = 1; c.stroke(); }
+}
+function caja(x0, x1, y0, y1, z0, z1, frente, lado, techo){
+  poly([[x0,y1,z0],[x1,y1,z0],[x1,y1,z1],[x0,y1,z1]], techo);
+  const caraX = V.ojo[0] < x0 ? x0 : (V.ojo[0] > x1 ? x1 : null);
+  if (caraX != null) poly([[caraX,y0,z0],[caraX,y0,z1],[caraX,y1,z1],[caraX,y1,z0]], lado);
+  poly([[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]], frente);
+}
+/* Caja alineada con el SALON (no con el escenario): centro (u, v) en metros del salon, medio ancho hu (de lado) y hv (a lo largo). */
+function cajaS(u, v, hu, hv, y0, y1, frente, lado, techo){
+  const P4 = [[u-hu, v-hv], [u+hu, v-hv], [u+hu, v+hv], [u-hu, v+hv]];
+  const caras = [];
+  for (let i = 0; i < 4; i++){
+    const a = P4[i], b = P4[(i + 1) % 4], m = deSalon((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (y0 + y1) / 2);
+    caras.push({ d: Math.hypot(...sub(m, V.ojo)), pts: [deSalon(a[0], a[1], y0), deSalon(b[0], b[1], y0), deSalon(b[0], b[1], y1), deSalon(a[0], a[1], y1)], col: i % 2 ? lado : frente });
+  }
+  caras.sort((p, q) => q.d - p.d).slice(2).forEach(c => poly(c.pts, c.col));     // solo las 2 caras que miran a la camara
+  poly(P4.map(([uu, vv]) => deSalon(uu, vv, y1)), techo);
+}
+function linea(a, b, color, ancho){
+  let ca = aCam(a), cb = aCam(b);
+  if (ca[2] < CERCA && cb[2] < CERCA) return;
+  if (ca[2] < CERCA) ca = cortar(ca, cb); else if (cb[2] < CERCA) cb = cortar(ca, cb);
+  const p = aPantalla(ca), q = aPantalla(cb);
+  const c = V.ctx; c.strokeStyle = color; c.lineWidth = ancho || 1; c.beginPath(); c.moveTo(p[0], p[1]); c.lineTo(q[0], q[1]); c.stroke();
+}
+
+/* Color real de un grupo segun los canales que salen por el cable */
+function colorGrupo(g){
+  const s = V.salida; if (!s) return null;
+  const ch = g.canales || {}, b = g.direccion - 1, v = n => n ? (s[b + n - 1] || 0) : 0;
+  const dim = ch.dimmer ? v(ch.dimmer) / 255 : 1, w = v(ch.w);
+  const r = Math.min(255, v(ch.r) + w), gg = Math.min(255, v(ch.g) + w * 0.9), bb = Math.min(255, v(ch.b) + w * 0.75);
+  const i = dim * Math.max(r, gg, bb) / 255;
+  // zoom: del canal si existe (lo que de verdad sale por el cable); si no, el valor elegido en la pantalla
+  let zoom = 50;
+  if (ch.zoom){ const zv = v(ch.zoom); zoom = (g.zoom_invertido ? 255 - zv : zv) / 2.55; }
+  else if (zonas[g.id] && zonas[g.id].zoom != null) zoom = zonas[g.id].zoom;
+  return { r, g:gg, b:bb, i, pan: ch.pan ? v(ch.pan) : null, tilt: ch.tilt ? v(ch.tilt) : null, zoom };
+}
+const rgba = (c, a) => `rgba(${c.r|0},${c.g|0},${c.b|0},${a})`;
+
+function brillo(punto, radio, c, fuerza, aplastar){
+  const p = P(punto); if (!p || c.i <= 0.01) return;
+  const ctx = V.ctx, R = radio * p[3];
+  ctx.save(); ctx.translate(p[0], p[1]); if (aplastar) ctx.scale(1, aplastar);
+  const gr = ctx.createRadialGradient(0, 0, 0, 0, 0, R);
+  gr.addColorStop(0, rgba(c, 0.85 * c.i * fuerza)); gr.addColorStop(0.45, rgba(c, 0.35 * c.i * fuerza)); gr.addColorStop(1, rgba(c, 0));
+  ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+}
+function haz(desde, hasta, c, apertura){
+  const a = P(desde), b = P(hasta); if (!a || !b || a[2] < 1 || c.i <= 0.01) return;
+  const largo = Math.hypot(...sub(hasta, desde)), rb = Math.max(4, apertura * largo * b[3]), ra = Math.max(1.5, 0.08 * a[3]);
+  const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1, nx = -dy / l, ny = dx / l;
+  const ctx = V.ctx, gr = ctx.createLinearGradient(a[0], a[1], b[0], b[1]);
+  gr.addColorStop(0, rgba(c, 0.5 * c.i)); gr.addColorStop(1, rgba(c, 0.08 * c.i));
+  ctx.fillStyle = gr; ctx.beginPath();
+  ctx.moveTo(a[0] + nx * ra, a[1] + ny * ra); ctx.lineTo(b[0] + nx * rb, b[1] + ny * rb);
+  ctx.lineTo(b[0] - nx * rb, b[1] - ny * rb); ctx.lineTo(a[0] - nx * ra, a[1] - ny * ra); ctx.closePath(); ctx.fill();
+}
+/* Donde choca un rayo: piso del salon, tarima, pared del fondo o techo */
+function choque(o, d){
+  let mejor = 120;
+  const prueba = (t, ok) => { if (t > 0.05 && t < mejor && ok) mejor = t; };
+  if (d[1] < 0){
+    const t1 = (0.4 - o[1]) / d[1], p1 = add(o, mul(d, t1)); prueba(t1, Math.abs(p1[0]) <= 5 && p1[2] >= -4 && p1[2] <= 0);
+    const t0 = (0 - o[1]) / d[1], p0 = add(o, mul(d, t0)); prueba(t0, !(Math.abs(p0[0]) <= 5 && p0[2] >= -4 && p0[2] <= 0));
+  }
+  if (d[2] < 0) prueba((-4 - o[2]) / d[2], true);
+  // techo del local: alto y oscuro (fotos y capturas de Twitch); antes 4,6 m, y las mini de arriba de las columnas casi lo tocaban
+  if (d[1] > 0) prueba((7 - o[1]) / d[1], true);
+  return { p: add(o, mul(d, mejor)), piso: d[1] < 0 && Math.abs(add(o, mul(d, mejor))[1]) < 0.45 };
+}
+/* Direccion aproximada de una cabeza movil a partir de pan y tilt */
+// Modelo generico de cabeza movil: pan 0-255 = 540 grados (+-270 desde "casa"), tilt 0-255 = 0 a 135 grados desde la vertical.
+const RANGO_PAN = Math.PI * 1.5, RANGO_TILT = Math.PI * 0.75;
+// pan 128 = "casa". Las cabezas del salon cuelgan en la columna con la base vertical mirando a las COCINAS
+// (Cote, 24 nov): su casa es hacia las cocinas y solo alcanzan el lado interno del salon. Las demas miran al escenario.
+function casaDe(pos, id){
+  if (id && (POS3D[id] || {}).columna != null){ const d = rotY([1, 0, 0], giroSalon()); return Math.atan2(d[0], d[2]); }
+  return Math.atan2(0 - pos[0], -1.5 - pos[2]);
+}
+function posCabeza(id){                                            // donde esta montada cada cabeza (igual que en la vista 3D)
+  const g = grupo(id), def = POS3D[id] || {};
+  if (g && g.vista3d) return g.vista3d[0];
+  if (def.columna != null){ const [cu, cv] = colsSalon()[def.columna] || colsSalon()[0]; return deSalon(cu + 0.75, cv, 4.0); } // costado hacia las cocinas
+  return def.pos ? def.pos[0] : null;
+}
+function direccion(pos, pan, tilt, piso, id){
+  const casa = casaDe(pos, id);
+  const a = casa + (pan - 128) / 128 * RANGO_PAN;
+  const th = tilt / 255 * RANGO_TILT;
+  return norm([Math.sin(a) * Math.sin(th), piso ? Math.cos(th) : -Math.cos(th), Math.cos(a) * Math.sin(th)]);
+}
+
+function dibujar3D(){
+  const cv = $('cv3d'); if (!cv || $('vista').classList.contains('oculta') || !conf) return;
+  if (window.Vista3D && Vista3D.ok){                                    // vista realista (vista3d.js, three.js)
+    try { Vista3D.render(); V.sucio = false; return; }
+    catch(e){ console.warn('Vista realista fallo, se usa la simple', e); Vista3D.ok = false; $('vista').classList.remove('gl'); }
+  }
+  const dpr = window.devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight;
+  if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)){ cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+  const ctx = V.ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  V.w = W; V.h = H; camara();
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.fillStyle = '#050608'; ctx.fillRect(0, 0, W, H);
+
+  // --- Sala (segun las fotos del escenario de Mercado Kennedy) ---
+  const gs = giroSalon();
+  const L = SALON.largo;
+  poly([[SALON.pasillo, -9],[SALON.cocinas + 0.6, -9],[SALON.cocinas + 0.6, L],[SALON.pasillo, L]].map(([u, v]) => deSalon(u, v)), '#0d0e12'); // piso del salon
+  poly([[SALON.pasillo - 4, -9],[SALON.pasillo, -9],[SALON.pasillo, L],[SALON.pasillo - 4, L]].map(([u, v]) => deSalon(u, v)), '#16181d'); // pasillo del mall
+  for (let u = SALON.pasillo; u <= SALON.cocinas; u += 2) linea(deSalon(u, -2, 0.01), deSalon(u, L, 0.01), '#15171c', 1);   // baldosas
+  for (let v = 0; v <= L; v += 2) linea(deSalon(SALON.pasillo, v, 0.01), deSalon(SALON.cocinas, v, 0.01), '#15171c', 1);
+  linea(deSalon(SALON.pasillo, 0, 0.02), deSalon(SALON.pasillo, L, 0.02), '#2b2f37', 2);                                   // borde del pasillo
+  // Paredes de los costados: se dibujan ANTES que el escenario, para que nunca tapen las columnas azules.
+  // Lado cocinas (todo el largo del salon): pared con azulejos de mariscos al principio y cocinas iluminadas
+  const uc = SALON.cocinas + 0.6;
+  poly([[uc,0,1],[uc,0,L],[uc,3.4,L],[uc,3.4,1]].map(([u, y, v]) => deSalon(u, v, y)), '#24272d');
+  poly([[uc-0.01,0.3,1],[uc-0.01,0.3,8],[uc-0.01,3.2,8],[uc-0.01,3.2,1]].map(([u, y, v]) => deSalon(u, v, y)), '#5a6068'); // azulejos (gris, no blanco)
+  for (let v = 1.3; v < 7.8; v += 0.8) for (let y = 0.6; y < 3; y += 0.7)
+    poly([[uc-0.02,y,v],[uc-0.02,y,v+0.35],[uc-0.02,y+0.25,v+0.35],[uc-0.02,y+0.25,v]].map(([u, yy, vv]) => deSalon(u, vv, yy)), '#424850');
+  for (let v = 9; v < L - 1; v += 4.5)                                               // ventanas de las cocinas
+    poly([[uc-0.01,1.1,v],[uc-0.01,1.1,v+3.6],[uc-0.01,2.3,v+3.6],[uc-0.01,2.3,v]].map(([u, y, vv]) => deSalon(u, vv, y)), '#6e6553', '#4a4438');
+  // Lado pasillo: locales iluminados del mall
+  Array.from({length: Math.floor((L - 1) / 5.5)}, (_, i) => [1 + i * 5.5, ['#6d685e', '#7a5f38', '#64666a', '#5c6470', '#73653f'][i % 5]]).forEach(([v, col]) =>
+    poly([[SALON.pasillo-4,0.3,v],[SALON.pasillo-4,0.3,v+4.2],[SALON.pasillo-4,2.7,v+4.2],[SALON.pasillo-4,2.7,v]].map(([u, y, vv]) => deSalon(u, vv, y)), col, '#444'));
+  poly([[-8.2,0,-1.2],[-6.4,0,-1.2],[-6.4,2.6,-1.2],[-8.2,2.6,-1.2]], '#1a1f26', '#2a313b'); // acceso a estacionamientos (lado izquierdo, abierto)
+  poly([[-8.0,2.0,-1.19],[-6.6,2.0,-1.19],[-6.6,2.5,-1.19],[-8.0,2.5,-1.19]], '#8b9098');    // letrero del acceso
+  poly([[-5,0,-4],[5,0,-4],[5,4.6,-4],[-5,4.6,-4]], '#17191e');                   // pared del fondo (oscura)
+  [-3.3, 0, 3.3].forEach(cx => {                                                    // dibujo de X turquesa
+    [[-1.6, 0.8, 1.6, 4.0], [1.6, 0.8, -1.6, 4.0], [-1.6, 1.2, 1.6, 4.4], [1.6, 1.2, -1.6, 4.4]].forEach(([x0, y0, x1, y1]) =>
+      linea([cx + x0, y0, -3.99], [cx + x1, y1, -3.99], '#2c4f55', 1.4));
+  });
+  [-1.8, -1.65, 1.65, 1.8].forEach(x => linea([x, 0.5, -3.99], [x, 4.6, -3.99], '#2c4f55', 1)); // lineas verticales
+  // Tarima: frente de madera y esquina derecha en diagonal
+  const tar = [[-5,-4],[5,-4],[5,-1.6],[3.2,0.3],[-5,0.3]], ht = 0.45;
+  poly(tar.map(([x, z]) => [x, ht, z]), '#24201b');
+  for (let i = 0; i < tar.length; i++){
+    const [x0, z0] = tar[i], [x1, z1] = tar[(i + 1) % tar.length];
+    if (z0 >= -1.6 || z1 >= -1.6) poly([[x0,0,z0],[x1,0,z1],[x1,ht,z1],[x0,ht,z0]], '#6b4a26', '#7d5a30');
+  }
+  poly([[-1.15,1.35,-3.95],[1.15,1.35,-3.95],[1.15,2.6,-3.95],[-1.15,2.6,-3.95]], '#0b0d12', '#2a2f3a'); // televisor
+  poly([[-1,ht+0.005,-3.7],[1,ht+0.005,-3.7],[1,ht+0.005,-2.2],[-1,ht+0.005,-2.2]], '#3c3a3e');          // alfombra (1,5 m)
+  caja(-0.75, 0.75, ht, 1.4, -3.5, -2.4, '#1a1c22', '#14161b', '#2a2d35');      // bateria electronica, delante de la pantalla
+  caja(4.0, 4.9, ht, 1.75, -2.35, -1.75, '#2b2e36', '#22252c', '#3a3e48');      // case: al borde, detras de la columna azul derecha
+  caja(-2.6, -1.9, ht, 1.2, -3.4, -2.9, '#141519', '#101114', '#1b1c21');       // parlante
+  // Columnas azules de listones en las esquinas, con paneles de luz
+  [[-6.3, -5.3], [5.3, 6.3]].forEach(([x0, x1]) => {
+    caja(x0, x1, 0, 4.3, -0.6, 0.6, '#2f5f9e', '#264f86', '#3a6fb5');                  // columnas azules: siempre visibles
+    for (let x = x0 + 0.12; x < x1; x += 0.16) linea([x, 0, 0.61], [x, 4.3, 0.61], '#24497d', 1);
+    poly([[x0+0.15,2.3,0.62],[x1-0.15,2.3,0.62],[x1-0.15,3.7,0.62],[x0+0.15,3.7,0.62]], '#56698a', '#7d8ba3'); // pantalla vertical (mira al publico)
+    poly([[x0+0.03,1.67,0.64],[x1-0.03,1.67,0.64],[x1-0.03,2.23,0.64],[x0+0.03,2.23,0.64]], '#4d6890', '#111'); // pantalla de 42" debajo (las dos columnas)
+  });
+  // Lamparas hexagonales y sombreros de paja colgando sobre el salon
+  [[-2.5, 5], [1.5, 6.5], [-1, 9.5], [3, 11], [-3.5, 13], [1, 15.5]].forEach(([su, sv]) => {
+    const c = deSalon(su, sv), r = 0.8;
+    poly([0,1,2,3,4,5].map(k => [c[0] + r * Math.cos(k * Math.PI / 3), 4.3, c[2] + r * Math.sin(k * Math.PI / 3)]), '#a8824c', '#c99d5e');
+  });
+  // Marco azul arriba
+  linea([-5.8, 4.5, 0.3], [5.8, 4.5, 0.3], '#3a6fb5', 4);
+  linea([-5.8, 4.5, 0.3], [-5.8, 4.5, -3.6], '#3a6fb5', 4);
+  linea([5.8, 4.5, 0.3], [5.8, 4.5, -3.6], '#3a6fb5', 4);
+  // Red de cuerdas sobre el escenario (del marco del frente hacia atras) y cuerdas colgando
+  linea([-5.8, 4.5, -2.6], [5.8, 4.5, -2.6], '#3a6fb5', 3);
+  for (let x = -5.4; x <= 5.4; x += 0.42) linea([x, 4.5, 0.3], [x, 4.35, -2.6], '#8f7d5c', 1);
+  for (let z = 0; z >= -2.4; z -= 0.6) linea([-5.8, 4.42, z], [5.8, 4.42, z], '#8f7d5c', 1);
+  for (let x = -5.4; x <= 5.4; x += 0.42){
+    const largo = 1.0 + 0.5 * Math.abs(Math.sin(x * 1.7));
+    linea([x, 4.5, 0.3], [x + 0.15, 4.5 - largo, -0.6], '#b8a27a', 1);
+  }
+  // Tres lamparas hexagonales de madera
+  [-1.5, 0, 1.5].forEach((cx, i) => {
+    const cy = 3.55 + (i === 1 ? -0.1 : 0.05), r = 0.62, cz = -1.1;
+    poly([0,1,2,3,4,5].map(k => [cx + r * Math.cos(k * Math.PI / 3), cy + r * Math.sin(k * Math.PI / 3) * 0.85, cz]), '#b08a52', '#d0aa6a');
+  });
+
+  // --- Salon: mesas con velas y sillas amarillas, y columnas de piedra (de lejos a cerca) ---
+  const objetos = [], velas = [];
+  const dist = mesasSalon();
+  dist.sillones.forEach(sv => {                                                     // sillones de espaldas a los maceteros
+    const c = deSalon(FILAS.sillon - 0.75, sv);
+    objetos.push({ d: Math.hypot(...sub(c, V.ojo)), f: () => {
+      cajaS(FILAS.sillon - 0.7, sv, 0.3, 1.1, 0, 0.42, '#5b3a32', '#4a2f29', '#6e463c');     // asiento
+      cajaS(FILAS.sillon - 0.95, sv, 0.07, 1.1, 0.42, 0.95, '#5b3a32', '#4a2f29', '#6e463c'); // respaldo
+    }});
+  });
+  dist.mesas.forEach(({ u: su, v: sv, sillas }) => {
+    const c = deSalon(su, sv);
+    objetos.push({ d: Math.hypot(...sub(c, V.ojo)), f: () => {
+      sillas.forEach(s => {                                                       // sillas amarillas (asiento + respaldo), alineadas al salon
+        cajaS(su + s * 0.62, sv, 0.2, 0.2, 0.42, 0.47, '#c9a227', '#a8861d', '#d8b437');
+        cajaS(su + s * 0.82, sv, 0.02, 0.2, 0.47, 0.9, '#c9a227', '#a8861d', '#d8b437');
+      });
+      cajaS(su, sv, 0.04, 0.04, 0, 0.72, '#3b3f46', '#30333a', '#3b3f46');          // pata
+      cajaS(su, sv, 0.4, 0.4, 0.72, 0.77, '#7a5a38', '#6a4d30', '#9a7a50');          // cubierta de madera
+    }});
+    velas.push([c[0], 0.82, c[2]]);
+  });
+  tramosMaceteros().forEach(([a, b]) => {                                            // maceteros con plantas
+    for (let v = a + 0.3; v <= b; v += 0.6){                                        // tramos de 0.6 m, alineados al salon; 1 m de alto en total
+      const c = deSalon(U_MACETEROS, v), alto = 0.88 + 0.12 * Math.abs(Math.sin(v * 2.3));
+      objetos.push({ d: Math.hypot(...sub(c, V.ojo)), f: () => {
+        cajaS(U_MACETEROS, v, 0.28, 0.3, 0, 0.6, '#3a3430', '#2e2925', '#4a433d');   // macetero
+        cajaS(U_MACETEROS, v, 0.22, 0.27, 0.6, alto, '#2f5d34', '#264d2b', '#3f7a45'); // plantas
+      }});
+    }
+  });
+  colsSalon().forEach((_, n) => {                                                    // los 6 pilares del salon
+    const c = columnaSalon(n), [cu, cv] = colsSalon()[n];
+    objetos.push({ d: Math.hypot(...sub(c, V.ojo)), f: () => {
+      cajaS(cu, cv, 0.6, 0.6, 0, 5.5, 'rgba(120,125,135,.08)', 'rgba(120,125,135,.06)', 'rgba(140,145,155,.1)');   // pilar casi invisible
+      if (n === 0){                                                                  // letrero de neon EAT FISH (cara hacia las mesas)
+        const p = P(deSalon(cu + 0.62, cv, 3.3));
+        if (p && p[2] > 2){
+          const ctx = V.ctx, s = Math.max(7, Math.min(22, 0.32 * p[3]));
+          ctx.save(); ctx.font = `bold ${s}px system-ui`; ctx.textAlign = 'center';
+          ctx.shadowColor = '#7ff6ff'; ctx.shadowBlur = 10; ctx.fillStyle = '#c9fbff';
+          ctx.fillText('EAT', p[0], p[1]); ctx.fillText('FISH', p[0], p[1] + s); ctx.restore();
+        }
+      }
+    }});
+  });
+  objetos.sort((a, b) => b.d - a.d).forEach(o => o.f());
+
+  // --- Luces (se suman como luz real) ---
+  ctx.globalCompositeOperation = 'lighter';
+  velas.forEach(v => brillo(v, 0.45, {r:255, g:170, b:70, i:1}, 0.55));            // velas de las mesas
+  const neon = deSalon(SALON.cocinas + 0.55, 4.5, 2.3);                              // neon azul vertical, lado cocinas
+  brillo(neon, 0.9, {r:60, g:120, b:255, i:1}, 0.9);
+  linea(deSalon(SALON.cocinas + 0.55, 4.5, 1.5), deSalon(SALON.cocinas + 0.55, 4.5, 3.1), '#7fb0ff', 3);
+  const marcas = [];
+  conf.grupos.forEach(g => {
+    const def = POS3D[g.id] || {}, c = colorGrupo(g);
+    const posiciones = g.vista3d || (def.columna != null ? [posCabeza(g.id)] : (def.pos || []));
+    if (!c) return;
+    posiciones.forEach(pos => {
+      marcas.push({pos, c});
+      if (g.id === 'perimetrales'){                                       // PAR en el suelo: pintan la pared hacia arriba
+        haz(pos, [pos[0], 2.6, -3.95], c, 0.35);
+        brillo([pos[0], 1.9, -3.98], 1.9, c, 1);
+      } else if (g.id === 'fondo'){                                      // focos arriba que pintan la pared
+        const muro = [Math.sign(pos[0]) * 2.4, 2.4, -3.97];
+        haz(pos, muro, c, 0.3);
+        brillo(muro, 2.9, c, 0.9);
+      } else if (g.id === 'frontales'){                                  // frontales: blanco de frente al escenario
+        const blanco = [-Math.sign(pos[0]) * 0.6, 2.0, -1.5];                // cruzados, a la cara de la persona
+        haz(pos, blanco, c, 0.15); brillo(blanco, 1.2, c, 0.9);
+      } else if (c.pan != null && c.tilt != null){                       // cabezas moviles
+        const d = direccion(pos, c.pan, c.tilt, def.piso, g.id), h = choque(pos, d);
+        const zf = (c.zoom != null ? c.zoom : 50) / 100;                    // 0 = foco angosto y potente, 1 = ancho y suave
+        const ck = {...c, i: Math.min(1, c.i * (1.35 - 0.6 * zf))};
+        haz(pos, h.p, ck, 0.03 + 0.13 * zf); brillo(h.p, 0.35 + 1.4 * zf, ck, 1.1, h.piso ? 0.38 : 1);
+      }
+    });
+  });
+
+  // --- Punto tocado en el mapa de Seguir (anillo en el piso) ---
+  if (V.marca && document.body.classList.contains('en-seguir')){
+    const p = P(V.marca);
+    if (p){
+      const r = Math.max(6, 0.7 * p[3]);
+      ctx.save(); ctx.translate(p[0], p[1]); ctx.scale(1, 0.45);
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.setLineDash([5, 4]);
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+    }
+  }
+  // --- Los equipos (puntitos) ---
+  ctx.globalCompositeOperation = 'source-over';
+  marcas.forEach(({pos, c}) => {
+    const p = P(pos); if (!p || p[2] < 2) return;
+    const r = Math.min(7, Math.max(3, 0.16 * p[3]));
+    ctx.fillStyle = c.i > 0.02 ? rgba({r:Math.max(c.r,60), g:Math.max(c.g,60), b:Math.max(c.b,60)}, 1) : '#3a3f4b';
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(p[0], p[1], r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  });
+  if (!V.salida){ ctx.fillStyle = '#8a91a0'; ctx.font = '14px system-ui'; ctx.fillText('Esperando datos del Dell…', 14, H - 14); }
+  V.sucio = false;
+}
+
+/* Girar con el dedo, centrar, tamaño, ocultar */
+(() => {
+  /* Navegar en la vista 3D (computador y celular):
+     - un dedo / arrastrar con el mouse: girar alrededor
+     - dos dedos / boton derecho / Shift + arrastrar: desplazarse por el salon
+     - pellizcar / ruedita: acercar o alejar
+     - teclado: flechas o WASD = moverse, Q/E = girar, + / - = acercar
+     - botones con flechas sobre la vista */
+  const cv = $('vista'), punteros = new Map(); let modo = 'girar';
+  cv.style.touchAction = 'none';
+  cv.addEventListener('contextmenu', e => e.preventDefault());
+  const limitarObjetivo = () => {                                     // no salir del salon
+    const [u, v] = aSalon(V.objetivo), uu = Math.max(-14, Math.min(9, u)), vv = Math.max(-12, Math.min(SALON.largo + 4, v));
+    const p = deSalon(uu, vv, V.objetivo[1]); V.objetivo = [p[0], Math.max(0.3, Math.min(5, V.objetivo[1])), p[2]];
+  };
+  const desplazar = (dx, dy) => {                                     // arrastrar el piso: el salon se mueve con el dedo
+    const k = V.dist * 0.0016, sy = Math.sin(V.yaw), cy = Math.cos(V.yaw);
+    V.objetivo = [V.objetivo[0] - cy * dx * k - sy * dy * k, V.objetivo[1], V.objetivo[2] + sy * dx * k - cy * dy * k];
+    limitarObjetivo(); V.sucio = true;
+  };
+  const girar = (dx, dy) => {
+    V.yaw -= dx * 0.006;
+    V.pitch = Math.max(0.03, Math.min(1.45, V.pitch + dy * 0.004)); V.sucio = true;
+  };
+  const acercar = f => { V.dist = Math.max(2, Math.min(110, V.dist * f)); V.sucio = true; };
+  const medio = () => { const p = [...punteros.values()]; return [(p[0].x + p[1].x) / 2, (p[0].y + p[1].y) / 2, Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y)]; };
+  cv.addEventListener('pointerdown', e => {
+    if (e.target.closest('button')) return;
+    punteros.set(e.pointerId, {x: e.clientX, y: e.clientY}); cv.setPointerCapture(e.pointerId);
+    modo = (e.button === 2 || e.shiftKey) ? 'mover' : 'girar';
+  });
+  cv.addEventListener('pointermove', e => {
+    const p = punteros.get(e.pointerId); if (!p) return;
+    if (punteros.size >= 2){                                           // dos dedos: desplazar + pellizcar
+      const [mx, my, d] = medio(); p.x = e.clientX; p.y = e.clientY; const [nx, ny, nd] = medio();
+      desplazar(nx - mx, ny - my); if (d > 0 && nd > 0) acercar(d / nd);
+      return;
+    }
+    const dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
+    modo === 'mover' ? desplazar(dx, dy) : girar(dx, dy);
+  });
+  const fin = e => { punteros.delete(e.pointerId); if (punteros.size === 1) modo = 'girar'; };
+  cv.addEventListener('pointerup', fin); cv.addEventListener('pointercancel', fin);
+  cv.addEventListener('wheel', e => { e.preventDefault(); acercar(1 + e.deltaY * 0.001); }, {passive:false});
+  window.addEventListener('keydown', e => {
+    if (/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) || $('vista').classList.contains('oculta')) return;
+    const t = { ArrowUp:[0,-40], KeyW:[0,-40], ArrowDown:[0,40], KeyS:[0,40], ArrowLeft:[-40,0], KeyA:[-40,0], ArrowRight:[40,0], KeyD:[40,0] }[e.code];
+    if (t){ desplazar(-t[0], -t[1]); e.preventDefault(); return; }
+    if (e.code === 'KeyQ') girar(-25, 0); else if (e.code === 'KeyE') girar(25, 0);
+    else if (e.key === '+' || e.key === '=') acercar(0.85); else if (e.key === '-') acercar(1.18);
+  });
+  // botones con flechas sobre la vista (mantener apretado para seguir moviendo)
+  const accion = { adelante: () => desplazar(0, 30), atras: () => desplazar(0, -30), izq: () => desplazar(30, 0), der: () => desplazar(-30, 0),
+                   mas: () => acercar(0.9), menos: () => acercar(1.11), giraI: () => girar(-18, 0), giraD: () => girar(18, 0) };
+  document.querySelectorAll('[data-nav]').forEach(b => {
+    let rep = null;
+    const parar = () => { clearInterval(rep); rep = null; };
+    b.addEventListener('pointerdown', e => { e.preventDefault(); accion[b.dataset.nav](); parar(); rep = setInterval(accion[b.dataset.nav], 60); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, parar));
+  });
+  const vp = JSON.parse(localStorage.getItem('krb_vista') || '{"oculta":false,"grande":false}');
+  const aplicar = () => {
+    $('vista').classList.toggle('oculta', vp.oculta);
+    $('vista').style.setProperty('--vh', vp.grande ? 'min(60vh,560px)' : (window.innerWidth < 640 ? '200px' : '300px'));
+    $('vOcultar').textContent = vp.oculta ? 'Mostrar vista 3D' : 'Ocultar';
+    $('vTam').style.display = $('vReset').style.display = $('vSalon').style.display = vp.oculta ? 'none' : '';
+    $('vTam').textContent = vp.grande ? 'Más chica' : 'Más grande';
+    localStorage.setItem('krb_vista', JSON.stringify(vp)); V.sucio = true;
+  };
+  $('vOcultar').onclick = () => { vp.oculta = !vp.oculta; aplicar(); };
+  $('vTam').onclick = () => { vp.grande = !vp.grande; aplicar(); };
+  $('vReset').onclick = () => { V.objetivo = [0, 1.7, -2]; V.yaw = giroSalon() * 0.6; V.pitch = 0.2; V.dist = 11; V.sucio = true; };
+  $('vSalon').onclick = () => {                         // vista desde arriba de todo el salon, con las 3 columnas
+    // Misma orientacion que el mapa de Seguir: escenario a la izquierda, cocinas al fondo de la imagen, pasillo adelante.
+    V.objetivo = deSalon(0, SALON.largo * 0.4);
+    V.yaw = giroSalon() + (giroSalon() < 0 ? 1.4 : -1.4); V.pitch = 0.85; V.dist = SALON.largo * 0.85; V.sucio = true;
+  };
+  window.addEventListener('resize', aplicar);
+  aplicar();
+  (function cuadro(){ if (V.sucio) dibujar3D(); requestAnimationFrame(cuadro); })();
+})();
+/* Mientras la vista esta abierta, pide al Dell lo que sale por el cable ~7 veces por segundo */
+async function sondearVista(){
+  if (DEMO && !CONTROL) return;                       // en el demo la vista se actualiza en cada cuadro (bucleDemo); el control pregunta al demo
+  if (!$('vista').classList.contains('oculta') && !document.hidden && !pidiendo){
+    try { pintarEstado(await api('/api/estado')); } catch(e){}
+  }
+  setTimeout(sondearVista, 150);
+}
+
+/* ---------- Plano del salon en el mapa de Seguir ---------- */
+function dibujarPlano(){
+  const X = v => ((v - MAPA.v0) * 10).toFixed(1), Y = u => ((MAPA.u0 - u) * 10).toFixed(1);
+  const pt = p => { const [u, v] = aSalon(p); return X(v) + ',' + Y(u); };
+  let s = '';
+  const W = (MAPA.v1 - MAPA.v0) * 10;
+  s += `<rect x="0" y="0" width="${W}" height="160" fill="#121419"/>`;
+  s += `<rect x="0" y="0" width="${W}" height="${Y(SALON.cocinas)}" fill="#24272d"/>`;
+  [W * 0.3, W * 0.75].forEach(x => s += `<text x="${x}" y="6.5" fill="#8a91a0" font-size="5.5" text-anchor="middle" font-weight="700" letter-spacing="2">COCINAS</text>`);
+  s += `<rect x="0" y="${Y(SALON.pasillo)}" width="${W}" height="${160 - Y(SALON.pasillo)}" fill="#1c1f25"/>`;
+  [W * 0.3, W * 0.75].forEach(x => s += `<text x="${x}" y="158" fill="#8a91a0" font-size="5.5" text-anchor="middle" font-weight="700" letter-spacing="2">PASILLO</text>`);
+  // escenario (tarima en diagonal) y pared del fondo
+  const tar = [[-5,-4],[5,-4],[5,-1.6],[3.2,0.3],[-5,0.3]].map(([x, z]) => pt([x, 0, z])).join(' ');
+  s += `<polygon points="${tar}" fill="#3a2f22" stroke="#7d5a30" stroke-width="1"/>`;
+  s += `<line x1="${pt([-5,0,-4]).split(',')[0]}" y1="${pt([-5,0,-4]).split(',')[1]}" x2="${pt([5,0,-4]).split(',')[0]}" y2="${pt([5,0,-4]).split(',')[1]}" stroke="#2c6f8a" stroke-width="2"/>`;
+  const ce = aSalon([0.5, 0, -2]);
+  s += `<text x="${X(ce[1])}" y="${Y(ce[0])}" fill="#e8d3b0" font-size="6" text-anchor="middle" font-weight="700">ESCENARIO</text>`;
+  [[-5.8, 0], [5.8, 0]].forEach(([x, z]) => { const p = pt([x, 0, z]).split(','); s += `<rect x="${p[0]-3}" y="${p[1]-3}" width="6" height="6" fill="#3a6fb5"/>`; });
+  // mesas y sillones (igual que en la vista 3D)
+  const dm = mesasSalon();
+  dm.sillones.forEach(sv => { s += `<rect x="${X(sv) - 11}" y="${Y(FILAS.sillon - 0.75) - 3}" width="22" height="6" rx="1.5" fill="#5b3a32"/>`; });
+  dm.mesas.forEach(({ u: su, v: sv }) => {
+    s += `<rect x="${X(sv) - 4}" y="${Y(su) - 4}" width="8" height="8" fill="none" stroke="#c98a3a" stroke-width="0.9"/>`;
+  });
+  // maceteros con plantas entre el pasillo y las mesas
+  tramosMaceteros().forEach(([a, b]) => {
+    s += `<rect x="${X(a)}" y="${Y(U_MACETEROS) - 2.5}" width="${X(b) - X(a)}" height="5" rx="2" fill="#2f5d34" stroke="#3f7a45" stroke-width="0.8"/>`;
+  });
+  // pilares del salon: los 3 primeros llevan las cabezas 1, 2 y 3 (marcados); los otros son solo pilares
+  colsSalon().forEach(([u, v], i) => {
+    const conCabeza = i < 3;
+    s += `<rect x="${X(v) - 5}" y="${Y(u) - 5}" width="10" height="10" fill="#34373d" stroke="${conCabeza ? '#f5c542' : '#6b7079'}" stroke-width="${conCabeza ? 1.2 : 0.8}"/>`;
+    if (conCabeza) s += `<text x="${X(v)}" y="${+Y(u) + 2.2}" fill="#fff" font-size="6.5" text-anchor="middle" font-weight="700">${i + 1}</text>`;
+  });
+  // esquinas de calibracion
+  [[CAL.u0, CAL.v0, 1], [CAL.u0, CAL.v1, 2], [CAL.u1, CAL.v0, 3], [CAL.u1, CAL.v1, 4]].forEach(([u, v, n]) => {
+    s += `<circle cx="${X(v)}" cy="${Y(u)}" r="4" fill="#f5c542"/><text x="${X(v)}" y="${+Y(u) + 2}" fill="#000" font-size="5.5" text-anchor="middle" font-weight="800">${n}</text>`;
+  });
+  $('plano').innerHTML = s;
+}
+
+/* ---------- Momentos de los juegos (decisiones de Cote en el registro) ----------
+   Cada momento se "compila" a acciones del Dell (canales + efectos) y se guarda alli en momentos.txt,
+   para que el Dell lo ejecute solo cuando lo pida el iPad o el GC Master: /api/momento?nombre=...
+   Cabezas siempre en blanco calido. Pared = perimetrales (abajo) + fondo (arriba).
+   Regla de Cote (registro rev 175): las cabezas 1 y 2 estan SIEMPRE sobre el escenario como luz base;
+   solo salen cuando el animador camina por las mesas (bingo_al_publico). */
+const CARA = [0, 1.6, -1.8];                                               // la cara del animador en el escenario
+const PARED_COLORES = () => (conf.fondo_enlazado && conf.fondo_enlazado.colores) || CICLO;
+// Piezas para armar los momentos
+const cab = (donde, zoom, ids) => { const o = {}; (ids || segIds().slice(0, 2)).forEach(id => o[id] = {color:'blanco_calido', intensidad:100, posicion:donde, zoom}); return o; };
+const pared = (color, intensidad) => ({perimetrales:{color, intensidad}, fondo:{color, intensidad}});
+const frente = intensidad => ({frontales:{color:'blanco_calido', intensidad}});
+const miniRoja = {mini:{color:'rojo', intensidad:100, posicion:'escenario', mover:true}};
+const BASE = () => ({...pared('azul', 100), ...frente(100), ...cab('escenario', 50), ...miniRoja});
+const JUEGOS = [
+  { juego:'Inicio y base', momentos:[
+    { id:'base_juegos', nombre:'Base juegos', detalle:'Pared azul, frente y cabezas al escenario, mini rojas', g:BASE },
+    { id:'inicio_noche', nombre:'Inicio de la noche', igual:'base_juegos' },
+    { id:'siguiente_juego', nombre:'Siguiente juego', igual:'base_juegos' } ]},
+  { juego:'Bingo', momentos:[
+    { id:'bingo_qr', nombre:'QR en pantalla', igual:'base_juegos' },
+    { id:'bingo_bolitas', nombre:'Primeras bolitas', igual:'base_juegos' },
+    { id:'bingo_al_publico', nombre:'Al público', detalle:'Escenario más bajo, 3 cabezas al público (abre Seguir)',
+      g:() => ({...pared('azul', 50), ...frente(40), ...cab('publico', 40, segIds()), ...miniRoja}) },
+    { id:'ganador_al_escenario', nombre:'Ganador al escenario', igual:'base_juegos' },
+    { id:'celebracion_ganador', nombre:'Celebración', detalle:'Pared cambiando de color a 148 BPM', g:BASE, pared:{colores:CICLO, t:0.41} },
+    { id:'entrega_premio', nombre:'Entrega del premio', detalle:'Pared roja, todo bien iluminado', g:() => ({...BASE(), ...pared('rojo', 100)}) } ]},
+  { juego:'Tómbolas', momentos:[
+    { id:'tombola_gira', nombre:'Tómbola girando', detalle:'Cabezas a la cara del animador, el resto en estrobo',
+      g:() => ({...pared('blanco', 100), ...frente(100), ...cab(CARA, 15), mini:{color:'blanco', intensidad:100, posicion:'escenario', mover:true}}),
+      estrobo:['perimetrales', 'fondo', 'frontales', 'mini'] },
+    { id:'tombola_resultado', nombre:'Resultado', igual:'base_juegos' } ]},
+  { juego:'El Rosko', momentos:[
+    // Pregunta (Cote, rev 184): fondo mucho mas oscuro, casi interrogatorio. Solo las cabezas al escenario y la pared muy baja.
+    { id:'rosko_pregunta', nombre:'Pregunta (interrogatorio)', detalle:'Pared muy oscura con colores lentos; solo cabezas al escenario',
+      g:() => ({...pared('azul', 15), ...cab('escenario', 50)}), rosco:true },
+    // Reloj (Cote, rev 187): con 30 s el fondo rojo suave; en los ultimos 10 s ese rojo parpadea como estroboscopica
+    { id:'rosko_30s', nombre:'Quedan 30 s', detalle:'Fondo rojo suave', g:() => ({...pared('rojo', 35), ...cab('escenario', 50)}) },
+    { id:'rosko_10s', nombre:'Quedan 10 s', detalle:'El rojo parpadea (estrobo)', g:() => ({...pared('rojo', 35), ...cab('escenario', 50)}), estrobo:['perimetrales', 'fondo'] },
+    // Correcta: verde 2 s y vuelve a como estaba (pregunta, 30 s o 10 s), porque el reloj sigue corriendo
+    // Duracion de los colores del Rosko: 1 s (Cote, rev 219)
+    { id:'rosko_correcta', nombre:'Correcta', detalle:'Pared verde 1 s y vuelve a como estaba', g:() => ({...BASE(), ...pared('verde', 100)}), luego:[1, 'previo'] },
+    { id:'rosko_incorrecta', nombre:'Incorrecta', detalle:'Pared roja 1 s', g:() => ({...BASE(), ...pared('rojo', 100)}), luego:[1, 'base_juegos'] },
+    { id:'rosko_pasa', nombre:'Pasa palabra', detalle:'Pared blanca 1 s', g:() => ({...BASE(), ...pared('blanco', 100)}), luego:[1, 'base_juegos'] },
+    { id:'rosko_puntajes', nombre:'Puntajes', detalle:'Todo abajo, pared en naranja; cabezas al escenario', g:() => ({...pared('ambar', 100), ...cab('escenario', 50)}) },
+    { id:'rosko_tiempo', nombre:'Se acabó el reloj', detalle:'Escenario apagado, solo las cabezas móviles', g:() => cab('escenario', 50) },
+    { id:'rosko_ganador', nombre:'Ganador (celebración)', igual:'celebracion_ganador' },
+    { id:'rosko_premio', nombre:'Entrega del premio', igual:'entrega_premio' } ]},
+  { juego:'El objeto más extraño', momentos:[
+    { id:'objeto_presenta', nombre:'Muestra su objeto', detalle:'Fondo suave, frente blanco cálido', g:() => ({...pared('azul', 30), ...frente(100), ...cab('escenario', 50)}) },
+    { id:'objeto_votacion', nombre:'Votación', detalle:'Fondo apagado; mini cabezas en diagonal a la pared con estrobo; cabezas al escenario',
+      g:() => ({...cab('escenario', 25), mini:{color:'blanco', intensidad:100, pan:213, tilt:85}}), estrobo:['mini'] },
+    { id:'objeto_ganador', nombre:'Ganador', detalle:'Estrobo blanco en la pared del fondo',
+      g:() => ({...pared('blanco', 100), ...frente(100), ...cab('escenario', 50)}), estrobo:['perimetrales', 'fondo'] },
+    { id:'objeto_celebracion', nombre:'Celebración', igual:'celebracion_ganador' },
+    { id:'objeto_premio', nombre:'Entrega del premio', igual:'entrega_premio' } ]},
+  { juego:'El Festival', momentos:[
+    // Cancion (Cote, rev 216): la pared cambia de color a 60 BPM (1 s) con fundido de 1 s
+    { id:'festival_cancion', nombre:'Canción', detalle:'Pared a 60 BPM con fundido, el resto blanco cálido a las caras',
+      g:() => ({...BASE(), ...cab(CARA, 50)}), pared:{colores:null, t:1, fx:1} },
+    { id:'festival_presenta', nombre:'Presenta / despide', igual:'base_juegos' },
+    // Al terminar la cancion y la votacion, y antes de revelar cada lugar (Cote, rev 217-218): tension como el interrogatorio,
+    // fondo apagado y mini cabezas en diagonal hacia atras con estrobo blanco
+    { id:'festival_tension', nombre:'Tensión (fin de canción / antes de cada lugar)', igual:'objeto_votacion' },
+    // Al revelar un lugar: un pestaneo de colores atras (2 s) y vuelve a la tension para el lugar siguiente
+    { id:'festival_revela', nombre:'Revela un lugar', detalle:'Pestañeo de colores en la pared 2 s y vuelve a la tensión',
+      g:() => ({...pared('azul', 100), ...cab('escenario', 50)}), pared:{colores:null, t:0.12, fx:0}, luego:[2, 'previo'] },
+    { id:'festival_redoble', nombre:'Redoble finalistas', igual:'tombola_gira' },
+    { id:'festival_ganador', nombre:'Ganador', igual:'objeto_ganador' },
+    { id:'festival_celebracion', nombre:'Celebración', igual:'celebracion_ganador' },
+    { id:'festival_premio', nombre:'Entrega del premio', igual:'entrega_premio' } ]},
+  { juego:'Trivia', momentos:[
+    { id:'trivia_ganador', nombre:'Ganador (celebración)', igual:'celebracion_ganador' },
+    { id:'trivia_premio', nombre:'Entrega del premio', igual:'entrega_premio' } ]}
+];
+// Nombres que usa la Sala de juegos (lista de Code 1, registro rev 165-166) -> momento de luces.
+// "nada" = no cambia las luces (por ejemplo cada bolita del bingo: si el animador esta en el publico, las luces se quedan).
+// Respuestas de Cote a la pregunta 18 (registro rev 172) ya incluidas.
+const ALIAS_SALA = {
+  sala_abierta:'base_juegos', juego_siguiente:'base_juegos', bingo_numero:'nada',
+  rosko_pantalla:'nada', rosko_pantalla_fin:'base_juegos',     // el rosco entra / sale de pantalla (la camara del demo cambia)
+  bingo_ganador_aparece:'ganador_al_escenario', bingo_ganador_confirmado:'celebracion_ganador', bingo_vuelve_escenario:'base_juegos',
+  premio_entrega:'entrega_premio', rosko_ranking:'rosko_puntajes', rosko_ranking_fin:'base_juegos',
+  objeto_votacion_fin:'base_juegos', objeto_final:'objeto_votacion', festival_despide:'base_juegos',
+  festival_canta:'festival_cancion', festival_termina:'festival_tension',
+  festival_lugar_suspenso:'festival_tension', festival_lugar_revela:'festival_revela'   // nombres propuestos a Code 1
+};
+const todosMomentos = () => JUEGOS.flatMap(j => j.momentos).concat(
+  Object.entries(ALIAS_SALA).map(([id, a]) => a === 'nada' ? {id, nombre:id, nada:true, oculto:true} : {id, nombre:id, igual:a, oculto:true}));
+const momentoPorId = id => todosMomentos().find(m => m.id === id);
+// Valores de canales de un momento (siempre con master al 100: el master del iPad no cambia lo que dispara el GC)
+function zonasDe(m){
+  const spec = m.g(), out = {};
+  conf.grupos.forEach(g => { if (g.igual_que && spec[g.id] == null && spec[g.igual_que]) spec[g.id] = {...spec[g.igual_que]}; });   // mini de las columnas = mini del escenario
+  conf.grupos.forEach(g => {
+    const s = spec[g.id], z = s ? {color:s.color, intensidad:s.intensidad, zoom:s.zoom} : {color:null, intensidad:0};
+    if (s && Array.isArray(s.posicion)) apuntarGeo(g.id, s.posicion, z);
+    else if (s && s.posicion) fijarPosicion(z, s.posicion, g.id);
+    if (s && s.pan != null){ z.pan = s.pan; z.tilt = s.tilt; }
+    z.mover = !!(s && s.mover);
+    out[g.id] = z;
+  });
+  return out;
+}
+function compilarMomento(m){
+  if (m.nada) return [];
+  if (m.igual) return compilarMomento(momentoPorId(m.igual));
+  const mGuard = master; master = 100;
+  try {
+    const zs = zonasDe(m), todo = {}, L = ['/api/efecto?todos=off'];
+    conf.grupos.forEach(g => Object.assign(todo, valoresGrupo(g, zs[g.id])));
+    L.push('/api/set?d=' + serial(todo) + '&f=0');                           // cambios inmediatos, sin fundido (Cote, rev 185)
+    const ef = (id, p) => L.push('/api/efecto?id=' + encodeURIComponent(id) + '&' + new URLSearchParams(p));
+    conf.grupos.forEach(g => {                                                  // mini (u otras cabezas) en movimiento, mirando al techo
+      if (!zs[g.id].mover || !g.canales.pan) return;
+      const b = g.direccion - 1, mv = g.mover || {};
+      ef('mover:' + g.id, {tipo:'seno', ch:[b + g.canales.pan, b + g.canales.tilt].join(','),
+        centro:[128, mv.tilt_centro != null ? mv.tilt_centro : 30].join(','), amp:[mv.amp_pan || 110, mv.amp_tilt || 18].join(','), periodo:mv.periodo || 8});
+    });
+    const ids = idsPared().filter(id => grupo(id));
+    if (m.pared){                                                               // pared cambiando de color al ritmo
+      const pasos = (m.pared.colores || PARED_COLORES()).map(c => { const s = {}; ids.forEach(id => Object.assign(s, valoresGrupo(grupo(id), {...zs[id], color:c}))); return s; });
+      ef('alternar', {tipo:'sec', pasos:pasosTxt(pasos), t:m.pared.t, fx:m.pared.fx != null ? m.pared.fx : 0.1});
+    }
+    if (m.rosco){                                                               // arriba (fondo) y abajo (perimetrales) distintos, fundido lento
+      const pares = [['azul', 'morado'], ['morado', 'cian'], ['cian', 'azul'], ['rosa', 'azul'], ['azul', 'rosa']];
+      const pasos = pares.map(([arriba, abajo]) => ({...valoresGrupo(grupo('fondo'), {...zs.fondo, color:arriba}), ...valoresGrupo(grupo('perimetrales'), {...zs.perimetrales, color:abajo})}));
+      ef('alternar', {tipo:'sec', pasos:pasosTxt(pasos), t:6, fx:1});
+    }
+    if (m.estrobo){
+      const on = {}, off = {};
+      conEspejos(m.estrobo).forEach(id => { const g = grupo(id); if (!g) return; Object.assign(on, valoresGrupo(g, zs[id])); Object.assign(off, valoresGrupo(g, {...zs[id], intensidad:0})); });
+      ef('estrobo', {tipo:'sec', pasos:pasosTxt([on, off]), t:0.06, fx:0});
+    }
+    if (m.luego){ L.push('espera:' + m.luego[0]); L.push('@' + m.luego[1]); }
+    return L;
+  } finally { master = mGuard; }
+}
+async function publicarMomentos(){
+  const txt = todosMomentos().map(m => '#' + m.id + '\n' + compilarMomento(m).join('\n')).join('\n\n');
+  try { await postApi('/api/momentos', {d: txt}); } catch(e){}
+}
+async function dispararMomento(id){
+  try { pintarEstado(await api('/api/momento?nombre=' + encodeURIComponent(id))); }
+  catch(e){ toast('El Dell no conoce ese momento: reinicia INICIAR.bat'); }
+}
+let momentoVisto = null;
+function pintarJuegos(nombre){
+  const cont = $('juegosLista'); if (!cont) return;
+  if (!cont.childElementCount) JUEGOS.forEach(j => {
+    const h = document.createElement('h2'); h.className = 'sec'; h.textContent = j.juego; cont.appendChild(h);
+    const row = document.createElement('div'); row.className = 'fxrow';
+    j.momentos.forEach(m => {
+      const b = document.createElement('button'); b.className = 'big'; b.dataset.mom = m.id;
+      const det = m.igual ? 'Igual que «' + momentoPorId(m.igual).nombre + '»' : m.detalle;
+      b.innerHTML = m.nombre + '<small>' + det + '<br><code>' + m.id + '</code></small>';
+      b.onclick = () => dispararMomento(m.id);
+      row.appendChild(b);
+    });
+    cont.appendChild(row);
+  });
+  cont.querySelectorAll('[data-mom]').forEach(b => b.classList.toggle('act', b.dataset.mom === nombre));
+  const m = momentoPorId(nombre); $('momActual').textContent = m ? m.nombre + ' (' + nombre + ')' : '—';
+}
+// Cuando llega un momento nuevo (del iPad o del GC Master), el iPad se acomoda solo
+function momentoRecibido(e){
+  if (e.momentoN == null || e.momentoN === momentoVisto) return;
+  const primero = momentoVisto === null; momentoVisto = e.momentoN;
+  pintarJuegos(e.momento);
+  // Si el iPad se abre cuando el animador ya esta en el publico, tambien abre el mapa (Code 1, rev 205)
+  if (primero && e.momento === 'bingo_al_publico' && !TV && !MAPA_SOLO) abrirTab('seguir');
+  if (primero || !e.momento) return;
+  escenaActiva = -1; efectoPared = null; progActivo = null;
+  let m = momentoPorId(e.momento);
+  while (m && m.igual) m = momentoPorId(m.igual);
+  if (m){
+    const z = zonasDe(m); Object.keys(z).forEach(id => zonas[id] = {color:z[id].color, intensidad:z[id].intensidad, pan:z[id].pan, tilt:z[id].tilt, zoom:z[id].zoom, posicion:z[id].posicion});
+    pintarTodo(); pintarProgramas(); toast('▶ ' + m.nombre);
+  }
+  if (e.momento === 'bingo_al_publico' && !TV && !MAPA_SOLO) abrirTab('seguir');
+}
+
+/* ---------- MODO DEMO: el Dell simulado dentro del navegador ----------
+   Copia de lo que hace krb_luces.ps1 (fundidos, efectos seno/sec, momentos), para usar el demo del GC Master
+   cualquier dia sin prender el escenario. Recibe los momentos del juego por postMessage desde la pagina que lo contiene:
+     iframe.contentWindow.postMessage({momento:'bingo_al_publico'}, '*')
+   o por BroadcastChannel('krb-luces') si esta abierto en otra pestana del mismo sitio. */
+const SIM = { cur:new Float64Array(513), tgt:new Float64Array(513), rate:new Float64Array(513), ef:new Map(), salida:new Array(512).fill(0),
+  momentos:{}, gen:0, momento:'', momentoN:0, last:performance.now() };
+const simT = () => performance.now() / 1000;
+function simTick(){
+  const now = performance.now(), dt = (now - SIM.last) / 1000; SIM.last = now;
+  const f = new Array(513).fill(0);
+  for (let i = 1; i <= 512; i++){
+    const d = SIM.tgt[i] - SIM.cur[i];
+    if (d){ const p = SIM.rate[i] * dt; SIM.cur[i] = (SIM.rate[i] <= 0 || Math.abs(d) <= p) ? SIM.tgt[i] : SIM.cur[i] + Math.sign(d) * p; }
+    f[i] = Math.round(SIM.cur[i]);
+  }
+  const poner = (c, v) => { if (c >= 1 && c <= 512) f[c] = Math.round(Math.max(0, Math.min(255, v))); };
+  for (const e of SIM.ef.values()){
+    const t = simT() - e.inicio;
+    if (e.tipo === 'seno') e.ch.forEach((c, k) => poner(c, e.centro[k] + e.amp[k] * Math.sin(2 * Math.PI * (k + 1) * t / Math.max(0.5, e.periodo))));
+    else if (e.pasos.length){
+      const n = e.pasos.length, pos = t / Math.max(0.03, e.t), i = Math.floor(pos) % n, j = (i + 1) % n, fr = pos - Math.floor(pos);
+      const w = (e.fx > 0 && fr > 1 - e.fx) ? (fr - (1 - e.fx)) / e.fx : 0;
+      const chs = new Set(); e.pasos.forEach(p => Object.keys(p).forEach(c => chs.add(+c)));
+      chs.forEach(c => { const a = e.pasos[i][c] != null ? e.pasos[i][c] : f[c], b = e.pasos[j][c] != null ? e.pasos[j][c] : f[c]; poner(c, a + (b - a) * w); });
+    }
+  }
+  SIM.salida = f.slice(1);
+}
+function simSet(ch, v, fade){
+  if (ch < 1 || ch > 512) return; v = Math.max(0, Math.min(255, v)); SIM.tgt[ch] = v;
+  if (fade <= 0){ SIM.cur[ch] = v; SIM.rate[ch] = 0; } else SIM.rate[ch] = Math.abs(v - SIM.cur[ch]) / fade;
+}
+const pares = t => (t || '').split(',').map(p => p.split(':').map(Number)).filter(kv => kv.length === 2 && !isNaN(kv[0]) && !isNaN(kv[1]));
+function simAccion(ruta, q){
+  if (ruta === '/api/set'){ const f = +q.get('f') || 0; pares(q.get('d')).forEach(([c, v]) => simSet(c, v, f)); return true; }
+  if (ruta === '/api/apagar'){ SIM.ef.clear(); for (let i = 1; i <= 512; i++) simSet(i, 0, +q.get('f') || 0); return true; }
+  if (ruta === '/api/efecto'){
+    const id = q.get('id') || 'efecto';
+    if (q.get('todos') === 'off') SIM.ef.clear();
+    else if (q.get('off') === '1') SIM.ef.delete(id);
+    else if (q.get('tipo') === 'seno'){
+      const ch = (q.get('ch') || '').split(',').map(Number), lista = (k, d) => { const a = (q.get(k) || '').split(',').map(Number); return ch.map((_, i) => isNaN(a[i]) ? d : a[i]); };
+      SIM.ef.set(id, {tipo:'seno', inicio:simT(), ch, centro:lista('centro', 128), amp:lista('amp', 40), periodo:+q.get('periodo') || 8});
+    } else {
+      const pasos = (q.get('pasos') || '').split('|').map(p => { const o = {}; pares(p).forEach(([c, v]) => o[c] = v); return o; });
+      SIM.ef.set(id, {tipo:'sec', inicio:simT(), pasos, t:+q.get('t') || 0.5, fx:Math.max(0, Math.min(1, +q.get('fx') || 0))});
+    }
+    return true;
+  }
+  return false;
+}
+function simMomento(n, encadenado){
+  const acc = SIM.momentos[n]; if (!acc) return false;
+  recorridoDemo(n, encadenado);                                         // animador y camara (tambien con momentos sin luces, como rosko_pantalla)
+  if (!acc.length) return true;                                         // bingo_numero: no cambia nada
+  const gen = ++SIM.gen; SIM.momento = n; SIM.momentoN++;
+  if (!acc.includes('@previo')) SIM.estable = n;
+  (async () => {
+    for (const l of acc){
+      if (gen !== SIM.gen) return;
+      if (l.startsWith('espera:')){ await new Promise(r => setTimeout(r, +l.slice(7) * 1000)); continue; }
+      if (l === '@previo'){ if (gen === SIM.gen && SIM.estable){ simMomento(SIM.estable, true); pintarEstado(simEstado()); } return; }
+      if (l.startsWith('@')){ if (gen === SIM.gen){ simMomento(l.slice(1).trim(), true); pintarEstado(simEstado()); } return; }
+      const i = l.indexOf('?'); simAccion(i >= 0 ? l.slice(0, i) : l, new URLSearchParams(i >= 0 ? l.slice(i + 1) : ''));
+    }
+  })();
+  return true;
+}
+const simEstado = () => ({ tipo:'demo', puerto:'', conectado:false, error:'', efectos:[...SIM.ef.keys()],
+  canales:Array.from(SIM.tgt.slice(1), Math.round), salida:SIM.salida, momento:SIM.momento, momentoN:SIM.momentoN,
+  animador:V.animador || null, rosko:!!V.rosko });
+async function simApi(path, params){
+  const [ruta, qs] = path.split('?'), q = new URLSearchParams(params || qs || '');
+  if (ruta.endsWith('luces.json')){ const r = await fetch(path, {cache:'no-store'}); if (!r.ok) throw new Error(r.status); return r.json(); }
+  if (ruta === '/api/datos') return JSON.parse(localStorage.getItem('krb_demo_datos') || '{"calibracion":{}}');
+  if (ruta === '/api/guardar'){ localStorage.setItem('krb_demo_datos', q.get('d') || '{}'); return {ok:true}; }
+  if (ruta === '/api/momentos'){
+    const d = {}; let cur = null;
+    (q.get('d') || '').split('\n').forEach(l => { l = l.trim(); if (!l) return; if (l[0] === '#'){ cur = d[l.slice(1).trim()] = []; } else if (cur) cur.push(l); });
+    SIM.momentos = d; return {ok:true, momentos:Object.keys(d).length};
+  }
+  if (ruta === '/api/lista-momentos') return Object.keys(SIM.momentos);
+  if (ruta === '/api/momento'){ if (!simMomento(q.get('nombre') || '')) throw new Error(404); return simEstado(); }
+  simAccion(ruta, q);
+  return simEstado();
+}
+
+/* Animador del demo: en el escenario; con bingo_al_publico baja, se para en una mesa, habla, pasa a otra,
+   cambia de lado y vuelve. Las cabezas 1-3 lo siguen solas (en el show real se siguen a mano en Seguir). */
+const DEMO_ESC = [0.3, 0.45, -1.6];
+// El Rosko (Cote, 24 nov): el animador sentado en un piso alto al costado derecho (mirando el escenario desde el frente);
+// el concursante al centro con su atril. Con la pregunta en pantalla, la camara va a un plano cerrado del concursante.
+const DEMO_PISO = [3.0, 0.45, -1.3];
+// Camaras de El Rosko (Cote rev 183 y 186; momentos de Code 1 rev 188): el rosco ENTRA en pantalla -> corte a la cara de frente;
+// mientras sigue (correcta, reloj) se queda; SALE -> tres "flashazos" rapidos (publico y otras tomas) y vuelve al escenario.
+const ROSKO_ENTRA = ['rosko_pregunta', 'rosko_pantalla'], ROSKO_SIGUE = ['rosko_correcta', 'rosko_30s', 'rosko_10s'];
+const ROSKO_SALE = ['rosko_incorrecta', 'rosko_pasa', 'rosko_tiempo', 'rosko_pantalla_fin'];
+const camDemo = { cerca:false, corte:false, flashes:[], hasta:0 };
+const FUERA_ROSKO = /^(sala_abierta|juego_siguiente|siguiente_juego|inicio_noche|bingo_|objeto_|festival_)/;
+const demoAn = { ruta:null, i:0, s:0, espera:0, p:[...DEMO_ESC], rumbo:0, paso:0, quieto:true, mira:null, tour:false, rosko:false, sentado:false };
+let demoUltimo = '';                                                  // ultimo momento que llego de la Sala (no los encadenados)
+const casaDemo = () => demoAn.rosko ? DEMO_PISO : DEMO_ESC;
+function irDemo(dest){ demoAn.ruta = [{p:[...demoAn.p], t:0}, {p:[...dest], t:0}]; demoAn.i = 0; demoAn.s = 0; demoAn.espera = 0; demoAn.tour = false; }
+function rutaDemo(paradas){
+  // paradas: [u, v, segundos] en metros del salon (0 = no se detiene). Bajada y subida por la escalera del escenario.
+  const bajar = [[0.3, 0.45, -1.6], [-1.2, 0.45, -0.1], [-1.3, 0, 1.1]];
+  const pts = bajar.map(p => ({p, t:0}));
+  paradas.forEach(([u, v, t]) => pts.push({p:deSalon(u, v, 0), t, mira:t ? deSalon(u + (u < 0 ? 1.6 : -1.6), v, 0) : null}));
+  bajar.slice().reverse().forEach(p => pts.push({p, t:0}));
+  return pts;
+}
+function recorridoDemo(n, encadenado){
+  if (!encadenado){
+    demoUltimo = n;
+    if (ROSKO_ENTRA.includes(n)){ camDemo.cerca = true; camDemo.corte = true; camDemo.flashes = []; }
+    // incorrecta / pasa: la camara se queda en la cara mientras dura el color (1 s, Cote rev 202 y 219) y despues los flashazos
+    else if (ROSKO_SALE.includes(n)){ if (camDemo.cerca) iniciarFlashazos(n === 'rosko_incorrecta' || n === 'rosko_pasa' ? 1000 : 0); camDemo.cerca = false; }
+    else if (!ROSKO_SIGUE.includes(n)){ camDemo.cerca = false; }
+  }
+  let m = momentoPorId(n); const nombres = [n]; while (m && m.igual){ nombres.push(m.igual); m = momentoPorId(m.igual); }
+  const antes = demoAn.rosko;
+  if (n.startsWith('rosko_')) demoAn.rosko = true; else if (FUERA_ROSKO.test(n)) demoAn.rosko = false;
+  if (nombres.includes('bingo_al_publico')){
+    // Pasillo de los sillones (dos mesas), cruce entre filas y pasillo de las cocinas (una mesa), y vuelta por el mismo camino
+    demoAn.ruta = rutaDemo([[-3.2, 1.0, 0], [-3.2, 5.5, 7], [-3.2, 11.5, 7], [-3.2, 15.7, 0], [2.8, 15.7, 0], [2.8, 21, 7], [2.8, 15.7, 0], [-3.2, 15.7, 0], [-3.2, 1.0, 0]]);
+    demoAn.tour = true;
+  } else if (demoAn.tour && demoAn.ruta && nombres.includes('base_juegos')){   // hay ganador / vuelve: sube al escenario por el camino que trae
+    const hecho = demoAn.ruta.slice(0, demoAn.i + 1).reverse().map(x => ({p:x.p, t:0}));
+    demoAn.ruta = [{p:[...demoAn.p], t:0}, ...hecho]; demoAn.tour = false;
+  } else { if (demoAn.rosko !== antes && !demoAn.tour) irDemo(casaDemo()); return; }   // entra o sale de El Rosko: al piso alto o a su lugar
+  demoAn.i = 0; demoAn.s = 0; demoAn.espera = 0;
+}
+function pasoAnimadorDemo(dt){
+  const a = demoAn;
+  a.sentado = false;
+  if (!a.ruta){
+    a.quieto = true; a.p = [...casaDemo()];
+    const f = a.rosko ? [0.5, 0, 0.3] : deSalon(0, 8, 0);                  // en El Rosko mira hacia el concursante y el frente
+    a.rumbo = Math.atan2(f[0] - a.p[0], f[2] - a.p[2]); a.sentado = a.rosko; return;
+  }
+  if (a.espera > 0){ a.espera -= dt; a.quieto = true; return; }
+  const A = a.ruta[a.i], B = a.ruta[a.i + 1];
+  if (!B){ a.ruta = null; return; }
+  const L = Math.hypot(B.p[0] - A.p[0], B.p[2] - A.p[2]) || 0.01;
+  a.s += 1.0 * dt; a.quieto = false; a.paso += dt;
+  const f = Math.min(1, a.s / L);
+  a.p = [A.p[0] + (B.p[0] - A.p[0]) * f, A.p[1] + (B.p[1] - A.p[1]) * f, A.p[2] + (B.p[2] - A.p[2]) * f];
+  a.rumbo = Math.atan2(B.p[0] - A.p[0], B.p[2] - A.p[2]);
+  if (f >= 1){
+    a.i++; a.s = 0;
+    if (B.t){ a.espera = B.t; if (B.mira) a.rumbo = Math.atan2(B.mira[0] - B.p[0], B.mira[2] - B.p[2]); }
+  }
+}
+function bucleDemo(){
+  const ahora = performance.now(), dt = Math.min(0.1, (ahora - (bucleDemo.t || ahora)) / 1000); bucleDemo.t = ahora;
+  if (!animador.activo){
+    pasoAnimadorDemo(dt);
+    const a = demoAn;
+    V.animador = { p:a.p, rumbo:a.rumbo, t:a.paso, quieto:a.quieto, sentado:a.sentado };
+    V.rosko = a.rosko;
+    // Las cabezas NO siguen solas al animador (Cote, rev 215): en el demo se le sigue a mano con el mapa
+    // (?demo=mapa o ?demo=control), como lo hara el DJ en el show.
+    if (TV) camaraDemo(dt, a);
+  }
+  simTick(); V.salida = SIM.salida; V.sucio = true;
+  requestAnimationFrame(bucleDemo);
+}
+// Camara de transmision del demo
+function plano(cam, obj){                                             // corte a una toma: camara en "cam" mirando a "obj"
+  const d = [cam[0] - obj[0], cam[1] - obj[1], cam[2] - obj[2]], L = Math.hypot(...d);
+  V.objetivo = [...obj]; V.dist = L; V.pitch = Math.asin(d[1] / L); V.yaw = Math.atan2(d[0], d[2]);
+}
+// Camara del escenario (Cote, rev 195): siempre la misma toma fija, como la camara de las transmisiones de Twitch,
+// un poco mas abierta para que entren las dos columnas azules con sus pantallas verticales y las de 42".
+// Segun las capturas de Twitch (Cote, 24 nov): de frente, al centro, a la altura del pecho de quien esta en el escenario,
+// mirando derecho. Mas abierta que Twitch porque en la 3D las columnas quedan mas separadas que en el local (falta medirlas).
+const PLANO_ESC = { cam: [0, 1.95, 8.8], mira: [0, 1.85, -1.0] };
+function iniciarFlashazos(retardo){
+  // Tres tomas rapidas, SIEMPRE del escenario desde distintos angulos (Cote, rev 197); despues vuelve a la camara fija
+  camDemo.flashes = [
+    [[-4.6, 1.7, 5.2], [0.2, 1.6, -1.6]],                              // desde el publico, a la izquierda y baja
+    [[7.4, 2.8, 2.6], [-0.6, 1.5, -1.8]],                               // desde el costado derecho
+    [[1.6, 4.2, 10.5], [0, 1.4, -1.6]]                                  // alta y abierta, por encima de las mesas
+  ];
+  camDemo.hasta = retardo ? performance.now() + retardo : 0;          // mientras espera, la camara se queda donde estaba
+}
+function tomaFija(){ plano(PLANO_ESC.cam, PLANO_ESC.mira); }
+function camaraDemo(dt, a){
+  const ahora = performance.now();
+  if (camDemo.flashes.length || camDemo.hasta){
+    if (ahora < camDemo.hasta) return;                                  // la toma se queda fija hasta el siguiente corte
+    const t = camDemo.flashes.shift();
+    if (t){ plano(t[0], t[1]); camDemo.hasta = ahora + 1100; return; }
+    camDemo.hasta = 0; tomaFija(); return;                              // fin: corte de vuelta a la camara del escenario
+  }
+  if (camDemo.cerca){                                                   // rosco en pantalla: la cara de frente, del pecho a la cabeza
+    if (camDemo.corte){ V.objetivo = [0, 1.66, -1.2]; V.dist = 1.2; V.yaw = 0; V.pitch = 0.02; camDemo.corte = false; }
+    return;
+  }
+  // En el publico (bingo) la camara sigue al animador; si no, vuelve suave a la toma fija del escenario
+  const guarda = {objetivo:V.objetivo, dist:V.dist, pitch:V.pitch, yaw:V.yaw};
+  let meta;
+  if (a.tour || a.p[1] < 0.2){
+    meta = { objetivo:[a.p[0], a.p[1] + 1.3, a.p[2]], dist:6.5, pitch:0.22, yaw:giroSalon() * 0.6 };
+  } else { tomaFija(); meta = {objetivo:V.objetivo, dist:V.dist, pitch:V.pitch, yaw:V.yaw}; }
+  const k = Math.min(1, dt * 1.5);
+  V.objetivo = guarda.objetivo.map((x, i) => x + (meta.objetivo[i] - x) * k);
+  V.dist = guarda.dist + (meta.dist - guarda.dist) * k; V.pitch = guarda.pitch + (meta.pitch - guarda.pitch) * k;
+  V.yaw = guarda.yaw + (meta.yaw - guarda.yaw) * k;
+}
+function iniciarDemo(){
+  if (CONTROL) return;                                                  // el control no simula: maneja el demo que esta abierto (pantalla 1)
+  if (TV) tomaFija();
+  const recibir = d => { const n = typeof d === 'string' ? d : d && (d.momento || d.nombre); if (n && SIM.momentos[n]) { simMomento(n); pintarEstado(simEstado()); } };
+  window.addEventListener('message', ev => recibir(ev.data));
+  if (CANAL) CANAL.onmessage = async ev => {
+    const d = ev.data;
+    if (d && d.api){                                                    // pedido de un iPad de control (?demo=control): se atiende como el Dell
+      let res = null, error = null;
+      try { res = await simApi(d.ruta, d.params); if (/^\/api\/(set|efecto|apagar)/.test(d.ruta)) SIM.control = performance.now(); }
+      catch(e){ error = String(e.message || e); }
+      CANAL.postMessage({resp:d.id, res, error}); return;
+    }
+    if (d && !d.resp) recibir(d);
+  };
+  simMomento(PARAMS.get('momento') || 'base_juegos'); pintarEstado(simEstado());
+  bucleDemo();
+}
+
+/* ---------- iPad de control del demo (?demo=control, Cote rev 192) ----------
+   Es el iPad completo, pero en vez de hablar con el Dell maneja el demo abierto en el mismo navegador
+   (la pantalla 1 del GC Master), por BroadcastChannel. Con bingo_al_publico se abre solo el mapa de Seguir
+   y la persona sigue al animador a mano: mientras mueve las cabezas, el demo deja de seguirlo solo. */
+const CANAL = DEMO ? (() => { try { return new BroadcastChannel('krb-luces'); } catch(e){ return null; } })() : null;
+const pedidos = new Map(); let nPedido = 0;
+if (CONTROL && CANAL) CANAL.onmessage = ev => {
+  const d = ev.data; if (!d || !d.resp || !pedidos.has(d.resp)) return;
+  const p = pedidos.get(d.resp); pedidos.delete(d.resp);
+  if (d.error) p.no(new Error(d.error)); else p.si(d.res);
+};
+function canalApi(path, params){
+  if (path.endsWith('luces.json')) return fetch(path, {cache:'no-store'}).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+  if (!CANAL) return Promise.reject(new Error('sin canal'));
+  return new Promise((si, no) => {
+    const id = 'c' + (++nPedido) + '-' + Math.random().toString(36).slice(2, 7);
+    pedidos.set(id, {si, no});
+    CANAL.postMessage({api:true, id, ruta:path, params: params || null});
+    setTimeout(() => { if (pedidos.delete(id)) no(new Error('sin demo')); }, 2000);
+  });
+}
+function marcaAnimador(a){                                              // el animador del demo en el mapa de Seguir
+  const map = $('map'), m = $('animMarca'); if (!map || !m || animador.activo) return;
+  if (!a){ m.style.display = 'none'; return; }
+  const [u, v] = aSalon(a.p);
+  m.style.display = 'block';
+  m.style.left = ((v - MAPA.v0) / (MAPA.v1 - MAPA.v0) * map.clientWidth) + 'px';
+  m.style.top = ((MAPA.u0 - u) / (MAPA.u0 - MAPA.u1) * map.clientHeight) + 'px';
+}
+
+/* ---------- Inicio ---------- */
+(async () => {
+  try { conf = await api(DEMO ? 'luces.json' : '/luces.json'); }
+  catch(e){ if (!pidiendo) document.querySelector('main').innerHTML = '<p class="help">No se pudo leer luces.json desde el Dell. ¿Está abierto INICIAR.bat?</p>'; return; }
+  try { datos = await api('/api/datos'); if (!datos.calibracion) datos.calibracion = {}; } catch(e){}
+  conf.grupos.forEach(g => zonas[g.id] = {color:null, intensidad:0});
+  pintarDirecciones(); dibujarPlano(); pintarTodo(); pintarProgramas(); pintarVistas(); pintarJuegos();
+  await publicarMomentos();
+  if (DEMO) iniciarDemo();
+  V.yaw = giroSalon() * 0.6; V.dist = 11; V.pitch = 0.2;   // vista inicial: desde el salon, en diagonal
+  sondear(); setInterval(sondear, 3000); sondearVista(); V.sucio = true;
+})();
+</script>
+<!-- Vista 3D realista (three.js incluido en la suite, no usa internet). Si falla, sigue la vista simple. -->
+<script type="module" src="vista3d.js"></script>
+</body>
+</html>
