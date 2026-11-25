@@ -291,17 +291,30 @@ module.exports = function desafio({ app, db, save, requireAdmin, fail, setStage,
     const b = req.body || {};
     const act = actions[String(b.action)];
     if (!act) return fail(res, 400, 'Acción no válida');
+    const before = g().phase;
     try { act(g(), b); } catch (err) { return fail(res, 400, err.message); }
     changed();
+    const s = g();
+    const m = require('./momentos.js');
+    // Luces (como en El Rosko): un momento por cada paso del juego. Los nombres «desafio_*» son nuevos: falta que Code 4
+    // les asigne luces en su suite (mientras tanto las luces no hacen nada con ellos)
+    const name = b.action === 'next' && s.phase === 'question' ? 'desafio_pregunta' : b.action === 'swap' ? 'desafio_pregunta'
+      : b.action === 'lock' ? 'desafio_definitiva' : b.action === 'reveal' ? (s.chosen === s.q.correct ? 'desafio_correcta' : 'desafio_incorrecta')
+        : b.action === 'audience' ? 'desafio_publico' : b.action === 'phone' ? 'desafio_llamada'
+          : b.action === 'rank' ? (s.rankShow ? 'desafio_ranking' : 'desafio_ranking_fin') : '';
+    if (name) m.emit(name);
+    if (before !== 'end' && s.phase === 'end' && s.outcome === 'won') { m.emit('desafio_ganador'); m.emitLater('premio_entrega', 9000); festejo(); }
     // Luces y confeti con el ganador de la Trivia (como en El Rosko): la tómbola gira y, al detenerse, el ganador
-    const cw = g().crowd.winner;
+    const cw = s.crowd.winner;
     if (b.action === 'crowdwin' && cw && !cw.none) {
-      const m = require('./momentos.js');
       m.emit('tombola_gira');
       setTimeout(() => { m.emit('trivia_ganador'); m.emitLater('premio_entrega', 9000); festejo(); }, CROWD_ROLL_MS);
     }
     res.json(hostState());
   });
 
-  return { refresh: () => notify() };
+  // Al cerrar la sala (fin de la jornada) o abrir una nueva: la partida y la Trivia quedan en blanco, como los otros juegos.
+  // El conteo de preguntas ya usadas (db.desafioUsed) se mantiene, para que no se repitan en las noches siguientes.
+  const clear = () => { clearTimeout(audienceTimer); Object.assign(g(), blank(), { rev: (g().rev || 0) + 1 }); save(); };
+  return { refresh: () => notify(), clear };
 };

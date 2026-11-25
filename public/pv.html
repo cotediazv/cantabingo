@@ -743,6 +743,7 @@
         else if (stage === 'sorteo') sRaffle();
         else if (stage === 'voto') sVote();
         else if (stage === 'enpie') sEnpie();
+        else if (stage === 'desafio') sDesafio();
         else if (stage === 'juego') sDraw();
         else if (stage === 'votojuego') sGameVote();
         else if (stage === 'karaoke') viewKaraoke(VENUE, origin() + '/#/jugar', stageTimers);
@@ -886,6 +887,54 @@
       fitAll();
     }
     function load() { get('/api/enpie', function (r) { if (r && cur === 'sala') { r.got = new Date().getTime(); st = r; paint(); } }); }
+    load();
+    every(stageTimers, 2000, load);
+    every(stageTimers, 500, function () { if (st) paint(); });
+  }
+  // El Gran Desafío (pedido de Gabriel, 25 nov): el concursante, la pregunta con sus 4 alternativas, el público (la Trivia,
+  // el comodín y la llamada), el ranking y el ganador de la Trivia. Misma información que el tablero, en la versión liviana.
+  function sDesafio() {
+    var last = ''; var st = null; var L = ['A', 'B', 'C', 'D'];
+    function left(until, s) { return until ? Math.max(0, Math.ceil((until - s.now - (new Date().getTime() - s.got)) / 1000)) : 0; }
+    function paint() {
+      var s = st; var a = s.audience; var k;
+      var aud = a && a.open ? left(a.until, s) : 0; var call = left(s.phoneUntil, s);
+      var cw = s.crowdWinner; var rolling = cw && !cw.none && cw.rollMs && (s.now - cw.at) + (new Date().getTime() - s.got) < cw.rollMs;
+      var sig = JSON.stringify([s.rev, aud, call, rolling]);
+      if (sig === last) return;
+      last = sig;
+      var o = '<div class="abs g-title fit">El Gran Desafío</div><div class="abs v-body" style="top:16rem">';
+      if (s.player && s.phase !== 'setup') o += '<div class="mid gold">' + h(s.player) + '</div>';
+      if (s.phase === 'setup') o += '<b class="big fit" style="display:block;margin-top:3rem">¡Muy pronto!</b><div class="mid" style="margin-top:2rem">Juega desde tu celular</div><div class="mid">Más rápido, más puntos</div>';
+      else if (s.rank) {
+        o += '<div class="mid" style="margin-top:2rem">La Trivia del Gran Desafío</div><div class="mid gold">' + (s.phase === 'end' ? 'Resultados finales' : 'Resultados parciales') + '</div><ol class="rows rk sc" style="margin-top:2rem">';
+        for (k = 0; k < s.rank.length && k < 10; k++) o += '<li><em>' + (k + 1) + '.º</em>' + h(s.rank[k].name) + '<i>' + s.rank[k].score + '</i></li>';
+        o += '</ol>' + (s.rank.length ? '' : '<div class="mid">Todavía nadie suma puntos</div>');
+      } else if (s.phase === 'end' && cw) {
+        if (rolling) o += '<div class="mid" style="margin-top:3rem">Y el ganador de la Trivia es…</div><div class="big gold" style="margin-top:2rem">' + se('🥁') + '</div>';
+        else if (cw.none) o += '<div class="mid" style="margin-top:3rem">La Trivia del Gran Desafío</div><b class="big fit" style="display:block">Nadie sumó puntos</b>';
+        else o += '<div class="mid gold" style="margin-top:3rem">Premio especial · Ganó la Trivia</div><b class="big fit" style="display:block">' + h(cw.name) + '</b><div class="mid">' + cw.score + ' puntos · ' + cw.hits + (cw.hits === 1 ? ' acierto' : ' aciertos') + '</div>';
+      } else if (s.phase === 'end') {
+        o += '<b class="big gold fit" style="display:block;margin-top:3rem">' + ({ won: '¡Ganó El Gran Desafío!', retired: 'Se retira', lost: 'Fin del juego' }[s.outcome] || '') + '</b><div class="mid" style="margin-top:2rem">Se lleva: ' + h(s.won || 'el aplauso del público') + '</div>';
+      } else if (s.phase === 'intro' || !s.q) {
+        o += '<b class="big fit" style="display:block;margin-top:3rem">' + s.steps + ' preguntas</b><div class="mid" style="margin-top:2rem">4 comodines · ¡a subir la escalera!</div><div class="mid gold" style="margin-top:2rem">Tú también juegas desde tu celular</div>';
+      } else {
+        o += '<div class="mid" style="margin-top:1.2rem">Pregunta ' + s.step + ' de ' + s.steps + '</div><b class="mid" style="display:block;font-size:3.8rem;line-height:1.1;margin:1rem 3rem 1.6rem">' + h(s.q.text) + '</b><ol class="rows">';
+        for (var i = 0; i < 4; i++) {
+          var gone = s.hidden.indexOf(i) >= 0;
+          var style = s.correct === i ? 'background:#16a34a;color:#fff' : s.correct != null && s.chosen === i ? 'background:#d92f36;color:#fff' : s.chosen === i ? 'background:#f4bf5a;color:#1a1407' : s.correct != null ? 'opacity:.35' : '';
+          if (!gone) o += '<li style="padding:.8rem 2rem;margin-bottom:1rem' + (style ? ';' + style : '') + '"><em>' + L[i] + '</em>' + h(s.q.options[i]) + (a && a.pct ? '<i>' + a.pct[i] + '%</i>' : '') + '</li>'; // las que quitó el 50:50 no se muestran
+        }
+        o += '</ol>';
+        if (aud) o += '<div class="mid gold" style="margin-top:2rem">Pregunta al público · quedan ' + aud + ' s</div>';
+        else if (call) o += '<div class="mid gold" style="margin-top:2rem">Llamada · quedan ' + call + ' s</div>';
+        else if (s.crowd && s.crowd.open) o += '<div class="mid gold" style="margin-top:2rem">Responde en tu celular · ' + s.crowd.answered + (s.crowd.answered === 1 ? ' respuesta' : ' respuestas') + '</div>';
+      }
+      o += '</div>' + qrFoot();
+      view.innerHTML = o;
+      fitAll();
+    }
+    function load() { get('/api/desafio', function (r) { if (r && cur === 'sala') { r.got = new Date().getTime(); st = r; paint(); } }); }
     load();
     every(stageTimers, 2000, load);
     every(stageTimers, 500, function () { if (st) paint(); });

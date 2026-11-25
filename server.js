@@ -203,7 +203,7 @@ function publicState(s, full = false) { // eslint-disable-line complexity
     voteGen: (db.vote || {}).gen || 0, // cambia con cada concurso nuevo (El Festival u objeto): los celulares muestran sus instrucciones
     gameVoteRev: (db.gameVote || {}).rev || 0, // votación del juego: cambia al abrir o cerrar cada vuelta (no con cada voto)
     // El juego en pantalla ya terminó (concurso con ganador o rosco con ganador aceptado): los celulares no muestran sus instrucciones
-    stageDone: db.stage === 'enpie' ? (db.enpie || {}).phase === 'done' : db.stage === 'voto' ? !!(db.vote || {}).winner : db.stage === 'rueda' ? !!(Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).winAccepted : false,
+    stageDone: db.stage === 'enpie' ? (db.enpie || {}).phase === 'done' : db.stage === 'desafio' ? (db.desafio || {}).phase === 'end' && !!((db.desafio || {}).crowd || {}).winner : db.stage === 'voto' ? !!(db.vote || {}).winner : db.stage === 'rueda' ? !!(Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).winAccepted : false,
     winConfirmed: roundOver(s), winConfirmedAt: s.confirmedAt || 0, now: Date.now(),
     started: bingoStarted(s),
     publico: { at: PUBLICO_AT, due: needsPublico(s), done: s.publicoRound === s.round }, // «Anda al público» (luces) // el bingo de esta ronda empezó (figura elegida o ya hay números); antes, la sala espera el primer juego
@@ -280,6 +280,7 @@ function resetEvent() {
   db.raffle = { picked: [], roll: null };
   wheel.clear();
   vote.clear();
+  desafio.clear(); // El Gran Desafío y su Trivia
   db.stage = 'bingo';
   if (db.gcper) db.gcper.on = false;
 }
@@ -810,7 +811,7 @@ const vote = require('./vote.js')({ app, db, save, requireAdmin, fail, setStage,
   venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
   notify: () => Object.values(db.sessions).forEach((s) => broadcast(s)) });
 // «El Gran Desafío»: trivia de 10 escalones con un concursante en el escenario
-require('./desafio.js')({ app, db, save, requireAdmin, fail, setStage, festejo,
+const desafio = require('./desafio.js')({ app, db, save, requireAdmin, fail, setStage, festejo,
   findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null,
   venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
   notify: () => Object.values(db.sessions).forEach((s) => broadcast(s)) });

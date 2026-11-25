@@ -199,3 +199,18 @@ test('Trivia del Gran Desafío: puntos por rapidez al revelar, cierre, 50:50, ca
   assert.equal(st.crowdWinner.none, true);
   await h('reset');
 });
+
+// Como los otros juegos: al cerrar la sala (fin de la jornada) la partida queda en blanco, y la pantalla lo sabe
+// (stageDone) cuando ya se mostró el ganador de la Trivia
+test('El Gran Desafío: al cerrar la sala la partida queda en blanco; con el ganador de la Trivia el juego cuenta como terminado', async () => {
+  await h('new', { player: 'Marta' });
+  await h('next');
+  await h('retire');
+  await h('crowdwin');
+  assert.equal((await srv.admin.get(`/api/sessions/${sid}/host/state`)).stageDone, true);
+  await srv.admin.post(`/api/sessions/${sid}/host/close`);
+  const st = await pub();
+  assert.equal(st.phase, 'setup');
+  assert.equal(st.player, '');
+  assert.equal(st.crowdWinner, null);
+});

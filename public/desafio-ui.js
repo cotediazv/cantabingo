@@ -267,16 +267,17 @@
     const cls = [st.hidden.includes(i) ? 'gone' : '', st.chosen === i ? 'chosen' : '', st.correct === i ? 'right' : '', st.correct != null && st.chosen === i && st.correct !== i ? 'wrong' : ''].join(' ');
     return `<div class="${cls}"><b>${L[i]}</b><span ${n(o)}>${st.hidden.includes(i) ? '' : esc(o)}</span></div>`;
   }).join('')}</div>`;
+  const se = (x) => (window.sinEmoji ? window.sinEmoji(x) : x); // diseño nuevo: las etiquetas de pantalla van sin emojis
   const audienceHTML = (st) => {
     const a = st.audience;
     if (!a) return '';
-    if (a.open) return `<div class="d-aud open"><b>📱 Pregunta al público</b><span>Vota desde tu celular · quedan <i data-clock="aud">${secs('aud')}</i> s</span><small>${a.total} votos</small></div>`;
-    return `<div class="d-aud"><b>📱 El público dice</b><div class="d-bars">${L.map((l, i) => `<p class="${st.hidden.includes(i) ? 'gone' : ''}"><i style="--p:${a.pct[i]}%"></i><em>${a.pct[i]}%</em><b>${l}</b></p>`).join('')}</div></div>`;
+    if (a.open) return `<div class="d-aud open"><b>${se('📱 Pregunta al público')}</b><span>Vota desde tu celular · quedan <i data-clock="aud">${secs('aud')}</i> s</span><small>${many(a.total, 'respuesta', 'respuestas')}</small></div>`;
+    return `<div class="d-aud"><b>${se('📱 El público dice')}</b><div class="d-bars">${L.map((l, i) => `<p class="${st.hidden.includes(i) ? 'gone' : ''}"><i style="--p:${a.pct[i]}%"></i><em>${a.pct[i]}%</em><b>${l}</b></p>`).join('')}</div></div>`;
   };
   // Trivia: aviso mientras el público puede responder, ranking desplegado, tómbola y ganador
   const crowdChip = (st) => (st.crowd && st.crowd.open && !(st.audience && st.audience.open)
-    ? `<div class="d-aud d-chip"><b>📱 Juega desde tu celular</b><span>Más rápido, más puntos</span><small>${many(st.crowd.answered, 'respuesta', 'respuestas')}</small></div>` : '');
-  const rankList = (st) => `<div class="d-rank"><small>${TRIVIA} · Top 10</small><b>🏅 ${st.crowdWinner || st.phase === 'end' ? 'Resultados finales' : 'Resultados parciales'}</b>
+    ? `<div class="d-aud d-chip"><b>${se('📱 Juega desde tu celular')}</b><span>Más rápido, más puntos</span><small>${many(st.crowd.answered, 'respuesta', 'respuestas')}</small></div>` : '');
+  const rankList = (st) => `<div class="d-rank"><small>${TRIVIA} · Top 10</small><b>${se(`🏅 ${st.crowdWinner || st.phase === 'end' ? 'Resultados finales' : 'Resultados parciales'}`)}</b>
     ${st.rank.length ? `<ol>${st.rank.map((x) => `<li><span>${esc(x.name)}</span><em>${x.score} pts</em></li>`).join('')}</ol>` : '<p>Todavía nadie suma puntos</p>'}
     <span>${many(st.rankPlayers, 'persona jugando', 'personas jugando')}</span></div>`;
   let rolled = '';
@@ -295,7 +296,7 @@
   };
   // QR para entrar a la sala y jugar la Trivia (la frase de siempre)
   const joinHTML = () => `<div class="d-join">${qr(joinUrl())}<p><b>Escanea el código QR con tu celular</b><span>y juega ${TRIVIA_L}</span></p></div>`;
-  const phoneHTML = () => (left('phone') > 0 ? `<div class="d-aud open"><b>📞 Llamada</b><span>Quedan <i data-clock="phone">${secs('phone')}</i> s</span></div>` : '');
+  const phoneHTML = () => (left('phone') > 0 ? `<div class="d-aud open"><b>${se('📞 Llamada')}</b><span>Quedan <i data-clock="phone">${secs('phone')}</i> s</span></div>` : '');
   const endHTML = (st) => {
     const won = st.outcome === 'won';
     const head = { won: '¡Ganó El Gran Desafío!', retired: 'Se retira', lost: 'Fin del juego' }[st.outcome];

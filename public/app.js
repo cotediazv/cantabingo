@@ -1264,7 +1264,7 @@ views.jugar = async (sid) => {
   // esperando, QR, show, karaoke, sorteo o votación del próximo juego, y cuando un juego ya terminó)
   const syncKids = () => {
     const s = st.stage || 'bingo';
-    const inGame = (s === 'bingo' && st.started && !st.winConfirmed) || s === 'sorteo' || (s === 'rueda' && !!st.roscoId && !st.stageDone) || (s === 'voto' && !st.stageDone) || (s === 'enpie' && !st.stageDone) || s === 'desafio';
+    const inGame = (s === 'bingo' && st.started && !st.winConfirmed) || s === 'sorteo' || (s === 'rueda' && !!st.roscoId && !st.stageDone) || (s === 'voto' && !st.stageDone) || (s === 'enpie' && !st.stageDone) || (s === 'desafio' && !st.stageDone);
     const slot = $('#kids-slot');
     if (slot) slot.hidden = inGame;
   };
