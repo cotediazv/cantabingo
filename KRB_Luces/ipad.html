@@ -2535,20 +2535,35 @@ const DJ_ESCENAS = [
 ];
 // Automatico: cambia entre las escenas del MISMO grupo (en la previa nunca salta a una de fiesta)
 const djGrupo = () => { const g = (DJ_ESCENAS[djEstado.escena] || {}).grupo || 'Fiesta';
+  if (g === 'Standby') return [];                                     // en Standby el Automatico es un fundido continuo, no salta de escena
   return DJ_ESCENAS.map((e, i) => e.grupo === g ? i : -1).filter(i => i >= 0); };
+/* Standby con Automatico (Cote, 25 nov): el fondo cambia suave de color, en fundido continuo, y el color "sube" de abajo
+   (perimetrales) hacia arriba (focos de fondo). Va por tiempo (no por el ritmo) para que siempre sea parejo.
+   Cabezas grandes y frontales apagados; mini cabezas lentas. Parte del color de la escena de Standby elegida. */
+const STANDBY_TONOS = ['azul', 'morado', 'rosa', 'ambar', 'cian', 'verde'];
+const STANDBY_INICIO = { Azul: 'azul', Atardecer: 'ambar', Lavanda: 'morado', Agua: 'cian' };
+function capasStandbyAuto(e){
+  const k0 = Math.max(0, STANDBY_TONOS.indexOf(STANDBY_INICIO[e.n] || 'azul')), n = STANDBY_TONOS.length;
+  const tono = k => STANDBY_TONOS[(k0 + k + n) % n];
+  const col = N(n).map(k => pasoColor({ ...grupos(djCabezas(), null), frontales: null,
+    ...grupos(djAbajo(), tono(k)), ...grupos(djArriba(), tono(k ? k - 1 : 0)), ...grupos(djMini(), tono(k ? k - 1 : 0)) },   // parte igual que la escena: sin salto
+    { perimetrales: 45, fondo: 45, mini: 30, mini_columnas: 30 }));
+  return [{ ...capa('col', col, 0, 1), seg: 9 },                     // 9 s por tono, fundido completo entre uno y otro
+          { ...capa('mini', N(6).map(() => pasoPos(djMiniSuave())), 0, 1), seg: 7 }];
+}
 
 async function djAplicar(i, auto){
   const e = DJ_ESCENAS[i]; if (!e || !conf) return;
   djEstado.escena = i; master = +$('djInt').value; djPintar();
   if (!auto) djServidor({ escena: i, int: master });            // los demas aparatos ven la misma escena
-  const capas = e.capas(), seg = 60 / djEstado.bpm;
+  const capas = djEstado.auto && e.grupo === 'Standby' ? capasStandbyAuto(e) : e.capas(), seg = 60 / djEstado.bpm;
   await efecto('todos', {todos: 'off'});
   // lo que no tocan las capas queda apagado (y los canales fijos de cada equipo en su valor)
   const base = {}; conf.grupos.forEach(g => Object.assign(base, valoresGrupo(g, {color: null, intensidad: 0})));
   capas.forEach(c => Object.keys(c.pasos[0] || {}).forEach(k => delete base[k]));
   djSeguidas().forEach(id => Object.assign(base, valoresGrupo(grupo(id))));   // las cabezas que sigue el DJ quedan como estan
   enviar(base, 0);
-  capas.forEach(c => efecto(c.id, {tipo: 'sec', pasos: pasosTxt(c.pasos), t: (c.ritmo * seg).toFixed(3), fx: c.fx, ritmo: c.ritmo}));
+  capas.forEach(c => efecto(c.id, {tipo: 'sec', pasos: pasosTxt(c.pasos), t: (c.seg != null ? c.seg : c.ritmo * seg).toFixed(3), fx: c.fx, ritmo: c.ritmo}));
 }
 function djPintar(){
   document.querySelectorAll('#djEsc .djb').forEach((b, i) => b.classList.toggle('act', i === djEstado.escena));
@@ -2579,7 +2594,9 @@ async function djServidor(params){
   document.querySelector('.djent').style.display = r.estacion && !ritmo.mic ? 'none' : '';
   djPintar();
 }
-$('djAuto').onclick = () => { djEstado.auto = !djEstado.auto; djPintar(); djServidor({ auto: djEstado.auto ? '1' : '0' }); };
+$('djAuto').onclick = () => { djEstado.auto = !djEstado.auto; djPintar(); djServidor({ auto: djEstado.auto ? '1' : '0' });
+  // en Standby, prender o apagar el Automatico cambia al fundido continuo (o vuelve a la escena fija) en el acto
+  const e = DJ_ESCENAS[djEstado.escena]; if (e && e.grupo === 'Standby') djAplicar(djEstado.escena, true); };
 $('djApagar').onclick = async () => { djEstado.auto = false; djEstado.escena = -1; djPintar(); djServidor({ auto: '0', escena: '-1' });
   try { pintarEstado(await api('/api/apagar?f=1')); } catch(e){ sinConexion(); } };
 $('djInt').oninput = () => { $('djIntTxt').textContent = $('djInt').value + '%'; };
