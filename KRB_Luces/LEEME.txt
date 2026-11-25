@@ -30,8 +30,9 @@ PANEL DEL DJ (noches sin show ni juegos)
       frontales). En la previa el fondo cambia lento; en el show el fondo es libre y las
       cabezas 1 y 2 se mueven un poco sin salir del escenario.
     FIESTA (Fiesta, Disco, Pista, Destello): todo libre y sincronizado.
-    ESPECIALES (Latido, Persecucion, Espejo, Respiracion): las 3 cabezas en blanco al centro
-      del escenario y el resto cambiando con efectos distintos.
+    LOCURA (Explosion, Tormenta, Caleidoscopio, Climax): lo mas loco, todo al maximo:
+      cada luz de un color distinto, destellos y estrobo, cabezas por todo el salon.
+    Los grupos van creciendo: Standby < Previa < Show < Fiesta < Locura.
     Automatico (cambia sola cada 3 min entre las escenas del mismo grupo),
     Ritmo (escucha la musica con el microfono y sigue el bombo y la caja),
     Tap (marcar el ritmo a mano), Intensidad y Apagar.

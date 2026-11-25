@@ -2423,7 +2423,8 @@ function pasoPos(pos){
 const posMini = () => ({ pan: azar(20, 235), tilt: azar(0, 80) });          // mini: giran y miran hacia arriba
 const posCab = tipo => { const o = {}; djCabezas().forEach(id => o[id] = apuntarCabeza(id, PUNTOS[tipo]())); return o; };
 const posCabJuntas = tipo => { const p = PUNTOS[tipo](), o = {}; djCabezas().forEach(id => o[id] = apuntarCabeza(id, p)); return o; };
-const todos = c => { const o = {}; conf.grupos.forEach(g => o[g.id] = c); return o; };
+const djLibres = () => conf.grupos.map(g => g.id).filter(id => !djSeguidas().includes(id));   // todo menos las cabezas que sigue el DJ
+const todos = c => { const o = {}; djLibres().forEach(id => o[id] = c); return o; };
 const grupos = (ids, c) => { const o = {}; ids.forEach(id => o[id] = c); return o; };
 // Capas de una escena: { id, pasos, ritmo (golpes por paso), fx (fundido entre pasos 0-1) }
 const capa = (id, pasos, ritmo, fx) => ({ id: 'dj-' + id, pasos, ritmo, fx: fx || 0 });
@@ -2449,10 +2450,9 @@ const djSuave = (c, k) => pasoColor({ ...grupos(djCabezas(), null), frontales: n
   { perimetrales: 45, fondo: 45, mini: 35, mini_columnas: 35 });
 const djPrevia = (cs, k) => pasoColor({ ...blancoFrente(), ...grupos(djMini(), cs[(k + 1) % cs.length]), ...grupos(djArriba(), cs[k % cs.length]), ...grupos(djAbajo(), cs[(k + 1) % cs.length]) },
   { perimetrales: 70, fondo: 70, mini: 50, mini_columnas: 50 });
-// Especiales: las 3 cabezas en blanco, juntas al centro del escenario (a la altura del pecho)
-const djBlancoCentro = () => grupos(djCabezas(), 'blanco');
-const djPosCentro = () => { const o = {}; djCabezas().forEach(id => { const p = apuntarCabeza(id, ESC_PECHO), z = zoomPara(id, ESC_PECHO, 1.6);
-  o[id] = { pan: p.pan, tilt: p.tilt, zoom: z }; }); return o; };
+// Locura: cada equipo con un color distinto (sin repetir mientras alcancen los colores)
+const djDistintos = () => { const c = [...VIVOS].sort(() => Math.random() - 0.5), o = {};
+  [...djCabezas(), ...djMini(), ...djPared()].forEach((id, j) => o[id] = c[j % c.length]); return o; };
 const movFrente = () => capa('frente', N(4).map(k => pasoPos(djPosEsc(...[[0, 0], [2, 1], [0, 2], [-2, 1]][k]))), 4, 1);   // movimiento chico en el escenario
 
 const DJ_ESCENAS = [
@@ -2506,26 +2506,28 @@ const DJ_ESCENAS = [
     capas: () => [capa('col', N(8).map(k => { const c = elegir(VIVOS); return pasoColor(k % 2 ? { ...grupos(djCabezas(), null), ...grupos(djMini(), null), ...grupos(djPared(), null), frontales: null }
         : { ...grupos(djCabezas(), c), ...grupos(djMini(), 'blanco'), ...grupos(djPared(), c), frontales: null }); }), 0.5),
       capa('mov', N(8).map(() => pasoPos({ ...posCab('salon'), ...grupos(djMini(), posMini()) })), 2, 0)] },
-  // ---------- ESPECIALES (sugerencia de Code 4): las cabezas en blanco al centro del escenario y el resto cambiando ----------
-  { grupo: 'Especiales', n: 'Latido', i: '❤️', g: 'radial-gradient(circle,#fff 0 18%,#ff2a2a 40%,#3a0008)',
-    capas: () => [capa('col', [1, 0.35, 1, 0.05, 0.05, 0.05, 0.05, 0.05].map(k => pasoColor({ ...djBlancoCentro(), ...grupos(djMini(), 'rojo'), ...grupos(djPared(), 'rojo'), frontales: 'rojo' },
-        { perimetrales: 100 * k, fondo: 100 * k, mini: 100 * k, mini_columnas: 100 * k, frontales: 60 * k })), 0.25, 0.4),
-      capa('mov', [pasoPos(djPosCentro())], 16), capa('mini', N(4).map(() => pasoPos(grupos(djMini(), { pan: azar(80, 175), tilt: azar(0, 25) }))), 8, 1)] },
-  { grupo: 'Especiales', n: 'Persecución', i: '🏃', g: 'linear-gradient(90deg,#22e5ff,#9b3cff,#ff3fa0,#22e5ff)',
-    capas: () => { const orden = [...djAbajo(), ...djArriba(), 'mini_columnas', 'mini', 'frontales'].filter(id => grupo(id)), cs = ['cian', 'morado', 'rosa', 'verde'];
-      const pasos = []; cs.forEach(c => orden.forEach((x, k) => { const o = { ...djBlancoCentro() }; orden.forEach((id, j) => o[id] = j === k ? c : null); pasos.push(pasoColor(o)); }));
-      return [capa('col', pasos, 0.5, 0.35), capa('mov', [pasoPos(djPosCentro())], 16), capa('mini', N(6).map(() => pasoPos(grupos(djMini(), posMini()))), 2, 0.6)]; } },
-  { grupo: 'Especiales', n: 'Espejo', i: '🪞', g: 'linear-gradient(90deg,#ffbe00 50%,#2b55ff 50%)',
-    capas: () => { const pares = [['amarillo', 'azul'], ['rosa', 'verde'], ['rojo', 'cian'], ['morado', 'ambar']];
-      const col = N(8).map(k => { const [x, y] = pares[Math.floor(k / 2)], [a, b] = k % 2 ? [y, x] : [x, y];
-        return pasoColor({ ...djBlancoCentro(), ...grupos(djArriba(), a), ...grupos(djAbajo(), b), mini: a, mini_columnas: b, frontales: b }, { frontales: 40 }); });
-      const mov = N(8).map(() => { const p = azar(30, 225), t = azar(0, 70); return pasoPos({ mini: { pan: p, tilt: t }, mini_columnas: { pan: 255 - p, tilt: t } }); });
-      return [capa('col', col, 2, 0.5), capa('mov', [pasoPos(djPosCentro())], 16), capa('mini', mov, 1, 0.6)]; } },
-  { grupo: 'Especiales', n: 'Respiración', i: '🌬️', g: 'radial-gradient(circle,#fff 0 15%,#22e5ff 45%,#0a1a4a)',
-    capas: () => { const cs = ['cian', 'morado', 'azul', 'rosa'], niv = [0.1, 0.4, 0.8, 1, 0.8, 0.4];
-      const col = []; cs.forEach(c => niv.forEach(k => col.push(pasoColor({ ...djBlancoCentro(), ...grupos(djMini(), c), ...grupos(djPared(), c), frontales: c },
-        { perimetrales: 100 * k, fondo: 100 * k, mini: 100 * k, mini_columnas: 100 * k, frontales: 35 * k }))));
-      return [capa('col', col, 1, 1), capa('mov', [pasoPos(djPosCentro())], 16), capa('mini', N(4).map(() => pasoPos(grupos(djMini(), { pan: azar(60, 195), tilt: azar(0, 30) }))), 12, 1)]; } }
+  // ---------- LOCURA (Cote, 25 nov: el grupo mas loco; los grupos van creciendo del primero al quinto) ----------
+  { grupo: 'Locura', n: 'Explosión', i: '🎆', g: 'conic-gradient(#ff2a2a,#ffbe00,#22dd55,#22e5ff,#2b55ff,#9b3cff,#ff3fa0,#ff2a2a)',
+    capas: () => [capa('col', N(16).map(k => k % 4 === 3
+        ? pasoColor({ ...todos('blanco'), frontales: 'blanco' })
+        : pasoColor({ ...djDistintos(), frontales: elegir(VIVOS) })), 0.5),
+      capa('mov', N(16).map(() => pasoPos({ ...posCab('salon'), ...grupos(djMini(), posMini()) })), 1, 0.15)] },
+  { grupo: 'Locura', n: 'Tormenta', i: '🌩️', g: 'linear-gradient(160deg,#0a1033 40%,#fff 45%,#0a1033 50%,#2b55ff)',
+    capas: () => { const oscuro = () => pasoColor({ ...grupos(djCabezas(), 'azul'), ...grupos(djMini(), 'azul'), ...grupos(djPared(), 'azul'), frontales: null },
+        { seguidor1: 25, seguidor2: 25, seguidor3: 25, perimetrales: 30, fondo: 30, mini: 20, mini_columnas: 20 });
+      const rayo = () => { const o = {}; djLibres().forEach(id => o[id] = Math.random() < 0.55 ? 'blanco' : null); o.frontales = Math.random() < 0.5 ? 'blanco' : null; return pasoColor(o); };
+      const pasos = []; N(4).forEach(() => { pasos.push(oscuro(), oscuro(), rayo(), oscuro(), rayo(), rayo(), oscuro(), oscuro()); });
+      return [capa('col', pasos, 0.25), capa('mov', N(12).map(() => pasoPos({ ...posCab('salon'), ...grupos(djMini(), posMini()) })), 1, 0.3)]; } },
+  { grupo: 'Locura', n: 'Caleidoscopio', i: '🔮', g: 'conic-gradient(from 45deg,#ff3fa0,#22e5ff,#ffbe00,#9b3cff,#22dd55,#ff3fa0)',
+    capas: () => { const c = ['rojo', 'ambar', 'amarillo', 'verde', 'cian', 'azul', 'morado', 'rosa'], ids = djLibres();
+      const col = N(16).map(k => { const o = {}; ids.forEach((id, j) => o[id] = c[(k + j * 3) % 8]); return pasoColor(o); });
+      const mov = N(16).map(() => { const p = azar(10, 245), t = azar(0, 90);
+        return pasoPos({ ...posCab('salon'), mini: { pan: p, tilt: t }, mini_columnas: { pan: 255 - p, tilt: t } }); });
+      return [capa('col', col, 0.25, 0.3), capa('mov', mov, 0.5, 0.4)]; } },
+  { grupo: 'Locura', n: 'Clímax', i: '🚀', g: 'repeating-linear-gradient(45deg,#fff 0 10px,#ff2a2a 10px 20px,#ffbe00 20px 30px,#2b55ff 30px 40px)',
+    capas: () => [capa('col', N(16).map(k => k % 2 ? pasoColor({ ...todos('blanco'), frontales: 'blanco' })
+        : pasoColor({ ...djDistintos(), frontales: elegir(VIVOS) })), 0.25),
+      capa('mov', N(16).map(k => pasoPos({ ...(k % 4 === 0 ? posCabJuntas('pista') : posCab('salon')), ...grupos(djMini(), posMini()) })), 0.5, 0.1)] }
 ];
 // Automatico: cambia entre las escenas del MISMO grupo (en la previa nunca salta a una de fiesta)
 const djGrupo = () => { const g = (DJ_ESCENAS[djEstado.escena] || {}).grupo || 'Fiesta';
