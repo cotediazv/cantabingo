@@ -4,8 +4,10 @@ LUCES KRB - suite de iluminacion de Mercado Kennedy
 INSTALAR (una vez, en el Dell)
   1. Doble clic en INSTALAR.bat
      - Copia la suite a C:\Users\<usuario>\KRB_Luces
-     - Hace que arranque sola cada vez que se prende Windows
-     - La abre de inmediato (ventana minimizada)
+     - Hace que arranque sola cada vez que se prende Windows, en segundo plano (sin ventana)
+     - La deja corriendo de inmediato. Si se cae o se cierra, se vuelve a abrir sola.
+     - Lo que va pasando queda en registro.txt (para revisar si algo falla).
+     - INICIAR.bat la vuelve a partir; DETENER.bat la detiene de verdad.
   2. Desde ahi en adelante se usa SOLO la carpeta C:\Users\<usuario>\KRB_Luces.
      Si se abre INICIAR.bat o CONFIGURAR_INTERNET.bat desde otra carpeta (el ZIP bajado,
      el Escritorio), primero se actualiza esa carpeta y todo sigue desde alla.
@@ -26,9 +28,11 @@ PANEL DEL DJ (noches sin show ni juegos)
     Tap (marcar el ritmo a mano), Intensidad y Apagar.
   - El microfono solo funciona por https://luces.krbstage.cl/dj o en el Dell
     (http://localhost:8080/dj); por el WiFi con http el navegador no lo permite.
-  - ESTACION DE RITMO (fija): en el computador donde entra la mezcla (el de OBS), doble clic
-    UNA vez en ESTACION_RITMO.bat. Desde ahi se abre sola al prender ese computador, con la
-    clave guardada y escuchando la entrada de linea elegida la primera vez. Ese computador escucha la musica y
+  - ESTACION DE RITMO (fija, en segundo plano): en el computador donde entra la mezcla (el de
+    OBS), doble clic UNA vez en ESTACION_RITMO.bat. Pregunta la clave y la entrada de linea en
+    la ventana negra (solo esa vez). Desde ahi corre sola y sin ventana cada vez que se prende
+    ese computador; si se cierra, se vuelve a abrir. Para mirarla: 'Ver estacion de ritmo KRB'
+    en el Escritorio. Ese computador escucha la musica y
     manda los golpes; el DJ maneja las escenas desde su celular, por todo el local, sin
     microfono. Escena, Automatico e intensidad son los mismos en todos los aparatos, y el
     Automatico sigue aunque el celular se bloquee.

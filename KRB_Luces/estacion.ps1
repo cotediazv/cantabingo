@@ -1,29 +1,52 @@
 # ============================================================
 #  LUCES KRB - ESTACION DE RITMO (se instala UNA vez, en el computador donde entra la mezcla, el de OBS)
-#  Deja el panel del DJ abriendose solo al prender el computador, en una ventana propia de Edge:
-#  - escucha la entrada de linea siempre (Ritmo se prende solo, con la entrada elegida la primera vez),
-#  - el navegador no la frena aunque quede detras de OBS,
-#  - la clave queda guardada (la sesion se renueva sola y no vence),
-#  - si el Dell o internet no estan listos al prender, espera y se conecta sola.
+#  Queda corriendo SOLA y en segundo plano cada vez que se prende el computador, sin ventanas ni preguntas:
+#  - entra sola con la clave (se pregunta aqui una sola vez),
+#  - escucha la entrada de linea elegida aqui y manda el ritmo a las luces,
+#  - el navegador no la frena aunque no se vea, y si se cierra o se cae, se vuelve a abrir.
 #  El DJ maneja las escenas desde su celular, por todo el local.
 # ============================================================
 $ErrorActionPreference = "Stop"
 $dir = Join-Path $env:LOCALAPPDATA "KRB_Estacion"
 New-Item -ItemType Directory -Force -Path $dir | Out-Null
+$utf8 = New-Object Text.UTF8Encoding $false
 
 Write-Host ""
-Write-Host "  LUCES KRB - estacion de ritmo" -ForegroundColor Yellow
+Write-Host "  LUCES KRB - estacion de ritmo (solo esta vez se pregunta algo)" -ForegroundColor Yellow
 Write-Host ""
 
 # 1) Direccion de las luces: si la suite corre en este mismo computador, por localhost; si no, por internet
 $enEste = Test-Path (Join-Path $env:USERPROFILE "KRB_Luces\krb_luces.ps1")
 $porDefecto = if ($enEste) { "http://localhost:8080" } else { "https://luces.krbstage.cl" }
-Write-Host "  Direccion de las luces: $porDefecto  (Enter para usarla)"
-$base = (Read-Host "  Direccion").Trim().TrimEnd('/')
+Write-Host "  1) Direccion de las luces: $porDefecto  (Enter para usarla)"
+$base = (Read-Host "     Direccion").Trim().TrimEnd('/')
 if ($base -eq "") { $base = $porDefecto }
-$url = $base + "/dj?estacion=1"
 
-# 2) Navegador: Edge (viene con Windows) o Chrome
+# 2) Clave de las luces (queda guardada en este computador para entrar sola)
+$sec = Read-Host "  2) Clave de las luces (Enter si no tiene)" -AsSecureString
+$clave = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec))
+
+# 3) Entrada de audio donde llega la mezcla (las de grabacion de Windows)
+$ents = @(Get-PnpDevice -Class AudioEndpoint -PresentOnly -ErrorAction SilentlyContinue |
+  Where-Object { $_.InstanceId -like "*{0.0.1.00000000}*" -and $_.Status -eq "OK" } | ForEach-Object { $_.FriendlyName })
+$entrada = ""
+if ($ents.Count -gt 0) {
+  Write-Host "  3) Entrada de audio donde llega la mezcla:"
+  $sug = 0
+  for ($i = 0; $i -lt $ents.Count; $i++) {
+    Write-Host ("       " + ($i + 1) + ". " + $ents[$i])
+    if ($ents[$i] -match "l.nea|line" -and $sug -eq 0) { $sug = $i + 1 }
+  }
+  if ($sug -eq 0) { $sug = 1 }
+  $r = (Read-Host ("     Numero (Enter = " + $sug + ")")).Trim()
+  $k = if ($r -match '^\d+$' -and [int]$r -ge 1 -and [int]$r -le $ents.Count) { [int]$r } else { $sug }
+  $entrada = $ents[$k - 1]
+  Write-Host "     Entrada: $entrada" -ForegroundColor Green
+} else {
+  Write-Host "  3) No se pudo listar las entradas de audio: se usara la predeterminada de Windows." -ForegroundColor DarkYellow
+}
+
+# 4) Navegador: Edge (viene con Windows) o Chrome
 $nav = @(
   (Join-Path ${env:ProgramFiles(x86)} "Microsoft\Edge\Application\msedge.exe"),
   (Join-Path $env:ProgramFiles "Microsoft\Edge\Application\msedge.exe"),
@@ -32,52 +55,82 @@ $nav = @(
   (Join-Path $env:LOCALAPPDATA "Google\Chrome\Application\chrome.exe")
 ) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
 if (-not $nav) { throw "No se encontro Edge ni Chrome en este computador." }
-Write-Host "  Navegador: $nav" -ForegroundColor Green
 
-# 3) Pagina de espera: se conecta sola cuando el Dell responde (al prender, internet o el Dell pueden tardar)
-$espera = @"
+# 5) Pagina de arranque (solo en este computador): espera al Dell y entra sola con la clave
+$ir = "/dj?estacion=1&entrada=" + [Uri]::EscapeDataString($entrada)
+$jsTxt = { param($t) ($t -replace '\\', '\\' -replace '"', '\"' -replace '<', '<') }
+$arranque = @"
 <!doctype html><meta charset="utf-8"><title>Estacion de ritmo KRB</title>
 <body style="margin:0;background:#0c0d10;color:#eceef2;font:16px system-ui;display:grid;place-items:center;height:100vh;text-align:center">
 <div><b style="font-size:20px">Estacion de ritmo KRB</b><p id="t">Conectando con las luces...</p></div>
+<form id="f" method="post"><input type="hidden" name="clave" id="c"></form>
 <script>
-var url = "$url", base = "$base", n = 0;
+var base = "$(& $jsTxt $base)", ir = "$(& $jsTxt $ir)", clave = "$(& $jsTxt $clave)", n = 0;
+function entrar(){ var f = document.getElementById('f'); document.getElementById('c').value = clave;
+  f.action = base + '/api/login?ir=' + encodeURIComponent(ir); f.submit(); }
 function probar(){ n++; document.getElementById('t').textContent = 'Conectando con las luces... (intento ' + n + ')';
-  fetch(base + '/api/dj?' + Date.now(), { mode: 'no-cors', cache: 'no-store' }).then(function(){ location.replace(url); })
-  .catch(function(){ setTimeout(probar, 5000); }); }
+  fetch(base + '/api/dj?' + Date.now(), { mode: 'no-cors', cache: 'no-store' }).then(entrar).catch(function(){ setTimeout(probar, 5000); }); }
 probar();
 </script>
 "@
-$pEspera = Join-Path $dir "arranque.html"
-[IO.File]::WriteAllText($pEspera, $espera, (New-Object Text.UTF8Encoding $false))
+$pArranque = Join-Path $dir "arranque.html"
+[IO.File]::WriteAllText($pArranque, $arranque, $utf8)
 
-# 4) Acceso directo: ventana propia (perfil aparte), permiso de audio dado y sin frenos en segundo plano
+# 6) Vigilante: abre el navegador fuera de la pantalla (no se ve, pero corre de verdad) y lo vuelve a abrir si se cierra
 $perfil = Join-Path $dir "perfil"
-$args_ = @(
-  "--user-data-dir=`"$perfil`"",
-  "--app=`"file:///" + ($pEspera -replace '\\', '/') + "`"",
-  "--use-fake-ui-for-media-stream",
-  "--autoplay-policy=no-user-gesture-required",
-  "--disable-background-timer-throttling",
-  "--disable-renderer-backgrounding",
-  "--disable-backgrounding-occluded-windows",
-  "--hide-crash-restore-bubble",
-  "--no-first-run", "--no-default-browser-check",
-  "--window-size=480,860"
-) -join " "
-$sh = New-Object -ComObject WScript.Shell
-foreach ($lnk in @((Join-Path ([Environment]::GetFolderPath("Startup")) "Estacion de ritmo KRB.lnk"),
-                   (Join-Path ([Environment]::GetFolderPath("Desktop")) "Estacion de ritmo KRB.lnk"))) {
-  $s = $sh.CreateShortcut($lnk)
-  $s.TargetPath = $nav; $s.Arguments = $args_; $s.WorkingDirectory = $dir
-  $s.Description = "Luces KRB - estacion de ritmo (escucha la mezcla y manda el ritmo a las luces)"
-  $s.Save()
-}
-Write-Host "  Listo: se abre sola al prender este computador (y hay un acceso directo en el Escritorio)." -ForegroundColor Green
+$comun = "--user-data-dir=""$perfil"" --app=""file:///" + ($pArranque -replace '\\', '/') + """ --use-fake-ui-for-media-stream --autoplay-policy=no-user-gesture-required --disable-background-timer-throttling --disable-renderer-backgrounding --disable-backgrounding-occluded-windows --hide-crash-restore-bubble --no-first-run --no-default-browser-check --window-size=480,860"
+$vbs = @"
+' LUCES KRB - estacion de ritmo en segundo plano: abre el navegador fuera de la pantalla y lo vuelve a abrir si se cierra.
+Set sh = CreateObject("WScript.Shell")
+Set fso = CreateObject("Scripting.FileSystemObject")
+Set wmi = GetObject("winmgmts:\\.\root\cimv2")
+n = 0
+For Each p In wmi.ExecQuery("SELECT CommandLine FROM Win32_Process WHERE Name='wscript.exe'")
+  If Not IsNull(p.CommandLine) Then
+    If InStr(LCase(p.CommandLine), "estacion.vbs") > 0 Then n = n + 1
+  End If
+Next
+If n > 1 Then WScript.Quit
+Do
+  If fso.FileExists("$dir\detenida.txt") Then WScript.Quit
+  vivo = False
+  For Each p In wmi.ExecQuery("SELECT CommandLine FROM Win32_Process WHERE Name='$(Split-Path $nav -Leaf)'")
+    If Not IsNull(p.CommandLine) Then
+      If InStr(LCase(p.CommandLine), "krb_estacion") > 0 Then vivo = True
+    End If
+  Next
+  If Not vivo Then sh.Run """$nav"" $($comun.Replace('"', '""')) --window-position=-32000,-32000", 0, False
+  WScript.Sleep 30000
+Loop
+"@
+$pVbs = Join-Path $dir "estacion.vbs"
+[IO.File]::WriteAllText($pVbs, $vbs, (New-Object Text.UnicodeEncoding $false, $true))
 
-# 5) Abrirla ahora para poner la clave y elegir la entrada de linea (solo esta vez)
-Start-Process -FilePath $nav -ArgumentList $args_
+# VER: muestra la estacion en pantalla (para revisar); al reiniciar el computador vuelve a quedar oculta
+$ver = @"
+@echo off
+powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { `$_.CommandLine -like '*KRB_Estacion*' -and `$_.Name -ne 'powershell.exe' -and `$_.Name -ne 'wscript.exe' } | ForEach-Object { Stop-Process -Id `$_.ProcessId -Force -ErrorAction SilentlyContinue }"
+start "" "$nav" $comun --window-position=100,60
+"@
+[IO.File]::WriteAllText((Join-Path $dir "VER_ESTACION.bat"), $ver.Replace("`n", "`r`n"), (New-Object Text.UTF8Encoding $false))
+
+# 7) Arranque automatico al prender el computador (sin ventana) + acceso para verla en el Escritorio
+$sh = New-Object -ComObject WScript.Shell
+$s = $sh.CreateShortcut((Join-Path ([Environment]::GetFolderPath("Startup")) "Estacion de ritmo KRB.lnk"))
+$s.TargetPath = Join-Path $env:WINDIR "System32\wscript.exe"; $s.Arguments = '"' + $pVbs + '"'; $s.WorkingDirectory = $dir
+$s.Description = "Luces KRB - estacion de ritmo (en segundo plano)"; $s.Save()
+$s = $sh.CreateShortcut((Join-Path ([Environment]::GetFolderPath("Desktop")) "Ver estacion de ritmo KRB.lnk"))
+$s.TargetPath = Join-Path $dir "VER_ESTACION.bat"; $s.WorkingDirectory = $dir
+$s.Description = "Muestra la estacion de ritmo en pantalla (para revisar)"; $s.Save()
+# Si habia un acceso directo de la version anterior (ventana visible), se quita
+Remove-Item (Join-Path ([Environment]::GetFolderPath("Desktop")) "Estacion de ritmo KRB.lnk") -ErrorAction SilentlyContinue
+
+# 8) Partir ahora: se cierra la anterior y queda corriendo oculta
+Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*KRB_Estacion*" -and $_.Name -ne "powershell.exe" } |
+  ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+Start-Sleep -Milliseconds 800
+Start-Process -FilePath "wscript.exe" -ArgumentList ('"' + $pVbs + '"')
 Write-Host ""
-Write-Host "  Se abrio la estacion. SOLO ESTA VEZ:" -ForegroundColor Yellow
-Write-Host "   1. Poner la clave de las luces."
-Write-Host "   2. En 'Entrada', elegir la entrada de linea donde llega la mezcla (la barrita verde se mueve)."
-Write-Host "  Desde ahi queda fija: no hay que volver a tocarla."
+Write-Host "  LISTO. La estacion de ritmo quedo corriendo en segundo plano y se abre sola al prender el computador." -ForegroundColor Green
+Write-Host "  No hay que hacer nada mas. Para revisarla: 'Ver estacion de ritmo KRB' en el Escritorio."
+Write-Host "  En el celular del DJ (https://luces.krbstage.cl/dj) debe aparecer 'Ritmo desde la estacion'."

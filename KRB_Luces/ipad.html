@@ -2587,9 +2587,15 @@ registerProcessor('krb-ritmo', KrbRitmo);`;
 // La entrada guardada se busca por su id y, si cambio, por su nombre
 async function entradaGuardada(){
   let g = {}; try { g = JSON.parse(localStorage.getItem('krb_dj_entrada2') || '{}'); } catch(e){}
+  // estacion fija: la entrada que se eligio al instalarla (nombre de Windows), si no se cambio despues en el panel
+  const pedida = ESTACION && PARAMS.get('entrada');
+  if (pedida && !g.manual) g = { nombre: pedida, parecido: true };
   if (!g.id && !g.nombre) return '';
   try { const ins = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput');
-    const d = ins.find(x => x.deviceId === g.id) || ins.find(x => g.nombre && x.label === g.nombre); return d ? d.deviceId : (g.id || ''); }
+    const n = (g.nombre || '').toLowerCase();
+    const d = ins.find(x => x.deviceId === g.id) || ins.find(x => n && x.label.toLowerCase() === n) ||
+      (g.parecido && n ? ins.find(x => x.label && (x.label.toLowerCase().includes(n) || n.includes(x.label.toLowerCase()))) : null);
+    return d ? d.deviceId : (g.id || ''); }
   catch(e){ return g.id || ''; }
 }
 async function escucharMusica(){
@@ -2616,7 +2622,8 @@ async function escucharMusica(){
   };
   const lead = setInterval(() => nodo.port.postMessage({ lead: ritmo.rtt / 2 }), 2000);
   ritmo.on = false;                                                                              // el reloj lo lleva el proceso de audio
-  return { vivo: () => ctx.state !== 'closed' && stream.getAudioTracks().some(x => x.readyState === 'live'), stop(){ clearInterval(lead); nodo.port.onmessage = null; stream.getTracks().forEach(x => x.stop()); ctx.close(); $('djNivel').style.width = '0'; } };
+  return { vivo: () => ctx.state !== 'closed' && stream.getAudioTracks().some(x => x.readyState === 'live'),
+    id: () => { const t = stream.getAudioTracks()[0]; return (t && t.getSettings && t.getSettings().deviceId) || ''; }, stop(){ clearInterval(lead); nodo.port.onmessage = null; stream.getTracks().forEach(x => x.stop()); ctx.close(); $('djNivel').style.width = '0'; } };
 }
 async function escucharMusicaSimple(){
   // Entrada elegida (Cote, 25 nov: la mezcla completa entra por la entrada de linea del computador de OBS)
@@ -2677,7 +2684,7 @@ async function listarEntradas(){
   sel.value = ins.some(d => d.deviceId === elegida) ? elegida : '';
 }
 $('djEntrada').onchange = async () => {
-  try { const o = $('djEntrada').selectedOptions[0]; localStorage.setItem('krb_dj_entrada2', JSON.stringify({ id: o.value, nombre: o.value ? o.textContent : '' })); } catch(e){}
+  try { const o = $('djEntrada').selectedOptions[0]; localStorage.setItem('krb_dj_entrada2', JSON.stringify({ id: o.value, nombre: o.value ? o.textContent : '', manual: true })); } catch(e){}
   if (ritmo.mic){ ritmo.mic.stop(); ritmo.mic = null; try { ritmo.mic = await escucharMusica(); $('djAviso').textContent = 'Escuchando: ' + $('djEntrada').selectedOptions[0].textContent; } catch(e){ $('djMic').classList.remove('act'); $('djAviso').textContent = 'No se pudo usar esa entrada (' + (e.name || e.message) + ')'; } }
 };
 function iniciarDJ(){
@@ -2696,12 +2703,13 @@ function iniciarDJ(){
 function iniciarEstacion(){
   document.querySelector('.djtop b').textContent = 'Estación de ritmo · KRB';
   const prender = async () => {
-    if (ritmo.mic && (!ritmo.mic.vivo || ritmo.mic.vivo())) return;
+    // la primera vez los nombres de las entradas no se conocen hasta abrir una: si ahora se encuentra la pedida, se cambia a esa
+    if (ritmo.mic && ritmo.mic.vivo && ritmo.mic.vivo()){ const q = await entradaGuardada(); if (!q || !ritmo.mic.id || ritmo.mic.id() === q) return; }
     if (ritmo.mic){ try { ritmo.mic.stop(); } catch(e){} ritmo.mic = null; }
     try { ritmo.mic = await escucharMusica(); $('djMic').classList.add('act'); $('djAviso').textContent = 'Estación de ritmo escuchando · ' + ($('djEntrada').selectedOptions[0] || {}).textContent; djServidor(); }
     catch(e){ $('djMic').classList.remove('act'); $('djAviso').textContent = 'La estación no pudo abrir la entrada de audio (' + (e.name || e.message) + '). Reintenta en 15 s.'; }
   };
-  prender(); setInterval(prender, 15000);
+  prender(); setTimeout(prender, 3000); setInterval(prender, 15000);
   // la pagina completa se vuelve a cargar una vez al dia (por si el navegador acumula algo)
   // (solo si el Dell responde, para no quedar en una pagina de error)
   setInterval(async () => { if (performance.now() < 24 * 3600 * 1000) return;

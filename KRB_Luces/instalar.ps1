@@ -92,7 +92,7 @@ New-Item -ItemType Directory -Force -Path $Destino | Out-Null
 # Archivos del programa: siempre se actualizan
 # (momentos.txt = las luces de cada momento de los juegos, para que el GC Master funcione aunque nadie haya abierto el iPad;
 #  el iPad lo vuelve a generar desde luces.json cada vez que se abre)
-$programa = @("INICIAR.bat", "INICIAR_OCULTO.vbs", "DETENER.bat", "krb_luces.ps1", "ipad.html", "vista3d.js", "instalar.ps1", "INSTALAR.bat", "internet.ps1", "CONFIGURAR_INTERNET.bat", "LEEME.txt", "momentos.txt", "lib\three.module.min.js", "lib\three-LICENSE.txt")
+$programa = @("INICIAR.bat", "INICIAR_OCULTO.vbs", "DETENER.bat", "krb_luces.ps1", "ipad.html", "vista3d.js", "instalar.ps1", "INSTALAR.bat", "internet.ps1", "CONFIGURAR_INTERNET.bat", "ESTACION_RITMO.bat", "estacion.ps1", "LEEME.txt", "momentos.txt", "lib\three.module.min.js", "lib\three-LICENSE.txt")
 New-Item -ItemType Directory -Force -Path (Join-Path $Destino "lib") | Out-Null
 foreach ($f in $programa) {
   $src = Join-Path $origen $f
@@ -161,10 +161,11 @@ if (-not $SinInicio) {
 Write-Host "  Instalacion lista." -ForegroundColor Green
 Write-Host ""
 if (-not $NoArrancar) {
-  # La suite nueva cierra sola cualquier copia anterior (tambien la oculta), asi que se abre siempre
+  # Se cierra la copia anterior (tambien la oculta) y la nueva queda corriendo en segundo plano, con su vigilante
+  Remove-Item (Join-Path $Destino "detenida.txt") -ErrorAction SilentlyContinue
   $viejas = Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction SilentlyContinue |
-    Where-Object { $_.CommandLine -like "*krb_luces.ps1*" }
+    Where-Object { $_.CommandLine -like "*krb_luces.ps1*" -and $_.ProcessId -ne $PID }
   $viejas | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
-  Start-Process -FilePath (Join-Path $Destino "INICIAR.bat") -WorkingDirectory $Destino -WindowStyle Minimized
-  Write-Host "  Se abrio la suite nueva (ventana minimizada en la barra de tareas)."
+  Start-Process -FilePath "wscript.exe" -ArgumentList ('"' + (Join-Path $Destino "INICIAR_OCULTO.vbs") + '"') -WorkingDirectory $Destino
+  Write-Host "  La suite nueva quedo corriendo en segundo plano (sin ventana). Lo que pasa queda en registro.txt."
 }

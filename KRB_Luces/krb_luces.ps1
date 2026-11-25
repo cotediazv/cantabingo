@@ -19,7 +19,7 @@ if (-not $configDada -and (Resolve-Path $root).Path.TrimEnd('\') -ne $casa.TrimE
   Write-Host ""
   Write-Host "  Esta copia esta en otra carpeta: se actualiza $casa y la suite se abre desde alla." -ForegroundColor Yellow
   & (Join-Path $root "instalar.ps1") -NoArrancar
-  Start-Process -FilePath (Join-Path $casa "INICIAR.bat") -WorkingDirectory $casa
+  Start-Process -FilePath "wscript.exe" -ArgumentList ('"' + (Join-Path $casa "INICIAR_OCULTO.vbs") + '"') -WorkingDirectory $casa
   exit
 }
 
@@ -38,6 +38,9 @@ try {
 
 # Calibracion: si aca no hay, se busca la mas reciente que haya quedado en otra carpeta y se recupera
 if (-not $configDada) { try { & (Join-Path $root "instalar.ps1") -SoloRecuperar } catch {} }
+
+# Corre oculta: lo que muestra la ventana queda tambien en registro.txt (para revisar si algo falla)
+if (-not $configDada) { try { Start-Transcript -Path (Join-Path $root "registro.txt") -Force | Out-Null } catch {} }
 
 if ($Config -eq "") { $Config = Join-Path $root "luces.json" }
 $cfg = Get-Content $Config -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -574,7 +577,7 @@ namespace KRB {
         if (partes[0] == "POST" && cuerpo.Length > 0 && ruta != "/api/login") query = query.Length > 0 ? query + "&" + cuerpo : cuerpo;
 
         // ---- Clave ----
-        if (ruta == "/api/login") { Login(s, cuerpo); return; }
+        if (ruta == "/api/login") { Login(s, cuerpo, query); return; }
         if (ruta == "/api/salir") {
           string tk = Cookie(cookies, "krb");
           lock (SL) { if (tk != null && sesiones.Remove(tk)) GuardarSesiones(); }
@@ -866,21 +869,32 @@ namespace KRB {
       Enviar(s, "200 OK", tipo, File.ReadAllBytes(path));
     }
 
-    static void Login(NetworkStream s, string cuerpo) {
+    static void Login(NetworkStream s, string cuerpo, string query) {
       // El navegador envia la clave en el cuerpo (POST), nunca en la direccion.
-      if (Clave == "") { Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":true}")); return; }
+      // Con ?ir=/... (la estacion de ritmo entra sola al prender): la clave viene como formulario y se vuelve a esa pagina.
+      string ir = Arg(query, "ir"); if (ir != null && (!ir.StartsWith("/") || ir.StartsWith("//"))) ir = null;
+      string clave = cuerpo.Trim();
+      if (ir != null) { string f = Arg(cuerpo, "clave"); if (f != null) clave = f; }
+      if (Clave == "") { if (ir != null) Redirigir(s, ir, null); else Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":true}")); return; }
       if (fallosLogin >= 5) Thread.Sleep(5000);           // freno contra adivinar la clave
-      if (IgualSeguro(cuerpo.Trim(), Clave)) {
+      if (IgualSeguro(clave, Clave)) {
         string tk = NuevoToken();
         lock (SL) { sesiones.Add(tk); GuardarSesiones(); }
         fallosLogin = 0;
+        if (ir != null) { Redirigir(s, ir, CookieSesion(tk)); return; }
         Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":true}"),
                CookieSesion(tk));
       } else {
         fallosLogin++;
         Thread.Sleep(1500);
+        if (ir != null) { Redirigir(s, ir, null); return; }
         Enviar(s, "401 Unauthorized", "application/json", Encoding.UTF8.GetBytes("{\"login\":true,\"error\":\"Clave incorrecta\"}"));
       }
+    }
+    static void Redirigir(NetworkStream s, string a, string setCookie) {
+      string cab = "HTTP/1.1 303 See Other\r\nLocation: " + a.Replace("\r", "").Replace("\n", "") + "\r\nContent-Length: 0\r\nCache-Control: no-store\r\n" +
+                   (setCookie != null ? "Set-Cookie: " + setCookie + "\r\n" : "") + "Connection: close\r\n\r\n";
+      byte[] c = Encoding.ASCII.GetBytes(cab); s.Write(c, 0, c.Length);
     }
 
     static void Enviar(NetworkStream s, string estado, string tipo, byte[] cuerpo) { Enviar(s, estado, tipo, cuerpo, null); }
