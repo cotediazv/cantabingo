@@ -176,9 +176,51 @@
   body.solo-mapa #cabezas{margin-top:6px}
   body.solo-mapa .map .warn{display:none}
   .toast.show{transform:translate(-50%,0);opacity:1}
+  /* ===== Panel del DJ (/dj, Cote 25 nov): pocos botones, muchas escenas ===== */
+  #dj{display:none}
+  body.dj > header, body.dj > nav, body.dj > main, body.dj > footer, body.dj > #vista{display:none !important}
+  body.dj #dj{display:flex;flex-direction:column;gap:10px;min-height:100vh;min-height:100dvh;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
+  .djtop{display:flex;align-items:center;gap:8px}
+  .djtop b{font-size:17px;flex:1;letter-spacing:.02em}
+  .djesc{flex:1;display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:8px;min-height:300px}
+  @media (min-width:700px){ .djesc{grid-template-columns:repeat(4,1fr)} }
+  .djb{position:relative;border:0;border-radius:16px;color:#fff;font-weight:800;font-size:16px;cursor:pointer;overflow:hidden;
+       background:var(--card);box-shadow:inset 0 0 0 1px var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px;min-height:70px;text-align:center}
+  .djb i{font-style:normal;font-size:28px;line-height:1;position:relative}
+  .djb span{position:relative;text-shadow:0 1px 3px #000a}
+  .djb::before{content:"";position:absolute;inset:0;background:var(--g);opacity:.32;transition:.2s}
+  .djb.act{box-shadow:inset 0 0 0 3px #fff}
+  .djb.act::before{opacity:.75}
+  .djb:active{transform:scale(.96)}
+  .djctl{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .djc{border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:14px;padding:10px 6px;font-size:14px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px}
+  .djc small{font-size:11px;font-weight:500;color:var(--mut)}
+  .djc.act{background:#2a3f6e;border-color:var(--acc)}
+  .djc.off{background:var(--bad);border-color:var(--bad);color:#fff}
+  .djc.off small{color:#fff}
+  .djint{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--mut)}
+  .djint input{flex:1;height:30px;margin:0}
+  #djLatido{width:14px;height:14px;border-radius:50%;background:#333;display:inline-block;transition:background .08s}
+  #djLatido.on{background:#ffcc00;box-shadow:0 0 10px #ffcc00}
+  #djAviso{font-size:12px;color:var(--warn);min-height:14px}
+
 </style>
 </head>
 <body>
+<!-- Panel del DJ: se abre en /dj (o ?dj=1) -->
+<div id="dj">
+  <div class="djtop"><b>Luces KRB · DJ</b><span id="djLatido" title="Ritmo"></span><span id="djBpm" style="font-size:13px;color:var(--mut);min-width:64px">—</span>
+    <div class="pill" id="djPill"><span class="dot" id="djDot"></span><span id="djPillTxt">…</span></div></div>
+  <div class="djesc" id="djEsc"></div>
+  <div class="djctl">
+    <button class="djc" id="djAuto">🔀 Automático<small>cambia sola</small></button>
+    <button class="djc" id="djMic">🎤 Ritmo<small>escuchar música</small></button>
+    <button class="djc" id="djTap">👆 Tap<small>marcar el ritmo</small></button>
+    <button class="djc off" id="djApagar">⏻ Apagar<small>todo</small></button>
+  </div>
+  <div class="djint">Intensidad <input type="range" id="djInt" min="10" max="100" value="100"><span id="djIntTxt">100%</span></div>
+  <div id="djAviso"></div>
+</div>
 <header>
   <h1>Luces KRB</h1>
   <div class="pill" id="pill" title="Tocar para reconectar el cable"><span class="dot" id="dot"></span><span id="pillTxt">Conectando…</span></div>
@@ -361,6 +403,8 @@ const MAPA_SOLO = DEMO && (PARAMS.get('demo') === 'mapa' || PARAMS.get('mapa') =
 const CONTROL = DEMO && (PARAMS.get('demo') === 'control' || MAPA_SOLO);
 if (MAPA_SOLO) document.body.classList.add('solo-mapa');
 if (TV) document.body.classList.add('tv');
+const DJ = location.pathname === '/dj' || PARAMS.has('dj');
+if (DJ) document.body.classList.add('dj');
 const COLOR_CSS = {blanco_calido:'#ffd9a0',blanco:'#ffffff',azul:'#2b55ff',rojo:'#ff2a2a',verde:'#22dd55',amarillo:'#ffbe00',ambar:'#ff8a00',morado:'#9b3cff',rosa:'#ff3fa0',cian:'#22e5ff'};
 // Las 4 marcas de calibracion: las que uso Cote en Kennedy (25 nov), con su lugar real en el salon (sal = [u, v] en metros:
 // u = de lado, + cocinas / - columnas; v = a lo largo desde el escenario). u/v chicos = posicion en el rectangulo antiguo.
@@ -2267,6 +2311,247 @@ function marcaAnimador(a){                                              // el an
   m.style.top = ((MAPA.u0 - u) / (MAPA.u0 - MAPA.u1) * map.clientHeight) + 'px';
 }
 
+
+/* =====================================================================
+   PANEL DEL DJ (Cote, 25 nov): para las noches sin show ni juegos. Pocos botones y muchas escenas que se mueven
+   solas; si se activa «Ritmo», el panel escucha la musica (bombo y caja), calcula el tempo y le manda cada golpe
+   al Dell, que hace avanzar los efectos al compas. Sin microfono, «Tap» marca el ritmo a mano.
+   ===================================================================== */
+const djEstado = { escena: -1, auto: false, autoTimer: null, bpm: 120 };
+const azar = (a, b) => a + Math.random() * (b - a);
+const elegir = arr => arr[Math.floor(Math.random() * arr.length)];
+const VIVOS = ['rojo', 'azul', 'verde', 'amarillo', 'morado', 'rosa', 'cian', 'ambar'];
+// Puntos del salon para las cabezas grandes (u: de lado, + cocinas; v: a lo largo desde el escenario)
+const PUNTOS = {
+  pista:  () => puntoPiso(azar(-3, 3), azar(1, 9)),
+  salon:  () => puntoPiso(azar(-4, 4.5), azar(0, 24)),
+  techo:  () => deSalon(azar(-4, 4.5), azar(2, 22), 6.5),
+  escenario: () => [azar(-3, 3), 1.2, azar(-3.2, -0.8)]
+};
+function apuntarCabeza(id, punto){ const zz = {}; if (!apuntarModelo(id, punto, zz)) apuntarGeo(id, punto, zz); return zz; }
+const djCabezas = () => segIds();
+const djMini = () => conEspejos(['mini']);
+// Un paso de color: { grupo: color } (o null = apagado), con intensidad opcional por grupo
+function pasoColor(colores, intens){
+  const s = {};
+  Object.entries(colores).forEach(([id, c]) => { const g = grupo(id); if (!g) return;
+    const v = valoresGrupo(g, {color: c || 'blanco', intensidad: c ? ((intens && intens[id]) || 100) : 0});
+    const ch = g.canales || {}, base = g.direccion - 1;
+    if (ch.pan) delete v[base + ch.pan]; if (ch.tilt) delete v[base + ch.tilt];    // el color no toca la posicion
+    Object.assign(s, v); });
+  return s;
+}
+// Un paso de posicion: { grupo: {pan, tilt} }
+function pasoPos(pos){
+  const s = {};
+  Object.entries(pos).forEach(([id, p]) => { const g = grupo(id); if (!g || !p) return; const ch = g.canales || {}, base = g.direccion - 1;
+    if (ch.pan) s[base + ch.pan] = Math.round(Math.max(0, Math.min(255, p.pan)));
+    if (ch.tilt) s[base + ch.tilt] = Math.round(Math.max(0, Math.min(255, p.tilt))); });
+  return s;
+}
+const posMini = () => ({ pan: azar(20, 235), tilt: azar(0, 80) });          // mini: giran y miran hacia arriba
+const posCab = tipo => { const o = {}; djCabezas().forEach(id => o[id] = apuntarCabeza(id, PUNTOS[tipo]())); return o; };
+const posCabJuntas = tipo => { const p = PUNTOS[tipo](), o = {}; djCabezas().forEach(id => o[id] = apuntarCabeza(id, p)); return o; };
+const todos = c => { const o = {}; conf.grupos.forEach(g => o[g.id] = c); return o; };
+const grupos = (ids, c) => { const o = {}; ids.forEach(id => o[id] = c); return o; };
+// Capas de una escena: { id, pasos, ritmo (golpes por paso), fx (fundido entre pasos 0-1) }
+const capa = (id, pasos, ritmo, fx) => ({ id: 'dj-' + id, pasos, ritmo, fx: fx || 0 });
+const N = n => Array.from({length: n}, (_, i) => i);
+
+const DJ_ESCENAS = [
+  { n: 'Fiesta', i: '🎉', g: 'linear-gradient(135deg,#ff2a2a,#ffbe00,#22dd55,#2b55ff,#9b3cff)', fiesta: true,
+    capas: () => [
+      capa('col', N(16).map(() => pasoColor({ ...grupos(djCabezas(), elegir(VIVOS)), ...grupos(djMini(), elegir(VIVOS)),
+        ...grupos(idsPared(), elegir(VIVOS)), frontales: null })), 1),
+      capa('mov', N(12).map(() => pasoPos({ ...posCab('salon'), ...grupos(djMini(), posMini()) })), 2, 0.55)
+    ] },
+  { n: 'Arcoíris', i: '🌈', g: 'linear-gradient(135deg,#ff2a2a,#ffbe00,#22dd55,#22e5ff,#9b3cff)', fiesta: true,
+    capas: () => { const c = ['rojo', 'ambar', 'amarillo', 'verde', 'cian', 'azul', 'morado', 'rosa'];
+      return [capa('col', c.map((x, k) => pasoColor({ ...grupos(djCabezas(), c[(k + 2) % 8]), ...grupos(djMini(), c[(k + 4) % 8]),
+          ...grupos(idsPared(), x), frontales: null })), 2, 0.7),
+        capa('mov', N(8).map(() => pasoPos({ ...posCab('techo'), ...grupos(djMini(), posMini()) })), 4, 0.9)]; } },
+  { n: 'Pista', i: '💃', g: 'radial-gradient(circle,#ff3fa0,#2b55ff)', fiesta: true,
+    capas: () => [
+      capa('col', N(8).map(k => pasoColor({ ...grupos(djCabezas(), k % 2 ? 'rosa' : 'cian'), ...grupos(djMini(), k % 2 ? 'cian' : 'rosa'),
+        ...grupos(idsPared(), k % 4 < 2 ? 'azul' : 'morado'), frontales: null })), 1),
+      capa('mov', N(8).map(() => pasoPos({ ...posCabJuntas('pista'), ...grupos(djMini(), posMini()) })), 2, 0.5)
+    ] },
+  { n: 'Sirena', i: '🚨', g: 'linear-gradient(90deg,#ff2a2a 50%,#2b55ff 50%)', fiesta: true,
+    capas: () => [
+      capa('col', [0, 1].map(k => { const a = k ? 'azul' : 'rojo', b = k ? 'rojo' : 'azul', o = {};
+        djCabezas().forEach((id, j) => o[id] = j % 2 ? a : b); djMini().forEach(id => o[id] = a);
+        idsPared().forEach((id, j) => o[id] = j % 2 ? b : a); o.frontales = null; return pasoColor(o); }), 1),
+      capa('mov', N(6).map(() => pasoPos({ ...posCab('salon'), ...grupos(djMini(), posMini()) })), 4, 0.4)
+    ] },
+  { n: 'Fuego', i: '🔥', g: 'linear-gradient(0deg,#ff2a2a,#ff8a00,#ffbe00)', fiesta: true,
+    capas: () => [
+      capa('col', N(12).map(() => pasoColor({ ...grupos(djCabezas(), elegir(['rojo', 'ambar', 'amarillo'])), ...grupos(djMini(), elegir(['rojo', 'ambar'])),
+        ...grupos(idsPared(), elegir(['rojo', 'ambar', 'rojo'])), frontales: 'ambar' }, { frontales: 25 })), 0.5),
+      capa('mov', N(8).map(() => pasoPos({ ...posCab('escenario'), ...grupos(djMini(), posMini()) })), 2, 0.6)
+    ] },
+  { n: 'Barrido', i: '🔦', g: 'linear-gradient(90deg,#000,#fff,#000)', fiesta: true,
+    capas: () => { const izq = posCabJuntas('salon'), der = posCabJuntas('salon');
+      return [capa('col', [pasoColor({ ...grupos(djCabezas(), 'blanco'), ...grupos(djMini(), 'blanco'), ...grupos(idsPared(), 'azul'), frontales: null },
+          { perimetrales: 40, fondo: 40 })], 8),
+        capa('mov', [pasoPos({ ...izq, ...grupos(djMini(), {pan: 40, tilt: 40}) }), pasoPos({ ...der, ...grupos(djMini(), {pan: 215, tilt: 40}) })], 2, 1)]; } },
+  { n: 'Destello', i: '⚡', g: 'repeating-linear-gradient(90deg,#fff 0 8px,#222 8px 16px)', fiesta: true,
+    capas: () => [
+      capa('col', N(8).map(k => pasoColor(k % 2 ? { ...grupos(djCabezas(), null), ...grupos(djMini(), null), ...grupos(idsPared(), null), frontales: null }
+        : { ...grupos(djCabezas(), 'blanco'), ...grupos(djMini(), 'blanco'), ...grupos(idsPared(), elegir(VIVOS)), frontales: null })), 0.5),
+      capa('mov', N(8).map(() => pasoPos({ ...posCab('salon'), ...grupos(djMini(), posMini()) })), 2, 0)
+    ] },
+  { n: 'Océano', i: '🌊', g: 'linear-gradient(180deg,#22e5ff,#2b55ff,#0a1a4a)', fiesta: true,
+    capas: () => [
+      capa('col', ['azul', 'cian', 'azul', 'morado'].map((c, k) => pasoColor({ ...grupos(djCabezas(), k % 2 ? 'azul' : 'cian'),
+        ...grupos(djMini(), 'azul'), ...grupos(idsPared(), c), frontales: null })), 8, 1),
+      capa('mov', N(6).map(() => pasoPos({ ...posCab('techo'), ...grupos(djMini(), posMini()) })), 8, 1)
+    ] },
+  { n: 'Lounge', i: '🍸', g: 'linear-gradient(135deg,#9b3cff,#ff3fa0)',
+    capas: () => [
+      capa('col', ['morado', 'rosa', 'morado', 'ambar'].map(c => pasoColor({ ...grupos(djCabezas(), null), ...grupos(djMini(), 'morado'),
+        ...grupos(idsPared(), c), frontales: 'blanco_calido' }, { perimetrales: 60, fondo: 60, frontales: 20 })), 16, 1),
+      capa('mov', N(4).map(() => pasoPos(grupos(djMini(), { pan: azar(40, 215), tilt: azar(0, 30) }))), 16, 1)
+    ] },
+  { n: 'Karaoke', i: '🎤', g: 'radial-gradient(circle at 50% 30%,#ffd9a0,#2b55ff)',
+    capas: () => { const esc = {}; djCabezas().slice(0, 2).forEach(id => { const z = {}; fijarPosicion(z, 'escenario', id); esc[id] = z; });
+      return [capa('col', ['azul', 'morado', 'rosa', 'cian'].map(c => pasoColor({ ...grupos(djCabezas().slice(0, 2), 'blanco_calido'),
+          ...grupos(djCabezas().slice(2), null), ...grupos(djMini(), c), ...grupos(idsPared(), c), frontales: 'blanco_calido' })), 8, 1),
+        capa('mov', [pasoPos(esc)], 8), capa('mini', N(8).map(() => pasoPos(grupos(djMini(), posMini()))), 4, 0.8)]; } },
+  { n: 'Estrellas', i: '✨', g: 'radial-gradient(circle at 30% 30%,#fff 0 3px,transparent 4px),radial-gradient(circle at 70% 60%,#fff 0 2px,transparent 3px),#0a1033',
+    capas: () => [
+      capa('col', [pasoColor({ ...grupos(djCabezas(), 'blanco'), ...grupos(djMini(), 'blanco'), ...grupos(idsPared(), 'azul'), frontales: null },
+        { perimetrales: 25, fondo: 25, mini: 50, mini_columnas: 50 })], 8),
+      capa('mov', N(8).map(() => pasoPos({ ...posCab('techo'), ...grupos(djMini(), posMini()) })), 4, 0.8)
+    ] },
+  { n: 'Luz de sala', i: '💡', g: 'linear-gradient(135deg,#ffd9a0,#ffffff)',
+    capas: () => [capa('col', [pasoColor({ ...grupos(djCabezas(), null), ...grupos(djMini(), null), ...grupos(idsPared(), 'blanco_calido'),
+      frontales: 'blanco_calido' }, { perimetrales: 70, fondo: 70, frontales: 70 })], 8)] }
+];
+const djFiesta = () => DJ_ESCENAS.map((e, i) => e.fiesta ? i : -1).filter(i => i >= 0);
+
+async function djAplicar(i, auto){
+  const e = DJ_ESCENAS[i]; if (!e || !conf) return;
+  djEstado.escena = i; master = +$('djInt').value; djPintar();
+  if (!auto) djAutoOff();
+  const capas = e.capas(), seg = 60 / djEstado.bpm;
+  await efecto('todos', {todos: 'off'});
+  // lo que no tocan las capas queda apagado (y los canales fijos de cada equipo en su valor)
+  const base = {}; conf.grupos.forEach(g => Object.assign(base, valoresGrupo(g, {color: null, intensidad: 0})));
+  capas.forEach(c => Object.keys(c.pasos[0] || {}).forEach(k => delete base[k]));
+  enviar(base, 0);
+  capas.forEach(c => efecto(c.id, {tipo: 'sec', pasos: pasosTxt(c.pasos), t: (c.ritmo * seg).toFixed(3), fx: c.fx, ritmo: c.ritmo}));
+}
+function djPintar(){
+  document.querySelectorAll('#djEsc .djb').forEach((b, i) => b.classList.toggle('act', i === djEstado.escena));
+  $('djAuto').classList.toggle('act', djEstado.auto);
+}
+// Automatico: cambia sola a otra escena de fiesta cada 3 minutos
+function djAutoOff(){ djEstado.auto = false; clearInterval(djEstado.autoTimer); djPintar(); }
+function djAutoSiguiente(){ const f = djFiesta().filter(i => i !== djEstado.escena); djAplicar(elegir(f), true); }
+$('djAuto').onclick = () => {
+  if (djEstado.auto) return djAutoOff();
+  djEstado.auto = true; djAutoSiguiente(); djEstado.autoTimer = setInterval(djAutoSiguiente, 180000); djPintar();
+};
+$('djApagar').onclick = async () => { djAutoOff(); djEstado.escena = -1; djPintar(); try { pintarEstado(await api('/api/apagar?f=1')); } catch(e){ sinConexion(); } };
+$('djInt').oninput = () => { $('djIntTxt').textContent = $('djInt').value + '%'; };
+$('djInt').onchange = () => { if (djEstado.escena >= 0) djAplicar(djEstado.escena, djEstado.auto); };
+
+/* ---------- Ritmo: reloj de golpes que se ajusta a la musica ---------- */
+const ritmo = { on: false, P: 0.5, prox: 0, rtt: 0.08, golpes: [], taps: [], mic: null, ultOnset: 0 };
+function enviarPulso(){
+  const t0 = performance.now();
+  fetch('/api/pulso', {cache: 'no-store', credentials: 'same-origin'}).then(() => {
+    ritmo.rtt = ritmo.rtt * 0.8 + ((performance.now() - t0) / 1000) * 0.2; }).catch(() => {});
+  const l = $('djLatido'); l.classList.add('on'); setTimeout(() => l.classList.remove('on'), 90);
+}
+function relojRitmo(){
+  if (!ritmo.on || !ritmo.prox) return;
+  const ahora = performance.now() / 1000;
+  if (ahora - ritmo.prox > 1) ritmo.prox = ahora + ritmo.P;            // pantalla dormida: no mandar golpes atrasados de una vez
+  // se manda un poco antes, para que llegue al Dell justo en el golpe (la mitad del tiempo de ida y vuelta)
+  while (ahora >= ritmo.prox - ritmo.rtt / 2){ enviarPulso(); ritmo.prox += ritmo.P; }
+}
+setInterval(relojRitmo, 8);
+function fijarTempo(P){
+  P = Math.max(0.3, Math.min(1.0, P));
+  ritmo.P = P; djEstado.bpm = Math.round(60 / P); $('djBpm').textContent = djEstado.bpm + ' BPM';
+}
+// Tap: tocar al ritmo de la musica (4 toques fijan el tempo)
+$('djTap').onclick = () => {
+  const t = performance.now() / 1000;
+  ritmo.taps = ritmo.taps.filter(x => t - x < 2.5); ritmo.taps.push(t);
+  if (ritmo.taps.length >= 2){
+    const ints = ritmo.taps.slice(1).map((x, k) => x - ritmo.taps[k]).sort((a, b) => a - b);
+    fijarTempo(ints[Math.floor(ints.length / 2)]);
+  }
+  ritmo.on = true; ritmo.prox = t + ritmo.P; enviarPulso();
+  $('djTap').classList.add('act'); setTimeout(() => $('djTap').classList.remove('act'), 120);
+  if (!ritmo.mic) $('djAviso').textContent = 'Ritmo a mano: ' + djEstado.bpm + ' BPM. Toca 4 veces al compás para ajustarlo.';
+};
+// Micro: escucha el bombo (graves) y la caja (medios-agudos); con los golpes calcula el tempo y corrige el compas
+$('djMic').onclick = async () => {
+  if (ritmo.mic){ ritmo.mic.stop(); ritmo.mic = null; ritmo.on = false; $('djMic').classList.remove('act'); $('djBpm').textContent = '—'; $('djAviso').textContent = ''; return; }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    $('djAviso').textContent = 'Este navegador no deja usar el micrófono aquí. Abrir https://luces.krbstage.cl/dj (o en el Dell: http://localhost:8080/dj). Mientras, usa Tap.';
+    return;
+  }
+  try { ritmo.mic = await escucharMusica(); $('djMic').classList.add('act'); $('djAviso').textContent = 'Escuchando la música…'; }
+  catch(e){ $('djAviso').textContent = 'No se pudo usar el micrófono (' + (e.name || e.message) + '). Usa Tap.'; }
+};
+async function escucharMusica(){
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const src = ctx.createMediaStreamSource(stream);
+  if (ctx.resume) ctx.resume();
+  const banda = (tipo, f, q, n) => { const b = ctx.createBiquadFilter(); b.type = tipo; b.frequency.value = f; if (q) b.Q.value = q;
+    const a = ctx.createAnalyser(); a.fftSize = n; src.connect(b); b.connect(a); return { a, buf: new Float32Array(n), hist: [], ult: 0 }; };
+  const bombo = banda('lowpass', 140, 0, 1024), caja = banda('bandpass', 2200, 0.9, 512);
+  const onsets = [];
+  const nivel = c => { c.a.getFloatTimeDomainData(c.buf); let e = 0; for (let i = 0; i < c.buf.length; i++) e += c.buf[i] * c.buf[i]; return Math.sqrt(e / c.buf.length); };
+  const detectar = (c, t, umbral) => {
+    const e = nivel(c), prom = c.hist.length ? c.hist.reduce((a, b) => a + b) / c.hist.length : e;
+    c.hist.push(e); if (c.hist.length > 60) c.hist.shift();                          // ~0,8 s de historia
+    if (e > prom * umbral && e > 0.004 && t - c.ult > 0.22){ c.ult = t; return true; }
+    return false;
+  };
+  const tick = setInterval(() => {
+    const t = performance.now() / 1000;
+    const golpeB = detectar(bombo, t, 1.45), golpeC = detectar(caja, t, 1.6);
+    if (!golpeB && !golpeC) return;
+    onsets.push({ t, b: golpeB }); while (onsets.length && t - onsets[0].t > 8) onsets.shift();
+    ritmo.ultOnset = t;
+    // tempo: los intervalos entre golpes, llevados a 80-150 BPM, y el mas repetido
+    const hist = new Array(80).fill(0);                                              // 0,40 a 0,80 s en pasos de 5 ms
+    for (let i = 0; i < onsets.length; i++) for (let j = i + 1; j < onsets.length; j++){
+      let d = onsets[j].t - onsets[i].t; if (d < 0.2 || d > 2.4) continue;
+      while (d > 0.8) d /= 2; while (d < 0.4) d *= 2;
+      const k = Math.round((d - 0.4) / 0.005); for (let w = -2; w <= 2; w++) if (hist[k + w] != null) hist[k + w] += (onsets[i].b && onsets[j].b ? 2 : 1) * (3 - Math.abs(w));
+    }
+    let mejor = 0; hist.forEach((v, k) => { if (v > hist[mejor]) mejor = k; });
+    if (onsets.length >= 6 && hist[mejor] > 0) fijarTempo(0.4 + mejor * 0.005);
+    // compas: el bombo corrige la fase del reloj (sin saltos)
+    if (!ritmo.on && onsets.length >= 6){ ritmo.on = true; ritmo.prox = t + ritmo.P; }
+    if (ritmo.on && golpeB){
+      let err = t - (ritmo.prox - ritmo.P); if (err > ritmo.P / 2) err -= ritmo.P;
+      if (Math.abs(err) < ritmo.P * 0.3) ritmo.prox += err * 0.35;
+    }
+    $('djAviso').textContent = 'Escuchando la música · ' + djEstado.bpm + ' BPM';
+  }, 12);
+  // si se deja de escuchar musica 6 s, el reloj se detiene (las luces siguen solas a su tiempo)
+  const vigila = setInterval(() => { if (ritmo.on && performance.now() / 1000 - ritmo.ultOnset > 6){ ritmo.on = false; $('djAviso').textContent = 'Sin música: las luces siguen solas'; } }, 1000);
+  return { stop(){ clearInterval(tick); clearInterval(vigila); stream.getTracks().forEach(x => x.stop()); ctx.close(); } };
+}
+function iniciarDJ(){
+  $('vista').classList.add('oculta');
+  const cont = $('djEsc'); cont.innerHTML = '';
+  DJ_ESCENAS.forEach((e, i) => { const b = document.createElement('button'); b.className = 'djb'; b.style.setProperty('--g', e.g);
+    b.innerHTML = `<i>${e.i}</i><span>${e.n}</span>`; b.onclick = () => djAplicar(i); cont.appendChild(b); });
+  // el estado de conexion del panel normal se copia al del DJ
+  new MutationObserver(() => { $('djDot').className = $('dot').className; $('djPillTxt').textContent = $('pillTxt').textContent; })
+    .observe($('pill'), { subtree: true, childList: true, attributes: true, characterData: true });
+  djPintar();
+}
+
 /* ---------- Inicio ---------- */
 (async () => {
   try { conf = await api(DEMO ? 'luces.json' : '/luces.json'); }
@@ -2276,6 +2561,7 @@ function marcaAnimador(a){                                              // el an
   pintarDirecciones(); dibujarPlano(); pintarTodo(); pintarProgramas(); pintarVistas(); pintarJuegos(); pintarPosiciones();
   await publicarMomentos();
   if (DEMO) iniciarDemo();
+  if (DJ) iniciarDJ();
   V.yaw = giroSalon() * 0.6; V.dist = 11; V.pitch = 0.2;   // vista inicial: desde el salon, en diagonal
   sondear(); setInterval(sondear, 3000); sondearVista(); V.sucio = true;
 })();

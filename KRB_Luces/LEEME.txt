@@ -17,6 +17,15 @@ USAR
     ventana de la suite, por ejemplo http://192.168.1.50:8080
   - Safari > Compartir > "Agregar a inicio" deja un icono como una app.
 
+PANEL DEL DJ (noches sin show ni juegos)
+  - La misma direccion terminada en /dj, por ejemplo https://luces.krbstage.cl/dj
+  - 12 escenas (Fiesta, Arcoiris, Pista, Sirena, Fuego, Barrido, Destello, Oceano,
+    Lounge, Karaoke, Estrellas, Luz de sala), Automatico (cambia sola cada 3 min),
+    Ritmo (escucha la musica con el microfono y sigue el bombo y la caja),
+    Tap (marcar el ritmo a mano), Intensidad y Apagar.
+  - El microfono solo funciona por https://luces.krbstage.cl/dj o en el Dell
+    (http://localhost:8080/dj); por el WiFi con http el navegador no lo permite.
+
 ACCESO DESDE INTERNET (una vez, en el Dell)
   - Doble clic en CONFIGURAR_INTERNET.bat y seguir los pasos:
     clave, programa de Cloudflare, iniciar sesion en Cloudflare,

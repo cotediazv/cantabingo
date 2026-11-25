@@ -226,6 +226,8 @@ namespace KRB {
     public int[] Ch; public double[] Centro; public double[] Amp; public double Periodo;
     public List<Dictionary<int, int>> Pasos; public double T; public double Fx;
     public double Inicio;
+    public double Ritmo;                      // > 0: avanza con los golpes de la musica (golpes por paso o por vuelta)
+    public long PulsoBase;
   }
 
   // ---------- Salida DMX: un universo de 512 canales, con fundidos ----------
@@ -247,24 +249,43 @@ namespace KRB {
     static Stopwatch reloj = Stopwatch.StartNew();
 
     public static void PonerEfecto(string id, Efecto e) {
-      lock (L) { e.Inicio = reloj.Elapsed.TotalSeconds; efectos[id] = e; }
+      lock (L) { e.Inicio = reloj.Elapsed.TotalSeconds; e.PulsoBase = Pulsos; efectos[id] = e; }
     }
+    // Golpes de la musica (panel del DJ, 25 nov): el panel escucha el bombo y la caja y manda cada golpe.
+    // Los efectos con Ritmo avanzan con los golpes; si dejan de llegar, siguen solos con su tiempo.
+    public static long Pulsos = 0;
+    static double ultimoPulso = -100, intervaloPulso = 0.5;
+    public static void Pulsar() {
+      lock (L) {
+        double ahora = reloj.Elapsed.TotalSeconds, d = ahora - ultimoPulso;
+        if (d > 0.2 && d < 2.0) intervaloPulso = intervaloPulso * 0.7 + d * 0.3;
+        ultimoPulso = ahora; Pulsos++;
+      }
+    }
+    public static double Bpm { get { return 60.0 / intervaloPulso; } }
+    public static bool ConRitmo { get { return reloj.Elapsed.TotalSeconds - ultimoPulso < Math.Max(2.5, 3 * intervaloPulso); } }
     public static void QuitarEfecto(string id) { lock (L) { efectos.Remove(id); } }
     public static void QuitarEfectos() { lock (L) { efectos.Clear(); } }
     public static string[] Efectos() { lock (L) { return new List<string>(efectos.Keys).ToArray(); } }
 
     static void AplicarEfectos(byte[] frame) {
       double ahora = reloj.Elapsed.TotalSeconds;
+      bool conRitmo = ahora - ultimoPulso < Math.Max(2.5, 3 * intervaloPulso);
+      double fraccion = Math.Min(1, Math.Max(0, (ahora - ultimoPulso) / intervaloPulso));
       foreach (Efecto e in efectos.Values) {
         double t = ahora - e.Inicio;
+        // con ritmo: cuantos golpes van desde que partio el efecto (con la fraccion hasta el proximo golpe)
+        double golpes = (e.Ritmo > 0 && conRitmo) ? (Pulsos - e.PulsoBase - 1) + fraccion : -1;
         if (e.Tipo == "seno") {
           for (int k = 0; k < e.Ch.Length; k++) {
-            double v = e.Centro[k] + e.Amp[k] * Math.Sin(2 * Math.PI * (k + 1) * t / Math.Max(0.5, e.Periodo));
+            double fase = golpes >= 0 ? golpes / e.Ritmo : t / Math.Max(0.5, e.Periodo);
+            double v = e.Centro[k] + e.Amp[k] * Math.Sin(2 * Math.PI * (k + 1) * fase);
             Poner(frame, e.Ch[k], v);
           }
         } else if (e.Tipo == "sec" && e.Pasos.Count > 0) {
           int n = e.Pasos.Count;
-          double pos = t / Math.Max(0.03, e.T);
+          double pos = golpes >= 0 ? golpes / e.Ritmo : t / Math.Max(0.03, e.T);
+          if (pos < 0) pos = 0;
           int i = (int)Math.Floor(pos) % n, j = (i + 1) % n;
           double frac = pos - Math.Floor(pos);
           double w = (e.Fx > 0 && frac > 1 - e.Fx) ? (frac - (1 - e.Fx)) / e.Fx : 0;
@@ -566,7 +587,7 @@ namespace KRB {
           bool ok; lock (SL) { ok = tk != null && sesiones.Contains(tk); }
           if (!ok && autorizacion != null && autorizacion.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
             ok = IgualSeguro(autorizacion.Substring(7).Trim(), Clave);
-          if (!ok && ruta != "/" && ruta != "/index.html") {
+          if (!ok && ruta != "/" && ruta != "/index.html" && ruta != "/dj") {
             Enviar(s, "401 Unauthorized", "application/json", Encoding.UTF8.GetBytes("{\"login\":true}"));
             return;
           }
@@ -597,6 +618,9 @@ namespace KRB {
       if (ruta == "/vista3d.js") { Archivo(s, Path.Combine(Root, "vista3d.js"), "text/javascript; charset=utf-8"); return; }
       if (ruta == "/lib/three.module.min.js") { Archivo(s, Path.Combine(Root, "lib", "three.module.min.js"), "text/javascript; charset=utf-8"); return; }
 
+      // Golpe de la musica (panel del DJ): respuesta minima, llega varias veces por segundo
+      if (ruta == "/api/pulso") { Dmx.Pulsar(); Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":true}")); return; }
+      if (ruta == "/dj") { Archivo(s, Path.Combine(Root, "ipad.html"), "text/html; charset=utf-8"); return; }
       if (Accion(ruta, query)) { Estado(s); return; }
 
       // ---- Momentos de los juegos (los dispara el iPad o, mas adelante, el GC Master / la Sala de juegos) ----
@@ -707,6 +731,7 @@ namespace KRB {
             e.T = Num(Arg(query, "t"), 0.5);
             e.Fx = Math.Max(0, Math.Min(1, Num(Arg(query, "fx"), 0)));
           }
+          e.Ritmo = Math.Max(0, Num(Arg(query, "ritmo"), 0));
           Dmx.PonerEfecto(id, e);
         }
         return true;
@@ -788,6 +813,7 @@ namespace KRB {
       b.Append(",\"conectado\":").Append(Dmx.Conectado ? "true" : "false");
       b.Append(",\"error\":\"").Append(Esc(Dmx.Error)).Append("\"");
       b.Append(",\"carpeta\":\"").Append(Esc(Root)).Append("\"");
+      b.Append(",\"ritmo\":").Append(Dmx.ConRitmo ? "true" : "false").Append(",\"bpm\":").Append(Math.Round(Dmx.Bpm).ToString(System.Globalization.CultureInfo.InvariantCulture));
       b.Append(",\"tramas\":").Append(Dmx.Tramas).Append(",\"errores\":").Append(Dmx.Errores);
       b.Append(",\"momento\":\"").Append(Esc(MomentoActual)).Append("\",\"momentoN\":").Append(MomentoN);
       b.Append(",\"efectos\":[");
@@ -875,6 +901,7 @@ try {
     ForEach-Object { Write-Host ("     http://" + $_.IPAddress + ":" + $puertoWeb) -ForegroundColor Green }
 } catch {}
 Write-Host ("  En este computador: http://localhost:" + $puertoWeb)
+Write-Host ("  Panel del DJ: la misma direccion terminada en /dj  (ej. http://localhost:" + $puertoWeb + "/dj)") -ForegroundColor Green
 Write-Host ("  Carpeta de la suite (calibracion en datos.json): " + $root) -ForegroundColor DarkGray
 if ([KRB.Web]::Clave -eq "") {
   Write-Host "  Clave: NO configurada (cualquiera en el WiFi puede usarlo)." -ForegroundColor DarkYellow
