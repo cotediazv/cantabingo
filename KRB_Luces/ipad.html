@@ -2465,11 +2465,14 @@ function techoDiagonal(id){
   const dist = Math.max(0.5, TECHO - pos[1]) / Math.tan(elev);
   return [pos[0] + dir[0] * dist, TECHO, pos[2] + dir[2] * dist];
 }
-// Recorrido de una cabeza por el techo: un circulo chico (pasos cercanos), asi en el fundido la luz nunca baja al piso
-// (las cabezas van de lado en el pilar: un giro grande del pan hace pasar la luz por abajo)
+// Recorrido de una cabeza por el techo (Cote, 25 nov): se mueve suave A TRAVES DEL SALON, siempre hacia arriba (la luz
+// nunca llega al publico). Es una vuelta larga por el techo, a lo largo del salon, con pasos cercanos para que en el
+// fundido no baje (las cabezas van de lado en el pilar: un giro grande del pan haria pasar la luz por abajo).
 function recorridoTecho(id, n){
-  const c = techoDiagonal(id), r = azar(1.2, 1.8), a0 = azar(0, 6.28), zz = {};
-  return N(n).map(k => { const a = a0 + k / n * 2 * Math.PI, p = [c[0] + r * Math.cos(a), TECHO, c[2] + r * Math.sin(a)];
+  const [cu, cv] = aSalon(posCabeza(id)), zz = {}, a0 = azar(0, 6.28), sentido = Math.random() < 0.5 ? 1 : -1;
+  const v0 = Math.max(2, cv - 9), v1 = Math.min(SALON.largo - 6, cv + 9);
+  return N(n).map(k => { const a = a0 + sentido * k / n * 2 * Math.PI;
+    const p = deSalon(0.6 + 3.2 * Math.sin(a), (v0 + v1) / 2 + (v1 - v0) / 2 * Math.cos(a), TECHO);   // elipse larga sobre el salon
     if (!apuntarModelo(id, p, zz)) apuntarGeo(id, p, zz);             // cada paso parte del anterior (sin vueltas)
     return { pan: zz.pan, tilt: zz.tilt, zoom: 70 }; });
 }
@@ -2477,15 +2480,17 @@ const capasCabezasTecho = tema => { const n = tema.length;
   const col = N(n * 2).map(k => { const o = {}, int = { frontales: 30 };
     djCabezas().forEach((id, j) => { o[id] = tema[(k + j + 1) % n]; int[id] = 70; });
     o.frontales = tema[(k + 2) % n]; return pasoColor(o, int); });
-  const rec = {}; djCabezas().forEach(id => rec[id] = recorridoTecho(id, 12));
-  const mov = N(12).map(k => { const o = {}; djCabezas().forEach(id => o[id] = rec[id][k]); return pasoPos(o); });
-  return [{ ...capa('cabcol', col, 0, 0.6), seg: 4 }, { ...capa('cabmov', mov, 0, 1), seg: 3 }]; };   // una vuelta lenta cada 36 s
+  const rec = {}; djCabezas().forEach(id => rec[id] = recorridoTecho(id, 20));
+  const mov = N(20).map(k => { const o = {}; djCabezas().forEach(id => o[id] = rec[id][k]); return pasoPos(o); });
+  return [{ ...capa('cabcol', col, 0, 0.6), seg: 4 }, { ...capa('cabmov', mov, 0, 1), seg: 3 }]; };   // una vuelta por el salon cada 60 s
 // Mini cabezas en Standby (Cote, 25 nov): pintan el TECHO moviendose suave, con colores del tema de la escena,
 // y los cambios de color se notan (cada 3 s, con un fundido corto). Van por tiempo: en Standby puede no haber musica.
+// las mini van en color de CONTRASTE con la pared (Cote, 25 nov), con mas movimiento (una vuelta cada 16 s)
+const CONTRASTE = { azul: 'ambar', cian: 'rosa', morado: 'amarillo', ambar: 'azul', rosa: 'cian', rojo: 'cian', verde: 'morado', amarillo: 'morado' };
 const capasMiniTecho = tema => [
-  { ...capa('minicol', N(tema.length * 2).map(k => pasoColor(grupos(djMini(), tema[k % tema.length]), { mini: 85, mini_columnas: 85 })), 0, 0.35), seg: 3 },
-  { ...capa('mini', N(8).map(k => { const a = k / 8 * 2 * Math.PI, p = 128 + 100 * Math.sin(a), t = 14 + 12 * Math.sin(2 * a + 1);
-      return pasoPos({ mini: { pan: p, tilt: t }, mini_columnas: { pan: 255 - p, tilt: t } }); }), 0, 1), seg: 4 }];
+  { ...capa('minicol', N(tema.length * 2).map(k => pasoColor(grupos(djMini(), CONTRASTE[tema[k % tema.length]] || 'blanco'), { mini: 85, mini_columnas: 85 })), 0, 0.35), seg: 3 },
+  { ...capa('mini', N(8).map(k => { const a = k / 8 * 2 * Math.PI, p = 128 + 105 * Math.sin(a), t = 18 + 16 * Math.sin(2 * a + 1);
+      return pasoPos({ mini: { pan: p, tilt: t }, mini_columnas: { pan: 255 - p, tilt: t } }); }), 0, 1), seg: 2 }];
 const djPrevia = (cs, k) => pasoColor({ ...blancoFrente(), ...grupos(djMini(), cs[(k + 1) % cs.length]), ...grupos(djArriba(), cs[k % cs.length]), ...grupos(djAbajo(), cs[(k + 1) % cs.length]) },
   { perimetrales: 70, fondo: 70, mini: 80, mini_columnas: 80 });
 // Locura: cada equipo con un color distinto (sin repetir mientras alcancen los colores)
