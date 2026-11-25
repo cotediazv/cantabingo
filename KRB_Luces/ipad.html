@@ -182,8 +182,25 @@
   body.dj #dj{display:flex;flex-direction:column;gap:10px;min-height:100vh;min-height:100dvh;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
   .djtop{display:flex;align-items:center;gap:8px}
   .djtop b{font-size:17px;flex:1;letter-spacing:.02em}
-  .djesc{flex:1;display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:8px;min-height:300px}
+  .djesc{flex:1;display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:1fr;gap:6px;min-height:200px}
   @media (min-width:700px){ .djesc{grid-template-columns:repeat(5,1fr)} }
+  /* Vista previa del escenario de frente (mitad de arriba; Cote, 25 nov) */
+  body.dj #dj{height:100vh;height:100dvh;min-height:0;gap:6px;padding-top:calc(6px + env(safe-area-inset-top))}
+  .djvista{position:relative;flex:0 0 42%;min-height:0;border-radius:14px;overflow:hidden;background:#050608}
+  body.dj .djvista #vista{margin:0;border:0;border-radius:0;height:100%}
+  body.dj .djvista #vista canvas{height:100% !important}
+  body.dj .djvista .nav3d, body.dj .djvista .vistas3d, body.dj .djvista .bar{display:none}
+  #djFrente{position:absolute;right:6px;bottom:6px;z-index:3;border:0;border-radius:8px;background:#000a;color:#fff;font-size:12px;padding:5px 8px}
+  body.dj .djb{min-height:0;border-radius:12px;font-size:12px;gap:2px;padding:4px}
+  body.dj .djb i{font-size:21px}
+  body.dj .djc{padding:7px 4px;font-size:13px}
+  body.dj .djc small{display:none}
+  body.dj .djtop b{font-size:15px;white-space:nowrap;flex:0 0 auto}
+  body.dj .djtop{gap:6px}
+  body.dj #djPill{margin-left:auto;min-width:0;max-width:55%;padding:5px 10px;font-size:12px}
+  body.dj #djPillTxt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  body.dj #djAviso{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;min-height:13px}
+  body.dj .djint input{height:24px}
   .djent{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mut)}
   .djent select{flex:1;min-width:0;background:#121419;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:8px;font-size:14px}
   .djnivel{width:70px;height:10px;border-radius:5px;background:#222;overflow:hidden}
@@ -214,8 +231,9 @@
 <body>
 <!-- Panel del DJ: se abre en /dj (o ?dj=1) -->
 <div id="dj">
-  <div class="djtop"><b>Luces KRB · DJ</b><span id="djLatido" title="Ritmo"></span><span id="djBpm" style="font-size:13px;color:var(--mut);min-width:64px">—</span>
+  <div class="djtop"><b>KRB · DJ</b><span id="djLatido" title="Ritmo"></span><span id="djBpm" style="font-size:13px;color:var(--mut);min-width:64px">—</span>
     <div class="pill" id="djPill"><span class="dot" id="djDot"></span><span id="djPillTxt">…</span></div></div>
+  <div class="djvista" id="djVista"><button id="djFrente">⟲ De frente</button></div>
   <div class="djesc" id="djEsc"></div>
   <div class="djctl">
     <button class="djc" id="djAuto">🔀 Automático<small>cambia sola</small></button>
@@ -2431,6 +2449,34 @@ const DJ_ESCENAS = [
         ...grupos(idsPared(), c), frontales: 'blanco_calido' }, { perimetrales: 70, fondo: 70, frontales: 15, mini: 40, mini_columnas: 40 })), 8, 1),
       capa('mov', N(6).map(() => pasoPos({ ...posCabJuntas('pista'), ...grupos(djMini(), { pan: azar(40, 215), tilt: azar(0, 30) }) })), 8, 1)
     ] },
+  { n: 'Neón', i: '🟣', g: 'linear-gradient(135deg,#22e5ff,#ff3fa0,#7dff3a)', fiesta: true,
+    capas: () => { const c = ['cian', 'rosa', 'verde', 'morado'];
+      return [capa('col', N(8).map(k => pasoColor({ ...grupos(djCabezas(), c[k % 4]), ...grupos(djMini(), c[(k + 1) % 4]),
+          ...grupos(idsPared(), c[(k + 2) % 4]), frontales: null })), 1),
+        capa('mov', N(8).map(() => pasoPos({ ...posCab('techo'), ...grupos(djMini(), posMini()) })), 2, 0.5)]; } },
+  { n: 'Rock', i: '🎸', g: 'linear-gradient(135deg,#ff2a2a,#000 55%,#fff)', fiesta: true,
+    capas: () => [
+      capa('col', N(8).map(k => pasoColor({ ...grupos(djCabezas(), k % 2 ? 'blanco' : 'rojo'), ...grupos(djMini(), k % 4 < 2 ? 'rojo' : null),
+        ...grupos(idsPared(), k % 2 ? 'rojo' : null), frontales: k % 4 === 0 ? 'blanco' : null }, { frontales: 60 })), 0.5),
+      capa('mov', N(8).map(() => pasoPos({ ...posCab('escenario'), ...grupos(djMini(), posMini()) })), 1, 0.2)
+    ] },
+  { n: 'Ola', i: '〰️', g: 'linear-gradient(90deg,#2b55ff,#22e5ff,#2b55ff)', fiesta: true,
+    capas: () => { const cab = djCabezas(), c = elegir(['cian', 'azul', 'morado', 'verde']);
+      return [capa('col', N(cab.length + 1).map(k => { const o = {}; cab.forEach((id, j) => o[id] = j === k ? 'blanco' : c);
+          djMini().forEach((id, j) => o[id] = (j + k) % 2 ? c : null); idsPared().forEach(id => o[id] = c); o.frontales = null; return pasoColor(o); }), 0.5, 0.3),
+        capa('mov', N(4).map(() => pasoPos({ ...posCabJuntas('pista'), ...grupos(djMini(), posMini()) })), 4, 0.8)]; } },
+  { n: 'Galaxia', i: '🌌', g: 'radial-gradient(circle at 60% 40%,#fff 0 2px,transparent 3px),linear-gradient(135deg,#1a0a4a,#9b3cff,#2b55ff)', fiesta: true,
+    capas: () => [
+      capa('col', ['morado', 'azul', 'rosa', 'azul'].map((c, k) => pasoColor({ ...grupos(djCabezas(), k % 2 ? 'blanco' : 'morado'), ...grupos(djMini(), c),
+        ...grupos(idsPared(), c), frontales: null }, { perimetrales: 50, fondo: 50 })), 4, 0.9),
+      capa('mov', N(10).map(() => pasoPos({ ...posCab('techo'), ...grupos(djMini(), posMini()) })), 2, 0.9)
+    ] },
+  { n: 'Cumpleaños', i: '🎂', g: 'linear-gradient(135deg,#ffbe00,#ff3fa0,#22e5ff)',
+    capas: () => [
+      capa('col', N(12).map(k => pasoColor({ ...grupos(djCabezas(), elegir(VIVOS)), ...grupos(djMini(), elegir(VIVOS)),
+        ...grupos(idsPared(), k % 2 ? 'amarillo' : 'rosa'), frontales: 'blanco_calido' }, { frontales: 80 })), 0.5),
+      capa('mov', N(8).map(() => pasoPos({ ...posCabJuntas('escenario'), ...grupos(djMini(), posMini()) })), 2, 0.4)
+    ] },
   { n: 'Lounge', i: '🍸', g: 'linear-gradient(135deg,#9b3cff,#ff3fa0)',
     capas: () => [
       capa('col', ['morado', 'rosa', 'morado', 'ambar'].map(c => pasoColor({ ...grupos(djCabezas(), null), ...grupos(djMini(), 'morado'),
@@ -2692,7 +2738,13 @@ $('djEntrada').onchange = async () => {
   if (ritmo.mic){ ritmo.mic.stop(); ritmo.mic = null; try { ritmo.mic = await escucharMusica(); $('djAviso').textContent = 'Escuchando: ' + $('djEntrada').selectedOptions[0].textContent; } catch(e){ $('djMic').classList.remove('act'); $('djAviso').textContent = 'No se pudo usar esa entrada (' + (e.name || e.message) + ')'; } }
 };
 function iniciarDJ(){
-  $('vista').classList.add('oculta');
+  // la vista 3D (lo que de verdad sale por el cable) arriba, con la toma fija del escenario de frente
+  // (en la estacion de ritmo no: corre en el computador de OBS y no debe quitarle fuerza a la transmision)
+  if (ESTACION){ $('djVista').style.display = 'none'; $('vista').classList.add('oculta'); }
+  else { $('djVista').insertBefore($('vista'), $('djFrente'));
+    $('vista').classList.remove('oculta'); $('vista').style.setProperty('--vh', '100%'); }
+  tomaFija(); V.sucio = true;
+  $('djFrente').onclick = () => { tomaFija(); V.sucio = true; };
   const cont = $('djEsc'); cont.innerHTML = '';
   DJ_ESCENAS.forEach((e, i) => { const b = document.createElement('button'); b.className = 'djb'; b.style.setProperty('--g', e.g);
     b.innerHTML = `<i>${e.i}</i><span>${e.n}</span>`; b.onclick = () => djAplicar(i); cont.appendChild(b); });
@@ -2705,7 +2757,7 @@ function iniciarDJ(){
 }
 // Estacion fija: prende Ritmo sola y, si se corta (se desenchufo la entrada, el navegador la cerro), vuelve a partir
 function iniciarEstacion(){
-  document.querySelector('.djtop b').textContent = 'Estación de ritmo · KRB';
+  document.querySelector('.djtop b').textContent = 'KRB · Estación de ritmo';
   const prender = async () => {
     // la primera vez los nombres de las entradas no se conocen hasta abrir una: si ahora se encuentra la pedida, se cambia a esa
     if (ritmo.mic && ritmo.mic.vivo && ritmo.mic.vivo()){ const q = await entradaGuardada(); if (!q || !ritmo.mic.id || ritmo.mic.id() === q) return; }

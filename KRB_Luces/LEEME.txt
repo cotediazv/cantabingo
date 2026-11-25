@@ -21,8 +21,10 @@ USAR
 
 PANEL DEL DJ (noches sin show ni juegos)
   - La misma direccion terminada en /dj, por ejemplo https://luces.krbstage.cl/dj
-  - 15 escenas (Fiesta, Arcoiris, Pista, Sirena, Fuego, Barrido, Destello, Oceano,
-    Disco, Tropical, Romantico, Lounge, Karaoke, Estrellas, Luz de sala),
+  - Arriba, la vista previa del escenario de frente (lo que de verdad sale por el cable).
+  - 20 escenas (Fiesta, Arcoiris, Pista, Sirena, Fuego, Barrido, Destello, Oceano,
+    Disco, Tropical, Romantico, Neon, Rock, Ola, Galaxia, Cumpleanos, Lounge, Karaoke,
+    Estrellas, Luz de sala),
     Automatico (cambia sola cada 3 min),
     Ritmo (escucha la musica con el microfono y sigue el bombo y la caja),
     Tap (marcar el ritmo a mano), Intensidad y Apagar.
