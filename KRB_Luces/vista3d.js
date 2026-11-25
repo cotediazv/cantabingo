@@ -9,7 +9,7 @@ import * as THREE from './lib/three.module.min.js';
 
 let renderer, scene, camera, construido = false;
 const focos = [];            // un foco por equipo: { g, tipo, pos, spot, haz, lente, cuerpo }
-let anilloMarca, animadorObj, artistaObj, roskoObj;
+let anilloMarca, animadorObj, artistaObj, roskoObj, techoObj;
 const PANT = { tv:null, vert:[], h42:[] };   // pantallas del escenario (para mostrar las de la Sala en el demo)
 
 /* ---------- utilidades ---------- */
@@ -204,6 +204,11 @@ function construir(){
   const piso = new THREE.Mesh(new THREE.PlaneGeometry(SALON.cocinas + 0.6 - SALON.pasillo + 6, L + 12), mat.piso);
   piso.rotation.x = -Math.PI / 2; piso.receiveShadow = true;
   const gp = new THREE.Group(); gp.add(piso); enSalon(gp, (SALON.cocinas + 0.6 + SALON.pasillo - 6) / 2, (L - 12) / 2 + 3, 0); scene.add(gp);
+  // techo oscuro (7 m): ahi se ve la luz que pintan las cabezas y las mini hacia arriba (Standby del DJ, Cote 25 nov).
+  // Se oculta cuando la camara esta por encima (vista del salon desde arriba).
+  const techo = new THREE.Mesh(new THREE.PlaneGeometry(SALON.cocinas + 0.6 - SALON.pasillo + 6, L + 12), new THREE.MeshStandardMaterial({ color: 0x2a2a30, roughness: 0.95 }));
+  techo.rotation.x = Math.PI / 2;
+  const gt = new THREE.Group(); gt.add(techo); enSalon(gt, (SALON.cocinas + 0.6 + SALON.pasillo - 6) / 2, (L - 12) / 2 + 3, 7); scene.add(gt); techoObj = gt;
 
   // --- escenario ---
   const forma = new THREE.Shape(TARIMA.map(([x, z]) => new THREE.Vector2(x, -z)));
@@ -456,6 +461,7 @@ function render(){
   }
   anilloMarca.visible = !!(V.marca && enSeguir);
   if (anilloMarca.visible) anilloMarca.position.set(V.marca[0], V.marca[1] + 0.02, V.marca[2]);
+  if (techoObj) techoObj.visible = camera.position.y < 6.8;
   renderer.render(scene, camera);
   if (VIVO.activo) moverPantallasVivo(cv);
 }
