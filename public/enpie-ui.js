@@ -249,7 +249,7 @@
         side = `<small>En pie</small><b>${st.standing}</b>`;
       }
       box.className = `th-${st.venue} on`;
-      box.innerHTML = `<div class="epg-bar"><div class="epg-tag"><small>El último en pie</small><b>${esc(tag)}</b></div><div class="epg-main">${main}</div><div class="epg-side">${side}</div></div>`;
+      box.innerHTML = `<div class="epg-bar"><div class="epg-tag"><b class="epg-name">El último en pie</b><small>${esc(tag)}</small></div><div class="epg-main">${main}</div><div class="epg-side">${side}</div></div>`;
     });
     return () => { stop(); document.body.classList.remove('obs', 'gc-screen'); };
   };

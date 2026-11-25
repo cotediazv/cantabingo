@@ -3743,3 +3743,11 @@ body.gm-compactpage .krb-mark { display: none; } /* el logo chico de la esquina 
 .gm-demo .dm-mapbox iframe { display: block; border: 0; border-radius: 0; height: 330px; }
 .gm-compact[data-pane="mapa"] .dm-mapbox { flex: 1; min-height: 0; }
 .gm-compact[data-pane="mapa"] .dm-mapbox iframe { width: 100%; height: 100%; }
+/* El último en pie en el GC: el nombre del juego es lo más grande (pedido de Cote, 25 nov: «lo que más grande se tiene que
+   ver en el GC es el nombre del juego, y siempre está muy pequeño»); debajo, en chico, en qué parte va */
+#epg .epg-tag { width: 26vw; }
+#epg .epg-tag b.epg-name { font-size: 5.2vh; line-height: .95; }
+#epg .epg-tag small { margin-top: .6vh; font-size: 2vh; }
+/* (diseño anterior) El último en pie y ¿Quién quiere ser ganador? en la pantalla de pie: título centrado */
+@media (max-aspect-ratio: 1/1) { #ep .ep-top { align-items: center; text-align: center; } #ep .ep-top > p { justify-content: center; } }
+#epg .epg-tag small { white-space: nowrap; }

@@ -8,8 +8,9 @@ imagen completa, sin depender de un computador del local.
   Solo envía mientras hay un juego de la sala de juegos en pantalla (no el karaoke ni el show).
 - El decodificador (`pv.html`) la recibe por WHEP y la pone encima durante los juegos; si no llega, sigue con su propia
   vista. La dirección de reproducción va en la variable `EMISION_KENNEDY` del servicio principal.
-- Corre como **Cron Job** de Render con Docker (`emisor/Dockerfile`): los jueves parte a las 18:20 de Chile y termina
-  sola a las 21:45 (otros días, «Trigger Run» lo deja 4 horas). Se cobra solo el tiempo que corre.
+- Corre como **Cron Job** de Render con Docker (`emisor/Dockerfile`). Lo arranca solo el servidor de la Sala cuando
+  empieza un juego en Kennedy (variables `RENDER_API_KEY` y `EMISOR_CRON` en el servicio principal) y se apaga solo tras
+  10 minutos sin juego (`SIN_JUEGO`). Se cobra solo el tiempo que corre.
 - Variables del Cron Job: `WHIP_URL` (dirección de publicación del canal: **secreta**, solo en Render), `RES`
-  (`1080` o `720`), y opcionales `PANTALLA` (por defecto `kennedy`), `SITIO` y `HASTA` (hora de término, ej. `21:45`).
+  (`1080` o `720`), y opcionales `PANTALLA` (por defecto `kennedy`), `SITIO` y `SIN_JUEGO` (minutos).
 - Probado en local con Chrome 153 (Playwright 1.63.0): 1080x1920 a unos 25 cuadros por segundo, H.264, 1,6 núcleos.

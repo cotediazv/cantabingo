@@ -7,7 +7,9 @@
 //   SITIO      por defecto https://cantabingo.onrender.com
 //   PANTALLA   por defecto kennedy
 //   RES        1080 (1080x1920) o 720 (720x1280); por defecto 1080
-//   HASTA      hora de Chile en que termina (por defecto los jueves 21:45; otros días, 4 horas después de partir)
+//   SIN_JUEGO  minutos sin juego para terminar (por defecto 10). Lo arranca solo el servidor de la Sala cuando empieza un
+//              juego en el local (pedido de Cote, 25 nov: «que parta solo cuando empieza un juego, sin Trigger Run ni horario»);
+//              como máximo corre 6 horas seguidas
 const { chromium } = require('playwright');
 
 const SITIO = (process.env.SITIO || 'https://cantabingo.onrender.com').replace(/\/$/, '');
@@ -18,19 +20,12 @@ const W = RES, H = Math.round((RES * 16) / 9);
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// Hora de Chile (con o sin horario de verano)
-const chile = (d = new Date()) => {
-  const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Santiago', weekday: 'short', hour: 'numeric', minute: 'numeric', hourCycle: 'h23' }).formatToParts(d).map((x) => [x.type, x.value]));
-  return { dia: p.weekday, min: Number(p.hour) * 60 + Number(p.minute) };
-};
-const hhmm = (s) => { const [h, m] = String(s).split(':').map(Number); return h * 60 + (m || 0); };
 const inicio = Date.now();
-const fin = (() => {
-  const c = chile();
-  const hasta = process.env.HASTA ? hhmm(process.env.HASTA) : c.dia === 'Thu' ? hhmm('21:45') : null;
-  if (hasta != null && hasta > c.min) return inicio + (hasta - c.min) * 60000;
-  return inicio + 4 * 3600000;
-})();
+const MAX_MS = 6 * 3600000;
+const IDLE_MS = (Number(process.env.SIN_JUEGO) || 10) * 60000;
+let ultimoJuego = Date.now(); // al partir se cuenta como si recién hubiera un juego (lo arrancó el servidor por eso)
+// Avisa al servidor de la Sala que está corriendo (así no lo vuelve a arrancar, lo que lo reiniciaría)
+const latido = () => fetch(`${SITIO}/api/emisor/latido`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pantalla: PANTALLA }) }).catch(() => {});
 
 // Hay juego cuando la pantalla vertical muestra la sala de juegos (no la cartelera ni la información del local) y en la
 // sala no está el karaoke ni el show (no son juegos: esos los sigue mostrando el decodificador)
@@ -75,7 +70,7 @@ const cortar = (page) => page.evaluate(async () => {
 
 (async () => {
   if (!WHIP_URL) { log('Falta WHIP_URL (la dirección de publicación del canal de Cloudflare).'); process.exit(1); }
-  log(`Emisor de la pantalla ${PANTALLA}: ${W}x${H} a 30 cuadros, hasta ${new Date(fin).toISOString()}`);
+  log(`Emisor de la pantalla ${PANTALLA}: ${W}x${H} a 30 cuadros; termina tras ${IDLE_MS / 60000} min sin juego`);
   const browser = await chromium.launch({
     ignoreDefaultArgs: ['--enable-automation'], // sin el aviso «controlado por software», que le quita alto a la página
     headless: false, // la captura de la pestaña necesita un navegador con ventana: en Render corre dentro de una pantalla virtual (xvfb-run)
@@ -105,9 +100,12 @@ const cortar = (page) => page.evaluate(async () => {
     await cdp.detach().catch(() => {});
   };
   try {
-    while (Date.now() < fin) {
+    let tLat = 0;
+    while (Date.now() - inicio < MAX_MS && Date.now() - ultimoJuego < IDLE_MS) {
+      if (Date.now() - tLat > 30000) { tLat = Date.now(); latido(); }
       const st = await estado();
       const juego = st.juego;
+      if (juego) ultimoJuego = Date.now();
       if (juego && !enviando) {
         try {
           await abrir(); await sleep(4000); await ajustar(); // que cargue con el juego a la vista

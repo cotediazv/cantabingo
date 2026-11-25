@@ -33,7 +33,7 @@ const levelOf = (step) => (step <= 4 ? 'f' : step <= 8 ? 'm' : 'd');
 
 module.exports = function desafio({ app, db, save, requireAdmin, fail, setStage, findPlayer, venue, notify, festejo = () => {} }) {
   const blank = () => ({
-    rev: ((db.desafio || {}).rev || 0) + 1, phase: 'setup', player: '', team: [], lostAt: 0, out: '', prizes: [...(db.desafioPrizes || DEFAULT_PRIZES)],
+    rev: ((db.desafio || {}).rev || 0) + 1, phase: 'setup', player: '', team: [], lostAt: 0, out: '', stageBy: [null, null, null], prizes: [...(db.desafioPrizes || DEFAULT_PRIZES)],
     step: 0, q: null, chosen: null, hidden: [], outcome: null, used: { fifty: false, audience: false, phone: false, swap: false },
     audience: null, phoneUntil: 0, seen: [],
     // Trivia del público: pregunta en juego (qid), desde cuándo se ve, si se puede responder, respuestas por pregunta,
@@ -74,9 +74,11 @@ module.exports = function desafio({ app, db, save, requireAdmin, fail, setStage,
     s.phoneUntil = 0;
   }
 
-  // Lo que se lleva quien termina: los premios de las etapas ya pasadas (las 3 si ganó)
-  const stagesDone = () => { const s = g(); return s.outcome === 'won' ? 3 : Math.floor(Math.max(0, s.step - 1) / STAGE); };
-  const wonList = () => (g().phase === 'end' ? g().prizes.slice(0, stagesDone()) : []);
+  // Cada premio es para quien pasó esa etapa (Cote, 25 nov, respuesta 25.2: «cada premio para la persona que pasó esa
+  // etapa»): stageBy guarda quién pasó la pregunta 4, la 8 y la 12. Lo que se lleva quien está jugando al terminar: los
+  // premios de las etapas que pasó él; y la lista completa de premios ganados, con el nombre de cada uno
+  const prizeWinners = () => { const s = g(); return (s.stageBy || []).map((by, i) => (by ? { prize: s.prizes[i], by, stage: i + 1 } : null)).filter(Boolean); };
+  const wonList = () => (g().phase === 'end' ? prizeWinners().filter((x) => x.by === g().player).map((x) => x.prize) : []);
   const andJoin = (a) => (a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} y ${a[a.length - 1]}`);
   const wonPrize = () => andJoin(wonList());
 
@@ -126,7 +128,7 @@ module.exports = function desafio({ app, db, save, requireAdmin, fail, setStage,
       hidden: s.hidden, chosen: s.phase === 'locked' || shown ? s.chosen : null,
       correct: shown && s.q ? s.q.correct : null,
       right: shown && s.q && s.chosen != null ? s.chosen === s.q.correct : null,
-      outcome: s.outcome, won: wonPrize(), wonList: wonList(), used: s.used,
+      outcome: s.outcome, won: wonPrize(), wonList: wonList(), prizeWinners: prizeWinners(), used: s.used,
       audience: s.audience ? { open: !!s.audience.open, until: s.audience.until, ms: AUDIENCE_MS, total: t.total, pct: s.audience.open ? null : t.pct } : null,
       phoneUntil: s.phoneUntil, phoneMs: PHONE_MS,
       // La Trivia del Billonario
@@ -222,6 +224,7 @@ module.exports = function desafio({ app, db, save, requireAdmin, fail, setStage,
       if (s.phase === 'subintro') { deal(s.step); s.phase = 'question'; return; } // el reemplazo sigue en la misma pregunta (otra pregunta del mismo nivel)
       if (s.phase === 'swap') throw new Error('Primero sortea al reemplazo');
       if (s.phase !== 'reveal') throw new Error('Primero revela la respuesta');
+      if (s.chosen === s.q.correct && s.step % STAGE === 0) { s.stageBy ||= [null, null, null]; s.stageBy[s.step / STAGE - 1] = s.player; } // pasó la etapa: ese premio es suyo
       if (s.chosen !== s.q.correct) {
         if (s.team.length < MAX_TEAM) { s.lostAt = s.step; s.out = s.player; s.phase = 'swap'; return; } // perdió: se sortea un reemplazo
         s.outcome = 'lost'; s.phase = 'end'; return;

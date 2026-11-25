@@ -579,6 +579,7 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
       s.patterns = cleanPatterns(b.patterns);
       s.figRound = s.round; // figura elegida: el bingo de esta ronda empezó
       s.figAt = Date.now(); // las pantallas y los celulares muestran la figura en grande unos segundos (Cote, 24 nov)
+      setTimeout(() => emisorCheck(), 0); // en Kennedy, el emisor de la pantalla vertical
       break;
     case 'hidewin': s.hideWin = b.hide !== false; break; // quitar o volver a mostrar la celebración en pantalla
     case 'gc':
@@ -771,7 +772,7 @@ const setStage = (show) => {
   const changed = db.stage !== show;
   const famBefore = familyOf(db.stage);
   db.stage = show;
-  if (changed && familyOf(show) && familyOf(show) !== famBefore) cortinaJuego(); // se cargó otro juego: la cortina
+  if (changed && familyOf(show) && familyOf(show) !== famBefore) { cortinaJuego(); setTimeout(() => emisorCheck(), 0); } // se cargó otro juego: la cortina (y en Kennedy, el emisor de la pantalla vertical)
   if (changed) { perOff(); if (db.carton) db.carton.on = false; } // un juego tomó la pantalla: el GC PER y el cartón salen
   save();
   if (changed) for (const s of Object.values(db.sessions)) broadcast(s); // los celulares se enteran del cambio de juego
@@ -803,6 +804,34 @@ const familyOf = (st) => {
   return ['voto', 'desafio', 'enpie'].includes(st) ? (st === 'voto' ? `voto:${(db.vote || {}).mode || ''}` : st) : null;
 };
 const cortinaJuego = () => { const s = Object.values(db.sessions)[0]; if (s) capaFire(s.theme || 'frida', 'cortina'); };
+// Emisor de la pantalla vertical de Mercado Kennedy (pedido de Cote, 25 nov: «que el emisor parta solo cuando empieza
+// un juego en Kennedy, sin Trigger Run ni horario»): cuando hay un juego en pantalla en la sala de Kennedy y el emisor
+// no está corriendo (no ha avisado en los últimos 90 s), se le pide a Render que lo arranque (Cron Job emisor-kennedy).
+// Necesita en Render RENDER_API_KEY (clave de la API de Render; nunca en el repositorio) y EMISOR_CRON (el id del Cron
+// Job, crn-…). El emisor se apaga solo tras 10 minutos sin juego.
+const emisor = { latido: 0, pedido: 0, error: '' };
+app.post('/api/emisor/latido', (req, res) => { if (String((req.body || {}).pantalla || '') === 'kennedy') emisor.latido = Date.now(); res.json({ ok: true }); });
+app.get('/api/emisor', requireAdmin, (_req, res) => res.json({ corriendo: Date.now() - emisor.latido < 90000, latido: emisor.latido, pedido: emisor.pedido, error: emisor.error, configurado: !!(process.env.RENDER_API_KEY && process.env.EMISOR_CRON) }));
+// Hay un juego de verdad en pantalla (no solo la sala abierta con el QR): lo mismo que hace pasar la pantalla vertical a la sala
+const juegoEnPantalla = (s) => {
+  const st = db.stage;
+  if (!familyOf(st)) return false;
+  if (st === 'bingo') return !!((s.drawn || []).length || s.figRound === s.round || s.bigQr);
+  if (st === 'rueda') return Object.keys(db.wheels || {}).length > 0;
+  return true;
+};
+const emisorCheck = () => {
+  const key = process.env.RENDER_API_KEY; const cron = process.env.EMISOR_CRON;
+  const s = Object.values(db.sessions)[0];
+  if (!key || !cron || !s || (s.theme || 'frida') !== 'kennedy' || !juegoEnPantalla(s)) return;
+  if (((db.vertical || {}).kennedy || {}).mode === 'video') return; // la pantalla está en «Siempre el video»: no se vería
+  if (Date.now() - emisor.latido < 90000 || Date.now() - emisor.pedido < 5 * 60000) return; // ya corre, o se pidió hace poco (tarda 1 o 2 min en partir)
+  emisor.pedido = Date.now();
+  fetch(`${process.env.RENDER_API_URL || 'https://api.render.com'}/v1/cron-jobs/${encodeURIComponent(cron)}/runs`, { method: 'POST', headers: { Authorization: `Bearer ${key}`, Accept: 'application/json' }, signal: AbortSignal.timeout(10000) })
+    .then(async (r) => { emisor.error = r.ok ? '' : `Render respondió ${r.status}: ${(await r.text()).slice(0, 160)}`; if (!r.ok) console.log('Emisor:', emisor.error); })
+    .catch((e) => { emisor.error = String(e.message || e); console.log('Emisor:', emisor.error); });
+};
+setInterval(emisorCheck, 30000);
 require('./momentos.js').init({ app, db, aviso }); // momentos de los juegos para las luces (lista acordada con Code 4)
 const wheel = require('./wheel.js')({ app, db, save, requireAdmin, fail, setStage, festejo, findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null });
 roscoRef = wheel;

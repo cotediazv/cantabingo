@@ -414,3 +414,12 @@ html.t2 #gv.gv-gc .gv-in b { font-size: min(3.6vh, 2.6vw); }
 html.t2 #gv.gv-gc .gv-name { font-size: 1.9vh; }
 html.t2 #gv.gv-gc .gv-intro .gv-lines { font-size: 1.9vh; }
 html.t2 #gv.gv-gc .gv-intro .gv-lines li { margin-bottom: .5vh; }
+/* El último en pie en la pantalla de pie: el título centrado y grande, y los números de pie y en la banca debajo, centrados
+   (pedido de Cote, 25 nov: «los títulos, por ejemplo en la pantalla vertical, que sean centrados»). En el GC, el nombre del
+   juego es lo más grande */
+@media (max-aspect-ratio: 1/1) {
+  html.t2 #ep .ep-top { align-items: center; text-align: center; }
+  html.t2 #ep .ep-top > b { font-size: 11vw; }
+  html.t2 #ep .ep-top > p { justify-content: center; }
+}
+html.t2 #epg .epg-tag small { white-space: nowrap; letter-spacing: .08em; }

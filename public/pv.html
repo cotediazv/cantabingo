@@ -922,7 +922,10 @@
         else if (cw.none) o += '<div class="mid" style="margin-top:3rem">La Trivia del Ganador</div><b class="big fit" style="display:block">Nadie sumó puntos</b>';
         else o += '<div class="mid gold" style="margin-top:3rem">Premio especial · Ganó la Trivia</div><b class="big fit" style="display:block">' + h(cw.name) + '</b><div class="mid">' + cw.score + ' puntos · ' + cw.hits + (cw.hits === 1 ? ' acierto' : ' aciertos') + '</div>';
       } else if (s.phase === 'end') {
-        o += '<b class="big gold fit" style="display:block;margin-top:3rem">' + ({ won: '¡Ganó los 3 premios!', retired: 'Se retira', lost: 'Fin del juego' }[s.outcome] || '') + '</b><div class="mid" style="margin-top:2rem">Se lleva: ' + h(s.won || 'el aplauso del público') + '</div>';
+        o += '<b class="big gold fit" style="display:block;margin-top:3rem">' + ({ won: '¡Ganó el juego!', retired: 'Se retira', lost: 'Fin del juego' }[s.outcome] || '') + '</b>';
+        var pw = s.prizeWinners || [];
+        if (!pw.length) o += '<div class="mid" style="margin-top:2rem">¡El aplauso del público!</div>';
+        for (var q = 0; q < pw.length; q++) o += '<div class="mid" style="margin-top:1.4rem">' + h(pw[q].prize) + ': <span class="gold">' + h(pw[q].by) + '</span></div>';
       } else if (s.phase === 'swap') {
         o += '<div class="mid" style="margin-top:2rem">' + h(s.out) + ' quedó fuera</div><b class="big fit" style="display:block;margin-top:2rem">Sorteamos un reemplazo</b><div class="mid" style="margin-top:2rem">Sigue desde la pregunta ' + s.step + '</div>';
       } else if (s.phase === 'subintro') {

@@ -116,8 +116,9 @@ test('reemplazos: hasta 4 participantes, cada uno sigue desde la pregunta en que
   st = await wrong(); assert.equal(st.phase, 'swap');
   await h('sub', { player: 'Rosa' }); await h('next');
   assert.deepEqual((await srv.admin.get('/api/desafio/host')).team, ['ANA', 'LUIS', 'PEDRO', 'ROSA']);
-  st = await wrong(); // el cuarto pierde: termina, con el premio de la etapa ya pasada
-  assert.equal(st.phase, 'end'); assert.equal(st.outcome, 'lost'); assert.equal(st.won, 'P1'); assert.equal(st.player, 'ROSA');
+  st = await wrong(); // el cuarto pierde: termina; el premio de la etapa 1 es de quien la pasó (ANA, respuesta 25.2 de Cote)
+  assert.equal(st.phase, 'end'); assert.equal(st.outcome, 'lost'); assert.equal(st.won, ''); assert.equal(st.player, 'ROSA');
+  assert.deepEqual(st.prizeWinners, [{ prize: 'P1', by: 'ANA', stage: 1 }]);
   await h('reset');
 });
 

@@ -18,6 +18,8 @@
   const prizeOf = (st, step) => st.prizes[stageOf(step) - 1] || '';
   const stageTxt = (st, step) => `Etapa ${stageOf(step)} · ${prizeOf(st, step)}`;
   const nth = (k) => `${k}.º`;
+  // Premios ganados, cada uno con quien pasó su etapa (Cote, 25 nov, respuesta 25.2)
+  const prizesTxt = (st) => ((st.prizeWinners || []).length ? st.prizeWinners.map((x) => `${x.prize}: ${x.by}`).join(' · ') : 'Esta vez no hubo premios');
   // ---------- La Trivia del Ganador (el público juega desde el celular; pedido de Gabriel, 25 nov) ----------
   const TRIVIA = 'La Trivia del Ganador';
   const TRIVIA_L = 'la Trivia del Ganador'; // a mitad de frase
@@ -111,7 +113,7 @@
         box.innerHTML = `${rankBox}${head}${read}${options(true)}
           <button class="primary big" data-lock ${chosen == null ? 'disabled' : ''}>🔒 Respuesta definitiva${chosen != null ? `: ${L[chosen]}` : ''}</button>
           ${extras()}<h2 style="margin:18px 0 6px">Comodines</h2>${lifelines()}
-          <button class="big dc-retire" data-do="retire">🏳 Se retira con ${esc(st.step > 4 ? st.prizes.slice(0, Math.floor((st.step - 1) / 4)).join(' y ') : 'nada')}</button>${rankBtn}`;
+          <button class="big dc-retire" data-do="retire">🏳 Se retira con ${esc((st.prizeWinners || []).filter((x) => x.by === st.player).map((x) => x.prize).join(' y ') || 'nada')}</button>${rankBtn}`;
       } else if (st.phase === 'locked') {
         box.innerHTML = `${rankBox}${head}${read}${options(false)}<p class="dc-note">Respuesta definitiva: <b>${L[st.pick]}</b>. En pantalla queda marcada, en suspenso.</p>
           ${extras()}<button class="primary big" data-do="reveal">✨ Revelar</button>
@@ -130,8 +132,9 @@
           <p class="dc-note">Sigue desde la pregunta ${st.step} · etapa ${stageOf(st.step)}: <b>${esc(prizeOf(st, st.step))}</b>. En pantalla se presenta al reemplazo.</p>
           <button class="primary big" data-do="next">▶ Pregunta ${st.step} para ${esc(st.player)}</button>${rankBtn}`;
       } else if (st.phase === 'end') {
-        const txt = { won: '🏆 ¡Ganó el juego: los 3 premios!', retired: '🏳 Se retiró', lost: '✘ Fin del juego' }[st.outcome];
-        box.innerHTML = `<p class="dc-result ${st.outcome === 'lost' ? 'bad' : 'ok'}">${txt}<br>${esc(st.player)} se lleva: <b>${esc(st.won || 'nada')}</b></p>
+        const txt = { won: `🏆 ¡${esc(st.player)} ganó el juego!`, retired: `🏳 ${esc(st.player)} se retiró`, lost: '✘ Fin del juego' }[st.outcome];
+        box.innerHTML = `<p class="dc-result ${st.outcome === 'lost' ? 'bad' : 'ok'}">${txt}</p>
+          <div class="dc-note">📣 Premios: ${(st.prizeWinners || []).length ? st.prizeWinners.map((x) => `<br><b>${esc(x.prize)}</b> para ${esc(x.by)}`).join('') : 'esta vez no hubo premios'}</div>
           ${st.q ? `<p class="muted">La respuesta correcta era ${L[st.answer]}: ${esc(st.q.options[st.answer])}</p>` : ''}
           ${crowdEnd()}`;
       }
@@ -243,7 +246,7 @@
       } else if (st.phase === 'subintro') {
         body = `<p class="pvote-wait">Sube al escenario: <b>${esc(st.player)}</b><br>Sigue desde la pregunta ${st.step}.</p>`;
       } else if (st.phase === 'end') {
-        body = `<p class="pvote-wait">${esc(st.player)} ${st.outcome === 'won' ? '¡ganó el juego y los 3 premios!' : 'terminó la partida'}${st.won ? `<br>Se lleva: <b>${esc(st.won)}</b>` : ''}<br>Muy pronto, el ganador de ${TRIVIA_L}.</p>`;
+        body = `<p class="pvote-wait">${esc(st.player)} ${st.outcome === 'won' ? '¡ganó el juego!' : 'terminó la partida'}<br>${esc(prizesTxt(st))}<br>Muy pronto, el ganador de ${TRIVIA_L}.</p>`;
       } else if (st.player && st.phase !== 'setup') {
         body = `<p class="pvote-wait">Concursante: <b>${esc(st.player)}</b><br>Premios de hoy: ${st.prizes.map((x, i) => `<b>${i + 1})</b> ${esc(x)}`).join(' · ')}<br>¡Prepárate! Vas a responder cada pregunta desde aquí.</p>`;
       } else body = '<p class="pvote-wait">¡Prepárate! Muy pronto comienza ¿Quién quiere ser ganador?</p>';
@@ -338,9 +341,9 @@
   const phoneHTML = () => (left('phone') > 0 ? `<div class="d-aud open"><b>${se('📞 Llamada')}</b><span>Quedan <i data-clock="phone">${secs('phone')}</i> s</span></div>` : '');
   const endHTML = (st) => {
     const won = st.outcome === 'won';
-    const head = { won: '¡Ganó los 3 premios!', retired: 'Se retira', lost: 'Fin del juego' }[st.outcome];
+    const head = { won: '¡Ganó el juego!', retired: 'Se retira', lost: 'Fin del juego' }[st.outcome];
     return `<div class="d-end ${st.outcome}">${won ? `<div class="confetti">${confetti()}</div>` : ''}<span class="d-cup">${won ? '🏆' : st.outcome === 'retired' ? '🏳' : '👏'}</span>
-      <small>${head}</small><b ${n(st.player)}>${esc(st.player)}</b><span>Se lleva: <b>${esc(st.won || 'el aplauso del público')}</b></span></div>`;
+      <small>${head}</small><b ${n(st.player)}>${esc(st.player)}</b><span>${(st.prizeWinners || []).length ? st.prizeWinners.map((x) => `${esc(x.prize)}: <b>${esc(x.by)}</b>`).join(' · ') : 'Gracias por jugar: ¡el aplauso del público!'}</span></div>`;
   };
   // Sonidos del tablero: suspenso al marcar, acierto, error, victoria y el tic-tac de los relojes
   const cues = (st, prev) => {
@@ -407,7 +410,7 @@
         : st.phase === 'swap' ? `<div class="dg-bar dg-intro"><small>${esc(st.out)} quedó fuera · sigue desde la pregunta ${st.step}</small><b>Sorteamos un reemplazo</b></div>`
         : st.phase === 'subintro' ? `<div class="dg-bar dg-intro"><small>Entra el reemplazo · participante ${st.team.length} de 4 · sigue desde la pregunta ${st.step}</small><b ${n(st.player)}>${esc(st.player)}</b></div>`
         : st.phase === 'end' && st.crowdWinner ? `<div class="dg-bar dg-intro">${winnerHTML(st, false)}</div>`
-        : st.phase === 'end' ? `<div class="dg-bar dg-intro"><small>${esc(st.player)} · ${{ won: '¡Ganó!', retired: 'Se retira', lost: 'Fin del juego' }[st.outcome]}</small><b>Se lleva: ${esc(st.won || 'el aplauso del público')}</b></div>`
+        : st.phase === 'end' ? `<div class="dg-bar dg-intro"><small>${esc(st.player)} · ${{ won: '¡Ganó el juego!', retired: 'Se retira', lost: 'Fin del juego' }[st.outcome]}</small><b>${esc(prizesTxt(st))}</b></div>`
           : `<div class="dg-bar"><div class="d-q"><small>Pregunta ${st.step} · ${esc(stageTxt(st, st.step))}</small><b ${n(st.q.text)}>${esc(st.q.text)}</b></div>${optionsHTML(st)}</div>`;
       box.innerHTML = `<aside class="dg-side">${lifeIcons(st)}${ladder(st)}</aside>
         ${st.rank ? `<div class="dg-extra dg-rank">${rankList(st)}</div>` : st.phase === 'question' || st.phase === 'locked' ? `<div class="dg-extra">${audienceHTML(st)}${phoneHTML()}${crowdChip(st)}</div>` : ''}
