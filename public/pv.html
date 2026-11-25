@@ -132,6 +132,11 @@
   .qr-foot .qrp { margin-top: 1rem; color: #fff; font-size: 2.2rem; }
   /* Botón «Pantalla completa» (pedido de Cote, 21 nov): aparece al tocar la pantalla y se esconde solo a los 8 s */
   #fs { position: absolute; right: 2rem; top: 2rem; z-index: 50; margin: 0; padding: 1.4rem 2.4rem; border: .3rem solid #ffc400; border-radius: 1.6rem; background: #000; background: rgba(0, 0, 0, .78); color: #fff; font-family: 'Fredoka', 'Trebuchet MS', Arial, sans-serif; font-size: 2.8rem; font-weight: 700; line-height: 1.1; -webkit-appearance: none; cursor: pointer; }
+  /* Emisión en vivo de la pantalla (pedido de Cote, 25 nov): durante los juegos, la imagen real de la pantalla vertical
+     llega en tiempo real desde el emisor y se pone encima; si no llega, sigue la vista de esta página */
+  #emi { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 45; background: #000; object-fit: contain; display: none; }
+  #cv.emi-on #emi { display: block; }
+  #cv.emi-on #view, #cv.emi-on #per, #cv.emi-on #marks { visibility: hidden; }
   #diag { position: fixed; left: 0; right: 0; bottom: 0; z-index: 99; margin: 0; padding: 8px; font: 12px/1.35 monospace; background: #fff; color: #000; white-space: pre-wrap; word-wrap: break-word; max-height: 45%; overflow: auto; }
 
   /* ================= Diseño nuevo (pedido de Cote, 22 nov: «Me gusta, aplícalo a todo») =================
@@ -361,6 +366,7 @@
   <div id="view"></div>
   <div id="per" class="hide"></div>
   <div id="marks"></div>
+  <video id="emi" muted autoplay playsinline webkit-playsinline></video>
 </div>
 <div id="t2pre"><b>.</b><s>.</s><i>.</i><u>.</u><em>.</em></div>
 <script src="gameintro.js"></script>
@@ -1080,8 +1086,59 @@
       if (show === 'light') show = { karaoke: st.karaokeNow ? 'karaoke' : 'light-kar', qr: 'light-qr', show: 'light-show' }[st.lightStage] || 'light';
       var want = show === 'video' ? (ver ? 'video' : 'logo') : show === 'light' ? 'info' : show === 'light-qr' ? 'info-qr' : show === 'light-show' ? 'info-show' : show === 'light-kar' ? 'info-kar' : show === 'karaoke' ? 'karaoke' : !st.activity ? (ver ? 'video' : 'logo') : 'sala';
       if (want !== cur) go(want);
+      eUrl = eTest || st.emision || '';
+      emiWant();
     });
   }
+  // ---------- Emisión en vivo (WHEP de Cloudflare) ----------
+  // Solo con la sala en pantalla y la dirección configurada; la imagen se pone encima apenas el video empieza a andar.
+  // Si se corta, vuelve al instante la vista de esta página y se reintenta cada 15 s.
+  var emi = $('emi'); var epc = null; var eOn = false; var eTimer = null; var eUrl = '';
+  // Prueba del decodificador (?senal=kennedy, frida o tobalaba): muestra encima, todo el tiempo, la transmisión propia
+  // de ese local (la misma de krbstage.cl), para comprobar que el decodificador recibe la señal en tiempo real
+  var SENAL = { kennedy: 'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/c24ccde66ad7d935841dd934d9b3e1cf/webRTC/play', frida: 'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/2c9c627707b0fbc53e20c611f84235a0/webRTC/play', tobalaba: 'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/9c4d261a1b6c2fb79842b6d3821b9018/webRTC/play' };
+  var eTest = SENAL[Q.senal] || '';
+  function emiStop() {
+    clearTimeout(eTimer); eTimer = null;
+    if (epc) { try { epc.close(); } catch (e) { /* nada */ } epc = null; }
+    if (eOn) { eOn = false; cv.className = cv.className.replace(/ emi-on\b/, ''); }
+    try { if ('srcObject' in emi) emi.srcObject = null; else emi.removeAttribute('src'); } catch (e) { /* nada */ }
+  }
+  function emiWant() { if ((cur === 'sala' || eTest) && eUrl) { if (!epc && !eTimer) emiStart(); } else if (epc || eOn || eTimer) emiStop(); }
+  function emiStart() {
+    if (!window.RTCPeerConnection || !window.Promise) return;
+    var pc; try { pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.cloudflare.com:3478' }], bundlePolicy: 'max-bundle' }); } catch (e) { return; }
+    epc = pc;
+    var again = function (ms) { if (epc !== pc) return; emiStop(); eTimer = setTimeout(function () { eTimer = null; emiWant(); }, ms); };
+    var got = function (stream) {
+      if (epc !== pc || !stream) return;
+      if ('srcObject' in emi) emi.srcObject = stream; else emi.src = URL.createObjectURL(stream);
+      var pl = emi.play(); if (pl && pl['catch']) pl['catch'](function () { /* nada */ });
+    };
+    if ('ontrack' in pc) pc.ontrack = function (e) { got(e.streams && e.streams[0] ? e.streams[0] : new MediaStream([e.track])); };
+    else pc.onaddstream = function (e) { got(e.stream); };
+    pc.oniceconnectionstatechange = function () { var c = pc.iceConnectionState; if (c === 'failed' || c === 'disconnected' || c === 'closed') again(5000); };
+    var opts = {};
+    try { pc.addTransceiver('video', { direction: 'recvonly' }); } catch (e) { opts = { offerToReceiveVideo: true }; }
+    var limit = setTimeout(function () { if (epc === pc && !eOn) again(15000); }, 12000);
+    pc.createOffer(opts).then(function (o) { return pc.setLocalDescription(o); }).then(function () {
+      return new Promise(function (r) {
+        if (pc.iceGatheringState === 'complete') return r();
+        var t = setTimeout(r, 1500);
+        pc.onicegatheringstatechange = function () { if (pc.iceGatheringState === 'complete') { clearTimeout(t); r(); } };
+      });
+    }).then(function () {
+      return new Promise(function (ok, bad) {
+        var x = new XMLHttpRequest();
+        x.open('POST', eUrl, true); x.setRequestHeader('Content-Type', 'application/sdp'); x.timeout = 10000;
+        x.onreadystatechange = function () { if (x.readyState !== 4) return; if (x.status >= 200 && x.status < 300) ok(x.responseText); else bad(new Error('WHEP ' + x.status)); };
+        x.ontimeout = function () { bad(new Error('WHEP sin respuesta')); };
+        x.send(pc.localDescription.sdp);
+      });
+    }).then(function (sdp) { return pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: sdp })); })['catch'](function () { clearTimeout(limit); again(15000); });
+  }
+  emi.addEventListener('playing', function () { if (epc && !eOn) { eOn = true; cv.className += ' emi-on'; } });
+  emi.addEventListener('error', function () { if (eOn) { emiStop(); eTimer = setTimeout(function () { eTimer = null; emiWant(); }, 5000); } });
   function pubLoad() { get('/api/tema', function (r) { if (r && typeof r.pub === 'string') PUB = r.pub; }); }
   pubLoad(); setInterval(pubLoad, 300000);
   tick();
@@ -1115,7 +1172,7 @@
   // Revisión: con ?diag=1, el navegador y los errores
   if (Q.diag) {
     var d = document.createElement('pre'); d.id = 'diag'; document.body.appendChild(d);
-    setInterval(function () { d.textContent = navigator.userAgent + '\nventana ' + window.innerWidth + 'x' + window.innerHeight + ' · pantalla ' + P + ' · vista ' + cur + ' · video ' + ver + (vid.paused ? ' (detenido)' : ' (andando)') + '\nerrores: ' + (errs.length ? errs.join(' | ') : 'ninguno'); }, 1500);
+    setInterval(function () { d.textContent = navigator.userAgent + '\nventana ' + window.innerWidth + 'x' + window.innerHeight + ' · pantalla ' + P + ' · vista ' + cur + ' · video ' + ver + (vid.paused ? ' (detenido)' : ' (andando)') + '\nemisión ' + (eUrl ? (eOn ? 'en pantalla' : epc ? 'conectando' : 'esperando') : 'sin configurar') + (window.RTCPeerConnection ? '' : ' (este navegador no tiene WebRTC)') + '\nerrores: ' + (errs.length ? errs.join(' | ') : 'ninguno'); }, 1500);
   }
 })();
 </script>
