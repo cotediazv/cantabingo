@@ -188,6 +188,42 @@
     return { fitPanel, applyK, reset: () => { k = max; cap = max; applyK(); } };
   };
 
+  // Todo a la vista sin bajar la página (pedido de Cote, 25 nov: «en GC Master, que todas las herramientas entren en
+  // pantalla, tanto en computador como en iPad o iPhone»). Si lo que hay en la página es más alto o más ancho que la
+  // ventana, la página entera se achica lo justo (zoom) para que quepa; si después sobra espacio, vuelve a crecer (hasta
+  // su tamaño normal). No baja de «min»: más chico no se podría usar (ahí se baja la página, como antes).
+  const encaja = (root, { min = 0.5 } = {}) => {
+    let z = 1;
+    const main = root.parentElement;
+    const apply = (nz) => {
+      z = nz;
+      root.style.zoom = z === 1 ? '' : String(z);
+      // las pantallas se miden por el ancho: al achicar, la página conserva su ancho (así también baja su alto) y queda centrada
+      const cs = main ? getComputedStyle(main) : null;
+      const mw = main ? main.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0) : 0;
+      root.style.width = z === 1 || !mw ? '' : `${mw}px`;
+      root.style.marginLeft = z === 1 || !mw ? '' : `${((mw / z) - mw) / 2}px`;
+    };
+    const run = () => {
+      if (!root.isConnected) return;
+      const H = window.innerHeight; const W = window.innerWidth;
+      const pad = main ? parseFloat(getComputedStyle(main).paddingBottom) || 0 : 0;
+      const bottom = Math.max(root.getBoundingClientRect().bottom + window.scrollY + 10, document.documentElement.scrollHeight - pad); // también lo que sobresale
+      const wide = document.documentElement.scrollWidth;
+      if (bottom <= H + 2 && wide <= W + 2) { if (z < 1 && bottom < H * 0.9 && !rt) reset(); return; } // sobra mucho: se vuelve a medir desde el tamaño normal
+      const nz = Math.max(min, Math.floor(z * Math.min(1, (H - 6) / bottom, W / wide) * 200) / 200);
+      if (nz < z - 0.004) apply(nz);
+    };
+    // al abrir y al cambiar el tamaño de la ventana (o girar el iPad/teléfono) se parte del tamaño normal y se achica lo
+    // justo; mientras tanto solo se achica más si algo nuevo no cabe
+    let rt = null;
+    const reset = () => { clearTimeout(rt); rt = setTimeout(() => { apply(1); rt = setTimeout(() => { rt = null; run(); }, 400); }, 250); };
+    const t = setInterval(run, 700);
+    window.addEventListener('resize', reset);
+    setTimeout(run, 1200);
+    return { stop: () => { clearInterval(t); clearTimeout(rt); window.removeEventListener('resize', reset); apply(1); }, z: () => z };
+  };
+
   // «Sala KRB»: la sala de juegos en el teléfono (pedido de Cote, 22 nov: «una versión móvil… guardarlo en el inicio, que no
   // se vea la barra de direcciones y pueda en una plana operar todos los botones… distribuido para un iPhone»). Se abre
   // en /sala (#/master/movil), a pantalla completa y sin bajar la página: arriba los 3 monitores chicos (GC, tablero y de
@@ -289,13 +325,38 @@
     const sim0 = demo ? await api('GET', '/api/sim').catch(() => null) : null;
     const open0 = demo ? ((await api('GET', '/api/current').catch(() => ({}))).sessions || [])[0] : null;
     if (demo && !location.hash.startsWith('#/master/demo')) return undefined; // ya se cambió de pestaña mientras se esperaba
-    app.innerHTML = `<div id="gm" class="gm-all gm-jg ${demo ? 'gm-demo' : ''}">${navHTML(demo ? 'demo' : 'juegos')}
-      <a class="gm-movil" href="/sala">📱 Abrir la versión para el teléfono</a>
+    app.innerHTML = `<div id="gm" class="gm-all gm-jg ${demo ? 'gm-demo' : ''}" data-pane="juego">${navHTML(demo ? 'demo' : 'juegos')}
+      <div class="gm-btnrow"><a class="gm-movil" href="/sala">📱 Abrir la versión para el teléfono</a>
       <button type="button" class="gm-fuerabtn" data-k="fuera">🖥️ Pantallas en otra ventana</button>
-      ${demo ? '<button type="button" class="gm-fuerabtn" data-k="luces" title="El iPad de las luces de Code 4, manejando el demo de este navegador: con «Anda al público» se abre el mapa para seguir al animador a mano">💡 Luces del demo</button>' : ''}
+      ${demo ? '<button type="button" class="gm-fuerabtn" data-k="luces" title="El iPad de las luces de Code 4, manejando el demo de este navegador: con «Anda al público» se abre el mapa para seguir al animador a mano">💡 Luces del demo</button>' : ''}</div>
       <div class="gm-grid"><div class="gm-jgleft" data-k="left"></div>
-        <div class="gm-jgright"><div class="gm-panel"><iframe title="Panel de la sala de juegos" src="${location.pathname}${demo && !open0 ? '#/simulada' : '#/juegos'}"></iframe></div><div class="gm-jgctl" data-k="ctl"></div></div></div></div>`;
+        <div class="gm-jgright"><div class="gm-panel"><iframe title="Panel de la sala de juegos" src="${location.pathname}${demo && !open0 ? '#/simulada' : '#/juegos'}"></iframe></div><div class="gm-jgctl" data-k="ctl"></div></div></div>
+      <div class="gm-panes" data-k="panes"><button type="button" data-pane="juego" class="on">🎮 Juego</button><button type="button" data-pane="gc">🎛️ GC y efectos</button>${demo ? '<button type="button" data-pane="mapa">🗺️ Mapa</button>' : ''}</div></div>`;
     const root = $('#gm');
+    // En el iPad de pie y en el teléfono (pedido de Cote, 25 nov: todo a la vista): versión compacta, como «Sala KRB»:
+    // arriba las pantallas y, al medio, lo que eligen las teclas de abajo: el panel del juego, los botones del GC y los
+    // efectos, o el mapa del salón (en el demo)
+    const compact = () => { const c = window.innerWidth < 900 || window.innerHeight > window.innerWidth * 1.15; root.classList.toggle('gm-compact', c); document.body.classList.toggle('gm-compactpage', c); };
+    compact();
+    root.querySelector('[data-k="panes"]').onclick = (e) => {
+      const b = e.target.closest('[data-pane]'); if (!b) return;
+      root.dataset.pane = b.dataset.pane;
+      root.querySelectorAll('.gm-panes [data-pane]').forEach((x) => x.classList.toggle('on', x === b));
+      setTimeout(() => { fit(); fitPanel(); }, 50);
+    };
+    // Computador e iPad acostado: el panel de la derecha mide lo que queda bajo los botones del GC, y el mapa del demo,
+    // lo que queda abajo (con un mínimo); si aun así no cabe, la página se achica sola (encaja)
+    const fitMap = () => {
+      const ctlEl = root.querySelector('[data-k="ctl"]');
+      root.style.setProperty('--ctlh', `${ctlEl && !ctlEl.hidden ? ctlEl.offsetHeight + 10 : 0}px`);
+      const m = root.querySelector('.dm-map iframe');
+      if (!m || root.classList.contains('gm-compact')) { if (m) m.style.height = ''; return; }
+      if (fitter.z() < 1) return; // ya achicada: el mapa queda como está
+      const h = Math.max(180, Math.floor(window.innerHeight - m.getBoundingClientRect().top - 20));
+      if (Math.abs(h - m.offsetHeight) > 3) m.style.height = `${h}px`;
+    };
+    const fitter = encaja(root);
+    const tFitMap = setInterval(() => { compact(); fitMap(); }, 500);
     const left = root.querySelector('[data-k="left"]');
     const ctlBox = root.querySelector('[data-k="ctl"]'); // los botones del GC y de los efectos van a la derecha, debajo del panel de los juegos (pedido de Cote, 23 nov), para que las pantallas queden más grandes
     let alive = true; let venue = null; let stage = ''; let sigStop = null;
@@ -438,7 +499,7 @@
     const t1 = setInterval(load, 3000);
     const offAviso = window.onAviso(load); // el botón encendido y los monitores cambian al instante (aviso del servidor)
     const t4 = setInterval(fitPanel, 400);
-    return () => { alive = false; offAviso(); if (sigStop) sigStop(); clearInterval(t1); clearInterval(t3); clearInterval(t4); clearInterval(tAway); window.removeEventListener('resize', fitPanel); ro.disconnect(); document.body.classList.remove('gm-on'); };
+    return () => { alive = false; offAviso(); if (sigStop) sigStop(); clearInterval(t1); clearInterval(t3); clearInterval(t4); clearInterval(tAway); clearInterval(tFitMap); fitter.stop(); window.removeEventListener('resize', fitPanel); ro.disconnect(); document.body.classList.remove('gm-on', 'gm-compactpage'); };
   };
 
   // Pantallas en otra ventana (pedido de Cote, 24 nov: «poder abrir una pantalla secundaria, para que las pantallas estén
@@ -581,6 +642,7 @@
       <div class="gm-grid">${list.map(venueHTML).join('')}</div>
       ${single ? '' : `<div class="gm-audio"><small>Audio · escuchar la señal 1 de un local (los otros se apagan)</small><div class="gm-audiorow">${list.map((v, i) => `<button type="button" class="gm-key" data-audio="${v}"><i></i><span>🔇</span><b>${i + 1} · ${esc(VENUES[v])}</b></button>`).join('')}</div></div>`}</div>`;
     const root = $('#gm');
+    const fitter = encaja(root); // todo a la vista sin bajar la página (pedido de Cote, 25 nov)
     const el = (v, k) => root.querySelector(`.gm-venue[data-v="${v}"] [data-k="${k}"]`);
     const state = {}; // por local: lo que eligió el operador para la pantalla 1 y lo último dibujado
     list.forEach((v) => { state[v] = { p1: 'auto', p1src: '', keys: '', live: false, viewers: 0, own: false, pc: null, ownTimer: null, main: null, light: null }; });
@@ -685,6 +747,7 @@
       if (document.activeElement !== ti) ti.value = (s.light && s.light.text) || '';
       s.keys = sig;
       const l = s.light;
+      box.classList.toggle('gm-dos', !!(s.main && l)); // con la sala de juegos de este local, los dos grupos en 3 columnas para que quepan
       box.innerHTML = `${s.main ? `<div class="gm-row"><small>GC de la sala de juegos</small><div class="gm-keyrow">${MAIN.map(([k, i, t]) => key('data-main', k, i, t, s.main.stage === k)).join('')}</div></div>` : ''}
         ${l ? `<form class="gm-row gm-custom" id="gmf-${v}"><small>GC de la sala light</small><div class="gm-keyrow">${LIGHT.map(([k, i, t]) => key('data-light', k, i, t, l.stage === k)).join('')}
             ${key('data-video', l.video ? '0' : '1', '🎬', 'Video cartelera', !!l.video)}
@@ -767,7 +830,7 @@
     const t1 = setInterval(load, 3000);
     const offAviso = window.onAviso(load); // el botón encendido y los monitores cambian al instante (aviso del servidor)
     const t2 = setInterval(loadLive, 20000);
-    return () => { alive = false; offAviso(); clearInterval(t1); clearInterval(t2); clearInterval(t3); ro.disconnect(); document.removeEventListener('visibilitychange', onVisible); list.forEach((v) => { clearInterval(fades[v]); ownStop(v); }); document.body.classList.remove('gm-on'); };
+    return () => { alive = false; offAviso(); clearInterval(t1); clearInterval(t2); clearInterval(t3); ro.disconnect(); document.removeEventListener('visibilitychange', onVisible); list.forEach((v) => { clearInterval(fades[v]); ownStop(v); }); fitter.stop(); document.body.classList.remove('gm-on'); };
   };
 
   // #/master: los 3 locales juntos · #/master/<local>: la página de un local · #/master/juegos: la sala de juegos ·

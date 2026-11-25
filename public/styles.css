@@ -3647,3 +3647,82 @@ body.con-paso #ctl-carton { top: calc(var(--paso-h, 64px) + 20px); }
 .d-cover.d-wide { grid-column: 1 / -1; }
 /* Sorteo de ¿Quién quiere ser ganador? (diseño anterior): la etiqueta «Principal» / «Suplente» en lugar del número */
 #rf .rf-picked.rf-des b, body.full #rf .rf-picked.rf-des b { width: auto; padding: 0 1.4vh; border-radius: 99px; font-size: .7em; }
+
+/* GC Master: todas las herramientas a la vista, sin bajar la página (pedido de Cote, 25 nov: «en GC Master, que todas las
+   herramientas entren en pantalla, tanto en computador como en iPad o iPhone»). Lo que no alcance a caber lo resuelve el
+   ajuste automático (encaja() en master-ui.js: la página se achica lo justo) */
+.gm-btnrow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0 0 8px; }
+.gm-btnrow .gm-fuerabtn { margin: 0; }
+.gm-btnrow .gm-movil { margin: 0; }
+.gm-panes { display: none; }
+/* Computador e iPad acostado: el panel mide lo que queda bajo los botones del GC (--ctlh lo pone master-ui.js) */
+.gm-jg:not(.gm-compact) .gm-panel { height: calc(100vh - 92px - var(--ctlh, 0px)); height: calc(100dvh - 92px - var(--ctlh, 0px)); min-height: 240px; }
+.gm-jg.gm-demo:not(.gm-compact) .gm-panel { height: calc(100vh - 128px - var(--ctlh, 0px)); height: calc(100dvh - 128px - var(--ctlh, 0px)); }
+/* Con la sala de juegos del local abierta, la página del local tiene 2 grupos de botones: van en 3 columnas para que quepan */
+@media (min-width: 900px) {
+  .gm-one .gm-keys.gm-dos .gm-keyrow { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: var(--kh2); gap: 5px; }
+  .gm-one .gm-venue { --kh2: calc((var(--h3) - 2 * 22px - 7 * 5px - 6px) / 8); }
+  .gm-one .gm-keys.gm-dos { container-type: inline-size; }
+  .gm-one .gm-keys.gm-dos .gm-row + .gm-row { margin-top: 6px; }
+  .gm-one .gm-keys.gm-dos .gm-key span { font-size: min(1.1rem, calc(var(--kh2) * .36)); }
+  .gm-one .gm-keys.gm-dos .gm-key b, .gm-one .gm-keys.gm-dos .gm-key.gm-long b { font-size: max(.5rem, min(.72rem, 3.4cqw)); }
+  .gm-one .gm-keys.gm-dos .gm-key i { top: 3px; right: 3px; width: 5px; height: 5px; }
+}
+
+/* Versión compacta (iPad de pie y teléfono) de «Sala de juegos» y «Demo», como «Sala KRB»: arriba las pantallas y, al
+   medio, lo que eligen las teclas de abajo (el panel del juego, los botones del GC y los efectos, o el mapa) */
+body.gm-compactpage main { padding: 6px 8px !important; }
+#gm.gm-compact { display: flex; flex-direction: column; height: calc(100vh - 12px); height: calc(100dvh - 12px); gap: 6px; overflow: hidden; }
+.gm-compact .gm-nav { flex: none; flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding-bottom: 4px; margin: 0; scrollbar-width: none; }
+.gm-compact .gm-nav::-webkit-scrollbar { display: none; }
+.gm-compact .gm-nav > * { flex: none; }
+.gm-compact .gm-nav > b { display: none; }
+.gm-compact .gm-tab { padding: 6px 9px; font-size: .82rem; white-space: nowrap; }
+.gm-compact .gm-clock { flex: none; margin-left: 4px; flex-direction: column; align-items: flex-end; gap: 0; line-height: 1.1; }
+.gm-compact .gm-clock b { font-size: 1rem; } .gm-compact .gm-clock i { font-size: .62rem; }
+.gm-compact .gm-btnrow { flex: none; flex-wrap: nowrap; overflow-x: auto; margin: 0; gap: 6px; }
+.gm-compact .gm-btnrow > * { flex: none; white-space: nowrap; font-size: .78rem; padding: 5px 9px; }
+.gm-compact .gm-btnrow .gm-movil { display: inline-block; border-radius: 8px; }
+.gm-compact .gm-grid { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+.gm-compact .gm-jgleft { flex: none; min-width: 0; }
+.gm-compact .gm-jgleft > .gm-venue { padding: 6px 8px; }
+.gm-compact .gm-head { margin: 0 0 4px; gap: 8px; font-size: .8rem; }
+.gm-compact .gm-head > b { font-size: .9rem; }
+.gm-compact .gm-screens { width: 100%; max-width: calc(24vh * 1.45); max-width: calc(24dvh * 1.45); margin: 0 auto; grid-template-columns: minmax(0, 1fr) minmax(0, .6328fr); gap: 0 6px; }
+.gm-compact.gm-demo .gm-screens { max-width: calc(24vh * 1.96); max-width: calc(24dvh * 1.96); grid-template-columns: minmax(0, 1fr) minmax(0, .6328fr) minmax(0, .577fr); }
+.gm-compact .gm-tall .gm-box, .gm-compact.gm-demo .dm-phone .gm-box { max-width: none; }
+.gm-compact .gm-left { display: grid; gap: 0; }
+.gm-compact .dm-ctl { margin-top: 4px; font-size: 11px; gap: 4px 10px; }
+.gm-compact .dm-ctl select { max-width: 170px; font-size: 12px; padding: 3px 6px; }
+.gm-compact .dm-vista, .gm-compact .dm-map { display: none; }
+.gm-compact .gm-jgright { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+.gm-compact .gm-panel { position: static; flex: 1; height: auto; min-height: 0; }
+.gm-compact .gm-jgctl { flex: none; }
+.gm-compact[data-pane="juego"] .gm-jgctl { display: none; }
+.gm-compact[data-pane="gc"] .gm-panel { display: none; }
+.gm-compact[data-pane="gc"] .gm-jgctl { flex: 1; min-height: 0; overflow-y: auto; }
+.gm-compact[data-pane="gc"] .gm-keyrow { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); }
+.gm-compact[data-pane="mapa"] .gm-jgright { display: none; }
+.gm-compact[data-pane="mapa"] .gm-jgleft { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.gm-compact[data-pane="mapa"] .gm-jgleft > .gm-venue { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.gm-compact[data-pane="mapa"] .dm-map { display: flex; flex-direction: column; flex: 1; min-height: 0; margin-top: 6px; }
+.gm-compact[data-pane="mapa"] .dm-map iframe { flex: 1; height: auto; min-height: 0; }
+.gm-compact .gm-panes { flex: none; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; }
+.gm-compact .gm-panes button { margin: 0; padding: 10px 6px; font-size: .9rem; font-weight: 800; border-radius: 10px; }
+.gm-compact .gm-panes button.on { background: #ffc400; border-color: #ffc400; color: #1a1407; }
+/* teléfono acostado: las pantallas más bajas, para que quede espacio para el panel */
+@media (max-height: 500px) {
+  .gm-compact .gm-screens { max-width: calc(34vh * 1.45); max-width: calc(34dvh * 1.45); }
+  .gm-compact.gm-demo .gm-screens { max-width: calc(34vh * 1.96); max-width: calc(34dvh * 1.96); }
+  .gm-compact .gm-btnrow, .gm-compact .gm-head { display: none; }
+  .gm-compact .gm-panes button { padding: 6px; font-size: .8rem; }
+}
+/* compacta: el panel, los botones y el mapa usan todo el ancho; en el teléfono no va «Pantallas en otra ventana» */
+.gm-compact .gm-grid { align-items: stretch; }
+.gm-compact .gm-jgleft, .gm-compact .gm-jgright { width: 100%; }
+@media (max-width: 700px) { .gm-compact .gm-fuerabtn { display: none; } }
+/* computador: la columna de la derecha llega hasta abajo (el panel crece si la izquierda es más alta) */
+.gm-jg:not(.gm-compact) .gm-grid { align-items: stretch; }
+.gm-jg:not(.gm-compact) .gm-jgright { display: flex; flex-direction: column; }
+.gm-jg:not(.gm-compact) .gm-panel { flex: 1 0 auto; }
+body.gm-compactpage .krb-mark { display: none; } /* el logo chico de la esquina tapaba la tecla «Juego» */
