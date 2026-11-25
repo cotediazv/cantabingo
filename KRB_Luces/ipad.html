@@ -246,6 +246,10 @@
   .djint input{flex:1;height:30px;margin:0}
   #djLatido{width:14px;height:14px;border-radius:50%;background:#333;display:inline-block;transition:background .08s}
   #djLatido.on{background:#ffcc00;box-shadow:0 0 10px #ffcc00}
+  /* Tap late con cada pulso (Cote, 25 nov): metronomo para sincronizar a mano */
+  #djTap{transition:none}
+  #djTap.pulso{background:#ffcc00;border-color:#ffcc00;color:#111;box-shadow:0 0 16px #ffcc0099}
+  @keyframes djtap{0%,14%{background:#ffcc00;border-color:#ffcc00;color:#111}30%,100%{background:var(--card);border-color:var(--line);color:var(--txt)}}
   @keyframes djlatir{0%,12%{background:#ffcc00;box-shadow:0 0 10px #ffcc00}30%,100%{background:#333;box-shadow:none}}
   #djAviso{font-size:12px;color:var(--warn);min-height:14px}
 
@@ -2564,8 +2568,11 @@ async function djServidor(params){
   if (document.activeElement !== $('djInt') && r.int && +$('djInt').value !== r.int){ $('djInt').value = r.int; $('djIntTxt').textContent = r.int + '%'; }
   // ritmo que llega al Dell (de este aparato o de la estacion)
   const lat = $('djLatido');
-  if (r.ritmo){ djEstado.bpm = r.bpm; $('djBpm').textContent = r.bpm + ' BPM'; lat.style.animation = `djlatir ${(60 / r.bpm).toFixed(3)}s infinite`; }
-  else { lat.style.animation = ''; if (!ritmo.on) $('djBpm').textContent = '—'; }
+  const local = ritmo.on || ritmo.mic;                                  // los pulsos los manda este aparato: Tap ya late con cada uno
+  if (r.ritmo){ djEstado.bpm = r.bpm; $('djBpm').textContent = r.bpm + ' BPM';
+    const anim = `${(60 / r.bpm).toFixed(3)}s infinite`;
+    if (!local){ lat.style.animation = 'djlatir ' + anim; if ($('djTap').dataset.anim !== anim){ $('djTap').style.animation = 'djtap ' + anim; $('djTap').dataset.anim = anim; } } }
+  else { lat.style.animation = ''; $('djTap').style.animation = ''; $('djTap').dataset.anim = ''; if (!ritmo.on) $('djBpm').textContent = '—'; }
   if (!ritmo.mic && !ritmo.on) $('djAviso').textContent = r.estacion ? (r.ritmo ? 'Ritmo desde la estación: ' + r.bpm + ' BPM' : 'La estación está conectada, sin música por ahora')
     : 'Nadie está escuchando la música: abrir el panel en el computador de la mezcla y tocar 🎤 Ritmo (o usar Tap)';
   // en el celular del DJ, si ya hay una estacion escuchando, no hace falta elegir la entrada de audio
@@ -2581,11 +2588,16 @@ $('djInt').onchange = () => { djServidor({ int: $('djInt').value }); if (djEstad
 /* ---------- Ritmo: reloj de golpes que se ajusta a la musica ---------- */
 const ritmo = { on: false, P: 0.5, prox: 0, rtt: 0.08, golpes: [], taps: [], mic: null, ultOnset: 0 };
 function enviarPulso(){
-  if (DEMO){ simPulso(); const l = $('djLatido'); l.classList.add('on'); setTimeout(() => l.classList.remove('on'), 90); return; }
+  marcarPulso();
+  if (DEMO){ simPulso(); return; }
   const t0 = performance.now();
   fetch('/api/pulso', {cache: 'no-store', credentials: 'same-origin'}).then(() => {
     ritmo.rtt = ritmo.rtt * 0.8 + ((performance.now() - t0) / 1000) * 0.2; }).catch(() => {});
-  const l = $('djLatido'); l.classList.add('on'); setTimeout(() => l.classList.remove('on'), 90);
+}
+function marcarPulso(){
+  const l = $('djLatido'), t = $('djTap');
+  l.classList.add('on'); t.style.animation = ''; t.classList.add('pulso');
+  setTimeout(() => { l.classList.remove('on'); t.classList.remove('pulso'); }, 110);
 }
 function relojRitmo(){
   if (!ritmo.on || !ritmo.prox) return;
@@ -2608,7 +2620,6 @@ $('djTap').onclick = () => {
     fijarTempo(ints[Math.floor(ints.length / 2)]);
   }
   ritmo.on = true; ritmo.prox = t + ritmo.P; enviarPulso();
-  $('djTap').classList.add('act'); setTimeout(() => $('djTap').classList.remove('act'), 120);
   if (!ritmo.mic) $('djAviso').textContent = 'Ritmo a mano: ' + djEstado.bpm + ' BPM. Toca 4 veces al compás para ajustarlo.';
 };
 // Micro: escucha el bombo (graves) y la caja (medios-agudos); con los golpes calcula el tempo y corrige el compas
