@@ -3736,3 +3736,10 @@ body.gm-compactpage .krb-mark { display: none; } /* el logo chico de la esquina 
 .dc-prizes3 label { display: grid; grid-template-columns: 90px 1fr; grid-template-rows: auto auto; gap: 2px 10px; align-items: center; }
 .dc-prizes3 label b { grid-row: 1 / 3; }
 .dc-prizes3 label input { grid-column: 2; }
+/* Demo: no hace falta ver de quién es el celular (pedido de Cote, 25 nov): la fila «Celular de…» y «Vista 3D» no se
+   muestran (el celular sigue siendo el de quien está en el escenario) */
+.gm-demo .dm-ctl { display: none; }
+.gm-demo .dm-mapbox { position: relative; overflow: hidden; border: 1px solid #2b2838; border-radius: 8px; background: #0c0b12; }
+.gm-demo .dm-mapbox iframe { display: block; border: 0; border-radius: 0; height: 330px; }
+.gm-compact[data-pane="mapa"] .dm-mapbox { flex: 1; min-height: 0; }
+.gm-compact[data-pane="mapa"] .dm-mapbox iframe { width: 100%; height: 100%; }

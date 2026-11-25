@@ -133,7 +133,7 @@
   // El mapa del salón bajo las pantallas del Demo (pedido de Cote, 24 nov: «para poder seguir al animador con el dedo o
   // con el mouse… como lo va a hacer el DJ»): el iPad de luces de Code 4 en modo control, que maneja el demo de este
   // navegador; `?demo=mapa` es su página de solo el mapa y los botones de las cabezas (las cabezas ya no siguen solas)
-  const MAPA = '<div class="dm-map"><small>Mapa del salón · sigue al animador con el dedo o el mouse</small><iframe title="Mapa del salón para seguir al animador" src="/demo-luces/ipad.html?demo=mapa"></iframe></div>';
+  const MAPA = '<div class="dm-map"><small>Mapa del salón · sigue al animador con el dedo o el mouse</small><div class="dm-mapbox"><iframe title="Mapa del salón para seguir al animador" src="/demo-luces/ipad.html?demo=mapa"></iframe></div></div>';
   const DEMO3D = () => `/demo-luces/ipad.html?demo=tv&p2=${encodeURIComponent(page('#/tablero'))}&p3=${encodeURIComponent(page('#/tablero'))}&gc=${encodeURIComponent(page('#/escena'))}`;
   const monCtl = (fit) => {
     let snd = null; let big = null; let zone = null; let sig = null;
@@ -349,11 +349,23 @@
     const fitMap = () => {
       const ctlEl = root.querySelector('[data-k="ctl"]');
       root.style.setProperty('--ctlh', `${ctlEl && !ctlEl.hidden ? ctlEl.offsetHeight + 10 : 0}px`);
-      const m = root.querySelector('.dm-map iframe');
-      if (!m || root.classList.contains('gm-compact')) { if (m) m.style.height = ''; return; }
+      // El mapa de Code 4 crece en alto según su ancho (con los botones de las cabezas debajo): se muestra entero en el
+      // alto que queda; si no alcanza, más chico y centrado (pedido de Cote, 25 nov: «el panel de las cabezas móviles queda
+      // fuera de pantalla»)
+      const box = root.querySelector('.dm-mapbox'); const m = box && box.querySelector('iframe');
+      if (!m) return;
+      if (root.classList.contains('gm-compact')) { box.style.height = ''; m.style.cssText = ''; return; }
       if (fitter.z() < 1) return; // ya achicada: el mapa queda como está
-      const h = Math.max(180, Math.floor(window.innerHeight - m.getBoundingClientRect().top - 20));
-      if (Math.abs(h - m.offsetHeight) > 3) m.style.height = `${h}px`;
+      let doc = null; try { doc = m.contentDocument; } catch { doc = null; }
+      const bw = box.clientWidth;
+      const h = Math.max(140, Math.floor(window.innerHeight - box.getBoundingClientRect().top - 16));
+      if (!doc || !doc.body || !bw) return;
+      if (m.offsetWidth !== bw) { m.style.width = `${bw}px`; return; } // primero el ancho; el alto se mide en la próxima vuelta
+      const nat = Math.max(120, doc.documentElement.scrollHeight > m.offsetHeight + 2 ? doc.documentElement.scrollHeight : Math.min(m.offsetHeight, doc.body.scrollHeight || m.offsetHeight));
+      const k = Math.min(1, h / nat);
+      const css = `width:${bw}px;height:${nat}px;transform:scale(${k});transform-origin:0 0;margin-left:${Math.round((bw - bw * k) / 2)}px`;
+      box.style.height = `${Math.round(nat * k)}px`;
+      if (m.style.cssText !== css) m.style.cssText = css;
     };
     const fitter = encaja(root);
     const tFitMap = setInterval(() => { compact(); fitMap(); }, 500);
