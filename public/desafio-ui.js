@@ -65,7 +65,7 @@
         <div class="dc-prizes">${prizes.map((p, i) => i).reverse().map((i) => `<label><b>${i + 1}</b><input type="text" data-prize="${i}" maxlength="30" value="${esc(prizes[i])}">${i < 9 ? `<span><input type="checkbox" data-safe="${i + 1}" ${st.safe.includes(i + 1) ? 'checked' : ''}> Seguro</span>` : '<span></span>'}</label>`).join('')}</div>
         <button class="primary big" style="margin-top:14px">▶ Presentar en pantalla</button></form>`;
     };
-    const lifelines = () => `<div class="dc-life">${LIFELINES.map(([k, name, icon]) => `<button type="button" data-life="${k}" ${st.used[k] ? 'disabled' : ''}><span>${icon}</span>${name}</button>`).join('')}</div>`;
+    const lifelines = () => `<div class="dc-life">${LIFELINES.map(([k, name, icon]) => `<button type="button" data-life="${k}" ${st.used[k] ? 'disabled' : ''}><span>${icon}</span>${name}${st.used[k] ? '<small>Ya usado en esta partida</small>' : ''}</button>`).join('')}</div>`;
     const options = (clickable) => `<div class="dc-opts">${st.q.options.map((o, i) => {
       const cls = [i === st.answer ? 'ok' : '', st.hidden.includes(i) ? 'gone' : '', i === (st.pick != null ? st.pick : pick) ? 'on' : ''].join(' ');
       return `<button type="button" class="${cls}" ${clickable && !st.hidden.includes(i) ? `data-pick="${i}"` : 'disabled'}><b>${L[i]}</b><span>${esc(o)}</span>${i === st.answer ? '<i>✔ correcta</i>' : ''}</button>`;

@@ -3348,6 +3348,7 @@ body.con-paso #ctl-reload-fixed { top: calc(var(--paso-h, 64px) + 20px); }
 .dc-life button { display: grid; justify-items: center; gap: 2px; padding: 12px 6px; border-radius: 14px; font-weight: 700; }
 .dc-life button span { font-size: 1.8rem; line-height: 1; }
 .dc-life button:disabled { opacity: .3; text-decoration: line-through; }
+.dc-life button small { font-size: .75rem; font-weight: 600; text-decoration: none; }
 .dc-retire { width: 100%; margin-top: 14px; }
 .dc-note { margin: 0 0 12px; padding: 12px; border-radius: 12px; background: rgba(255, 196, 0, .12); border: 1px dashed #ffc400; }
 .dc-result { margin: 0 0 12px; padding: 14px; border-radius: 14px; text-align: center; font-size: 1.4rem; font-weight: 800; line-height: 1.35; }

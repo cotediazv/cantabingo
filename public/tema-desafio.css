@@ -185,6 +185,67 @@ html.t2 body[data-view="jugar"] .pcrowd-score b { color: var(--t-foco); font-fam
 html.t2 body[data-view="jugar"] .pcrowd-top em { border-radius: 0; background: var(--t-foco); color: #1a1407; font-family: var(--t-mono); }
 html.t2 body[data-view="jugar"] .pcrowd-top > div.me, html.t2 body[data-view="jugar"] .pcrowd-rank > div.me { outline-color: var(--t-foco); }
 
+/* PANTALLA DE PIE (tablero en una pantalla vertical: la de pie de los locales y «3 · De pie» del GC Master) ================
+   Una sola columna: título, pregunta, alternativas y público; abajo la escalera con los comodines y, al lado, el QR.
+   Las medidas van en vw (el ancho es lo que manda en una pantalla alta). */
+@media (orientation: portrait) {
+  html.t2 #df { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); gap: 2.6vw; padding: 4.5vw 4.5vw 9.5vw; }
+  html.t2 #df .d-top { flex-wrap: wrap; justify-content: space-between; gap: 2vw 3vw; }
+  html.t2 #df .d-top b { font-size: 7vw; }
+  html.t2 #df .d-top::after { display: none; }
+  html.t2 #df .d-top span { padding: 1.4vw 4.4vw 1.2vw 3.6vw; font-size: 4.6vw; clip-path: polygon(2vw 0, 100% 0, calc(100% - 2vw) 100%, 0 100%); }
+  html.t2 #df .d-play { grid-template-rows: auto auto auto; gap: 3vw; }
+  html.t2 #df .d-q { gap: 1.6vw; padding: 4vw 5vw 4.6vw; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 4vw), calc(100% - 4vw) 100%, 0 100%); }
+  html.t2 #df .d-q small { font-size: 2.6vw; }
+  html.t2 #df .d-q b { font-size: min(6.4vw, calc(230vw / (var(--n, 10) * .45 + 12))); }
+  html.t2 #df .d-opts { gap: 2.4vw; }
+  html.t2 #df .d-opts > div { min-height: 11.5vw; gap: 2.6vw; padding-right: 3vw; clip-path: polygon(2.4vw 0, 100% 0, calc(100% - 2.4vw) 100%, 0 100%); }
+  html.t2 #df .d-opts > div > b { min-width: 11vw; padding: 0 3vw 0 4vw; font-size: 6.4vw; clip-path: polygon(0 0, 100% 0, calc(100% - 2.4vw) 100%, 0 100%); }
+  html.t2 #df .d-opts > div > span { font-size: min(4.8vw, calc(66vw / (var(--n, 10) * .5 + 4))); }
+  html.t2 #df .d-foot { grid-auto-flow: row; gap: 2.4vw; }
+  html.t2 #df .d-aud { grid-template-columns: minmax(0, 1fr) auto; gap: 1vw 3vw; padding: 2.6vw 4vw 2.2vw 3.4vw; }
+  html.t2 #df .d-aud > b { grid-column: 1 / -1; }
+  html.t2 #df .d-aud > .d-bars { grid-column: 1 / -1; }
+  html.t2 #df .d-aud > b { font-size: 4.4vw; }
+  html.t2 #df .d-aud > span { font-size: 3.6vw; }
+  html.t2 #df .d-aud > span i { font-size: 5.6vw; }
+  html.t2 #df .d-aud > small { font-size: 2.2vw; }
+  html.t2 #df .d-bars { height: 12vw; gap: 2.4vw; }
+  html.t2 #df .d-bars p em { font-size: 3.4vw; }
+  html.t2 #df .d-bars p b { font-size: 3.8vw; }
+  /* abajo: la escalera a la izquierda; a la derecha, los comodines (2 × 2) y el QR */
+  html.t2 #df .d-side { grid-template-columns: minmax(0, 1fr) 38vw; grid-template-rows: auto minmax(min-content, 1fr); gap: 2.4vw 3vw; }
+  html.t2 #df .d-ladder { grid-column: 1; grid-row: 1 / 3; }
+  html.t2 #df .d-life { grid-column: 2; grid-row: 1; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.6vw; }
+  html.t2 #df .d-join { grid-column: 2; grid-row: 2; }
+  html.t2 #df .d-life span { gap: .6vw; padding: 1.2vw .6vw 1vw; font-size: 4.4vw; }
+  html.t2 #df .d-life small { font-size: 1.7vw; }
+  html.t2 #df .d-ladder { gap: .5vw; padding: 2vw 1.6vw 1.6vw; }
+  html.t2 #df .d-ladder li { gap: 2.4vw; padding: 0 2.4vw; font-size: 3.4vw; }
+  html.t2 #df .d-join { align-self: end; gap: 1.8vw; padding: 1.6vw 2vw 1.6vw 1.6vw; }
+  html.t2 #df .d-join .qr { width: 17vw; height: 17vw; }
+  html.t2 #df .d-join b { font-size: 2.6vw; }
+  html.t2 #df .d-join span { font-size: 2vw; }
+  /* portadas: presentación, fin, ranking y ganador */
+  html.t2 #df .d-cover { gap: 3vw; padding: 7vw 6vw; clip-path: polygon(0 0, 100% 0, 100% calc(100% - 5vw), calc(100% - 5vw) 100%, 0 100%); }
+  html.t2 #df .d-cover > small { font-size: 3vw; }
+  html.t2 #df .d-cover > b, html.t2 #df .d-end > b, html.t2 #df .d-cw > b { font-size: min(17vw, calc(86vw / (var(--n, 10) * .46))); }
+  html.t2 #df .d-cover > span, html.t2 #df .d-cw > span, html.t2 #df .d-end > span { font-size: 3.2vw; }
+  html.t2 #df .d-cw > small, html.t2 #df .d-end > small { font-size: 6vw; }
+  html.t2 #df .d-cover.d-wide { grid-row: 2 / -1; padding: 6vw 5vw; }
+  html.t2 #df .d-rank > small, html.t2 #df .d-rank > span { font-size: 2.4vw; }
+  html.t2 #df .d-rank > b { font-size: 10vw; }
+  html.t2 #df .d-rank ol { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; grid-auto-flow: row; gap: 1.4vw; }
+  html.t2 #df .d-cover.d-wide .d-rank li { gap: 3vw; padding: 1.8vw 3vw 1.8vw 2vw; font-size: 5.4vw; }
+  /* antes de empezar: el QR grande, debajo de la portada */
+  html.t2 #df.ph-setup .d-side { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto; justify-items: center; }
+  html.t2 #df.ph-setup .d-join { grid-column: 1; grid-row: 1; }
+  html.t2 #df.ph-setup .d-join { flex-direction: column; align-self: center; width: 60vw; padding: 4vw; text-align: center; }
+  html.t2 #df.ph-setup .d-join .qr { width: 100%; height: auto; aspect-ratio: 1; }
+  html.t2 #df.ph-setup .d-join b { font-size: 3.6vw; }
+  html.t2 #df.ph-setup .d-join span { font-size: 2.8vw; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html.t2 #df .d-opts > div, html.t2 #dg .d-opts > div, html.t2 #df .d-opts > div::before, html.t2 #dg .d-opts > div::before, html.t2 #df .d-cover, html.t2 #dg .dg-intro { animation: none !important; }
 }
