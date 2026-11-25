@@ -303,6 +303,7 @@
     <p class="help">Para descubrir qué hace cada canal de una luz: elige su dirección y mueve los controles uno por uno. Anota qué canal es pan, tilt, dimmer, rojo, verde, azul y blanco, y cámbialo en <b>luces.json</b>.</p>
     <div class="addr" id="addrBar"><span>Dirección inicial</span><input type="number" id="addr" min="1" max="497" value="1"></div>
     <div id="chanList"></div>
+    <button class="chip" id="max16" style="margin-top:8px">Subir estos 16 canales al máximo</button>
     <button class="chip" id="cero16" style="margin-top:8px">Poner estos 16 canales en 0</button>
   </section>
 </main>
@@ -975,11 +976,14 @@ function pintarDirecciones(){
   });
 }
 $('addr').onchange = pintarCanales;
-$('cero16').onclick = () => {
-  const inicio = +$('addr').value || 1, v = {};
-  for (let i = 0; i < 16; i++){ v[inicio + i] = 0; canales[inicio + i - 1] = 0; }
+const poner16 = val => {
+  const inicio = Math.max(1, Math.min(497, +$('addr').value || 1)), v = {};
+  for (let i = 0; i < 16; i++){ v[inicio + i] = val; canales[inicio + i - 1] = val; }
   enviar(v, 0); pintarCanales();
 };
+$('cero16').onclick = () => poner16(0);
+// Para ubicar en terreno que equipo esta en cada direccion (Kennedy, 24 nov): se prende todo el bloque de una vez
+$('max16').onclick = () => poner16(255);
 
 /* ---------- Barra inferior ---------- */
 $('master').oninput = () => {
