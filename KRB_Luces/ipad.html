@@ -206,6 +206,7 @@
   .djint input{flex:1;height:30px;margin:0}
   #djLatido{width:14px;height:14px;border-radius:50%;background:#333;display:inline-block;transition:background .08s}
   #djLatido.on{background:#ffcc00;box-shadow:0 0 10px #ffcc00}
+  @keyframes djlatir{0%,12%{background:#ffcc00;box-shadow:0 0 10px #ffcc00}30%,100%{background:#333;box-shadow:none}}
   #djAviso{font-size:12px;color:var(--warn);min-height:14px}
 
 </style>
@@ -2454,7 +2455,7 @@ const djFiesta = () => DJ_ESCENAS.map((e, i) => e.fiesta ? i : -1).filter(i => i
 async function djAplicar(i, auto){
   const e = DJ_ESCENAS[i]; if (!e || !conf) return;
   djEstado.escena = i; master = +$('djInt').value; djPintar();
-  if (!auto) djAutoOff();
+  if (!auto) djServidor({ escena: i, int: master });            // los demas aparatos ven la misma escena
   const capas = e.capas(), seg = 60 / djEstado.bpm;
   await efecto('todos', {todos: 'off'});
   // lo que no tocan las capas queda apagado (y los canales fijos de cada equipo en su valor)
@@ -2467,16 +2468,33 @@ function djPintar(){
   document.querySelectorAll('#djEsc .djb').forEach((b, i) => b.classList.toggle('act', i === djEstado.escena));
   $('djAuto').classList.toggle('act', djEstado.auto);
 }
-// Automatico: cambia sola a otra escena de fiesta cada 3 minutos
-function djAutoOff(){ djEstado.auto = false; clearInterval(djEstado.autoTimer); djPintar(); }
-function djAutoSiguiente(){ const f = djFiesta().filter(i => i !== djEstado.escena); djAplicar(elegir(f), true); }
-$('djAuto').onclick = () => {
-  if (djEstado.auto) return djAutoOff();
-  djEstado.auto = true; djAutoSiguiente(); djEstado.autoTimer = setInterval(djAutoSiguiente, 180000); djPintar();
-};
-$('djApagar').onclick = async () => { djAutoOff(); djEstado.escena = -1; djPintar(); try { pintarEstado(await api('/api/apagar?f=1')); } catch(e){ sinConexion(); } };
+/* Estado compartido en el Dell (Cote, 25 nov): el DJ se mueve con su celular y un computador fijo (el de OBS, con la
+   mezcla por la entrada de linea) escucha la musica. Escena, Automatico e intensidad son los mismos en todos los
+   aparatos; el Automatico lo hace el Dell: cada 3 minutos el primer aparato que pregunta aplica la escena nueva. */
+async function djServidor(params){
+  const q = new URLSearchParams(params || {});
+  if (djEstado.auto) q.set('turno', djFiesta().join(','));
+  if (ritmo.mic) q.set('estacion', '1');
+  let r; try { r = await api('/api/dj?' + q); } catch(e){ return; }
+  djEstado.auto = !!r.auto;
+  if (r.aplicar && r.escena >= 0){ djEstado.bpm = r.bpm || djEstado.bpm; djAplicar(r.escena, true); }
+  else if (r.escena !== djEstado.escena){ djEstado.escena = r.escena; }
+  if (document.activeElement !== $('djInt') && r.int && +$('djInt').value !== r.int){ $('djInt').value = r.int; $('djIntTxt').textContent = r.int + '%'; }
+  // ritmo que llega al Dell (de este aparato o de la estacion)
+  const lat = $('djLatido');
+  if (r.ritmo){ djEstado.bpm = r.bpm; $('djBpm').textContent = r.bpm + ' BPM'; lat.style.animation = `djlatir ${(60 / r.bpm).toFixed(3)}s infinite`; }
+  else { lat.style.animation = ''; if (!ritmo.on) $('djBpm').textContent = '—'; }
+  if (!ritmo.mic && !ritmo.on) $('djAviso').textContent = r.estacion ? (r.ritmo ? 'Ritmo desde la estación: ' + r.bpm + ' BPM' : 'La estación está conectada, sin música por ahora')
+    : 'Nadie está escuchando la música: abrir el panel en el computador de la mezcla y tocar 🎤 Ritmo (o usar Tap)';
+  // en el celular del DJ, si ya hay una estacion escuchando, no hace falta elegir la entrada de audio
+  document.querySelector('.djent').style.display = r.estacion && !ritmo.mic ? 'none' : '';
+  djPintar();
+}
+$('djAuto').onclick = () => { djEstado.auto = !djEstado.auto; djPintar(); djServidor({ auto: djEstado.auto ? '1' : '0' }); };
+$('djApagar').onclick = async () => { djEstado.auto = false; djEstado.escena = -1; djPintar(); djServidor({ auto: '0', escena: '-1' });
+  try { pintarEstado(await api('/api/apagar?f=1')); } catch(e){ sinConexion(); } };
 $('djInt').oninput = () => { $('djIntTxt').textContent = $('djInt').value + '%'; };
-$('djInt').onchange = () => { if (djEstado.escena >= 0) djAplicar(djEstado.escena, djEstado.auto); };
+$('djInt').onchange = () => { djServidor({ int: $('djInt').value }); if (djEstado.escena >= 0) djAplicar(djEstado.escena, true); };
 
 /* ---------- Ritmo: reloj de golpes que se ajusta a la musica ---------- */
 const ritmo = { on: false, P: 0.5, prox: 0, rtt: 0.08, golpes: [], taps: [], mic: null, ultOnset: 0 };
@@ -2517,10 +2535,80 @@ $('djMic').onclick = async () => {
     $('djAviso').textContent = 'Este navegador no deja usar el micrófono aquí. Abrir https://luces.krbstage.cl/dj (o en el Dell: http://localhost:8080/dj). Mientras, usa Tap.';
     return;
   }
-  try { ritmo.mic = await escucharMusica(); $('djMic').classList.add('act'); $('djAviso').textContent = 'Escuchando la música…'; }
+  try { ritmo.mic = await escucharMusica(); $('djMic').classList.add('act'); $('djAviso').textContent = 'Escuchando la música… (este aparato es la estación de ritmo)'; djServidor(); }
   catch(e){ $('djAviso').textContent = 'No se pudo usar el micrófono (' + (e.name || e.message) + '). Usa Tap.'; }
 };
+// Deteccion en el proceso de audio (AudioWorklet): sigue funcionando aunque la ventana quede detras de OBS
+const RITMO_WORKLET = `
+class KrbRitmo extends AudioWorkletProcessor {
+  constructor(){ super(); this.acc = [0, 0]; this.n = 0; this.hist = [[], []]; this.ult = [-9, -9]; this.onsets = [];
+    this.P = 0.5; this.prox = 0; this.on = false; this.ultOnset = -99; this.lead = 0.04; this.cuenta = 0;
+    this.port.onmessage = e => { if (e.data.lead != null) this.lead = e.data.lead; }; }
+  detectar(k, e, t, umbral){
+    const h = this.hist[k], prom = h.length ? h.reduce((a, b) => a + b) / h.length : e;
+    h.push(e); if (h.length > 35) h.shift();
+    if (e > prom * umbral && e > 0.004 && t - this.ult[k] > 0.22){ this.ult[k] = t; return true; } return false;
+  }
+  analizar(t, eB, eC){
+    if (++this.cuenta % 4 === 0) this.port.postMessage({ nivel: eB });
+    const gB = this.detectar(0, eB, t, 1.45), gC = this.detectar(1, eC, t, 1.6);
+    if (!gB && !gC) return;
+    const o = this.onsets; o.push({ t, b: gB }); while (o.length && t - o[0].t > 8) o.shift();
+    this.ultOnset = t;
+    const hist = new Array(80).fill(0);
+    for (let i = 0; i < o.length; i++) for (let j = i + 1; j < o.length; j++){
+      let d = o[j].t - o[i].t; if (d < 0.2 || d > 2.4) continue;
+      while (d > 0.8) d /= 2; while (d < 0.4) d *= 2;
+      const k = Math.round((d - 0.4) / 0.005);
+      for (let w = -2; w <= 2; w++) if (hist[k + w] != null) hist[k + w] += (o[i].b && o[j].b ? 2 : 1) * (3 - Math.abs(w));
+    }
+    let m = 0; for (let k = 1; k < 80; k++) if (hist[k] > hist[m]) m = k;
+    if (o.length >= 6 && hist[m] > 0){ const P = 0.4 + m * 0.005; if (Math.abs(P - this.P) > 0.004){ this.P = P; this.port.postMessage({ bpm: Math.round(60 / P) }); } }
+    if (!this.on && o.length >= 6){ this.on = true; this.prox = t + this.P; this.port.postMessage({ activo: 1 }); }
+    if (this.on && gB){ let err = t - (this.prox - this.P); if (err > this.P / 2) err -= this.P; if (Math.abs(err) < this.P * 0.3) this.prox += err * 0.35; }
+  }
+  process(inputs){
+    const inp = inputs[0]; const t = currentTime;
+    if (inp && inp.length){ const a = inp[0], b = inp[1] || inp[0];
+      for (let i = 0; i < a.length; i++){ this.acc[0] += a[i] * a[i]; this.acc[1] += b[i] * b[i]; }
+      this.n += a.length;
+      if (this.n >= 1024){ const eB = Math.sqrt(this.acc[0] / this.n), eC = Math.sqrt(this.acc[1] / this.n); this.acc = [0, 0]; this.n = 0; this.analizar(t, eB, eC); } }
+    if (this.on){
+      if (t - this.prox > 1) this.prox = t + this.P;
+      while (t >= this.prox - this.lead){ this.port.postMessage({ golpe: 1 }); this.prox += this.P; }
+      if (t - this.ultOnset > 6){ this.on = false; this.port.postMessage({ silencio: 1 }); }
+    }
+    return true;
+  }
+}
+registerProcessor('krb-ritmo', KrbRitmo);`;
 async function escucharMusica(){
+  if (!(window.AudioWorkletNode)) return escucharMusicaSimple();
+  let elegida = ''; try { elegida = localStorage.getItem('krb_dj_entrada') || ''; } catch(e){}
+  const pedir = id => navigator.mediaDevices.getUserMedia({ audio: { deviceId: id ? { exact: id } : undefined,
+    echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+  let stream; try { stream = await pedir(elegida); } catch(e){ if (!elegida) throw e; stream = await pedir(''); }
+  listarEntradas();
+  const ctx = new AudioContext(); if (ctx.resume) ctx.resume();
+  await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([RITMO_WORKLET], { type: 'text/javascript' })));
+  const src = ctx.createMediaStreamSource(stream);
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 140;                 // bombo
+  const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2200; bp.Q.value = 0.9; // caja
+  const mez = ctx.createChannelMerger(2); src.connect(lp); src.connect(bp); lp.connect(mez, 0, 0); bp.connect(mez, 0, 1);
+  const nodo = new AudioWorkletNode(ctx, 'krb-ritmo', { numberOfInputs: 1, numberOfOutputs: 1, channelCount: 2, channelCountMode: 'explicit' });
+  mez.connect(nodo);
+  const mudo = ctx.createGain(); mudo.gain.value = 0; nodo.connect(mudo); mudo.connect(ctx.destination);   // para que el proceso corra
+  nodo.port.onmessage = e => { const d = e.data;
+    if (d.golpe) enviarPulso();
+    if (d.bpm){ fijarTempo(60 / d.bpm); $('djAviso').textContent = 'Escuchando la música · ' + d.bpm + ' BPM'; }
+    if (d.nivel != null) $('djNivel').style.width = Math.min(100, Math.round(d.nivel * 400)) + '%';
+    if (d.silencio) $('djAviso').textContent = 'Sin música: las luces siguen solas';
+  };
+  const lead = setInterval(() => nodo.port.postMessage({ lead: ritmo.rtt / 2 }), 2000);
+  ritmo.on = false;                                                                              // el reloj lo lleva el proceso de audio
+  return { stop(){ clearInterval(lead); nodo.port.onmessage = null; stream.getTracks().forEach(x => x.stop()); ctx.close(); $('djNivel').style.width = '0'; } };
+}
+async function escucharMusicaSimple(){
   // Entrada elegida (Cote, 25 nov: la mezcla completa entra por la entrada de linea del computador de OBS)
   let elegida = ''; try { elegida = localStorage.getItem('krb_dj_entrada') || ''; } catch(e){}
   const pedir = id => navigator.mediaDevices.getUserMedia({ audio: { deviceId: id ? { exact: id } : undefined,
@@ -2591,6 +2679,7 @@ function iniciarDJ(){
   new MutationObserver(() => { $('djDot').className = $('dot').className; $('djPillTxt').textContent = $('pillTxt').textContent; })
     .observe($('pill'), { subtree: true, childList: true, attributes: true, characterData: true });
   djPintar(); listarEntradas();
+  djServidor(); setInterval(() => djServidor(), 2500);
 }
 
 /* ---------- Inicio ---------- */

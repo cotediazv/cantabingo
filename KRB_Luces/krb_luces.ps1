@@ -619,7 +619,9 @@ namespace KRB {
       if (ruta == "/lib/three.module.min.js") { Archivo(s, Path.Combine(Root, "lib", "three.module.min.js"), "text/javascript; charset=utf-8"); return; }
 
       // Golpe de la musica (panel del DJ): respuesta minima, llega varias veces por segundo
-      if (ruta == "/api/pulso") { Dmx.Pulsar(); Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":true}")); return; }
+      if (ruta == "/api/pulso") { Dmx.Pulsar(); lock (DJL) { djEstacion = DateTime.UtcNow; } Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":true}")); return; }
+      // Estado del panel del DJ, el mismo para todos los aparatos (celular del DJ, estacion que escucha la musica)
+      if (ruta == "/api/dj") { Dj(s, query); return; }
       if (ruta == "/dj") { Archivo(s, Path.Combine(Root, "ipad.html"), "text/html; charset=utf-8"); return; }
       if (Accion(ruta, query)) { Estado(s); return; }
 
@@ -798,6 +800,33 @@ namespace KRB {
     }
 
     static readonly object DL = new object();
+    // ---- Panel del DJ (Cote, 25 nov): escena, automatico e intensidad compartidos; la estacion de ritmo avisa que esta viva ----
+    static readonly object DJL = new object();
+    static int djEscena = -1, djInt = 100; static bool djAuto = false;
+    static DateTime djCambio = DateTime.MinValue, djEstacion = DateTime.MinValue;
+    static Random djAzar = new Random();
+    static void Dj(NetworkStream s, string query) {
+      bool aplicar = false;
+      lock (DJL) {
+        string v;
+        if ((v = Arg(query, "escena")) != null) { int.TryParse(v, out djEscena); djCambio = DateTime.UtcNow; }
+        if ((v = Arg(query, "auto")) != null) { djAuto = v == "1"; if (djAuto) djCambio = DateTime.MinValue; }
+        if ((v = Arg(query, "int")) != null) int.TryParse(v, out djInt);
+        if (Arg(query, "estacion") == "1") djEstacion = DateTime.UtcNow;
+        // Automatico: el primer aparato que pregunta cuando ya pasaron 3 minutos recibe la escena nueva y la aplica
+        string lista = Arg(query, "turno");
+        if (lista != null && djAuto && (DateTime.UtcNow - djCambio).TotalSeconds >= 180) {
+          List<int> op = new List<int>();
+          foreach (string x in lista.Split(',')) { int k; if (int.TryParse(x, out k) && k != djEscena) op.Add(k); }
+          if (op.Count > 0) { djEscena = op[djAzar.Next(op.Count)]; djCambio = DateTime.UtcNow; aplicar = true; }
+        }
+      }
+      string j = "{\"escena\":" + djEscena + ",\"auto\":" + (djAuto ? "true" : "false") + ",\"int\":" + djInt +
+        ",\"aplicar\":" + (aplicar ? "true" : "false") + ",\"estacion\":" + ((DateTime.UtcNow - djEstacion).TotalSeconds < 10 ? "true" : "false") +
+        ",\"ritmo\":" + (Dmx.ConRitmo ? "true" : "false") + ",\"bpm\":" + Math.Round(Dmx.Bpm).ToString(System.Globalization.CultureInfo.InvariantCulture) +
+        ",\"pulsos\":" + Dmx.Pulsos + "}";
+      Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes(j));
+    }
     // Cuantas marcas de calibracion hay en un datos.json (las marcas se llaman abajo, ei, ed, fi y fd)
     static int Marcas(string t) {
       if (string.IsNullOrEmpty(t)) return 0;
