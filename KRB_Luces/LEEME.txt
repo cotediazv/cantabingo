@@ -62,3 +62,10 @@ AJUSTES
     Editar con el Bloc de notas y luego cerrar y abrir INICIAR.bat.
   - datos.json: calibracion del mapa (la crea la pestana Seguir). No borrar.
     Cada vez que cambia, la version anterior queda en la carpeta respaldos (las ultimas 60).
+
+AYUDA Y REGISTRO DE CADA NOCHE
+  - Boton "?" arriba (en el iPad y en el panel del DJ): instrucciones cortas para DJs y
+    operadores, y "Ver registro de esta noche".
+  - La suite anota cada noche (de 6 a 6) en registro-noches\AAAA-MM-DD.txt: cuando se abre,
+    los momentos de los juegos, las escenas del DJ y del iPad, el Automatico, APAGAR TODO,
+    cuando llega o se corta la musica y si el cable se conecta, se desconecta o da error.

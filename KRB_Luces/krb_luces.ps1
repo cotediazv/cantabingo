@@ -223,6 +223,36 @@ namespace KRB {
     }
   }
 
+  // ---------- Registro de cada noche (Cote, 25 nov): que escenas y momentos se usaron, a que hora y si fallo el cable ----------
+  // Un archivo por noche en registro-noches\AAAA-MM-DD.txt. La noche va de las 6 de la manana a las 6 de la manana
+  // siguiente: lo que pasa despues de medianoche queda en la noche que empezo el dia anterior.
+  public static class Bitacora {
+    public static string Carpeta = "";
+    static readonly object BL = new object();
+    static string ultimo = "";
+    public static string Noche(DateTime t) { return t.AddHours(-6).ToString("yyyy-MM-dd"); }
+    public static void Anotar(string texto) {
+      if (Carpeta == "" || string.IsNullOrEmpty(texto)) return;
+      try {
+        lock (BL) {
+          DateTime ahora = DateTime.Now;
+          if (texto == ultimo) return;                       // sin repetir la misma linea seguida
+          ultimo = texto;
+          string dir = Path.Combine(Carpeta, "registro-noches"); Directory.CreateDirectory(dir);
+          File.AppendAllText(Path.Combine(dir, Noche(ahora) + ".txt"), ahora.ToString("HH:mm:ss") + "  " + texto.Replace("\r", " ").Replace("\n", " ") + "\r\n", new UTF8Encoding(false));
+        }
+      } catch {}
+    }
+    public static string Leer(string noche) {
+      try { string f = Path.Combine(Path.Combine(Carpeta, "registro-noches"), noche + ".txt"); return File.Exists(f) ? File.ReadAllText(f) : ""; } catch { return ""; }
+    }
+    public static string[] Noches() {
+      try { string dir = Path.Combine(Carpeta, "registro-noches"); if (!Directory.Exists(dir)) return new string[0];
+        List<string> r = new List<string>(); foreach (string f in Directory.GetFiles(dir, "*.txt")) r.Add(Path.GetFileNameWithoutExtension(f));
+        r.Sort(); r.Reverse(); return r.ToArray(); } catch { return new string[0]; }
+    }
+  }
+
   // ---------- Efectos que corren en el Dell (siguen aunque el iPad se bloquee) ----------
   public class Efecto {
     public string Tipo;                       // "seno" o "sec"
@@ -412,6 +442,15 @@ namespace KRB {
       return r;
     }
 
+    static double ultimaRevision = 0;
+    static bool conectadoAntes = false, ritmoAntes = false; static string errorAntes = "";
+    static void RevisarEstado() {
+      if (Tipo == "simulacion") return;
+      if (Conectado != conectadoAntes) { Bitacora.Anotar(Conectado ? "Cable DMX conectado (" + PuertoUsado + ")" : "CABLE DMX DESCONECTADO" + (Error != "" ? ": " + Error : "")); conectadoAntes = Conectado; }
+      if (Error != errorAntes) { if (Error != "") Bitacora.Anotar("Problema con el cable: " + Error); errorAntes = Error; }
+      bool r = ConRitmo;
+      if (r != ritmoAntes) { Bitacora.Anotar(r ? "Ritmo: llega la musica (" + Math.Round(Bpm) + " BPM)" : "Ritmo: dejaron de llegar los golpes de la musica"); ritmoAntes = r; }
+    }
     static void Loop() {
       byte[] frame = new byte[513];               // frame[0] = codigo de inicio 0
       Stopwatch sw = Stopwatch.StartNew();
@@ -435,6 +474,7 @@ namespace KRB {
           s = port;
         }
         IntPtr fh = ftdi;
+        if (now - ultimaRevision > 1) { ultimaRevision = now; RevisarEstado(); }
         // Si se perdio el cable (o fallo muchas veces), se vuelve a buscar solo cada 3 s
         if (!Conectado && Tipo != "simulacion" && now - ultimoIntento > 3) {
           ultimoIntento = now;
@@ -628,6 +668,18 @@ namespace KRB {
       if (ruta == "/api/pulso") { Dmx.Pulsar(); lock (DJL) { djEstacion = DateTime.UtcNow; } Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":true}")); return; }
       // Estado del panel del DJ, el mismo para todos los aparatos (celular del DJ, estacion que escucha la musica)
       if (ruta == "/api/dj") { Dj(s, query); return; }
+      // Nota del iPad para el registro de la noche (por ejemplo, la escena que se eligio)
+      if (ruta == "/api/anotar") { string t = Arg(query, "t") ?? ""; if (t.Length > 200) t = t.Substring(0, 200); Bitacora.Anotar("iPad: " + t);
+        Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":true}")); return; }
+      // Registro de una noche (texto) y lista de noches guardadas
+      if (ruta == "/api/registro") {
+        string n = Arg(query, "noche") ?? Bitacora.Noche(DateTime.Now);
+        StringBuilder b = new StringBuilder("{\"noche\":\"").Append(Esc(n)).Append("\",\"noches\":[");
+        string[] ns = Bitacora.Noches(); for (int i = 0; i < ns.Length && i < 60; i++) { if (i > 0) b.Append(','); b.Append('"').Append(Esc(ns[i])).Append('"'); }
+        string tx = Bitacora.Leer(n).Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "").Replace("\n", "\\n").Replace("\t", " ");
+        b.Append("],\"texto\":\"").Append(tx).Append("\"}");
+        Enviar(s, "200 OK", "application/json; charset=utf-8", Encoding.UTF8.GetBytes(b.ToString())); return;
+      }
       if (ruta == "/dj") { Archivo(s, Path.Combine(Root, "ipad.html"), "text/html; charset=utf-8"); return; }
       if (Accion(ruta, query)) { Estado(s); return; }
 
@@ -645,7 +697,7 @@ namespace KRB {
         if (sala != null && sala.ToLower().IndexOf(Sala.ToLower()) < 0) {
           Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":false,\"ignorado\":\"otra sala\",\"sala\":\"" + Esc(sala) + "\"}")); return;
         }
-        if (!EjecutarMomento(n)) { Enviar(s, "404 Not Found", "application/json", Encoding.UTF8.GetBytes("{\"error\":\"momento desconocido\",\"nombre\":\"" + Esc(n) + "\"}")); return; }
+        if (!EjecutarMomento(n)) { Bitacora.Anotar("Momento desconocido (sin luces): " + n); Enviar(s, "404 Not Found", "application/json", Encoding.UTF8.GetBytes("{\"error\":\"momento desconocido\",\"nombre\":\"" + Esc(n) + "\"}")); return; }
         Estado(s); return;
       }
       if (ruta == "/api/lista-momentos") {                 // nombres disponibles (para Code 1 / GC Master)
@@ -709,7 +761,7 @@ namespace KRB {
         }
         return true;
       }
-      if (ruta == "/api/apagar") { Dmx.QuitarEfectos(); Dmx.Todo(0, Num(Arg(query, "f"), 0)); return true; }
+      if (ruta == "/api/apagar") { Bitacora.Anotar("APAGAR TODO"); Dmx.QuitarEfectos(); Dmx.Todo(0, Num(Arg(query, "f"), 0)); return true; }
       if (ruta == "/api/efecto") {
         // id=nombre  off=1 | todos=off
         // tipo=seno&ch=113,115&centro=128,100&amp=60,30&periodo=8
@@ -778,6 +830,7 @@ namespace KRB {
       bool dePaso = acc.Contains("@previo");
       int gen = Interlocked.Increment(ref genMomento);
       MomentoActual = nombre; MomentoN++;
+      Bitacora.Anotar("Momento de los juegos: " + nombre);
       if (!dePaso) MomentoEstable = nombre;
       Thread t = new Thread(() => {
         foreach (string l in acc) {
@@ -815,8 +868,9 @@ namespace KRB {
       bool aplicar = false;
       lock (DJL) {
         string v;
-        if ((v = Arg(query, "escena")) != null) { int.TryParse(v, out djEscena); djCambio = DateTime.UtcNow; }
-        if ((v = Arg(query, "auto")) != null) { djAuto = v == "1"; if (djAuto) djCambio = DateTime.MinValue; }
+        if ((v = Arg(query, "escena")) != null) { int.TryParse(v, out djEscena); djCambio = DateTime.UtcNow;
+          Bitacora.Anotar("DJ: escena " + (Arg(query, "nombre") ?? v)); }
+        if ((v = Arg(query, "auto")) != null) { bool a = v == "1"; if (a != djAuto) Bitacora.Anotar("DJ: Automatico " + (a ? "encendido" : "apagado")); djAuto = a; if (djAuto) djCambio = DateTime.MinValue; }
         if ((v = Arg(query, "int")) != null) int.TryParse(v, out djInt);
         if (Arg(query, "estacion") == "1") djEstacion = DateTime.UtcNow;
         // Automatico: el primer aparato que pregunta cuando ya pasaron 3 minutos recibe la escena nueva y la aplica
@@ -824,7 +878,7 @@ namespace KRB {
         if (lista != null && djAuto && (DateTime.UtcNow - djCambio).TotalSeconds >= 180) {
           List<int> op = new List<int>();
           foreach (string x in lista.Split(',')) { int k; if (int.TryParse(x, out k) && k != djEscena) op.Add(k); }
-          if (op.Count > 0) { djEscena = op[djAzar.Next(op.Count)]; djCambio = DateTime.UtcNow; aplicar = true; }
+          if (op.Count > 0) { djEscena = op[djAzar.Next(op.Count)]; djCambio = DateTime.UtcNow; aplicar = true; Bitacora.Anotar("DJ: el Automatico cambio a la escena " + djEscena); }
         }
       }
       string j = "{\"escena\":" + djEscena + ",\"auto\":" + (djAuto ? "true" : "false") + ",\"int\":" + djInt +
@@ -886,6 +940,7 @@ namespace KRB {
                CookieSesion(tk));
       } else {
         fallosLogin++;
+        Bitacora.Anotar("Clave incorrecta (intento " + fallosLogin + ")");
         Thread.Sleep(1500);
         if (ir != null) { Redirigir(s, ir, null); return; }
         Enviar(s, "401 Unauthorized", "application/json", Encoding.UTF8.GetBytes("{\"login\":true,\"error\":\"Clave incorrecta\"}"));
@@ -928,6 +983,9 @@ if ($cfg.acceso) {
 }
 if ($cfg.momentos -and $cfg.momentos.sala) { [KRB.Web]::Sala = [string]$cfg.momentos.sala
 }
+[KRB.Bitacora]::Carpeta = $root
+$estadoCable = if ([KRB.Dmx]::Conectado) { "cable conectado (" + [KRB.Dmx]::PuertoUsado + ")" } elseif ([KRB.Dmx]::Tipo -eq "simulacion") { "modo simulacion" } else { "SIN CABLE: " + [KRB.Dmx]::Error }
+[KRB.Bitacora]::Anotar("Se abrio la suite de luces (" + $estadoCable + ")")
 [KRB.Web]::CargarSesiones()
 [KRB.Web]::CargarMomentos()
 [KRB.Web]::Start($puertoWeb)

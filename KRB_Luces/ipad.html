@@ -176,6 +176,16 @@
   body.solo-mapa #cabezas{margin-top:6px}
   body.solo-mapa .map .warn{display:none}
   .toast.show{transform:translate(-50%,0);opacity:1}
+  /* Ayuda para DJs y operadores (Cote, 25 nov) */
+  .ayudaBtn{flex:0 0 auto;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--txt);font-size:16px;font-weight:800;cursor:pointer;padding:0}
+  #ayuda{display:none;position:fixed;inset:0;z-index:30;background:#000c;padding:calc(12px + env(safe-area-inset-top)) 12px 12px;overflow:auto}
+  #ayuda.on{display:block}
+  #ayuda .caja{max-width:640px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px}
+  #ayuda h2{margin:0 0 6px;font-size:19px} #ayuda h3{margin:14px 0 4px;font-size:15px;color:var(--warn)}
+  #ayuda p,#ayuda li{font-size:14px;line-height:1.45;color:var(--txt)} #ayuda ul{margin:4px 0;padding-left:18px}
+  #ayuda .fila{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  #ayuda pre{white-space:pre-wrap;font:12px/1.5 ui-monospace,monospace;background:#0f1116;border:1px solid var(--line);border-radius:10px;padding:10px;max-height:55vh;overflow:auto}
+  #ayuda select{background:#121419;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:6px}
   /* ===== Panel del DJ (/dj, Cote 25 nov): pocos botones, muchas escenas ===== */
   #dj{display:none}
   body.dj > header, body.dj > nav, body.dj > main, body.dj > footer, body.dj > #vista{display:none !important}
@@ -258,7 +268,7 @@
 <body>
 <!-- Panel del DJ: se abre en /dj (o ?dj=1) -->
 <div id="dj">
-  <div class="djtop"><b>KRB · DJ</b><div class="djpag"><button id="djPagEsc" class="act">Escenas</button><button id="djPagCab">Cabezas</button></div><span id="djLatido" title="Ritmo"></span><span id="djBpm" style="font-size:13px;color:var(--mut);min-width:64px">—</span>
+  <div class="djtop"><button class="ayudaBtn" id="djAyudaBtn" title="Ayuda e instrucciones">?</button><b>KRB · DJ</b><div class="djpag"><button id="djPagEsc" class="act">Escenas</button><button id="djPagCab">Cabezas</button></div><span id="djLatido" title="Ritmo"></span><span id="djBpm" style="font-size:13px;color:var(--mut);min-width:64px">—</span>
     <div class="pill" id="djPill"><span class="dot" id="djDot"></span><span id="djPillTxt">…</span></div></div>
   <div class="djvista" id="djVista"><div id="djToque"><div id="djPunto"></div><span id="djToqueAyuda">Pasa el dedo por el salón</span></div><button id="djFrente">⟲ De frente</button></div>
   <div class="djesc" id="djEsc"></div>
@@ -279,6 +289,7 @@
 </div>
 <header>
   <h1>Luces KRB</h1>
+  <button class="ayudaBtn" id="ayudaBtn" title="Ayuda e instrucciones">?</button>
   <div class="pill" id="pill" title="Tocar para reconectar el cable"><span class="dot" id="dot"></span><span id="pillTxt">Conectando…</span></div>
 </header>
 <nav>
@@ -435,6 +446,55 @@
   <button class="blackout" id="blackout">APAGAR TODO</button>
 </footer>
 <div class="toast" id="toast"></div>
+<!-- Ayuda e instrucciones cortas para los DJs y operadores (Cote, 25 nov) -->
+<div id="ayuda" role="dialog" aria-label="Ayuda">
+  <div class="caja">
+    <div id="ayudaDJ">
+      <h2>Panel del DJ · cómo se usa</h2>
+      <h3>Escenas (5 grupos, de más tranquilo a más intenso)</h3>
+      <ul>
+        <li><b>Standby</b>: cuando no pasa nada. Color suave en el techo y la pared, sin blanco.</li>
+        <li><b>Previa</b>: cantante suave (piano bar). Siempre el blanco de frente en el escenario.</li>
+        <li><b>Show</b>: con artista. Blanco de frente siempre; el fondo con más movimiento.</li>
+        <li><b>Fiesta</b>: todo libre; las cabezas recorren el salón.</li>
+        <li><b>Locura</b>: lo más intenso (destellos, estrobo). Para el momento más alto.</li>
+      </ul>
+      <h3>Botones de abajo</h3>
+      <ul>
+        <li><b>Automático</b>: cambia solo de escena cada 3 min, dentro del mismo grupo. En Standby hace un fundido suave continuo.</li>
+        <li><b>Ritmo</b>: escuchar la música (normalmente lo hace solo el computador de la mezcla: arriba debe decir el BPM).</li>
+        <li><b>Tap</b>: tocar 4 veces al compás si las luces no van a tiempo. El botón late con cada pulso.</li>
+        <li><b>Apagar</b>: apaga todo.</li>
+        <li><b>Intensidad</b>: baja o sube todas las luces.</li>
+      </ul>
+      <h3>Cabezas (seguir a una persona)</h3>
+      <p>Arriba, «Cabezas». Pasa el dedo por el salón y las cabezas siguen tu dedo. Elige Cabeza 1, 2, 3 o las 3, y el ancho de la luz. <b>Soltar</b> las devuelve a la escena. Cuando el animador baja al público en el bingo, esta página se abre sola.</p>
+    </div>
+    <div id="ayudaIpad">
+      <h2>Luces KRB · cómo se usa</h2>
+      <ul>
+        <li><b>Escenas</b>: tocar una escena cambia todas las luces.</li>
+        <li><b>APAGAR TODO</b> (abajo, siempre a la vista) o <b>Detener todo</b> (en Juegos): apagan las luces y detienen los efectos.</li>
+        <li><b>Juegos</b>: las luces de cada momento de los juegos. La Sala las cambia sola; aquí se pueden disparar a mano.</li>
+        <li><b>Seguir</b>: tocar el mapa del salón para que las cabezas sigan a una persona. «A mano · calibrar» es solo para calibrar (no tocar en el show).</li>
+        <li><b>Zonas</b>: color e intensidad por grupo de luces.</li>
+        <li><b>Probar canales</b>: para revisar una luz canal por canal (solo técnicos).</li>
+      </ul>
+      <p>Panel del DJ: la misma dirección terminada en <b>/dj</b>.</p>
+    </div>
+    <h3>Si algo falla</h3>
+    <ul>
+      <li><b>«Sin conexión con el Dell»</b>: revisar que el Dell esté prendido y conectado al WiFi. La suite se abre sola; si no, abrir INICIAR.bat en la carpeta KRB_Luces.</li>
+      <li><b>«Sin cable DMX»</b>: desenchufar y volver a enchufar el cable USB del Dell; vuelve solo en unos segundos.</li>
+      <li><b>Las luces no siguen la música</b>: revisar que arriba diga el BPM; si no, usar Tap.</li>
+    </ul>
+    <h3>Registro de la noche</h3>
+    <p>Lo que pasó cada noche (escenas, momentos, cable), con la hora.</p>
+    <div class="fila"><button class="chip" id="verRegistro">Ver registro de esta noche</button><select id="regNoche" hidden></select></div>
+    <pre id="regTexto" hidden></pre>
+    <div class="fila"><button class="chip act" id="ayudaCerrar">Cerrar</button></div>
+  </div>
+</div>
 
 <div id="login" style="display:none;position:fixed;inset:0;z-index:20;background:var(--bg);place-items:center;padding:24px">
   <form id="loginForm" style="width:min(100%,360px);text-align:center">
@@ -839,7 +899,7 @@ async function aplicarEscena(i){
     if (tipo === 'mover') conEspejos([id]).forEach(x => moverGrupo(x, true));
     if (tipo === 'parpadeo' || tipo === 'alternar') efectoParedOn(tipo);
   });
-  pintarTodo(); toast(e.nombre);
+  pintarTodo(); toast(e.nombre); anotar('escena ' + e.nombre);
   if (e.abrir) abrirTab(e.abrir);
 }
 
@@ -2005,6 +2065,20 @@ const JUEGOS = [
     { id:'festival_ganador', nombre:'Ganador', igual:'objeto_ganador' },
     { id:'festival_celebracion', nombre:'Celebración', igual:'celebracion_ganador' },
     { id:'festival_premio', nombre:'Entrega del premio', igual:'entrega_premio' } ]},
+  // «¿Quien quiere ser billonario?» (juego de Gabriel; en la Sala se llama desafio). Estilo de El Rosko: oscuro y enfocado
+  // en el concursante, tension antes de revelar (propuesta de Code 4, 25 nov)
+  { juego:'¿Quién quiere ser billonario?', momentos:[
+    { id:'desafio_pregunta', nombre:'Pregunta', detalle:'Pared muy oscura con colores lentos; cabezas 1 y 2 a la cara del concursante',
+      g:() => ({...pared('azul', 15), ...cab(CARA, 30), mini:{color:'azul', intensidad:60, posicion:'escenario', mover:true}}), rosco:true },
+    { id:'desafio_definitiva', nombre:'Respuesta definitiva (suspenso)', detalle:'Todo baja: pared ámbar tenue, solo un haz angosto a la cara',
+      g:() => ({...pared('ambar', 20), ...cab(CARA, 12)}) },
+    { id:'desafio_correcta', nombre:'Correcta', detalle:'Pared verde 3 s y vuelve a la pregunta', g:() => ({...BASE(), ...pared('verde', 100)}), luego:[3, 'desafio_pregunta'] },
+    { id:'desafio_incorrecta', nombre:'Incorrecta', detalle:'Pared roja 3 s y vuelve a la base', g:() => ({...BASE(), ...pared('rojo', 100)}), luego:[3, 'base_juegos'] },
+    { id:'desafio_publico', nombre:'Pregunta al público', detalle:'Las 3 cabezas al público, pared morada, mini en movimiento',
+      g:() => ({...pared('morado', 50), ...frente(30), ...cab('publico', 40, segIds()), mini:{color:'morado', intensidad:100, posicion:'escenario', mover:true}}) },
+    { id:'desafio_llamada', nombre:'Llamada (30 s)', detalle:'La pared late en ámbar y rojo cada segundo, como un reloj',
+      g:() => ({...pared('ambar', 40), ...cab(CARA, 30)}), pared:{colores:['ambar', 'rojo'], t:0.5, fx:1} },
+    { id:'desafio_ganador', nombre:'Ganador (10 escalones)', igual:'celebracion_ganador' } ]},
   { juego:'Trivia', momentos:[
     { id:'trivia_ganador', nombre:'Ganador (celebración)', igual:'celebracion_ganador' },
     { id:'trivia_premio', nombre:'Entrega del premio', igual:'entrega_premio' } ]}
@@ -2022,7 +2096,9 @@ const ALIAS_SALA = {
   festival_lugar_suspenso:'festival_tension', festival_lugar_revela:'festival_revela',
   // nombres que manda la Sala (Code 1, rev 223): al pasar a los resultados = tension; cada lugar revelado = pestaneo y vuelve la tension
   festival_resultados:'festival_tension', objeto_resultados:'festival_tension',
-  festival_lugar:'festival_revela', objeto_lugar:'festival_revela'
+  festival_lugar:'festival_revela', objeto_lugar:'festival_revela',
+  // «¿Quien quiere ser billonario?» (Code 1, 25 nov): el ranking de la Trivia entra y sale como en El Rosko
+  desafio_ranking:'rosko_puntajes', desafio_ranking_fin:'base_juegos'
 };
 const todosMomentos = () => JUEGOS.flatMap(j => j.momentos).concat(
   Object.entries(ALIAS_SALA).map(([id, a]) => a === 'nada' ? {id, nombre:id, nada:true, oculto:true} : {id, nombre:id, igual:a, oculto:true}));
@@ -2618,7 +2694,7 @@ async function djAplicar(i, auto){
   // en Standby la toma mira un poco mas arriba, para ver como las luces pintan el techo
   djEstado.tomaTecho = e.grupo === 'Standby';
   if (!document.body.classList.contains('dj-cabezas')) djToma();
-  if (!auto) djServidor({ escena: i, int: master });            // los demas aparatos ven la misma escena
+  if (!auto) djServidor({ escena: i, int: master, nombre: e.grupo + ' · ' + e.n });   // los demas aparatos ven la misma escena
   const capas = djEstado.auto && e.grupo === 'Standby' ? capasStandbyAuto(e) : e.capas(), seg = 60 / djEstado.bpm;
   await efecto('todos', {todos: 'off'});
   // lo que no tocan las capas queda apagado (y los canales fijos de cada equipo en su valor)
@@ -2999,6 +3075,24 @@ function iniciarEstacion(){
   setInterval(async () => { if (performance.now() < 24 * 3600 * 1000) return;
     try { const r = await fetch('/api/dj', { cache: 'no-store', credentials: 'same-origin' }); if (r.ok) location.reload(); } catch(e){} }, 10 * 60 * 1000);
 }
+
+/* ---------- Ayuda y registro de la noche ---------- */
+function anotar(t){ if (DEMO || CONTROL) return; fetch('/api/anotar?t=' + encodeURIComponent(t), {cache: 'no-store', credentials: 'same-origin'}).catch(() => {}); }
+function abrirAyuda(){
+  $('ayudaDJ').hidden = !DJ; $('ayudaIpad').hidden = DJ;
+  $('regTexto').hidden = true; $('regNoche').hidden = true; $('ayuda').classList.add('on');
+}
+async function verRegistro(noche){
+  let r; try { r = DEMO ? { noche: 'demo', noches: [], texto: 'En la versión de prueba no hay registro: se guarda en el Dell de Kennedy.' }
+    : await api('/api/registro' + (noche ? '?noche=' + encodeURIComponent(noche) : '')); } catch(e){ toast('No se pudo leer el registro del Dell'); return; }
+  const sel = $('regNoche'); sel.innerHTML = (r.noches.length ? r.noches : [r.noche]).map(n => `<option${n === r.noche ? ' selected' : ''}>${n}</option>`).join(''); sel.hidden = false;
+  $('regTexto').textContent = r.texto || 'Todavía no hay nada anotado en la noche ' + r.noche + '.'; $('regTexto').hidden = false;
+}
+['ayudaBtn', 'djAyudaBtn'].forEach(id => $(id).onclick = abrirAyuda);
+$('ayudaCerrar').onclick = () => $('ayuda').classList.remove('on');
+$('ayuda').onclick = e => { if (e.target === $('ayuda')) $('ayuda').classList.remove('on'); };
+$('verRegistro').onclick = () => verRegistro();
+$('regNoche').onchange = () => verRegistro($('regNoche').value);
 
 /* ---------- Inicio ---------- */
 (async () => {
