@@ -16,22 +16,24 @@ const later = new Map(); // momentos que llegan después (la entrega del premio,
 
 const sala = () => (ctx ? Object.values(ctx.db.sessions || {})[0] : null);
 
-function send(name) {
+function send(name, extra) {
   const url = process.env.LUCES_URL; const key = process.env.LUCES_CLAVE;
   const s = sala();
   if (!url || !key || !s || s.sim || (s.theme || 'frida') !== 'kennedy') return;
-  fetch(`${url.replace(/\/$/, '')}/api/momento?nombre=${encodeURIComponent(name)}&sala=kennedy`, { headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(2000) }).catch(() => {});
+  const more = Object.entries(extra || {}).map(([k, v]) => `&${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('');
+  fetch(`${url.replace(/\/$/, '')}/api/momento?nombre=${encodeURIComponent(name)}&sala=kennedy${more}`, { headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(2000) }).catch(() => {});
 }
 
-// Anuncia un momento. `kind` agrupa los que se reemplazan: un momento nuevo cancela los diferidos pendientes
-function emit(name) {
+// Anuncia un momento. Un momento nuevo cancela los diferidos pendientes. `extra`: datos que van con el aviso
+// (por ejemplo { escalon: 7 } en ¿Quién quiere ser ganador?, pedido de Code 4: las luces cambian según el escalón)
+function emit(name, extra) {
   if (!ctx) return;
   for (const t of later.values()) clearTimeout(t);
   later.clear();
   const s = sala();
-  list.push({ seq: ++seq, name, at: Date.now(), venue: s ? s.theme || 'frida' : '', sim: !!(s && s.sim) });
+  list.push({ seq: ++seq, name, at: Date.now(), venue: s ? s.theme || 'frida' : '', sim: !!(s && s.sim), ...(extra || {}) });
   while (list.length > MAX) list.shift();
-  send(name);
+  send(name, extra);
   if (ctx.aviso) ctx.aviso();
 }
 // Anuncia un momento dentro de `ms` milisegundos (se cancela si antes pasa otro momento)

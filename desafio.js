@@ -1,30 +1,34 @@
-// «¿Quién quiere ser billonario?»: un concursante en el escenario sube una escalera de 10 preguntas con 4 alternativas.
+// «¿Quién quiere ser ganador?» (antes «¿Quién quiere ser billonario?»; nombre y 12 preguntas pedidos por Cote el 25 nov):
+// un concursante en el escenario sube una escalera de 12 preguntas con 4 alternativas.
 // El animador maneja todo desde su panel (#/desafioctl); el público ve la pantalla grande y solo vota
 // desde el celular cuando se usa el comodín «Pregunta al público».
 // Fases: setup → intro → question → locked → reveal → (question siguiente…) → end (won / retired / lost).
-// «La Trivia del Billonario» (pedido de Gabriel, 25 nov, como la Trivia del Rosko): el público responde cada pregunta
+// Suplente (pedido de Cote, 25 nov): antes de empezar se sortean dos personas, el participante principal y el suplente.
+// Juega solo el principal; si pierde, en lugar de terminar pasa a la fase «swap» (entra el suplente) y el suplente sigue
+// desde ese mismo escalón, con todo lo ganado hasta ahí, como si él hubiera llegado. Si el suplente pierde, termina.
+// «La Trivia del Ganador» (antes «del Billonario»; pedido de Gabriel, 25 nov, como la Trivia del Rosko): el público responde cada pregunta
 // desde el celular hasta la respuesta definitiva del concursante; vale más responder rápido y los puntos se suman al
 // revelar. El comodín «Pregunta al público» muestra el porcentaje de esas mismas respuestas y cierra la pregunta a los
 // 20 s. Ranking con botón y, al final, el ganador del público con tómbola.
 const crypto = require('crypto');
 const { BANK } = require('./questions-desafio.js');
 
-const TITLE = '¿Quién quiere ser billonario?';
-const STEPS = 10;
+const TITLE = '¿Quién quiere ser ganador?';
+const STEPS = 12;
 const LETTERS = ['A', 'B', 'C', 'D'];
 const AUDIENCE_MS = Number(process.env.DESAFIO_AUDIENCE_MS) || 20000; // votación del público: 20 s
 const PHONE_MS = 30000; // llamada a un amigo: 30 s
 const GRACE_MS = 1000; // margen para los votos que venían en camino al llegar a cero
-const DEFAULT_PRIZES = ['100', '200', '300', '500', '1.000', '2.000', '5.000', '10.000', '25.000', '50.000'].map((x) => `${x} puntos`);
+const DEFAULT_PRIZES = ['100', '200', '300', '500', '1.000', '2.000', '5.000', '10.000', '25.000', '50.000', '100.000', '250.000'].map((x) => `${x} puntos`);
 const DEFAULT_SAFE = [5];
 const CROWD_ROLL_MS = 5500; // la «tómbola» del ganador de la Trivia (igual que en El Rosko)
 const points = (ms) => Math.max(40, Math.round(100 - (ms / 1000) * 6)); // 100 al instante, baja 6 por segundo, mínimo 40
-// Dificultad según el escalón: 1 a 3 fácil, 4 a 7 medio, 8 a 10 difícil
-const levelOf = (step) => (step <= 3 ? 'f' : step <= 7 ? 'm' : 'd');
+// Dificultad según el escalón: 1 a 4 fácil, 5 a 8 medio, 9 a 12 difícil (los mismos 3 niveles de las luces de Code 4)
+const levelOf = (step) => (step <= 4 ? 'f' : step <= 8 ? 'm' : 'd');
 
 module.exports = function desafio({ app, db, save, requireAdmin, fail, setStage, findPlayer, venue, notify, festejo = () => {} }) {
   const blank = () => ({
-    rev: ((db.desafio || {}).rev || 0) + 1, phase: 'setup', player: '', prizes: [...DEFAULT_PRIZES], safe: [...DEFAULT_SAFE],
+    rev: ((db.desafio || {}).rev || 0) + 1, phase: 'setup', player: '', first: '', sub: '', subIn: false, lostAt: 0, prizes: [...DEFAULT_PRIZES], safe: [...DEFAULT_SAFE],
     step: 0, q: null, chosen: null, hidden: [], outcome: null, used: { fifty: false, audience: false, phone: false, swap: false },
     audience: null, phoneUntil: 0, seen: [],
     // Trivia del público: pregunta en juego (qid), desde cuándo se ve, si se puede responder, respuestas por pregunta,
@@ -115,6 +119,7 @@ module.exports = function desafio({ app, db, save, requireAdmin, fail, setStage,
     const t = tally();
     return {
       rev: s.rev, now: Date.now(), venue: venue(), title: TITLE, phase: s.phase, player: s.player,
+      first: s.first || s.player, sub: s.sub || '', subIn: !!s.subIn, lostAt: s.lostAt || 0,
       prizes: s.prizes, safe: s.safe, step: s.step, steps: STEPS,
       q: s.q ? { text: s.q.text, options: s.q.options, level: s.q.level } : null,
       hidden: s.hidden, chosen: s.phase === 'locked' || shown ? s.chosen : null,
@@ -193,20 +198,26 @@ module.exports = function desafio({ app, db, save, requireAdmin, fail, setStage,
     // Prepara la partida: concursante, premios y escalones seguros. En pantalla queda la presentación.
     new(s, b) {
       const player = clean(b.player, 40).toLocaleUpperCase('es');
-      if (!player) throw new Error('Escribe el nombre del concursante');
+      if (!player) throw new Error('Escribe el nombre del participante principal');
+      const sub = clean(b.sub, 40).toLocaleUpperCase('es');
+      if (sub && sub === player) throw new Error('El suplente tiene que ser otra persona');
       const prizes = Array.isArray(b.prizes) ? b.prizes.slice(0, STEPS).map((p, i) => clean(p, 30) || DEFAULT_PRIZES[i]) : [...DEFAULT_PRIZES];
       while (prizes.length < STEPS) prizes.push(DEFAULT_PRIZES[prizes.length]);
       const safe = Array.isArray(b.safe) ? [...new Set(b.safe.map(Number).filter((x) => Number.isInteger(x) && x >= 1 && x < STEPS))].sort((x, y) => x - y) : [...DEFAULT_SAFE];
       clearTimeout(audienceTimer);
-      Object.assign(s, blank(), { rev: s.rev, phase: 'intro', player, prizes, safe, gen: Date.now() }); // gen: cada partida (instrucciones en el celular)
+      Object.assign(s, blank(), { rev: s.rev, phase: 'intro', player, first: player, sub, prizes, safe, gen: Date.now() }); // gen: cada partida (instrucciones en el celular)
       setStage('desafio');
     },
     // Desde la presentación o tras acertar: la pregunta siguiente
     next(s) {
       s.rankShow = false; // «Iniciar pregunta» recoge el ranking (como en El Rosko)
       if (s.phase === 'intro') { s.step = 1; deal(1); s.phase = 'question'; return; }
+      if (s.phase === 'swap') { s.player = s.sub; s.subIn = true; deal(s.step); s.phase = 'question'; return; } // el suplente sigue en el mismo escalón
       if (s.phase !== 'reveal') throw new Error('Primero revela la respuesta');
-      if (s.chosen !== s.q.correct) { s.outcome = 'lost'; s.phase = 'end'; return; }
+      if (s.chosen !== s.q.correct) {
+        if (s.sub && !s.subIn) { s.lostAt = s.step; s.phase = 'swap'; return; } // perdió el principal: entra el suplente
+        s.outcome = 'lost'; s.phase = 'end'; return;
+      }
       if (s.step >= STEPS) { s.outcome = 'won'; s.phase = 'end'; return; }
       s.step++;
       deal(s.step);
@@ -298,11 +309,14 @@ module.exports = function desafio({ app, db, save, requireAdmin, fail, setStage,
     const m = require('./momentos.js');
     // Luces (como en El Rosko): un momento por cada paso del juego. Los nombres «desafio_*» son nuevos: falta que Code 4
     // les asigne luces en su suite (mientras tanto las luces no hacen nada con ellos)
-    const name = b.action === 'next' && s.phase === 'question' ? 'desafio_pregunta' : b.action === 'swap' ? 'desafio_pregunta'
-      : b.action === 'lock' ? 'desafio_definitiva' : b.action === 'reveal' ? (s.chosen === s.q.correct ? 'desafio_correcta' : 'desafio_incorrecta')
-        : b.action === 'audience' ? 'desafio_publico' : b.action === 'phone' ? 'desafio_llamada'
-          : b.action === 'rank' ? (s.rankShow ? 'desafio_ranking' : 'desafio_ranking_fin') : '';
-    if (name) m.emit(name);
+    // Pedidos de Cote por Code 4 (25 nov): el escalón va con cada pregunta (las luces cambian en 3 niveles: 1 a 4, 5 a 8 y
+    // 9 a 12), y avisos para la presentación (también cuando entra el suplente), el 50:50 y el retiro
+    const name = b.action === 'new' || (b.action === 'next' && s.phase === 'swap') ? 'desafio_presenta'
+      : b.action === 'next' && s.phase === 'question' ? 'desafio_pregunta' : b.action === 'swap' ? 'desafio_pregunta'
+        : b.action === 'lock' ? 'desafio_definitiva' : b.action === 'reveal' ? (s.chosen === s.q.correct ? 'desafio_correcta' : 'desafio_incorrecta')
+          : b.action === 'audience' ? 'desafio_publico' : b.action === 'phone' ? 'desafio_llamada' : b.action === 'fifty' ? 'desafio_5050'
+            : b.action === 'retire' ? 'desafio_retiro' : b.action === 'rank' ? (s.rankShow ? 'desafio_ranking' : 'desafio_ranking_fin') : '';
+    if (name) m.emit(name, name === 'desafio_pregunta' ? { escalon: s.step } : undefined);
     if (before !== 'end' && s.phase === 'end' && s.outcome === 'won') { m.emit('desafio_ganador'); m.emitLater('premio_entrega', 9000); festejo(); }
     // Luces y confeti con el ganador de la Trivia (como en El Rosko): la tómbola gira y, al detenerse, el ganador
     const cw = s.crowd.winner;

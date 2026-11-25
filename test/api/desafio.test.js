@@ -1,4 +1,5 @@
-// ¿Quién quiere ser billonario?: escalera de 10 preguntas, comodines, voto del público desde el celular y premios.
+// ¿Quién quiere ser ganador? (antes «billonario»): escalera de 12 preguntas, comodines, voto del público desde el celular,
+// premios y el suplente (pedido de Cote, 25 nov).
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const { startServer, sleep } = require('../helpers');
@@ -19,7 +20,7 @@ const pub = () => srv.ok('GET', '/api/desafio');
 const answerRight = async () => { const st = await srv.admin.get('/api/desafio/host'); await h('lock', { choice: st.answer }); await h('reveal'); return h('next'); };
 
 test('partida con comodines: la respuesta nunca se filtra antes de revelar', async () => {
-  assert.equal(await hErr('new', { player: '  ' }), 'Escribe el nombre del concursante');
+  assert.equal(await hErr('new', { player: '  ' }), 'Escribe el nombre del participante principal');
   let st = await h('new', { player: 'Camila Rojas', safe: [3, 6] });
   assert.equal(st.phase, 'intro');
   assert.equal(st.player, 'CAMILA ROJAS');
@@ -96,18 +97,18 @@ test('premios: pierde bajo el escalón seguro, se retira, gana todo, pierde en l
   assert.equal(st.outcome, 'retired');
   assert.equal(st.won, '300 puntos');
 
-  // Gana las 10 sin repetir preguntas; la dificultad sube
-  await h('new', { player: 'Gana', prizes: ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'Un auto'] });
+  // Gana las 12 sin repetir preguntas; la dificultad sube (1 a 4 fácil, 5 a 8 medio, 9 a 12 difícil)
+  await h('new', { player: 'Gana', prizes: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', 'Un auto'] });
   await h('next');
   const seen = new Set();
   const levels = [];
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 12; i++) {
     st = await srv.admin.get('/api/desafio/host');
     seen.add(st.q.text); levels.push(st.q.level);
     st = await answerRight();
   }
-  assert.equal(seen.size, 10);
-  assert.deepEqual(levels, ['f', 'f', 'f', 'm', 'm', 'm', 'm', 'd', 'd', 'd']);
+  assert.equal(seen.size, 12);
+  assert.deepEqual(levels, ['f', 'f', 'f', 'f', 'm', 'm', 'm', 'm', 'd', 'd', 'd', 'd']);
   assert.equal(st.outcome, 'won');
   assert.equal(st.won, 'Un auto');
 
@@ -123,6 +124,39 @@ test('premios: pierde bajo el escalón seguro, se retira, gana todo, pierde en l
 
   st = await h('reset');
   assert.equal(st.phase, 'setup');
+});
+
+// Suplente (pedido de Cote, 25 nov): si el principal pierde, entra el suplente y sigue desde ese escalón con lo ganado
+test('suplente: entra cuando pierde el principal, sigue en el mismo escalón y se lleva los premios', async () => {
+  assert.equal(await hErr('new', { player: 'Ana', sub: 'ana' }), 'El suplente tiene que ser otra persona');
+  let st = await h('new', { player: 'Ana', sub: 'Luis' });
+  assert.equal(st.player, 'ANA'); assert.equal(st.sub, 'LUIS'); assert.equal(st.steps, 12);
+  await h('next');
+  for (let i = 1; i < 4; i++) await answerRight();
+  st = await srv.admin.get('/api/desafio/host');
+  assert.equal(st.step, 4);
+  await h('lock', { choice: (st.answer + 1) % 4 });
+  await h('reveal');
+  st = await h('next');
+  assert.equal(st.phase, 'swap'); // no termina: entra el suplente
+  assert.equal(st.outcome, null);
+  assert.equal(st.first, 'ANA');
+  st = await h('next');
+  assert.equal(st.phase, 'question'); assert.equal(st.step, 4); // misma pregunta del escalón, otra pregunta
+  assert.equal(st.player, 'LUIS'); assert.equal(st.subIn, true);
+  for (let i = 4; i < 6; i++) await answerRight();
+  st = await h('retire'); // se retira en la 6: se lleva el premio de la 5, como si él hubiera llegado
+  assert.equal(st.outcome, 'retired'); assert.equal(st.won, '1.000 puntos'); assert.equal(st.player, 'LUIS');
+  // Si el suplente también pierde, termina
+  await h('new', { player: 'Ana', sub: 'Luis' });
+  st = await h('next');
+  await h('lock', { choice: (st.answer + 1) % 4 }); await h('reveal');
+  st = await h('next'); assert.equal(st.phase, 'swap');
+  st = await h('next');
+  await h('lock', { choice: (st.answer + 1) % 4 }); await h('reveal');
+  st = await h('next');
+  assert.equal(st.phase, 'end'); assert.equal(st.outcome, 'lost'); assert.equal(st.won, '');
+  await h('reset');
 });
 
 // La Trivia del Billonario (pedido de Gabriel, 25 nov): el público responde cada pregunta desde el celular

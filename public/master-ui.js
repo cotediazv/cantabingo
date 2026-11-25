@@ -18,7 +18,7 @@
   // Opciones del GC de la sala light (las mismas del panel de la sala light)
   const LIGHT = [['info', '🔄', 'Información'], ['karaoke', '🎤', 'Karaoke'], ['show', '⭐', 'Show'], ['cartelera', '📅', 'Cartelera'], ['qr', '📱', 'QR grande'], ['none', '⛔', 'Nada']];
   // Opciones del GC de la sala de juegos (cuando la sala abierta es la de este local)
-  const MAIN = [['bingo', '🎱', 'Bingo'], ['rueda', '🎡', 'El Rosko'], ['sorteo', '🎲', 'Sorteo'], ['voto', '🗳️', 'Votación'], ['karaoke', '🎤', 'Karaoke'], ['show', '⭐', 'Show'], ['insta', '📸', 'Instagram'], ['desafio', '🏆', 'Desafío'], ['qr', '📱', 'QR'], ['none', '⛔', 'Nada'], ['per', '✏️', 'GC PER']]; // «GC PER»: el texto escrito, en la franja del GC (no es un escenario: /api/gcper)
+  const MAIN = [['bingo', '🎱', 'Bingo'], ['rueda', '🎡', 'El Rosko'], ['sorteo', '🎲', 'Sorteo'], ['voto', '🗳️', 'Votación'], ['karaoke', '🎤', 'Karaoke'], ['show', '⭐', 'Show'], ['insta', '📸', 'Instagram'], ['desafio', '🏆', '¿Ganador?'], ['qr', '📱', 'QR'], ['none', '⛔', 'Nada'], ['per', '✏️', 'GC PER']]; // «GC PER»: el texto escrito, en la franja del GC (no es un escenario: /api/gcper)
   // Capa gráfica sobre la cámara (pedido de Cote, 21 nov): piezas que se disparan sobre el GC de OBS del local y salen solas
   const CAPA = [['cortina', '🎬', 'Cortina', 'Cortina'], ['texto3d', '🧊', 'Texto 3D', 'Texto 3D'], ['celebracion', '🎉', 'Celebración', 'Celebración'], ['fuegos', '🎆', 'Fuegos', 'Fuegos artificiales'],
     ['confeti', '🎊', 'Confeti', 'Lluvia de confeti'], ['luces', '🔦', 'Luces', 'Luces de escenario'], ['corazones', '❤️', 'Corazones', 'Corazones'], ['off', '✖', 'Quitar', 'Quitar lo que está en pantalla']];
@@ -373,7 +373,7 @@
       const first = momSeq == null; momSeq = r.seq;
       if (first) return; // al abrir no se repiten los momentos viejos
       const f = left.querySelector('.dm-v3d');
-      if (f && f.contentWindow) for (const m of r.momentos) f.contentWindow.postMessage({ momento: m.name }, '*');
+      if (f && f.contentWindow) for (const m of r.momentos) f.contentWindow.postMessage({ momento: m.name, escalon: m.escalon }, '*');
     }
     // El celular: el de quien está en el escenario (automático) o el que se elige
     async function demoWho() {
@@ -520,7 +520,7 @@
       if (!alive || !r) return;
       const first = momSeq == null; momSeq = r.seq;
       const f = area.querySelector('.dm-v3d');
-      if (!first && f && f.contentWindow) for (const m of r.momentos) f.contentWindow.postMessage({ momento: m.name }, '*');
+      if (!first && f && f.contentWindow) for (const m of r.momentos) f.contentWindow.postMessage({ momento: m.name, escalon: m.escalon }, '*');
     };
     const load = async () => {
       const r = await api('GET', '/api/consola').catch(() => null);

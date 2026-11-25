@@ -10,7 +10,7 @@
 //   - El Festival y El objeto más extraño: algunas se inscriben con su canción u objeto, votan del 1 al 10 y en la final.
 //   - Votación del juego: votan por un juego.
 //   - El último en pie: contestan cada pregunta.
-//   - ¿Quién quiere ser billonario?: contestan la Trivia del Billonario (4 alternativas, antes de la respuesta definitiva).
+//   - ¿Quién quiere ser ganador?: contestan la Trivia del Ganador (4 alternativas, antes de la respuesta definitiva).
 // No piden canciones de karaoke (eso escribiría en la planilla real del local). No quedan en el registro de clientes ni
 // en los registros de conectados. Al cerrar la sala, desaparecen.
 const crypto = require('crypto');
@@ -92,6 +92,10 @@ module.exports = function simulador({ app, db, save, requireAdmin, fail, port, p
       const e = db.enpie; const f = e.fin;
       if (f && f.players && f.players[f.turn] && s.players[f.players[f.turn].token]) return { token: f.players[f.turn].token, why: 'su turno en la final' };
       const t = byName(s, e.winner && e.winner.name); if (t) return { token: t, why: 'ganó El último en pie' };
+    }
+    if (st === 'desafio' && db.desafio) { // ¿Quién quiere ser ganador?: quien está jugando (el principal o, si entró, el suplente)
+      const d = db.desafio; const t = byName(s, d.phase === 'swap' ? d.sub : d.player);
+      if (t) return { token: t, why: d.subIn || d.phase === 'swap' ? 'el suplente en ¿Quién quiere ser ganador?' : 'en ¿Quién quiere ser ganador?' };
     }
     if (st === 'sorteo') {
       const r = db.raffle || {};
@@ -196,7 +200,7 @@ module.exports = function simulador({ app, db, save, requireAdmin, fail, port, p
         later(delay(b, 1.5, 8), () => { const now = db.enpie; if (now && now.phase === 'question' && now.n === e.n && now.gen === e.gen) post('/api/enpie/answer', { sid, token: b.token, pick: pickNo }); });
       }
     }
-    // La Trivia del Billonario: responden cada pregunta antes de la respuesta definitiva (4 alternativas)
+    // La Trivia del Ganador: responden cada pregunta antes de la respuesta definitiva (4 alternativas)
     const d = db.desafio;
     if (stage === 'desafio' && d && d.phase === 'question' && d.open && d.q) {
       for (const b of m.bots) {

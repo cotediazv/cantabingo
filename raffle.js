@@ -4,6 +4,10 @@ const crypto = require('crypto');
 
 const ROLL_MS = 6500; // cuánto dura la animación antes de revelar el nombre
 const MAX_PICKS = 4; // un rosko admite hasta 4 concursantes
+// Para qué juego se sortea (pedido de Cote, 25 nov): El Rosko (3 concursantes, hasta 4) o ¿Quién quiere ser ganador?
+// (2: el participante principal y el suplente). El juego del sorteo queda en db.raffle.game.
+const GAMES = { rosco: { max: MAX_PICKS }, desafio: { max: 2 } };
+const gameOf = (r) => (GAMES[r.game] ? r.game : 'rosco');
 
 module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, refreshAll, connectedNames, festejo = () => {} }) {
   const key = (name) => String(name).trim().toLowerCase().replace(/\s+/g, ' ');
@@ -27,7 +31,7 @@ module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, 
     // Desempate del bingo: la misma tómbola, pero solo entre los ganadores empatados
     if (r.mode === 'tie' && r.tie) return res.json({ mode: 'tie', picked: [], roll: r.tie, rollMs: ROLL_MS, now: Date.now(), pool: r.tie.tied });
     const on = connectedNames(); const no = new Set(declined()); // una sola vez por consulta (la leen todos los celulares)
-    return res.json({ mode: 'rosco', picked: r.picked, confirm: conf(), declined: declined(), roll: r.roll, rollMs: ROLL_MS, now: Date.now(), pool: names().filter((n) => on.has(n) && !no.has(n)).length });
+    return res.json({ mode: 'rosco', game: gameOf(r), picked: r.picked, confirm: conf(), declined: declined(), roll: r.roll, rollMs: ROLL_MS, now: Date.now(), pool: names().filter((n) => on.has(n) && !no.has(n)).length });
   });
 
   app.get('/api/people', requireAdmin, (_req, res) => { const on = connectedNames(); res.json({ names: names(), connected: names().filter((n) => on.has(n)) }); });
@@ -80,7 +84,8 @@ module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, 
 
   app.post('/api/raffle/draw', requireAdmin, (_req, res) => {
     const r = db.raffle;
-    if (r.picked.length >= MAX_PICKS) return fail(res, 400, `Ya hay ${MAX_PICKS} concursantes elegidos`);
+    const max = GAMES[gameOf(r)].max;
+    if (r.picked.length >= max) return fail(res, 400, max === 2 ? 'Ya están sorteados el principal y el suplente' : `Ya hay ${max} concursantes elegidos`);
     if (r.roll && Date.now() - r.roll.at < ROLL_MS) return fail(res, 400, 'Espera a que termine el sorteo en curso');
     const all = names();
     // Solo entran al sorteo quienes están conectados en este momento
@@ -100,9 +105,14 @@ module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, 
     res.json({ winner, picked: r.picked });
   });
 
-  // El panel del sorteo de El Rosko pone la tómbola en pantalla al abrirse
-  app.post('/api/raffle/open', requireAdmin, (_req, res) => {
+  // El panel del sorteo pone la tómbola en pantalla al abrirse. Si cambia el juego (El Rosko ↔ ¿Quién quiere ser
+  // ganador?), el sorteo parte de nuevo: los elegidos de un juego no pasan al otro
+  app.post('/api/raffle/open', requireAdmin, (req, res) => {
+    const game = GAMES[(req.body || {}).game] ? req.body.game : 'rosco';
+    if (gameOf(db.raffle) !== game) Object.assign(db.raffle, { picked: [], roll: null, confirm: {}, declined: [] });
+    db.raffle.game = game;
     db.raffle.mode = 'rosco';
+    save();
     setStage('sorteo');
     res.json({ ok: true });
   });
@@ -167,7 +177,7 @@ module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, 
   });
 
   app.post('/api/raffle/reset', requireAdmin, (_req, res) => {
-    db.raffle = { picked: [], roll: null, confirm: {}, declined: [] };
+    db.raffle = { picked: [], roll: null, confirm: {}, declined: [], game: gameOf(db.raffle) };
     save();
     res.json({ ok: true });
   });

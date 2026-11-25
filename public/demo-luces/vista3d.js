@@ -9,7 +9,7 @@ import * as THREE from './lib/three.module.min.js';
 
 let renderer, scene, camera, construido = false;
 const focos = [];            // un foco por equipo: { g, tipo, pos, spot, haz, lente, cuerpo }
-let anilloMarca, animadorObj, artistaObj, roskoObj, techoObj;
+let anilloMarca, animadorObj, artistaObj, roskoObj, techoObj, desafioObj;
 const PANT = { tv:null, vert:[], h42:[] };   // pantallas del escenario (para mostrar las de la Sala en el demo)
 
 /* ---------- utilidades ---------- */
@@ -241,11 +241,11 @@ function construir(){
     }), roughness: 1 }));
     alf.rotation.x = -Math.PI / 2; alf.position.set(0, 0.452, -2.95); alf.receiveShadow = true; scene.add(alf);
   }
-  caja(0.9, 1.3, 0.6, mat.gris, 4.45, 1.1, -2.05);                                    // case: al borde, detras de la columna azul derecha
+  caja(0.9, 1.3, 0.6, mat.gris, ESC_X - 0.55, 1.1, -2.05);                                    // case: al borde, detras de la columna azul derecha
   caja(0.7, 0.75, 0.5, mat.negro, -2.25, 0.82, -3.15);                               // parlante
   // columnas azules del escenario con su pantalla vertical (y la TV en la derecha)
   // columnas azules del escenario: SIEMPRE visibles (Cote). Las casi invisibles son solo los pilares del salon.
-  [-5.8, 5.8].forEach(x => {
+  [-COL_X, COL_X].forEach(x => {
     caja(1.0, 4.3, 1.2, mat.listones, x, 2.15, 0);
     const pant = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 1.4), new THREE.MeshBasicMaterial({ map: texRosko(), color: 0xc8c8c8 }));   // muestra: El Rosko
     pant.position.set(x, 3.0, 0.61); scene.add(pant); PANT.vert.push(pant);
@@ -257,14 +257,14 @@ function construir(){
   // marco azul, red de cuerdas y lamparas hexagonales
   const barra = (a, b) => { const d = v3(b).sub(v3(a)), m = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, d.length(), 10), mat.azul);
     m.position.copy(v3(a).add(d.clone().multiplyScalar(0.5))); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); scene.add(m); };
-  barra([-5.8, 4.5, 0.3], [5.8, 4.5, 0.3]); barra([-5.8, 4.5, 0.3], [-5.8, 4.5, -3.6]); barra([5.8, 4.5, 0.3], [5.8, 4.5, -3.6]); barra([-5.8, 4.5, -2.6], [5.8, 4.5, -2.6]);
+  barra([-COL_X, 4.5, 0.3], [COL_X, 4.5, 0.3]); barra([-COL_X, 4.5, 0.3], [-COL_X, 4.5, -3.6]); barra([COL_X, 4.5, 0.3], [COL_X, 4.5, -3.6]); barra([-COL_X, 4.5, -2.6], [COL_X, 4.5, -2.6]);
   const pts = [];
-  for (let x = -5.4; x <= 5.4; x += 0.42){
+  for (let x = -(COL_X - 0.4); x <= COL_X - 0.4; x += 0.42){
     const largo = 1.0 + 0.5 * Math.abs(Math.sin(x * 1.7));
     pts.push(x, 4.5, 0.3, x + 0.15, 4.5 - largo, -0.6);
     pts.push(x, 4.5, 0.3, x, 4.35, -2.6);
   }
-  for (let z = 0; z >= -2.4; z -= 0.6) pts.push(-5.8, 4.42, z, 5.8, 4.42, z);
+  for (let z = 0; z >= -2.4; z -= 0.6) pts.push(-COL_X, 4.42, z, COL_X, 4.42, z);
   const gc = new THREE.BufferGeometry(); gc.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3)); scene.add(new THREE.LineSegments(gc, mat.cuerda));
   [[-1.5, 3.6], [0, 3.45], [1.5, 3.6]].forEach(([x, y]) => { const h = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.45, 6), mat.lampara); h.rotation.x = Math.PI / 2; h.position.set(x, y, -1.1); scene.add(h); });
   [[-2.5, 5], [1.5, 6.5], [-1, 9.5], [3, 11], [-3.5, 13], [1, 15.5]].forEach(([u, v]) => { const h = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.35, 6), mat.lampara); enSalon(h, u, v, 4.3); scene.add(h); });
@@ -382,6 +382,34 @@ function construir(){
   palo(3.0, -1.3, 0.74, 0.03);                                                             // piso alto del animador
   const aro = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.012, 6, 20), mat.negro); aro.position.set(3.0, 0.45 + 0.3, -1.3); aro.rotation.x = Math.PI / 2; roskoObj.add(aro);
   roskoObj.visible = false; scene.add(roskoObj);
+
+  // --- «¿Quien quiere ser ganador?» (Cote, rev 308): concursante sentado a la izquierda (mirando de frente), en diagonal,
+  //     con su pantalla al frente; animador a la derecha en un sillon bajo, con una tablet en un atril vertical ---
+  desafioObj = new THREE.Group();
+  const dPersona = (ropa, alto) => { const g = new THREE.Group();
+    const torso = sombra(new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 0.5, 6, 12), ropa)); torso.position.y = alto + 0.42; g.add(torso);
+    const cabeza = sombra(new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 12), mat.piel)); cabeza.position.y = alto + 0.88; g.add(cabeza);
+    const muslos = sombra(new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.14, 0.45), ropa)); muslos.position.set(0, alto + 0.07, 0.2); g.add(muslos);
+    const piernas = sombra(new THREE.Mesh(new THREE.BoxGeometry(0.3, alto, 0.12), mat.negro)); piernas.position.set(0, alto / 2, 0.4); g.add(piernas);
+    return g; };
+  const dSilla = (alto, ancho) => { const g = new THREE.Group();
+    const asientoS = sombra(new THREE.Mesh(new THREE.BoxGeometry(ancho, 0.1, 0.5), mat.negro)); asientoS.position.y = alto - 0.05; g.add(asientoS);
+    const resp = sombra(new THREE.Mesh(new THREE.BoxGeometry(ancho, 0.6, 0.08), mat.negro)); resp.position.set(0, alto + 0.3, -0.22); g.add(resp);
+    const pata = sombra(new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, alto, 8), mat.negro)); pata.position.y = alto / 2; g.add(pata);
+    return g; };
+  // concursante: dSilla alta, mirando en diagonal hacia el centro y el publico; pantalla al frente
+  const dConc = new THREE.Group(); dConc.add(dSilla(0.65, 0.5)); dConc.add(dPersona(new THREE.MeshStandardMaterial({ color: 0x17305a, roughness: 0.9 }), 0.65));
+  const dMonitor = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.38, 0.04), mat.negro); dMonitor.position.set(0, 1.05, 0.85); dMonitor.rotation.y = Math.PI; dConc.add(dMonitor);
+  const dBrillo = new THREE.Mesh(new THREE.PlaneGeometry(0.56, 0.32), new THREE.MeshBasicMaterial({ color: 0x3b6fd8 })); dBrillo.position.set(0, 0, -0.025); dBrillo.rotation.y = Math.PI; dMonitor.add(dBrillo);
+  const dPieM = sombra(new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.85, 8), mat.negro)); dPieM.position.set(0, 0.43, 0.85); dConc.add(dPieM);
+  dConc.position.set(-2.2, 0.45, -1.7); dConc.rotation.y = Math.PI / 4; desafioObj.add(dConc);
+  // animador: sillon bajo, mirando en diagonal hacia el concursante y el publico; dTablet en un dAtril vertical
+  const dAnim = new THREE.Group(); dAnim.add(dSilla(0.42, 0.7)); dAnim.add(dPersona(new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.8 }), 0.42));
+  const dAtril = sombra(new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 1.0, 8), mat.negro)); dAtril.position.set(0.25, 0.5, 0.6); dAnim.add(dAtril);
+  const dTablet = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.19, 0.015), mat.negro); dTablet.position.set(0.25, 1.02, 0.6); dTablet.rotation.y = Math.PI; dAnim.add(dTablet);
+  const dPantT = new THREE.Mesh(new THREE.PlaneGeometry(0.23, 0.16), new THREE.MeshBasicMaterial({ color: 0x9ec2ff })); dPantT.position.z = -0.009; dPantT.rotation.y = Math.PI; dTablet.add(dPantT);
+  dAnim.position.set(2.4, 0.45, -1.7); dAnim.rotation.y = -Math.PI / 4; desafioObj.add(dAnim);
+  desafioObj.visible = false; scene.add(desafioObj);
   if (VIVO.activo) prepararPantallasVivo();
 
   // anillo del punto tocado en el mapa de Seguir
@@ -444,8 +472,9 @@ function render(){
   const enSeguir = document.body.classList.contains('en-seguir') || document.body.classList.contains('dj-cabezas');
   const an = V.animador;
   // mientras camina el animador, la artista fija no se muestra; en el panel del DJ hay alguien en el escenario en Previa y Show
-  animadorObj.visible = !!an && !V.escenarioVacio; artistaObj.visible = !an && !V.escenarioVacio;
-  roskoObj.visible = !!V.rosko;
+  animadorObj.visible = !!an && !V.escenarioVacio && !V.desafio; artistaObj.visible = !an && !V.escenarioVacio && !V.desafio;
+  roskoObj.visible = !!V.rosko && !V.desafio;
+  if (desafioObj) desafioObj.visible = !!V.desafio;
   if (an){                                                     // camina: posicion, rumbo y piernas en movimiento
     animadorObj.position.set(an.p[0], an.p[1] + Math.abs(Math.sin(an.t * 6)) * 0.03, an.p[2]);
     animadorObj.rotation.y = an.rumbo;

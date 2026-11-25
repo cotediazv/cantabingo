@@ -56,3 +56,19 @@ test('desempate del bingo: con dos ganadores, la tómbola elige uno y solo ese q
   assert.equal(final.results.length, 1);
   assert.equal(final.results[0].name, winner);
 });
+
+// ¿Quién quiere ser ganador? (pedido de Cote, 25 nov): el mismo sorteo, para 2 (principal y suplente). Cambiar de juego
+// deja el sorteo en blanco: los elegidos de un juego no pasan al otro
+test('sorteo de ¿Quién quiere ser ganador?: juego propio y vuelve a El Rosko en blanco', async () => {
+  await srv.admin.post('/api/raffle/open', { game: 'desafio' });
+  let pub = await srv.ok('GET', '/api/raffle');
+  assert.equal(pub.game, 'desafio');
+  assert.deepEqual(pub.picked, []);
+  const { picked } = await srv.admin.post('/api/raffle/draw');
+  assert.equal(picked.length, 1);
+  assert.deepEqual((await srv.admin.get('/api/sessions/' + sid + '/host/state')).current, { game: 'desafio' }); // «Volver al juego en curso» va al panel del juego
+  await srv.admin.post('/api/raffle/open', { game: 'rosco' });
+  pub = await srv.ok('GET', '/api/raffle');
+  assert.equal(pub.game, 'rosco');
+  assert.deepEqual(pub.picked, []);
+});

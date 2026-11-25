@@ -5,7 +5,7 @@
    TODO va bajo «html.t2»: con el interruptor del Centro de control (o ?tema=0) se quita esa clase y vuelve el diseño
    anterior, sin tocar nada más. Este archivo tiene la base compartida; cada familia de pantallas tiene el suyo:
    tema-bingo.css, tema-light.css (sala light, karaoke y show), tema-rosco.css (El Rosco y sorteo de concursantes) y
-   tema-juegos.css (Festival, objeto, sorteo y votación del juego, Instagram) y tema-desafio.css (¿Quién quiere ser billonario?). No usar blur ni 3D con CSS: el computador
+   tema-juegos.css (Festival, objeto, sorteo y votación del juego, Instagram) y tema-desafio.css (¿Quién quiere ser ganador?). No usar blur ni 3D con CSS: el computador
    de OBS es modesto (se probó el 22 nov); solo transform y opacity en las animaciones. */
 html.t2 {
   --t-noche: #0c0b12; --t-fondo: #07060c; --t-tarima: #15131e; --t-tarima2: #1c1828; --t-linea: #2a2636; --t-texto: #f3eee6; --t-tenue: #a59fb0; --t-foco: #f4bf5a; --t-foco-tinta: #1a1407;

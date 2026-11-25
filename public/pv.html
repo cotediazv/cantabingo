@@ -852,12 +852,13 @@
       if (sig === last) return;
       last = sig;
       var isRosco = r.mode === 'tie' && r.roll && r.roll.game === 'rosco'; // El Rosko usa el mismo sorteo para su desempate
-      var o = '<div class="abs g-title fit">' + se(isRosco ? '🏆 ¡Ganador de El Rosko!' : r.mode === 'tie' ? 'Desempate del bingo' : '🎲 Sorteo de concursantes') + '</div>';
+      var isDes = r.mode !== 'tie' && r.game === 'desafio'; // ¿Quién quiere ser ganador?: el principal y el suplente (pedido de Cote, 25 nov)
+      var o = '<div class="abs g-title fit">' + se(isRosco ? '🏆 ¡Ganador de El Rosko!' : r.mode === 'tie' ? 'Desempate del bingo' : isDes ? '🎲 ¿Quién quiere ser ganador? · Sorteo' : '🎲 Sorteo de concursantes') + '</div>';
       if (rolling) o += '<div class="abs big gold r-roll' + tv('', ' fit') + '" style="top:30rem">' + se('🎲 Sorteando…') + '</div>';
       else if (r.mode === 'tie' && r.roll && r.roll.winner) o += '<div class="abs r-win" style="top:28rem"><div class="g-sub">Ganó</div><b class="big fit" style="display:block">' + h(r.roll.winner) + '</b></div>';
       var picked = [];
       for (var k = 0; k < (r.picked || []).length; k++) if (!(rolling && r.roll && r.picked[k] === r.roll.winner)) picked.push(r.picked[k]); // mientras gira, sin adelantar el nombre
-      if (picked.length) { o += '<div class="abs r-list' + (rolling ? ' r-low' : '') + '" style="top:' + (rolling ? 44 : 22) + 'rem"><ol class="rows rk">'; for (var i = 0; i < picked.length; i++) o += '<li class="top"><em>' + (i + 1) + '.º</em>' + h(picked[i]) + '</li>'; o += '</ol></div>'; }
+      if (picked.length) { o += '<div class="abs r-list' + (rolling ? ' r-low' : '') + '" style="top:' + (rolling ? 44 : 22) + 'rem"><ol class="rows rk">'; for (var i = 0; i < picked.length; i++) o += '<li class="top"><em>' + (isDes ? (i === 0 ? 'Principal' : 'Suplente') : (i + 1) + '.º') + '</em>' + h(picked[i]) + '</li>'; o += '</ol></div>'; }
       o += qrFoot();
       view.innerHTML = o;
       if (T2) fitAll(); // diseño nuevo: el título y el nombre se achican si no caben
@@ -897,7 +898,7 @@
     every(stageTimers, 2000, load);
     every(stageTimers, 500, function () { if (st) paint(); });
   }
-  // ¿Quién quiere ser billonario? (pedido de Gabriel, 25 nov): el concursante, la pregunta con sus 4 alternativas, el público (la Trivia,
+  // ¿Quién quiere ser ganador? (antes «billonario»; pedido de Gabriel, 25 nov; nombre, 12 preguntas y suplente: Cote, 25 nov): el concursante, la pregunta con sus 4 alternativas, el público (la Trivia,
   // el comodín y la llamada), el ranking y el ganador de la Trivia. Misma información que el tablero, en la versión liviana.
   function sDesafio() {
     var last = ''; var st = null; var L = ['A', 'B', 'C', 'D'];
@@ -909,20 +910,23 @@
       var sig = JSON.stringify([s.rev, aud, call, rolling]);
       if (sig === last) return;
       last = sig;
-      var o = '<div class="abs g-title fit">¿Quién quiere ser billonario?</div><div class="abs v-body" style="top:16rem">';
-      if (s.player && s.phase !== 'setup') o += '<div class="mid gold">' + h(s.player) + '</div>';
+      var o = '<div class="abs g-title fit">¿Quién quiere ser ganador?</div><div class="abs v-body" style="top:16rem">';
+      if (s.player && s.phase !== 'setup' && s.phase !== 'swap') o += '<div class="mid gold">' + h(s.player) + '</div>';
       if (s.phase === 'setup') o += '<b class="big fit" style="display:block;margin-top:3rem">¡Muy pronto!</b><div class="mid" style="margin-top:2rem">Juega desde tu celular</div><div class="mid">Más rápido, más puntos</div>';
       else if (s.rank) {
-        o += '<div class="mid" style="margin-top:2rem">La Trivia del Billonario</div><div class="mid gold">' + (s.phase === 'end' ? 'Resultados finales' : 'Resultados parciales') + '</div><ol class="rows rk sc" style="margin-top:2rem">';
+        o += '<div class="mid" style="margin-top:2rem">La Trivia del Ganador</div><div class="mid gold">' + (s.phase === 'end' ? 'Resultados finales' : 'Resultados parciales') + '</div><ol class="rows rk sc" style="margin-top:2rem">';
         for (k = 0; k < s.rank.length && k < 10; k++) o += '<li><em>' + (k + 1) + '.º</em>' + h(s.rank[k].name) + '<i>' + s.rank[k].score + '</i></li>';
         o += '</ol>' + (s.rank.length ? '' : '<div class="mid">Todavía nadie suma puntos</div>');
       } else if (s.phase === 'end' && cw) {
         if (rolling) o += '<div class="mid" style="margin-top:3rem">Y el ganador de la Trivia es…</div><div class="big gold" style="margin-top:2rem">' + se('🥁') + '</div>';
-        else if (cw.none) o += '<div class="mid" style="margin-top:3rem">La Trivia del Billonario</div><b class="big fit" style="display:block">Nadie sumó puntos</b>';
+        else if (cw.none) o += '<div class="mid" style="margin-top:3rem">La Trivia del Ganador</div><b class="big fit" style="display:block">Nadie sumó puntos</b>';
         else o += '<div class="mid gold" style="margin-top:3rem">Premio especial · Ganó la Trivia</div><b class="big fit" style="display:block">' + h(cw.name) + '</b><div class="mid">' + cw.score + ' puntos · ' + cw.hits + (cw.hits === 1 ? ' acierto' : ' aciertos') + '</div>';
       } else if (s.phase === 'end') {
         o += '<b class="big gold fit" style="display:block;margin-top:3rem">' + ({ won: '¡Ganó el premio mayor!', retired: 'Se retira', lost: 'Fin del juego' }[s.outcome] || '') + '</b><div class="mid" style="margin-top:2rem">Se lleva: ' + h(s.won || 'el aplauso del público') + '</div>';
+      } else if (s.phase === 'swap') {
+        o += '<div class="mid" style="margin-top:2rem">' + h(s.first) + ' quedó fuera</div><div class="mid gold" style="margin-top:2rem">Entra el suplente</div><b class="big fit" style="display:block;margin-top:1rem">' + h(s.sub) + '</b><div class="mid" style="margin-top:2rem">Sigue desde la pregunta ' + s.step + ' · ' + h(s.prizes[s.step - 1] || '') + '</div>';
       } else if (s.phase === 'intro' || !s.q) {
+        if (s.sub) o += '<div class="mid" style="margin-top:1rem">Suplente: ' + h(s.sub) + '</div>';
         o += '<b class="big fit" style="display:block;margin-top:3rem">' + s.steps + ' preguntas</b><div class="mid" style="margin-top:2rem">4 comodines · ¡a subir la escalera!</div><div class="mid gold" style="margin-top:2rem">Tú también juegas desde tu celular</div>';
       } else {
         o += '<div class="mid" style="margin-top:1.2rem">Pregunta ' + s.step + ' de ' + s.steps + '</div><b class="mid" style="display:block;font-size:3.8rem;line-height:1.1;margin:1rem 3rem 1.6rem">' + h(s.q.text) + '</b><ol class="rows">';

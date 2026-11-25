@@ -3645,3 +3645,5 @@ body.con-paso #ctl-carton { top: calc(var(--paso-h, 64px) + 20px); }
 .dg-intro .d-cw > b { font-size: min(8vh, calc(70vw / (var(--n, 10) * .6))); }
 .dg-intro .d-cw > span { font-size: 3vh; }
 .d-cover.d-wide { grid-column: 1 / -1; }
+/* Sorteo de ¿Quién quiere ser ganador? (diseño anterior): la etiqueta «Principal» / «Suplente» en lugar del número */
+#rf .rf-picked.rf-des b, body.full #rf .rf-picked.rf-des b { width: auto; padding: 0 1.4vh; border-radius: 99px; font-size: .7em; }

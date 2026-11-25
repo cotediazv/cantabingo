@@ -1,4 +1,4 @@
-/* Diseño nuevo · ¿Quién quiere ser billonario? (tablero #df, GC de OBS #dg y celular). Pedido de Gabriel (25 nov): «el mismo estilo
+/* Diseño nuevo · ¿Quién quiere ser ganador? (tablero #df, GC de OBS #dg y celular). Pedido de Gabriel (25 nov): «el mismo estilo
    de diseño de los otros juegos». Todo bajo «html.t2» (ver tema.css: colores, letras y reglas): fondo de noche, foco
    dorado, el color del local, Big Shoulders en títulos y nombres, Manrope en los textos, JetBrains Mono en etiquetas y
    relojes, cortes en diagonal y sin esquinas redondeadas. Sin blur ni sombras grandes (computador de OBS modesto); las
@@ -249,3 +249,5 @@ html.t2 body[data-view="jugar"] .pcrowd-top > div.me, html.t2 body[data-view="ju
 @media (prefers-reduced-motion: reduce) {
   html.t2 #df .d-opts > div, html.t2 #dg .d-opts > div, html.t2 #df .d-opts > div::before, html.t2 #dg .d-opts > div::before, html.t2 #df .d-cover, html.t2 #dg .dg-intro { animation: none !important; }
 }
+/* Suplente (pedido de Cote, 25 nov): su nombre en la presentación y cuando entra, en el dorado de la marca */
+html.t2 #df .d-cover > span.d-sub b { color: var(--t-foco); }
