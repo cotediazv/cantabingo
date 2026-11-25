@@ -179,6 +179,7 @@ const currentGame = (s) => {
   }
   if (st === 'voto') { const v = db.vote || {}; return v.winner ? null : { game: v.mode === 'karaoke' ? 'festival' : 'objeto' }; }
   if (st === 'enpie') { const e = db.enpie || {}; return e.phase && e.phase !== 'done' ? { game: 'enpie' } : null; }
+  if (st === 'desafio') { const d = db.desafio || {}; return d.phase && d.phase !== 'setup' && d.phase !== 'end' ? { game: 'desafio' } : null; }
   if (st === 'bingo') return bingoStarted(s) && !roundOver(s) ? { game: 'bingo' } : null;
   return null;
 };
@@ -196,11 +197,13 @@ function publicState(s, full = false) { // eslint-disable-line complexity
     stage: db.stage || 'bingo', roscoId: db.stage === 'rueda' ? (Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).id || null : null,
     celebrateAt: s.celebrateAt || 0,
     voteRev: (db.vote || {}).rev || 0, // los celulares vuelven a leer la votación cuando cambia
+    desafioRev: (db.desafio || {}).rev || 0, // ídem para ¿Quién quiere ser billonario? (la Trivia del público)
+    desafioGen: (db.desafio || {}).gen || 0, // cada partida de ¿Quién quiere ser billonario?: sus instrucciones en el celular
     enpieRev: (db.enpie || {}).rev || 0, // «El último en pie» (versión de prueba): los celulares vuelven a leer cuando cambia
     voteGen: (db.vote || {}).gen || 0, // cambia con cada concurso nuevo (El Festival u objeto): los celulares muestran sus instrucciones
     gameVoteRev: (db.gameVote || {}).rev || 0, // votación del juego: cambia al abrir o cerrar cada vuelta (no con cada voto)
     // El juego en pantalla ya terminó (concurso con ganador o rosco con ganador aceptado): los celulares no muestran sus instrucciones
-    stageDone: db.stage === 'enpie' ? (db.enpie || {}).phase === 'done' : db.stage === 'voto' ? !!(db.vote || {}).winner : db.stage === 'rueda' ? !!(Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).winAccepted : false,
+    stageDone: db.stage === 'enpie' ? (db.enpie || {}).phase === 'done' : db.stage === 'desafio' ? (db.desafio || {}).phase === 'end' && !!((db.desafio || {}).crowd || {}).winner : db.stage === 'voto' ? !!(db.vote || {}).winner : db.stage === 'rueda' ? !!(Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).winAccepted : false,
     winConfirmed: roundOver(s), winConfirmedAt: s.confirmedAt || 0, now: Date.now(),
     started: bingoStarted(s),
     publico: { at: PUBLICO_AT, due: needsPublico(s), done: s.publicoRound === s.round }, // «Anda al público» (luces) // el bingo de esta ronda empezó (figura elegida o ya hay números); antes, la sala espera el primer juego
@@ -277,6 +280,7 @@ function resetEvent() {
   db.raffle = { picked: [], roll: null };
   wheel.clear();
   vote.clear();
+  desafio.clear(); // ¿Quién quiere ser billonario? y su Trivia
   db.stage = 'bingo';
   if (db.gcper) db.gcper.on = false;
 }
@@ -725,7 +729,7 @@ app.get('/api/sessions/:sid/events', (req, res) => {
 // Segundo juego de la plataforma
 // Pantalla única de OBS: qué gráfica se muestra ahora. Cambia sola al activar un bingo,
 // crear un rosko o lanzar un sorteo; el moderador también puede cambiarla a mano.
-const STAGES = ['bingo', 'rueda', 'sorteo', 'qr', 'karaoke', 'show', 'voto', 'insta', 'juego', 'votojuego', 'enpie', 'none'];
+const STAGES = ['bingo', 'rueda', 'sorteo', 'qr', 'karaoke', 'show', 'voto', 'insta', 'juego', 'votojuego', 'enpie', 'desafio', 'none'];
 // Pedido de Cote: el juego que está en actividad tiene prioridad. Mientras haya un rosko en juego, la pantalla queda en
 // El Rosko aunque se apriete otra cosa (un botón del bingo, el escenario a mano o el karaoke automático); al terminar
 // el rosko (ganador, empate o se acabó), todo vuelve a funcionar como siempre. Devuelve false si no se cambió.
@@ -806,6 +810,11 @@ const vote = require('./vote.js')({ app, db, save, requireAdmin, fail, setStage,
   findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null,
   venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
   notify: () => Object.values(db.sessions).forEach((s) => broadcast(s)) });
+// «¿Quién quiere ser billonario?»: trivia de 10 escalones con un concursante en el escenario
+const desafio = require('./desafio.js')({ app, db, save, requireAdmin, fail, setStage, festejo,
+  findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null,
+  venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
+  notify: () => Object.values(db.sessions).forEach((s) => broadcast(s)) });
 // «Síguenos en Instagram»: la cuenta del local de la sala abierta
 const insta = require('./insta.js')({ app, db, save, requireAdmin, fail, venue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
 // Sala light: karaoke, show y cartelera en otro local, al mismo tiempo que la sala principal
@@ -842,7 +851,7 @@ require('./twitch.js')({ app }); // videos y transmisiones en vivo de Twitch, pa
 require('./instagram-web.js')({ app, db, save, insta }); // últimos videos de Instagram de cada local, para la página web
 
 // Consola general: en qué está cada local (sala principal o sala light), su bloque del horario y su karaoke
-const STAGE_NAMES = { bingo: 'Bingo', rueda: 'El Rosko', sorteo: 'Sorteo', qr: 'QR grande', karaoke: 'Karaoke', show: 'Show', voto: 'Votación', enpie: 'El último en pie', insta: 'Instagram', juego: 'Sorteo de juegos', votojuego: 'Votación del juego', none: 'Nada', cartelera: 'Cartelera de la semana', custom: 'GC personalizable', info: 'Información que va cambiando' };
+const STAGE_NAMES = { bingo: 'Bingo', rueda: 'El Rosko', sorteo: 'Sorteo', qr: 'QR grande', karaoke: 'Karaoke', show: 'Show', voto: 'Votación', enpie: 'El último en pie', desafio: '¿Quién quiere ser billonario?', insta: 'Instagram', juego: 'Sorteo de juegos', votojuego: 'Votación del juego', none: 'Nada', cartelera: 'Cartelera de la semana', custom: 'GC personalizable', info: 'Información que va cambiando' };
 app.get('/api/consola', requireAdmin, async (_req, res) => {
   const main = Object.values(db.sessions)[0] || null;
   const out = await Promise.all(['kennedy', 'frida', 'tobalaba'].map(async (v) => {
@@ -1203,6 +1212,13 @@ const cartonInfo = () => {
     const pl = Object.values(e.players || {}); const up = pl.filter((x) => x.up).length;
     out.big = `${up} de pie`; out.small = e.n ? `Pregunta ${e.n}` : '';
     out.lines.push(`${pl.length - up} en la banca`);
+  } else if (st === 'desafio') {
+    const d = db.desafio || {};
+    out.title = '¿Quién quiere ser billonario?';
+    out.big = d.player || '¡Ya comienza!'; out.small = d.player ? 'Concursante' : '';
+    if (d.step) out.lines.push(`Va por la pregunta ${d.step} de ${(d.prizes || []).length || 10}${(d.prizes || [])[d.step - 1] ? ` · ${d.prizes[d.step - 1]}` : ''}`);
+    const crowd = new Set(Object.values((d.crowd || {}).ans || {}).flatMap((by) => Object.keys(by))).size;
+    if (crowd) out.lines.push(`${crowd} ${crowd === 1 ? 'persona juega' : 'personas juegan'} la Trivia desde el celular`);
   } else {
     out.title = st === 'juego' ? 'El próximo juego' : st === 'votojuego' ? 'Votación del próximo juego' : st === 'sorteo' ? 'Sorteo de concursantes' : s.name;
     out.big = 'Escanea el código QR'; out.small = 'con tu celular y participa';
@@ -1232,13 +1248,19 @@ app.post('/api/stage', requireAdmin, (req, res) => {
   res.json({ show });
 });
 
+// La hora para el karaoke del jueves y las salas automáticas. En las pruebas automáticas, KRB_FECHA (fecha ISO) fija
+// desde qué momento corre el reloj, para simular cualquier día; sin KRB_FECHA (en Render) es la hora real.
+const RELOJ_DESDE = Date.now();
+const RELOJ_BASE = process.env.KRB_FECHA ? Date.parse(process.env.KRB_FECHA) : NaN;
+const ahora = () => new Date(Number.isNaN(RELOJ_BASE) ? Date.now() : RELOJ_BASE + (Date.now() - RELOJ_DESDE));
+
 // Pedido de Cote: todos los jueves a las 21:45 (hora de Chile), si la sala abierta es la de Kennedy, el escenario
 // pasa solo a Karaoke, para que el público siga pidiendo canciones desde su celular. Una vez por jueves; después
 // se puede cambiar a mano. Si el servicio estaba reiniciándose justo a esa hora, se hace apenas vuelve (hasta las 22:00).
 const AUTO_KARAOKE = { venue: 'kennedy', dow: 'Thu', from: 21 * 60 + 45, until: 22 * 60 };
 setInterval(() => {
   const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
-    .formatToParts(new Date()).map((x) => [x.type, x.value]));
+    .formatToParts(ahora()).map((x) => [x.type, x.value]));
   const min = +p.hour * 60 + +p.minute;
   const day = `${p.year}-${p.month}-${p.day}`;
   if (p.weekday !== AUTO_KARAOKE.dow || min < AUTO_KARAOKE.from || min >= AUTO_KARAOKE.until || db.autoKaraoke === day) return;
@@ -1266,7 +1288,7 @@ const AUTO_SALAS = [
 // para que el público siga pidiendo canciones. Si a esa hora hay un rosko en juego, se espera a que termine.
 function autoSala() {
   const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
-    .formatToParts(new Date()).map((x) => [x.type, x.value]));
+    .formatToParts(ahora()).map((x) => [x.type, x.value]));
   const min = +p.hour * 60 + +p.minute;
   const a = AUTO_SALAS.find((x) => x.dow === p.weekday && min >= x.from);
   if (!a) return;

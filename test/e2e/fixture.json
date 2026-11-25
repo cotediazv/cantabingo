@@ -1,0 +1,1516 @@
+{
+ "projects": {
+  "a70189836715d78c": {
+   "id": "a70189836715d78c",
+   "created": 1795000000000,
+   "format": "numbers",
+   "values": 75,
+   "items": null,
+   "name": "Prueba",
+   "theme": "kennedy",
+   "headers": "BINGO",
+   "freeCenter": true,
+   "startNumber": 1,
+   "sessionId": "t7v356",
+   "cards": [
+    [
+     5,
+     26,
+     42,
+     57,
+     74,
+     7,
+     22,
+     43,
+     54,
+     64,
+     9,
+     30,
+     0,
+     58,
+     73,
+     3,
+     23,
+     38,
+     49,
+     70,
+     12,
+     24,
+     45,
+     47,
+     62
+    ],
+    [
+     2,
+     30,
+     32,
+     48,
+     69,
+     3,
+     18,
+     43,
+     60,
+     72,
+     6,
+     24,
+     0,
+     54,
+     65,
+     1,
+     21,
+     38,
+     52,
+     68,
+     5,
+     22,
+     34,
+     53,
+     73
+    ],
+    [
+     13,
+     29,
+     35,
+     53,
+     71,
+     9,
+     21,
+     40,
+     48,
+     75,
+     7,
+     20,
+     0,
+     59,
+     70,
+     2,
+     17,
+     36,
+     49,
+     69,
+     4,
+     16,
+     43,
+     47,
+     74
+    ],
+    [
+     14,
+     24,
+     44,
+     48,
+     61,
+     5,
+     18,
+     32,
+     57,
+     70,
+     3,
+     22,
+     0,
+     47,
+     71,
+     7,
+     20,
+     35,
+     52,
+     75,
+     8,
+     21,
+     43,
+     58,
+     74
+    ],
+    [
+     9,
+     28,
+     37,
+     57,
+     71,
+     6,
+     24,
+     31,
+     47,
+     68,
+     4,
+     18,
+     0,
+     54,
+     72,
+     11,
+     19,
+     45,
+     51,
+     67,
+     14,
+     20,
+     33,
+     58,
+     73
+    ],
+    [
+     10,
+     29,
+     42,
+     46,
+     71,
+     9,
+     27,
+     35,
+     51,
+     70,
+     5,
+     25,
+     0,
+     53,
+     75,
+     11,
+     22,
+     39,
+     56,
+     69,
+     12,
+     26,
+     43,
+     54,
+     73
+    ],
+    [
+     10,
+     25,
+     33,
+     58,
+     62,
+     3,
+     27,
+     36,
+     56,
+     61,
+     6,
+     21,
+     0,
+     52,
+     75,
+     2,
+     28,
+     43,
+     53,
+     70,
+     8,
+     19,
+     37,
+     57,
+     72
+    ],
+    [
+     11,
+     26,
+     42,
+     58,
+     73,
+     3,
+     18,
+     45,
+     46,
+     67,
+     13,
+     22,
+     0,
+     51,
+     64,
+     8,
+     28,
+     31,
+     48,
+     65,
+     2,
+     17,
+     35,
+     54,
+     74
+    ],
+    [
+     5,
+     27,
+     44,
+     60,
+     61,
+     3,
+     19,
+     39,
+     47,
+     66,
+     8,
+     25,
+     0,
+     58,
+     73,
+     4,
+     24,
+     35,
+     50,
+     74,
+     1,
+     26,
+     43,
+     48,
+     68
+    ],
+    [
+     3,
+     19,
+     36,
+     52,
+     73,
+     1,
+     23,
+     42,
+     54,
+     70,
+     10,
+     27,
+     0,
+     48,
+     66,
+     14,
+     22,
+     32,
+     56,
+     63,
+     13,
+     25,
+     31,
+     47,
+     68
+    ],
+    [
+     1,
+     30,
+     31,
+     48,
+     73,
+     15,
+     17,
+     42,
+     46,
+     64,
+     8,
+     24,
+     0,
+     49,
+     70,
+     9,
+     16,
+     39,
+     59,
+     68,
+     12,
+     22,
+     33,
+     58,
+     61
+    ],
+    [
+     5,
+     20,
+     43,
+     57,
+     68,
+     7,
+     16,
+     41,
+     60,
+     64,
+     9,
+     25,
+     0,
+     48,
+     69,
+     13,
+     22,
+     44,
+     54,
+     75,
+     11,
+     21,
+     34,
+     49,
+     63
+    ],
+    [
+     13,
+     29,
+     45,
+     50,
+     70,
+     12,
+     20,
+     31,
+     57,
+     69,
+     10,
+     25,
+     0,
+     58,
+     73,
+     15,
+     22,
+     44,
+     48,
+     64,
+     5,
+     19,
+     38,
+     46,
+     68
+    ],
+    [
+     7,
+     28,
+     42,
+     46,
+     65,
+     2,
+     16,
+     45,
+     59,
+     71,
+     11,
+     20,
+     0,
+     57,
+     75,
+     5,
+     17,
+     43,
+     52,
+     74,
+     1,
+     27,
+     37,
+     58,
+     67
+    ],
+    [
+     1,
+     27,
+     37,
+     56,
+     73,
+     7,
+     23,
+     40,
+     59,
+     71,
+     13,
+     16,
+     0,
+     60,
+     74,
+     10,
+     25,
+     44,
+     51,
+     65,
+     2,
+     29,
+     39,
+     58,
+     64
+    ],
+    [
+     13,
+     18,
+     36,
+     46,
+     66,
+     7,
+     30,
+     40,
+     57,
+     69,
+     10,
+     27,
+     0,
+     50,
+     68,
+     11,
+     24,
+     37,
+     54,
+     72,
+     5,
+     23,
+     38,
+     48,
+     71
+    ],
+    [
+     4,
+     26,
+     39,
+     48,
+     68,
+     5,
+     24,
+     38,
+     46,
+     71,
+     11,
+     22,
+     0,
+     59,
+     72,
+     1,
+     28,
+     44,
+     60,
+     65,
+     3,
+     29,
+     45,
+     55,
+     67
+    ],
+    [
+     9,
+     20,
+     38,
+     47,
+     70,
+     7,
+     17,
+     34,
+     55,
+     67,
+     8,
+     25,
+     0,
+     46,
+     64,
+     11,
+     29,
+     36,
+     49,
+     71,
+     2,
+     18,
+     40,
+     50,
+     63
+    ],
+    [
+     1,
+     18,
+     36,
+     57,
+     67,
+     14,
+     28,
+     37,
+     48,
+     68,
+     15,
+     30,
+     0,
+     55,
+     64,
+     2,
+     17,
+     35,
+     51,
+     63,
+     11,
+     19,
+     40,
+     49,
+     61
+    ],
+    [
+     10,
+     21,
+     43,
+     57,
+     64,
+     13,
+     27,
+     34,
+     58,
+     71,
+     1,
+     16,
+     0,
+     54,
+     67,
+     3,
+     22,
+     45,
+     47,
+     72,
+     2,
+     26,
+     40,
+     56,
+     66
+    ],
+    [
+     12,
+     19,
+     45,
+     60,
+     62,
+     5,
+     24,
+     36,
+     56,
+     68,
+     15,
+     28,
+     0,
+     46,
+     65,
+     1,
+     16,
+     38,
+     50,
+     71,
+     2,
+     18,
+     35,
+     55,
+     70
+    ],
+    [
+     10,
+     19,
+     42,
+     56,
+     64,
+     2,
+     18,
+     31,
+     58,
+     69,
+     4,
+     16,
+     0,
+     48,
+     75,
+     8,
+     17,
+     44,
+     55,
+     73,
+     6,
+     28,
+     36,
+     47,
+     67
+    ],
+    [
+     10,
+     20,
+     38,
+     46,
+     71,
+     7,
+     28,
+     33,
+     47,
+     64,
+     13,
+     19,
+     0,
+     56,
+     69,
+     4,
+     29,
+     34,
+     49,
+     66,
+     1,
+     26,
+     43,
+     48,
+     68
+    ],
+    [
+     4,
+     19,
+     35,
+     47,
+     75,
+     1,
+     17,
+     33,
+     51,
+     71,
+     13,
+     16,
+     0,
+     60,
+     73,
+     7,
+     30,
+     42,
+     48,
+     67,
+     14,
+     23,
+     41,
+     56,
+     69
+    ],
+    [
+     8,
+     23,
+     42,
+     57,
+     67,
+     10,
+     26,
+     34,
+     59,
+     64,
+     12,
+     27,
+     0,
+     48,
+     65,
+     15,
+     18,
+     35,
+     60,
+     75,
+     4,
+     17,
+     40,
+     50,
+     70
+    ],
+    [
+     14,
+     28,
+     33,
+     46,
+     69,
+     11,
+     18,
+     35,
+     49,
+     74,
+     13,
+     26,
+     0,
+     52,
+     61,
+     4,
+     17,
+     44,
+     58,
+     71,
+     3,
+     29,
+     36,
+     57,
+     68
+    ],
+    [
+     10,
+     16,
+     41,
+     56,
+     71,
+     3,
+     29,
+     32,
+     49,
+     67,
+     11,
+     28,
+     0,
+     52,
+     61,
+     13,
+     30,
+     35,
+     57,
+     75,
+     12,
+     18,
+     44,
+     46,
+     70
+    ],
+    [
+     11,
+     26,
+     41,
+     56,
+     66,
+     5,
+     17,
+     34,
+     48,
+     69,
+     13,
+     24,
+     0,
+     50,
+     70,
+     7,
+     30,
+     32,
+     57,
+     68,
+     6,
+     28,
+     31,
+     58,
+     64
+    ],
+    [
+     9,
+     26,
+     39,
+     57,
+     68,
+     6,
+     25,
+     40,
+     51,
+     72,
+     12,
+     17,
+     0,
+     52,
+     69,
+     8,
+     20,
+     45,
+     53,
+     63,
+     1,
+     24,
+     38,
+     46,
+     62
+    ],
+    [
+     6,
+     27,
+     41,
+     57,
+     72,
+     8,
+     22,
+     38,
+     56,
+     73,
+     15,
+     29,
+     0,
+     54,
+     69,
+     12,
+     26,
+     42,
+     60,
+     75,
+     13,
+     30,
+     39,
+     51,
+     61
+    ]
+   ]
+  }
+ },
+ "sessions": {
+  "t7v356": {
+   "id": "t7v356",
+   "projectId": "a70189836715d78c",
+   "name": "Prueba",
+   "password": "",
+   "cardsPerPlayer": 1,
+   "showName": true,
+   "isPublic": true,
+   "patterns": [
+    "linea"
+   ],
+   "bigQr": false,
+   "theme": "kennedy",
+   "gc": {
+    "top": "Escanea el código QR con tu celular y participa",
+    "bottom": "Pon tu nombre, apellido y participa"
+   },
+   "round": 1,
+   "drawn": [
+    5,
+    26,
+    7,
+    22,
+    9,
+    23,
+    24,
+    47
+   ],
+   "results": [],
+   "marks": {},
+   "players": {
+    "ff9fdc14c044767e8fb9a5a0": {
+     "name": "ANA PÉREZ SOTO",
+     "first": "ANA",
+     "cards": [
+      1
+     ],
+     "place": ""
+    },
+    "d87b3423a8475d4d59cc01ea": {
+     "name": "LUIS GONZÁLEZ",
+     "first": "LUIS",
+     "cards": [
+      2
+     ],
+     "place": ""
+    },
+    "0043946f806b9a931248e435": {
+     "name": "MARÍA JOSÉ FERNÁNDEZ ALLENDE",
+     "first": "MARÍA JOSÉ",
+     "cards": [
+      3
+     ],
+     "place": ""
+    },
+    "438ad1413547f9dd923e3267": {
+     "name": "PEDRO ROJAS",
+     "first": "PEDRO",
+     "cards": [
+      4
+     ],
+     "place": ""
+    }
+   },
+   "finalists": null,
+   "auto": {
+    "on": false,
+    "interval": 10,
+    "stopOnWin": true
+   },
+   "created": 1795000000000,
+   "expires": 4102444800000,
+   "celebrateAt": 0
+  }
+ },
+ "mercadoKennedy": true,
+ "qrPhraseFix": true,
+ "wheels": {
+  "k7jkyb": {
+   "id": "k7jkyb",
+   "name": "El Rosko",
+   "created": 4102444799999,
+   "letters": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "J"
+   ],
+   "seconds": 120,
+   "setup": {
+    "players": [
+     "ANA PÉREZ",
+     "LUIS GONZÁLEZ"
+    ]
+   },
+   "bank": {
+    "cats": [
+     "g",
+     "m",
+     "a"
+    ],
+    "levels": [
+     "f",
+     "m"
+    ]
+   },
+   "questions": [
+    [
+     {
+      "q": "Con la A: País y continente a la vez, tierra de canguros y koalas",
+      "a": "Australia",
+      "cat": "g",
+      "level": "f"
+     },
+     {
+      "q": "Con la B: Mamífero marino, el animal más grande del planeta",
+      "a": "Ballena",
+      "cat": "g",
+      "level": "f"
+     },
+     {
+      "q": "Con la C: Cuerpo celeste con cola luminosa que orbita alrededor del Sol",
+      "a": "Cometa",
+      "cat": "g",
+      "level": "m"
+     },
+     {
+      "q": "Con la D: Reptiles gigantes que se extinguieron hace millones de años",
+      "a": "Dinosaurios",
+      "cat": "g",
+      "level": "f"
+     },
+     {
+      "q": "Con la E: Moneda común que usan Francia, Italia, Alemania y España",
+      "a": "Euro",
+      "cat": "g",
+      "level": "f"
+     },
+     {
+      "q": "Con la F: Líder de la revolución cubana, de barba y uniforme verde olivo",
+      "a": "Fidel Castro",
+      "cat": "g",
+      "level": "f"
+     },
+     {
+      "q": "Con la G: País cuya capital es Atenas",
+      "a": "Grecia",
+      "cat": "g",
+      "level": "f"
+     },
+     {
+      "q": "Con la H: Elemento químico más ligero y abundante del universo",
+      "a": "Hidrógeno",
+      "cat": "g",
+      "level": "m"
+     },
+     {
+      "q": "Con la I: Porción de tierra rodeada de agua",
+      "a": "Isla",
+      "cat": "g",
+      "level": "f"
+     },
+     {
+      "q": "Con la J: Isla del Caribe cuna de Bob Marley",
+      "a": "Jamaica",
+      "cat": "g",
+      "level": "f"
+     }
+    ],
+    [
+     {
+      "q": "Con la A: Desierto de Sudamérica considerado el más árido del mundo",
+      "a": "Atacama",
+      "cat": "g",
+      "level": "f"
+     },
+     {
+      "q": "Con la B: Libro sagrado del cristianismo",
+      "a": "Biblia",
+      "cat": "g",
+      "level": "f"
+     },
+     {
+      "q": "Con la C: Grupo de personas que cantan juntas",
+      "a": "Coro",
+      "cat": "m",
+      "level": "f"
+     },
+     {
+      "q": "Con la D: Forma de gobierno en la que el pueblo elige a sus gobernantes",
+      "a": "Democracia",
+      "cat": "g",
+      "level": "f"
+     },
+     {
+      "q": "Con la E: Serie de notas ordenadas de grave a agudo",
+      "a": "Escala",
+      "cat": "m",
+      "level": "f"
+     },
+     {
+      "q": "Con la F: Pintora mexicana famosa por sus autorretratos, esposa de Diego Rivera",
+      "a": "Frida Kahlo",
+      "cat": "a",
+      "level": "m"
+     },
+     {
+      "q": "Con la G: Pintor español de «Los fusilamientos del 3 de mayo»",
+      "a": "Goya",
+      "cat": "a",
+      "level": "m"
+     },
+     {
+      "q": "Con la H: Compositor austríaco llamado «padre de la sinfonía»",
+      "a": "Haydn",
+      "cat": "m",
+      "level": "m"
+     },
+     {
+      "q": "Con la I: Religión cuyo libro sagrado es el Corán",
+      "a": "Islam",
+      "cat": "g",
+      "level": "f"
+     },
+     {
+      "q": "Con la J: Planeta más grande del sistema solar",
+      "a": "Júpiter",
+      "cat": "g",
+      "level": "m"
+     }
+    ]
+   ],
+   "turn": 0,
+   "runningSince": null,
+   "history": [],
+   "players": [
+    {
+     "name": "ANA PÉREZ",
+     "status": [
+      "hit",
+      "hit",
+      "hit",
+      "hit",
+      "hit",
+      "hit",
+      "hit",
+      "hit",
+      "hit",
+      "hit"
+     ],
+     "current": 9,
+     "remainingMs": 119987
+    },
+    {
+     "name": "LUIS GONZÁLEZ",
+     "status": [
+      "pending",
+      "pending",
+      "pending",
+      "pending",
+      "pending",
+      "pending",
+      "pending",
+      "pending",
+      "pending",
+      "pending"
+     ],
+     "current": 0,
+     "remainingMs": 120000
+    }
+   ],
+   "onScreen": false,
+   "rankShow": false,
+   "turnPlayed": true,
+   "wonAt": 1795000000000,
+   "crowd": {
+    "opts": {
+     "0:0": [
+      "Australia",
+      "Austria",
+      "Argentina"
+     ],
+     "0:1": [
+      "Beluga",
+      "Búfalo",
+      "Ballena"
+     ],
+     "0:2": [
+      "Constelación",
+      "Cráter",
+      "Cometa"
+     ],
+     "0:3": [
+      "Dromedarios",
+      "Dinosaurios",
+      "Dragones"
+     ],
+     "0:4": [
+      "Euro",
+      "Escudo",
+      "Esterlina"
+     ],
+     "0:5": [
+      "Francisco Franco",
+      "Fulgencio Batista",
+      "Fidel Castro"
+     ],
+     "0:6": [
+      "Georgia",
+      "Guatemala",
+      "Grecia"
+     ],
+     "0:7": [
+      "Hidrógeno",
+      "Hierro",
+      "Helio"
+     ],
+     "0:8": [
+      "Islote",
+      "Istmo",
+      "Isla"
+     ],
+     "0:9": [
+      "Jamaica",
+      "Jersey",
+      "Java"
+     ]
+    },
+    "ans": {},
+    "shown": {
+     "0:0": 1795443426672,
+     "0:1": 1795443426673,
+     "0:2": 1795443426675,
+     "0:3": 1795443426676,
+     "0:4": 1795443426677,
+     "0:5": 1795443426679,
+     "0:6": 1795443426680,
+     "0:7": 1795443426681,
+     "0:8": 1795443426682,
+     "0:9": 1795443426683
+    },
+    "last": "",
+    "winner": null
+   }
+  }
+ },
+ "bankUsed": {
+  "A:Australia": 1,
+  "B:Ballena": 1,
+  "C:Cometa": 1,
+  "D:Dinosaurios": 1,
+  "E:Euro": 1,
+  "F:Fidel Castro": 1,
+  "G:Grecia": 1,
+  "H:Hidrógeno": 1,
+  "I:Isla": 1,
+  "J:Jamaica": 1,
+  "A:Atacama": 1,
+  "B:Biblia": 1,
+  "C:Coro": 1,
+  "D:Democracia": 1,
+  "E:Escala": 1,
+  "F:Frida Kahlo": 1,
+  "G:Goya": 1,
+  "H:Haydn": 1,
+  "I:Islam": 1,
+  "J:Júpiter": 1
+ },
+ "people": {
+  "ana pérez soto": {
+   "name": "ANA PÉREZ SOTO",
+   "at": 1795000000000
+  },
+  "luis gonzález": {
+   "name": "LUIS GONZÁLEZ",
+   "at": 1795000000000
+  },
+  "maría josé fernández allende": {
+   "name": "MARÍA JOSÉ FERNÁNDEZ ALLENDE",
+   "at": 1795000000000
+  },
+  "pedro rojas": {
+   "name": "PEDRO ROJAS",
+   "at": 1795000000000
+  }
+ },
+ "raffle": {
+  "picked": [
+   "ANA PÉREZ SOTO"
+  ],
+  "roll": {
+   "winner": "ANA PÉREZ SOTO",
+   "names": [
+    "ANA PÉREZ SOTO",
+    "PEDRO ROJAS",
+    "MARÍA JOSÉ FERNÁNDEZ ALLENDE",
+    "LUIS GONZÁLEZ"
+   ],
+   "at": 1795000000000
+  },
+  "declined": [],
+  "mode": "rosco",
+  "confirm": {
+   "ANA PÉREZ SOTO": "pending"
+  }
+ },
+ "karaoke": {
+  "venue": "frida",
+  "phone": true,
+  "phoneDefault": true,
+  "manual": {},
+  "urls": {
+   "frida": {
+    "exec": "",
+    "form": ""
+   },
+   "kennedy": {
+    "exec": "",
+    "form": ""
+   },
+   "tobalaba": {
+    "exec": "",
+    "form": ""
+   }
+  },
+  "tobalabaExec16nov": true,
+  "withIds": {},
+  "ask": {}
+ },
+ "vote": {
+  "mode": "objeto",
+  "title": "El objeto más extraño",
+  "max": 5,
+  "players": [
+   {
+    "id": "d4f1ca10",
+    "name": "CARLA",
+    "thing": "Una tetera con forma de gato",
+    "votes": {
+     "ff9fdc14c044767e8fb9a5a0": 9,
+     "d87b3423a8475d4d59cc01ea": 8,
+     "0043946f806b9a931248e435": 10
+    },
+    "done": true,
+    "voters": {
+     "ff9fdc14c044767e8fb9a5a0": "ANA",
+     "d87b3423a8475d4d59cc01ea": "LUIS",
+     "0043946f806b9a931248e435": "MARÍA JOSÉ"
+    }
+   },
+   {
+    "id": "f6331db9",
+    "name": "DIEGO",
+    "thing": "Un zapato de payaso",
+    "votes": {
+     "ff9fdc14c044767e8fb9a5a0": 5,
+     "d87b3423a8475d4d59cc01ea": 6,
+     "0043946f806b9a931248e435": 4
+    },
+    "done": true,
+    "voters": {
+     "ff9fdc14c044767e8fb9a5a0": "ANA",
+     "d87b3423a8475d4d59cc01ea": "LUIS",
+     "0043946f806b9a931248e435": "MARÍA JOSÉ"
+    }
+   },
+   {
+    "id": "645db07c",
+    "name": "FERNANDA",
+    "thing": "Un disco de vinilo partido",
+    "votes": {
+     "ff9fdc14c044767e8fb9a5a0": 7,
+     "d87b3423a8475d4d59cc01ea": 7,
+     "0043946f806b9a931248e435": 8
+    },
+    "done": true,
+    "voters": {
+     "ff9fdc14c044767e8fb9a5a0": "ANA",
+     "d87b3423a8475d4d59cc01ea": "LUIS",
+     "0043946f806b9a931248e435": "MARÍA JOSÉ"
+    }
+   }
+  ],
+  "open": null,
+  "last": "645db07c",
+  "sample": {
+   "id": "645db07c",
+   "notes": [
+    {
+     "note": 7,
+     "name": "ANA"
+    },
+    {
+     "note": 8,
+     "name": "MARÍA JOSÉ"
+    },
+    {
+     "note": 7,
+     "name": "LUIS"
+    }
+   ],
+   "at": 1795443426694
+  },
+  "phase": "results",
+  "rank": [
+   "d4f1ca10",
+   "645db07c",
+   "f6331db9"
+  ],
+  "revealed": 1,
+  "final": {
+   "ids": [
+    "d4f1ca10",
+    "645db07c"
+   ],
+   "votes": {},
+   "open": false,
+   "closed": false
+  },
+  "winner": null,
+  "winAt": 0,
+  "rev": 15,
+  "gen": 3,
+  "onstage": null,
+  "openUntil": 1795443434693,
+  "signup": false
+ },
+ "desafio": {
+  "rev": 14,
+  "phase": "locked",
+  "player": "CAMILA ROJAS VALENZUELA",
+  "prizes": [
+   "100 puntos",
+   "200 puntos",
+   "300 puntos",
+   "500 puntos",
+   "1.000 puntos",
+   "2.000 puntos",
+   "5.000 puntos",
+   "10.000 puntos",
+   "25.000 puntos",
+   "50.000 puntos"
+  ],
+  "safe": [
+   5
+  ],
+  "step": 4,
+  "q": {
+   "text": "¿Cuál es el planeta más grande del sistema solar?",
+   "options": [
+    "Urano",
+    "Saturno",
+    "Neptuno",
+    "Júpiter"
+   ],
+   "correct": 3,
+   "level": "m"
+  },
+  "chosen": 2,
+  "hidden": [
+   1,
+   0
+  ],
+  "outcome": null,
+  "used": {
+   "fifty": true,
+   "audience": false,
+   "phone": false,
+   "swap": false
+  },
+  "audience": null,
+  "phoneUntil": 0,
+  "seen": [
+   "¿Qué se celebra el 25 de diciembre?",
+   "¿Cómo se llama el completo con tomate, palta y mayonesa?",
+   "¿Cuántas cuerdas tiene una guitarra común?",
+   "¿Cuál es el planeta más grande del sistema solar?"
+  ]
+ },
+ "desafioUsed": {
+  "¿Qué se celebra el 25 de diciembre?": 1,
+  "¿Cómo se llama el completo con tomate, palta y mayonesa?": 1,
+  "¿Cuántas cuerdas tiene una guitarra común?": 1,
+  "¿Cuál es el planeta más grande del sistema solar?": 1
+ },
+ "insta": {
+  "handles": {
+   "kennedy": "krbstage",
+   "tobalaba": "krbstage",
+   "frida": "krbstage"
+  }
+ },
+ "lights": {
+  "frida": {
+   "id": "L38b1faae",
+   "venue": "frida",
+   "stage": "info",
+   "players": {},
+   "created": 1795443426557
+  },
+  "kennedy": {
+   "id": "L5f771e91",
+   "venue": "kennedy",
+   "stage": "info",
+   "players": {},
+   "created": 1795443426557
+  },
+  "tobalaba": {
+   "id": "Ldd801013",
+   "venue": "tobalaba",
+   "stage": "info",
+   "players": {},
+   "created": 1795443426557
+  }
+ },
+ "lightInfoDefault": true,
+ "lightInfoAll": true,
+ "vertical": {},
+ "conectados": {
+  "jornadas": []
+ },
+ "webIg": {},
+ "agenda": {
+  "notice": true,
+  "month": "2026-11",
+  "text": {
+   "frida": "Viernes: 19:00 Música / 19:30 Previa en vivo + karaoke / 21:00 Dobles / 22:00 Karaoke y Fiesta / 00:00 Cierre\nSábado: 19:00 Música / 19:30 Previa en vivo + karaoke / 21:00 Dobles / 22:00 Karaoke y Fiesta / 00:00 Cierre\nDomingo: 13:30 Música / 14:00 Bingo / 16:00 Cierre\nDom 1 - El Bingo de Frida\nVie 6 - Doble de Lucero\nSáb 7 - Doble de Pedro Fernández\nDom 8 - El Bingo de Frida\nVie 13 - Doble de Selena\nSáb 14 - Doble de Marco Antonio Solís\nDom 15 - El Bingo de Frida\nVie 20 - Doble de Shakira\nSáb 21 - Doble de Cristian Castro\nDom 22 - El Bingo de Frida\nVie 27 - Especial Caribe Tropical\nSáb 28 - Doble de Ricky Martin\nDom 29 - El Bingo de Frida",
+   "kennedy": "Jueves: 19:00 Música / 20:00 Previa / 20:30 Bingo / 21:00 Stand Up / Karaoke 22:00 / 00:30 fiesta\nViernes: 19:00 Música / 20:30 Previa / Piano 21:15 / Karaoke 22:15 / 00:30 fiesta\nSábado: 19:00 Música / 20:30 Previa / Show 21:00 / Karaoke 22:00 / 00:30 fiesta\nJue 5 - Stand Up: ALEX ORTIZ\nVie 6 - KARAOKE NIGHT SHOW + Piano Man\nSáb 7 - Banda Tributo a Joe Cocker\nJue 12 - Stand Up: KURT CARRERA\nVie 13 - KARAOKE NIGHT SHOW + Piano Man\nSáb 14 - Banda Tributo a Maná\nJue 19 - Stand Up: GONZALO TRUJILLO\nVie 20 - KARAOKE NIGHT SHOW + Piano Man\nSáb 21 - Especial Caribe Tropical\nJue 26 - Stand Up: DAVID PEREZ\nVie 27 - KARAOKE NIGHT SHOW + Piano Man\nSáb 28 - Banda Tributo a Bon Jovi",
+   "tobalaba": "Viernes: 18:30 Música / 19:00 Previa / 19:30 Bingo / 20:15 Show / 21:15 Karaoke / 22:30 Cierre\nVier 06 - Especial Salsa (Miguel Angel Caballero)\nVier 13 - Especial 80's (Marcelo Durán)\nVier 20 - Especial México (Verónica Yañez)\nVier 27 - Especial Balada Italiana (Matias Fajardo)"
+  }
+ },
+ "gameDraw": {
+  "played": [
+   "rosco"
+  ],
+  "last": {
+   "game": "rosco",
+   "pool": [
+    "rosco"
+   ],
+   "at": 1795000000000,
+   "direct": true
+  },
+  "rule2": true,
+  "total": 3,
+  "list": [
+   "rosco"
+  ],
+  "ready": null,
+  "free": false,
+  "undo": [],
+  "seq": 1
+ },
+ "gameVote": {
+  "id": 0,
+  "rev": 2,
+  "phase": "idle",
+  "round": 0,
+  "options": [],
+  "votes": {},
+  "until": 0,
+  "counts": null,
+  "total": 0,
+  "runoff": null,
+  "tie2": false,
+  "winner": null,
+  "tie": false,
+  "empty": false,
+  "decidedAt": 0
+ },
+ "stage": "bingo",
+ "fixture": {
+  "sid": "t7v356",
+  "projectId": "a70189836715d78c",
+  "wheelId": "k7jkyb",
+  "phone": {
+   "token": "ff9fdc14c044767e8fb9a5a0",
+   "name": "ANA PÉREZ SOTO"
+  }
+ }
+}

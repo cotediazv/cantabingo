@@ -10,6 +10,7 @@
 //   - El Festival y El objeto más extraño: algunas se inscriben con su canción u objeto, votan del 1 al 10 y en la final.
 //   - Votación del juego: votan por un juego.
 //   - El último en pie: contestan cada pregunta.
+//   - ¿Quién quiere ser billonario?: contestan la Trivia del Billonario (4 alternativas, antes de la respuesta definitiva).
 // No piden canciones de karaoke (eso escribiría en la planilla real del local). No quedan en el registro de clientes ni
 // en los registros de conectados. Al cerrar la sala, desaparecen.
 const crypto = require('crypto');
@@ -193,6 +194,18 @@ module.exports = function simulador({ app, db, save, requireAdmin, fail, port, p
         const right = chance(p);
         const pickNo = right ? e.q.correct : pick([0, 1, 2].filter((x) => x !== e.q.correct));
         later(delay(b, 1.5, 8), () => { const now = db.enpie; if (now && now.phase === 'question' && now.n === e.n && now.gen === e.gen) post('/api/enpie/answer', { sid, token: b.token, pick: pickNo }); });
+      }
+    }
+    // La Trivia del Billonario: responden cada pregunta antes de la respuesta definitiva (4 alternativas)
+    const d = db.desafio;
+    if (stage === 'desafio' && d && d.phase === 'question' && d.open && d.q) {
+      for (const b of m.bots) {
+        if (!once(`desafio:${d.gen}:${d.qid}:${b.token}`) || !chance(b.active)) continue;
+        const p = Math.max(0.05, b.skill - (d.q.level === 'm' ? 0.15 : d.q.level === 'd' ? 0.3 : 0));
+        const ok = [0, 1, 2, 3].filter((x) => !d.hidden.includes(x));
+        const choice = chance(p) ? d.q.correct : pick(ok.filter((x) => x !== d.q.correct));
+        const qid = d.qid;
+        later(delay(b, 1.5, 12), () => { const now = db.desafio; if (now && now.qid === qid && now.open && !now.hidden.includes(choice)) post('/api/desafio/answer', { sid, token: b.token, qid, choice }); });
       }
     }
   };
