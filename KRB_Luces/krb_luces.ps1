@@ -21,8 +21,28 @@ using System.Text;
 using System.Threading;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using Microsoft.Win32;
 
 namespace KRB {
+
+  // ---------- Cable FTDI por su driver propio (ftd2xx.dll), como Freestyler ----------
+  // Muchos cables USB-DMX baratos (FTDI) no crean un puerto COM: los programas como Freestyler les hablan
+  // directo por el driver de FTDI. Si no hay puerto COM, la suite usa este camino.
+  public static class Ftdi {
+    [DllImport("ftd2xx.dll")] public static extern uint FT_CreateDeviceInfoList(ref uint n);
+    [DllImport("ftd2xx.dll")] public static extern uint FT_Open(int idx, ref IntPtr h);
+    [DllImport("ftd2xx.dll")] public static extern uint FT_Close(IntPtr h);
+    [DllImport("ftd2xx.dll")] public static extern uint FT_ResetDevice(IntPtr h);
+    [DllImport("ftd2xx.dll")] public static extern uint FT_SetBaudRate(IntPtr h, uint baud);
+    [DllImport("ftd2xx.dll")] public static extern uint FT_SetDataCharacteristics(IntPtr h, byte bits, byte stop, byte parity);
+    [DllImport("ftd2xx.dll")] public static extern uint FT_SetFlowControl(IntPtr h, ushort flow, byte xon, byte xoff);
+    [DllImport("ftd2xx.dll")] public static extern uint FT_ClrRts(IntPtr h);
+    [DllImport("ftd2xx.dll")] public static extern uint FT_Purge(IntPtr h, uint mask);
+    [DllImport("ftd2xx.dll")] public static extern uint FT_SetBreakOn(IntPtr h);
+    [DllImport("ftd2xx.dll")] public static extern uint FT_SetBreakOff(IntPtr h);
+    [DllImport("ftd2xx.dll")] public static extern uint FT_Write(IntPtr h, byte[] buf, uint len, ref uint escritos);
+  }
 
   // ---------- Efectos que corren en el Dell (siguen aunque el iPad se bloquee) ----------
   public class Efecto {
@@ -95,19 +115,63 @@ namespace KRB {
       th = new Thread(Loop); th.IsBackground = true; th.Start();
     }
 
+    static IntPtr ftdi = IntPtr.Zero;              // cable abierto por el driver de FTDI (sin puerto COM)
+
+    // Puerto COM de un cable USB (FTDI = \Device\VCPn; otros = USBSER). Asi "auto" no toma un COM de Bluetooth o de la placa.
+    static string ComUsb() {
+      try {
+        using (RegistryKey k = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DEVICEMAP\SERIALCOMM")) {
+          if (k == null) return null;
+          foreach (string n in k.GetValueNames()) {
+            string v = k.GetValue(n) as string, u = n.ToUpper();
+            if (v != null && (u.Contains("VCP") || u.Contains("USBSER") || u.Contains("SILABSER") || u.Contains("CH341"))) return v;
+          }
+        }
+      } catch {}
+      return null;
+    }
+
+    // Abre el primer cable FTDI por su driver (ftd2xx.dll): 250000 baudios, 8 bits, 2 de parada, sin paridad.
+    static string AbrirFtdi() {
+      try {
+        uint n = 0; Ftdi.FT_CreateDeviceInfoList(ref n);
+        if (n == 0) return "el driver de FTDI no ve ningun cable";
+        IntPtr h = IntPtr.Zero;
+        uint r = Ftdi.FT_Open(0, ref h);
+        if (r != 0 || h == IntPtr.Zero) return "el driver de FTDI no pudo abrir el cable (codigo " + r + "; puede estar abierto en otro programa, como Freestyler)";
+        Ftdi.FT_ResetDevice(h);
+        Ftdi.FT_SetBaudRate(h, 250000);
+        Ftdi.FT_SetDataCharacteristics(h, 8, 2, 0);
+        Ftdi.FT_SetFlowControl(h, 0, 0, 0);
+        Ftdi.FT_ClrRts(h);
+        Ftdi.FT_Purge(h, 3);
+        ftdi = h; return null;
+      } catch (DllNotFoundException) { return "no esta instalado el driver de FTDI (ftd2xx.dll)"; }
+      catch (Exception e) { return "driver de FTDI: " + e.Message; }
+    }
+
     public static void Abrir() {
       lock (L) {
         try { if (port != null) port.Close(); } catch {}
-        port = null; Conectado = false; PuertoUsado = "";
+        try { if (ftdi != IntPtr.Zero) Ftdi.FT_Close(ftdi); } catch {}
+        port = null; ftdi = IntPtr.Zero; Conectado = false; PuertoUsado = "";
         if (Tipo == "simulacion") { Error = ""; return; }
         try {
           string p = Puerto;
-          if (p == null || p == "" || p.ToLower() == "auto") {
-            string[] ps = SerialPort.GetPortNames();
-            if (ps.Length == 0) { Error = "No hay ningun puerto COM. Esta enchufado el cable USB-DMX?"; return; }
-            Array.Sort(ps);
-            p = ps[ps.Length - 1];
+          bool auto = p == null || p == "" || p.ToLower() == "auto";
+          // "ftdi" (o auto sin puerto COM de un cable USB): por el driver de FTDI, como Freestyler
+          if (Tipo != "enttec" && (p != null && p.ToLower() == "ftdi" || auto && ComUsb() == null)) {
+            string err = AbrirFtdi();
+            if (err == null) { PuertoUsado = "FTDI (driver directo)"; Conectado = true; Error = ""; return; }
+            // Ya no se toma "el ultimo COM": en muchos computadores es un puerto de Bluetooth y falla con
+            // "se agoto el tiempo de espera del semaforo". Se informa lo que hay para poder elegirlo a mano.
+            string[] todos = SerialPort.GetPortNames();
+            Error = "No se encontro el cable USB-DMX. Puertos COM: " + (todos.Length == 0 ? "ninguno" : string.Join(", ", todos)) +
+                    " (ninguno es de un cable USB). FTDI: " + err + ".";
+            return;
           }
+          if (auto) p = ComUsb();
+          if (p == null) { Error = "No hay ningun puerto COM de un cable USB. Esta enchufado el cable USB-DMX?"; return; }
           SerialPort s;
           if (Tipo == "enttec") s = new SerialPort(p, 115200, Parity.None, 8, StopBits.One);
           else s = new SerialPort(p, 250000, Parity.None, 8, StopBits.Two);
@@ -165,7 +229,21 @@ namespace KRB {
           Array.Copy(frame, ultimo, 513);
           s = port;
         }
-        if (s != null && Conectado) {
+        IntPtr fh = ftdi;
+        if (fh != IntPtr.Zero && Conectado) {         // por el driver de FTDI: BREAK, MAB y la trama
+          try {
+            Ftdi.FT_SetBreakOn(fh); Thread.Sleep(1);
+            Ftdi.FT_SetBreakOff(fh);
+            uint esc = 0;
+            uint r = Ftdi.FT_Write(fh, frame, 513, ref esc);
+            if (r != 0) throw new Exception("FTDI: error al enviar (codigo " + r + "); se desenchufo el cable?");
+            Tramas++; fallos = 0;
+          } catch (Exception e) {
+            Error = e.Message;
+            if (++fallos > 20) { Conectado = false; }
+          }
+        }
+        else if (s != null && Conectado) {
           try {
             if (Tipo == "enttec") {
               byte[] p = new byte[518];
