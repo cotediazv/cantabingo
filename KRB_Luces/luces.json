@@ -101,10 +101,10 @@
       "fijos": {}
     },
     {
-      "id": "perimetrales", "nombre": "Perimetrales PAR (4)", "escaner": 6, "direccion": 81, "tipo": "par",
-      "_direccion": "81 = probado en Kennedy (24 nov): con la 81 se prenden los cuatro. La tabla de la consola decia 129.",
-      "canales": { "dimmer": 1, "r": 2, "g": 3, "b": 4, "w": 5 },
-      "fijos": {}
+      "id": "perimetrales", "nombre": "Perimetrales PAR (4)", "escaner": 6, "direccion": 82, "tipo": "par",
+      "_direccion": "82 = probado en Kennedy (24 nov): canal 1 master, 2 rojo, 3 verde, 4 azul, 5 estroboscopica (sin blanco). La pantalla del equipo dice d082 (se leia al reves como 280d).",
+      "canales": { "dimmer": 1, "r": 2, "g": 3, "b": 4 },
+      "fijos": { "5": 0 }
     },
     {
       "id": "fondo", "nombre": "Fondo (2) · pintan la pared", "escaner": 10, "direccion": 145, "tipo": "par",
