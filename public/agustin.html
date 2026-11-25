@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="viewport" id="vp" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#120d1d">
@@ -10,6 +10,9 @@
 <style>
   html, body { margin: 0; height: 100%; background: #120d1d; overflow: hidden; }
   body { position: fixed; top: 0; left: 0; right: 0; bottom: 0; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; font-family: 'Trebuchet MS', Verdana, Arial, sans-serif; }
+  /* Sin zoom: ningún toque agranda la página (si igual se agranda, html.zoomed deja achicarla con dos dedos) */
+  html, body, body * { touch-action: none; }
+  html.zoomed, html.zoomed body, html.zoomed body * { touch-action: pan-x pan-y pinch-zoom; }
   #c { position: absolute; display: block; }
   #pad { display: none; }
   body.playing #pad { display: block; }
@@ -77,6 +80,33 @@
   window.addEventListener('resize', layout);
   window.addEventListener('orientationchange', () => setTimeout(layout, 250));
   layout();
+
+  // ---------- Sin zoom ----------
+  // El iPhone y el iPad no respetan «user-scalable=no»: un doble toque rápido (por ejemplo, la espada
+  // apretada seguido) agrandaba la página y después no había cómo volver. Aquí se impide y, si igual
+  // pasa, la página vuelve sola a su tamaño (y mientras tanto se puede achicar con dos dedos).
+  const vp = document.getElementById('vp');
+  const VP = vp.getAttribute('content');
+  const zoomed = () => !!(window.visualViewport && window.visualViewport.scale > 1.02);
+  let lastTouchEnd = 0;
+  document.addEventListener('touchend', (e) => {
+    const now = Date.now();
+    if (now - lastTouchEnd < 400 && !zoomed()) e.preventDefault();
+    lastTouchEnd = now;
+  }, { passive: false });
+  document.addEventListener('touchmove', (e) => { if (e.touches.length > 1 && !zoomed()) e.preventDefault(); }, { passive: false });
+  ['gesturestart', 'gesturechange', 'gestureend'].forEach((t) => document.addEventListener(t, (e) => { if (!zoomed()) e.preventDefault(); }, { passive: false }));
+  document.addEventListener('dblclick', (e) => e.preventDefault(), { passive: false });
+  let unzoomT = null, unzoomN = 0;
+  function unzoom() {
+    const z = zoomed();
+    document.documentElement.classList.toggle('zoomed', z);
+    if (!z) { unzoomN = 0; return; }
+    if (unzoomT || unzoomN++ > 6) return;
+    vp.setAttribute('content', VP + ',minimum-scale=1');
+    unzoomT = setTimeout(() => { unzoomT = null; vp.setAttribute('content', VP); window.scrollTo(0, 0); layout(); if (zoomed()) setTimeout(unzoom, 400); }, 80);
+  }
+  if (window.visualViewport) { window.visualViewport.addEventListener('resize', unzoom); window.visualViewport.addEventListener('scroll', unzoom); }
 
   // ---------- Controles ----------
   const K = { left: false, right: false, jump: false, attack: false };
