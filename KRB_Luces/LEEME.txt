@@ -19,12 +19,15 @@ USAR
 
 PANEL DEL DJ (noches sin show ni juegos)
   - La misma direccion terminada en /dj, por ejemplo https://luces.krbstage.cl/dj
-  - 12 escenas (Fiesta, Arcoiris, Pista, Sirena, Fuego, Barrido, Destello, Oceano,
-    Lounge, Karaoke, Estrellas, Luz de sala), Automatico (cambia sola cada 3 min),
+  - 15 escenas (Fiesta, Arcoiris, Pista, Sirena, Fuego, Barrido, Destello, Oceano,
+    Disco, Tropical, Romantico, Lounge, Karaoke, Estrellas, Luz de sala),
+    Automatico (cambia sola cada 3 min),
     Ritmo (escucha la musica con el microfono y sigue el bombo y la caja),
     Tap (marcar el ritmo a mano), Intensidad y Apagar.
   - El microfono solo funciona por https://luces.krbstage.cl/dj o en el Dell
     (http://localhost:8080/dj); por el WiFi con http el navegador no lo permite.
+  - Entrada: se puede elegir la entrada de linea (la mezcla de la transmision) en vez del
+    microfono. La barrita verde muestra que esta llegando sonido.
 
 ACCESO DESDE INTERNET (una vez, en el Dell)
   - Doble clic en CONFIGURAR_INTERNET.bat y seguir los pasos:

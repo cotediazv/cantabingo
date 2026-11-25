@@ -183,7 +183,11 @@
   .djtop{display:flex;align-items:center;gap:8px}
   .djtop b{font-size:17px;flex:1;letter-spacing:.02em}
   .djesc{flex:1;display:grid;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;gap:8px;min-height:300px}
-  @media (min-width:700px){ .djesc{grid-template-columns:repeat(4,1fr)} }
+  @media (min-width:700px){ .djesc{grid-template-columns:repeat(5,1fr)} }
+  .djent{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mut)}
+  .djent select{flex:1;min-width:0;background:#121419;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:8px;font-size:14px}
+  .djnivel{width:70px;height:10px;border-radius:5px;background:#222;overflow:hidden}
+  .djnivel i{display:block;height:100%;width:0;background:var(--ok);transition:width .08s}
   .djb{position:relative;border:0;border-radius:16px;color:#fff;font-weight:800;font-size:16px;cursor:pointer;overflow:hidden;
        background:var(--card);box-shadow:inset 0 0 0 1px var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px;min-height:70px;text-align:center}
   .djb i{font-style:normal;font-size:28px;line-height:1;position:relative}
@@ -219,6 +223,7 @@
     <button class="djc off" id="djApagar">⏻ Apagar<small>todo</small></button>
   </div>
   <div class="djint">Intensidad <input type="range" id="djInt" min="10" max="100" value="100"><span id="djIntTxt">100%</span></div>
+  <div class="djent">Entrada <select id="djEntrada"><option value="">Micrófono (predeterminado)</option></select><span class="djnivel"><i id="djNivel"></i></span></div>
   <div id="djAviso"></div>
 </div>
 <header>
@@ -2406,6 +2411,23 @@ const DJ_ESCENAS = [
         ...grupos(djMini(), 'azul'), ...grupos(idsPared(), c), frontales: null })), 8, 1),
       capa('mov', N(6).map(() => pasoPos({ ...posCab('techo'), ...grupos(djMini(), posMini()) })), 8, 1)
     ] },
+  { n: 'Disco', i: '🪩', g: 'radial-gradient(circle at 40% 35%,#fff 0 4px,transparent 5px),radial-gradient(circle at 65% 60%,#fff 0 3px,transparent 4px),linear-gradient(135deg,#9b3cff,#2b55ff)', fiesta: true,
+    capas: () => [
+      capa('col', N(8).map(k => pasoColor({ ...grupos(djCabezas(), 'blanco'), ...grupos(djMini(), k % 2 ? 'blanco' : null),
+        ...grupos(idsPared(), ['morado', 'azul', 'rosa', 'cian'][k % 4]), frontales: null }, { perimetrales: 70, fondo: 70 })), 1),
+      capa('mov', N(16).map(() => pasoPos({ ...posCab('salon'), ...grupos(djMini(), posMini()) })), 1, 0.25)
+    ] },
+  { n: 'Tropical', i: '🌴', g: 'linear-gradient(135deg,#ffbe00,#22dd55,#ff3fa0)', fiesta: true,
+    capas: () => { const c = ['amarillo', 'verde', 'rosa', 'ambar', 'cian'];
+      return [capa('col', N(10).map(k => pasoColor({ ...grupos(djCabezas(), c[k % 5]), ...grupos(djMini(), c[(k + 2) % 5]),
+          ...grupos(idsPared(), c[(k + 1) % 5]), frontales: null })), 1, 0.2),
+        capa('mov', N(8).map(() => pasoPos({ ...posCabJuntas('pista'), ...grupos(djMini(), posMini()) })), 2, 0.7)]; } },
+  { n: 'Romántico', i: '❤️', g: 'radial-gradient(circle,#ff3fa0,#ff2a2a 60%,#3a0010)',
+    capas: () => [
+      capa('col', ['rojo', 'rosa', 'rojo', 'morado'].map((c, k) => pasoColor({ ...grupos(djCabezas(), k % 2 ? 'rojo' : 'rosa'), ...grupos(djMini(), 'rosa'),
+        ...grupos(idsPared(), c), frontales: 'blanco_calido' }, { perimetrales: 70, fondo: 70, frontales: 15, mini: 40, mini_columnas: 40 })), 8, 1),
+      capa('mov', N(6).map(() => pasoPos({ ...posCabJuntas('pista'), ...grupos(djMini(), { pan: azar(40, 215), tilt: azar(0, 30) }) })), 8, 1)
+    ] },
   { n: 'Lounge', i: '🍸', g: 'linear-gradient(135deg,#9b3cff,#ff3fa0)',
     capas: () => [
       capa('col', ['morado', 'rosa', 'morado', 'ambar'].map(c => pasoColor({ ...grupos(djCabezas(), null), ...grupos(djMini(), 'morado'),
@@ -2499,7 +2521,12 @@ $('djMic').onclick = async () => {
   catch(e){ $('djAviso').textContent = 'No se pudo usar el micrófono (' + (e.name || e.message) + '). Usa Tap.'; }
 };
 async function escucharMusica(){
-  const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+  // Entrada elegida (Cote, 25 nov: la mezcla completa entra por la entrada de linea del computador de OBS)
+  let elegida = ''; try { elegida = localStorage.getItem('krb_dj_entrada') || ''; } catch(e){}
+  const pedir = id => navigator.mediaDevices.getUserMedia({ audio: { deviceId: id ? { exact: id } : undefined,
+    echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+  let stream; try { stream = await pedir(elegida); } catch(e){ if (!elegida) throw e; stream = await pedir(''); }
+  listarEntradas();
   const ctx = new (window.AudioContext || window.webkitAudioContext)();
   const src = ctx.createMediaStreamSource(stream);
   if (ctx.resume) ctx.resume();
@@ -2517,6 +2544,7 @@ async function escucharMusica(){
   const tick = setInterval(() => {
     const t = performance.now() / 1000;
     const golpeB = detectar(bombo, t, 1.45), golpeC = detectar(caja, t, 1.6);
+    const nv = bombo.hist[bombo.hist.length - 1] || 0; $('djNivel').style.width = Math.min(100, Math.round(nv * 400)) + '%';
     if (!golpeB && !golpeC) return;
     onsets.push({ t, b: golpeB }); while (onsets.length && t - onsets[0].t > 8) onsets.shift();
     ritmo.ultOnset = t;
@@ -2539,8 +2567,21 @@ async function escucharMusica(){
   }, 12);
   // si se deja de escuchar musica 6 s, el reloj se detiene (las luces siguen solas a su tiempo)
   const vigila = setInterval(() => { if (ritmo.on && performance.now() / 1000 - ritmo.ultOnset > 6){ ritmo.on = false; $('djAviso').textContent = 'Sin música: las luces siguen solas'; } }, 1000);
-  return { stop(){ clearInterval(tick); clearInterval(vigila); stream.getTracks().forEach(x => x.stop()); ctx.close(); } };
+  return { stop(){ clearInterval(tick); clearInterval(vigila); stream.getTracks().forEach(x => x.stop()); ctx.close(); $('djNivel').style.width = '0'; } };
 }
+// Lista de entradas de audio del aparato (los nombres aparecen despues de dar permiso al microfono)
+async function listarEntradas(){
+  if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+  let elegida = ''; try { elegida = localStorage.getItem('krb_dj_entrada') || ''; } catch(e){}
+  const sel = $('djEntrada'), ins = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput' && d.deviceId !== 'default' && d.deviceId !== 'communications');
+  sel.innerHTML = '<option value="">Micrófono (predeterminado)</option>' +
+    ins.map((d, k) => `<option value="${d.deviceId}">${(d.label || 'Entrada ' + (k + 1)).replace(/[<>&"]/g, '')}</option>`).join('');
+  sel.value = ins.some(d => d.deviceId === elegida) ? elegida : '';
+}
+$('djEntrada').onchange = async () => {
+  try { localStorage.setItem('krb_dj_entrada', $('djEntrada').value); } catch(e){}
+  if (ritmo.mic){ ritmo.mic.stop(); ritmo.mic = null; try { ritmo.mic = await escucharMusica(); $('djAviso').textContent = 'Escuchando: ' + $('djEntrada').selectedOptions[0].textContent; } catch(e){ $('djMic').classList.remove('act'); $('djAviso').textContent = 'No se pudo usar esa entrada (' + (e.name || e.message) + ')'; } }
+};
 function iniciarDJ(){
   $('vista').classList.add('oculta');
   const cont = $('djEsc'); cont.innerHTML = '';
@@ -2549,7 +2590,7 @@ function iniciarDJ(){
   // el estado de conexion del panel normal se copia al del DJ
   new MutationObserver(() => { $('djDot').className = $('dot').className; $('djPillTxt').textContent = $('pillTxt').textContent; })
     .observe($('pill'), { subtree: true, childList: true, attributes: true, characterData: true });
-  djPintar();
+  djPintar(); listarEntradas();
 }
 
 /* ---------- Inicio ---------- */
