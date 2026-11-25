@@ -10,12 +10,24 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $configDada = $Config -ne ""
 
-# Si ya habia otra copia de la suite abierta (por ejemplo la que se abre sola al prender Windows), se cierra:
-# dos copias se pelean el cable USB-DMX y una queda "sin cable" (Kennedy, 24 nov).
+# UNA SOLA CARPETA (Kennedy, 25 nov: la calibracion quedo en una copia y despues se abrio otra que no la tenia).
+# La suite corre siempre desde C:\Users\<usuario>\KRB_Luces, que guarda la calibracion (datos.json) y la clave.
+# Si se abre INICIAR.bat desde otra carpeta (el ZIP bajado, el Escritorio), primero se actualiza esa carpeta
+# (sin borrar la calibracion ni la clave) y la suite se abre desde alla.
+$casa = Join-Path $env:USERPROFILE "KRB_Luces"
+if (-not $configDada -and (Resolve-Path $root).Path.TrimEnd('\') -ne $casa.TrimEnd('\')) {
+  Write-Host ""
+  Write-Host "  Esta copia esta en otra carpeta: se actualiza $casa y la suite se abre desde alla." -ForegroundColor Yellow
+  & (Join-Path $root "instalar.ps1") -NoArrancar
+  Start-Process -FilePath (Join-Path $casa "INICIAR.bat") -WorkingDirectory $casa
+  exit
+}
+
+# Si ya habia otra copia de la suite abierta (de esta o de CUALQUIER otra carpeta, tambien la oculta), se cierra:
+# dos copias se pelean el cable USB-DMX y cada una guarda su propia calibracion (Kennedy, 24 y 25 nov).
 try {
-  $yo = $MyInvocation.MyCommand.Path
   Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction Stop | Where-Object {
-    $_.ProcessId -ne $PID -and $_.CommandLine -and $_.CommandLine -like "*$yo*" -and
+    $_.ProcessId -ne $PID -and $_.CommandLine -and $_.CommandLine -like "*krb_luces.ps1*" -and
     (($configDada -and $_.CommandLine -like "*$Config*") -or (-not $configDada -and $_.CommandLine -notlike "*-Config*"))
   } | ForEach-Object {
     Write-Host ("  Se cerro una copia anterior de la suite (proceso " + $_.ProcessId + ").") -ForegroundColor DarkYellow
@@ -23,6 +35,9 @@ try {
   }
   Start-Sleep -Milliseconds 800
 } catch {}
+
+# Calibracion: si aca no hay, se busca la mas reciente que haya quedado en otra carpeta y se recupera
+if (-not $configDada) { try { & (Join-Path $root "instalar.ps1") -SoloRecuperar } catch {} }
 
 if ($Config -eq "") { $Config = Join-Path $root "luces.json" }
 $cfg = Get-Content $Config -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -617,7 +632,28 @@ namespace KRB {
       }
       if (ruta == "/api/guardar") {
         string d = Arg(query, "d");
-        if (d != null && d.StartsWith("{")) File.WriteAllText(Path.Combine(Root, "datos.json"), d, new UTF8Encoding(false));
+        string p = Path.Combine(Root, "datos.json");
+        if (d == null || !d.StartsWith("{")) { Enviar(s, "400 Bad Request", "application/json", Encoding.UTF8.GetBytes("{\"error\":\"datos\"}")); return; }
+        lock (DL) {
+          string viejo = File.Exists(p) ? File.ReadAllText(p) : "";
+          // Proteccion (Kennedy, 25 nov): nunca borrar la calibracion sin querer (un aparato que no alcanzo a leerla
+          // guardaria todo vacio). Solo "Borrar calibracion" manda borrar=1.
+          if (Marcas(viejo) > Marcas(d) && Arg(query, "borrar") != "1") {
+            Enviar(s, "409 Conflict", "application/json", Encoding.UTF8.GetBytes("{\"error\":\"perderia la calibracion\"}")); return;
+          }
+          // Respaldo de lo anterior en la carpeta respaldos (se guardan los ultimos 60)
+          try {
+            if (viejo.Length > 2 && viejo != d) {
+              string dir = Path.Combine(Root, "respaldos"); Directory.CreateDirectory(dir);
+              File.WriteAllText(Path.Combine(dir, "datos-" + DateTime.Now.ToString("yyyyMMdd-HHmmss-fff") + ".json"), viejo, new UTF8Encoding(false));
+              string[] fs = Directory.GetFiles(dir, "datos-*.json"); Array.Sort(fs);
+              for (int i = 0; i < fs.Length - 60; i++) File.Delete(fs[i]);
+            }
+          } catch {}
+          string tmp = p + ".tmp";
+          File.WriteAllText(tmp, d, new UTF8Encoding(false));
+          if (File.Exists(p)) File.Replace(tmp, p, null); else File.Move(tmp, p);
+        }
         Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":true}"));
         return;
       }
@@ -736,6 +772,13 @@ namespace KRB {
       return r;
     }
 
+    static readonly object DL = new object();
+    // Cuantas marcas de calibracion hay en un datos.json (las marcas se llaman abajo, ei, ed, fi y fd)
+    static int Marcas(string t) {
+      if (string.IsNullOrEmpty(t)) return 0;
+      return System.Text.RegularExpressions.Regex.Matches(t, "\"(abajo|ei|ed|fi|fd)\"\\s*:").Count;
+    }
+
     static string Esc(string t) { return (t ?? "").Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", " ").Replace("\n", " "); }
 
     static void Estado(NetworkStream s) {
@@ -744,6 +787,7 @@ namespace KRB {
       b.Append(",\"puerto\":\"").Append(Esc(Dmx.PuertoUsado)).Append("\"");
       b.Append(",\"conectado\":").Append(Dmx.Conectado ? "true" : "false");
       b.Append(",\"error\":\"").Append(Esc(Dmx.Error)).Append("\"");
+      b.Append(",\"carpeta\":\"").Append(Esc(Root)).Append("\"");
       b.Append(",\"tramas\":").Append(Dmx.Tramas).Append(",\"errores\":").Append(Dmx.Errores);
       b.Append(",\"momento\":\"").Append(Esc(MomentoActual)).Append("\",\"momentoN\":").Append(MomentoN);
       b.Append(",\"efectos\":[");
@@ -831,6 +875,7 @@ try {
     ForEach-Object { Write-Host ("     http://" + $_.IPAddress + ":" + $puertoWeb) -ForegroundColor Green }
 } catch {}
 Write-Host ("  En este computador: http://localhost:" + $puertoWeb)
+Write-Host ("  Carpeta de la suite (calibracion en datos.json): " + $root) -ForegroundColor DarkGray
 if ([KRB.Web]::Clave -eq "") {
   Write-Host "  Clave: NO configurada (cualquiera en el WiFi puede usarlo)." -ForegroundColor DarkYellow
 } elseif ([KRB.Web]::PedirEnWifiLocal) {

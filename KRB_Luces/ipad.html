@@ -261,8 +261,15 @@
       <div class="pad" id="pad"><div class="lbl">Arrastra el dedo para mover la luz</div><div class="pt p1" id="pt0">1</div><div class="pt p2" id="pt1">2</div><div class="pt p3" id="pt2">3</div></div>
       <div class="row">
         <span class="help" style="margin:0 6px 0 0">Velocidad:</span>
-        <button class="chip" data-v="0.15">Fina</button><button class="chip act" data-v="0.4">Normal</button><button class="chip" data-v="1">Rápida</button>
+        <button class="chip" data-v="0.04">Muy fina</button><button class="chip" data-v="0.15">Fina</button><button class="chip act" data-v="0.4">Normal</button><button class="chip" data-v="1">Rápida</button>
         <button class="chip" id="invX">Invertir ↔</button><button class="chip" id="invY">Invertir ↕</button>
+      </div>
+      <!-- Pedido de Cote (25 nov): volver la cabeza a su posicion basica y apuntar fino de a un paso -->
+      <div class="row">
+        <button class="chip" id="centroCab">⟲ Reset · posición básica</button>
+        <span class="help" style="margin:0 4px 0 8px">De a un paso:</span>
+        <button class="chip" data-paso="-1,0">◀</button><button class="chip" data-paso="1,0">▶</button>
+        <button class="chip" data-paso="0,-1">▲</button><button class="chip" data-paso="0,1">▼</button>
       </div>
       <h2 class="sec">Calibrar el mapa (una sola vez)</h2>
       <p class="help">Para cada esquina del salón: elige <b>Cabeza 1</b>, apúntala al suelo en esa esquina y toca la esquina. Luego haz lo mismo con <b>Cabeza 2</b> y <b>Cabeza 3</b>. Las 4 esquinas son las de la zona de mesas, marcadas con números en el mapa (escenario a la izquierda, cocinas arriba, columnas y pasillo abajo).</p>
@@ -543,7 +550,12 @@ async function postApi(ruta, params){
   return r.json();
 }
 async function efectoPost(id, params){ try { pintarEstado(await postApi('/api/efecto', {id, ...params})); } catch(e){ sinConexion(); } }
-async function guardarDatos(){ return postApi('/api/guardar', {d: JSON.stringify(datos)}); }
+// Si este aparato no alcanzo a leer los datos del Dell, no guarda: guardaria la calibracion vacia (Kennedy, 25 nov)
+let datosLeidos = false;
+async function guardarDatos(borrar){
+  if (!datosLeidos && !DEMO && !CONTROL){ toast('No se leyó la calibración del Dell: recarga la página antes de guardar'); throw new Error('sin datos'); }
+  return postApi('/api/guardar', borrar ? {d: JSON.stringify(datos), borrar: '1'} : {d: JSON.stringify(datos)});
+}
 
 /* ---------- Animador virtual para practicar el seguimiento (Cote, 24 nov) ----------
    Camina suave (1 m/s): baja del escenario, pasa entre las mesas y sigue hasta el fondo; despues vuelve. */
@@ -971,6 +983,18 @@ $('invY').onclick = () => { prefs.invY = !prefs.invY; guardarPrefs(); pintarSegu
   pad.addEventListener('pointerup', fin); pad.addEventListener('pointercancel', fin);
 })();
 
+/* Reset (posicion basica: pan y tilt al medio) y pasos de a 1 para apuntar fino (Cote, 25 nov) */
+function moverCabezas(fn){
+  segActivos().forEach(id => { encenderSiApagada(id); const z = zona(id); fn(z); z.posicion = null;
+    z.pan = Math.max(0, Math.min(255, z.pan)); z.tilt = Math.max(0, Math.min(255, z.tilt)); });
+  escenaActiva = -1; pintarSeguir(); enviarGrupos(segActivos(), 0);
+}
+$('centroCab').onclick = () => moverCabezas(z => { z.pan = 128; z.tilt = 128; });
+document.querySelectorAll('[data-paso]').forEach(b => b.onclick = () => {
+  const [dx, dy] = b.dataset.paso.split(',').map(Number);
+  moverCabezas(z => { z.pan = (z.pan != null ? z.pan : 128) + dx * (prefs.invX ? -1 : 1); z.tilt = (z.tilt != null ? z.tilt : 128) + dy * (prefs.invY ? -1 : 1); });
+});
+
 /* Calibracion: guarda pan/tilt actuales de las cabezas elegidas en una esquina */
 async function guardarEsquina(k){
   datos.calibracion = datos.calibracion || {};
@@ -1001,7 +1025,7 @@ document.querySelectorAll('[data-z]').forEach(b => b.onclick = () => { $('zoom')
 $('borrarCal').onclick = async () => {
   if (!confirm('¿Borrar la calibración de las 3 cabezas? Después habrá que calibrar de nuevo en Kennedy.')) return;
   datos.calibracion = {};
-  try { await guardarDatos(); toast('Calibración borrada'); }
+  try { await guardarDatos(true); toast('Calibración borrada'); }
   catch(e){ toast('No se pudo guardar en el Dell'); }
   pintarSeguir();
 };
@@ -1244,7 +1268,8 @@ function pintarEstado(e){
     const porSeg = p && ahora > p.t ? Math.round((e.tramas - p.n) * 1000 / (ahora - p.t)) : 0;
     pintarEstado.prev = {t: ahora, n: e.tramas};
     ec.textContent = 'Cable: ' + (e.conectado ? 'conectado · ' + e.puerto : 'NO conectado') + ' · envíos ' + e.tramas +
-      (p ? ' (' + Math.max(0, porSeg) + '/s)' : '') + ' · errores ' + (e.errores || 0) + (e.error ? ' · último error: ' + e.error : '');
+      (p ? ' (' + Math.max(0, porSeg) + '/s)' : '') + ' · errores ' + (e.errores || 0) + (e.error ? ' · último error: ' + e.error : '') +
+      (e.carpeta ? ' · carpeta de la suite: ' + e.carpeta : '');
   }
   if (CONTROL){ V.animador = e.animador || null; V.rosko = !!e.rosko; V.sucio = true; marcaAnimador(e.animador); }
   momentoRecibido(e);
@@ -2246,7 +2271,7 @@ function marcaAnimador(a){                                              // el an
 (async () => {
   try { conf = await api(DEMO ? 'luces.json' : '/luces.json'); }
   catch(e){ if (!pidiendo) document.querySelector('main').innerHTML = '<p class="help">No se pudo leer luces.json desde el Dell. ¿Está abierto INICIAR.bat?</p>'; return; }
-  try { datos = await api('/api/datos'); if (!datos.calibracion) datos.calibracion = {}; } catch(e){}
+  try { datos = await api('/api/datos'); if (!datos.calibracion) datos.calibracion = {}; datosLeidos = true; } catch(e){}
   conf.grupos.forEach(g => zonas[g.id] = {color:null, intensidad:0});
   pintarDirecciones(); dibujarPlano(); pintarTodo(); pintarProgramas(); pintarVistas(); pintarJuegos(); pintarPosiciones();
   await publicarMomentos();

@@ -6,6 +6,14 @@
 # ============================================================
 $ErrorActionPreference = "Stop"
 $dir = Split-Path -Parent $MyInvocation.MyCommand.Path
+# Una sola carpeta (Kennedy, 25 nov): la clave y el tunel se guardan siempre en C:\Users\<usuario>\KRB_Luces
+$casa = Join-Path $env:USERPROFILE "KRB_Luces"
+if ((Resolve-Path $dir).Path.TrimEnd('\') -ne $casa.TrimEnd('\')) {
+  Write-Host "  Esta copia esta en otra carpeta: se actualiza $casa y se sigue desde alla." -ForegroundColor Yellow
+  & (Join-Path $dir "instalar.ps1") -NoArrancar
+  & (Join-Path $casa "internet.ps1")
+  return
+}
 $cfgPath = Join-Path $dir "luces.json"
 $yml = Join-Path $dir "tunel.yml"
 $nombreTunel = "krb-luces"
@@ -126,4 +134,5 @@ Write-Host ""
 Write-Host "  LISTO." -ForegroundColor Green
 Write-Host "  Desde ahora, al abrir INICIAR.bat (o al prender el Dell) el tunel se levanta solo."
 Write-Host "  Desde cualquier lugar: https://$host_   (pide la clave una vez por aparato)"
-Write-Host "  Si la suite ya estaba abierta, cierrala y abre INICIAR.bat de nuevo."
+Write-Host "  Se reinicia la suite para levantar el tunel..."
+Start-Process -FilePath (Join-Path $dir "INICIAR.bat") -WorkingDirectory $dir -WindowStyle Minimized

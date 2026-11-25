@@ -6,7 +6,11 @@ INSTALAR (una vez, en el Dell)
      - Copia la suite a C:\Users\<usuario>\KRB_Luces
      - Hace que arranque sola cada vez que se prende Windows
      - La abre de inmediato (ventana minimizada)
-  2. Desde ahi en adelante se usa la carpeta C:\Users\<usuario>\KRB_Luces
+  2. Desde ahi en adelante se usa SOLO la carpeta C:\Users\<usuario>\KRB_Luces.
+     Si se abre INICIAR.bat o CONFIGURAR_INTERNET.bat desde otra carpeta (el ZIP bajado,
+     el Escritorio), primero se actualiza esa carpeta y todo sigue desde alla.
+     La calibracion, la clave y el tunel nunca se borran al actualizar; si quedaron en
+     otra copia de la suite, se recuperan solos.
 
 USAR
   - En el iPad o el celular (mismo WiFi): abrir la direccion que muestra la
@@ -23,3 +27,4 @@ AJUSTES
   - luces.json: luces, direcciones DMX, canales, colores, escenas, clave.
     Editar con el Bloc de notas y luego cerrar y abrir INICIAR.bat.
   - datos.json: calibracion del mapa (la crea la pestana Seguir). No borrar.
+    Cada vez que cambia, la version anterior queda en la carpeta respaldos (las ultimas 60).
