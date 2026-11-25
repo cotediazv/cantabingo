@@ -2149,10 +2149,24 @@ function simMomento(n, encadenado){
 const simEstado = () => ({ tipo:'demo', puerto:'', conectado:false, error:'', efectos:[...SIM.ef.keys()],
   canales:Array.from(SIM.tgt.slice(1), Math.round), salida:SIM.salida, momento:SIM.momento, momentoN:SIM.momentoN,
   animador:V.animador || null, rosko:!!V.rosko });
+const SIMDJ = { escena: -1, auto: false, int: 100, cambio: 0, ult: -99, P: 0.5 };
+function simPulso(){ const t = performance.now() / 1000, d = t - SIMDJ.ult; if (d > 0.2 && d < 2) SIMDJ.P = SIMDJ.P * 0.7 + d * 0.3; SIMDJ.ult = t; }
+function simDj(q){
+  const t = performance.now() / 1000; let aplicar = false;
+  if (q.has('escena')){ SIMDJ.escena = +q.get('escena'); SIMDJ.cambio = t; }
+  if (q.has('auto')){ SIMDJ.auto = q.get('auto') === '1'; if (SIMDJ.auto) SIMDJ.cambio = -1e9; }
+  if (q.has('int')) SIMDJ.int = +q.get('int');
+  if (q.has('turno') && SIMDJ.auto && t - SIMDJ.cambio >= 180){
+    const op = q.get('turno').split(',').map(Number).filter(k => k !== SIMDJ.escena);
+    if (op.length){ SIMDJ.escena = op[Math.floor(Math.random() * op.length)]; SIMDJ.cambio = t; aplicar = true; } }
+  const ritmo = t - SIMDJ.ult < Math.max(2.5, 3 * SIMDJ.P);
+  return { escena: SIMDJ.escena, auto: SIMDJ.auto, int: SIMDJ.int, aplicar, estacion: false, ritmo, bpm: Math.round(60 / SIMDJ.P) };
+}
 async function simApi(path, params){
   const [ruta, qs] = path.split('?'), q = new URLSearchParams(params || qs || '');
   if (ruta.endsWith('luces.json')){ const r = await fetch(path, {cache:'no-store'}); if (!r.ok) throw new Error(r.status); return r.json(); }
   if (ruta === '/api/datos') return JSON.parse(localStorage.getItem('krb_demo_datos') || '{"calibracion":{}}');
+  if (ruta === '/api/dj') return simDj(q);                            // panel del DJ en el demo: lo mismo que hace el Dell
   if (ruta === '/api/guardar'){ localStorage.setItem('krb_demo_datos', q.get('d') || '{}'); return {ok:true}; }
   if (ruta === '/api/momentos'){
     const d = {}; let cur = null;
@@ -2547,6 +2561,7 @@ $('djInt').onchange = () => { djServidor({ int: $('djInt').value }); if (djEstad
 /* ---------- Ritmo: reloj de golpes que se ajusta a la musica ---------- */
 const ritmo = { on: false, P: 0.5, prox: 0, rtt: 0.08, golpes: [], taps: [], mic: null, ultOnset: 0 };
 function enviarPulso(){
+  if (DEMO){ simPulso(); const l = $('djLatido'); l.classList.add('on'); setTimeout(() => l.classList.remove('on'), 90); return; }
   const t0 = performance.now();
   fetch('/api/pulso', {cache: 'no-store', credentials: 'same-origin'}).then(() => {
     ritmo.rtt = ritmo.rtt * 0.8 + ((performance.now() - t0) / 1000) * 0.2; }).catch(() => {});
