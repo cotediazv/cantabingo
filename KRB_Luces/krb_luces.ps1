@@ -44,6 +44,77 @@ namespace KRB {
     [DllImport("ftd2xx.dll")] public static extern uint FT_Write(IntPtr h, byte[] buf, uint len, ref uint escritos);
   }
 
+  // ---------- Cable uDMX (Anyma, USB 16C0:05DC) por WinUSB ----------
+  // El uDMX no es FTDI ni crea puerto COM: genera el DMX solo y recibe los canales por "control transfers" USB.
+  // Necesita el driver WinUSB (viene con Windows), asignado una vez con la herramienta Zadig.
+  public static class UDmx {
+    [StructLayout(LayoutKind.Sequential)]
+    struct SP_DEVICE_INTERFACE_DATA { public int cbSize; public Guid InterfaceClassGuid; public int Flags; public IntPtr Reserved; }
+    [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    struct SETUP { public byte RequestType; public byte Request; public ushort Value; public ushort Index; public ushort Length; }
+    [DllImport("setupapi.dll", SetLastError = true)] static extern IntPtr SetupDiGetClassDevs(ref Guid g, IntPtr enumerador, IntPtr ventana, int flags);
+    [DllImport("setupapi.dll", SetLastError = true)] static extern bool SetupDiEnumDeviceInterfaces(IntPtr set, IntPtr info, ref Guid g, int i, ref SP_DEVICE_INTERFACE_DATA d);
+    [DllImport("setupapi.dll", SetLastError = true, CharSet = CharSet.Unicode)] static extern bool SetupDiGetDeviceInterfaceDetailW(IntPtr set, ref SP_DEVICE_INTERFACE_DATA d, IntPtr detalle, int tam, ref int req, IntPtr info);
+    [DllImport("setupapi.dll")] static extern bool SetupDiDestroyDeviceInfoList(IntPtr set);
+    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)] static extern IntPtr CreateFileW(string nombre, uint acceso, uint compartir, IntPtr seg, uint disp, uint flags, IntPtr plantilla);
+    [DllImport("kernel32.dll")] static extern bool CloseHandle(IntPtr h);
+    [DllImport("winusb.dll", SetLastError = true)] static extern bool WinUsb_Initialize(IntPtr dev, ref IntPtr iface);
+    [DllImport("winusb.dll")] static extern bool WinUsb_Free(IntPtr iface);
+    [DllImport("winusb.dll", SetLastError = true)] static extern bool WinUsb_ControlTransfer(IntPtr iface, SETUP setup, byte[] buf, uint largo, ref uint pasados, IntPtr ov);
+
+    static IntPtr archivo = IntPtr.Zero, iface = IntPtr.Zero;
+    public static bool Abierto { get { return iface != IntPtr.Zero; } }
+
+    // Abre el primer uDMX. Devuelve null si quedo listo, o el motivo si no.
+    public static string Abrir() {
+      Cerrar();
+      Guid usb = new Guid("A5DCBF10-6530-11D2-901F-00C04FB951ED");     // interfaz de todos los dispositivos USB con driver
+      IntPtr set = SetupDiGetClassDevs(ref usb, IntPtr.Zero, IntPtr.Zero, 0x12);   // PRESENT | DEVICEINTERFACE
+      if (set == new IntPtr(-1)) return "no se pudo listar los dispositivos USB";
+      string ruta = null; int revisados = 0;
+      try {
+        for (int i = 0; ; i++) {
+          SP_DEVICE_INTERFACE_DATA d = new SP_DEVICE_INTERFACE_DATA(); d.cbSize = Marshal.SizeOf(d);
+          if (!SetupDiEnumDeviceInterfaces(set, IntPtr.Zero, ref usb, i, ref d)) break;
+          revisados++;
+          int req = 0; SetupDiGetDeviceInterfaceDetailW(set, ref d, IntPtr.Zero, 0, ref req, IntPtr.Zero);
+          if (req <= 0) continue;
+          IntPtr buf = Marshal.AllocHGlobal(req);
+          try {
+            Marshal.WriteInt32(buf, IntPtr.Size == 8 ? 8 : 6);
+            if (SetupDiGetDeviceInterfaceDetailW(set, ref d, buf, req, ref req, IntPtr.Zero)) {
+              string p = Marshal.PtrToStringUni(new IntPtr(buf.ToInt64() + 4));
+              if (p != null && p.ToLower().Contains("vid_16c0&pid_05dc")) { ruta = p; break; }
+            }
+          } finally { Marshal.FreeHGlobal(buf); }
+        }
+      } finally { SetupDiDestroyDeviceInfoList(set); }
+      if (ruta == null) return VistoSinDriver() ? "el uDMX esta enchufado pero sin driver: instalar WinUSB con Zadig" : "no hay un uDMX (" + revisados + " dispositivos USB revisados)";
+      IntPtr h = CreateFileW(ruta, 0xC0000000, 3, IntPtr.Zero, 3, 0x40000080, IntPtr.Zero);   // lectura/escritura, OPEN_EXISTING, OVERLAPPED
+      if (h == new IntPtr(-1)) return "no se pudo abrir el uDMX (error " + Marshal.GetLastWin32Error() + "; esta abierto en otro programa?)";
+      IntPtr w = IntPtr.Zero;
+      if (!WinUsb_Initialize(h, ref w)) { int err = Marshal.GetLastWin32Error(); CloseHandle(h); return "el uDMX no tiene el driver WinUSB (error " + err + "): instalarlo con Zadig"; }
+      archivo = h; iface = w; return null;
+    }
+    // Se enchufo alguna vez un uDMX (aunque no tenga driver)?
+    static bool VistoSinDriver() {
+      try { using (RegistryKey k = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Enum\USB\VID_16C0&PID_05DC")) { return k != null; } } catch { return false; }
+    }
+    public static void Cerrar() {
+      try { if (iface != IntPtr.Zero) WinUsb_Free(iface); } catch {}
+      try { if (archivo != IntPtr.Zero) CloseHandle(archivo); } catch {}
+      iface = IntPtr.Zero; archivo = IntPtr.Zero;
+    }
+    // Comando 2 del uDMX (SetChannelRange): Value = cantidad de canales, Index = primer canal (desde 0), datos = valores
+    public static bool Enviar(byte[] frame) {
+      if (iface == IntPtr.Zero) return false;
+      byte[] datos = new byte[512]; Array.Copy(frame, 1, datos, 0, 512);
+      SETUP s = new SETUP(); s.RequestType = 0x40; s.Request = 2; s.Value = 512; s.Index = 0; s.Length = 512;
+      uint pasados = 0;
+      return WinUsb_ControlTransfer(iface, s, datos, 512, ref pasados, IntPtr.Zero);
+    }
+  }
+
   // ---------- Efectos que corren en el Dell (siguen aunque el iPad se bloquee) ----------
   public class Efecto {
     public string Tipo;                       // "seno" o "sec"
@@ -154,20 +225,24 @@ namespace KRB {
       lock (L) {
         try { if (port != null) port.Close(); } catch {}
         try { if (ftdi != IntPtr.Zero) Ftdi.FT_Close(ftdi); } catch {}
+        try { UDmx.Cerrar(); } catch {}
         port = null; ftdi = IntPtr.Zero; Conectado = false; PuertoUsado = "";
         if (Tipo == "simulacion") { Error = ""; return; }
         try {
           string p = Puerto;
           bool auto = p == null || p == "" || p.ToLower() == "auto";
-          // "ftdi" (o auto sin puerto COM de un cable USB): por el driver de FTDI, como Freestyler
-          if (Tipo != "enttec" && (p != null && p.ToLower() == "ftdi" || auto && ComUsb() == null)) {
-            string err = AbrirFtdi();
+          // Sin puerto COM de un cable USB: primero un uDMX (el cable de Kennedy, 24 nov) y despues FTDI por su driver
+          if (Tipo == "udmx" || Tipo != "enttec" && (p != null && (p.ToLower() == "ftdi" || p.ToLower() == "udmx") || auto && ComUsb() == null)) {
+            string errU = (p != null && p.ToLower() == "ftdi") ? "no se busco" : UDmx.Abrir();
+            if (errU == null) { PuertoUsado = "uDMX"; Conectado = true; Error = ""; return; }
+            string err = (Tipo == "udmx" || p != null && p.ToLower() == "udmx") ? "no se busco" : AbrirFtdi();
             if (err == null) { PuertoUsado = "FTDI (driver directo)"; Conectado = true; Error = ""; return; }
+            err = "uDMX: " + errU + ". FTDI: " + err;
             // Ya no se toma "el ultimo COM": en muchos computadores es un puerto de Bluetooth y falla con
             // "se agoto el tiempo de espera del semaforo". Se informa lo que hay para poder elegirlo a mano.
             string[] todos = SerialPort.GetPortNames();
             Error = "No se encontro el cable USB-DMX. Puertos COM: " + (todos.Length == 0 ? "ninguno" : string.Join(", ", todos)) +
-                    " (ninguno es de un cable USB). FTDI: " + err + ".";
+                    " (ninguno es de un cable USB). " + err + ".";
             return;
           }
           if (auto) p = ComUsb();
@@ -230,7 +305,17 @@ namespace KRB {
           s = port;
         }
         IntPtr fh = ftdi;
-        if (fh != IntPtr.Zero && Conectado) {         // por el driver de FTDI: BREAK, MAB y la trama
+        if (UDmx.Abierto && Conectado) {              // uDMX: le manda los 512 canales; el DMX lo genera el cable
+          try {
+            if (!UDmx.Enviar(frame)) throw new Exception("uDMX: no recibio los canales (error " + Marshal.GetLastWin32Error() + "); se desenchufo el cable?");
+            Tramas++; fallos = 0;
+          } catch (Exception e) {
+            Error = e.Message;
+            if (++fallos > 20) { Conectado = false; }
+          }
+          Thread.Sleep(20);
+        }
+        else if (fh != IntPtr.Zero && Conectado) {         // por el driver de FTDI: BREAK, MAB y la trama
           try {
             Ftdi.FT_SetBreakOn(fh); Thread.Sleep(1);
             Ftdi.FT_SetBreakOff(fh);

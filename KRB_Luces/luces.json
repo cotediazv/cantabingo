@@ -2,7 +2,7 @@
   "_ayuda": "Archivo de configuracion de las luces de KRB (Mercado Kennedy). Se puede editar con el Bloc de notas. Despues de guardar, cerrar y volver a abrir INICIAR.bat.",
 
   "salida": {
-    "_ayuda": "tipo: opendmx (cable FTDI comun, el que trae Freestyler), enttec (DMX USB Pro) o simulacion (sin cable). puerto: auto o el COM que muestre Windows, por ejemplo COM3.",
+    "_ayuda": "tipo: opendmx (busca solo el cable: uDMX, FTDI o un puerto COM USB), udmx, enttec (DMX USB Pro) o simulacion (sin cable). puerto: auto, ftdi, udmx o el COM que muestre Windows, por ejemplo COM3. El cable de Kennedy es un uDMX: necesita el driver WinUSB (con Zadig).",
     "tipo": "opendmx",
     "puerto": "auto"
   },
