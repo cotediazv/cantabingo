@@ -22,10 +22,15 @@ USAR
 PANEL DEL DJ (noches sin show ni juegos)
   - La misma direccion terminada en /dj, por ejemplo https://luces.krbstage.cl/dj
   - Arriba, la vista previa del escenario de frente (lo que de verdad sale por el cable).
-  - 20 escenas (Fiesta, Arcoiris, Pista, Sirena, Fuego, Barrido, Destello, Oceano,
-    Disco, Tropical, Romantico, Neon, Rock, Ola, Galaxia, Cumpleanos, Lounge, Karaoke,
-    Estrellas, Luz de sala),
-    Automatico (cambia sola cada 3 min),
+  - 16 escenas en 4 grupos:
+    STANDBY (Azul, Atardecer, Lavanda, Agua): cabezas y frontales apagados, color suave y
+      mini cabezas lentas. Para cuando no pasa nada.
+    PREVIA (Piano bar, Jazz azul, Vino, Dorado) y SHOW (Colores, Estrobo, Arriba/abajo,
+      Arcoiris): SIEMPRE el blanco calido de frente (cabezas 1 y 2 al escenario y los 2
+      frontales). En la previa el fondo cambia lento; en el show el fondo es libre y las
+      cabezas 1 y 2 se mueven un poco sin salir del escenario.
+    FIESTA (Fiesta, Disco, Pista, Destello): todo libre y sincronizado.
+    Automatico (cambia sola cada 3 min entre las escenas del mismo grupo),
     Ritmo (escucha la musica con el microfono y sigue el bombo y la caja),
     Tap (marcar el ritmo a mano), Intensidad y Apagar.
   - El microfono solo funciona por https://luces.krbstage.cl/dj o en el Dell

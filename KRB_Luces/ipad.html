@@ -183,7 +183,8 @@
   .djtop{display:flex;align-items:center;gap:8px}
   .djtop b{font-size:17px;flex:1;letter-spacing:.02em}
   .djesc{flex:1;display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:1fr;gap:6px;min-height:200px}
-  @media (min-width:700px){ .djesc{grid-template-columns:repeat(5,1fr)} }
+  .djesc{grid-auto-rows:auto;grid-template-rows:repeat(4,auto 1fr)}
+  .djgr{grid-column:1/-1;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);font-weight:800;margin:2px 0 -2px 2px}
   /* Vista previa del escenario de frente (mitad de arriba; Cote, 25 nov) */
   body.dj #dj{height:100vh;height:100dvh;min-height:0;gap:6px;padding-top:calc(6px + env(safe-area-inset-top))}
   .djvista{position:relative;flex:0 0 42%;min-height:0;border-radius:14px;overflow:hidden;background:#050608}
@@ -2415,7 +2416,8 @@ function pasoPos(pos){
   const s = {};
   Object.entries(pos).forEach(([id, p]) => { const g = grupo(id); if (!g || !p) return; const ch = g.canales || {}, base = g.direccion - 1;
     if (ch.pan) s[base + ch.pan] = Math.round(Math.max(0, Math.min(255, p.pan)));
-    if (ch.tilt) s[base + ch.tilt] = Math.round(Math.max(0, Math.min(255, p.tilt))); });
+    if (ch.tilt) s[base + ch.tilt] = Math.round(Math.max(0, Math.min(255, p.tilt)));
+    if (ch.zoom && p.zoom != null){ const zv = Math.round(p.zoom * 2.55); s[base + ch.zoom] = g.zoom_invertido ? 255 - zv : zv; } });
   return s;
 }
 const posMini = () => ({ pan: azar(20, 235), tilt: azar(0, 80) });          // mini: giran y miran hacia arriba
@@ -2427,121 +2429,83 @@ const grupos = (ids, c) => { const o = {}; ids.forEach(id => o[id] = c); return 
 const capa = (id, pasos, ritmo, fx) => ({ id: 'dj-' + id, pasos, ritmo, fx: fx || 0 });
 const N = n => Array.from({length: n}, (_, i) => i);
 
+/* Escenas del DJ en 4 grupos (Cote, 25 nov):
+   - Standby: cabezas y frontales (97) apagados; color suave de base y mini cabezas moviendose suave. Sin protagonismo.
+   - Previa (piano bar) y Show: SIEMPRE el blanco calido de frente (cabezas 1 y 2 al escenario + los 2 frontales del 97).
+     En la previa el fondo cambia lento; en el show el fondo es libre (estrobo, arriba distinto de abajo, mini locas)
+     y las cabezas 1 y 2 hacen un movimiento chico sin salir del escenario.
+   - Fiesta: libre; las cabezas recorren el salon cambiando de color, sincronizadas con el escenario. */
+const djCab12 = () => djCabezas().filter(id => segIds().indexOf(id) < 2);             // cabezas 1 y 2 (si el DJ no las esta siguiendo)
+const djCab3 = () => djCabezas().filter(id => segIds().indexOf(id) >= 2);            // cabeza 3
+const djPared = () => idsPared();
+const djArriba = () => idsPared().filter(id => id === 'fondo');                       // fondo: arriba de las columnas azules
+const djAbajo = () => idsPared().filter(id => id !== 'fondo');                        // perimetrales: en el piso
+// blanco calido de frente: cabezas 1 y 2 al escenario + frontales
+const blancoFrente = () => ({ ...grupos(djCab12(), 'blanco_calido'), ...grupos(djCab3(), null), frontales: 'blanco_calido' });
+const djPosEsc = (dp, dt) => { const o = {}; djCab12().forEach((id, j) => { const z = {}; fijarPosicion(z, 'escenario', id);
+  o[id] = { pan: (z.pan || 128) + (dp || 0) * (j ? -1 : 1), tilt: (z.tilt || 100) + (dt || 0), zoom: z.zoom }; }); return o; };
+const djMiniSuave = () => grupos(djMini(), { pan: azar(50, 205), tilt: azar(0, 35) });
+const djSuave = (c, k) => pasoColor({ ...grupos(djCabezas(), null), frontales: null, ...grupos(djMini(), c[0]), ...grupos(djPared(), c[k % c.length]) },
+  { perimetrales: 45, fondo: 45, mini: 35, mini_columnas: 35 });
+const djPrevia = (cs, k) => pasoColor({ ...blancoFrente(), ...grupos(djMini(), cs[(k + 1) % cs.length]), ...grupos(djArriba(), cs[k % cs.length]), ...grupos(djAbajo(), cs[(k + 1) % cs.length]) },
+  { perimetrales: 70, fondo: 70, mini: 50, mini_columnas: 50 });
+const movFrente = () => capa('frente', N(4).map(k => pasoPos(djPosEsc(...[[0, 0], [2, 1], [0, 2], [-2, 1]][k]))), 4, 1);   // movimiento chico en el escenario
+
 const DJ_ESCENAS = [
-  { n: 'Fiesta', i: '🎉', g: 'linear-gradient(135deg,#ff2a2a,#ffbe00,#22dd55,#2b55ff,#9b3cff)', fiesta: true,
-    capas: () => [
-      capa('col', N(16).map(() => pasoColor({ ...grupos(djCabezas(), elegir(VIVOS)), ...grupos(djMini(), elegir(VIVOS)),
-        ...grupos(idsPared(), elegir(VIVOS)), frontales: null })), 1),
-      capa('mov', N(12).map(() => pasoPos({ ...posCab('salon'), ...grupos(djMini(), posMini()) })), 2, 0.55)
-    ] },
-  { n: 'Arcoíris', i: '🌈', g: 'linear-gradient(135deg,#ff2a2a,#ffbe00,#22dd55,#22e5ff,#9b3cff)', fiesta: true,
+  // ---------- STANDBY ----------
+  { grupo: 'Standby', n: 'Azul', i: '🌙', g: 'linear-gradient(135deg,#0a1a4a,#2b55ff)',
+    capas: () => [capa('col', [0, 1].map(k => djSuave(['azul', 'azul'], k)), 16, 1), capa('mini', N(6).map(() => pasoPos(djMiniSuave())), 8, 1)] },
+  { grupo: 'Standby', n: 'Atardecer', i: '🌅', g: 'linear-gradient(135deg,#ff8a00,#ff3fa0)',
+    capas: () => [capa('col', [0, 1].map(k => djSuave(['ambar', 'rosa'], k)), 16, 1), capa('mini', N(6).map(() => pasoPos(djMiniSuave())), 8, 1)] },
+  { grupo: 'Standby', n: 'Lavanda', i: '🪻', g: 'linear-gradient(135deg,#9b3cff,#2b55ff)',
+    capas: () => [capa('col', [0, 1].map(k => djSuave(['morado', 'azul'], k)), 16, 1), capa('mini', N(6).map(() => pasoPos(djMiniSuave())), 8, 1)] },
+  { grupo: 'Standby', n: 'Agua', i: '💧', g: 'linear-gradient(135deg,#22e5ff,#22dd55)',
+    capas: () => [capa('col', [0, 1].map(k => djSuave(['cian', 'verde'], k)), 16, 1), capa('mini', N(6).map(() => pasoPos(djMiniSuave())), 8, 1)] },
+  // ---------- PREVIA (piano bar): blanco de frente siempre ----------
+  { grupo: 'Previa', n: 'Piano bar', i: '🎹', g: 'radial-gradient(circle at 50% 30%,#ffd9a0,#ff8a00 60%,#3a1a00)',
+    capas: () => [capa('col', N(4).map(k => djPrevia(['ambar', 'rosa'], k)), 16, 1), capa('mov', [pasoPos(djPosEsc())], 16), capa('mini', N(6).map(() => pasoPos(djMiniSuave())), 8, 1)] },
+  { grupo: 'Previa', n: 'Jazz azul', i: '🎷', g: 'radial-gradient(circle at 50% 30%,#ffd9a0,#2b55ff 60%,#0a1033)',
+    capas: () => [capa('col', N(4).map(k => djPrevia(['azul', 'cian'], k)), 16, 1), capa('mov', [pasoPos(djPosEsc())], 16), capa('mini', N(6).map(() => pasoPos(djMiniSuave())), 8, 1)] },
+  { grupo: 'Previa', n: 'Vino', i: '🍷', g: 'radial-gradient(circle at 50% 30%,#ffd9a0,#9b1030 60%,#2a0010)',
+    capas: () => [capa('col', N(4).map(k => djPrevia(['rojo', 'morado'], k)), 16, 1), capa('mov', [pasoPos(djPosEsc())], 16), capa('mini', N(6).map(() => pasoPos(djMiniSuave())), 8, 1)] },
+  { grupo: 'Previa', n: 'Dorado', i: '✨', g: 'radial-gradient(circle at 50% 30%,#fff3c4,#ffbe00 60%,#3a2a00)',
+    capas: () => [capa('col', N(4).map(k => djPrevia(['amarillo', 'ambar'], k)), 16, 1), capa('mov', [pasoPos(djPosEsc())], 16), capa('mini', N(6).map(() => pasoPos(djMiniSuave())), 8, 1)] },
+  // ---------- SHOW: blanco de frente siempre, fondo libre ----------
+  { grupo: 'Show', n: 'Colores', i: '🎤', g: 'linear-gradient(135deg,#ff2a2a,#ffd9a0 50%,#2b55ff)',
+    capas: () => [capa('col', N(12).map(() => pasoColor({ ...blancoFrente(), ...grupos(djMini(), elegir(VIVOS)), ...grupos(djArriba(), elegir(VIVOS)), ...grupos(djAbajo(), elegir(VIVOS)) })), 1),
+      movFrente(), capa('mini', N(12).map(() => pasoPos(grupos(djMini(), posMini()))), 1, 0.3)] },
+  { grupo: 'Show', n: 'Estrobo', i: '⚡', g: 'repeating-linear-gradient(90deg,#fff 0 8px,#222 8px 16px)',
+    capas: () => { const c = elegir(VIVOS);
+      return [capa('col', N(8).map(k => pasoColor({ ...blancoFrente(), ...grupos(djMini(), k % 2 ? 'blanco' : c), ...grupos(djArriba(), k % 2 ? null : 'blanco'), ...grupos(djAbajo(), k % 2 ? c : null) })), 0.25),
+        movFrente(), capa('mini', N(12).map(() => pasoPos(grupos(djMini(), posMini()))), 0.5, 0.2)]; } },
+  { grupo: 'Show', n: 'Arriba/abajo', i: '↕️', g: 'linear-gradient(180deg,#9b3cff 50%,#22e5ff 50%)',
+    capas: () => { const pares = [['morado', 'cian'], ['rojo', 'amarillo'], ['azul', 'rosa'], ['verde', 'morado']];
+      return [capa('col', N(8).map(k => { const [x, y] = pares[Math.floor(k / 2) % 4]; return pasoColor({ ...blancoFrente(), ...grupos(djMini(), k % 2 ? x : y),
+          ...grupos(djArriba(), k % 2 ? x : y), ...grupos(djAbajo(), k % 2 ? y : x) }); }), 1),
+        movFrente(), capa('mini', N(8).map(() => pasoPos(grupos(djMini(), posMini()))), 1, 0.5)]; } },
+  { grupo: 'Show', n: 'Arcoíris', i: '🌈', g: 'linear-gradient(135deg,#ff2a2a,#ffbe00,#22dd55,#22e5ff,#9b3cff)',
     capas: () => { const c = ['rojo', 'ambar', 'amarillo', 'verde', 'cian', 'azul', 'morado', 'rosa'];
-      return [capa('col', c.map((x, k) => pasoColor({ ...grupos(djCabezas(), c[(k + 2) % 8]), ...grupos(djMini(), c[(k + 4) % 8]),
-          ...grupos(idsPared(), x), frontales: null })), 2, 0.7),
-        capa('mov', N(8).map(() => pasoPos({ ...posCab('techo'), ...grupos(djMini(), posMini()) })), 4, 0.9)]; } },
-  { n: 'Pista', i: '💃', g: 'radial-gradient(circle,#ff3fa0,#2b55ff)', fiesta: true,
-    capas: () => [
-      capa('col', N(8).map(k => pasoColor({ ...grupos(djCabezas(), k % 2 ? 'rosa' : 'cian'), ...grupos(djMini(), k % 2 ? 'cian' : 'rosa'),
-        ...grupos(idsPared(), k % 4 < 2 ? 'azul' : 'morado'), frontales: null })), 1),
-      capa('mov', N(8).map(() => pasoPos({ ...posCabJuntas('pista'), ...grupos(djMini(), posMini()) })), 2, 0.5)
-    ] },
-  { n: 'Sirena', i: '🚨', g: 'linear-gradient(90deg,#ff2a2a 50%,#2b55ff 50%)', fiesta: true,
-    capas: () => [
-      capa('col', [0, 1].map(k => { const a = k ? 'azul' : 'rojo', b = k ? 'rojo' : 'azul', o = {};
-        djCabezas().forEach((id, j) => o[id] = j % 2 ? a : b); djMini().forEach(id => o[id] = a);
-        idsPared().forEach((id, j) => o[id] = j % 2 ? b : a); o.frontales = null; return pasoColor(o); }), 1),
-      capa('mov', N(6).map(() => pasoPos({ ...posCab('salon'), ...grupos(djMini(), posMini()) })), 4, 0.4)
-    ] },
-  { n: 'Fuego', i: '🔥', g: 'linear-gradient(0deg,#ff2a2a,#ff8a00,#ffbe00)', fiesta: true,
-    capas: () => [
-      capa('col', N(12).map(() => pasoColor({ ...grupos(djCabezas(), elegir(['rojo', 'ambar', 'amarillo'])), ...grupos(djMini(), elegir(['rojo', 'ambar'])),
-        ...grupos(idsPared(), elegir(['rojo', 'ambar', 'rojo'])), frontales: 'ambar' }, { frontales: 25 })), 0.5),
-      capa('mov', N(8).map(() => pasoPos({ ...posCab('escenario'), ...grupos(djMini(), posMini()) })), 2, 0.6)
-    ] },
-  { n: 'Barrido', i: '🔦', g: 'linear-gradient(90deg,#000,#fff,#000)', fiesta: true,
-    capas: () => { const izq = posCabJuntas('salon'), der = posCabJuntas('salon');
-      return [capa('col', [pasoColor({ ...grupos(djCabezas(), 'blanco'), ...grupos(djMini(), 'blanco'), ...grupos(idsPared(), 'azul'), frontales: null },
-          { perimetrales: 40, fondo: 40 })], 8),
-        capa('mov', [pasoPos({ ...izq, ...grupos(djMini(), {pan: 40, tilt: 40}) }), pasoPos({ ...der, ...grupos(djMini(), {pan: 215, tilt: 40}) })], 2, 1)]; } },
-  { n: 'Destello', i: '⚡', g: 'repeating-linear-gradient(90deg,#fff 0 8px,#222 8px 16px)', fiesta: true,
-    capas: () => [
-      capa('col', N(8).map(k => pasoColor(k % 2 ? { ...grupos(djCabezas(), null), ...grupos(djMini(), null), ...grupos(idsPared(), null), frontales: null }
-        : { ...grupos(djCabezas(), 'blanco'), ...grupos(djMini(), 'blanco'), ...grupos(idsPared(), elegir(VIVOS)), frontales: null })), 0.5),
-      capa('mov', N(8).map(() => pasoPos({ ...posCab('salon'), ...grupos(djMini(), posMini()) })), 2, 0)
-    ] },
-  { n: 'Océano', i: '🌊', g: 'linear-gradient(180deg,#22e5ff,#2b55ff,#0a1a4a)', fiesta: true,
-    capas: () => [
-      capa('col', ['azul', 'cian', 'azul', 'morado'].map((c, k) => pasoColor({ ...grupos(djCabezas(), k % 2 ? 'azul' : 'cian'),
-        ...grupos(djMini(), 'azul'), ...grupos(idsPared(), c), frontales: null })), 8, 1),
-      capa('mov', N(6).map(() => pasoPos({ ...posCab('techo'), ...grupos(djMini(), posMini()) })), 8, 1)
-    ] },
-  { n: 'Disco', i: '🪩', g: 'radial-gradient(circle at 40% 35%,#fff 0 4px,transparent 5px),radial-gradient(circle at 65% 60%,#fff 0 3px,transparent 4px),linear-gradient(135deg,#9b3cff,#2b55ff)', fiesta: true,
-    capas: () => [
-      capa('col', N(8).map(k => pasoColor({ ...grupos(djCabezas(), 'blanco'), ...grupos(djMini(), k % 2 ? 'blanco' : null),
-        ...grupos(idsPared(), ['morado', 'azul', 'rosa', 'cian'][k % 4]), frontales: null }, { perimetrales: 70, fondo: 70 })), 1),
-      capa('mov', N(16).map(() => pasoPos({ ...posCab('salon'), ...grupos(djMini(), posMini()) })), 1, 0.25)
-    ] },
-  { n: 'Tropical', i: '🌴', g: 'linear-gradient(135deg,#ffbe00,#22dd55,#ff3fa0)', fiesta: true,
-    capas: () => { const c = ['amarillo', 'verde', 'rosa', 'ambar', 'cian'];
-      return [capa('col', N(10).map(k => pasoColor({ ...grupos(djCabezas(), c[k % 5]), ...grupos(djMini(), c[(k + 2) % 5]),
-          ...grupos(idsPared(), c[(k + 1) % 5]), frontales: null })), 1, 0.2),
-        capa('mov', N(8).map(() => pasoPos({ ...posCabJuntas('pista'), ...grupos(djMini(), posMini()) })), 2, 0.7)]; } },
-  { n: 'Romántico', i: '❤️', g: 'radial-gradient(circle,#ff3fa0,#ff2a2a 60%,#3a0010)',
-    capas: () => [
-      capa('col', ['rojo', 'rosa', 'rojo', 'morado'].map((c, k) => pasoColor({ ...grupos(djCabezas(), k % 2 ? 'rojo' : 'rosa'), ...grupos(djMini(), 'rosa'),
-        ...grupos(idsPared(), c), frontales: 'blanco_calido' }, { perimetrales: 70, fondo: 70, frontales: 15, mini: 40, mini_columnas: 40 })), 8, 1),
-      capa('mov', N(6).map(() => pasoPos({ ...posCabJuntas('pista'), ...grupos(djMini(), { pan: azar(40, 215), tilt: azar(0, 30) }) })), 8, 1)
-    ] },
-  { n: 'Neón', i: '🟣', g: 'linear-gradient(135deg,#22e5ff,#ff3fa0,#7dff3a)', fiesta: true,
-    capas: () => { const c = ['cian', 'rosa', 'verde', 'morado'];
-      return [capa('col', N(8).map(k => pasoColor({ ...grupos(djCabezas(), c[k % 4]), ...grupos(djMini(), c[(k + 1) % 4]),
-          ...grupos(idsPared(), c[(k + 2) % 4]), frontales: null })), 1),
-        capa('mov', N(8).map(() => pasoPos({ ...posCab('techo'), ...grupos(djMini(), posMini()) })), 2, 0.5)]; } },
-  { n: 'Rock', i: '🎸', g: 'linear-gradient(135deg,#ff2a2a,#000 55%,#fff)', fiesta: true,
-    capas: () => [
-      capa('col', N(8).map(k => pasoColor({ ...grupos(djCabezas(), k % 2 ? 'blanco' : 'rojo'), ...grupos(djMini(), k % 4 < 2 ? 'rojo' : null),
-        ...grupos(idsPared(), k % 2 ? 'rojo' : null), frontales: k % 4 === 0 ? 'blanco' : null }, { frontales: 60 })), 0.5),
-      capa('mov', N(8).map(() => pasoPos({ ...posCab('escenario'), ...grupos(djMini(), posMini()) })), 1, 0.2)
-    ] },
-  { n: 'Ola', i: '〰️', g: 'linear-gradient(90deg,#2b55ff,#22e5ff,#2b55ff)', fiesta: true,
-    capas: () => { const cab = djCabezas(), c = elegir(['cian', 'azul', 'morado', 'verde']);
-      return [capa('col', N(cab.length + 1).map(k => { const o = {}; cab.forEach((id, j) => o[id] = j === k ? 'blanco' : c);
-          djMini().forEach((id, j) => o[id] = (j + k) % 2 ? c : null); idsPared().forEach(id => o[id] = c); o.frontales = null; return pasoColor(o); }), 0.5, 0.3),
-        capa('mov', N(4).map(() => pasoPos({ ...posCabJuntas('pista'), ...grupos(djMini(), posMini()) })), 4, 0.8)]; } },
-  { n: 'Galaxia', i: '🌌', g: 'radial-gradient(circle at 60% 40%,#fff 0 2px,transparent 3px),linear-gradient(135deg,#1a0a4a,#9b3cff,#2b55ff)', fiesta: true,
-    capas: () => [
-      capa('col', ['morado', 'azul', 'rosa', 'azul'].map((c, k) => pasoColor({ ...grupos(djCabezas(), k % 2 ? 'blanco' : 'morado'), ...grupos(djMini(), c),
-        ...grupos(idsPared(), c), frontales: null }, { perimetrales: 50, fondo: 50 })), 4, 0.9),
-      capa('mov', N(10).map(() => pasoPos({ ...posCab('techo'), ...grupos(djMini(), posMini()) })), 2, 0.9)
-    ] },
-  { n: 'Cumpleaños', i: '🎂', g: 'linear-gradient(135deg,#ffbe00,#ff3fa0,#22e5ff)',
-    capas: () => [
-      capa('col', N(12).map(k => pasoColor({ ...grupos(djCabezas(), elegir(VIVOS)), ...grupos(djMini(), elegir(VIVOS)),
-        ...grupos(idsPared(), k % 2 ? 'amarillo' : 'rosa'), frontales: 'blanco_calido' }, { frontales: 80 })), 0.5),
-      capa('mov', N(8).map(() => pasoPos({ ...posCabJuntas('escenario'), ...grupos(djMini(), posMini()) })), 2, 0.4)
-    ] },
-  { n: 'Lounge', i: '🍸', g: 'linear-gradient(135deg,#9b3cff,#ff3fa0)',
-    capas: () => [
-      capa('col', ['morado', 'rosa', 'morado', 'ambar'].map(c => pasoColor({ ...grupos(djCabezas(), null), ...grupos(djMini(), 'morado'),
-        ...grupos(idsPared(), c), frontales: 'blanco_calido' }, { perimetrales: 60, fondo: 60, frontales: 20 })), 16, 1),
-      capa('mov', N(4).map(() => pasoPos(grupos(djMini(), { pan: azar(40, 215), tilt: azar(0, 30) }))), 16, 1)
-    ] },
-  { n: 'Karaoke', i: '🎤', g: 'radial-gradient(circle at 50% 30%,#ffd9a0,#2b55ff)',
-    capas: () => { const esc = {}; djCabezas().slice(0, 2).forEach(id => { const z = {}; fijarPosicion(z, 'escenario', id); esc[id] = z; });
-      return [capa('col', ['azul', 'morado', 'rosa', 'cian'].map(c => pasoColor({ ...grupos(djCabezas().slice(0, 2), 'blanco_calido'),
-          ...grupos(djCabezas().slice(2), null), ...grupos(djMini(), c), ...grupos(idsPared(), c), frontales: 'blanco_calido' })), 8, 1),
-        capa('mov', [pasoPos(esc)], 8), capa('mini', N(8).map(() => pasoPos(grupos(djMini(), posMini()))), 4, 0.8)]; } },
-  { n: 'Estrellas', i: '✨', g: 'radial-gradient(circle at 30% 30%,#fff 0 3px,transparent 4px),radial-gradient(circle at 70% 60%,#fff 0 2px,transparent 3px),#0a1033',
-    capas: () => [
-      capa('col', [pasoColor({ ...grupos(djCabezas(), 'blanco'), ...grupos(djMini(), 'blanco'), ...grupos(idsPared(), 'azul'), frontales: null },
-        { perimetrales: 25, fondo: 25, mini: 50, mini_columnas: 50 })], 8),
-      capa('mov', N(8).map(() => pasoPos({ ...posCab('techo'), ...grupos(djMini(), posMini()) })), 4, 0.8)
-    ] },
-  { n: 'Luz de sala', i: '💡', g: 'linear-gradient(135deg,#ffd9a0,#ffffff)',
-    capas: () => [capa('col', [pasoColor({ ...grupos(djCabezas(), null), ...grupos(djMini(), null), ...grupos(idsPared(), 'blanco_calido'),
-      frontales: 'blanco_calido' }, { perimetrales: 70, fondo: 70, frontales: 70 })], 8)] }
+      return [capa('col', c.map((x, k) => pasoColor({ ...blancoFrente(), ...grupos(djMini(), c[(k + 4) % 8]), ...grupos(djArriba(), x), ...grupos(djAbajo(), c[(k + 2) % 8]) })), 1, 0.6),
+        movFrente(), capa('mini', N(8).map(() => pasoPos(grupos(djMini(), posMini()))), 2, 0.7)]; } },
+  // ---------- FIESTA: libre, todo sincronizado ----------
+  { grupo: 'Fiesta', n: 'Fiesta', i: '🎉', g: 'linear-gradient(135deg,#ff2a2a,#ffbe00,#22dd55,#2b55ff,#9b3cff)',
+    capas: () => [capa('col', N(16).map(() => { const c = elegir(VIVOS); return pasoColor({ ...grupos(djCabezas(), c), ...grupos(djMini(), c), ...grupos(djPared(), c), frontales: null }); }), 1),
+      capa('mov', N(12).map(() => pasoPos({ ...posCab('salon'), ...grupos(djMini(), posMini()) })), 2, 0.55)] },
+  { grupo: 'Fiesta', n: 'Disco', i: '🪩', g: 'radial-gradient(circle at 40% 35%,#fff 0 4px,transparent 5px),linear-gradient(135deg,#9b3cff,#2b55ff)',
+    capas: () => [capa('col', N(8).map(k => pasoColor({ ...grupos(djCabezas(), 'blanco'), ...grupos(djMini(), k % 2 ? 'blanco' : null),
+        ...grupos(djPared(), ['morado', 'azul', 'rosa', 'cian'][k % 4]), frontales: null }, { perimetrales: 70, fondo: 70 })), 1),
+      capa('mov', N(16).map(() => pasoPos({ ...posCab('salon'), ...grupos(djMini(), posMini()) })), 1, 0.25)] },
+  { grupo: 'Fiesta', n: 'Pista', i: '💃', g: 'radial-gradient(circle,#ff3fa0,#2b55ff)',
+    capas: () => [capa('col', N(8).map(k => { const c = k % 2 ? 'rosa' : 'cian'; return pasoColor({ ...grupos(djCabezas(), c), ...grupos(djMini(), c), ...grupos(djPared(), k % 2 ? 'cian' : 'rosa'), frontales: null }); }), 1),
+      capa('mov', N(8).map(() => pasoPos({ ...posCabJuntas('pista'), ...grupos(djMini(), posMini()) })), 2, 0.5)] },
+  { grupo: 'Fiesta', n: 'Destello', i: '💥', g: 'linear-gradient(135deg,#fff,#ff3fa0,#22e5ff)',
+    capas: () => [capa('col', N(8).map(k => { const c = elegir(VIVOS); return pasoColor(k % 2 ? { ...grupos(djCabezas(), null), ...grupos(djMini(), null), ...grupos(djPared(), null), frontales: null }
+        : { ...grupos(djCabezas(), c), ...grupos(djMini(), 'blanco'), ...grupos(djPared(), c), frontales: null }); }), 0.5),
+      capa('mov', N(8).map(() => pasoPos({ ...posCab('salon'), ...grupos(djMini(), posMini()) })), 2, 0)] }
 ];
-const djFiesta = () => DJ_ESCENAS.map((e, i) => e.fiesta ? i : -1).filter(i => i >= 0);
+// Automatico: cambia entre las escenas del MISMO grupo (en la previa nunca salta a una de fiesta)
+const djGrupo = () => { const g = (DJ_ESCENAS[djEstado.escena] || {}).grupo || 'Fiesta';
+  return DJ_ESCENAS.map((e, i) => e.grupo === g ? i : -1).filter(i => i >= 0); };
 
 async function djAplicar(i, auto){
   const e = DJ_ESCENAS[i]; if (!e || !conf) return;
@@ -2565,7 +2529,7 @@ function djPintar(){
    aparatos; el Automatico lo hace el Dell: cada 3 minutos el primer aparato que pregunta aplica la escena nueva. */
 async function djServidor(params){
   const q = new URLSearchParams(params || {});
-  if (djEstado.auto) q.set('turno', djFiesta().join(','));
+  if (djEstado.auto) q.set('turno', djGrupo().join(','));
   if (ritmo.mic) q.set('estacion', '1');
   let r; try { r = await api('/api/dj?' + q); } catch(e){ return; }
   djEstado.auto = !!r.auto;
@@ -2878,7 +2842,9 @@ function iniciarDJ(){
   tomaFija(); V.sucio = true;
   $('djFrente').onclick = () => { document.body.classList.contains('dj-cabezas') ? vistaSalonArriba() : tomaFija(); V.sucio = true; };
   const cont = $('djEsc'); cont.innerHTML = '';
-  DJ_ESCENAS.forEach((e, i) => { const b = document.createElement('button'); b.className = 'djb'; b.style.setProperty('--g', e.g);
+  DJ_ESCENAS.forEach((e, i) => {
+    if (!i || DJ_ESCENAS[i - 1].grupo !== e.grupo){ const t = document.createElement('div'); t.className = 'djgr'; t.textContent = e.grupo; cont.appendChild(t); }
+    const b = document.createElement('button'); b.className = 'djb'; b.style.setProperty('--g', e.g);
     b.innerHTML = `<i>${e.i}</i><span>${e.n}</span>`; b.onclick = () => djAplicar(i); cont.appendChild(b); });
   // el estado de conexion del panel normal se copia al del DJ
   new MutationObserver(() => { $('djDot').className = $('dot').className; $('djPillTxt').textContent = $('pillTxt').textContent; })
