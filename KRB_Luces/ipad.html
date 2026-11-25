@@ -1502,10 +1502,10 @@ const POS3D = {
   seguidor1:    { columna:0 },
   seguidor2:    { columna:1 },
   seguidor3:    { columna:2 },
-  frontales:    { pos:[[-(COL_X - 1.1), 4.1, 0.6], [COL_X - 1.1, 4.1, 0.6]] },   // en los pilares (se corrieron con las columnas)
+  frontales:    { pos:[[-4.7, 4.1, 0.6], [4.7, 4.1, 0.6]] },   // donde siempre (Cote, 25 nov: no se corren con las columnas)
   mini:         { pos:[[-1.15, 0.6, -3.0], [1.15, 0.6, -3.0]], piso:true },   // justo al costado de la bateria (Cote, 24 nov)
   mini_columnas:{ pos:[[-COL_X, 4.45, -0.3], [COL_X, 4.45, -0.3]], piso:true },   // arriba de las columnas azules (Cote, 24 nov)
-  perimetrales: { pos:[[-2.9, 0.45, -3.75], [-1.0, 0.45, -3.75], [1.0, 0.45, -3.75], [2.9, 0.45, -3.75]] },   // repartidos en la tarima mas angosta
+  perimetrales: { pos:[[-3.9, 0.45, -3.75], [-1.3, 0.45, -3.75], [1.3, 0.45, -3.75], [3.9, 0.45, -3.75]] },   // donde siempre (Cote, 25 nov)
   fondo:        { pos:[[-COL_X, 4.35, 0.0], [COL_X, 4.35, 0.0]] }   // arriba de las columnas azules
 };
 const sub = (a, b) => [a[0]-b[0], a[1]-b[1], a[2]-b[2]], add = (a, b) => [a[0]+b[0], a[1]+b[1], a[2]+b[2]];
