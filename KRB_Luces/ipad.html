@@ -194,6 +194,10 @@
   .djtop b{font-size:17px;flex:1;letter-spacing:.02em}
   .djesc{flex:1;display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:1fr;gap:6px;min-height:200px}
   .djesc{grid-auto-rows:auto;grid-template-rows:repeat(5,auto 1fr)}
+  .ipadDJ{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  @media (min-width:900px){ .ipadDJ{grid-template-columns:repeat(8,1fr)} }
+  .ipadDJ .djb{min-height:78px}
+  .ipadDJ .djgr{margin:6px 0 0 2px}
   .djgr{grid-column:1/-1;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);font-weight:800;margin:1px 0 -3px 2px}
   /* Vista previa del escenario de frente (mitad de arriba; Cote, 25 nov) */
   body.dj #dj{height:100vh;height:100dvh;min-height:0;gap:6px;padding-top:calc(6px + env(safe-area-inset-top))}
@@ -317,6 +321,12 @@
   <!-- ===== ESCENAS ===== -->
   <section class="tab act" id="escenas">
     <div class="scenes" id="sceneGrid"></div>
+
+    <!-- Las escenas del panel del DJ tambien aqui (Cote, 25 nov): las mismas, en sus 5 grupos -->
+    <h2 class="sec">Escenas del DJ · de más tranquilo a más intenso</h2>
+    <div class="ipadDJ" id="ipadDJ"></div>
+    <div class="row"><button class="chip" id="ipadDJAuto">🔀 Automático</button>
+      <span class="help" style="margin:0">Cambia sola de escena cada 3 min dentro del mismo grupo (en Standby, fundido suave). Es el mismo Automático del panel del DJ.</span></div>
 
     <h2 class="sec">Color del fondo · perimetrales + focos de pared</h2>
     <div class="bgrow" id="bgRow"></div>
@@ -900,6 +910,7 @@ async function aplicarEscena(i){
     if (tipo === 'parpadeo' || tipo === 'alternar') efectoParedOn(tipo);
   });
   pintarTodo(); toast(e.nombre); anotar('escena ' + e.nombre);
+  if (djEstado.auto || djEstado.escena >= 0){ djEstado.auto = false; djEstado.escena = -1; djPintar(); djServidor({ auto: '0', escena: '-1' }); }
   if (e.abrir) abrirTab(e.abrir);
 }
 
@@ -2740,12 +2751,13 @@ function capasStandbyAuto(e){
 
 async function djAplicar(i, auto){
   const e = DJ_ESCENAS[i]; if (!e || !conf) return;
-  djEstado.escena = i; master = +$('djInt').value; djPintar();
+  djEstado.escena = i; if (DJ) master = +$('djInt').value; djPintar();
+  if (!DJ){ escenaActiva = -1; efectoPared = null; progActivo = null; pintarEscenas(); pintarEfectos(); pintarProgramas(); }
   // vista previa (Cote, 25 nov): en Previa y Show hay alguien en el escenario; en Standby, Fiesta y Locura no
   V.escenarioVacio = !['Previa', 'Show'].includes(e.grupo); V.sucio = true;
   // en Standby la toma mira un poco mas arriba, para ver como las luces pintan el techo
   djEstado.tomaTecho = e.grupo === 'Standby';
-  if (!document.body.classList.contains('dj-cabezas')) djToma();
+  if (DJ && !document.body.classList.contains('dj-cabezas')) djToma();
   if (!auto) djServidor({ escena: i, int: master, nombre: e.grupo + ' · ' + e.n });   // los demas aparatos ven la misma escena
   const capas = djEstado.auto && e.grupo === 'Standby' ? capasStandbyAuto(e) : e.capas(), seg = 60 / djEstado.bpm;
   await efecto('todos', {todos: 'off'});
@@ -2758,7 +2770,8 @@ async function djAplicar(i, auto){
 }
 function djPintar(){
   document.querySelectorAll('#djEsc .djb').forEach((b, i) => b.classList.toggle('act', i === djEstado.escena));
-  $('djAuto').classList.toggle('act', djEstado.auto);
+  document.querySelectorAll('#ipadDJ .djb').forEach((b, i) => b.classList.toggle('act', i === djEstado.escena));
+  $('djAuto').classList.toggle('act', djEstado.auto); $('ipadDJAuto').classList.toggle('act', djEstado.auto);
 }
 /* Estado compartido en el Dell (Cote, 25 nov): el DJ se mueve con su celular y un computador fijo (el de OBS, con la
    mezcla por la entrada de linea) escucha la musica. Escena, Automatico e intensidad son los mismos en todos los
@@ -3128,6 +3141,18 @@ function iniciarEstacion(){
     try { const r = await fetch('/api/dj', { cache: 'no-store', credentials: 'same-origin' }); if (r.ok) location.reload(); } catch(e){} }, 10 * 60 * 1000);
 }
 
+/* Escenas del DJ en el panel principal (iPad / computador) */
+function iniciarEscenasDJ(){
+  const cont = $('ipadDJ'); if (!cont) return; cont.innerHTML = '';
+  DJ_ESCENAS.forEach((e, i) => {
+    if (!i || DJ_ESCENAS[i - 1].grupo !== e.grupo){ const t = document.createElement('div'); t.className = 'djgr'; t.textContent = e.grupo; cont.appendChild(t); }
+    const b = document.createElement('button'); b.className = 'djb'; b.style.setProperty('--g', e.g);
+    b.innerHTML = `<i>${e.i}</i><span>${e.n}</span>`; b.onclick = () => { djAplicar(i); toast(e.grupo + ' · ' + e.n); }; cont.appendChild(b);
+  });
+  $('ipadDJAuto').onclick = () => $('djAuto').onclick();
+  djPintar(); djServidor(); setInterval(() => djServidor(), 4000);      // mismo estado que el panel del DJ (y ayuda con el Automatico)
+}
+
 /* ---------- Ayuda y registro de la noche ---------- */
 function anotar(t){ if (DEMO || CONTROL) return; fetch('/api/anotar?t=' + encodeURIComponent(t), {cache: 'no-store', credentials: 'same-origin'}).catch(() => {}); }
 function abrirAyuda(){
@@ -3155,7 +3180,7 @@ $('regNoche').onchange = () => verRegistro($('regNoche').value);
   pintarDirecciones(); dibujarPlano(); pintarTodo(); pintarProgramas(); pintarVistas(); pintarJuegos(); pintarPosiciones();
   await publicarMomentos();
   if (DEMO) iniciarDemo();
-  if (DJ) iniciarDJ();
+  if (DJ) iniciarDJ(); else if (!CONTROL && !TV) iniciarEscenasDJ();
   V.yaw = giroSalon() * 0.6; V.dist = 11; V.pitch = 0.2;   // vista inicial: desde el salon, en diagonal
   sondear(); setInterval(sondear, 3000); sondearVista(); V.sucio = true;
 })();
