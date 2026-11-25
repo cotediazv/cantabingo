@@ -769,19 +769,27 @@ function apuntar(id, u, v){
   const c = datos.calibracion[id], lerp = key => (1-u)*(1-v)*c.ei[key] + u*(1-v)*c.ed[key] + (1-u)*v*c.fi[key] + u*v*c.fd[key];
   const z = zona(id); z.pan = Math.max(0, Math.min(255, lerp('pan'))); z.tilt = Math.max(0, Math.min(255, lerp('tilt'))); z.posicion = null;
 }
-/* Modelo de cada cabeza a partir de sus 4 marcas calibradas (Kennedy, 25 nov).
-   Las cabezas del salon cuelgan mirando al piso (Cote, 25 nov): con el tilt al medio apuntan derecho hacia abajo y,
-   al pasar de ese punto, la luz cruza al OTRO lado. Un mismo lugar del piso se alcanza de dos maneras:
-   (giro, inclinacion) o (giro + media vuelta, inclinacion hacia el otro lado). La marca 3 queda casi debajo de las
-   cabezas 1 y 2, y para llegar ahi cruzan por debajo: el modelo anterior no lo sabia y las mandaba a otro lado.
+/* Modelo de cada cabeza a partir de sus marcas calibradas (Kennedy, 25 nov).
+   Montaje real (Cote, 25 nov): las cabezas grandes van AL COSTADO del pilar, de lado: su base mira hacia los
+   restaurantes (cocinas), en paralelo al piso. El giro (pan) es alrededor de esa linea horizontal y, con el tilt al
+   medio, la luz apunta derecho a los restaurantes; al pasar de ese punto cruza al OTRO lado. Un mismo lugar del piso
+   se alcanza de dos maneras: (giro, inclinacion) o (giro + media vuelta, inclinacion hacia el otro lado). La marca 3
+   queda junto a las cabezas 1 y 2 y para llegar ahi cruzan: el modelo anterior no lo sabia.
    Aqui, para cada cabeza:
-   - pan = a + b x angulo horizontal, tilt = c + d x angulo desde la vertical (con signo: de que lado cruzo),
-   - se prueba de que lado se guardo cada marca y la vuelta del giro, y
-   - se ajusta tambien donde esta colgada la cabeza (hasta 2,5 m de lo dibujado), porque cerca de la cabeza
-     un error chico de posicion cambia mucho el giro.
-   Con eso se apunta a cualquier punto del salon, eligiendo la manera mas cercana a donde estaba la luz. */
+   - pan = a + b x angulo de giro alrededor del eje de la cabeza, tilt = c + d x angulo desde el eje (con signo),
+   - se prueba de que lado se guardo cada marca y la vuelta del giro,
+   - se ajusta hacia donde mira el eje (de lado hacia los restaurantes, +-30 grados; o hacia el piso) y donde esta la
+     cabeza (hasta 2,5 m de lo dibujado), porque cerca de la cabeza un error chico de posicion cambia mucho el giro.
+   - Paso 0 (idea de Cote): la luz derecho al piso bajo su pilar es una direccion conocida y cuenta como una marca mas. */
 const modelos = {};
 const PAN_NOM = 128 / (Math.PI * 1.5), TILT_NOM = 128 / (Math.PI * 0.75);     // unidades DMX por radian de una cabeza tipica
+function marco(eje){                                                    // eje de la cabeza y dos direcciones perpendiculares
+  const n = norm(eje), ref = Math.abs(n[1]) > 0.9 ? [0, 0, 1] : [0, -1, 0];
+  const e1 = norm(sub(ref, mul(n, dot(ref, n)))), e2 = cross(n, e1);
+  return { n, e1, e2 };
+}
+const angulosEn = (d, F) => { const u = norm(d); return { az: Math.atan2(dot(u, F.e2), dot(u, F.e1)), el: Math.acos(Math.max(-1, Math.min(1, dot(u, F.n)))) }; };
+const dirDesde = (az, el, F) => norm(add(mul(F.n, Math.cos(el)), mul(add(mul(F.e1, Math.cos(az)), mul(F.e2, Math.sin(az))), Math.sin(el))));
 function ajusteRecta(xs, ys){
   const n = xs.length; let mx = 0, my = 0; for (let i = 0; i < n; i++){ mx += xs[i]; my += ys[i]; } mx /= n; my /= n;
   let sxy = 0, sxx = 0; for (let i = 0; i < n; i++){ sxy += (xs[i] - mx) * (ys[i] - my); sxx += (xs[i] - mx) * (xs[i] - mx); }
@@ -789,27 +797,26 @@ function ajusteRecta(xs, ys){
   let sse = 0; const res = []; for (let i = 0; i < n; i++){ const r = a + b * xs[i] - ys[i]; res.push(r); sse += r * r; }
   return { a, b, sse, res };
 }
-// Mejor ajuste con la cabeza en pos: de que lado se guardo cada marca y la vuelta del giro
-function ajusteEn(pos, marcas, abajo){
-  const geo = marcas.map(mk => { const d = sub(mk.p, pos); return { az: Math.atan2(d[0], d[2]), el: Math.atan2(Math.hypot(d[0], d[2]), -d[1]) }; });
-  const pans = marcas.map(mk => mk.pan), tilts = marcas.map(mk => mk.tilt);
+// Mejor ajuste con la cabeza en pos y su eje en F: de que lado se guardo cada marca y la vuelta del giro
+function ajusteEn(pos, F, marcas){
+  const geo = marcas.map(mk => angulosEn(mk.dir || sub(mk.p, pos), F));
+  const pans = marcas.map(mk => mk.pan), tilts = marcas.map(mk => mk.tilt), N = marcas.length;
   let mejor = null;
-  for (let sm = 0; sm < 8; sm++){                                       // lado de cada marca (la primera fija: es simetrico)
-    const sg = [1, sm & 1 ? -1 : 1, sm & 2 ? -1 : 1, sm & 4 ? -1 : 1];
-    // con la marca "derecho al piso" (idea de Cote, 25 nov) se sabe el tilt con angulo 0: cuenta doble en el ajuste
-    const t = abajo ? ajusteRecta(geo.map((g, i) => sg[i] * g.el).concat([0, 0]), tilts.concat([abajo.tilt, abajo.tilt]))
-                    : ajusteRecta(geo.map((g, i) => sg[i] * g.el), tilts);
-    if (abajo) t.res = t.res.slice(0, 4);
+  for (let sm = 0; sm < (1 << (N - 1)); sm++){                         // lado de cada marca (la primera fija: es simetrico)
+    const sg = marcas.map((_, i) => i && (sm >> (i - 1)) & 1 ? -1 : 1);
+    const t = ajusteRecta(geo.map((g, i) => sg[i] * g.el), tilts);
     const ad = Math.abs(t.b); if (ad < TILT_NOM * 0.45 || ad > TILT_NOM * 2.2) continue;
     const az0 = geo.map((g, i) => g.az + (sg[i] < 0 ? Math.PI : 0));
-    for (let i = 1; i < 4; i++){ while (az0[i] - az0[0] > Math.PI) az0[i] -= 2 * Math.PI; while (az0[i] - az0[0] < -Math.PI) az0[i] += 2 * Math.PI; }
-    for (let k = 0; k < 27; k++){
+    for (let i = 1; i < N; i++){ while (az0[i] - az0[0] > Math.PI) az0[i] -= 2 * Math.PI; while (az0[i] - az0[0] < -Math.PI) az0[i] += 2 * Math.PI; }
+    for (let k = 0; k < 27; k++){                                      // vuelta de las marcas 2 a 4 (la del piso: la mas cercana)
       const off = [0, Math.floor(k / 9) - 1, Math.floor(k / 3) % 3 - 1, k % 3 - 1];
-      const azs = az0.map((x, i) => x + off[i] * 2 * Math.PI);
+      const azs = az0.map((x, i) => x + (off[i] || 0) * 2 * Math.PI);
+      if (N > 4){ const r0 = ajusteRecta(azs.slice(0, 4), pans.slice(0, 4));
+        if (Math.abs(r0.b) > 1e-6){ const ideal = (pans[4] - r0.a) / r0.b; while (azs[4] - ideal > Math.PI) azs[4] -= 2 * Math.PI; while (azs[4] - ideal < -Math.PI) azs[4] += 2 * Math.PI; } }
       const r = ajusteRecta(azs, pans);
       const ab = Math.abs(r.b); if (ab < PAN_NOM * 0.45 || ab > PAN_NOM * 2.2) continue;
       const total = r.sse + t.sse;
-      if (!mejor || total < mejor.total) mejor = { total, a: r.a, b: r.b, c: t.a, d: t.b, resPan: r.res, resTilt: t.res, azs, sg };
+      if (!mejor || total < mejor.total) mejor = { total, a: r.a, b: r.b, c: t.a, d: t.b, resPan: r.res, resTilt: t.res };
     }
   }
   return mejor;
@@ -817,34 +824,39 @@ function ajusteEn(pos, marcas, abajo){
 function modeloCabeza(id){
   const c = (datos.calibracion || {})[id], base = posNominal(id);
   if (!c || !base || !ESQUINAS.every(e => c[e.k])) return null;
-  const clave = JSON.stringify(c) + JSON.stringify(base);
-  if (modelos[id] && modelos[id].clave === clave) return modelos[id];
+  const clave = JSON.stringify(c) + JSON.stringify(base) + giroSalon();
+  if (modelos[id] !== undefined && modelos[id] && modelos[id].clave === clave) return modelos[id];
   const marcas = ESQUINAS.map(e => ({ p: deSalon(e.sal[0], e.sal[1], ALTURA_CAL), pan: c[e.k].pan, tilt: c[e.k].tilt }));
-  const costo = (du, dv, dh) => { const pos = add(base, add(mul(rotY([1, 0, 0], giroSalon()), du), [0, dh, 0]));
-    const p = add(pos, mul(rotY([0, 0, 1], giroSalon()), dv));
-    const f = ajusteEn(p, marcas, c.abajo); if (!f) return null;
-    f.pos = p; f.costo = f.total + 12 * (du * du + dv * dv + dh * dh); return f; };   // 1 m corrido "cuesta" como ~3,5 DMX de error
-  let mejor = null, du0 = 0, dv0 = 0, dh0 = 0;
-  for (const paso of [0.5, 0.15, 0.04]){                               // busqueda de lo grueso a lo fino
-    const n = paso === 0.5 ? 5 : 3, cu = du0, cv = dv0, ch = dh0;
-    for (let i = -n; i <= n; i++) for (let j = -n; j <= n; j++) for (let h = -2; h <= 2; h++){
-      const du = cu + i * paso, dv = cv + j * paso, dh = ch + h * paso * (paso === 0.5 ? 0.75 : 1);
-      if (Math.abs(du) > 2.5 || Math.abs(dv) > 2.5 || Math.abs(dh) > 1.5) continue;
-      const f = costo(du, dv, dh);
-      if (f && (!mejor || f.costo < mejor.costo)){ mejor = f; du0 = du; dv0 = dv; dh0 = dh; }
-    }
-  }
+  if (c.abajo) marcas.push({ dir: [0, -1, 0], pan: c.abajo.pan, tilt: c.abajo.tilt });
+  const g = giroSalon(), ladoU = rotY([1, 0, 0], g), largoV = rotY([0, 0, 1], g);
+  // ejes posibles: de lado hacia los restaurantes (girado hasta +-30 grados) o hacia el piso
+  const ejes = [-30, -20, -10, 0, 10, 20, 30].map(gr => rotY(ladoU, gr * Math.PI / 180)).concat([[0, -1, 0]]);
+  const ejeCosto = e => e[1] < -0.9 ? 40 : 0;                           // de lado es lo que dijo Cote: el piso solo si calza mucho mejor
+  const probar = (du, dv, dh, eje) => {
+    const p = add(add(base, mul(ladoU, du)), add(mul(largoV, dv), [0, dh, 0]));
+    const F = marco(eje), f = ajusteEn(p, F, marcas); if (!f) return null;
+    f.pos = p; f.F = F; f.eje = eje; f.costo = f.total + 12 * (du * du + dv * dv + dh * dh) + ejeCosto(eje); f.du = du; f.dv = dv; f.dh = dh;
+    return f; };
+  let mejor = null;
+  ejes.forEach(eje => { for (let i = -5; i <= 5; i++) for (let j = -5; j <= 5; j++) for (let h = -2; h <= 2; h++){
+    const f = probar(i * 0.5, j * 0.5, h * 0.6, eje); if (f && (!mejor || f.costo < mejor.costo)) mejor = f; } });
   if (!mejor) return (modelos[id] = null);
+  for (const paso of [0.15, 0.04]){                                     // afinar alrededor del mejor (posicion y eje)
+    const b0 = mejor, ejesFinos = b0.eje[1] < -0.9 ? [b0.eje] : [-1, 0, 1].map(k => rotY(b0.eje, k * paso * 0.5));
+    ejesFinos.forEach(eje => { for (let i = -3; i <= 3; i++) for (let j = -3; j <= 3; j++) for (let h = -2; h <= 2; h++){
+      const du = b0.du + i * paso, dv = b0.dv + j * paso, dh = b0.dh + h * paso;
+      if (Math.abs(du) > 2.5 || Math.abs(dv) > 2.5 || Math.abs(dh) > 1.5) continue;
+      const f = probar(du, dv, dh, eje); if (f && f.costo < mejor.costo) mejor = f; } });
+  }
   const rms = arr => Math.sqrt(arr.reduce((s, x) => s + x * x, 0) / arr.length);
   const peor = mejor.resPan.map((r, i) => Math.hypot(r, mejor.resTilt[i]));
-  return (modelos[id] = { clave, pos: mejor.pos, a: mejor.a, b: mejor.b, c: mejor.c, d: mejor.d,
-    errPan: rms(mejor.resPan), errTilt: rms(mejor.resTilt), errMarca: peor, corrida: Math.hypot(du0, dv0, dh0),
-    panRef: marcas.reduce((s, mk) => s + mk.pan, 0) / 4, tiltRef: marcas.reduce((s, mk) => s + mk.tilt, 0) / 4,
-    ult: null });
+  return (modelos[id] = { clave, pos: mejor.pos, F: mejor.F, a: mejor.a, b: mejor.b, c: mejor.c, d: mejor.d,
+    errPan: rms(mejor.resPan), errTilt: rms(mejor.resTilt), errMarca: peor, corrida: Math.hypot(mejor.du, mejor.dv, mejor.dh),
+    panRef: marcas.reduce((s, mk) => s + mk.pan, 0) / marcas.length, tiltRef: marcas.reduce((s, mk) => s + mk.tilt, 0) / marcas.length });
 }
 // pan/tilt del modelo para apuntar a un punto: de las maneras posibles, la mas cercana a donde estaba la luz
 function panTiltModelo(m, punto, previo){
-  const d = sub(punto, m.pos), az = Math.atan2(d[0], d[2]), el = Math.atan2(Math.hypot(d[0], d[2]), -d[1]);
+  const { az, el } = angulosEn(sub(punto, m.pos), m.F);
   const ref = previo || { pan: m.panRef, tilt: m.tiltRef };
   let mejor = null;
   for (const sg of [1, -1]) for (let k = -2; k <= 2; k++){
@@ -892,14 +904,20 @@ function apuntarGeo(id, punto, zz){
     const [u, v] = aSalon(punto), uMin = (colsSalon()[def.columna] || colsSalon()[0])[0] + 1.0;
     if (u < uMin) punto = puntoPiso(uMin, v);
   }
+  const z0 = zz || zona(id);
+  if (def.columna != null){                                        // de lado en el pilar (Cote, 25 nov)
+    const { az, el } = angulosEn(sub(punto, pos), marcoPilar());
+    z0.pan = Math.max(0, Math.min(255, 128 + az / RANGO_PAN * 128));
+    z0.tilt = Math.max(0, Math.min(255, 128 + el / RANGO_TILT * 128));
+    z0.posicion = null; return;
+  }
   const d = sub(punto, pos), casa = casaDe(pos, id);
   let a = Math.atan2(d[0], d[2]) - casa;
   while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI;
   const th = Math.atan2(Math.hypot(d[0], d[2]), -d[1]);                 // angulo desde la vertical hacia abajo
   const z = zz || zona(id);
   z.pan = Math.max(0, Math.min(255, 128 + a / RANGO_PAN * 128));
-  // cabeza colgada (Cote, 25 nov): tilt 128 = derecho al piso; hacia un lado sube, hacia el otro cruza
-  z.tilt = Math.max(0, Math.min(255, 128 + th / RANGO_TILT * 128));
+  z.tilt = Math.max(0, Math.min(255, th / RANGO_TILT * 255));
   z.posicion = null;
 }
 (() => {
@@ -1424,8 +1442,9 @@ function choque(o, d){
 /* Direccion aproximada de una cabeza movil a partir de pan y tilt */
 // Modelo generico de cabeza movil: pan 0-255 = 540 grados (+-270 desde "casa"), tilt 0-255 = 270 grados (+-135 desde la base).
 // Las mini (en el piso, mirando al techo) siguen con tilt 0 = derecho arriba y 255 = 135 grados.
-// Las cabezas grandes del salon CUELGAN mirando al piso (Cote, 25 nov): tilt 128 = derecho abajo y, pasado ese punto,
-// la luz cruza al otro lado (como las reales). Si la cabeza ya esta calibrada en Kennedy, la vista usa su modelo.
+// Las cabezas grandes del salon van DE LADO en el pilar, con la base mirando a los restaurantes en paralelo al piso
+// (Cote, 25 nov): el pan gira alrededor de esa linea y tilt 128 = derecho a los restaurantes; pasado ese punto la luz
+// cruza al otro lado (como las reales). Si la cabeza ya esta calibrada en Kennedy, la vista usa su modelo.
 const RANGO_PAN = Math.PI * 1.5, RANGO_TILT = Math.PI * 0.75;
 // pan 128 = "casa". Las cabezas del salon cuelgan en la columna con la base vertical mirando a las COCINAS
 // (Cote, 24 nov): su casa es hacia las cocinas y solo alcanzan el lado interno del salon. Las demas miran al escenario.
@@ -1433,6 +1452,7 @@ function casaDe(pos, id){
   if (id && (POS3D[id] || {}).columna != null){ const d = rotY([1, 0, 0], giroSalon()); return Math.atan2(d[0], d[2]); }
   return Math.atan2(0 - pos[0], -1.5 - pos[2]);
 }
+const marcoPilar = () => marco(rotY([1, 0, 0], giroSalon()));        // cabezas del salon: eje horizontal hacia los restaurantes
 function posCabeza(id){                                            // donde esta montada cada cabeza (calibrada: la que calza con sus marcas)
   const m = (POS3D[id] || {}).columna != null && datos && modeloCabeza(id);
   return m ? m.pos : posNominal(id);
@@ -1448,11 +1468,11 @@ function direccion(pos, pan, tilt, piso, id){
   if (colgada){
     const m = datos && modeloCabeza(id);
     if (m){                                                          // calibrada: el inverso de su modelo (la vista calza con la luz real)
-      const sel = (tilt - m.c) / m.d, el = Math.abs(sel), az = (pan - m.a) / m.b - (sel < 0 ? Math.PI : 0);
-      return norm([Math.sin(az) * Math.sin(el), -Math.cos(el), Math.cos(az) * Math.sin(el)]);
+      const sel = (tilt - m.c) / m.d;
+      return dirDesde((pan - m.a) / m.b - (sel < 0 ? Math.PI : 0), Math.abs(sel), m.F);
     }
-    const a = casaDe(pos, id) + (pan - 128) / 128 * RANGO_PAN, th = (tilt - 128) / 128 * RANGO_TILT;
-    return norm([Math.sin(a) * Math.sin(th), -Math.cos(th), Math.cos(a) * Math.sin(th)]);
+    // de lado en el pilar, la base mirando a los restaurantes: pan gira alrededor de esa linea; tilt 128 = derecho a ellos
+    return dirDesde((pan - 128) / 128 * RANGO_PAN, (tilt - 128) / 128 * RANGO_TILT, marcoPilar());
   }
   const casa = casaDe(pos, id);
   const a = casa + (pan - 128) / 128 * RANGO_PAN;
