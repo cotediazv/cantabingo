@@ -2065,19 +2065,30 @@ const JUEGOS = [
     { id:'festival_ganador', nombre:'Ganador', igual:'objeto_ganador' },
     { id:'festival_celebracion', nombre:'Celebración', igual:'celebracion_ganador' },
     { id:'festival_premio', nombre:'Entrega del premio', igual:'entrega_premio' } ]},
-  // «¿Quien quiere ser billonario?» (juego de Gabriel; en la Sala se llama desafio). Estilo de El Rosko: oscuro y enfocado
-  // en el concursante, tension antes de revelar (propuesta de Code 4, 25 nov)
-  { juego:'¿Quién quiere ser billonario?', momentos:[
+  // «¿Quien quiere ser ganador?» (juego de Gabriel; en la Sala se llama desafio). Programado por Code 4 con la experiencia
+  // de los otros juegos (Cote, 25 nov): oscuro y enfocado en el concursante, tension antes de revelar, celebracion al ganar.
+  { juego:'¿Quién quiere ser ganador?', momentos:[
+    { id:'desafio_presenta', nombre:'Presentación del concursante', detalle:'Las cabezas barren desde el público hasta su cara; la pared sube en azul',
+      g:() => ({...pared('azul', 60), ...frente(60), ...cab(CARA, 25), mini:{color:'azul', intensidad:100, posicion:'escenario', mover:true}}), barrido:1.5, luego:[4, 'desafio_pregunta'] },
     { id:'desafio_pregunta', nombre:'Pregunta', detalle:'Pared muy oscura con colores lentos; cabezas 1 y 2 a la cara del concursante',
       g:() => ({...pared('azul', 15), ...cab(CARA, 30), mini:{color:'azul', intensidad:60, posicion:'escenario', mover:true}}), rosco:true },
+    { id:'desafio_5050', nombre:'Comodín 50:50', detalle:'Destello blanco corto y vuelve a la pregunta',
+      g:() => ({...pared('blanco', 100), ...frente(100), ...cab(CARA, 30), mini:{color:'blanco', intensidad:100, posicion:'escenario', mover:true}}), estrobo:['perimetrales', 'fondo'], luego:[1, 'desafio_pregunta'] },
     { id:'desafio_definitiva', nombre:'Respuesta definitiva (suspenso)', detalle:'Todo baja: pared ámbar tenue, solo un haz angosto a la cara',
       g:() => ({...pared('ambar', 20), ...cab(CARA, 12)}) },
-    { id:'desafio_correcta', nombre:'Correcta', detalle:'Pared verde 3 s y vuelve a la pregunta', g:() => ({...BASE(), ...pared('verde', 100)}), luego:[3, 'desafio_pregunta'] },
-    { id:'desafio_incorrecta', nombre:'Incorrecta', detalle:'Pared roja 3 s y vuelve a la base', g:() => ({...BASE(), ...pared('rojo', 100)}), luego:[3, 'base_juegos'] },
+    { id:'desafio_correcta', nombre:'Correcta', detalle:'Destello verde 1,5 s, verde fijo y vuelve a la pregunta',
+      g:() => ({...BASE(), ...pared('verde', 100), mini:{color:'verde', intensidad:100, posicion:'escenario', mover:true}}), pared:{colores:['verde', 'blanco'], t:0.15, fx:0}, luego:[1.5, 'desafio_correcta_fija'] },
+    { id:'desafio_correcta_fija', nombre:'Correcta (verde fijo)', detalle:'Verde fijo 2 s y vuelve a la pregunta',
+      g:() => ({...BASE(), ...pared('verde', 100), mini:{color:'verde', intensidad:100, posicion:'escenario', mover:true}}), luego:[2, 'desafio_pregunta'] },
+    { id:'desafio_incorrecta', nombre:'Incorrecta (fin del juego)', detalle:'Pared roja, las cabezas bajan; 4 s y vuelve a la base',
+      g:() => { const o = {...pared('rojo', 100), ...frente(40)}; segIds().slice(0, 2).forEach(id => o[id] = {color:'rojo', intensidad:40, posicion:CARA, zoom:40}); return o; },
+      luego:[4, 'base_juegos'] },
     { id:'desafio_publico', nombre:'Pregunta al público', detalle:'Las 3 cabezas al público, pared morada, mini en movimiento',
       g:() => ({...pared('morado', 50), ...frente(30), ...cab('publico', 40, segIds()), mini:{color:'morado', intensidad:100, posicion:'escenario', mover:true}}) },
     { id:'desafio_llamada', nombre:'Llamada (30 s)', detalle:'La pared late en ámbar y rojo cada segundo, como un reloj',
       g:() => ({...pared('ambar', 40), ...cab(CARA, 30)}), pared:{colores:['ambar', 'rojo'], t:0.5, fx:1} },
+    { id:'desafio_retiro', nombre:'Se retira con lo que lleva', detalle:'Aplauso: pared dorada latiendo suave, frente blanco cálido',
+      g:() => ({...pared('amarillo', 100), ...frente(100), ...cab('escenario', 50), mini:{color:'ambar', intensidad:100, posicion:'escenario', mover:true}}), pared:{colores:['amarillo', 'ambar'], t:0.8, fx:1} },
     { id:'desafio_ganador', nombre:'Ganador (10 escalones)', igual:'celebracion_ganador' } ]},
   { juego:'Trivia', momentos:[
     { id:'trivia_ganador', nombre:'Ganador (celebración)', igual:'celebracion_ganador' },
@@ -2097,7 +2108,7 @@ const ALIAS_SALA = {
   // nombres que manda la Sala (Code 1, rev 223): al pasar a los resultados = tension; cada lugar revelado = pestaneo y vuelve la tension
   festival_resultados:'festival_tension', objeto_resultados:'festival_tension',
   festival_lugar:'festival_revela', objeto_lugar:'festival_revela',
-  // «¿Quien quiere ser billonario?» (Code 1, 25 nov): el ranking de la Trivia entra y sale como en El Rosko
+  // «¿Quien quiere ser ganador?» (Code 1, 25 nov): el ranking de la Trivia entra y sale como en El Rosko
   desafio_ranking:'rosko_puntajes', desafio_ranking_fin:'base_juegos'
 };
 const todosMomentos = () => JUEGOS.flatMap(j => j.momentos).concat(
@@ -2109,7 +2120,9 @@ function zonasDe(m){
   conf.grupos.forEach(g => { if (g.igual_que && spec[g.id] == null && spec[g.igual_que]) spec[g.id] = {...spec[g.igual_que]}; });   // mini de las columnas = mini del escenario
   conf.grupos.forEach(g => {
     const s = spec[g.id], z = s ? {color:s.color, intensidad:s.intensidad, zoom:s.zoom} : {color:null, intensidad:0};
-    if (s && Array.isArray(s.posicion)) apuntarGeo(g.id, s.posicion, z);
+    // a un punto (por ejemplo la cara del concursante): con la calibracion de Kennedy si la cabeza esta calibrada
+    if (s && Array.isArray(s.posicion)){ const p = s.posicion;
+      if (!(POS3D[g.id] || {}).columna || !apuntarModelo(g.id, [p[0], p[1] - ALTURA_CAL, p[2]], z)) apuntarGeo(g.id, p, z); }
     else if (s && s.posicion) fijarPosicion(z, s.posicion, g.id);
     if (s && s.pan != null){ z.pan = s.pan; z.tilt = s.tilt; }
     z.mover = !!(s && s.mover);
@@ -2146,6 +2159,12 @@ function compilarMomento(m){
       const on = {}, off = {};
       conEspejos(m.estrobo).forEach(id => { const g = grupo(id); if (!g) return; Object.assign(on, valoresGrupo(g, zs[id])); Object.assign(off, valoresGrupo(g, {...zs[id], intensidad:0})); });
       ef('estrobo', {tipo:'sec', pasos:pasosTxt([on, off]), t:0.06, fx:0});
+    }
+    if (m.barrido){                                                             // las cabezas barren desde el publico hasta su destino
+      const desde = {}, hasta = {};
+      segIds().slice(0, 2).forEach(id => { const g = grupo(id), z0 = {...zs[id]}; fijarPosicion(z0, 'publico', id);
+        Object.assign(desde, valoresGrupo(g, z0)); Object.assign(hasta, valoresGrupo(g, zs[id])); });
+      ef('barrido', {tipo:'sec', pasos:pasosTxt([desde, hasta, hasta]), t:m.barrido, fx:1});
     }
     if (m.standby){                                                             // fondo como en Standby (sin tocar las cabezas)
       capasStandbyFondo(STANDBY_TONOS).forEach(c => ef(c.id, {tipo:'sec', pasos:pasosTxt(c.pasos), t:c.seg.toFixed(3), fx:c.fx}));
