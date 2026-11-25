@@ -22,7 +22,7 @@ USAR
 PANEL DEL DJ (noches sin show ni juegos)
   - La misma direccion terminada en /dj, por ejemplo https://luces.krbstage.cl/dj
   - Arriba, la vista previa del escenario de frente (lo que de verdad sale por el cable).
-  - 16 escenas en 4 grupos:
+  - 20 escenas en 5 grupos:
     STANDBY (Azul, Atardecer, Lavanda, Agua): cabezas y frontales apagados, color suave y
       mini cabezas lentas. Para cuando no pasa nada.
     PREVIA (Piano bar, Jazz azul, Vino, Dorado) y SHOW (Colores, Estrobo, Arriba/abajo,
@@ -30,6 +30,8 @@ PANEL DEL DJ (noches sin show ni juegos)
       frontales). En la previa el fondo cambia lento; en el show el fondo es libre y las
       cabezas 1 y 2 se mueven un poco sin salir del escenario.
     FIESTA (Fiesta, Disco, Pista, Destello): todo libre y sincronizado.
+    ESPECIALES (Latido, Persecucion, Espejo, Respiracion): las 3 cabezas en blanco al centro
+      del escenario y el resto cambiando con efectos distintos.
     Automatico (cambia sola cada 3 min entre las escenas del mismo grupo),
     Ritmo (escucha la musica con el microfono y sigue el bombo y la caja),
     Tap (marcar el ritmo a mano), Intensidad y Apagar.
