@@ -3603,3 +3603,33 @@ body.carton-on #app, body.carton-on #join-qr { visibility: hidden; }
 #ctl-carton { position: absolute; top: 8px; right: 112px; z-index: 60; padding: 4px 10px; font-size: .8rem; }
 body.con-paso #ctl-carton { top: calc(var(--paso-h, 64px) + 20px); }
 .ctl-carton.on { background: #f4bf5a; color: #14121c; }
+
+/* ---------- La Trivia del Gran Desafío (el público juega desde el celular) ---------- */
+/* Panel */
+.dc-crowd { margin: 12px 0 0; padding: 10px 12px; border-radius: 12px; background: #12101f; border: 1px solid #3d3870; }
+.dc-crowd b { color: #ffc400; }
+.dc-rankbtn { width: 100%; margin-top: 12px; }
+.dc-rankbtn.on { background: #ffc400; border-color: #fff; color: #2a1030; }
+/* Tablero y GC: ranking y ganador */
+.d-rank, .d-cw { position: relative; display: grid; justify-items: center; gap: 2vh; width: 100%; }
+.d-rank > b { font-size: 6vh; font-weight: 900; text-transform: uppercase; color: var(--gc-yellow); text-shadow: .5vh .5vh 0 var(--gc-shade); }
+.d-rank > span { font-size: 3vh; font-weight: 700; opacity: .85; }
+.d-rank > p { font-size: 4vh; font-weight: 700; margin: 0; }
+.d-rank ol { list-style: none; margin: 0; padding: 0; width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(5, auto); grid-auto-flow: column; gap: 1.4vh 3vh; counter-reset: r; }
+.d-rank li { counter-increment: r; display: flex; align-items: center; gap: 2vh; min-width: 0; padding: 1.2vh 2.4vh; border-radius: 2vh; background: var(--gc-shade); font-size: 3.6vh; font-weight: 800; }
+.d-rank li::before { content: counter(r) ".º"; flex: 0 0 auto; min-width: 2.4em; color: var(--gc-yellow); }
+.d-rank li span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+.d-rank li em { flex: 0 0 auto; font-style: normal; color: var(--gc-yellow); }
+.d-cw > b { max-width: 100%; font-size: min(14vh, calc(60vw / (var(--n, 10) * .6))); font-weight: 900; text-transform: uppercase; color: var(--gc-yellow); text-shadow: .6vh .6vh 0 var(--gc-shade); overflow-wrap: anywhere; line-height: 1.1; }
+.d-cw > span { font-size: 4.2vh; font-weight: 700; }
+.d-cw .confetti { position: fixed; top: 0; right: 0; bottom: 0; left: 0; pointer-events: none; }
+.dg-rank .d-rank { padding: 2vh 3vh; border-radius: 3vh; background: var(--gc-dots), var(--k-tag); border: var(--gc-line) solid var(--gc-yellow); gap: 1.2vh; }
+.dg-rank .d-rank > b { font-size: 4vh; }
+.dg-rank .d-rank small { font-size: 2.4vh; }
+.dg-rank .d-rank li { font-size: 2.6vh; padding: .8vh 2vh; }
+.dg-rank .d-rank > span { font-size: 2.4vh; }
+.dg-intro .d-cw { gap: 1vh; }
+.dg-intro .d-cw .d-cup { display: none; }
+.dg-intro .d-cw > b { font-size: min(8vh, calc(70vw / (var(--n, 10) * .6))); }
+.dg-intro .d-cw > span { font-size: 3vh; }
+.d-cover.d-wide { grid-column: 1 / -1; }

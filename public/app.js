@@ -6,7 +6,7 @@ const app = $('#app');
 // Pedido de Cote (21 nov): al dar a conocer un ganador, un premio o una información, el animador también lo ve en su
 // panel, grande, para leerlo en voz alta (lo mismo que está en la pantalla del local)
 // El ranking de la Trivia del Rosko desplegado en pantalla, también grande en el panel (pedido de Cote, 21 nov)
-window.rankAnnHtml = (rank, players, final) => `<div class="panel ann rank-ann"><small>📣 En pantalla ahora</small><span class="ann-t">🏅 Ranking de la Trivia del Rosko · ${final ? 'resultados finales' : 'resultados parciales'}</span>
+window.rankAnnHtml = (rank, players, final, title = 'la Trivia del Rosko') => `<div class="panel ann rank-ann"><small>📣 En pantalla ahora</small><span class="ann-t">🏅 Ranking de ${esc(title)} · ${final ? 'resultados finales' : 'resultados parciales'}</span>
   ${rank.length ? `<ol class="rank-ann-list">${rank.map((t, i) => `<li class="${i < 3 ? 'top' : ''}"><em>${i + 1}.º</em><b>${esc(t.name)}</b><i>${t.score} pts</i></li>`).join('')}</ol>` : '<span class="ann-l">Todavía nadie suma puntos</span>'}
   <span class="ann-l">${players} ${players === 1 ? 'persona jugando' : 'personas jugando'}</span></div>`;
 window.annHtml = (title, names, lines = []) => `<div class="panel ann"><small>📣 Para anunciar</small><span class="ann-t">${esc(title)}</span>${names.map((n) => `<b class="ann-n">${esc(n)}</b>`).join('')}${lines.filter(Boolean).map((l) => `<span class="ann-l">${esc(l)}</span>`).join('')}</div>`;
@@ -1249,7 +1249,7 @@ views.jugar = async (sid) => {
   };
   const syncHowto = async () => {
     const s = st.stage || 'bingo';
-    const key = st.stageDone ? null : s === 'rueda' && st.roscoId ? `rosco:${st.roscoId}` : s === 'voto' ? `voto:${st.voteGen}` : s === 'bingo' && st.started && !st.winConfirmed ? `bingo:${st.round}` : null;
+    const key = st.stageDone ? null : s === 'desafio' && st.desafioGen ? `desafio:${st.desafioGen}` : s === 'rueda' && st.roscoId ? `rosco:${st.roscoId}` : s === 'voto' ? `voto:${st.voteGen}` : s === 'bingo' && st.started && !st.winConfirmed ? `bingo:${st.round}` : null;
     if (!key || howtoShown.has(key)) return;
     howtoShown.add(key); howtoKey = key;
     if (key.startsWith('voto')) {
@@ -1257,6 +1257,7 @@ views.jugar = async (sid) => {
       if (!v || !window.voteHowto || howtoKey !== key) return;
       const h = window.voteHowto(v); phoneHowto(h.title, h.lines);
     } else if (key.startsWith('rosco')) phoneHowto('El Rosko', window.ROSCO_HOWTO);
+    else if (key.startsWith('desafio')) phoneHowto('El Gran Desafío', window.DESAFIO_HOWTO);
     else phoneHowto(bingoName(st.name), BINGO_HOWTO);
   };
   // Pedido de Cote (21 nov): el botón de KRB Kids no aparece durante los juegos, solo en los intermedios (sala abierta

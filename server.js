@@ -197,7 +197,8 @@ function publicState(s, full = false) { // eslint-disable-line complexity
     stage: db.stage || 'bingo', roscoId: db.stage === 'rueda' ? (Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).id || null : null,
     celebrateAt: s.celebrateAt || 0,
     voteRev: (db.vote || {}).rev || 0, // los celulares vuelven a leer la votación cuando cambia
-    desafioRev: (db.desafio || {}).rev || 0, // ídem para El Gran Desafío (pregunta al público)
+    desafioRev: (db.desafio || {}).rev || 0, // ídem para El Gran Desafío (la Trivia del público)
+    desafioGen: (db.desafio || {}).gen || 0, // cada partida de El Gran Desafío: sus instrucciones en el celular
     enpieRev: (db.enpie || {}).rev || 0, // «El último en pie» (versión de prueba): los celulares vuelven a leer cuando cambia
     voteGen: (db.vote || {}).gen || 0, // cambia con cada concurso nuevo (El Festival u objeto): los celulares muestran sus instrucciones
     gameVoteRev: (db.gameVote || {}).rev || 0, // votación del juego: cambia al abrir o cerrar cada vuelta (no con cada voto)
@@ -809,7 +810,7 @@ const vote = require('./vote.js')({ app, db, save, requireAdmin, fail, setStage,
   venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
   notify: () => Object.values(db.sessions).forEach((s) => broadcast(s)) });
 // «El Gran Desafío»: trivia de 10 escalones con un concursante en el escenario
-require('./desafio.js')({ app, db, save, requireAdmin, fail, setStage,
+require('./desafio.js')({ app, db, save, requireAdmin, fail, setStage, festejo,
   findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null,
   venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
   notify: () => Object.values(db.sessions).forEach((s) => broadcast(s)) });
@@ -1215,6 +1216,8 @@ const cartonInfo = () => {
     out.title = 'El Gran Desafío';
     out.big = d.player || '¡Ya comienza!'; out.small = d.player ? 'Concursante' : '';
     if (d.step) out.lines.push(`Va por la pregunta ${d.step} de ${(d.prizes || []).length || 10}${(d.prizes || [])[d.step - 1] ? ` · ${d.prizes[d.step - 1]}` : ''}`);
+    const crowd = new Set(Object.values((d.crowd || {}).ans || {}).flatMap((by) => Object.keys(by))).size;
+    if (crowd) out.lines.push(`${crowd} ${crowd === 1 ? 'persona juega' : 'personas juegan'} la Trivia desde el celular`);
   } else {
     out.title = st === 'juego' ? 'El próximo juego' : st === 'votojuego' ? 'Votación del próximo juego' : st === 'sorteo' ? 'Sorteo de concursantes' : s.name;
     out.big = 'Escanea el código QR'; out.small = 'con tu celular y participa';

@@ -14,6 +14,37 @@
     setClock('phone', st.phoneUntil && st.phoneUntil > st.now ? st.phoneUntil : 0, st.now);
   };
   const prizeOf = (st, step) => st.prizes[step - 1] || '';
+  // ---------- La Trivia del Gran Desafío (el público juega desde el celular; pedido de Gabriel, 25 nov) ----------
+  const TRIVIA = 'La Trivia del Gran Desafío';
+  const TRIVIA_L = 'la Trivia del Gran Desafío'; // a mitad de frase
+  const many = (k, one, more) => `${k} ${k === 1 ? one : more}`;
+  const stamp = (st) => { if (st) st.got = Date.now(); return st; };
+  // Cuánto le queda a la «tómbola» del ganador de la Trivia (5,5 s), con la hora de esta pantalla
+  const rollLeft = (st) => {
+    const cw = st && st.crowdWinner;
+    if (!cw || cw.none || !cw.roll || !cw.rollMs) return 0;
+    return cw.rollMs - (st.now - cw.at) - (Date.now() - (st.got || Date.now()));
+  };
+  // Hace pasar los nombres de la tómbola por el elemento, cada vez más lento, hasta que se acaba el tiempo
+  let spinT = null;
+  const spin = (el, names, ms) => {
+    clearTimeout(spinT);
+    const list = names.length > 1 ? names : [names[0], names[0]];
+    let i = 0; let wait = 70; const t0 = Date.now();
+    const step = () => {
+      if (!el.isConnected) return;
+      const nm = list[i++ % list.length]; el.textContent = nm; el.style.setProperty('--n', Math.max(10, nm.length));
+      wait = Math.min(420, wait * 1.07);
+      if (Date.now() - t0 + wait < ms) spinT = setTimeout(step, wait);
+    };
+    step();
+  };
+  window.DESAFIO_HOWTO = [
+    'Un concursante sube 10 escalones de preguntas en el escenario.',
+    'Tú también juegas: <b>responde cada pregunta desde tu celular</b> antes de la respuesta definitiva del concursante.',
+    'Mientras más rápido, más puntos. Se suman al revelar la respuesta.',
+    `<b>Premio especial</b> para el ganador de ${TRIVIA_L}.`,
+  ];
   const LIFELINES = [['fifty', '50:50', '✂️'], ['audience', 'Pregunta al público', '📱'], ['phone', 'Llamada', '📞'], ['swap', 'Cambiar pregunta', '🔄']];
 
   // ---------- Panel del animador ----------
@@ -25,7 +56,7 @@
     let st = null;
     let sig = '';
     let pick = null; // alternativa tocada, antes de confirmarla como respuesta definitiva
-    const act = async (action, extra = {}) => { try { st = await api('POST', '/api/desafio/host', { action, ...extra }); sig = ''; paint(); return true; } catch (err) { fail(err); return false; } };
+    const act = async (action, extra = {}) => { try { st = stamp(await api('POST', '/api/desafio/host', { action, ...extra })); sig = ''; paint(); return true; } catch (err) { fail(err); return false; } };
     const setupForm = () => {
       const prizes = st.prizes && st.prizes.length ? st.prizes : st.defaults.prizes;
       return `<form id="dc-new">
@@ -45,7 +76,9 @@
         const t = st.live;
         out += `<div class="dc-aud"><b>📱 Pregunta al público ${st.audience.open ? `· quedan <span data-clock="aud">${secs('aud')}</span> s` : '· cerrada'}</b>
           <div>${L.map((l, i) => `<p><span>${l}</span><i style="--p:${t.pct[i]}%"></i><em>${t.pct[i]}% (${t.counts[i]})</em></p>`).join('')}</div>
-          <small>${t.total} votos</small>${st.audience.open ? '<button type="button" data-do="closeaudience">Cerrar votación ya</button>' : ''}</div>`;
+          <small>${many(t.total, 'respuesta', 'respuestas')} de la Trivia</small>${st.audience.open ? '<button type="button" data-do="closeaudience">Cerrar votación ya</button>' : ''}</div>`;
+      } else if (st.crowd && (st.phase === 'question' || st.phase === 'locked')) {
+        out += `<p class="dc-crowd">📱 ${TRIVIA}: <b>${many(st.crowd.answered, 'respuesta', 'respuestas')}</b> ${st.crowd.open ? '· abierta hasta la respuesta definitiva' : '· cerrada'}</p>`;
       }
       if (left('phone') > 0) out += `<div class="dc-aud"><b>📞 Llamada · quedan <span data-clock="phone">${secs('phone')}</span> s</b><button type="button" data-do="stopphone">Terminar llamada</button></div>`;
       return out;
@@ -54,35 +87,38 @@
       const box = $('#dc-body');
       if (!box || !st) return;
       syncClocks(st);
-      const s = JSON.stringify([st.phase, st.step, st.q && st.q.text, st.hidden, st.pick, st.used, st.audience, st.live, st.phoneUntil > st.now, pick]);
+      const s = JSON.stringify([st.phase, st.step, st.q && st.q.text, st.hidden, st.pick, st.used, st.audience, st.live, st.phoneUntil > st.now, pick, st.crowd, st.rank, st.rankPlayers, st.crowdWinner, rollLeft(st) > 200]);
       if (s === sig) return;
       if (st.phase === 'setup' && sig && JSON.parse(sig)[0] === 'setup') return; // no se borra lo que se está escribiendo
       sig = s;
       const head = st.step ? `<p class="dc-step">Pregunta <b>${st.step}</b> de ${st.steps} · por <b>${esc(prizeOf(st, st.step))}</b>${st.safe.includes(st.step) ? ' · 🛟 escalón seguro' : ''}</p>` : '';
       const read = st.q ? `<p class="dc-read">${esc(st.q.text)}</p>` : '';
+      // Trivia: ranking en pantalla (arriba, grande, como en El Rosko) y su botón
+      const rankBox = st.rank ? window.rankAnnHtml(st.rank, st.rankPlayers, !!st.crowdWinner || st.phase === 'end', TRIVIA_L) : '';
+      const rankBtn = `<button type="button" class="big dc-rankbtn ${st.rank ? 'on' : ''}" data-rank>${st.rank ? '🏅 Recoger ranking (está en pantalla)' : `🏅 Desplegar ranking de ${TRIVIA_L}`}</button>`;
       if (st.phase === 'setup') box.innerHTML = setupForm();
       else if (st.phase === 'intro') {
         box.innerHTML = `<p class="dc-read">Concursante: ${esc(st.player)}</p><p class="muted">En pantalla se ve la presentación con la escalera de premios.</p>
           <button class="primary big" data-do="next">▶ Primera pregunta</button>`;
       } else if (st.phase === 'question') {
         const chosen = pick != null && !st.hidden.includes(pick) ? pick : null;
-        box.innerHTML = `${head}${read}${options(true)}
+        box.innerHTML = `${rankBox}${head}${read}${options(true)}
           <button class="primary big" data-lock ${chosen == null ? 'disabled' : ''}>🔒 Respuesta definitiva${chosen != null ? `: ${L[chosen]}` : ''}</button>
           ${extras()}<h2 style="margin:18px 0 6px">Comodines</h2>${lifelines()}
-          <button class="big dc-retire" data-do="retire">🏳 Se retira con ${esc(st.step > 1 ? prizeOf(st, st.step - 1) : 'nada')}</button>`;
+          <button class="big dc-retire" data-do="retire">🏳 Se retira con ${esc(st.step > 1 ? prizeOf(st, st.step - 1) : 'nada')}</button>${rankBtn}`;
       } else if (st.phase === 'locked') {
-        box.innerHTML = `${head}${read}${options(false)}<p class="dc-note">Respuesta definitiva: <b>${L[st.pick]}</b>. En pantalla queda marcada, en suspenso.</p>
-          <button class="primary big" data-do="reveal">✨ Revelar</button>
+        box.innerHTML = `${rankBox}${head}${read}${options(false)}<p class="dc-note">Respuesta definitiva: <b>${L[st.pick]}</b>. En pantalla queda marcada, en suspenso.</p>
+          ${extras()}<button class="primary big" data-do="reveal">✨ Revelar</button>
           <button class="big" data-do="unlock" style="margin-top:8px">↩ Cambiar la respuesta</button>`;
       } else if (st.phase === 'reveal') {
         const ok = st.pick === st.answer;
-        box.innerHTML = `${head}${read}${options(false)}<p class="dc-result ${ok ? 'ok' : 'bad'}">${ok ? '✔ ¡Correcta!' : `✘ Incorrecta · se lleva ${esc(st.won || prizeOf(st, Math.max(0, ...st.safe.filter((x) => x < st.step))) || 'nada')}`}</p>
-          <button class="primary big" data-do="next">${ok && st.step < st.steps ? `▶ Pregunta ${st.step + 1}` : '🏁 Ver resultado'}</button>`;
+        box.innerHTML = `${rankBox}${head}${read}${options(false)}<p class="dc-result ${ok ? 'ok' : 'bad'}">${ok ? '✔ ¡Correcta!' : `✘ Incorrecta · se lleva ${esc(st.won || prizeOf(st, Math.max(0, ...st.safe.filter((x) => x < st.step))) || 'nada')}`}</p>
+          <button class="primary big" data-do="next">${ok && st.step < st.steps ? `▶ Pregunta ${st.step + 1}` : '🏁 Ver resultado'}</button>${rankBtn}`;
       } else if (st.phase === 'end') {
         const txt = { won: '🏆 ¡Ganó El Gran Desafío!', retired: '🏳 Se retiró', lost: '✘ Perdió' }[st.outcome];
         box.innerHTML = `<p class="dc-result ${st.outcome === 'lost' ? 'bad' : 'ok'}">${txt}<br>${esc(st.player)} se lleva: <b>${esc(st.won || 'nada')}</b></p>
           ${st.q ? `<p class="muted">La respuesta correcta era ${L[st.answer]}: ${esc(st.q.options[st.answer])}</p>` : ''}
-          <button class="primary big" data-do="reset">▶ Nueva partida</button>`;
+          ${crowdEnd()}`;
       }
       const form = $('#dc-new');
       if (form) {
@@ -95,9 +131,22 @@
         };
       }
     };
+    // Al terminar: ranking (opcional), el ganador de la Trivia con su tómbola y, recién después, «Nueva partida»
+    const crowdEnd = () => {
+      const cw = st.crowdWinner;
+      const rankBox = st.rank ? window.rankAnnHtml(st.rank, st.rankPlayers, true, TRIVIA_L) : '';
+      const rankBtn = `<button type="button" class="big dc-rankbtn ${st.rank ? 'on' : ''}" data-rank>${st.rank ? '🏅 Recoger ranking (está en pantalla)' : '🏅 Desplegar ranking final'}</button>`;
+      if (!cw) return `${rankBox}<button class="primary big" data-do="crowdwin">🏅 Mostrar ganador de ${TRIVIA_L}</button>${rankBtn}`;
+      const left = rollLeft(st);
+      if (left > 200) { setTimeout(() => { sig = ''; paint(); }, left + 50); return window.annHtml(`🥁 ${TRIVIA}`, ['Sorteando en pantalla…'], ['El nombre sale aquí cuando se detenga la tómbola']); }
+      const ann = cw.none ? window.annHtml(`🏅 ${TRIVIA}`, ['Nadie sumó puntos'], [`Jugaron ${many(cw.players, 'persona', 'personas')}`])
+        : window.annHtml(`🏅 Premio especial · Ganó ${TRIVIA_L}`, [cw.name], [`${many(cw.score, 'punto', 'puntos')} · ${many(cw.hits, 'acierto', 'aciertos')}`, `Jugaron ${many(cw.players, 'persona', 'personas')}`]);
+      return `${ann}${rankBox}${rankBtn}<button class="primary big" data-do="reset" style="margin-top:12px">▶ Nueva partida</button>`;
+    };
     $('#dc-body').onclick = async (e) => {
       const b = e.target.closest('button');
       if (!b || b.disabled) return;
+      if (b.hasAttribute('data-rank')) { await act('rank', { on: !st.rank }); return; }
       if (b.dataset.pick != null) { pick = Number(b.dataset.pick); paint(); return; }
       if (b.hasAttribute('data-lock')) { if (await act('lock', { choice: pick })) pick = null; return; }
       if (b.dataset.life) {
@@ -109,42 +158,71 @@
       if (b.dataset.do) { if (b.dataset.do === 'next' || b.dataset.do === 'unlock') pick = null; await act(b.dataset.do); }
     };
     $('#dc-reset').onclick = async () => { if (confirm('¿Terminar esta partida y volver a empezar?')) { pick = null; await act('reset'); } };
-    const load = async () => { const r = await api('GET', '/api/desafio/host').catch(() => null); if (r) { st = r; paint(); } };
+    const load = async () => { const r = await api('GET', '/api/desafio/host').catch(() => null); if (r) { st = stamp(r); paint(); } };
     await load();
     const timer = setInterval(load, 1000);
     return () => clearInterval(timer);
   };
 
-  // ---------- Celular: solo vota con la pregunta al público ----------
+  // ---------- Celular: la Trivia del Gran Desafío (responde cada pregunta; el comodín usa estas mismas respuestas) ----------
   let shown = '';
+  let sending = null; // alternativa tocada mientras se envía (se ve marcada al instante)
+  let phoneT = null;
   window.phoneDesafio = {
-    reset() { shown = ''; },
+    reset() { shown = ''; sending = null; clearTimeout(phoneT); },
     async draw(sid, token) {
       const box = $('#pdesafio');
-      const st = await api('GET', `/api/desafio?sid=${encodeURIComponent(sid)}&token=${encodeURIComponent(token)}`).catch(() => null);
+      const st = stamp(await api('GET', `/api/desafio?sid=${encodeURIComponent(sid)}&token=${encodeURIComponent(token)}`).catch(() => null));
       if (!st || !box || box.hidden) return;
       syncClocks(st);
-      const s = JSON.stringify([st.rev, st.mine]);
+      const rolling = rollLeft(st) > 200;
+      const s = JSON.stringify([st.rev, st.mine, st.mineResult, st.me, st.top, st.crowd, rolling, sending]);
       if (s === shown) return;
       shown = s;
       const head = '<div class="pvote-head"><b>🏆 El Gran Desafío</b></div>';
-      let body;
-      if (st.audience && st.audience.open) {
-        body = `<p class="pvote-ask">Pregunta al público<b>${esc(st.q.text)}</b></p>
-          <div class="pdes-opts">${st.q.options.map((o, i) => (st.hidden.includes(i) ? '' : `<button type="button" data-c="${i}" class="${st.mine === i ? 'on' : ''}"><b>${L[i]}</b>${esc(o)}</button>`)).join('')}</div>
-          <p class="pvote-clock">Quedan <b data-clock="aud">${secs('aud')}</b> s</p>
-          ${st.mine != null ? `<p class="pvote-ok">✔ Votaste ${L[st.mine]}. Puedes cambiarlo mientras la votación esté abierta.</p>` : '<p class="muted small" style="text-align:center">Ayuda al concursante: ¿cuál crees que es la correcta?</p>'}`;
+      const cw = st.crowdWinner;
+      let body = '';
+      if (cw && rolling) {
+        body = `<div class="prosco-win">🥁 ${TRIVIA}<small>¡Ya viene el ganador! Mira la pantalla</small></div>`;
+        clearTimeout(phoneT); phoneT = setTimeout(() => { shown = ''; window.phoneDesafio.draw(sid, token); }, rollLeft(st) + 100);
+      } else if (cw) {
+        body = cw.none ? `<div class="prosco-win">🏅 ${TRIVIA}<small>Esta vez nadie sumó puntos</small></div>`
+          : `<div class="prosco-win">🏅 ${esc(cw.name)}<small>¡Ganó ${TRIVIA_L}! · ${many(cw.score, 'punto', 'puntos')}</small></div>`;
+      } else if (st.phase === 'question' && st.q) {
+        const mine = st.mine != null ? st.mine : sending;
+        const open = st.crowd && st.crowd.open;
+        body = `<p class="pvote-ask">${st.audience && st.audience.open ? 'Pregunta al público' : `Pregunta ${st.step} de ${st.steps}`}<b>${esc(st.q.text)}</b></p>
+          <div class="pdes-opts">${st.q.options.map((o, i) => (st.hidden.includes(i) ? '' : `<button type="button" data-c="${i}" class="${mine === i ? 'on' : ''}" ${mine != null || !open ? 'disabled' : ''}><b>${L[i]}</b>${esc(o)}</button>`)).join('')}</div>
+          ${st.audience && st.audience.open ? `<p class="pvote-clock">Quedan <b data-clock="aud">${secs('aud')}</b> s</p>` : ''}
+          ${mine != null ? `<p class="pvote-ok">✔ Respondiste ${L[mine]}. Se sabrá al revelar.</p>`
+            : open ? '<p class="muted small" style="text-align:center">Responde antes de la respuesta definitiva del concursante: mientras más rápido, más puntos</p>'
+              : '<p class="pvote-wait">Se cerraron las respuestas de esta pregunta</p>'}`;
+      } else if (st.phase === 'locked' && st.q) {
+        body = `<p class="pvote-wait">${esc(st.player)} dio su respuesta definitiva.<br>${st.mine != null ? `Tu respuesta: <b>${L[st.mine]}</b>. ¡Suspenso!` : 'Esta vez no alcanzaste a responder.'}</p>`;
+      } else if (st.phase === 'reveal' && st.q) {
+        const r = st.mineResult;
+        body = `<p class="pvote-wait">La correcta era <b>${L[st.correct]}: ${esc(st.q.options[st.correct])}</b></p>
+          ${r ? `<div class="pcrowd-res ${r.ok ? 'ok' : 'ko'}">${r.ok ? `¡Correcto! +${r.pts} puntos` : 'Esta vez no'}</div>` : '<p class="muted small" style="text-align:center">No respondiste esta pregunta</p>'}`;
       } else if (st.phase === 'end') {
-        body = `<p class="pvote-wait">${esc(st.player)} ${st.outcome === 'won' ? '¡ganó El Gran Desafío!' : 'terminó su partida'}${st.won ? `<br>Se lleva: <b>${esc(st.won)}</b>` : ''}</p>`;
+        body = `<p class="pvote-wait">${esc(st.player)} ${st.outcome === 'won' ? '¡ganó El Gran Desafío!' : 'terminó su partida'}${st.won ? `<br>Se lleva: <b>${esc(st.won)}</b>` : ''}<br>Muy pronto, el ganador de ${TRIVIA_L}.</p>`;
       } else if (st.player && st.phase !== 'setup') {
-        body = `<p class="pvote-wait">${st.step ? `${esc(st.player)} va por la pregunta ${st.step} de ${st.steps}.` : `Concursante: ${esc(st.player)}.`}<br>¡Mira la pantalla! Si piden ayuda al público, aquí podrás votar.</p>`;
+        body = `<p class="pvote-wait">Concursante: <b>${esc(st.player)}</b>.<br>¡Prepárate! Vas a responder cada pregunta desde aquí.</p>`;
       } else body = '<p class="pvote-wait">¡Prepárate! Muy pronto comienza El Gran Desafío.</p>';
-      box.innerHTML = head + body;
+      // Ranking desplegado (top 10) o, si no, los 5 primeros; y el puesto de esta persona
+      const me = st.me;
+      const meRow = (n) => (me && me.score > 0 && me.rank > n ? `<div class="you"><em>${me.rank}.º</em><span>Tú</span><b>${me.score}</b></div>` : '');
+      const list = st.rank
+        ? `<div class="pcrowd-rank"><small>🏅 ${TRIVIA} · Top 10</small><b>${cw || st.phase === 'end' ? 'Resultados finales' : 'Resultados parciales'}</b>${st.rank.length ? st.rank.map((x, i) => `<div class="${me && me.rank === i + 1 ? 'me' : ''}"><em>${i + 1}.º</em><span>${esc(x.name)}</span><b>${x.score}</b></div>`).join('') : '<p class="muted">Todavía nadie suma puntos</p>'}${meRow(10)}</div>`
+        : st.top && st.top.length ? `<div class="pcrowd-top"><small>Top 5 · ${TRIVIA}</small>${st.top.map((x, i) => `<div class="${me && me.rank === i + 1 ? 'me' : ''}"><em>${i + 1}</em><span>${esc(x.name)}</span><b>${x.score}</b></div>`).join('')}${meRow(5)}</div>` : '';
+      const score = me ? `<p class="pcrowd-score">Tus puntos: <b>${me.score}</b> · ${many(me.hits, 'acierto', 'aciertos')}${me.score > 0 ? ` · ${me.rank}.º lugar` : ''}</p>` : '';
+      box.innerHTML = head + body + score + list;
       box.onclick = async (e) => {
         const b = e.target.closest('[data-c]');
-        if (!b) return;
-        box.querySelectorAll('[data-c]').forEach((x) => x.classList.toggle('on', x === b)); // respuesta inmediata al tocar
-        try { await api('POST', '/api/desafio/vote', { sid, token, choice: Number(b.dataset.c) }); } catch (err) { fail(err); }
+        if (!b || b.disabled) return;
+        sending = Number(b.dataset.c);
+        box.querySelectorAll('[data-c]').forEach((x) => { x.classList.toggle('on', x === b); x.disabled = true; }); // respuesta inmediata al tocar
+        try { await api('POST', '/api/desafio/answer', { sid, token, qid: st.crowd ? st.crowd.qid : null, choice: sending }); } catch (err) { if (!/Ya respondiste/.test(err.message)) fail(err); }
+        sending = null;
         shown = '';
         window.phoneDesafio.draw(sid, token);
       };
@@ -165,7 +243,11 @@
       if (s === last) return;
       const prev = last ? JSON.parse(last)[0] : null;
       last = s;
+      stamp(st);
       paint(st, prev);
+      // la tómbola del ganador de la Trivia: al detenerse, se dibuja el ganador
+      const left = rollLeft(st);
+      if (left > 200) setTimeout(() => { if (alive && last === s) paint(st, st); }, left + 50);
     };
     tick();
     const timer = setInterval(tick, 1000);
@@ -190,6 +272,26 @@
     if (!a) return '';
     if (a.open) return `<div class="d-aud open"><b>📱 Pregunta al público</b><span>Vota desde tu celular · quedan <i data-clock="aud">${secs('aud')}</i> s</span><small>${a.total} votos</small></div>`;
     return `<div class="d-aud"><b>📱 El público dice</b><div class="d-bars">${L.map((l, i) => `<p class="${st.hidden.includes(i) ? 'gone' : ''}"><i style="--p:${a.pct[i]}%"></i><em>${a.pct[i]}%</em><b>${l}</b></p>`).join('')}</div></div>`;
+  };
+  // Trivia: aviso mientras el público puede responder, ranking desplegado, tómbola y ganador
+  const crowdChip = (st) => (st.crowd && st.crowd.open && !(st.audience && st.audience.open)
+    ? `<div class="d-aud d-chip"><b>📱 Juega desde tu celular</b><span>Más rápido, más puntos</span><small>${many(st.crowd.answered, 'respuesta', 'respuestas')}</small></div>` : '');
+  const rankList = (st) => `<div class="d-rank"><small>${TRIVIA} · Top 10</small><b>🏅 ${st.crowdWinner || st.phase === 'end' ? 'Resultados finales' : 'Resultados parciales'}</b>
+    ${st.rank.length ? `<ol>${st.rank.map((x) => `<li><span>${esc(x.name)}</span><em>${x.score} pts</em></li>`).join('')}</ol>` : '<p>Todavía nadie suma puntos</p>'}
+    <span>${many(st.rankPlayers, 'persona jugando', 'personas jugando')}</span></div>`;
+  let rolled = '';
+  const winnerHTML = (st, full) => {
+    const cw = st.crowdWinner;
+    const left = rollLeft(st);
+    if (left > 200) {
+      const key = `${cw.at}`;
+      setTimeout(() => { const el = document.querySelector('.d-cw-name'); if (el) spin(el, cw.roll, left); }, 0);
+      if (full && rolled !== key) { rolled = key; sfx.roll(true); setTimeout(() => sfx.roll(false), left); }
+      return `<div class="d-cw"><span class="d-cup">🥁</span><small>Y el ganador de ${TRIVIA_L} es…</small><b class="d-cw-name"></b></div>`;
+    }
+    if (full && rolled !== `${cw.at}|win`) { rolled = `${cw.at}|win`; if (!cw.none) sfx.play('win'); }
+    return cw.none ? `<div class="d-cw"><span class="d-cup">🏅</span><small>${TRIVIA}</small><b ${n('Nadie sumó puntos')}>Nadie sumó puntos</b><span>¡En la próxima!</span></div>`
+      : `<div class="d-cw">${full ? `<div class="confetti">${confetti()}</div>` : ''}<span class="d-cup">🏅</span><small>Premio especial · Ganó ${TRIVIA_L}</small><b ${n(cw.name)}>${esc(cw.name)}</b><span>${many(cw.score, 'punto', 'puntos')} · ${many(cw.hits, 'acierto', 'aciertos')}</span></div>`;
   };
   const phoneHTML = () => (left('phone') > 0 ? `<div class="d-aud open"><b>📞 Llamada</b><span>Quedan <i data-clock="phone">${secs('phone')}</i> s</span></div>` : '');
   const endHTML = (st) => {
@@ -231,16 +333,18 @@
       let main;
       if (st.phase === 'setup') main = `<section class="d-cover"><span class="d-cup">🏆</span><b>${esc(st.title)}</b><span>¡Muy pronto!</span></section>`;
       else if (st.phase === 'intro') main = `<section class="d-cover"><small>Concursante</small><b ${n(st.player)}>${esc(st.player)}</b><span>${st.steps} preguntas · 4 comodines · ¡a subir la escalera!</span></section>`;
+      else if (st.rank) main = `<section class="d-cover d-wide">${rankList(st)}</section>`; // a todo el ancho, para que quepan los nombres
+      else if (st.phase === 'end' && st.crowdWinner) main = `<section class="d-cover">${winnerHTML(st, true)}</section>`;
       else if (st.phase === 'end') main = `<section class="d-cover">${endHTML(st)}</section>`;
       else {
         main = `<section class="d-play">
           <div class="d-q"><small>Pregunta ${st.step} · por ${esc(prizeOf(st, st.step))}</small><b ${n(st.q.text)}>${esc(st.q.text)}</b></div>
           ${optionsHTML(st)}
-          <div class="d-foot">${audienceHTML(st)}${phoneHTML()}</div></section>`;
+          <div class="d-foot">${audienceHTML(st)}${phoneHTML()}${crowdChip(st)}</div></section>`;
       }
       box.innerHTML = `<header class="d-top"><b>🏆 ${esc(st.title)}</b>${st.player ? `<span>${esc(st.player)}</span>` : ''}</header>
         ${main}
-        <aside class="d-side">${st.phase === 'setup' ? `<div class="vf-qr">${qr(joinUrl())}<b>Únete desde tu celular</b></div>` : `${lifeIcons(st)}${ladder(st)}`}</aside>`;
+        ${st.rank && st.phase !== 'setup' && st.phase !== 'intro' ? '' : `<aside class="d-side">${st.phase === 'setup' ? `<div class="vf-qr">${qr(joinUrl())}<b>Únete desde tu celular</b></div>` : `${lifeIcons(st)}${ladder(st)}`}</aside>`}`;
     });
     return () => { stop(); stopTick(); };
   };
@@ -255,10 +359,11 @@
       box.className = `th-${st.venue} ph-${st.phase}`;
       if (st.phase === 'setup') { box.innerHTML = ''; return; }
       const bottom = st.phase === 'intro' ? `<div class="dg-bar dg-intro"><small>${esc(st.title)} · Concursante</small><b ${n(st.player)}>${esc(st.player)}</b></div>`
+        : st.phase === 'end' && st.crowdWinner ? `<div class="dg-bar dg-intro">${winnerHTML(st, false)}</div>`
         : st.phase === 'end' ? `<div class="dg-bar dg-intro"><small>${esc(st.player)} · ${{ won: '¡Ganó!', retired: 'Se retira', lost: 'Fin del juego' }[st.outcome]}</small><b>Se lleva: ${esc(st.won || 'el aplauso del público')}</b></div>`
           : `<div class="dg-bar"><div class="d-q"><small>Pregunta ${st.step} · por ${esc(prizeOf(st, st.step))}</small><b ${n(st.q.text)}>${esc(st.q.text)}</b></div>${optionsHTML(st)}</div>`;
       box.innerHTML = `<aside class="dg-side">${lifeIcons(st)}${ladder(st)}</aside>
-        ${st.phase === 'question' || st.phase === 'locked' ? `<div class="dg-extra">${audienceHTML(st)}${phoneHTML()}</div>` : ''}
+        ${st.rank ? `<div class="dg-extra dg-rank">${rankList(st)}</div>` : st.phase === 'question' || st.phase === 'locked' ? `<div class="dg-extra">${audienceHTML(st)}${phoneHTML()}${crowdChip(st)}</div>` : ''}
         ${st.phase === 'end' && st.outcome === 'won' ? `<div class="confetti">${confetti()}</div>` : ''}
         ${bottom}`;
     });

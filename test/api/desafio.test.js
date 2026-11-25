@@ -39,7 +39,7 @@ test('partida con comodines: la respuesta nunca se filtra antes de revelar', asy
   assert.ok(!st.hidden.includes(st.answer));
   assert.equal(await hErr('fifty'), 'El 50:50 no está disponible');
 
-  // Pregunta al público: votan los de la sala, no los extraños ni por opciones ocultas
+  // Pregunta al público: votan los de la sala, no los extraños ni por opciones ocultas (son las respuestas de la Trivia)
   st = await h('audience');
   const vote = (tok, choice) => srv.call('POST', '/api/desafio/vote', { sid, token: tok, choice });
   for (const x of people) assert.equal((await vote(x.token, st.answer)).status, 200);
@@ -52,7 +52,7 @@ test('partida con comodines: la respuesta nunca se filtra antes de revelar', asy
   st = await srv.admin.get('/api/desafio/host');
   assert.equal(st.audience.open, false);
   assert.equal(st.audience.pct[st.answer], 100);
-  assert.equal((await vote(people[0].token, st.answer)).status, 400); // ya cerró
+  assert.equal((await vote(people[0].token, st.answer)).status, 409); // ya cerró (con el comodín, la pregunta se cierra para el público)
 
   st = await h('lock', { choice: st.answer });
   assert.equal((await pub()).chosen, st.answer);
@@ -123,4 +123,79 @@ test('premios: pierde bajo el escalón seguro, se retira, gana todo, pierde en l
 
   st = await h('reset');
   assert.equal(st.phase, 'setup');
+});
+
+// La Trivia del Gran Desafío (pedido de Gabriel, 25 nov): el público responde cada pregunta desde el celular
+test('Trivia del Gran Desafío: puntos por rapidez al revelar, cierre, 50:50, cambio de pregunta, ranking y ganador', async () => {
+  const [ana, luis, pedro] = people;
+  const answer = (x, choice, qid) => srv.call('POST', '/api/desafio/answer', { sid, token: x.token, choice, qid });
+  const mine = async (x) => srv.ok('GET', `/api/desafio?sid=${sid}&token=${x.token}`);
+  let st = await h('new', { player: 'Trivia' });
+  assert.equal((await answer(ana, 0)).status, 409); // en la presentación todavía no hay pregunta
+  st = await h('next');
+  assert.equal(st.crowd.open, true);
+  const qid = st.crowd.qid;
+  // ANA responde al tiro y bien; LUIS bien pero 2 s después; PEDRO mal
+  assert.equal((await answer(ana, st.answer, qid)).status, 200);
+  assert.equal((await answer(ana, (st.answer + 1) % 4, qid)).status, 409); // una sola respuesta por pregunta
+  await sleep(2000);
+  assert.equal((await answer(luis, st.answer, qid)).status, 200);
+  assert.equal((await answer(pedro, (st.answer + 1) % 4, qid)).status, 200);
+  assert.equal((await answer({ token: 'extraño' }, 0, qid)).status, 403);
+  let m = await mine(ana);
+  assert.equal(m.mine, st.answer);
+  assert.equal(m.mineResult, null); // no se sabe si acertó hasta revelar
+  assert.equal(m.me.score, 0);
+  assert.equal((await pub()).crowd.answered, 3);
+  // Con la respuesta definitiva se cierra
+  await h('lock', { choice: st.answer });
+  assert.equal((await pub()).crowd.open, false);
+  assert.equal((await answer(ana, st.answer, qid)).status, 409);
+  await h('reveal');
+  m = await mine(ana);
+  assert.equal(m.mineResult.ok, true);
+  assert.ok(m.mineResult.pts >= 95);
+  const luisM = await mine(luis);
+  assert.ok(luisM.me.score < m.me.score && luisM.me.score >= 40); // más rápido, más puntos
+  assert.equal(m.me.rank, 1);
+  assert.equal((await mine(pedro)).mineResult.ok, false);
+  assert.deepEqual(m.top.map((x) => x.name), [ana.name, luis.name]);
+
+  // Pregunta 2: con 50:50 la oculta no se puede elegir; al cambiarla, las respuestas a la anterior no suman
+  st = await h('next');
+  const q2 = st.crowd.qid;
+  assert.notEqual(q2, qid);
+  st = await h('fifty');
+  assert.equal((await answer(luis, st.hidden[0], q2)).status, 400);
+  assert.equal((await answer(luis, st.answer, q2)).status, 200);
+  st = await h('swap');
+  assert.notEqual(st.crowd.qid, q2);
+  assert.equal((await answer(luis, st.answer, q2)).status, 409); // era la pregunta anterior
+  // Ranking en pantalla
+  st = await h('rank', { on: true });
+  assert.equal(st.rank.length, 2);
+  assert.equal(st.rank[0].name, ana.name);
+  assert.equal((await pub()).rankPlayers, 3);
+  st = await h('lock', { choice: st.answer });
+  await h('reveal');
+  st = await h('next'); // la siguiente pregunta recoge el ranking
+  assert.equal(st.rank, null);
+  assert.equal((await mine(luis)).me.hits, 1); // la respuesta de la pregunta cambiada no sumó
+
+  // El ganador se muestra solo al terminar, con la tómbola
+  assert.match(await hErr('crowdwin'), /al terminar/);
+  st = await h('retire');
+  st = await h('crowdwin');
+  assert.equal(st.crowdWinner.name, ana.name);
+  assert.ok(st.crowdWinner.roll.includes(luis.name));
+  assert.equal(st.crowdWinner.rollMs, 5500);
+  assert.match(await hErr('crowdwin'), /ya está en pantalla/);
+  // Partida nueva: la Trivia parte de cero; sin puntos no hay ganador
+  await h('new', { player: 'Otra' });
+  st = await h('next');
+  assert.equal((await mine(ana)).me, null);
+  await h('retire');
+  st = await h('crowdwin');
+  assert.equal(st.crowdWinner.none, true);
+  await h('reset');
 });
