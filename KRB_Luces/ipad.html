@@ -1581,6 +1581,10 @@ const RANGO_PAN = Math.PI * 1.5, RANGO_TILT = Math.PI * 0.75;
 // (Cote, 24 nov): su casa es hacia las cocinas y solo alcanzan el lado interno del salon. Las demas miran al escenario.
 function casaDe(pos, id){
   if (id && (POS3D[id] || {}).columna != null){ const d = rotY([1, 0, 0], giroSalon()); return Math.atan2(d[0], d[2]); }
+  // Mini cabezas (Cote, 25 nov): estan con los numeros y los botones MIRANDO AL PUBLICO, asi que su frente (pan al medio)
+  // es hacia el publico (+z), tanto las del escenario como las de arriba de las columnas azules
+  const g = id && grupo(id);
+  if (id === 'mini' || (g && g.igual_que === 'mini')) return 0;
   return Math.atan2(0 - pos[0], -1.5 - pos[2]);
 }
 const marcoPilar = () => marco(rotY([1, 0, 0], giroSalon()));        // cabezas del salon: eje horizontal hacia los restaurantes
