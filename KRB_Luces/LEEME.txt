@@ -69,3 +69,12 @@ AYUDA Y REGISTRO DE CADA NOCHE
   - La suite anota cada noche (de 6 a 6) en registro-noches\AAAA-MM-DD.txt: cuando se abre,
     los momentos de los juegos, las escenas del DJ y del iPad, el Automatico, APAGAR TODO,
     cuando llega o se corta la musica y si el cable se conecta, se desconecta o da error.
+
+ACTUALIZACION AUTOMATICA (no hay que instalar cada vez)
+  - La suite revisa cada 5 minutos la rama "luces-estable" de GitHub (la version publicada).
+    Si hay una nueva, baja solo los archivos que cambiaron y los instala sin tocar la
+    calibracion, la clave ni el tunel. El panel queda nuevo al instante.
+  - Si cambio el programa de fondo, se reinicia solo cuando nadie uso las luces en 20 minutos
+    (unos segundos sin luces). En la ayuda del panel: version instalada y
+    "Buscar actualizacion ahora" (tambien desde internet).
+  - Cada actualizacion queda anotada en el registro de la noche.

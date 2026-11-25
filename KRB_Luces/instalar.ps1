@@ -10,7 +10,8 @@ param(
   [string]$Destino = (Join-Path $env:USERPROFILE "KRB_Luces"),
   [switch]$SinInicio,
   [switch]$NoArrancar,
-  [switch]$SoloRecuperar
+  [switch]$SoloRecuperar,
+  [switch]$SinRecuperar
 )
 $ErrorActionPreference = "Stop"
 $origen = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -103,7 +104,7 @@ foreach ($f in $programa) {
 # propio de este Dell: la clave de acceso y la salida (tipo de cable / puerto). El archivo anterior queda como respaldo.
 $cfgDestino = Join-Path $Destino "luces.json"
 $cfgOrigen = Join-Path $origen "luces.json"
-if ((Resolve-Path $cfgOrigen).Path -ne $cfgDestino) {
+if ((Test-Path $cfgOrigen) -and (Resolve-Path $cfgOrigen).Path -ne $cfgDestino) {
   if (Test-Path $cfgDestino) {
     $viejoTxt = [IO.File]::ReadAllText($cfgDestino)
     $nuevoTxt = [IO.File]::ReadAllText($cfgOrigen)
@@ -141,7 +142,7 @@ foreach ($n in @("cloudflared.exe", "tunel.yml")) {
   if ((Test-Path $src) -and -not (Test-Path (Join-Path $Destino $n))) { Copy-Item $src $Destino }
 }
 # La calibracion, la clave y el tunel que hayan quedado en otras copias de la suite
-try { Recuperar } catch { Write-Host ("  No se pudo revisar otras copias: " + $_.Exception.Message) -ForegroundColor DarkYellow }
+if (-not $SinRecuperar) { try { Recuperar } catch { Write-Host ("  No se pudo revisar otras copias: " + $_.Exception.Message) -ForegroundColor DarkYellow } }
 
 # Arranque automatico al prender Windows
 if (-not $SinInicio) {

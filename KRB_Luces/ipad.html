@@ -176,6 +176,9 @@
   body.solo-mapa #cabezas{margin-top:6px}
   body.solo-mapa .map .warn{display:none}
   .toast.show{transform:translate(-50%,0);opacity:1}
+  #avisoVersion{position:fixed;left:50%;top:calc(62px + env(safe-area-inset-top));transform:translateX(-50%);z-index:25;border:0;border-radius:999px;
+    background:var(--warn);color:#111;font-weight:800;font-size:14px;padding:10px 16px;box-shadow:0 4px 16px #0008;cursor:pointer}
+  #avisoVersion[hidden]{display:none}
   /* Ayuda para DJs y operadores (Cote, 25 nov) */
   .ayudaBtn{flex:0 0 auto;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--txt);font-size:16px;font-weight:800;cursor:pointer;padding:0}
   #ayuda{display:none;position:fixed;inset:0;z-index:30;background:#000c;padding:calc(12px + env(safe-area-inset-top)) 12px 12px;overflow:auto}
@@ -457,6 +460,7 @@
   <button class="blackout" id="blackout">APAGAR TODO</button>
 </footer>
 <div class="toast" id="toast"></div>
+<button id="avisoVersion" hidden onclick="location.reload()">Hay una versión nueva de las luces · Recargar</button>
 <!-- Ayuda e instrucciones cortas para los DJs y operadores (Cote, 25 nov) -->
 <div id="ayuda" role="dialog" aria-label="Ayuda">
   <div class="caja">
@@ -499,6 +503,9 @@
       <li><b>«Sin cable DMX»</b>: desenchufar y volver a enchufar el cable USB del Dell; vuelve solo en unos segundos.</li>
       <li><b>Las luces no siguen la música</b>: revisar que arriba diga el BPM; si no, usar Tap.</li>
     </ul>
+    <h3>Versión de las luces</h3>
+    <p>El Dell se actualiza solo (revisa cada 5 minutos si hay una versión nueva). Instalada: <b id="verDell">—</b></p>
+    <div class="fila"><button class="chip" id="buscarAct">Buscar actualización ahora</button></div>
     <h3>Registro de la noche</h3>
     <p>Lo que pasó cada noche (escenas, momentos, cable), con la hora.</p>
     <div class="fila"><button class="chip" id="verRegistro">Ver registro de esta noche</button><select id="regNoche" hidden></select></div>
@@ -1450,6 +1457,13 @@ function pintarEstado(e){
     ec.textContent = 'Cable: ' + (e.conectado ? 'conectado · ' + e.puerto : 'NO conectado') + ' · envíos ' + e.tramas +
       (p ? ' (' + Math.max(0, porSeg) + '/s)' : '') + ' · errores ' + (e.errores || 0) + (e.error ? ' · último error: ' + e.error : '') +
       (e.carpeta ? ' · carpeta de la suite: ' + e.carpeta : '');
+  }
+  if (e.version != null && !DEMO){
+    // version nueva instalada en el Dell: la estacion (oculta) se recarga sola; en los paneles aparece un aviso para recargar
+    if (versionDell && e.version !== versionDell && /^[0-9a-f]{7} /.test(e.version)){
+      if (ESTACION) setTimeout(() => location.reload(), 3000); else $('avisoVersion').hidden = false;
+    }
+    versionDell = e.version;
   }
   if (CONTROL){ V.animador = e.animador || null; V.rosko = !!e.rosko; V.sucio = true; marcaAnimador(e.animador); }
   // «¿Quien quiere ser ganador?» en la vista 3D: el concursante y el animador sentados en sus lugares
@@ -3156,7 +3170,9 @@ function iniciarEscenasDJ(){
 
 /* ---------- Ayuda y registro de la noche ---------- */
 function anotar(t){ if (DEMO || CONTROL) return; fetch('/api/anotar?t=' + encodeURIComponent(t), {cache: 'no-store', credentials: 'same-origin'}).catch(() => {}); }
+let versionDell = '';
 function abrirAyuda(){
+  $('verDell').textContent = DEMO ? 'versión de prueba (simulación)' : (versionDell || '—');
   $('ayudaDJ').hidden = !DJ; $('ayudaIpad').hidden = DJ;
   $('regTexto').hidden = true; $('regNoche').hidden = true; $('ayuda').classList.add('on');
 }
@@ -3170,6 +3186,10 @@ async function verRegistro(noche){
 $('ayudaCerrar').onclick = () => $('ayuda').classList.remove('on');
 $('ayuda').onclick = e => { if (e.target === $('ayuda')) $('ayuda').classList.remove('on'); };
 $('verRegistro').onclick = () => verRegistro();
+$('buscarAct').onclick = async () => {
+  if (DEMO) return toast('En la versión de prueba no hay Dell que actualizar');
+  try { await api('/api/actualizar'); toast('Buscando: si hay versión nueva, se instala sola en menos de un minuto'); } catch(e){ toast('No se pudo pedir al Dell'); }
+};
 $('regNoche').onchange = () => verRegistro($('regNoche').value);
 
 /* ---------- Inicio ---------- */

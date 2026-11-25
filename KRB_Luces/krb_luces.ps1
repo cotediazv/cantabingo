@@ -533,6 +533,10 @@ namespace KRB {
     public static string Clave = "";               // vacia = sin clave
     public static bool PedirEnWifiLocal = false;    // false = en el WiFi del local no se pide clave
     public static string Sala = "kennedy";          // los momentos que traen &sala= solo se aceptan si es esta sala (Mercado Kennedy)
+    // Actualizacion automatica (Cote, 25 nov): version instalada, pedido de buscar ya, y ultima vez que alguien uso las luces
+    public static string Version = "";
+    public static bool PedirActualizar = false;
+    public static DateTime UltimaActividad = DateTime.UtcNow;
     static HashSet<string> sesiones = new HashSet<string>();
     static readonly object SL = new object();
     static int fallosLogin = 0;
@@ -745,12 +749,15 @@ namespace KRB {
         return;
       }
       if (ruta == "/api/reconectar") { Dmx.Abrir(); Estado(s); return; }
+      if (ruta == "/api/actualizar") { PedirActualizar = true; Bitacora.Anotar("Pidieron buscar actualizacion ahora");
+        Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":true}")); return; }
       if (ruta == "/api/estado") { Estado(s); return; }
       Enviar(s, "404 Not Found", "text/plain", Encoding.UTF8.GetBytes("No encontrado"));
     }
 
     /* Acciones sobre las luces: las usa la red (/api/...) y tambien los momentos guardados */
     static bool Accion(string ruta, string query) {
+      if (ruta == "/api/set" || ruta == "/api/apagar" || ruta == "/api/efecto") UltimaActividad = DateTime.UtcNow;
       if (ruta == "/api/set") {
         // d=canal:valor,canal:valor   f=segundos de fundido
         double f = Num(Arg(query, "f"), 0);
@@ -832,7 +839,7 @@ namespace KRB {
       // Los momentos que terminan en "@previo" son de paso y no cuentan como estables.
       bool dePaso = acc.Contains("@previo") || acc.Contains("paso");      // "paso": destellos que despues vuelven a donde estaba
       int gen = Interlocked.Increment(ref genMomento);
-      MomentoActual = nombre; MomentoN++;
+      MomentoActual = nombre; MomentoN++; UltimaActividad = DateTime.UtcNow;
       Bitacora.Anotar("Momento de los juegos: " + nombre);
       if (!dePaso) MomentoEstable = nombre;
       Thread t = new Thread(() => {
@@ -906,6 +913,7 @@ namespace KRB {
       b.Append(",\"conectado\":").Append(Dmx.Conectado ? "true" : "false");
       b.Append(",\"error\":\"").Append(Esc(Dmx.Error)).Append("\"");
       b.Append(",\"carpeta\":\"").Append(Esc(Root)).Append("\"");
+      b.Append(",\"version\":\"").Append(Esc(Version)).Append("\"");
       b.Append(",\"ritmo\":").Append(Dmx.ConRitmo ? "true" : "false").Append(",\"bpm\":").Append(Math.Round(Dmx.Bpm).ToString(System.Globalization.CultureInfo.InvariantCulture));
       b.Append(",\"tramas\":").Append(Dmx.Tramas).Append(",\"errores\":").Append(Dmx.Errores);
       b.Append(",\"momento\":\"").Append(Esc(MomentoActual)).Append("\",\"momentoN\":").Append(MomentoN);
@@ -1049,4 +1057,65 @@ Write-Host ""
 Write-Host "  Para apagar el servidor, cerrar esta ventana." -ForegroundColor DarkGray
 Write-Host ""
 
-while ($true) { Start-Sleep -Seconds 1 }
+# ---------- Actualizacion automatica (Cote, 25 nov: que no haya que instalar cada vez) ----------
+# Cada 5 minutos se revisa en GitHub la rama "luces-estable" (la version publicada; se trabaja en otra rama). Si hay una
+# version nueva, se bajan solo los archivos que cambiaron y se instalan sin tocar la calibracion, la clave ni el tunel.
+# El panel queda nuevo al instante. Si cambio este programa, se reinicia solo cuando nadie uso las luces en 20 minutos
+# (o al pedirlo con "Buscar actualizacion ahora"); el vigilante (INICIAR_OCULTO.vbs) lo vuelve a abrir.
+$repo = "cotediazv/cantabingo"; $rama = "luces-estable"
+$pVer = Join-Path $root "version.json"
+$script:reiniciar = $false
+function Leer-Version { if (Test-Path $pVer) { try { return (Get-Content $pVer -Raw -Encoding UTF8 | ConvertFrom-Json) } catch {} }; return $null }
+function Mostrar-Version { $v = Leer-Version; if ($v -and $v.sha) { [KRB.Web]::Version = $v.sha.Substring(0, 7) + " (" + $v.fecha + ")" } else { [KRB.Web]::Version = "sin actualizacion automatica todavia" } }
+function Huella-Git($f) {
+  $b = [IO.File]::ReadAllBytes($f); $h = [Text.Encoding]::ASCII.GetBytes("blob " + $b.Length + [char]0)
+  $todo = New-Object byte[] ($h.Length + $b.Length); [Array]::Copy($h, $todo, $h.Length); [Array]::Copy($b, 0, $todo, $h.Length, $b.Length)
+  return (([Security.Cryptography.SHA1]::Create().ComputeHash($todo) | ForEach-Object { $_.ToString("x2") }) -join "")
+}
+function Revisar-Actualizacion {
+  try {
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    $h = @{ "User-Agent" = "krb-luces"; "Accept" = "application/vnd.github+json" }
+    $sha = (Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/commits/$rama" -Headers $h -TimeoutSec 20).sha
+    $ver = Leer-Version
+    if ($ver -and $ver.sha -eq $sha) { return }
+    $arbol = Invoke-RestMethod -Uri ("https://api.github.com/repos/$repo/git/trees/" + $sha + "?recursive=1") -Headers $h -TimeoutSec 30
+    # se compara cada archivo del Dell con el de GitHub por su huella de Git: solo se baja lo que de verdad cambio
+    $cambios = @()
+    foreach ($it in $arbol.tree) {
+      if ($it.type -ne "blob" -or -not $it.path.StartsWith("KRB_Luces/")) { continue }
+      $rel = $it.path.Substring(10); $local = Join-Path $root ($rel -replace '/', '\')
+      if (-not (Test-Path $local) -or (Huella-Git $local) -ne $it.sha) { $cambios += $rel }
+    }
+    $tmp = Join-Path $env:TEMP ("krb-actualizar-" + $sha.Substring(0, 7))
+    Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue; New-Item -ItemType Directory -Force -Path $tmp | Out-Null
+    foreach ($rel in $cambios) {
+      $dst = Join-Path $tmp ($rel -replace '/', '\'); New-Item -ItemType Directory -Force -Path (Split-Path $dst) | Out-Null
+      Invoke-WebRequest -Uri ("https://raw.githubusercontent.com/$repo/$sha/KRB_Luces/" + $rel) -OutFile $dst -UseBasicParsing -TimeoutSec 90
+    }
+    if (-not (Test-Path (Join-Path $tmp "instalar.ps1"))) { Copy-Item (Join-Path $root "instalar.ps1") $tmp }
+    & (Join-Path $tmp "instalar.ps1") -Destino $root -NoArrancar -SinInicio -SinRecuperar | Out-Null
+    $fecha = Get-Date -Format "dd-MM HH:mm"
+    [IO.File]::WriteAllText($pVer, (@{ sha = $sha; fecha = $fecha } | ConvertTo-Json), (New-Object Text.UTF8Encoding $false))
+    Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
+    Mostrar-Version
+    [KRB.Bitacora]::Anotar("Actualizada a la version " + $sha.Substring(0, 7) + ": " + ($(if ($cambios.Count) { $cambios -join ", " } else { "sin cambios en los archivos" })))
+    if ($cambios -contains "momentos.txt") { [KRB.Web]::CargarMomentos() }
+    if ($cambios -contains "krb_luces.ps1") { $script:reiniciar = $true }
+  } catch { [KRB.Bitacora]::Anotar("No se pudo buscar actualizacion: " + $_.Exception.Message) }
+}
+Mostrar-Version
+$proxima = (Get-Date).AddSeconds(60)
+while ($true) {
+  Start-Sleep -Seconds 1
+  $forzar = [KRB.Web]::PedirActualizar
+  if ($forzar -or (Get-Date) -ge $proxima) { [KRB.Web]::PedirActualizar = $false; Revisar-Actualizacion; $proxima = (Get-Date).AddMinutes(5) }
+  if ($script:reiniciar) {
+    $quieto = ([DateTime]::UtcNow - [KRB.Web]::UltimaActividad).TotalMinutes -ge 20
+    if ($quieto -or $forzar) {
+      [KRB.Bitacora]::Anotar("Se reinicia para terminar la actualizacion (vuelve en unos segundos)")
+      try { Stop-Transcript | Out-Null } catch {}
+      exit
+    }
+  }
+}
