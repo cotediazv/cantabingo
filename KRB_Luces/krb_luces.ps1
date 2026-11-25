@@ -148,15 +148,44 @@ namespace KRB {
       try { if (archivo != IntPtr.Zero) CloseHandle(archivo); } catch {}
       try { if (lusb != IntPtr.Zero) usb_close(lusb); } catch {}
       iface = IntPtr.Zero; archivo = IntPtr.Zero; lusb = IntPtr.Zero;
+      previo = new byte[513]; maxUsado = 0; ultimoEnvio = DateTime.MinValue;   // al volver a abrir, se manda todo de nuevo
+    }
+    // Envio al uDMX (Kennedy, 24 nov): el uDMX es USB de baja velocidad y no le gustan los paquetes grandes.
+    // Se mandan solo los canales en uso (hasta el ultimo distinto de 0), en paquetes de 128, y solo cuando algo
+    // cambia (mas un refresco cada 1 s). El uDMX sigue repitiendo solo los ultimos valores que recibio.
+    static byte[] previo = new byte[513];
+    static int maxUsado = 0;
+    static DateTime ultimoEnvio = DateTime.MinValue;
+    public static string UltimoError = "";
+    [DllImport("libusb0.dll", CallingConvention = CallingConvention.Cdecl)] static extern IntPtr usb_strerror();
+    public static bool Enviar(byte[] frame) {
+      int hasta = maxUsado;
+      for (int i = 512; i > hasta; i--) if (frame[i] != 0) { hasta = i; break; }
+      maxUsado = hasta;
+      bool cambio = false;
+      for (int i = 1; i <= hasta; i++) if (frame[i] != previo[i]) { cambio = true; break; }
+      if (!cambio && (DateTime.UtcNow - ultimoEnvio).TotalMilliseconds < 1000) return true;
+      int n = Math.Max(hasta, 1);
+      for (int ini = 0; ini < n; ini += 128) {
+        int c = Math.Min(128, n - ini);
+        byte[] datos = new byte[c]; Array.Copy(frame, 1 + ini, datos, 0, c);
+        if (!Control(c, ini, datos)) return false;
+      }
+      Array.Copy(frame, previo, 513); ultimoEnvio = DateTime.UtcNow;
+      return true;
     }
     // Comando 2 del uDMX (SetChannelRange): Value = cantidad de canales, Index = primer canal (desde 0), datos = valores
-    public static bool Enviar(byte[] frame) {
-      byte[] datos = new byte[512]; Array.Copy(frame, 1, datos, 0, 512);
-      if (lusb != IntPtr.Zero) return usb_control_msg(lusb, 0x40, 2, 512, 0, datos, 512, 500) >= 0;
-      if (iface == IntPtr.Zero) return false;
-      SETUP s = new SETUP(); s.RequestType = 0x40; s.Request = 2; s.Value = 512; s.Index = 0; s.Length = 512;
+    static bool Control(int cant, int inicio, byte[] datos) {
+      if (lusb != IntPtr.Zero) {
+        int r = usb_control_msg(lusb, 0x40, 2, cant, inicio, datos, cant, 500);
+        if (r < 0) { try { UltimoError = "libusb " + r + ": " + Marshal.PtrToStringAnsi(usb_strerror()); } catch { UltimoError = "libusb " + r; } return false; }
+        return true;
+      }
+      if (iface == IntPtr.Zero) { UltimoError = "uDMX cerrado"; return false; }
+      SETUP s = new SETUP(); s.RequestType = 0x40; s.Request = 2; s.Value = (ushort)cant; s.Index = (ushort)inicio; s.Length = (ushort)cant;
       uint pasados = 0;
-      return WinUsb_ControlTransfer(iface, s, datos, 512, ref pasados, IntPtr.Zero);
+      if (!WinUsb_ControlTransfer(iface, s, datos, (uint)cant, ref pasados, IntPtr.Zero)) { UltimoError = "WinUSB error " + Marshal.GetLastWin32Error(); return false; }
+      return true;
     }
   }
 
@@ -182,6 +211,7 @@ namespace KRB {
     public static bool Conectado = false;
     public static string Error = "";
     public static long Tramas = 0;
+    public static long Errores = 0;                 // envios fallidos (para ver en Probar canales)
     static Dictionary<string, Efecto> efectos = new Dictionary<string, Efecto>();
     static Stopwatch reloj = Stopwatch.StartNew();
 
@@ -330,7 +360,7 @@ namespace KRB {
     static void Loop() {
       byte[] frame = new byte[513];               // frame[0] = codigo de inicio 0
       Stopwatch sw = Stopwatch.StartNew();
-      double last = 0;
+      double last = 0, ultimoIntento = 0;
       int fallos = 0;
       while (true) {
         double now = sw.Elapsed.TotalSeconds, dt = now - last; last = now;
@@ -350,12 +380,17 @@ namespace KRB {
           s = port;
         }
         IntPtr fh = ftdi;
-        if (UDmx.Abierto && Conectado) {              // uDMX: le manda los 512 canales; el DMX lo genera el cable
+        // Si se perdio el cable (o fallo muchas veces), se vuelve a buscar solo cada 3 s
+        if (!Conectado && Tipo != "simulacion" && now - ultimoIntento > 3) {
+          ultimoIntento = now;
+          try { Abrir(); if (Conectado) fallos = 0; } catch {}
+        }
+        if (UDmx.Abierto && Conectado) {              // uDMX: le manda los canales en uso; el DMX lo genera el cable
           try {
-            if (!UDmx.Enviar(frame)) throw new Exception("uDMX: no recibio los canales (error " + Marshal.GetLastWin32Error() + "); se desenchufo el cable?");
+            if (!UDmx.Enviar(frame)) throw new Exception("uDMX: no recibio los canales (" + UDmx.UltimoError + ")");
             Tramas++; fallos = 0;
           } catch (Exception e) {
-            Error = e.Message;
+            Error = e.Message; Errores++;
             if (++fallos > 20) { Conectado = false; }
           }
           Thread.Sleep(20);
@@ -693,7 +728,7 @@ namespace KRB {
       b.Append(",\"puerto\":\"").Append(Esc(Dmx.PuertoUsado)).Append("\"");
       b.Append(",\"conectado\":").Append(Dmx.Conectado ? "true" : "false");
       b.Append(",\"error\":\"").Append(Esc(Dmx.Error)).Append("\"");
-      b.Append(",\"tramas\":").Append(Dmx.Tramas);
+      b.Append(",\"tramas\":").Append(Dmx.Tramas).Append(",\"errores\":").Append(Dmx.Errores);
       b.Append(",\"momento\":\"").Append(Esc(MomentoActual)).Append("\",\"momentoN\":").Append(MomentoN);
       b.Append(",\"efectos\":[");
       string[] ef = Dmx.Efectos();

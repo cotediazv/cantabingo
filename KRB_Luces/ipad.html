@@ -301,6 +301,7 @@
   <!-- ===== PROBAR CANALES ===== -->
   <section class="tab" id="probar">
     <p class="help">Para descubrir qué hace cada canal de una luz: elige su dirección y mueve los controles uno por uno. Anota qué canal es pan, tilt, dimmer, rojo, verde, azul y blanco, y cámbialo en <b>luces.json</b>.</p>
+    <p class="help" id="estadoCable" style="font-family:ui-monospace,monospace;font-size:13px"></p>
     <div class="addr" id="addrBar"><span>Dirección inicial</span><input type="number" id="addr" min="1" max="497" value="1"></div>
     <div id="chanList"></div>
     <button class="chip" id="max16" style="margin-top:8px">Subir estos 16 canales al máximo</button>
@@ -1044,6 +1045,15 @@ function pintarEstado(e){
   else if (e.conectado){ dot.className = 'dot ok'; t.textContent = 'Cable DMX · ' + e.puerto; }
   else { dot.className = 'dot'; t.textContent = 'Sin cable DMX · tocar para reintentar'; }
   $('pill').title = e.error || '';
+  // Estado del cable en "Probar canales": cuantos envios por segundo salen y si hay errores (para revisar en terreno)
+  const ec = $('estadoCable');
+  if (ec && e.tramas != null){
+    const ahora = performance.now(), p = pintarEstado.prev;
+    const porSeg = p && ahora > p.t ? Math.round((e.tramas - p.n) * 1000 / (ahora - p.t)) : 0;
+    pintarEstado.prev = {t: ahora, n: e.tramas};
+    ec.textContent = 'Cable: ' + (e.conectado ? 'conectado · ' + e.puerto : 'NO conectado') + ' · envíos ' + e.tramas +
+      (p ? ' (' + Math.max(0, porSeg) + '/s)' : '') + ' · errores ' + (e.errores || 0) + (e.error ? ' · último error: ' + e.error : '');
+  }
   if (CONTROL){ V.animador = e.animador || null; V.rosko = !!e.rosko; V.sucio = true; marcaAnimador(e.animador); }
   momentoRecibido(e);
 }
