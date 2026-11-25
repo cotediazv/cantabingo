@@ -1,4 +1,4 @@
-// Banco de preguntas de «El Gran Desafío».
+// Banco de preguntas de «¿Quién quiere ser billonario?».
 // Formato por línea:  nivel | categoría | pregunta | respuesta correcta | incorrecta | incorrecta | incorrecta
 //   nivel: f = fácil (escalones 1 a 3), m = medio (4 a 7), d = difícil (8 a 10)
 //   categoría: g = cultura general, m = música, a = arte

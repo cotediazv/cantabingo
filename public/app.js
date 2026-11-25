@@ -406,7 +406,7 @@ views.control = async () => {
         <button data-show="rueda"><span>🎡</span>El Rosko</button><button data-show="qr"><span>📱</span>QR en pantalla completa</button>
         <button data-show="karaoke"><span>🎤</span>Karaoke</button><button data-show="show"><span>⭐</span>Show</button>
         <button data-show="voto"><span>🗳️</span>Votación</button><button data-show="insta"><span>📸</span>Instagram</button>
-        <button data-show="desafio" class="wide"><span>🏆</span>El Gran Desafío</button>
+        <button data-show="desafio" class="wide"><span>🏆</span>¿Quién quiere ser billonario?</button>
         <button data-show="none" class="wide"><span>⬛</span>Nada</button>
       </div>
       <div class="ctl-links">
@@ -608,7 +608,7 @@ views.juegos = async () => {
   store.set('lastBingo', open.projectId);
   // Pedido de Cote (21 nov): al crear la sala, tres botones y nada más (Manual, Por sorteo, Por votación)
   app.innerHTML = `<p class="back"><a href="#/">← Inicio</a></p><div id="jg-sim"></div><div id="jg-cur"></div>${activitiesNav('', { lobby: true })}
-    <p class="ep-link"><a class="btn" href="#/enpiectl">🧪 Juego en prueba: 🧍 El último en pie</a> <a class="btn" href="#/desafioctl">🧪 Juego en prueba: 🏆 El Gran Desafío</a></p>`;
+    <p class="ep-link"><a class="btn" href="#/enpiectl">🧪 Juego en prueba: 🧍 El último en pie</a> <a class="btn" href="#/desafioctl">🧪 Juego en prueba: 🏆 ¿Quién quiere ser billonario?</a></p>`;
   const venue = open.theme || 'frida';
   const paint = async () => {
     const st = await api('GET', `/api/sessions/${open.id}/host/state`).catch((err) => (err.status === 404 ? 'cerrada' : null));
@@ -616,7 +616,7 @@ views.juegos = async () => {
     if (!st || !$('#jg-cur')) return;
     // Si hay un juego en curso, se vuelve a él con un botón grande y el menú queda plegado (para no sortear otro por error)
     const cur = st.current;
-    const info = cur && (cur.game === 'enpie' ? { icon: '🧍', name: 'El último en pie', href: '#/enpiectl' } : cur.game === 'desafio' ? { icon: '🏆', name: 'El Gran Desafío', href: '#/desafioctl' } : GAME_INFO(venue)[cur.game]);
+    const info = cur && (cur.game === 'enpie' ? { icon: '🧍', name: 'El último en pie', href: '#/enpiectl' } : cur.game === 'desafio' ? { icon: '🏆', name: '¿Quién quiere ser billonario?', href: '#/desafioctl' } : GAME_INFO(venue)[cur.game]);
     const href = !cur ? '' : cur.game === 'bingo' ? `#/anfitrion/${open.projectId}` : cur.wheel ? `#/ruedactl/${cur.wheel}` : info.href;
     const html = cur ? `<a class="home-create open ctl-go paso" data-paso="8" href="${href}"><span>▶</span>Volver al juego en curso: ${info.icon} ${esc(info.name)}</a>` : '';
     if ($('#jg-cur').innerHTML !== html) $('#jg-cur').innerHTML = html;
@@ -1116,7 +1116,7 @@ views.jugar = async (sid) => {
     if (!on && epTimer) { clearInterval(epTimer); epTimer = null; }
     return on;
   };
-  // El Gran Desafío: se guarda el cartón; los botones A, B, C y D aparecen con la pregunta al público (desafio-ui.js)
+  // ¿Quién quiere ser billonario?: se guarda el cartón; los botones A, B, C y D aparecen con la pregunta al público (desafio-ui.js)
   let desafioTimer = null;
   let desafioRev = null;
   const syncDesafio = () => {
@@ -1257,7 +1257,7 @@ views.jugar = async (sid) => {
       if (!v || !window.voteHowto || howtoKey !== key) return;
       const h = window.voteHowto(v); phoneHowto(h.title, h.lines);
     } else if (key.startsWith('rosco')) phoneHowto('El Rosko', window.ROSCO_HOWTO);
-    else if (key.startsWith('desafio')) phoneHowto('El Gran Desafío', window.DESAFIO_HOWTO);
+    else if (key.startsWith('desafio')) phoneHowto('¿Quién quiere ser billonario?', window.DESAFIO_HOWTO);
     else phoneHowto(bingoName(st.name), BINGO_HOWTO);
   };
   // Pedido de Cote (21 nov): el botón de KRB Kids no aparece durante los juegos, solo en los intermedios (sala abierta
@@ -1854,7 +1854,7 @@ function activitiesNav(current, opts = {}) {
     ['show', '<a class="btn" href="#/showctl"><span>⭐</span>Show</a>'],
     ['karaoke', '<a class="btn" href="#/karaokectl"><span>🎤</span>Karaoke</a>'],
     ['insta', '<a class="btn" href="#/instactl"><span>📸</span>Instagram</a>'],
-    ['desafio', '<a class="btn" href="#/desafioctl"><span>🏆</span>El Gran Desafío</a>'],
+    ['desafio', '<a class="btn" href="#/desafioctl"><span>🏆</span>¿Quién quiere ser billonario?</a>'],
     ['qr', '<button type="button" data-stage-qr><span>📱</span>QR en pantalla completa</button>'],
   ];
   setTimeout(paintGameNav, 0);

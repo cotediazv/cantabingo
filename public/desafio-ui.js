@@ -1,5 +1,5 @@
 /* global views, app, $, esc, api, qr, joinUrl, isAdmin, viewLogin, fail, sfx, activitiesNav, toast */
-// «El Gran Desafío»: panel del animador, tablero del local, GC de OBS y botones del celular.
+// «¿Quién quiere ser billonario?»: panel del animador, tablero del local, GC de OBS y botones del celular.
 (() => {
   const L = ['A', 'B', 'C', 'D'];
   const n = (t) => `style="--n:${Math.max(10, String(t).length)}"`;
@@ -14,9 +14,9 @@
     setClock('phone', st.phoneUntil && st.phoneUntil > st.now ? st.phoneUntil : 0, st.now);
   };
   const prizeOf = (st, step) => st.prizes[step - 1] || '';
-  // ---------- La Trivia del Gran Desafío (el público juega desde el celular; pedido de Gabriel, 25 nov) ----------
-  const TRIVIA = 'La Trivia del Gran Desafío';
-  const TRIVIA_L = 'la Trivia del Gran Desafío'; // a mitad de frase
+  // ---------- La Trivia del Billonario (el público juega desde el celular; pedido de Gabriel, 25 nov) ----------
+  const TRIVIA = 'La Trivia del Billonario';
+  const TRIVIA_L = 'la Trivia del Billonario'; // a mitad de frase
   const many = (k, one, more) => `${k} ${k === 1 ? one : more}`;
   const stamp = (st) => { if (st) st.got = Date.now(); return st; };
   // Cuánto le queda a la «tómbola» del ganador de la Trivia (5,5 s), con la hora de esta pantalla
@@ -50,7 +50,7 @@
   // ---------- Panel del animador ----------
   views.desafioctl = async () => {
     if (!(await isAdmin())) return viewLogin();
-    app.innerHTML = `<div class="panel dc"><h1 style="margin:0">🏆 El Gran Desafío</h1><div id="dc-body" style="margin-top:14px"></div></div>
+    app.innerHTML = `<div class="panel dc"><h1 style="margin:0">🏆 ¿Quién quiere ser billonario?</h1><div id="dc-body" style="margin-top:14px"></div></div>
       ${activitiesNav('desafio')}
       <p style="margin-top:14px"><button class="big" id="dc-reset">🗑 Terminar partida (vuelve a empezar)</button></p>`;
     let st = null;
@@ -115,7 +115,7 @@
         box.innerHTML = `${rankBox}${head}${read}${options(false)}<p class="dc-result ${ok ? 'ok' : 'bad'}">${ok ? '✔ ¡Correcta!' : `✘ Incorrecta · se lleva ${esc(st.won || prizeOf(st, Math.max(0, ...st.safe.filter((x) => x < st.step))) || 'nada')}`}</p>
           <button class="primary big" data-do="next">${ok && st.step < st.steps ? `▶ Pregunta ${st.step + 1}` : '🏁 Ver resultado'}</button>${rankBtn}`;
       } else if (st.phase === 'end') {
-        const txt = { won: '🏆 ¡Ganó El Gran Desafío!', retired: '🏳 Se retiró', lost: '✘ Perdió' }[st.outcome];
+        const txt = { won: '🏆 ¡Ganó el premio mayor!', retired: '🏳 Se retiró', lost: '✘ Perdió' }[st.outcome];
         box.innerHTML = `<p class="dc-result ${st.outcome === 'lost' ? 'bad' : 'ok'}">${txt}<br>${esc(st.player)} se lleva: <b>${esc(st.won || 'nada')}</b></p>
           ${st.q ? `<p class="muted">La respuesta correcta era ${L[st.answer]}: ${esc(st.q.options[st.answer])}</p>` : ''}
           ${crowdEnd()}`;
@@ -164,7 +164,7 @@
     return () => clearInterval(timer);
   };
 
-  // ---------- Celular: la Trivia del Gran Desafío (responde cada pregunta; el comodín usa estas mismas respuestas) ----------
+  // ---------- Celular: la Trivia del Billonario (responde cada pregunta; el comodín usa estas mismas respuestas) ----------
   let shown = '';
   let sending = null; // alternativa tocada mientras se envía (se ve marcada al instante)
   let phoneT = null;
@@ -179,7 +179,7 @@
       const s = JSON.stringify([st.rev, st.mine, st.mineResult, st.me, st.top, st.crowd, rolling, sending]);
       if (s === shown) return;
       shown = s;
-      const head = '<div class="pvote-head"><b>🏆 El Gran Desafío</b></div>';
+      const head = '<div class="pvote-head"><b>🏆 ¿Quién quiere ser billonario?</b></div>';
       const cw = st.crowdWinner;
       let body = '';
       if (cw && rolling) {
@@ -204,10 +204,10 @@
         body = `<p class="pvote-wait">La correcta era <b>${L[st.correct]}: ${esc(st.q.options[st.correct])}</b></p>
           ${r ? `<div class="pcrowd-res ${r.ok ? 'ok' : 'ko'}">${r.ok ? `¡Correcto! +${r.pts} puntos` : 'Esta vez no'}</div>` : '<p class="muted small" style="text-align:center">No respondiste esta pregunta</p>'}`;
       } else if (st.phase === 'end') {
-        body = `<p class="pvote-wait">${esc(st.player)} ${st.outcome === 'won' ? '¡ganó El Gran Desafío!' : 'terminó su partida'}${st.won ? `<br>Se lleva: <b>${esc(st.won)}</b>` : ''}<br>Muy pronto, el ganador de ${TRIVIA_L}.</p>`;
+        body = `<p class="pvote-wait">${esc(st.player)} ${st.outcome === 'won' ? '¡ganó el premio mayor!' : 'terminó su partida'}${st.won ? `<br>Se lleva: <b>${esc(st.won)}</b>` : ''}<br>Muy pronto, el ganador de ${TRIVIA_L}.</p>`;
       } else if (st.player && st.phase !== 'setup') {
         body = `<p class="pvote-wait">Concursante: <b>${esc(st.player)}</b>.<br>¡Prepárate! Vas a responder cada pregunta desde aquí.</p>`;
-      } else body = '<p class="pvote-wait">¡Prepárate! Muy pronto comienza El Gran Desafío.</p>';
+      } else body = '<p class="pvote-wait">¡Prepárate! Muy pronto comienza ¿Quién quiere ser billonario?.</p>';
       // Ranking desplegado (top 10) o, si no, los 5 primeros; y el puesto de esta persona
       const me = st.me;
       const meRow = (n) => (me && me.score > 0 && me.rank > n ? `<div class="you"><em>${me.rank}.º</em><span>Tú</span><b>${me.score}</b></div>` : '');
@@ -299,7 +299,7 @@
   const phoneHTML = () => (left('phone') > 0 ? `<div class="d-aud open"><b>${se('📞 Llamada')}</b><span>Quedan <i data-clock="phone">${secs('phone')}</i> s</span></div>` : '');
   const endHTML = (st) => {
     const won = st.outcome === 'won';
-    const head = { won: '¡Ganó El Gran Desafío!', retired: 'Se retira', lost: 'Fin del juego' }[st.outcome];
+    const head = { won: '¡Ganó el premio mayor!', retired: 'Se retira', lost: 'Fin del juego' }[st.outcome];
     return `<div class="d-end ${st.outcome}">${won ? `<div class="confetti">${confetti()}</div>` : ''}<span class="d-cup">${won ? '🏆' : st.outcome === 'retired' ? '🏳' : '👏'}</span>
       <small>${head}</small><b ${n(st.player)}>${esc(st.player)}</b><span>Se lleva: <b>${esc(st.won || 'el aplauso del público')}</b></span></div>`;
   };
@@ -334,7 +334,7 @@
       cues(st, prev);
       box.className = `th-${st.venue} ph-${st.phase}`;
       let main;
-      if (st.phase === 'setup') main = `<section class="d-cover"><span class="d-cup">🏆</span><b>${esc(st.title)}</b><span>¡Muy pronto!</span></section>`;
+      if (st.phase === 'setup') main = `<section class="d-cover"><span class="d-cup">🏆</span><b style="--n:${Math.ceil(st.title.length / 2)}">${esc(st.title)}</b><span>¡Muy pronto!</span></section>`;
       else if (st.phase === 'intro') main = `<section class="d-cover"><small>Concursante</small><b ${n(st.player)}>${esc(st.player)}</b><span>${st.steps} preguntas · 4 comodines · ¡a subir la escalera!</span></section>`;
       else if (st.rank) main = `<section class="d-cover d-wide">${rankList(st)}</section>`; // a todo el ancho, para que quepan los nombres
       else if (st.phase === 'end' && st.crowdWinner) main = `<section class="d-cover">${winnerHTML(st, true)}</section>`;

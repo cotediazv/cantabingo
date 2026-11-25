@@ -1,4 +1,4 @@
-// El Gran Desafío: escalera de 10 preguntas, comodines, voto del público desde el celular y premios.
+// ¿Quién quiere ser billonario?: escalera de 10 preguntas, comodines, voto del público desde el celular y premios.
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const { startServer, sleep } = require('../helpers');
@@ -125,8 +125,8 @@ test('premios: pierde bajo el escalón seguro, se retira, gana todo, pierde en l
   assert.equal(st.phase, 'setup');
 });
 
-// La Trivia del Gran Desafío (pedido de Gabriel, 25 nov): el público responde cada pregunta desde el celular
-test('Trivia del Gran Desafío: puntos por rapidez al revelar, cierre, 50:50, cambio de pregunta, ranking y ganador', async () => {
+// La Trivia del Billonario (pedido de Gabriel, 25 nov): el público responde cada pregunta desde el celular
+test('Trivia del Billonario: puntos por rapidez al revelar, cierre, 50:50, cambio de pregunta, ranking y ganador', async () => {
   const [ana, luis, pedro] = people;
   const answer = (x, choice, qid) => srv.call('POST', '/api/desafio/answer', { sid, token: x.token, choice, qid });
   const mine = async (x) => srv.ok('GET', `/api/desafio?sid=${sid}&token=${x.token}`);
@@ -202,7 +202,7 @@ test('Trivia del Gran Desafío: puntos por rapidez al revelar, cierre, 50:50, ca
 
 // Como los otros juegos: al cerrar la sala (fin de la jornada) la partida queda en blanco, y la pantalla lo sabe
 // (stageDone) cuando ya se mostró el ganador de la Trivia
-test('El Gran Desafío: al cerrar la sala la partida queda en blanco; con el ganador de la Trivia el juego cuenta como terminado', async () => {
+test('¿Quién quiere ser billonario?: al cerrar la sala la partida queda en blanco; con el ganador de la Trivia el juego cuenta como terminado', async () => {
   await h('new', { player: 'Marta' });
   await h('next');
   await h('retire');

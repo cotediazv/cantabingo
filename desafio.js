@@ -1,15 +1,15 @@
-// «El Gran Desafío»: un concursante en el escenario sube una escalera de 10 preguntas con 4 alternativas.
+// «¿Quién quiere ser billonario?»: un concursante en el escenario sube una escalera de 10 preguntas con 4 alternativas.
 // El animador maneja todo desde su panel (#/desafioctl); el público ve la pantalla grande y solo vota
 // desde el celular cuando se usa el comodín «Pregunta al público».
 // Fases: setup → intro → question → locked → reveal → (question siguiente…) → end (won / retired / lost).
-// «La Trivia del Gran Desafío» (pedido de Gabriel, 25 nov, como la Trivia del Rosko): el público responde cada pregunta
+// «La Trivia del Billonario» (pedido de Gabriel, 25 nov, como la Trivia del Rosko): el público responde cada pregunta
 // desde el celular hasta la respuesta definitiva del concursante; vale más responder rápido y los puntos se suman al
 // revelar. El comodín «Pregunta al público» muestra el porcentaje de esas mismas respuestas y cierra la pregunta a los
 // 20 s. Ranking con botón y, al final, el ganador del público con tómbola.
 const crypto = require('crypto');
 const { BANK } = require('./questions-desafio.js');
 
-const TITLE = 'El Gran Desafío';
+const TITLE = '¿Quién quiere ser billonario?';
 const STEPS = 10;
 const LETTERS = ['A', 'B', 'C', 'D'];
 const AUDIENCE_MS = Number(process.env.DESAFIO_AUDIENCE_MS) || 20000; // votación del público: 20 s
@@ -123,7 +123,7 @@ module.exports = function desafio({ app, db, save, requireAdmin, fail, setStage,
       outcome: s.outcome, won: wonPrize(), used: s.used,
       audience: s.audience ? { open: !!s.audience.open, until: s.audience.until, ms: AUDIENCE_MS, total: t.total, pct: s.audience.open ? null : t.pct } : null,
       phoneUntil: s.phoneUntil, phoneMs: PHONE_MS,
-      // La Trivia del Gran Desafío
+      // La Trivia del Billonario
       crowd: { qid: s.qid, open: !!s.open && s.phase === 'question', answered: t.total, players: standings().table.length },
       rank: s.rankShow ? topOf(10) : null, rankPlayers: s.rankShow ? standings().table.length : 0,
       crowdWinner: s.crowd.winner,

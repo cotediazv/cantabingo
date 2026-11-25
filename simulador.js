@@ -10,7 +10,7 @@
 //   - El Festival y El objeto más extraño: algunas se inscriben con su canción u objeto, votan del 1 al 10 y en la final.
 //   - Votación del juego: votan por un juego.
 //   - El último en pie: contestan cada pregunta.
-//   - El Gran Desafío: contestan la Trivia del Gran Desafío (4 alternativas, antes de la respuesta definitiva).
+//   - ¿Quién quiere ser billonario?: contestan la Trivia del Billonario (4 alternativas, antes de la respuesta definitiva).
 // No piden canciones de karaoke (eso escribiría en la planilla real del local). No quedan en el registro de clientes ni
 // en los registros de conectados. Al cerrar la sala, desaparecen.
 const crypto = require('crypto');
@@ -196,7 +196,7 @@ module.exports = function simulador({ app, db, save, requireAdmin, fail, port, p
         later(delay(b, 1.5, 8), () => { const now = db.enpie; if (now && now.phase === 'question' && now.n === e.n && now.gen === e.gen) post('/api/enpie/answer', { sid, token: b.token, pick: pickNo }); });
       }
     }
-    // La Trivia del Gran Desafío: responden cada pregunta antes de la respuesta definitiva (4 alternativas)
+    // La Trivia del Billonario: responden cada pregunta antes de la respuesta definitiva (4 alternativas)
     const d = db.desafio;
     if (stage === 'desafio' && d && d.phase === 'question' && d.open && d.q) {
       for (const b of m.bots) {

@@ -891,7 +891,7 @@
     every(stageTimers, 2000, load);
     every(stageTimers, 500, function () { if (st) paint(); });
   }
-  // El Gran Desafío (pedido de Gabriel, 25 nov): el concursante, la pregunta con sus 4 alternativas, el público (la Trivia,
+  // ¿Quién quiere ser billonario? (pedido de Gabriel, 25 nov): el concursante, la pregunta con sus 4 alternativas, el público (la Trivia,
   // el comodín y la llamada), el ranking y el ganador de la Trivia. Misma información que el tablero, en la versión liviana.
   function sDesafio() {
     var last = ''; var st = null; var L = ['A', 'B', 'C', 'D'];
@@ -903,19 +903,19 @@
       var sig = JSON.stringify([s.rev, aud, call, rolling]);
       if (sig === last) return;
       last = sig;
-      var o = '<div class="abs g-title fit">El Gran Desafío</div><div class="abs v-body" style="top:16rem">';
+      var o = '<div class="abs g-title fit">¿Quién quiere ser billonario?</div><div class="abs v-body" style="top:16rem">';
       if (s.player && s.phase !== 'setup') o += '<div class="mid gold">' + h(s.player) + '</div>';
       if (s.phase === 'setup') o += '<b class="big fit" style="display:block;margin-top:3rem">¡Muy pronto!</b><div class="mid" style="margin-top:2rem">Juega desde tu celular</div><div class="mid">Más rápido, más puntos</div>';
       else if (s.rank) {
-        o += '<div class="mid" style="margin-top:2rem">La Trivia del Gran Desafío</div><div class="mid gold">' + (s.phase === 'end' ? 'Resultados finales' : 'Resultados parciales') + '</div><ol class="rows rk sc" style="margin-top:2rem">';
+        o += '<div class="mid" style="margin-top:2rem">La Trivia del Billonario</div><div class="mid gold">' + (s.phase === 'end' ? 'Resultados finales' : 'Resultados parciales') + '</div><ol class="rows rk sc" style="margin-top:2rem">';
         for (k = 0; k < s.rank.length && k < 10; k++) o += '<li><em>' + (k + 1) + '.º</em>' + h(s.rank[k].name) + '<i>' + s.rank[k].score + '</i></li>';
         o += '</ol>' + (s.rank.length ? '' : '<div class="mid">Todavía nadie suma puntos</div>');
       } else if (s.phase === 'end' && cw) {
         if (rolling) o += '<div class="mid" style="margin-top:3rem">Y el ganador de la Trivia es…</div><div class="big gold" style="margin-top:2rem">' + se('🥁') + '</div>';
-        else if (cw.none) o += '<div class="mid" style="margin-top:3rem">La Trivia del Gran Desafío</div><b class="big fit" style="display:block">Nadie sumó puntos</b>';
+        else if (cw.none) o += '<div class="mid" style="margin-top:3rem">La Trivia del Billonario</div><b class="big fit" style="display:block">Nadie sumó puntos</b>';
         else o += '<div class="mid gold" style="margin-top:3rem">Premio especial · Ganó la Trivia</div><b class="big fit" style="display:block">' + h(cw.name) + '</b><div class="mid">' + cw.score + ' puntos · ' + cw.hits + (cw.hits === 1 ? ' acierto' : ' aciertos') + '</div>';
       } else if (s.phase === 'end') {
-        o += '<b class="big gold fit" style="display:block;margin-top:3rem">' + ({ won: '¡Ganó El Gran Desafío!', retired: 'Se retira', lost: 'Fin del juego' }[s.outcome] || '') + '</b><div class="mid" style="margin-top:2rem">Se lleva: ' + h(s.won || 'el aplauso del público') + '</div>';
+        o += '<b class="big gold fit" style="display:block;margin-top:3rem">' + ({ won: '¡Ganó el premio mayor!', retired: 'Se retira', lost: 'Fin del juego' }[s.outcome] || '') + '</b><div class="mid" style="margin-top:2rem">Se lleva: ' + h(s.won || 'el aplauso del público') + '</div>';
       } else if (s.phase === 'intro' || !s.q) {
         o += '<b class="big fit" style="display:block;margin-top:3rem">' + s.steps + ' preguntas</b><div class="mid" style="margin-top:2rem">4 comodines · ¡a subir la escalera!</div><div class="mid gold" style="margin-top:2rem">Tú también juegas desde tu celular</div>';
       } else {

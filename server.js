@@ -197,8 +197,8 @@ function publicState(s, full = false) { // eslint-disable-line complexity
     stage: db.stage || 'bingo', roscoId: db.stage === 'rueda' ? (Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).id || null : null,
     celebrateAt: s.celebrateAt || 0,
     voteRev: (db.vote || {}).rev || 0, // los celulares vuelven a leer la votación cuando cambia
-    desafioRev: (db.desafio || {}).rev || 0, // ídem para El Gran Desafío (la Trivia del público)
-    desafioGen: (db.desafio || {}).gen || 0, // cada partida de El Gran Desafío: sus instrucciones en el celular
+    desafioRev: (db.desafio || {}).rev || 0, // ídem para ¿Quién quiere ser billonario? (la Trivia del público)
+    desafioGen: (db.desafio || {}).gen || 0, // cada partida de ¿Quién quiere ser billonario?: sus instrucciones en el celular
     enpieRev: (db.enpie || {}).rev || 0, // «El último en pie» (versión de prueba): los celulares vuelven a leer cuando cambia
     voteGen: (db.vote || {}).gen || 0, // cambia con cada concurso nuevo (El Festival u objeto): los celulares muestran sus instrucciones
     gameVoteRev: (db.gameVote || {}).rev || 0, // votación del juego: cambia al abrir o cerrar cada vuelta (no con cada voto)
@@ -280,7 +280,7 @@ function resetEvent() {
   db.raffle = { picked: [], roll: null };
   wheel.clear();
   vote.clear();
-  desafio.clear(); // El Gran Desafío y su Trivia
+  desafio.clear(); // ¿Quién quiere ser billonario? y su Trivia
   db.stage = 'bingo';
   if (db.gcper) db.gcper.on = false;
 }
@@ -810,7 +810,7 @@ const vote = require('./vote.js')({ app, db, save, requireAdmin, fail, setStage,
   findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null,
   venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
   notify: () => Object.values(db.sessions).forEach((s) => broadcast(s)) });
-// «El Gran Desafío»: trivia de 10 escalones con un concursante en el escenario
+// «¿Quién quiere ser billonario?»: trivia de 10 escalones con un concursante en el escenario
 const desafio = require('./desafio.js')({ app, db, save, requireAdmin, fail, setStage, festejo,
   findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null,
   venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
@@ -851,7 +851,7 @@ require('./twitch.js')({ app }); // videos y transmisiones en vivo de Twitch, pa
 require('./instagram-web.js')({ app, db, save, insta }); // últimos videos de Instagram de cada local, para la página web
 
 // Consola general: en qué está cada local (sala principal o sala light), su bloque del horario y su karaoke
-const STAGE_NAMES = { bingo: 'Bingo', rueda: 'El Rosko', sorteo: 'Sorteo', qr: 'QR grande', karaoke: 'Karaoke', show: 'Show', voto: 'Votación', enpie: 'El último en pie', desafio: 'El Gran Desafío', insta: 'Instagram', juego: 'Sorteo de juegos', votojuego: 'Votación del juego', none: 'Nada', cartelera: 'Cartelera de la semana', custom: 'GC personalizable', info: 'Información que va cambiando' };
+const STAGE_NAMES = { bingo: 'Bingo', rueda: 'El Rosko', sorteo: 'Sorteo', qr: 'QR grande', karaoke: 'Karaoke', show: 'Show', voto: 'Votación', enpie: 'El último en pie', desafio: '¿Quién quiere ser billonario?', insta: 'Instagram', juego: 'Sorteo de juegos', votojuego: 'Votación del juego', none: 'Nada', cartelera: 'Cartelera de la semana', custom: 'GC personalizable', info: 'Información que va cambiando' };
 app.get('/api/consola', requireAdmin, async (_req, res) => {
   const main = Object.values(db.sessions)[0] || null;
   const out = await Promise.all(['kennedy', 'frida', 'tobalaba'].map(async (v) => {
@@ -1214,7 +1214,7 @@ const cartonInfo = () => {
     out.lines.push(`${pl.length - up} en la banca`);
   } else if (st === 'desafio') {
     const d = db.desafio || {};
-    out.title = 'El Gran Desafío';
+    out.title = '¿Quién quiere ser billonario?';
     out.big = d.player || '¡Ya comienza!'; out.small = d.player ? 'Concursante' : '';
     if (d.step) out.lines.push(`Va por la pregunta ${d.step} de ${(d.prizes || []).length || 10}${(d.prizes || [])[d.step - 1] ? ` · ${d.prizes[d.step - 1]}` : ''}`);
     const crowd = new Set(Object.values((d.crowd || {}).ans || {}).flatMap((by) => Object.keys(by))).size;

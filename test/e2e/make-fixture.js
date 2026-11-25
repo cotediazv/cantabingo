@@ -1,5 +1,5 @@
 // Arma los datos fijos de las pruebas de pantalla (test/e2e/fixture.json): una jornada con todo en juego a la vez
-// (bingo con números, Rosco terminado, sorteo, votación en resultados, El Gran Desafío con respuesta marcada,
+// (bingo con números, Rosco terminado, sorteo, votación en resultados, ¿Quién quiere ser billonario? con respuesta marcada,
 // sorteo de juegos), siempre igual, para que las capturas se puedan comparar de una vez a otra.
 // Se corre solo cuando cambia la forma de los datos: `node test/e2e/make-fixture.js`.
 const fs = require('fs');
@@ -42,7 +42,7 @@ const T0 = 1795000000000; // fecha fija para lo que guarda hora
   await vh('results');
   await vh('reveal');
 
-  // El Gran Desafío: pregunta 4 con el 50:50 usado y la respuesta marcada
+  // ¿Quién quiere ser billonario?: pregunta 4 con el 50:50 usado y la respuesta marcada
   const dh = (action, b = {}) => srv.admin.post('/api/desafio/host', { action, ...b });
   await dh('new', { player: 'Camila Rojas Valenzuela', safe: [5] });
   await dh('next');

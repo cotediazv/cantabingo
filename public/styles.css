@@ -1127,7 +1127,7 @@ body.full #rf .rf-card.win .rf-name:not(.small) { font-size: min(21vh, calc(84vw
 .join-qr.tr { right: 2vw; top: 3vh; }
 .join-qr.above { right: 3vw; bottom: 27vh; }
 body.full .join-qr.br { bottom: 11vh; } /* en el tablero, sobre el botón «Activar sonido» */
-.join-qr.tl { left: 2vw; top: 3vh; } /* El Gran Desafío en OBS: arriba a la izquierda (abajo va la pregunta; a la derecha, la escalera) */
+.join-qr.tl { left: 2vw; top: 3vh; } /* ¿Quién quiere ser billonario? en OBS: arriba a la izquierda (abajo va la pregunta; a la derecha, la escalera) */
 .join-qr.bl { left: 2vw; bottom: 3.5vh; } /* rosco en OBS: abajo a la izquierda, lejos de la pregunta y la respuesta */
 
 /* ---------- Rosco en línea (el público juega desde el celular) ---------- */
@@ -3329,7 +3329,7 @@ body.con-paso #ctl-reload-fixed { top: calc(var(--paso-h, 64px) + 20px); }
 /* el recuadro del juego ocupa todo el ancho (la regla general de «main» lo centraba y lo dejaba del ancho de su contenido) */
 #ep .ep-main { margin: 0; max-width: none; width: 100%; box-sizing: border-box; align-self: stretch; }
 
-/* ---------- El Gran Desafío ---------- */
+/* ---------- ¿Quién quiere ser billonario? ---------- */
 /* Panel del animador */
 .dc-step { margin: 0 0 6px; font-size: 1.05rem; }
 .dc-step b { color: #ffc400; }
@@ -3616,7 +3616,7 @@ body.carton-on #app, body.carton-on #join-qr { visibility: hidden; }
 body.con-paso #ctl-carton { top: calc(var(--paso-h, 64px) + 20px); }
 .ctl-carton.on { background: #f4bf5a; color: #14121c; }
 
-/* ---------- La Trivia del Gran Desafío (el público juega desde el celular) ---------- */
+/* ---------- La Trivia del Billonario (el público juega desde el celular) ---------- */
 /* Panel */
 .dc-crowd { margin: 12px 0 0; padding: 10px 12px; border-radius: 12px; background: #12101f; border: 1px solid #3d3870; }
 .dc-crowd b { color: #ffc400; }
