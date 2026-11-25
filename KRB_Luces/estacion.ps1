@@ -12,7 +12,7 @@ New-Item -ItemType Directory -Force -Path $dir | Out-Null
 $utf8 = New-Object Text.UTF8Encoding $false
 
 Write-Host ""
-Write-Host "  LUCES KRB - estacion de ritmo (solo esta vez se pregunta algo)" -ForegroundColor Yellow
+Write-Host "  LUCES KRB - estacion de ritmo (solo esta vez se pregunta la clave)" -ForegroundColor Yellow
 Write-Host ""
 
 # 1) Direccion de las luces: si la suite corre en este mismo computador, por localhost; si no, por internet
@@ -26,24 +26,16 @@ if ($base -eq "") { $base = $porDefecto }
 $sec = Read-Host "  2) Clave de las luces (Enter si no tiene)" -AsSecureString
 $clave = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($sec))
 
-# 3) Entrada de audio donde llega la mezcla (las de grabacion de Windows)
+# 3) Entrada de audio: SIEMPRE la entrada de linea del computador (Cote, 25 nov), sin preguntar
 $ents = @(Get-PnpDevice -Class AudioEndpoint -PresentOnly -ErrorAction SilentlyContinue |
   Where-Object { $_.InstanceId -like "*{0.0.1.00000000}*" -and $_.Status -eq "OK" } | ForEach-Object { $_.FriendlyName })
-$entrada = ""
-if ($ents.Count -gt 0) {
-  Write-Host "  3) Entrada de audio donde llega la mezcla:"
-  $sug = 0
-  for ($i = 0; $i -lt $ents.Count; $i++) {
-    Write-Host ("       " + ($i + 1) + ". " + $ents[$i])
-    if ($ents[$i] -match "l.nea|line" -and $sug -eq 0) { $sug = $i + 1 }
-  }
-  if ($sug -eq 0) { $sug = 1 }
-  $r = (Read-Host ("     Numero (Enter = " + $sug + ")")).Trim()
-  $k = if ($r -match '^\d+$' -and [int]$r -ge 1 -and [int]$r -le $ents.Count) { [int]$r } else { $sug }
-  $entrada = $ents[$k - 1]
-  Write-Host "     Entrada: $entrada" -ForegroundColor Green
-} else {
-  Write-Host "  3) No se pudo listar las entradas de audio: se usara la predeterminada de Windows." -ForegroundColor DarkYellow
+$entrada = $ents | Where-Object { $_ -match "l.nea|line" } | Select-Object -First 1
+if ($entrada) { Write-Host "  3) Entrada de linea: $entrada" -ForegroundColor Green }
+else {
+  # sin nombre todavia (o deshabilitada en Windows): la pagina la busca sola por "linea" / "line" cada vez que parte
+  $entrada = "linea"
+  Write-Host "  3) No se encontro la entrada de linea activa en Windows. La estacion la buscara sola al partir." -ForegroundColor DarkYellow
+  Write-Host "     Si no aparece: Configuracion > Sonido > Entrada > habilitar 'Entrada de linea' / 'Line In'." -ForegroundColor DarkYellow
 }
 
 # 4) Navegador: Edge (viene con Windows) o Chrome

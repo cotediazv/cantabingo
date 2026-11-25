@@ -2590,8 +2590,12 @@ async function entradaGuardada(){
   // estacion fija: la entrada que se eligio al instalarla (nombre de Windows), si no se cambio despues en el panel
   const pedida = ESTACION && PARAMS.get('entrada');
   if (pedida && !g.manual) g = { nombre: pedida, parecido: true };
-  if (!g.id && !g.nombre) return '';
+  // la mezcla llega SIEMPRE por la entrada de linea del computador (Cote, 25 nov): si no se eligio otra a mano, esa
+  const linea = /l[ií]nea|line/i;
   try { const ins = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput');
+    const deLinea = ins.find(x => linea.test(x.label));
+    if (!g.manual && deLinea && (!g.nombre || g.nombre === 'linea')) return deLinea.deviceId;
+    if (!g.id && !g.nombre) return '';
     const n = (g.nombre || '').toLowerCase();
     const d = ins.find(x => x.deviceId === g.id) || ins.find(x => n && x.label.toLowerCase() === n) ||
       (g.parecido && n ? ins.find(x => x.label && (x.label.toLowerCase().includes(n) || n.includes(x.label.toLowerCase()))) : null);

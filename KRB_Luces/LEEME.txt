@@ -29,8 +29,8 @@ PANEL DEL DJ (noches sin show ni juegos)
   - El microfono solo funciona por https://luces.krbstage.cl/dj o en el Dell
     (http://localhost:8080/dj); por el WiFi con http el navegador no lo permite.
   - ESTACION DE RITMO (fija, en segundo plano): en el computador donde entra la mezcla (el de
-    OBS), doble clic UNA vez en ESTACION_RITMO.bat. Pregunta la clave y la entrada de linea en
-    la ventana negra (solo esa vez). Desde ahi corre sola y sin ventana cada vez que se prende
+    OBS), doble clic UNA vez en ESTACION_RITMO.bat. Pregunta solo la clave (una vez); escucha
+    siempre la entrada de linea del computador, sin preguntar. Desde ahi corre sola y sin ventana cada vez que se prende
     ese computador; si se cierra, se vuelve a abrir. Para mirarla: 'Ver estacion de ritmo KRB'
     en el Escritorio. Ese computador escucha la musica y
     manda los golpes; el DJ maneja las escenas desde su celular, por todo el local, sin
