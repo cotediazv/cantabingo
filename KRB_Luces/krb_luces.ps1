@@ -692,6 +692,9 @@ namespace KRB {
       }
       if (ruta == "/api/momento") {                        // ejecutar un momento: /api/momento?nombre=base_juegos
         string n = Arg(query, "nombre") ?? "";
+        // Escalon de la pregunta («¿Quien quiere ser ganador?», 12 preguntas): nivel 1 (1-4), 2 (5-8) o 3 (9-12), si existe ese momento
+        int esc; if (int.TryParse(Arg(query, "escalon") ?? "", out esc) && esc > 0) {
+          string alt = n + "_" + (esc <= 4 ? 1 : esc <= 8 ? 2 : 3); bool hay; lock (ML) { hay = momentos.ContainsKey(alt); } if (hay) n = alt; }
         // Solo la Sala de juegos de Mercado Kennedy (Cote, 24 nov): si el aviso dice de que sala viene y no es esta, no se toca nada
         string sala = Arg(query, "sala");
         if (sala != null && sala.ToLower().IndexOf(Sala.ToLower()) < 0) {
@@ -827,7 +830,7 @@ namespace KRB {
       if (acc.Count == 0) return true;                                     // momento sin acciones (p. ej. bingo_numero): no cambia nada
       // "@previo" = volver al ultimo momento estable (p. ej. despues del verde de una correcta, al rojo del reloj).
       // Los momentos que terminan en "@previo" son de paso y no cuentan como estables.
-      bool dePaso = acc.Contains("@previo");
+      bool dePaso = acc.Contains("@previo") || acc.Contains("paso");      // "paso": destellos que despues vuelven a donde estaba
       int gen = Interlocked.Increment(ref genMomento);
       MomentoActual = nombre; MomentoN++;
       Bitacora.Anotar("Momento de los juegos: " + nombre);
@@ -835,6 +838,7 @@ namespace KRB {
       Thread t = new Thread(() => {
         foreach (string l in acc) {
           if (gen != genMomento) return;                                   // llego otro momento: se cancela este
+          if (l == "paso") continue;
           if (l.StartsWith("espera:")) { Thread.Sleep((int)(Num(l.Substring(7), 0) * 1000)); continue; }
           if (l == "@previo") { if (gen == genMomento && MomentoEstable != "") EjecutarMomento(MomentoEstable); return; }
           if (l.StartsWith("@")) { if (gen == genMomento) EjecutarMomento(l.Substring(1).Trim()); return; }   // pasar a otro momento

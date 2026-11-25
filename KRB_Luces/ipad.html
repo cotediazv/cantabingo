@@ -1438,6 +1438,9 @@ function pintarEstado(e){
       (e.carpeta ? ' · carpeta de la suite: ' + e.carpeta : '');
   }
   if (CONTROL){ V.animador = e.animador || null; V.rosko = !!e.rosko; V.sucio = true; marcaAnimador(e.animador); }
+  // «¿Quien quiere ser ganador?» en la vista 3D: el concursante y el animador sentados en sus lugares
+  if (e.momento != null){ const d = /^desafio_/.test(e.momento) || (V.desafio && /^(premio_entrega|tombola_|trivia_|rosko_ranking|celebracion)/.test(e.momento));
+    if (d !== !!V.desafio){ V.desafio = d; V.sucio = true; } }
   momentoRecibido(e);
 }
 function sinConexion(){ $('dot').className = 'dot'; $('pillTxt').textContent = CONTROL ? 'Sin demo: abre la pantalla 1 del demo' : 'Sin conexión con el Dell'; }
@@ -2006,6 +2009,12 @@ const pared = (color, intensidad) => ({perimetrales:{color, intensidad}, fondo:{
 const frente = intensidad => ({frontales:{color:'blanco_calido', intensidad}});
 const miniRoja = {mini:{color:'rojo', intensidad:100, posicion:'escenario', mover:true}};
 const BASE = () => ({...pared('azul', 100), ...frente(100), ...cab('escenario', 50), ...miniRoja});
+// «¿Quien quiere ser ganador?»: donde se sientan (Cote, rev 308). Mirando el escenario de frente: concursante a la izquierda
+// (lado mas lejano de los restaurantes), animador a la derecha; los dos sentados, en diagonal.
+const CONC = [-2.2, 1.55, -1.5], ANIMA = [2.4, 1.45, -1.5];
+const llaveDesafio = () => ({ seguidor1:{color:'blanco_calido', intensidad:100, posicion:ANIMA, zoom:22},
+  seguidor2:{color:'blanco_calido', intensidad:100, posicion:CONC, zoom:22}, frontales:{color:'blanco_calido', intensidad:70} });
+const miniBlanca = i => ({ mini:{color:'blanco', intensidad:i, posicion:'escenario'} });
 const JUEGOS = [
   { juego:'Inicio y base', momentos:[
     { id:'base_juegos', nombre:'Base juegos', detalle:'Pared azul, frente y cabezas al escenario, mini rojas', g:BASE },
@@ -2065,31 +2074,43 @@ const JUEGOS = [
     { id:'festival_ganador', nombre:'Ganador', igual:'objeto_ganador' },
     { id:'festival_celebracion', nombre:'Celebración', igual:'celebracion_ganador' },
     { id:'festival_premio', nombre:'Entrega del premio', igual:'entrega_premio' } ]},
-  // «¿Quien quiere ser ganador?» (juego de Gabriel; en la Sala se llama desafio). Programado por Code 4 con la experiencia
-  // de los otros juegos (Cote, 25 nov): oscuro y enfocado en el concursante, tension antes de revelar, celebracion al ganar.
+  // «¿Quien quiere ser ganador?» (juego de Gabriel; en la Sala se llama desafio). Decisiones de Cote (registro rev 308-313):
+  // - Concursante sentado a un costado (lado mas lejano de los restaurantes, a la izquierda mirando de frente), en diagonal,
+  //   con la pantalla al frente; animador al otro costado, en un sillon bajo con una tablet en un atril vertical.
+  // - Luz fija sobre los dos todo el juego (1.1): cabeza 1 al animador, cabeza 2 al concursante y los frontales, en blanco
+  //   calido parejo. Solo cambia el fondo.
+  // - Tres niveles segun el escalon (2.1; 12 preguntas: 1-4, 5-8, 9-12), con las mini en blanco, lentas y rasantes (4).
+  // - Correcta / incorrecta (3.3): destello de 1 s y despues el estilo del programa (se abre / cae a oscuro).
   { juego:'¿Quién quiere ser ganador?', momentos:[
-    { id:'desafio_presenta', nombre:'Presentación del concursante', detalle:'Las cabezas barren desde el público hasta su cara; la pared sube en azul',
-      g:() => ({...pared('azul', 60), ...frente(60), ...cab(CARA, 25), mini:{color:'azul', intensidad:100, posicion:'escenario', mover:true}}), barrido:1.5, luego:[4, 'desafio_pregunta'] },
-    { id:'desafio_pregunta', nombre:'Pregunta', detalle:'Pared muy oscura con colores lentos; cabezas 1 y 2 a la cara del concursante',
-      g:() => ({...pared('azul', 15), ...cab(CARA, 30), mini:{color:'azul', intensidad:60, posicion:'escenario', mover:true}}), rosco:true },
-    { id:'desafio_5050', nombre:'Comodín 50:50', detalle:'Destello blanco corto y vuelve a la pregunta',
-      g:() => ({...pared('blanco', 100), ...frente(100), ...cab(CARA, 30), mini:{color:'blanco', intensidad:100, posicion:'escenario', mover:true}}), estrobo:['perimetrales', 'fondo'], luego:[1, 'desafio_pregunta'] },
-    { id:'desafio_definitiva', nombre:'Respuesta definitiva (suspenso)', detalle:'Todo baja: pared ámbar tenue, solo un haz angosto a la cara',
-      g:() => ({...pared('ambar', 20), ...cab(CARA, 12)}) },
-    { id:'desafio_correcta', nombre:'Correcta', detalle:'Destello verde 1,5 s, verde fijo y vuelve a la pregunta',
-      g:() => ({...BASE(), ...pared('verde', 100), mini:{color:'verde', intensidad:100, posicion:'escenario', mover:true}}), pared:{colores:['verde', 'blanco'], t:0.15, fx:0}, luego:[1.5, 'desafio_correcta_fija'] },
-    { id:'desafio_correcta_fija', nombre:'Correcta (verde fijo)', detalle:'Verde fijo 2 s y vuelve a la pregunta',
-      g:() => ({...BASE(), ...pared('verde', 100), mini:{color:'verde', intensidad:100, posicion:'escenario', mover:true}}), luego:[2, 'desafio_pregunta'] },
-    { id:'desafio_incorrecta', nombre:'Incorrecta (fin del juego)', detalle:'Pared roja, las cabezas bajan; 4 s y vuelve a la base',
-      g:() => { const o = {...pared('rojo', 100), ...frente(40)}; segIds().slice(0, 2).forEach(id => o[id] = {color:'rojo', intensidad:40, posicion:CARA, zoom:40}); return o; },
-      luego:[4, 'base_juegos'] },
-    { id:'desafio_publico', nombre:'Pregunta al público', detalle:'Las 3 cabezas al público, pared morada, mini en movimiento',
-      g:() => ({...pared('morado', 50), ...frente(30), ...cab('publico', 40, segIds()), mini:{color:'morado', intensidad:100, posicion:'escenario', mover:true}}) },
+    { id:'desafio_presenta', nombre:'Presentación del concursante', detalle:'Las cabezas barren desde el público hasta el animador y el concursante; la pared sube en azul',
+      g:() => ({...llaveDesafio(), ...pared('azul', 60), ...miniBlanca(80)}), rasante:true, barrido:{t:1.5, ids:['seguidor1', 'seguidor2']}, luego:[4, 'desafio_pregunta'] },
+    { id:'desafio_pregunta', nombre:'Pregunta (escalones 1 a 4)', detalle:'Fondo azul suave con colores lentos, público iluminado suave; mini blancas rasantes',
+      g:() => ({...llaveDesafio(), ...pared('azul', 45), seguidor3:{color:'blanco_calido', intensidad:30, posicion:'publico', zoom:95}, ...miniBlanca(70)}), rosco:true, rasante:true },
+    { id:'desafio_pregunta_1', nombre:'Pregunta · nivel 1 (escalones 1 a 4)', igual:'desafio_pregunta' },
+    { id:'desafio_pregunta_2', nombre:'Pregunta · nivel 2 (escalones 5 a 8)', detalle:'Fondo a media luz, público a oscuras; mini blancas rasantes',
+      g:() => ({...llaveDesafio(), ...pared('azul', 22), ...miniBlanca(55)}), rosco:true, rasante:true },
+    { id:'desafio_pregunta_3', nombre:'Pregunta · nivel 3 (escalones 9 a 12)', detalle:'Todo a oscuras salvo los dos; la cabeza 3 baja en barrido sobre el concursante',
+      g:() => ({...llaveDesafio(), ...pared('azul', 6), seguidor3:{color:'blanco_calido', intensidad:100, posicion:CONC, zoom:15}, ...miniBlanca(35)}), rasante:true,
+      barrido:{t:1.5, ids:['seguidor3']} },
+    { id:'desafio_5050', nombre:'Comodín 50:50', detalle:'Destello blanco 1 s y vuelve a la pregunta',
+      g:() => ({...llaveDesafio(), ...pared('blanco', 100), ...miniBlanca(100)}), estrobo:['perimetrales', 'fondo'], rasante:true, paso:true, luego:[1, 'previo'] },
+    { id:'desafio_definitiva', nombre:'Respuesta definitiva (suspenso)', detalle:'El fondo baja a ámbar tenue; la luz sobre los dos no cambia',
+      g:() => ({...llaveDesafio(), ...pared('ambar', 12), ...miniBlanca(25)}), rasante:true , paso:true },
+    { id:'desafio_correcta', nombre:'Correcta', detalle:'Destello verde 1 s y después se abre el ambiente 3 s',
+      g:() => ({...llaveDesafio(), ...pared('verde', 100), mini:{color:'verde', intensidad:100, posicion:'escenario'}}), rasante:true, paso:true, luego:[1, 'desafio_correcta_abre'] },
+    { id:'desafio_correcta_abre', nombre:'Correcta · se abre el ambiente', detalle:'Pared y mini suben, las mini barren; vuelve a la pregunta',
+      g:() => ({...llaveDesafio(), ...pared('azul', 90), ...frente(100), ...miniBlanca(100)}), pared:{colores:['azul', 'blanco', 'cian', 'blanco'], t:0.6, fx:1}, rasante:'amplio', paso:true, luego:[3, 'previo'] },
+    { id:'desafio_incorrecta', nombre:'Incorrecta', detalle:'Destello rojo 1 s y después todo cae a oscuro',
+      g:() => ({...llaveDesafio(), ...pared('rojo', 100), mini:{color:'rojo', intensidad:100, posicion:'escenario'}}), rasante:true, luego:[1, 'desafio_incorrecta_cae'] },
+    { id:'desafio_incorrecta_cae', nombre:'Incorrecta · todo cae a oscuro', detalle:'Solo quedan las luces sobre los dos; a los 5 s vuelve a la base',
+      g:() => llaveDesafio(), luego:[5, 'base_juegos'] },
+    { id:'desafio_publico', nombre:'Pregunta al público', detalle:'La cabeza 3 ilumina al público; pared morada; mini blancas',
+      g:() => ({...llaveDesafio(), ...pared('morado', 50), seguidor3:{color:'blanco_calido', intensidad:60, posicion:'publico', zoom:95}, ...miniBlanca(80)}), rasante:true , paso:true },
     { id:'desafio_llamada', nombre:'Llamada (30 s)', detalle:'La pared late en ámbar y rojo cada segundo, como un reloj',
-      g:() => ({...pared('ambar', 40), ...cab(CARA, 30)}), pared:{colores:['ambar', 'rojo'], t:0.5, fx:1} },
-    { id:'desafio_retiro', nombre:'Se retira con lo que lleva', detalle:'Aplauso: pared dorada latiendo suave, frente blanco cálido',
-      g:() => ({...pared('amarillo', 100), ...frente(100), ...cab('escenario', 50), mini:{color:'ambar', intensidad:100, posicion:'escenario', mover:true}}), pared:{colores:['amarillo', 'ambar'], t:0.8, fx:1} },
-    { id:'desafio_ganador', nombre:'Ganador (10 escalones)', igual:'celebracion_ganador' } ]},
+      g:() => ({...llaveDesafio(), ...pared('ambar', 40), ...miniBlanca(40)}), pared:{colores:['ambar', 'rojo'], t:0.5, fx:1}, rasante:true , paso:true },
+    { id:'desafio_retiro', nombre:'Se retira con lo que lleva', detalle:'Aplauso: pared dorada latiendo suave',
+      g:() => ({...llaveDesafio(), ...pared('amarillo', 100), ...frente(100), mini:{color:'ambar', intensidad:100, posicion:'escenario'}}), pared:{colores:['amarillo', 'ambar'], t:0.8, fx:1}, rasante:'amplio' },
+    { id:'desafio_ganador', nombre:'Ganador (todos los escalones)', igual:'celebracion_ganador' } ]},
   { juego:'Trivia', momentos:[
     { id:'trivia_ganador', nombre:'Ganador (celebración)', igual:'celebracion_ganador' },
     { id:'trivia_premio', nombre:'Entrega del premio', igual:'entrega_premio' } ]}
@@ -2135,7 +2156,7 @@ function compilarMomento(m){
   if (m.igual) return compilarMomento(momentoPorId(m.igual));
   const mGuard = master; master = 100;
   try {
-    const zs = zonasDe(m), todo = {}, L = ['/api/efecto?todos=off'];
+    const zs = zonasDe(m), todo = {}, L = m.paso ? ['paso', '/api/efecto?todos=off'] : ['/api/efecto?todos=off'];   // paso: no cuenta como estable (vuelve con @previo)
     conf.grupos.forEach(g => Object.assign(todo, valoresGrupo(g, zs[g.id])));
     L.push('/api/set?d=' + serial(todo) + '&f=0');                           // cambios inmediatos, sin fundido (Cote, rev 185)
     const ef = (id, p) => L.push('/api/efecto?id=' + encodeURIComponent(id) + '&' + new URLSearchParams(p));
@@ -2161,10 +2182,16 @@ function compilarMomento(m){
       ef('estrobo', {tipo:'sec', pasos:pasosTxt([on, off]), t:0.06, fx:0});
     }
     if (m.barrido){                                                             // las cabezas barren desde el publico hasta su destino
-      const desde = {}, hasta = {};
-      segIds().slice(0, 2).forEach(id => { const g = grupo(id), z0 = {...zs[id]}; fijarPosicion(z0, 'publico', id);
+      const desde = {}, hasta = {}, bt = m.barrido.t || m.barrido, bids = m.barrido.ids || segIds().slice(0, 2);
+      bids.forEach(id => { const g = grupo(id); if (!g) return; const z0 = {...zs[id]}; fijarPosicion(z0, 'publico', id);
         Object.assign(desde, valoresGrupo(g, z0)); Object.assign(hasta, valoresGrupo(g, zs[id])); });
-      ef('barrido', {tipo:'sec', pasos:pasosTxt([desde, hasta, hasta]), t:m.barrido, fx:1});
+      ef('barrido', {tipo:'sec', pasos:pasosTxt([desde, hasta, hasta, hasta, hasta, hasta, hasta, hasta]), t:bt, fx:1});   // barre una vez y se queda
+    }
+    if (m.rasante){                                                             // mini blancas, lentas y rasantes por encima del publico
+      const amplio = m.rasante === 'amplio';
+      conEspejos(['mini']).forEach(id => { const g = grupo(id); if (!g || !g.canales.pan) return; const b = g.direccion - 1;
+        ef('mover:' + id, {tipo:'seno', ch:[b + g.canales.pan, b + g.canales.tilt].join(','), centro:'128,105',
+          amp:(amplio ? '95,20' : '55,12'), periodo:(amplio ? 5 : 14)}); });
     }
     if (m.standby){                                                             // fondo como en Standby (sin tocar las cabezas)
       capasStandbyFondo(STANDBY_TONOS).forEach(c => ef(c.id, {tipo:'sec', pasos:pasosTxt(c.pasos), t:c.seg.toFixed(3), fx:c.fx}));
@@ -2271,15 +2298,18 @@ function simAccion(ruta, q){
   }
   return false;
 }
+// Escalon de la pregunta (Cote: 12 preguntas, tres niveles: 1-4, 5-8, 9-12): igual que en el Dell
+function conEscalon(n, esc){ const e = parseInt(esc, 10); if (!e) return n; const alt = n + '_' + (e <= 4 ? 1 : e <= 8 ? 2 : 3); return SIM.momentos[alt] ? alt : n; }
 function simMomento(n, encadenado){
   const acc = SIM.momentos[n]; if (!acc) return false;
   recorridoDemo(n, encadenado);                                         // animador y camara (tambien con momentos sin luces, como rosko_pantalla)
   if (!acc.length) return true;                                         // bingo_numero: no cambia nada
   const gen = ++SIM.gen; SIM.momento = n; SIM.momentoN++;
-  if (!acc.includes('@previo')) SIM.estable = n;
+  if (!acc.includes('@previo') && !acc.includes('paso')) SIM.estable = n;
   (async () => {
     for (const l of acc){
       if (gen !== SIM.gen) return;
+      if (l === 'paso') continue;
       if (l.startsWith('espera:')){ await new Promise(r => setTimeout(r, +l.slice(7) * 1000)); continue; }
       if (l === '@previo'){ if (gen === SIM.gen && SIM.estable){ simMomento(SIM.estable, true); pintarEstado(simEstado()); } return; }
       if (l.startsWith('@')){ if (gen === SIM.gen){ simMomento(l.slice(1).trim(), true); pintarEstado(simEstado()); } return; }
@@ -2316,7 +2346,7 @@ async function simApi(path, params){
     SIM.momentos = d; return {ok:true, momentos:Object.keys(d).length};
   }
   if (ruta === '/api/lista-momentos') return Object.keys(SIM.momentos);
-  if (ruta === '/api/momento'){ if (!simMomento(q.get('nombre') || '')) throw new Error(404); return simEstado(); }
+  if (ruta === '/api/momento'){ if (!simMomento(conEscalon(q.get('nombre') || '', q.get('escalon')) || '')) throw new Error(404); return simEstado(); }
   simAccion(ruta, q);
   return simEstado();
 }
@@ -2447,7 +2477,8 @@ function camaraDemo(dt, a){
 function iniciarDemo(){
   if (CONTROL) return;                                                  // el control no simula: maneja el demo que esta abierto (pantalla 1)
   if (TV) tomaFija();
-  const recibir = d => { const n = typeof d === 'string' ? d : d && (d.momento || d.nombre); if (n && SIM.momentos[n]) { simMomento(n); pintarEstado(simEstado()); } };
+  const recibir = d => { let n = typeof d === 'string' ? d : d && (d.momento || d.nombre); if (n && d && d.escalon) n = conEscalon(n, d.escalon);
+    if (n && SIM.momentos[n]) { simMomento(n); pintarEstado(simEstado()); } };
   window.addEventListener('message', ev => recibir(ev.data));
   if (CANAL) CANAL.onmessage = async ev => {
     const d = ev.data;

@@ -9,7 +9,7 @@ import * as THREE from './lib/three.module.min.js';
 
 let renderer, scene, camera, construido = false;
 const focos = [];            // un foco por equipo: { g, tipo, pos, spot, haz, lente, cuerpo }
-let anilloMarca, animadorObj, artistaObj, roskoObj, techoObj;
+let anilloMarca, animadorObj, artistaObj, roskoObj, techoObj, desafioObj;
 const PANT = { tv:null, vert:[], h42:[] };   // pantallas del escenario (para mostrar las de la Sala en el demo)
 
 /* ---------- utilidades ---------- */
@@ -382,6 +382,34 @@ function construir(){
   palo(3.0, -1.3, 0.74, 0.03);                                                             // piso alto del animador
   const aro = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.012, 6, 20), mat.negro); aro.position.set(3.0, 0.45 + 0.3, -1.3); aro.rotation.x = Math.PI / 2; roskoObj.add(aro);
   roskoObj.visible = false; scene.add(roskoObj);
+
+  // --- «¿Quien quiere ser ganador?» (Cote, rev 308): concursante sentado a la izquierda (mirando de frente), en diagonal,
+  //     con su pantalla al frente; animador a la derecha en un sillon bajo, con una tablet en un atril vertical ---
+  desafioObj = new THREE.Group();
+  const dPersona = (ropa, alto) => { const g = new THREE.Group();
+    const torso = sombra(new THREE.Mesh(new THREE.CapsuleGeometry(0.2, 0.5, 6, 12), ropa)); torso.position.y = alto + 0.42; g.add(torso);
+    const cabeza = sombra(new THREE.Mesh(new THREE.SphereGeometry(0.13, 16, 12), mat.piel)); cabeza.position.y = alto + 0.88; g.add(cabeza);
+    const muslos = sombra(new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.14, 0.45), ropa)); muslos.position.set(0, alto + 0.07, 0.2); g.add(muslos);
+    const piernas = sombra(new THREE.Mesh(new THREE.BoxGeometry(0.3, alto, 0.12), mat.negro)); piernas.position.set(0, alto / 2, 0.4); g.add(piernas);
+    return g; };
+  const dSilla = (alto, ancho) => { const g = new THREE.Group();
+    const asientoS = sombra(new THREE.Mesh(new THREE.BoxGeometry(ancho, 0.1, 0.5), mat.negro)); asientoS.position.y = alto - 0.05; g.add(asientoS);
+    const resp = sombra(new THREE.Mesh(new THREE.BoxGeometry(ancho, 0.6, 0.08), mat.negro)); resp.position.set(0, alto + 0.3, -0.22); g.add(resp);
+    const pata = sombra(new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, alto, 8), mat.negro)); pata.position.y = alto / 2; g.add(pata);
+    return g; };
+  // concursante: dSilla alta, mirando en diagonal hacia el centro y el publico; pantalla al frente
+  const dConc = new THREE.Group(); dConc.add(dSilla(0.65, 0.5)); dConc.add(dPersona(new THREE.MeshStandardMaterial({ color: 0x17305a, roughness: 0.9 }), 0.65));
+  const dMonitor = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.38, 0.04), mat.negro); dMonitor.position.set(0, 1.05, 0.85); dMonitor.rotation.y = Math.PI; dConc.add(dMonitor);
+  const dBrillo = new THREE.Mesh(new THREE.PlaneGeometry(0.56, 0.32), new THREE.MeshBasicMaterial({ color: 0x3b6fd8 })); dBrillo.position.set(0, 0, -0.025); dBrillo.rotation.y = Math.PI; dMonitor.add(dBrillo);
+  const dPieM = sombra(new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.85, 8), mat.negro)); dPieM.position.set(0, 0.43, 0.85); dConc.add(dPieM);
+  dConc.position.set(-2.2, 0.45, -1.7); dConc.rotation.y = Math.PI / 4; desafioObj.add(dConc);
+  // animador: sillon bajo, mirando en diagonal hacia el concursante y el publico; dTablet en un dAtril vertical
+  const dAnim = new THREE.Group(); dAnim.add(dSilla(0.42, 0.7)); dAnim.add(dPersona(new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.8 }), 0.42));
+  const dAtril = sombra(new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 1.0, 8), mat.negro)); dAtril.position.set(0.25, 0.5, 0.6); dAnim.add(dAtril);
+  const dTablet = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.19, 0.015), mat.negro); dTablet.position.set(0.25, 1.02, 0.6); dTablet.rotation.y = Math.PI; dAnim.add(dTablet);
+  const dPantT = new THREE.Mesh(new THREE.PlaneGeometry(0.23, 0.16), new THREE.MeshBasicMaterial({ color: 0x9ec2ff })); dPantT.position.z = -0.009; dPantT.rotation.y = Math.PI; dTablet.add(dPantT);
+  dAnim.position.set(2.4, 0.45, -1.7); dAnim.rotation.y = -Math.PI / 4; desafioObj.add(dAnim);
+  desafioObj.visible = false; scene.add(desafioObj);
   if (VIVO.activo) prepararPantallasVivo();
 
   // anillo del punto tocado en el mapa de Seguir
@@ -444,8 +472,9 @@ function render(){
   const enSeguir = document.body.classList.contains('en-seguir') || document.body.classList.contains('dj-cabezas');
   const an = V.animador;
   // mientras camina el animador, la artista fija no se muestra; en el panel del DJ hay alguien en el escenario en Previa y Show
-  animadorObj.visible = !!an && !V.escenarioVacio; artistaObj.visible = !an && !V.escenarioVacio;
-  roskoObj.visible = !!V.rosko;
+  animadorObj.visible = !!an && !V.escenarioVacio && !V.desafio; artistaObj.visible = !an && !V.escenarioVacio && !V.desafio;
+  roskoObj.visible = !!V.rosko && !V.desafio;
+  if (desafioObj) desafioObj.visible = !!V.desafio;
   if (an){                                                     // camina: posicion, rumbo y piernas en movimiento
     animadorObj.position.set(an.p[0], an.p[1] + Math.abs(Math.sin(an.t * 6)) * 0.03, an.p[2]);
     animadorObj.rotation.y = an.rumbo;
