@@ -1061,7 +1061,9 @@ function puntoPiso(u, v){
   p[1] = dentroPoligono(p[0], p[2], TARIMA) ? 0.45 : 0;
   return p;
 }
-const TARIMA = [[-5,-4],[5,-4],[5,-1.6],[3.2,0.3],[-5,0.3]];          // forma de la tarima (x, z)
+// Escenario (Cote, 25 nov): las columnas azules van 1,5 m mas adentro que antes y la tarima es mas angosta por los costados.
+const ESC_X = 3.5, COL_X = 4.3;                                            // medio ancho de la tarima y de las columnas azules (m)
+const TARIMA = [[-ESC_X,-4],[ESC_X,-4],[ESC_X,-1.6],[ESC_X - 1.8,0.3],[-ESC_X,0.3]];   // forma de la tarima (x, z), esquina derecha en diagonal
 function dentroPoligono(x, z, pol){
   let dentro = false;
   for (let i = 0, j = pol.length - 1; i < pol.length; j = i++){
@@ -1465,11 +1467,11 @@ const POS3D = {
   seguidor1:    { columna:0 },
   seguidor2:    { columna:1 },
   seguidor3:    { columna:2 },
-  frontales:    { pos:[[-4.7, 4.1, 0.6], [4.7, 4.1, 0.6]] },
+  frontales:    { pos:[[-(COL_X - 1.1), 4.1, 0.6], [COL_X - 1.1, 4.1, 0.6]] },   // en los pilares (se corrieron con las columnas)
   mini:         { pos:[[-1.15, 0.6, -3.0], [1.15, 0.6, -3.0]], piso:true },   // justo al costado de la bateria (Cote, 24 nov)
-  mini_columnas:{ pos:[[-5.8, 4.45, -0.3], [5.8, 4.45, -0.3]], piso:true },   // arriba de las columnas azules (Cote, 24 nov)
-  perimetrales: { pos:[[-3.9, 0.45, -3.75], [-1.3, 0.45, -3.75], [1.3, 0.45, -3.75], [3.9, 0.45, -3.75]] },
-  fondo:        { pos:[[-5.8, 4.35, 0.0], [5.8, 4.35, 0.0]] }   // arriba de las columnas azules
+  mini_columnas:{ pos:[[-COL_X, 4.45, -0.3], [COL_X, 4.45, -0.3]], piso:true },   // arriba de las columnas azules (Cote, 24 nov)
+  perimetrales: { pos:[[-2.9, 0.45, -3.75], [-1.0, 0.45, -3.75], [1.0, 0.45, -3.75], [2.9, 0.45, -3.75]] },   // repartidos en la tarima mas angosta
+  fondo:        { pos:[[-COL_X, 4.35, 0.0], [COL_X, 4.35, 0.0]] }   // arriba de las columnas azules
 };
 const sub = (a, b) => [a[0]-b[0], a[1]-b[1], a[2]-b[2]], add = (a, b) => [a[0]+b[0], a[1]+b[1], a[2]+b[2]];
 const mul = (a, k) => [a[0]*k, a[1]*k, a[2]*k], dot = (a, b) => a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
@@ -1720,7 +1722,7 @@ function dibujar3D(){
   });
   [-1.8, -1.65, 1.65, 1.8].forEach(x => linea([x, 0.5, -3.99], [x, 4.6, -3.99], '#2c4f55', 1)); // lineas verticales
   // Tarima: frente de madera y esquina derecha en diagonal
-  const tar = [[-5,-4],[5,-4],[5,-1.6],[3.2,0.3],[-5,0.3]], ht = 0.45;
+  const tar = TARIMA, ht = 0.45;
   poly(tar.map(([x, z]) => [x, ht, z]), '#24201b');
   for (let i = 0; i < tar.length; i++){
     const [x0, z0] = tar[i], [x1, z1] = tar[(i + 1) % tar.length];
@@ -1744,13 +1746,13 @@ function dibujar3D(){
     poly([0,1,2,3,4,5].map(k => [c[0] + r * Math.cos(k * Math.PI / 3), 4.3, c[2] + r * Math.sin(k * Math.PI / 3)]), '#a8824c', '#c99d5e');
   });
   // Marco azul arriba
-  linea([-5.8, 4.5, 0.3], [5.8, 4.5, 0.3], '#3a6fb5', 4);
-  linea([-5.8, 4.5, 0.3], [-5.8, 4.5, -3.6], '#3a6fb5', 4);
-  linea([5.8, 4.5, 0.3], [5.8, 4.5, -3.6], '#3a6fb5', 4);
+  linea([-COL_X, 4.5, 0.3], [COL_X, 4.5, 0.3], '#3a6fb5', 4);
+  linea([-COL_X, 4.5, 0.3], [-COL_X, 4.5, -3.6], '#3a6fb5', 4);
+  linea([COL_X, 4.5, 0.3], [COL_X, 4.5, -3.6], '#3a6fb5', 4);
   // Red de cuerdas sobre el escenario (del marco del frente hacia atras) y cuerdas colgando
-  linea([-5.8, 4.5, -2.6], [5.8, 4.5, -2.6], '#3a6fb5', 3);
+  linea([-COL_X, 4.5, -2.6], [COL_X, 4.5, -2.6], '#3a6fb5', 3);
   for (let x = -5.4; x <= 5.4; x += 0.42) linea([x, 4.5, 0.3], [x, 4.35, -2.6], '#8f7d5c', 1);
-  for (let z = 0; z >= -2.4; z -= 0.6) linea([-5.8, 4.42, z], [5.8, 4.42, z], '#8f7d5c', 1);
+  for (let z = 0; z >= -2.4; z -= 0.6) linea([-COL_X, 4.42, z], [COL_X, 4.42, z], '#8f7d5c', 1);
   for (let x = -5.4; x <= 5.4; x += 0.42){
     const largo = 1.0 + 0.5 * Math.abs(Math.sin(x * 1.7));
     linea([x, 4.5, 0.3], [x + 0.15, 4.5 - largo, -0.6], '#b8a27a', 1);
@@ -1966,7 +1968,7 @@ function dibujarPlano(){
   s += `<rect x="0" y="${Y(SALON.pasillo)}" width="${W}" height="${160 - Y(SALON.pasillo)}" fill="#1c1f25"/>`;
   [W * 0.3, W * 0.75].forEach(x => s += `<text x="${x}" y="158" fill="#8a91a0" font-size="5.5" text-anchor="middle" font-weight="700" letter-spacing="2">PASILLO</text>`);
   // escenario (tarima en diagonal) y pared del fondo
-  const tar = [[-5,-4],[5,-4],[5,-1.6],[3.2,0.3],[-5,0.3]].map(([x, z]) => pt([x, 0, z])).join(' ');
+  const tar = TARIMA.map(([x, z]) => pt([x, 0, z])).join(' ');
   s += `<polygon points="${tar}" fill="#3a2f22" stroke="#7d5a30" stroke-width="1"/>`;
   s += `<line x1="${pt([-5,0,-4]).split(',')[0]}" y1="${pt([-5,0,-4]).split(',')[1]}" x2="${pt([5,0,-4]).split(',')[0]}" y2="${pt([5,0,-4]).split(',')[1]}" stroke="#2c6f8a" stroke-width="2"/>`;
   const ce = aSalon([0.5, 0, -2]);

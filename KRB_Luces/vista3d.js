@@ -241,11 +241,11 @@ function construir(){
     }), roughness: 1 }));
     alf.rotation.x = -Math.PI / 2; alf.position.set(0, 0.452, -2.95); alf.receiveShadow = true; scene.add(alf);
   }
-  caja(0.9, 1.3, 0.6, mat.gris, 4.45, 1.1, -2.05);                                    // case: al borde, detras de la columna azul derecha
+  caja(0.9, 1.3, 0.6, mat.gris, ESC_X - 0.55, 1.1, -2.05);                                    // case: al borde, detras de la columna azul derecha
   caja(0.7, 0.75, 0.5, mat.negro, -2.25, 0.82, -3.15);                               // parlante
   // columnas azules del escenario con su pantalla vertical (y la TV en la derecha)
   // columnas azules del escenario: SIEMPRE visibles (Cote). Las casi invisibles son solo los pilares del salon.
-  [-5.8, 5.8].forEach(x => {
+  [-COL_X, COL_X].forEach(x => {
     caja(1.0, 4.3, 1.2, mat.listones, x, 2.15, 0);
     const pant = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 1.4), new THREE.MeshBasicMaterial({ map: texRosko(), color: 0xc8c8c8 }));   // muestra: El Rosko
     pant.position.set(x, 3.0, 0.61); scene.add(pant); PANT.vert.push(pant);
@@ -257,14 +257,14 @@ function construir(){
   // marco azul, red de cuerdas y lamparas hexagonales
   const barra = (a, b) => { const d = v3(b).sub(v3(a)), m = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, d.length(), 10), mat.azul);
     m.position.copy(v3(a).add(d.clone().multiplyScalar(0.5))); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); scene.add(m); };
-  barra([-5.8, 4.5, 0.3], [5.8, 4.5, 0.3]); barra([-5.8, 4.5, 0.3], [-5.8, 4.5, -3.6]); barra([5.8, 4.5, 0.3], [5.8, 4.5, -3.6]); barra([-5.8, 4.5, -2.6], [5.8, 4.5, -2.6]);
+  barra([-COL_X, 4.5, 0.3], [COL_X, 4.5, 0.3]); barra([-COL_X, 4.5, 0.3], [-COL_X, 4.5, -3.6]); barra([COL_X, 4.5, 0.3], [COL_X, 4.5, -3.6]); barra([-COL_X, 4.5, -2.6], [COL_X, 4.5, -2.6]);
   const pts = [];
-  for (let x = -5.4; x <= 5.4; x += 0.42){
+  for (let x = -(COL_X - 0.4); x <= COL_X - 0.4; x += 0.42){
     const largo = 1.0 + 0.5 * Math.abs(Math.sin(x * 1.7));
     pts.push(x, 4.5, 0.3, x + 0.15, 4.5 - largo, -0.6);
     pts.push(x, 4.5, 0.3, x, 4.35, -2.6);
   }
-  for (let z = 0; z >= -2.4; z -= 0.6) pts.push(-5.8, 4.42, z, 5.8, 4.42, z);
+  for (let z = 0; z >= -2.4; z -= 0.6) pts.push(-COL_X, 4.42, z, COL_X, 4.42, z);
   const gc = new THREE.BufferGeometry(); gc.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3)); scene.add(new THREE.LineSegments(gc, mat.cuerda));
   [[-1.5, 3.6], [0, 3.45], [1.5, 3.6]].forEach(([x, y]) => { const h = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.45, 6), mat.lampara); h.rotation.x = Math.PI / 2; h.position.set(x, y, -1.1); scene.add(h); });
   [[-2.5, 5], [1.5, 6.5], [-1, 9.5], [3, 11], [-3.5, 13], [1, 15.5]].forEach(([u, v]) => { const h = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 0.8, 0.35, 6), mat.lampara); enSalon(h, u, v, 4.3); scene.add(h); });
