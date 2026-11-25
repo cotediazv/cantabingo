@@ -410,6 +410,8 @@ const CONTROL = DEMO && (PARAMS.get('demo') === 'control' || MAPA_SOLO);
 if (MAPA_SOLO) document.body.classList.add('solo-mapa');
 if (TV) document.body.classList.add('tv');
 const DJ = location.pathname === '/dj' || PARAMS.has('dj');
+// Estacion de ritmo fija (Cote, 25 nov): el computador de la mezcla abre /dj?estacion=1 solo al prender y escucha siempre
+const ESTACION = DJ && PARAMS.get('estacion') === '1';
 if (DJ) document.body.classList.add('dj');
 const COLOR_CSS = {blanco_calido:'#ffd9a0',blanco:'#ffffff',azul:'#2b55ff',rojo:'#ff2a2a',verde:'#22dd55',amarillo:'#ffbe00',ambar:'#ff8a00',morado:'#9b3cff',rosa:'#ff3fa0',cian:'#22e5ff'};
 // Las 4 marcas de calibracion: las que uso Cote en Kennedy (25 nov), con su lugar real en el salon (sal = [u, v] en metros:
@@ -2582,9 +2584,17 @@ class KrbRitmo extends AudioWorkletProcessor {
   }
 }
 registerProcessor('krb-ritmo', KrbRitmo);`;
+// La entrada guardada se busca por su id y, si cambio, por su nombre
+async function entradaGuardada(){
+  let g = {}; try { g = JSON.parse(localStorage.getItem('krb_dj_entrada2') || '{}'); } catch(e){}
+  if (!g.id && !g.nombre) return '';
+  try { const ins = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput');
+    const d = ins.find(x => x.deviceId === g.id) || ins.find(x => g.nombre && x.label === g.nombre); return d ? d.deviceId : (g.id || ''); }
+  catch(e){ return g.id || ''; }
+}
 async function escucharMusica(){
   if (!(window.AudioWorkletNode)) return escucharMusicaSimple();
-  let elegida = ''; try { elegida = localStorage.getItem('krb_dj_entrada') || ''; } catch(e){}
+  const elegida = await entradaGuardada();
   const pedir = id => navigator.mediaDevices.getUserMedia({ audio: { deviceId: id ? { exact: id } : undefined,
     echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
   let stream; try { stream = await pedir(elegida); } catch(e){ if (!elegida) throw e; stream = await pedir(''); }
@@ -2606,11 +2616,11 @@ async function escucharMusica(){
   };
   const lead = setInterval(() => nodo.port.postMessage({ lead: ritmo.rtt / 2 }), 2000);
   ritmo.on = false;                                                                              // el reloj lo lleva el proceso de audio
-  return { stop(){ clearInterval(lead); nodo.port.onmessage = null; stream.getTracks().forEach(x => x.stop()); ctx.close(); $('djNivel').style.width = '0'; } };
+  return { vivo: () => ctx.state !== 'closed' && stream.getAudioTracks().some(x => x.readyState === 'live'), stop(){ clearInterval(lead); nodo.port.onmessage = null; stream.getTracks().forEach(x => x.stop()); ctx.close(); $('djNivel').style.width = '0'; } };
 }
 async function escucharMusicaSimple(){
   // Entrada elegida (Cote, 25 nov: la mezcla completa entra por la entrada de linea del computador de OBS)
-  let elegida = ''; try { elegida = localStorage.getItem('krb_dj_entrada') || ''; } catch(e){}
+  const elegida = await entradaGuardada();
   const pedir = id => navigator.mediaDevices.getUserMedia({ audio: { deviceId: id ? { exact: id } : undefined,
     echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
   let stream; try { stream = await pedir(elegida); } catch(e){ if (!elegida) throw e; stream = await pedir(''); }
@@ -2660,14 +2670,14 @@ async function escucharMusicaSimple(){
 // Lista de entradas de audio del aparato (los nombres aparecen despues de dar permiso al microfono)
 async function listarEntradas(){
   if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
-  let elegida = ''; try { elegida = localStorage.getItem('krb_dj_entrada') || ''; } catch(e){}
+  const elegida = await entradaGuardada();
   const sel = $('djEntrada'), ins = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput' && d.deviceId !== 'default' && d.deviceId !== 'communications');
   sel.innerHTML = '<option value="">Micrófono (predeterminado)</option>' +
     ins.map((d, k) => `<option value="${d.deviceId}">${(d.label || 'Entrada ' + (k + 1)).replace(/[<>&"]/g, '')}</option>`).join('');
   sel.value = ins.some(d => d.deviceId === elegida) ? elegida : '';
 }
 $('djEntrada').onchange = async () => {
-  try { localStorage.setItem('krb_dj_entrada', $('djEntrada').value); } catch(e){}
+  try { const o = $('djEntrada').selectedOptions[0]; localStorage.setItem('krb_dj_entrada2', JSON.stringify({ id: o.value, nombre: o.value ? o.textContent : '' })); } catch(e){}
   if (ritmo.mic){ ritmo.mic.stop(); ritmo.mic = null; try { ritmo.mic = await escucharMusica(); $('djAviso').textContent = 'Escuchando: ' + $('djEntrada').selectedOptions[0].textContent; } catch(e){ $('djMic').classList.remove('act'); $('djAviso').textContent = 'No se pudo usar esa entrada (' + (e.name || e.message) + ')'; } }
 };
 function iniciarDJ(){
@@ -2680,6 +2690,22 @@ function iniciarDJ(){
     .observe($('pill'), { subtree: true, childList: true, attributes: true, characterData: true });
   djPintar(); listarEntradas();
   djServidor(); setInterval(() => djServidor(), 2500);
+  if (ESTACION) iniciarEstacion();
+}
+// Estacion fija: prende Ritmo sola y, si se corta (se desenchufo la entrada, el navegador la cerro), vuelve a partir
+function iniciarEstacion(){
+  document.querySelector('.djtop b').textContent = 'Estación de ritmo · KRB';
+  const prender = async () => {
+    if (ritmo.mic && (!ritmo.mic.vivo || ritmo.mic.vivo())) return;
+    if (ritmo.mic){ try { ritmo.mic.stop(); } catch(e){} ritmo.mic = null; }
+    try { ritmo.mic = await escucharMusica(); $('djMic').classList.add('act'); $('djAviso').textContent = 'Estación de ritmo escuchando · ' + ($('djEntrada').selectedOptions[0] || {}).textContent; djServidor(); }
+    catch(e){ $('djMic').classList.remove('act'); $('djAviso').textContent = 'La estación no pudo abrir la entrada de audio (' + (e.name || e.message) + '). Reintenta en 15 s.'; }
+  };
+  prender(); setInterval(prender, 15000);
+  // la pagina completa se vuelve a cargar una vez al dia (por si el navegador acumula algo)
+  // (solo si el Dell responde, para no quedar en una pagina de error)
+  setInterval(async () => { if (performance.now() < 24 * 3600 * 1000) return;
+    try { const r = await fetch('/api/dj', { cache: 'no-store', credentials: 'same-origin' }); if (r.ok) location.reload(); } catch(e){} }, 10 * 60 * 1000);
 }
 
 /* ---------- Inicio ---------- */

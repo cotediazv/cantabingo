@@ -26,8 +26,9 @@ PANEL DEL DJ (noches sin show ni juegos)
     Tap (marcar el ritmo a mano), Intensidad y Apagar.
   - El microfono solo funciona por https://luces.krbstage.cl/dj o en el Dell
     (http://localhost:8080/dj); por el WiFi con http el navegador no lo permite.
-  - ESTACION DE RITMO: en el computador donde entra la mezcla (el de OBS) se abre el panel
-    del DJ, se toca Ritmo y se elige la entrada de linea. Ese computador escucha la musica y
+  - ESTACION DE RITMO (fija): en el computador donde entra la mezcla (el de OBS), doble clic
+    UNA vez en ESTACION_RITMO.bat. Desde ahi se abre sola al prender ese computador, con la
+    clave guardada y escuchando la entrada de linea elegida la primera vez. Ese computador escucha la musica y
     manda los golpes; el DJ maneja las escenas desde su celular, por todo el local, sin
     microfono. Escena, Automatico e intensidad son los mismos en todos los aparatos, y el
     Automatico sigue aunque el celular se bloquee.

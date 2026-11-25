@@ -546,6 +546,7 @@ namespace KRB {
 
     static void Atender(object o) {
       TcpClient c = (TcpClient)o;
+      renovar = null;
       try {
         NetworkStream s = c.GetStream();
         s.ReadTimeout = 5000;
@@ -585,6 +586,8 @@ namespace KRB {
         if (!libre) {
           string tk = Cookie(cookies, "krb");
           bool ok; lock (SL) { ok = tk != null && sesiones.Contains(tk); }
+          // Sesion de por vida (Cote, 25 nov: la estacion de ritmo queda fija): cada vez que se abre la pagina se renueva
+          if (ok && (ruta == "/" || ruta == "/index.html" || ruta == "/dj")) renovar = CookieSesion(tk);
           if (!ok && autorizacion != null && autorizacion.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
             ok = IgualSeguro(autorizacion.Substring(7).Trim(), Clave);
           if (!ok && ruta != "/" && ruta != "/index.html" && ruta != "/dj") {
@@ -872,7 +875,7 @@ namespace KRB {
         lock (SL) { sesiones.Add(tk); GuardarSesiones(); }
         fallosLogin = 0;
         Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":true}"),
-               "krb=" + tk + "; Max-Age=31536000; Path=/; HttpOnly; SameSite=Lax");
+               CookieSesion(tk));
       } else {
         fallosLogin++;
         Thread.Sleep(1500);
@@ -881,7 +884,11 @@ namespace KRB {
     }
 
     static void Enviar(NetworkStream s, string estado, string tipo, byte[] cuerpo) { Enviar(s, estado, tipo, cuerpo, null); }
+    [ThreadStatic] static string renovar;
+    // 400 dias es lo maximo que guardan los navegadores; como se renueva en cada visita, no vence nunca
+    static string CookieSesion(string tk) { return "krb=" + tk + "; Max-Age=34560000; Path=/; HttpOnly; SameSite=Lax"; }
     static void Enviar(NetworkStream s, string estado, string tipo, byte[] cuerpo, string setCookie) {
+      if (setCookie == null) setCookie = renovar;
       string cab = "HTTP/1.1 " + estado + "\r\nContent-Type: " + tipo + "\r\nContent-Length: " + cuerpo.Length +
                    "\r\nCache-Control: no-store\r\n" + (setCookie != null ? "Set-Cookie: " + setCookie + "\r\n" : "") +
                    "X-Content-Type-Options: nosniff\r\nConnection: close\r\n\r\n";
