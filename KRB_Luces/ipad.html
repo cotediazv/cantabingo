@@ -197,6 +197,7 @@
   .ipadDJ{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
   @media (min-width:900px){ .ipadDJ{grid-template-columns:repeat(8,1fr)} }
   .ipadDJ .djb{min-height:78px}
+  @media (max-width:640px){ .ipadDJ{gap:6px} .ipadDJ .djb{font-size:12.5px;padding:6px 3px;min-height:70px} .ipadDJ .djb i{font-size:24px} .ipadDJ .djb span{line-height:1.15} .ipadDJ .djb.largo span{font-size:10.5px} }
   .ipadDJ .djgr{margin:6px 0 0 2px}
   .djgr{grid-column:1/-1;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);font-weight:800;margin:1px 0 -3px 2px}
   /* Vista previa del escenario de frente (mitad de arriba; Cote, 25 nov) */
@@ -3146,7 +3147,7 @@ function iniciarEscenasDJ(){
   const cont = $('ipadDJ'); if (!cont) return; cont.innerHTML = '';
   DJ_ESCENAS.forEach((e, i) => {
     if (!i || DJ_ESCENAS[i - 1].grupo !== e.grupo){ const t = document.createElement('div'); t.className = 'djgr'; t.textContent = e.grupo; cont.appendChild(t); }
-    const b = document.createElement('button'); b.className = 'djb'; b.style.setProperty('--g', e.g);
+    const b = document.createElement('button'); b.className = 'djb' + (e.n.length > 11 ? ' largo' : ''); b.style.setProperty('--g', e.g);
     b.innerHTML = `<i>${e.i}</i><span>${e.n}</span>`; b.onclick = () => { djAplicar(i); toast(e.grupo + ' · ' + e.n); }; cont.appendChild(b);
   });
   $('ipadDJAuto').onclick = () => $('djAuto').onclick();
