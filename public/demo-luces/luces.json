@@ -2,7 +2,7 @@
   "_ayuda": "Archivo de configuracion de las luces de KRB (Mercado Kennedy). Se puede editar con el Bloc de notas. Despues de guardar, cerrar y volver a abrir INICIAR.bat.",
 
   "salida": {
-    "_ayuda": "tipo: opendmx (cable FTDI comun, el que trae Freestyler), enttec (DMX USB Pro) o simulacion (sin cable). puerto: auto o el COM que muestre Windows, por ejemplo COM3.",
+    "_ayuda": "tipo: opendmx (busca solo el cable: uDMX, FTDI o un puerto COM USB), udmx, enttec (DMX USB Pro) o simulacion (sin cable). puerto: auto, ftdi, udmx o el COM que muestre Windows, por ejemplo COM3. El cable de Kennedy es un uDMX: necesita el driver WinUSB (con Zadig).",
     "tipo": "opendmx",
     "puerto": "auto"
   },
@@ -66,19 +66,19 @@
       "_canales": "POR CONFIRMAR. Numeros relativos a la direccion (1 = primer canal). zoom = tamano del foco (si al subir el valor el foco se achica, poner zoom_invertido en true).",
       "canales": { "pan": 1, "tilt": 3, "dimmer": 6, "r": 8, "g": 9, "b": 10, "w": 11, "zoom": 12 },
       "zoom_invertido": false,
-      "fijos": {}
+      "fijos": { "7": 0, "13": 0, "15": 0 }
     },
     {
       "id": "seguidor2", "nombre": "Cabeza móvil 2 · segunda columna", "escaner": 2, "direccion": 17, "tipo": "cabeza",
       "canales": { "pan": 1, "tilt": 3, "dimmer": 6, "r": 8, "g": 9, "b": 10, "w": 11, "zoom": 12 },
       "zoom_invertido": false,
-      "fijos": {}
+      "fijos": { "7": 0, "13": 0, "15": 0 }
     },
     {
       "id": "seguidor3", "nombre": "Cabeza móvil 3 · fondo", "escaner": 3, "direccion": 33, "tipo": "cabeza",
       "canales": { "pan": 1, "tilt": 3, "dimmer": 6, "r": 8, "g": 9, "b": 10, "w": 11, "zoom": 12 },
       "zoom_invertido": false,
-      "fijos": {}
+      "fijos": { "7": 0, "13": 0, "15": 0 }
     },
     {
       "id": "frontales", "nombre": "Frontales RGBW (2)", "escaner": 7, "direccion": 97, "tipo": "par",
@@ -86,23 +86,28 @@
       "fijos": {}
     },
     {
-      "id": "mini", "nombre": "Mini cabezas (2) · escenario", "escaner": 8, "direccion": 113, "tipo": "cabeza",
-      "canales": { "pan": 1, "tilt": 3, "dimmer": 6, "r": 8, "g": 9, "b": 10, "w": 11 },
+      "id": "mini", "nombre": "Mini cabezas (2) · escenario", "escaner": 5, "direccion": 65, "tipo": "cabeza",
+      "_direccion": "65 = lo que muestra la mini cabeza en Kennedy (foto de Cote, 24 nov: d065). La tabla de la consola decia 113.",
+      "_canales": "Probado en Kennedy (24 nov): 1 pan, 3 tilt, 6 master con estrobo (255 = prendida fija), 7 rojo, 8 verde, 9 azul, 10 blanco, 11 colores alternados, 13 programas automaticos, 14 velocidad (muy alto la resetea). dimmer_pleno: el 6 va siempre en 255 o 0 (abajo de 255 hace estrobo); la intensidad se da con los colores.",
+      "canales": { "pan": 1, "tilt": 3, "dimmer": 6, "r": 7, "g": 8, "b": 9, "w": 10 },
+      "dimmer_pleno": true,
       "mover": { "_ayuda": "Movimiento automatico: las dos iguales, girando y apuntando al techo. amp_pan/amp_tilt: amplitud (0-127). tilt_centro: inclinacion de base (0 = hacia arriba).", "amp_pan": 110, "amp_tilt": 18, "tilt_centro": 30 },
-      "fijos": {}
+      "fijos": { "11": 0, "13": 0, "14": 0 }
     },
     {
       "id": "mini_columnas", "nombre": "Mini cabezas (2) · arriba de las columnas azules", "escaner": 11, "direccion": 161, "tipo": "cabeza",
       "igual_que": "mini",
-      "_ayuda": "Pedido de Cote (24 nov): hacen lo mismo que las mini cabezas del escenario (mismo color y mismo movimiento). Canales POR CONFIRMAR: se asume el mismo modelo que las mini del escenario. Las dos van con la direccion 161.",
-      "canales": { "pan": 1, "tilt": 3, "dimmer": 6, "r": 8, "g": 9, "b": 10, "w": 11 },
+      "_ayuda": "Pedido de Cote (24 nov): hacen lo mismo que las mini cabezas del escenario (mismo color y mismo movimiento). Se asume el mismo modelo que las mini del escenario. Las dos van con la direccion 161.",
+      "canales": { "pan": 1, "tilt": 3, "dimmer": 6, "r": 7, "g": 8, "b": 9, "w": 10 },
+      "dimmer_pleno": true,
       "mover": { "amp_pan": 110, "amp_tilt": 18, "tilt_centro": 30 },
-      "fijos": {}
+      "fijos": { "11": 0, "13": 0, "14": 0 }
     },
     {
-      "id": "perimetrales", "nombre": "Perimetrales PAR (4)", "escaner": 9, "direccion": 129, "tipo": "par",
-      "canales": { "dimmer": 1, "r": 2, "g": 3, "b": 4, "w": 5 },
-      "fijos": {}
+      "id": "perimetrales", "nombre": "Perimetrales PAR (4)", "escaner": 6, "direccion": 81, "tipo": "par",
+      "_direccion": "81 (Cote, 24 nov: asi esta configurado el sistema). Canales: 1 master, 2 rojo, 3 verde, 4 azul, 5 estroboscopica (sin blanco).",
+      "canales": { "dimmer": 1, "r": 2, "g": 3, "b": 4 },
+      "fijos": { "5": 0 }
     },
     {
       "id": "fondo", "nombre": "Fondo (2) · pintan la pared", "escaner": 10, "direccion": 145, "tipo": "par",

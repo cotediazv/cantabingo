@@ -9,7 +9,7 @@ import * as THREE from './lib/three.module.min.js';
 
 let renderer, scene, camera, construido = false;
 const focos = [];            // un foco por equipo: { g, tipo, pos, spot, haz, lente, cuerpo }
-let anilloMarca, animadorObj, artistaObj, roskoObj;
+let anilloMarca, animadorObj, artistaObj, roskoObj, techoObj;
 const PANT = { tv:null, vert:[], h42:[] };   // pantallas del escenario (para mostrar las de la Sala en el demo)
 
 /* ---------- utilidades ---------- */
@@ -204,6 +204,11 @@ function construir(){
   const piso = new THREE.Mesh(new THREE.PlaneGeometry(SALON.cocinas + 0.6 - SALON.pasillo + 6, L + 12), mat.piso);
   piso.rotation.x = -Math.PI / 2; piso.receiveShadow = true;
   const gp = new THREE.Group(); gp.add(piso); enSalon(gp, (SALON.cocinas + 0.6 + SALON.pasillo - 6) / 2, (L - 12) / 2 + 3, 0); scene.add(gp);
+  // techo oscuro (7 m): ahi se ve la luz que pintan las cabezas y las mini hacia arriba (Standby del DJ, Cote 25 nov).
+  // Se oculta cuando la camara esta por encima (vista del salon desde arriba).
+  const techo = new THREE.Mesh(new THREE.PlaneGeometry(SALON.cocinas + 0.6 - SALON.pasillo + 6, L + 12), new THREE.MeshStandardMaterial({ color: 0x2a2a30, roughness: 0.95 }));
+  techo.rotation.x = Math.PI / 2;
+  const gt = new THREE.Group(); gt.add(techo); enSalon(gt, (SALON.cocinas + 0.6 + SALON.pasillo - 6) / 2, (L - 12) / 2 + 3, 7); scene.add(gt); techoObj = gt;
 
   // --- escenario ---
   const forma = new THREE.Shape(TARIMA.map(([x, z]) => new THREE.Vector2(x, -z)));
@@ -436,9 +441,10 @@ function render(){
   camera.position.set(V.objetivo[0] + Math.sin(V.yaw) * cp * V.dist, V.objetivo[1] + sp * V.dist, V.objetivo[2] + Math.cos(V.yaw) * cp * V.dist);
   camera.lookAt(v3(V.objetivo));
   actualizarFocos();
-  const enSeguir = document.body.classList.contains('en-seguir');
+  const enSeguir = document.body.classList.contains('en-seguir') || document.body.classList.contains('dj-cabezas');
   const an = V.animador;
-  animadorObj.visible = !!an; artistaObj.visible = !an;          // mientras camina el animador, la artista fija no se muestra
+  // mientras camina el animador, la artista fija no se muestra; en el panel del DJ hay alguien en el escenario en Previa y Show
+  animadorObj.visible = !!an && !V.escenarioVacio; artistaObj.visible = !an && !V.escenarioVacio;
   roskoObj.visible = !!V.rosko;
   if (an){                                                     // camina: posicion, rumbo y piernas en movimiento
     animadorObj.position.set(an.p[0], an.p[1] + Math.abs(Math.sin(an.t * 6)) * 0.03, an.p[2]);
@@ -455,6 +461,7 @@ function render(){
   }
   anilloMarca.visible = !!(V.marca && enSeguir);
   if (anilloMarca.visible) anilloMarca.position.set(V.marca[0], V.marca[1] + 0.02, V.marca[2]);
+  if (techoObj) techoObj.visible = camera.position.y < 6.8;
   renderer.render(scene, camera);
   if (VIVO.activo) moverPantallasVivo(cv);
 }

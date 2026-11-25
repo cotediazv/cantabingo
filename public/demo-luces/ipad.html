@@ -84,6 +84,7 @@
   .calib button{border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:12px;padding:12px;font-size:15px;cursor:pointer;text-align:left}
   .calib button small{display:block;color:var(--mut);font-size:12px;margin-top:3px}
   .calib button.ok small{color:var(--ok)}
+  .calib .diag{grid-column:1/-1;margin:4px 0 0;font-size:15px;color:var(--txt);background:#121419;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
 
   /* Probar canales */
   .addr{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
@@ -175,9 +176,107 @@
   body.solo-mapa #cabezas{margin-top:6px}
   body.solo-mapa .map .warn{display:none}
   .toast.show{transform:translate(-50%,0);opacity:1}
+  /* ===== Panel del DJ (/dj, Cote 25 nov): pocos botones, muchas escenas ===== */
+  #dj{display:none}
+  body.dj > header, body.dj > nav, body.dj > main, body.dj > footer, body.dj > #vista{display:none !important}
+  body.dj #dj{display:flex;flex-direction:column;gap:10px;min-height:100vh;min-height:100dvh;padding:10px 10px calc(10px + env(safe-area-inset-bottom))}
+  .djtop{display:flex;align-items:center;gap:8px}
+  .djtop b{font-size:17px;flex:1;letter-spacing:.02em}
+  .djesc{flex:1;display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:1fr;gap:6px;min-height:200px}
+  .djesc{grid-auto-rows:auto;grid-template-rows:repeat(5,auto 1fr)}
+  .djgr{grid-column:1/-1;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);font-weight:800;margin:1px 0 -3px 2px}
+  /* Vista previa del escenario de frente (mitad de arriba; Cote, 25 nov) */
+  body.dj #dj{height:100vh;height:100dvh;min-height:0;gap:6px;padding-top:calc(6px + env(safe-area-inset-top))}
+  .djvista{position:relative;flex:0 0 34%;min-height:0;border-radius:14px;overflow:hidden;background:#050608}
+  body.dj .djvista #vista{margin:0;border:0;border-radius:0;height:100%}
+  body.dj .djvista #vista canvas{height:100% !important}
+  body.dj .djvista .nav3d, body.dj .djvista .vistas3d, body.dj .djvista .bar{display:none}
+  #djFrente{position:absolute;right:6px;bottom:6px;z-index:3;border:0;border-radius:8px;background:#000a;color:#fff;font-size:12px;padding:5px 8px}
+  body.dj .djb{min-height:0;border-radius:12px;font-size:12px;gap:2px;padding:4px}
+  body.dj .djb i{font-size:21px}
+  body.dj .djc{padding:7px 4px;font-size:13px}
+  body.dj .djc small{display:none}
+  body.dj .djtop b{font-size:15px;white-space:nowrap;flex:0 0 auto}
+  body.dj .djtop{gap:6px}
+  body.dj #djPill{margin-left:auto;min-width:0;max-width:55%;padding:5px 10px;font-size:12px}
+  body.dj #djPillTxt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  body.dj #djAviso{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:11px;min-height:13px}
+  body.dj .djint input{height:24px}
+  /* Paginas del panel: Escenas / Cabezas (Cote, 25 nov) */
+  .djpag{display:flex;background:#121419;border-radius:10px;padding:3px;gap:3px}
+  .djpag button{border:0;background:transparent;color:var(--mut);font-size:13px;font-weight:700;padding:6px 10px;border-radius:8px;cursor:pointer}
+  .djpag button.act{background:var(--card);color:var(--txt);box-shadow:inset 0 0 0 1px var(--line)}
+  #djCab{display:none;flex:0 0 auto;flex-direction:column;gap:6px}
+  body.dj-cabezas #djCab{display:flex}
+  body.dj-cabezas .djvista{flex:1 1 auto}
+  body.dj-cabezas .djint{display:none}
+  #djToque{display:none;position:absolute;inset:0;z-index:2;touch-action:none;cursor:crosshair}
+  body.dj-cabezas #djToque{display:block}
+  #djToqueAyuda{position:absolute;left:8px;top:8px;right:90px;font-size:11px;color:#fff;background:#0009;padding:4px 8px;border-radius:8px;pointer-events:none}
+  #djToque.drag #djToqueAyuda{display:none}
+  body.dj-cabezas #djEsc, body.dj-cabezas .djctl, body.dj-cabezas .djent{display:none !important}
+  .djsel{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+  .djsel button{border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:10px;padding:7px 2px;font-size:13px;font-weight:700}
+  .djsel button.act{background:#2a3f6e;border-color:var(--acc)}
+  #djPunto{position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 14px #ffd9a0;display:none;pointer-events:none;background:#ffd9a033}
+  .djancho{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mut)}
+  .djancho button{border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:9px;padding:6px 8px;font-size:12px;font-weight:700}
+  .djancho button.act{background:#2a3f6e;border-color:var(--acc)}
+  .djancho input{flex:1;min-width:0;height:24px;margin:0}
+  .djacc{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .djent{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mut)}
+  .djent select{flex:1;min-width:0;background:#121419;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:8px;font-size:14px}
+  .djnivel{width:70px;height:10px;border-radius:5px;background:#222;overflow:hidden}
+  .djnivel i{display:block;height:100%;width:0;background:var(--ok);transition:width .08s}
+  .djb{position:relative;border:0;border-radius:16px;color:#fff;font-weight:800;font-size:16px;cursor:pointer;overflow:hidden;
+       background:var(--card);box-shadow:inset 0 0 0 1px var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px;min-height:70px;text-align:center}
+  .djb i{font-style:normal;font-size:28px;line-height:1;position:relative}
+  .djb span{position:relative;text-shadow:0 1px 3px #000a}
+  .djb::before{content:"";position:absolute;inset:0;background:var(--g);opacity:.32;transition:.2s}
+  .djb.act{box-shadow:inset 0 0 0 3px #fff}
+  .djb.act::before{opacity:.75}
+  .djb:active{transform:scale(.96)}
+  .djctl{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .djc{border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:14px;padding:10px 6px;font-size:14px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px}
+  .djc small{font-size:11px;font-weight:500;color:var(--mut)}
+  .djc.act{background:#2a3f6e;border-color:var(--acc)}
+  .djc.off{background:var(--bad);border-color:var(--bad);color:#fff}
+  .djc.off small{color:#fff}
+  .djint{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--mut)}
+  .djint input{flex:1;height:30px;margin:0}
+  #djLatido{width:14px;height:14px;border-radius:50%;background:#333;display:inline-block;transition:background .08s}
+  #djLatido.on{background:#ffcc00;box-shadow:0 0 10px #ffcc00}
+  /* Tap late con cada pulso (Cote, 25 nov): metronomo para sincronizar a mano */
+  #djTap{transition:none}
+  #djTap.pulso{background:#ffcc00;border-color:#ffcc00;color:#111;box-shadow:0 0 16px #ffcc0099}
+  @keyframes djtap{0%,14%{background:#ffcc00;border-color:#ffcc00;color:#111}30%,100%{background:var(--card);border-color:var(--line);color:var(--txt)}}
+  @keyframes djlatir{0%,12%{background:#ffcc00;box-shadow:0 0 10px #ffcc00}30%,100%{background:#333;box-shadow:none}}
+  #djAviso{font-size:12px;color:var(--warn);min-height:14px}
+
 </style>
 </head>
 <body>
+<!-- Panel del DJ: se abre en /dj (o ?dj=1) -->
+<div id="dj">
+  <div class="djtop"><b>KRB · DJ</b><div class="djpag"><button id="djPagEsc" class="act">Escenas</button><button id="djPagCab">Cabezas</button></div><span id="djLatido" title="Ritmo"></span><span id="djBpm" style="font-size:13px;color:var(--mut);min-width:64px">—</span>
+    <div class="pill" id="djPill"><span class="dot" id="djDot"></span><span id="djPillTxt">…</span></div></div>
+  <div class="djvista" id="djVista"><div id="djToque"><div id="djPunto"></div><span id="djToqueAyuda">Pasa el dedo por el salón</span></div><button id="djFrente">⟲ De frente</button></div>
+  <div class="djesc" id="djEsc"></div>
+  <div id="djCab">
+    <div class="djsel" id="djSel"><button data-c="0">Cabeza 1</button><button data-c="1">Cabeza 2</button><button data-c="2">Cabeza 3</button><button data-c="todas" class="act">Las 3</button></div>
+    <div class="djancho">Ancho <button data-an="8">Angosto</button><button data-an="50" class="act">Medio</button><button data-an="92">Ancho</button><input type="range" id="djAncho" min="0" max="100" value="50"></div>
+    <div class="djacc"><button class="djc" id="djSegOn">💡 Encender cabezas</button><button class="djc" id="djSoltar">↩ Soltar · vuelven a la escena</button></div>
+  </div>
+  <div class="djctl">
+    <button class="djc" id="djAuto">🔀 Automático<small>cambia sola</small></button>
+    <button class="djc" id="djMic">🎤 Ritmo<small>escuchar música</small></button>
+    <button class="djc" id="djTap">👆 Tap<small>marcar el ritmo</small></button>
+    <button class="djc off" id="djApagar">⏻ Apagar<small>todo</small></button>
+  </div>
+  <div class="djint">Intensidad <input type="range" id="djInt" min="10" max="100" value="100"><span id="djIntTxt">100%</span></div>
+  <div class="djent">Entrada <select id="djEntrada"><option value="">Micrófono (predeterminado)</option></select><span class="djnivel"><i id="djNivel"></i></span></div>
+  <div id="djAviso"></div>
+</div>
 <header>
   <h1>Luces KRB</h1>
   <div class="pill" id="pill" title="Tocar para reconectar el cable"><span class="dot" id="dot"></span><span id="pillTxt">Conectando…</span></div>
@@ -239,6 +338,7 @@
   <section class="tab" id="juegos">
     <p class="help"><b>Solo para la Sala de juegos de Mercado Kennedy.</b> Cada botón es un momento del juego. Más adelante el GC Master los dispara solo (Code 1); mientras tanto se pueden tocar aquí.
       <br>Momento actual: <b id="momActual">—</b></p>
+    <div class="fxrow"><button class="big" id="detenerTodo" style="border-color:#ff5a5a">⏹ Detener todo<small>Para los efectos (mini cabezas, estrobos, colores) y apaga las luces</small></button></div>
     <div id="juegosLista"></div>
   </section>
 
@@ -259,8 +359,15 @@
       <div class="pad" id="pad"><div class="lbl">Arrastra el dedo para mover la luz</div><div class="pt p1" id="pt0">1</div><div class="pt p2" id="pt1">2</div><div class="pt p3" id="pt2">3</div></div>
       <div class="row">
         <span class="help" style="margin:0 6px 0 0">Velocidad:</span>
-        <button class="chip" data-v="0.15">Fina</button><button class="chip act" data-v="0.4">Normal</button><button class="chip" data-v="1">Rápida</button>
+        <button class="chip" data-v="0.04">Muy fina</button><button class="chip" data-v="0.15">Fina</button><button class="chip act" data-v="0.4">Normal</button><button class="chip" data-v="1">Rápida</button>
         <button class="chip" id="invX">Invertir ↔</button><button class="chip" id="invY">Invertir ↕</button>
+      </div>
+      <!-- Pedido de Cote (25 nov): volver la cabeza a su posicion basica y apuntar fino de a un paso -->
+      <div class="row">
+        <button class="chip" id="centroCab">⟲ Reset · posición básica</button>
+        <span class="help" style="margin:0 4px 0 8px">De a un paso:</span>
+        <button class="chip" data-paso="-1,0">◀</button><button class="chip" data-paso="1,0">▶</button>
+        <button class="chip" data-paso="0,-1">▲</button><button class="chip" data-paso="0,1">▼</button>
       </div>
       <h2 class="sec">Calibrar el mapa (una sola vez)</h2>
       <p class="help">Para cada esquina del salón: elige <b>Cabeza 1</b>, apúntala al suelo en esa esquina y toca la esquina. Luego haz lo mismo con <b>Cabeza 2</b> y <b>Cabeza 3</b>. Las 4 esquinas son las de la zona de mesas, marcadas con números en el mapa (escenario a la izquierda, cocinas arriba, columnas y pasillo abajo).</p>
@@ -293,6 +400,13 @@
       <button class="chip" id="segEscenario">Al escenario</button>
       <button class="chip" id="segOff">Apagar</button>
     </div>
+    <!-- Posiciones reales de cada cabeza (Kennedy, 24 nov): se apuntan a mano y se guardan; las usan escenas y juegos -->
+    <div class="row">
+      <button class="chip" id="guardarEsc">💾 Guardar como «escenario»</button>
+      <button class="chip" id="guardarPub">💾 Guardar como «público»</button>
+      <button class="chip" id="borrarPos">Borrar posiciones guardadas</button>
+    </div>
+    <p class="help" id="posGuardadas"></p>
   </section>
 
   <!-- ===== ZONAS ===== -->
@@ -301,8 +415,10 @@
   <!-- ===== PROBAR CANALES ===== -->
   <section class="tab" id="probar">
     <p class="help">Para descubrir qué hace cada canal de una luz: elige su dirección y mueve los controles uno por uno. Anota qué canal es pan, tilt, dimmer, rojo, verde, azul y blanco, y cámbialo en <b>luces.json</b>.</p>
+    <p class="help" id="estadoCable" style="font-family:ui-monospace,monospace;font-size:13px"></p>
     <div class="addr" id="addrBar"><span>Dirección inicial</span><input type="number" id="addr" min="1" max="497" value="1"></div>
     <div id="chanList"></div>
+    <button class="chip" id="max16" style="margin-top:8px">Subir estos 16 canales al máximo</button>
     <button class="chip" id="cero16" style="margin-top:8px">Poner estos 16 canales en 0</button>
   </section>
 </main>
@@ -338,17 +454,25 @@ const $ = id => document.getElementById(id);
 // ?demo=control = el iPad completo manejando el demo abierto en el mismo navegador (para seguir al animador a mano en el bingo).
 const PARAMS = new URLSearchParams(location.search), DEMO = PARAMS.has('demo'), TV = DEMO && PARAMS.get('demo') === 'tv';
 // ?demo=mapa = solo el mapa del salon (y las cabezas a elegir), para el espacio libre de la pestana Demo del GC Master.
-const MAPA_SOLO = DEMO && PARAMS.get('demo') === 'mapa';
+// (Code 1 lo incrusta como ?demo=control&mapa=1: tambien vale)
+const MAPA_SOLO = DEMO && (PARAMS.get('demo') === 'mapa' || PARAMS.get('mapa') === '1');
 const CONTROL = DEMO && (PARAMS.get('demo') === 'control' || MAPA_SOLO);
 if (MAPA_SOLO) document.body.classList.add('solo-mapa');
 if (TV) document.body.classList.add('tv');
+const DJ = location.pathname === '/dj' || PARAMS.has('dj');
+// Estacion de ritmo fija (Cote, 25 nov): el computador de la mezcla abre /dj?estacion=1 solo al prender y escucha siempre
+const ESTACION = DJ && PARAMS.get('estacion') === '1';
+if (DJ) document.body.classList.add('dj');
 const COLOR_CSS = {blanco_calido:'#ffd9a0',blanco:'#ffffff',azul:'#2b55ff',rojo:'#ff2a2a',verde:'#22dd55',amarillo:'#ffbe00',ambar:'#ff8a00',morado:'#9b3cff',rosa:'#ff3fa0',cian:'#22e5ff'};
+// Las 4 marcas de calibracion: las que uso Cote en Kennedy (25 nov), con su lugar real en el salon (sal = [u, v] en metros:
+// u = de lado, + cocinas / - columnas; v = a lo largo desde el escenario). u/v chicos = posicion en el rectangulo antiguo.
 const ESQUINAS = [
-  {k:'ei', u:0, v:0, nombre:'1 · Mesas junto al escenario, lado cocinas'},
-  {k:'ed', u:1, v:0, nombre:'2 · Mesas del fondo, lado cocinas'},
-  {k:'fi', u:0, v:1, nombre:'3 · Mesas junto al escenario, lado columnas'},
-  {k:'fd', u:1, v:1, nombre:'4 · Mesas del fondo, lado columnas'}
+  {k:'ei', u:0, v:0, sal:[4.0, 1.5],  nombre:'1 · Primera mesa junto al escenario, lado cocina'},
+  {k:'ed', u:1, v:0, sal:[4.5, 34],   nombre:'2 · Al lado de la cocina, a la altura del cuarto pilar'},
+  {k:'fi', u:0, v:1, sal:[-5.0, 1.5], nombre:'3 · Junto al escenario, lado columnas'},
+  {k:'fd', u:1, v:1, sal:[-5.0, 23],  nombre:'4 · Al fondo, al lado de la tercera columna'}
 ];
+const ALTURA_CAL = 1.0;          // se calibro apuntando a una persona parada en cada marca (~1 m de altura)
 // Mapa de Seguir: x = a lo largo del salon (escenario a la izquierda), y = de cocinas (arriba) a pasillo (abajo). En metros del salon.
 const MAPA = { v0:-7, v1:51, u0:6.5, u1:-9.5 };                      // todo el salon: 58 m de largo x 16 m de ancho
 const CAL = { v0:1.5, v1:25.5, u0:5, u1:-5.2 };      // zona de mesas donde se calibran las 4 esquinas
@@ -404,7 +528,11 @@ function valoresGrupo(g, zOverride){
   const col = on ? (conf.colores[z.color] || {}) : {};
   const k = on ? (z.intensidad / 100) * (master / 100) : 0;
   const rgbw = ['r','g','b','w'];
-  if (ch.dimmer){
+  if (ch.dimmer && g.dimmer_pleno){
+    // Mini cabezas de Kennedy: el master abajo de 255 hace estrobo. Va en 255 (o 0) y la intensidad se da con los colores.
+    out[base + ch.dimmer] = k > 0 ? 255 : 0;
+    rgbw.forEach(c => { if (ch[c]) out[base + ch[c]] = Math.round((col[c] || 0) * k); });
+  } else if (ch.dimmer){
     out[base + ch.dimmer] = Math.round(255 * k);
     rgbw.forEach(c => { if (ch[c]) out[base + ch[c]] = on ? (col[c] || 0) : 0; });
   } else {
@@ -439,13 +567,17 @@ function zoomPara(id, punto, radio){
   return Math.max(3, Math.min(100, Math.round((ang - 0.05) / 0.22 * 100)));
 }
 function fijarPosicion(z, nombre, id){
+  // 1) Si esa cabeza tiene la posicion guardada a mano en el local (Seguir → Guardar), se usa esa
+  const g = id && datos && datos.posiciones && datos.posiciones[id] && datos.posiciones[id][nombre];
+  if (g){ z.posicion = nombre; z.pan = g.pan; z.tilt = g.tilt; if (g.zoom != null) z.zoom = g.zoom; return; }
   // Cabezas del salon (miran a las cocinas): "escenario" y "publico" se calculan por geometria hacia esos lugares
   if (id && (POS3D[id] || {}).columna != null && (nombre === 'escenario' || nombre === 'publico')){
     // Escenario (Cote, rev 209): bien dirigidas y sin iluminar al publico. Apuntan al pecho de la persona (no al piso,
     // asi el borde de abajo del haz no cae en las mesas de adelante) y el foco se cierra segun la distancia,
     // para que la mancha de luz sea de unos 2,6 m (la persona y el atril).
     const blanco = nombre === 'escenario' ? ESC_PECHO : puntoPiso(0, 12);
-    apuntarGeo(id, blanco, z);
+    const m = modeloCabeza(id);
+    if (m){ const r = panTiltModelo(m, blanco, null); z.pan = r.pan; z.tilt = r.tilt; } else apuntarGeo(id, blanco, z);
     if (nombre === 'escenario'){ const zz = zoomPara(id, blanco, 1.3); if (zz != null) z.zoom = z.zoom != null ? Math.min(z.zoom, zz) : zz; }
     z.posicion = nombre; return;
   }
@@ -520,7 +652,12 @@ async function postApi(ruta, params){
   return r.json();
 }
 async function efectoPost(id, params){ try { pintarEstado(await postApi('/api/efecto', {id, ...params})); } catch(e){ sinConexion(); } }
-async function guardarDatos(){ return postApi('/api/guardar', {d: JSON.stringify(datos)}); }
+// Si este aparato no alcanzo a leer los datos del Dell, no guarda: guardaria la calibracion vacia (Kennedy, 25 nov)
+let datosLeidos = false;
+async function guardarDatos(borrar){
+  if (!datosLeidos && !DEMO && !CONTROL){ toast('No se leyó la calibración del Dell: recarga la página antes de guardar'); throw new Error('sin datos'); }
+  return postApi('/api/guardar', borrar ? {d: JSON.stringify(datos), borrar: '1'} : {d: JSON.stringify(datos)});
+}
 
 /* ---------- Animador virtual para practicar el seguimiento (Cote, 24 nov) ----------
    Camina suave (1 m/s): baja del escenario, pasa entre las mesas y sigue hasta el fondo; despues vuelve. */
@@ -746,6 +883,113 @@ function apuntar(id, u, v){
   const c = datos.calibracion[id], lerp = key => (1-u)*(1-v)*c.ei[key] + u*(1-v)*c.ed[key] + (1-u)*v*c.fi[key] + u*v*c.fd[key];
   const z = zona(id); z.pan = Math.max(0, Math.min(255, lerp('pan'))); z.tilt = Math.max(0, Math.min(255, lerp('tilt'))); z.posicion = null;
 }
+/* Modelo de cada cabeza a partir de sus marcas calibradas (Kennedy, 25 nov).
+   Montaje real (Cote, 25 nov): las cabezas grandes van AL COSTADO del pilar, de lado: su base mira hacia los
+   restaurantes (cocinas), en paralelo al piso. El giro (pan) es alrededor de esa linea horizontal y, con el tilt al
+   medio, la luz apunta derecho a los restaurantes; al pasar de ese punto cruza al OTRO lado. Un mismo lugar del piso
+   se alcanza de dos maneras: (giro, inclinacion) o (giro + media vuelta, inclinacion hacia el otro lado). La marca 3
+   queda junto a las cabezas 1 y 2 y para llegar ahi cruzan: el modelo anterior no lo sabia.
+   Aqui, para cada cabeza:
+   - pan = a + b x angulo de giro alrededor del eje de la cabeza, tilt = c + d x angulo desde el eje (con signo),
+   - se prueba de que lado se guardo cada marca y la vuelta del giro,
+   - se ajusta hacia donde mira el eje (de lado hacia los restaurantes, +-30 grados; o hacia el piso) y donde esta la
+     cabeza (hasta 2,5 m de lo dibujado), porque cerca de la cabeza un error chico de posicion cambia mucho el giro.
+   - Paso 0 (idea de Cote): la luz derecho al piso bajo su pilar es una direccion conocida y cuenta como una marca mas. */
+const modelos = {};
+const PAN_NOM = 128 / (Math.PI * 1.5), TILT_NOM = 128 / (Math.PI * 0.75);     // unidades DMX por radian de una cabeza tipica
+function marco(eje){                                                    // eje de la cabeza y dos direcciones perpendiculares
+  const n = norm(eje), ref = Math.abs(n[1]) > 0.9 ? [0, 0, 1] : [0, -1, 0];
+  const e1 = norm(sub(ref, mul(n, dot(ref, n)))), e2 = cross(n, e1);
+  return { n, e1, e2 };
+}
+const angulosEn = (d, F) => { const u = norm(d); return { az: Math.atan2(dot(u, F.e2), dot(u, F.e1)), el: Math.acos(Math.max(-1, Math.min(1, dot(u, F.n)))) }; };
+const dirDesde = (az, el, F) => norm(add(mul(F.n, Math.cos(el)), mul(add(mul(F.e1, Math.cos(az)), mul(F.e2, Math.sin(az))), Math.sin(el))));
+function ajusteRecta(xs, ys){
+  const n = xs.length; let mx = 0, my = 0; for (let i = 0; i < n; i++){ mx += xs[i]; my += ys[i]; } mx /= n; my /= n;
+  let sxy = 0, sxx = 0; for (let i = 0; i < n; i++){ sxy += (xs[i] - mx) * (ys[i] - my); sxx += (xs[i] - mx) * (xs[i] - mx); }
+  const b = sxx > 1e-9 ? sxy / sxx : 0, a = my - b * mx;
+  let sse = 0; const res = []; for (let i = 0; i < n; i++){ const r = a + b * xs[i] - ys[i]; res.push(r); sse += r * r; }
+  return { a, b, sse, res };
+}
+// Mejor ajuste con la cabeza en pos y su eje en F: de que lado se guardo cada marca y la vuelta del giro
+function ajusteEn(pos, F, marcas){
+  const geo = marcas.map(mk => angulosEn(mk.dir || sub(mk.p, pos), F));
+  const pans = marcas.map(mk => mk.pan), tilts = marcas.map(mk => mk.tilt), N = marcas.length;
+  let mejor = null;
+  for (let sm = 0; sm < (1 << (N - 1)); sm++){                         // lado de cada marca (la primera fija: es simetrico)
+    const sg = marcas.map((_, i) => i && (sm >> (i - 1)) & 1 ? -1 : 1);
+    const t = ajusteRecta(geo.map((g, i) => sg[i] * g.el), tilts);
+    const ad = Math.abs(t.b); if (ad < TILT_NOM * 0.45 || ad > TILT_NOM * 2.2) continue;
+    const az0 = geo.map((g, i) => g.az + (sg[i] < 0 ? Math.PI : 0));
+    for (let i = 1; i < N; i++){ while (az0[i] - az0[0] > Math.PI) az0[i] -= 2 * Math.PI; while (az0[i] - az0[0] < -Math.PI) az0[i] += 2 * Math.PI; }
+    for (let k = 0; k < 27; k++){                                      // vuelta de las marcas 2 a 4 (la del piso: la mas cercana)
+      const off = [0, Math.floor(k / 9) - 1, Math.floor(k / 3) % 3 - 1, k % 3 - 1];
+      const azs = az0.map((x, i) => x + (off[i] || 0) * 2 * Math.PI);
+      if (N > 4){ const r0 = ajusteRecta(azs.slice(0, 4), pans.slice(0, 4));
+        if (Math.abs(r0.b) > 1e-6){ const ideal = (pans[4] - r0.a) / r0.b; while (azs[4] - ideal > Math.PI) azs[4] -= 2 * Math.PI; while (azs[4] - ideal < -Math.PI) azs[4] += 2 * Math.PI; } }
+      const r = ajusteRecta(azs, pans);
+      const ab = Math.abs(r.b); if (ab < PAN_NOM * 0.45 || ab > PAN_NOM * 2.2) continue;
+      const total = r.sse + t.sse;
+      if (!mejor || total < mejor.total) mejor = { total, a: r.a, b: r.b, c: t.a, d: t.b, resPan: r.res, resTilt: t.res };
+    }
+  }
+  return mejor;
+}
+function modeloCabeza(id){
+  const c = (datos.calibracion || {})[id], base = posNominal(id);
+  if (!c || !base || !ESQUINAS.every(e => c[e.k])) return null;
+  const clave = JSON.stringify(c) + JSON.stringify(base) + giroSalon();
+  if (modelos[id] !== undefined && modelos[id] && modelos[id].clave === clave) return modelos[id];
+  const marcas = ESQUINAS.map(e => ({ p: deSalon(e.sal[0], e.sal[1], ALTURA_CAL), pan: c[e.k].pan, tilt: c[e.k].tilt }));
+  if (c.abajo) marcas.push({ dir: [0, -1, 0], pan: c.abajo.pan, tilt: c.abajo.tilt });
+  const g = giroSalon(), ladoU = rotY([1, 0, 0], g), largoV = rotY([0, 0, 1], g);
+  // ejes posibles: de lado hacia los restaurantes (girado hasta +-30 grados) o hacia el piso
+  const ejes = [-30, -20, -10, 0, 10, 20, 30].map(gr => rotY(ladoU, gr * Math.PI / 180)).concat([[0, -1, 0]]);
+  const ejeCosto = e => e[1] < -0.9 ? 40 : 0;                           // de lado es lo que dijo Cote: el piso solo si calza mucho mejor
+  const probar = (du, dv, dh, eje) => {
+    const p = add(add(base, mul(ladoU, du)), add(mul(largoV, dv), [0, dh, 0]));
+    const F = marco(eje), f = ajusteEn(p, F, marcas); if (!f) return null;
+    f.pos = p; f.F = F; f.eje = eje; f.costo = f.total + 12 * (du * du + dv * dv + dh * dh) + ejeCosto(eje); f.du = du; f.dv = dv; f.dh = dh;
+    return f; };
+  let mejor = null;
+  ejes.forEach(eje => { for (let i = -5; i <= 5; i++) for (let j = -5; j <= 5; j++) for (let h = -2; h <= 2; h++){
+    const f = probar(i * 0.5, j * 0.5, h * 0.6, eje); if (f && (!mejor || f.costo < mejor.costo)) mejor = f; } });
+  if (!mejor) return (modelos[id] = null);
+  for (const paso of [0.15, 0.04]){                                     // afinar alrededor del mejor (posicion y eje)
+    const b0 = mejor, ejesFinos = b0.eje[1] < -0.9 ? [b0.eje] : [-1, 0, 1].map(k => rotY(b0.eje, k * paso * 0.5));
+    ejesFinos.forEach(eje => { for (let i = -3; i <= 3; i++) for (let j = -3; j <= 3; j++) for (let h = -2; h <= 2; h++){
+      const du = b0.du + i * paso, dv = b0.dv + j * paso, dh = b0.dh + h * paso;
+      if (Math.abs(du) > 2.5 || Math.abs(dv) > 2.5 || Math.abs(dh) > 1.5) continue;
+      const f = probar(du, dv, dh, eje); if (f && f.costo < mejor.costo) mejor = f; } });
+  }
+  const rms = arr => Math.sqrt(arr.reduce((s, x) => s + x * x, 0) / arr.length);
+  const peor = mejor.resPan.map((r, i) => Math.hypot(r, mejor.resTilt[i]));
+  return (modelos[id] = { clave, pos: mejor.pos, F: mejor.F, a: mejor.a, b: mejor.b, c: mejor.c, d: mejor.d,
+    errPan: rms(mejor.resPan), errTilt: rms(mejor.resTilt), errMarca: peor, corrida: Math.hypot(mejor.du, mejor.dv, mejor.dh),
+    panRef: marcas.reduce((s, mk) => s + mk.pan, 0) / marcas.length, tiltRef: marcas.reduce((s, mk) => s + mk.tilt, 0) / marcas.length });
+}
+// pan/tilt del modelo para apuntar a un punto: de las maneras posibles, la mas cercana a donde estaba la luz
+function panTiltModelo(m, punto, previo){
+  const { az, el } = angulosEn(sub(punto, m.pos), m.F);
+  const ref = previo || { pan: m.panRef, tilt: m.tiltRef };
+  let mejor = null;
+  for (const sg of [1, -1]) for (let k = -2; k <= 2; k++){
+    const pan = m.a + m.b * (az + (sg < 0 ? Math.PI : 0) + k * 2 * Math.PI), tilt = m.c + m.d * sg * el;
+    const fuera = Math.max(0, -pan, pan - 255) + Math.max(0, -tilt, tilt - 255);
+    const dist = fuera * 1000 + Math.abs(pan - ref.pan) + 0.5 * Math.abs(tilt - ref.tilt);
+    if (!mejor || dist < mejor.dist) mejor = { dist, pan, tilt };
+  }
+  return { pan: Math.max(0, Math.min(255, mejor.pan)), tilt: Math.max(0, Math.min(255, mejor.tilt)) };
+}
+function apuntarModelo(id, punto, zz){
+  const m = modeloCabeza(id); if (!m) return false;
+  const z = zz || zona(id);
+  const previo = z.pan != null && z.tilt != null ? { pan: z.pan, tilt: z.tilt } : null;
+  const r = panTiltModelo(m, [punto[0], Math.max(punto[1], 0) + ALTURA_CAL, punto[2]], previo);
+  z.pan = r.pan; z.tilt = r.tilt; z.posicion = null;
+  return true;
+}
+
 /* Al dirigir una cabeza con el mapa o a mano, si estaba apagada se enciende (blanco calido), para que se vea moverse */
 function encenderSiApagada(id){
   const z = zona(id);
@@ -774,6 +1018,17 @@ function apuntarGeo(id, punto, zz){
     const [u, v] = aSalon(punto), uMin = (colsSalon()[def.columna] || colsSalon()[0])[0] + 1.0;
     if (u < uMin) punto = puntoPiso(uMin, v);
   }
+  const z0 = zz || zona(id);
+  if (def.columna != null){                                        // de lado en el pilar (Cote, 25 nov)
+    let { az, el } = angulosEn(sub(punto, pos), marcoPilar());
+    // el giro mas cercano al anterior (el pan da mas de una vuelta): asi un movimiento corto no cruza todo el recorrido
+    if (z0.pan != null){ const prev = (z0.pan - 128) / 128 * RANGO_PAN; let mejor = az;
+      for (const k of [-1, 1]){ const alt = az + k * 2 * Math.PI; if (Math.abs(alt) <= RANGO_PAN && Math.abs(alt - prev) < Math.abs(mejor - prev)) mejor = alt; }
+      az = mejor; }
+    z0.pan = Math.max(0, Math.min(255, 128 + az / RANGO_PAN * 128));
+    z0.tilt = Math.max(0, Math.min(255, 128 + el / RANGO_TILT * 128));
+    z0.posicion = null; return;
+  }
   const d = sub(punto, pos), casa = casaDe(pos, id);
   let a = Math.atan2(d[0], d[2]) - casa;
   while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI;
@@ -797,7 +1052,8 @@ function apuntarGeo(id, punto, zz){
     // Todas las cabezas elegidas apuntan al MISMO punto: con calibracion (luces reales) o por geometria (igual que la vista 3D).
     const ids = segActivos();
     ids.forEach(encenderSiApagada);
-    ids.forEach(id => calibrada(id) ? apuntar(id, s, t) : apuntarGeo(id, punto));
+    // con calibracion: el modelo de cada cabeza (si calza); si no, la mezcla de esquinas; sin calibrar: geometria
+    ids.forEach(id => { if (!apuntarModelo(id, punto)) { calibrada(id) ? apuntar(id, s, t) : apuntarGeo(id, punto); } });
     pintarSeguir();
     limitar('mapa', () => enviarGrupos(ids, 0));
   };
@@ -833,6 +1089,18 @@ $('invY').onclick = () => { prefs.invY = !prefs.invY; guardarPrefs(); pintarSegu
   pad.addEventListener('pointerup', fin); pad.addEventListener('pointercancel', fin);
 })();
 
+/* Reset (posicion basica: pan y tilt al medio) y pasos de a 1 para apuntar fino (Cote, 25 nov) */
+function moverCabezas(fn){
+  segActivos().forEach(id => { encenderSiApagada(id); const z = zona(id); fn(z); z.posicion = null;
+    z.pan = Math.max(0, Math.min(255, z.pan)); z.tilt = Math.max(0, Math.min(255, z.tilt)); });
+  escenaActiva = -1; pintarSeguir(); enviarGrupos(segActivos(), 0);
+}
+$('centroCab').onclick = () => moverCabezas(z => { z.pan = 128; z.tilt = 128; });
+document.querySelectorAll('[data-paso]').forEach(b => b.onclick = () => {
+  const [dx, dy] = b.dataset.paso.split(',').map(Number);
+  moverCabezas(z => { z.pan = (z.pan != null ? z.pan : 128) + dx * (prefs.invX ? -1 : 1); z.tilt = (z.tilt != null ? z.tilt : 128) + dy * (prefs.invY ? -1 : 1); });
+});
+
 /* Calibracion: guarda pan/tilt actuales de las cabezas elegidas en una esquina */
 async function guardarEsquina(k){
   datos.calibracion = datos.calibracion || {};
@@ -863,7 +1131,7 @@ document.querySelectorAll('[data-z]').forEach(b => b.onclick = () => { $('zoom')
 $('borrarCal').onclick = async () => {
   if (!confirm('¿Borrar la calibración de las 3 cabezas? Después habrá que calibrar de nuevo en Kennedy.')) return;
   datos.calibracion = {};
-  try { await guardarDatos(); toast('Calibración borrada'); }
+  try { await guardarDatos(true); toast('Calibración borrada'); }
   catch(e){ toast('No se pudo guardar en el Dell'); }
   pintarSeguir();
 };
@@ -874,6 +1142,31 @@ $('segOn').onclick = () => accionSeguir(z => { z.color = (conf.seguir && conf.se
 $('segOff').onclick = () => accionSeguir(z => { z.intensidad = 0; });
 $('segPublico').onclick = () => accionSeguir((z, id) => { encenderSiApagada(id); fijarPosicion(z, 'publico', id); });
 $('segEscenario').onclick = () => accionSeguir((z, id) => { encenderSiApagada(id); fijarPosicion(z, 'escenario', id); });
+// Guardar donde esta apuntando ahora cada cabeza elegida (Cabeza 1, 2, 3 o las 3) como su "escenario" o "publico".
+// Se guarda en el Dell (datos.json) y se vuelven a armar los momentos de los juegos con esas posiciones.
+async function guardarPosicion(nombre){
+  datos.posiciones = datos.posiciones || {};
+  const ids = segActivos(), hechas = [];
+  ids.forEach(id => { const z = zona(id); if (z.pan == null) return;
+    datos.posiciones[id] = datos.posiciones[id] || {};
+    datos.posiciones[id][nombre] = {pan: Math.round(z.pan), tilt: Math.round(z.tilt), zoom: z.zoom != null ? z.zoom : null};
+    hechas.push(segIds().indexOf(id) + 1); });
+  if (!hechas.length) return toast('Primero apunta la cabeza (mapa o «A mano»)');
+  try { await guardarDatos(); await publicarMomentos(); toast('Guardado «' + nombre + '» de la cabeza ' + hechas.join(', ')); }
+  catch(e){ toast('No se pudo guardar en el Dell'); }
+  pintarPosiciones();
+}
+function pintarPosiciones(){
+  const p = datos.posiciones || {}, el = $('posGuardadas'); if (!el) return;
+  const txt = segIds().map((id, i) => { const q = p[id] || {}; return 'Cabeza ' + (i + 1) + ': ' + (q.escenario ? 'escenario ✓' : 'escenario —') + ' · ' + (q.publico ? 'público ✓' : 'público —'); });
+  el.textContent = 'Posiciones guardadas · ' + txt.join(' | ');
+}
+$('guardarEsc').onclick = () => guardarPosicion('escenario');
+$('guardarPub').onclick = () => guardarPosicion('publico');
+$('borrarPos').onclick = async () => {
+  if (!confirm('¿Borrar las posiciones guardadas de las cabezas?')) return;
+  datos.posiciones = {}; try { await guardarDatos(); await publicarMomentos(); } catch(e){} pintarPosiciones();
+};
 
 function pintarSeguir(){
   if (!conf) return;
@@ -904,6 +1197,14 @@ function pintarSeguir(){
 
   // calibracion
   const cal = $('calib'); cal.innerHTML = '';
+  { // Paso 0 (idea de Cote, 25 nov): cada cabeza derecho al piso, justo debajo de su propio pilar
+    const hechas = segIds().map((id, i) => ((datos.calibracion || {})[id] || {}).abajo ? (i + 1) + ' ✓' : (i + 1) + ' –');
+    const b = document.createElement('button'); b.style.gridColumn = '1/-1';
+    b.className = hechas.every(x => x.includes('✓')) ? 'ok' : '';
+    b.innerHTML = `Guardar 0 · Derecho al piso, justo debajo de su propio pilar (primero)<small>Cabeza ${hechas.join('  ·  ')}</small>`;
+    b.onclick = () => guardarEsquina('abajo');
+    cal.appendChild(b);
+  }
   ESQUINAS.forEach(e => {
     const hechas = segIds().map((id, i) => ((datos.calibracion || {})[id] || {})[e.k] ? (i + 1) + ' ✓' : (i + 1) + ' –');
     const b = document.createElement('button');
@@ -912,6 +1213,18 @@ function pintarSeguir(){
     b.onclick = () => guardarEsquina(e.k);
     cal.appendChild(b);
   });
+  // diagnostico: como quedo cada cabeza (para revisar en terreno)
+  const diag = document.createElement('p'); diag.className = 'diag';
+  diag.textContent = 'Revisión: ' + segIds().map((id, i) => {
+    const c = (datos.calibracion || {})[id] || {}, faltan = ESQUINAS.filter(e => !c[e.k]).map(e => e.nombre[0]);
+    if (faltan.length) return 'Cabeza ' + (i + 1) + ': falta marca ' + faltan.join(', ');
+    const m = modeloCabeza(id);
+    if (!m) return 'Cabeza ' + (i + 1) + ': revisar todas sus marcas';
+    const peor = m.errMarca.indexOf(Math.max(...m.errMarca));
+    const ok = m.errMarca[peor] < 14;
+    return 'Cabeza ' + (i + 1) + ': ' + (ok ? 'bien' : 'revisar marca ' + (peor + 1)) + (m.b < 0 ? ', gira en espejo (corregido)' : '');
+  }).join(' · ');
+  cal.appendChild(diag);
 }
 
 /* ---------- Zonas ---------- */
@@ -960,7 +1273,7 @@ function pintarCanales(){
     row.innerHTML = `<div><b>Canal ${i + 1}</b><small>DMX ${ch}${nombres[i + 1] ? ' · ' + nombres[i + 1] : ''}</small></div>
       <input type="range" min="0" max="255" value="${v}"><div class="v">${v}</div>`;
     const r = row.querySelector('input'), t = row.querySelector('.v');
-    r.oninput = () => { t.textContent = r.value; canales[ch - 1] = +r.value; limitar('c' + ch, () => enviar({[ch]: +r.value}, 0)); };
+    r.oninput = () => { detenerParaProbar(); t.textContent = r.value; canales[ch - 1] = +r.value; limitar('c' + ch, () => enviar({[ch]: +r.value}, 0)); };
     list.appendChild(row);
   }
 }
@@ -974,11 +1287,15 @@ function pintarDirecciones(){
   });
 }
 $('addr').onchange = pintarCanales;
-$('cero16').onclick = () => {
-  const inicio = +$('addr').value || 1, v = {};
-  for (let i = 0; i < 16; i++){ v[inicio + i] = 0; canales[inicio + i - 1] = 0; }
+const poner16 = val => {
+  detenerParaProbar();
+  const inicio = Math.max(1, Math.min(497, +$('addr').value || 1)), v = {};
+  for (let i = 0; i < 16; i++){ v[inicio + i] = val; canales[inicio + i - 1] = val; }
   enviar(v, 0); pintarCanales();
 };
+$('cero16').onclick = () => poner16(0);
+// Para ubicar en terreno que equipo esta en cada direccion (Kennedy, 24 nov): se prende todo el bloque de una vez
+$('max16').onclick = () => poner16(255);
 
 /* ---------- Barra inferior ---------- */
 $('master').oninput = () => {
@@ -995,6 +1312,15 @@ $('blackout').onclick = async () => {
   try { pintarEstado(await api('/api/apagar?f=' + fade)); toast('Todo apagado'); } catch(e){ sinConexion(); }
   pintarTodo();
 };
+// Detener todo (Cote, 24 nov: no encontraba como parar las mini cabezas): lo mismo que APAGAR TODO, tambien en Juegos
+if ($('detenerTodo')) $('detenerTodo').onclick = () => $('blackout').click();
+// En "Probar canales" los efectos (por ejemplo las mini cabezas moviendose) pisaban los canales: se detienen al probar
+let avisoProbar = 0;
+function detenerParaProbar(){
+  if (!efectosActivos.length) return;
+  efectosActivos = []; efecto('todos', {todos:'off'});
+  if (Date.now() - avisoProbar > 5000){ avisoProbar = Date.now(); toast('Efectos detenidos para probar canales'); }
+}
 
 /* ---------- Pestanas ---------- */
 /* Camara para Seguir: zona de las cabezas 1-3 (primer restaurante), orientada igual que el mapa */
@@ -1009,6 +1335,8 @@ function medirSeguir(){
   document.body.style.setProperty('--abajo', Math.round(window.innerHeight - pie.top + 6) + 'px');
   // alto disponible para la vista 3D + el mapa (los botones quedan debajo)
   document.body.style.setProperty('--disp', Math.max(220, Math.round(pie.top - nav.bottom - 14)) + 'px');
+  // la barra de abajo (intensidad, fundido, apagar) no debe tapar lo ultimo de la pagina (Kennedy, 25 nov: tapaba las esquinas)
+  document.querySelector('main').style.paddingBottom = Math.round(pie.height + 24) + 'px';
   V.sucio = true;
 }
 window.addEventListener('resize', () => { if (document.body.classList.contains('en-seguir')) medirSeguir(); });
@@ -1039,6 +1367,16 @@ function pintarEstado(e){
   else if (e.conectado){ dot.className = 'dot ok'; t.textContent = 'Cable DMX · ' + e.puerto; }
   else { dot.className = 'dot'; t.textContent = 'Sin cable DMX · tocar para reintentar'; }
   $('pill').title = e.error || '';
+  // Estado del cable en "Probar canales": cuantos envios por segundo salen y si hay errores (para revisar en terreno)
+  const ec = $('estadoCable');
+  if (ec && e.tramas != null){
+    const ahora = performance.now(), p = pintarEstado.prev;
+    const porSeg = p && ahora > p.t ? Math.round((e.tramas - p.n) * 1000 / (ahora - p.t)) : 0;
+    pintarEstado.prev = {t: ahora, n: e.tramas};
+    ec.textContent = 'Cable: ' + (e.conectado ? 'conectado · ' + e.puerto : 'NO conectado') + ' · envíos ' + e.tramas +
+      (p ? ' (' + Math.max(0, porSeg) + '/s)' : '') + ' · errores ' + (e.errores || 0) + (e.error ? ' · último error: ' + e.error : '') +
+      (e.carpeta ? ' · carpeta de la suite: ' + e.carpeta : '');
+  }
   if (CONTROL){ V.animador = e.animador || null; V.rosko = !!e.rosko; V.sucio = true; marcaAnimador(e.animador); }
   momentoRecibido(e);
 }
@@ -1233,21 +1571,44 @@ function choque(o, d){
   return { p: add(o, mul(d, mejor)), piso: d[1] < 0 && Math.abs(add(o, mul(d, mejor))[1]) < 0.45 };
 }
 /* Direccion aproximada de una cabeza movil a partir de pan y tilt */
-// Modelo generico de cabeza movil: pan 0-255 = 540 grados (+-270 desde "casa"), tilt 0-255 = 0 a 135 grados desde la vertical.
+// Modelo generico de cabeza movil: pan 0-255 = 540 grados (+-270 desde "casa"), tilt 0-255 = 270 grados (+-135 desde la base).
+// Las mini (en el piso, mirando al techo) siguen con tilt 0 = derecho arriba y 255 = 135 grados.
+// Las cabezas grandes del salon van DE LADO en el pilar, con la base mirando a los restaurantes en paralelo al piso
+// (Cote, 25 nov): el pan gira alrededor de esa linea y tilt 128 = derecho a los restaurantes; pasado ese punto la luz
+// cruza al otro lado (como las reales). Si la cabeza ya esta calibrada en Kennedy, la vista usa su modelo.
 const RANGO_PAN = Math.PI * 1.5, RANGO_TILT = Math.PI * 0.75;
 // pan 128 = "casa". Las cabezas del salon cuelgan en la columna con la base vertical mirando a las COCINAS
 // (Cote, 24 nov): su casa es hacia las cocinas y solo alcanzan el lado interno del salon. Las demas miran al escenario.
 function casaDe(pos, id){
   if (id && (POS3D[id] || {}).columna != null){ const d = rotY([1, 0, 0], giroSalon()); return Math.atan2(d[0], d[2]); }
+  // Mini cabezas (Cote, 25 nov): estan con los numeros y los botones MIRANDO AL PUBLICO, asi que su frente (pan al medio)
+  // es hacia el publico (+z), tanto las del escenario como las de arriba de las columnas azules
+  const g = id && grupo(id);
+  if (id === 'mini' || (g && g.igual_que === 'mini')) return 0;
   return Math.atan2(0 - pos[0], -1.5 - pos[2]);
 }
-function posCabeza(id){                                            // donde esta montada cada cabeza (igual que en la vista 3D)
+const marcoPilar = () => marco(rotY([1, 0, 0], giroSalon()));        // cabezas del salon: eje horizontal hacia los restaurantes
+function posCabeza(id){                                            // donde esta montada cada cabeza (calibrada: la que calza con sus marcas)
+  const m = (POS3D[id] || {}).columna != null && datos && modeloCabeza(id);
+  return m ? m.pos : posNominal(id);
+}
+function posNominal(id){                                           // donde esta dibujada cada cabeza en la vista 3D
   const g = grupo(id), def = POS3D[id] || {};
   if (g && g.vista3d) return g.vista3d[0];
   if (def.columna != null){ const [cu, cv] = colsSalon()[def.columna] || colsSalon()[0]; return deSalon(cu + 0.75, cv, 4.0); } // costado hacia las cocinas
   return def.pos ? def.pos[0] : null;
 }
 function direccion(pos, pan, tilt, piso, id){
+  const colgada = id && (POS3D[id] || {}).columna != null;
+  if (colgada){
+    const m = datos && modeloCabeza(id);
+    if (m){                                                          // calibrada: el inverso de su modelo (la vista calza con la luz real)
+      const sel = (tilt - m.c) / m.d;
+      return dirDesde((pan - m.a) / m.b - (sel < 0 ? Math.PI : 0), Math.abs(sel), m.F);
+    }
+    // de lado en el pilar, la base mirando a los restaurantes: pan gira alrededor de esa linea; tilt 128 = derecho a ellos
+    return dirDesde((pan - 128) / 128 * RANGO_PAN, (tilt - 128) / 128 * RANGO_TILT, marcoPilar());
+  }
   const casa = casaDe(pos, id);
   const a = casa + (pan - 128) / 128 * RANGO_PAN;
   const th = tilt / 255 * RANGO_TILT;
@@ -1565,7 +1926,7 @@ function dibujarPlano(){
     if (conCabeza) s += `<text x="${X(v)}" y="${+Y(u) + 2.2}" fill="#fff" font-size="6.5" text-anchor="middle" font-weight="700">${i + 1}</text>`;
   });
   // esquinas de calibracion
-  [[CAL.u0, CAL.v0, 1], [CAL.u0, CAL.v1, 2], [CAL.u1, CAL.v0, 3], [CAL.u1, CAL.v1, 4]].forEach(([u, v, n]) => {
+  ESQUINAS.map((e, i) => [e.sal[0], e.sal[1], i + 1]).forEach(([u, v, n]) => {
     s += `<circle cx="${X(v)}" cy="${Y(u)}" r="4" fill="#f5c542"/><text x="${X(v)}" y="${+Y(u) + 2}" fill="#000" font-size="5.5" text-anchor="middle" font-weight="800">${n}</text>`;
   });
   $('plano').innerHTML = s;
@@ -1593,8 +1954,10 @@ const JUEGOS = [
   { juego:'Bingo', momentos:[
     { id:'bingo_qr', nombre:'QR en pantalla', igual:'base_juegos' },
     { id:'bingo_bolitas', nombre:'Primeras bolitas', igual:'base_juegos' },
-    { id:'bingo_al_publico', nombre:'Al público', detalle:'Escenario más bajo, 3 cabezas al público (abre Seguir)',
-      g:() => ({...pared('azul', 50), ...frente(40), ...cab('publico', 40, segIds()), ...miniRoja}) },
+    // Cote (25 nov): el foco esta en el salon; el escenario queda como en Standby (fondo suave en fundido, mini al techo
+    // en contraste, frontales suavecitos) y el DJ sigue al animador con las 3 cabezas (en blanco calido)
+    { id:'bingo_al_publico', nombre:'Al público', detalle:'Fondo como Standby, 3 cabezas al público para seguir al animador (abre Seguir)',
+      g:() => ({...pared('azul', 45), frontales:{color:'azul', intensidad:30}, ...cab('publico', 40, segIds()), mini:{color:'ambar', intensidad:85, posicion:'escenario'}}), standby:true },
     { id:'ganador_al_escenario', nombre:'Ganador al escenario', igual:'base_juegos' },
     { id:'celebracion_ganador', nombre:'Celebración', detalle:'Pared cambiando de color a 148 BPM', g:BASE, pared:{colores:CICLO, t:0.41} },
     { id:'entrega_premio', nombre:'Entrega del premio', detalle:'Pared roja, todo bien iluminado', g:() => ({...BASE(), ...pared('rojo', 100)}) } ]},
@@ -1656,7 +2019,10 @@ const ALIAS_SALA = {
   premio_entrega:'entrega_premio', rosko_ranking:'rosko_puntajes', rosko_ranking_fin:'base_juegos',
   objeto_votacion_fin:'base_juegos', objeto_final:'objeto_votacion', festival_despide:'base_juegos',
   festival_canta:'festival_cancion', festival_termina:'festival_tension',
-  festival_lugar_suspenso:'festival_tension', festival_lugar_revela:'festival_revela'   // nombres propuestos a Code 1
+  festival_lugar_suspenso:'festival_tension', festival_lugar_revela:'festival_revela',
+  // nombres que manda la Sala (Code 1, rev 223): al pasar a los resultados = tension; cada lugar revelado = pestaneo y vuelve la tension
+  festival_resultados:'festival_tension', objeto_resultados:'festival_tension',
+  festival_lugar:'festival_revela', objeto_lugar:'festival_revela'
 };
 const todosMomentos = () => JUEGOS.flatMap(j => j.momentos).concat(
   Object.entries(ALIAS_SALA).map(([id, a]) => a === 'nada' ? {id, nombre:id, nada:true, oculto:true} : {id, nombre:id, igual:a, oculto:true}));
@@ -1705,6 +2071,9 @@ function compilarMomento(m){
       conEspejos(m.estrobo).forEach(id => { const g = grupo(id); if (!g) return; Object.assign(on, valoresGrupo(g, zs[id])); Object.assign(off, valoresGrupo(g, {...zs[id], intensidad:0})); });
       ef('estrobo', {tipo:'sec', pasos:pasosTxt([on, off]), t:0.06, fx:0});
     }
+    if (m.standby){                                                             // fondo como en Standby (sin tocar las cabezas)
+      capasStandbyFondo(STANDBY_TONOS).forEach(c => ef(c.id, {tipo:'sec', pasos:pasosTxt(c.pasos), t:c.seg.toFixed(3), fx:c.fx}));
+    }
     if (m.luego){ L.push('espera:' + m.luego[0]); L.push('@' + m.luego[1]); }
     return L;
   } finally { master = mGuard; }
@@ -1741,7 +2110,8 @@ function momentoRecibido(e){
   const primero = momentoVisto === null; momentoVisto = e.momentoN;
   pintarJuegos(e.momento);
   // Si el iPad se abre cuando el animador ya esta en el publico, tambien abre el mapa (Code 1, rev 205)
-  if (primero && e.momento === 'bingo_al_publico' && !TV && !MAPA_SOLO) abrirTab('seguir');
+  if (primero && e.momento === 'bingo_al_publico' && !TV && !MAPA_SOLO && !DJ) abrirTab('seguir');
+  if (primero && DJ && e.momento === 'bingo_al_publico') djMomento(e.momento);
   if (primero || !e.momento) return;
   escenaActiva = -1; efectoPared = null; progActivo = null;
   let m = momentoPorId(e.momento);
@@ -1750,7 +2120,8 @@ function momentoRecibido(e){
     const z = zonasDe(m); Object.keys(z).forEach(id => zonas[id] = {color:z[id].color, intensidad:z[id].intensidad, pan:z[id].pan, tilt:z[id].tilt, zoom:z[id].zoom, posicion:z[id].posicion});
     pintarTodo(); pintarProgramas(); toast('▶ ' + m.nombre);
   }
-  if (e.momento === 'bingo_al_publico' && !TV && !MAPA_SOLO) abrirTab('seguir');
+  if (e.momento === 'bingo_al_publico' && !TV && !MAPA_SOLO && !DJ) abrirTab('seguir');
+  if (DJ) djMomento(e.momento);
 }
 
 /* ---------- MODO DEMO: el Dell simulado dentro del navegador ----------
@@ -1825,10 +2196,24 @@ function simMomento(n, encadenado){
 const simEstado = () => ({ tipo:'demo', puerto:'', conectado:false, error:'', efectos:[...SIM.ef.keys()],
   canales:Array.from(SIM.tgt.slice(1), Math.round), salida:SIM.salida, momento:SIM.momento, momentoN:SIM.momentoN,
   animador:V.animador || null, rosko:!!V.rosko });
+const SIMDJ = { escena: -1, auto: false, int: 100, cambio: 0, ult: -99, P: 0.5 };
+function simPulso(){ const t = performance.now() / 1000, d = t - SIMDJ.ult; if (d > 0.2 && d < 2) SIMDJ.P = SIMDJ.P * 0.7 + d * 0.3; SIMDJ.ult = t; }
+function simDj(q){
+  const t = performance.now() / 1000; let aplicar = false;
+  if (q.has('escena')){ SIMDJ.escena = +q.get('escena'); SIMDJ.cambio = t; }
+  if (q.has('auto')){ SIMDJ.auto = q.get('auto') === '1'; if (SIMDJ.auto) SIMDJ.cambio = -1e9; }
+  if (q.has('int')) SIMDJ.int = +q.get('int');
+  if (q.has('turno') && SIMDJ.auto && t - SIMDJ.cambio >= 180){
+    const op = q.get('turno').split(',').map(Number).filter(k => k !== SIMDJ.escena);
+    if (op.length){ SIMDJ.escena = op[Math.floor(Math.random() * op.length)]; SIMDJ.cambio = t; aplicar = true; } }
+  const ritmo = t - SIMDJ.ult < Math.max(2.5, 3 * SIMDJ.P);
+  return { escena: SIMDJ.escena, auto: SIMDJ.auto, int: SIMDJ.int, aplicar, estacion: false, ritmo, bpm: Math.round(60 / SIMDJ.P) };
+}
 async function simApi(path, params){
   const [ruta, qs] = path.split('?'), q = new URLSearchParams(params || qs || '');
   if (ruta.endsWith('luces.json')){ const r = await fetch(path, {cache:'no-store'}); if (!r.ok) throw new Error(r.status); return r.json(); }
   if (ruta === '/api/datos') return JSON.parse(localStorage.getItem('krb_demo_datos') || '{"calibracion":{}}');
+  if (ruta === '/api/dj') return simDj(q);                            // panel del DJ en el demo: lo mismo que hace el Dell
   if (ruta === '/api/guardar'){ localStorage.setItem('krb_demo_datos', q.get('d') || '{}'); return {ok:true}; }
   if (ruta === '/api/momentos'){
     const d = {}; let cur = null;
@@ -2013,15 +2398,618 @@ function marcaAnimador(a){                                              // el an
   m.style.top = ((MAPA.u0 - u) / (MAPA.u0 - MAPA.u1) * map.clientHeight) + 'px';
 }
 
+
+/* =====================================================================
+   PANEL DEL DJ (Cote, 25 nov): para las noches sin show ni juegos. Pocos botones y muchas escenas que se mueven
+   solas; si se activa «Ritmo», el panel escucha la musica (bombo y caja), calcula el tempo y le manda cada golpe
+   al Dell, que hace avanzar los efectos al compas. Sin microfono, «Tap» marca el ritmo a mano.
+   ===================================================================== */
+const djEstado = { escena: -1, auto: false, autoTimer: null, bpm: 120 };
+const azar = (a, b) => a + Math.random() * (b - a);
+const elegir = arr => arr[Math.floor(Math.random() * arr.length)];
+const VIVOS = ['rojo', 'azul', 'verde', 'amarillo', 'morado', 'rosa', 'cian', 'ambar'];
+// Puntos del salon para las cabezas grandes (u: de lado, + cocinas; v: a lo largo desde el escenario)
+const PUNTOS = {
+  pista:  () => puntoPiso(azar(-3, 3), azar(1, 9)),
+  salon:  () => puntoPiso(azar(-4, 4.5), azar(0, 24)),
+  techo:  () => deSalon(azar(-4, 4.5), azar(2, 22), 6.5),
+  escenario: () => [azar(-3, 3), 1.2, azar(-3.2, -0.8)]
+};
+function apuntarCabeza(id, punto){ const zz = {}; if (!apuntarModelo(id, punto, zz)) apuntarGeo(id, punto, zz); return zz; }
+const djSeg = { activo: false, sel: 'todas', ancho: 50, punto: null };
+const djSeguidas = () => djSeg.activo ? (djSeg.sel === 'todas' ? segIds() : [segIds()[+djSeg.sel]].filter(Boolean)) : [];
+const djCabezas = () => segIds().filter(id => !djSeguidas().includes(id));      // las que siguen la escena
+const djMini = () => conEspejos(['mini']);
+// Un paso de color: { grupo: color } (o null = apagado), con intensidad opcional por grupo
+function pasoColor(colores, intens){
+  const s = {};
+  Object.entries(colores).forEach(([id, c]) => { const g = grupo(id); if (!g) return;
+    const v = valoresGrupo(g, {color: c || 'blanco', intensidad: c ? ((intens && intens[id]) || 100) : 0});
+    const ch = g.canales || {}, base = g.direccion - 1;
+    if (ch.pan) delete v[base + ch.pan]; if (ch.tilt) delete v[base + ch.tilt];    // el color no toca la posicion
+    Object.assign(s, v); });
+  return s;
+}
+// Un paso de posicion: { grupo: {pan, tilt} }
+function pasoPos(pos){
+  const s = {};
+  Object.entries(pos).forEach(([id, p]) => { const g = grupo(id); if (!g || !p) return; const ch = g.canales || {}, base = g.direccion - 1;
+    if (ch.pan) s[base + ch.pan] = Math.round(Math.max(0, Math.min(255, p.pan)));
+    if (ch.tilt) s[base + ch.tilt] = Math.round(Math.max(0, Math.min(255, p.tilt)));
+    if (ch.zoom && p.zoom != null){ const zv = Math.round(p.zoom * 2.55); s[base + ch.zoom] = g.zoom_invertido ? 255 - zv : zv; } });
+  return s;
+}
+const posMini = () => ({ pan: azar(20, 235), tilt: azar(0, 80) });          // mini: giran y miran hacia arriba
+const posCab = tipo => { const o = {}; djCabezas().forEach(id => o[id] = apuntarCabeza(id, PUNTOS[tipo]())); return o; };
+const posCabJuntas = tipo => { const p = PUNTOS[tipo](), o = {}; djCabezas().forEach(id => o[id] = apuntarCabeza(id, p)); return o; };
+const djLibres = () => conf.grupos.map(g => g.id).filter(id => !djSeguidas().includes(id));   // todo menos las cabezas que sigue el DJ
+const todos = c => { const o = {}; djLibres().forEach(id => o[id] = c); return o; };
+const grupos = (ids, c) => { const o = {}; ids.forEach(id => o[id] = c); return o; };
+// Capas de una escena: { id, pasos, ritmo (golpes por paso), fx (fundido entre pasos 0-1) }
+const capa = (id, pasos, ritmo, fx) => ({ id: 'dj-' + id, pasos, ritmo, fx: fx || 0 });
+const N = n => Array.from({length: n}, (_, i) => i);
+
+/* Escenas del DJ en 4 grupos (Cote, 25 nov):
+   - Standby: sin blanco; cabezas al techo en diagonal con colores suaves, frontales (97) suavecitos, pared y mini con color. Sin protagonismo.
+   - Previa (piano bar) y Show: SIEMPRE el blanco calido de frente (cabezas 1 y 2 al escenario + los 2 frontales del 97).
+     En la previa el fondo cambia lento; en el show el fondo es libre (estrobo, arriba distinto de abajo, mini locas)
+     y las cabezas 1 y 2 hacen un movimiento chico sin salir del escenario.
+   - Fiesta: libre; las cabezas recorren el salon cambiando de color, sincronizadas con el escenario. */
+const djCab12 = () => djCabezas().filter(id => segIds().indexOf(id) < 2);             // cabezas 1 y 2 (si el DJ no las esta siguiendo)
+const djCab3 = () => djCabezas().filter(id => segIds().indexOf(id) >= 2);            // cabeza 3
+const djPared = () => idsPared();
+const djArriba = () => idsPared().filter(id => id === 'fondo');                       // fondo: arriba de las columnas azules
+const djAbajo = () => idsPared().filter(id => id !== 'fondo');                        // perimetrales: en el piso
+// blanco calido de frente: cabezas 1 y 2 al escenario + frontales
+const blancoFrente = () => ({ ...grupos(djCab12(), 'blanco_calido'), ...grupos(djCab3(), null), frontales: 'blanco_calido' });
+const djPosEsc = (dp, dt) => { const o = {}; djCab12().forEach((id, j) => { const z = {}; fijarPosicion(z, 'escenario', id);
+  o[id] = { pan: (z.pan || 128) + (dp || 0) * (j ? -1 : 1), tilt: (z.tilt || 100) + (dt || 0), zoom: z.zoom }; }); return o; };
+const djMiniSuave = () => grupos(djMini(), { pan: azar(50, 205), tilt: azar(0, 35) });
+const djSuave = (c, k) => pasoColor(grupos(djPared(), c[k % c.length]), { perimetrales: 45, fondo: 45 });
+// Standby (Cote, 25 nov): las cabezas grandes apuntan EN DIAGONAL AL TECHO (sobre el salon, frente al escenario) y lo
+// pintan con colores suaves del tema, moviendose lento; los frontales (97) con colores suavecitos que complementan.
+// punto del techo para cada cabeza: en diagonal hacia arriba (20 a 40 grados), hacia el lado del salon (no a la pared de atras)
+const TECHO = 6.8;
+function techoDiagonal(id){
+  const pos = posCabeza(id), hacia = rotY([1, 0, 0], giroSalon());             // del pilar hacia el salon (lado cocinas)
+  const ang = azar(-0.5, 0.5), dir = rotY(hacia, ang), elev = azar(26, 34) * Math.PI / 180;
+  const dist = Math.max(0.5, TECHO - pos[1]) / Math.tan(elev);
+  return [pos[0] + dir[0] * dist, TECHO, pos[2] + dir[2] * dist];
+}
+// Recorrido de una cabeza por el techo (Cote, 25 nov): se mueve suave A TRAVES DEL SALON, siempre hacia arriba (la luz
+// nunca llega al publico). Es una vuelta larga por el techo, a lo largo del salon, con pasos cercanos para que en el
+// fundido no baje (las cabezas van de lado en el pilar: un giro grande del pan haria pasar la luz por abajo).
+function recorridoTecho(id, n){
+  const [cu, cv] = aSalon(posCabeza(id)), zz = {}, a0 = azar(0, 6.28), sentido = Math.random() < 0.5 ? 1 : -1;
+  const v0 = Math.max(2, cv - 9), v1 = Math.min(SALON.largo - 6, cv + 9);
+  return N(n).map(k => { const a = a0 + sentido * k / n * 2 * Math.PI;
+    const p = deSalon(0.6 + 3.2 * Math.sin(a), (v0 + v1) / 2 + (v1 - v0) / 2 * Math.cos(a), TECHO);   // elipse larga sobre el salon
+    if (!apuntarModelo(id, p, zz)) apuntarGeo(id, p, zz);             // cada paso parte del anterior (sin vueltas)
+    return { pan: zz.pan, tilt: zz.tilt, zoom: 70 }; });
+}
+const capasCabezasTecho = (tema, sinCabezas) => { const n = tema.length, cabs = sinCabezas ? [] : djCabezas();
+  const col = N(n * 2).map(k => { const o = {}, int = { frontales: 30 };
+    cabs.forEach((id, j) => { o[id] = tema[(k + j + 1) % n]; int[id] = 70; });
+    o.frontales = tema[(k + 2) % n]; return pasoColor(o, int); });
+  if (sinCabezas) return [{ ...capa('cabcol', col, 0, 0.6), seg: 4 }];
+  const rec = {}; cabs.forEach(id => rec[id] = recorridoTecho(id, 20));
+  const mov = N(20).map(k => { const o = {}; cabs.forEach(id => o[id] = rec[id][k]); return pasoPos(o); });
+  return [{ ...capa('cabcol', col, 0, 0.6), seg: 4 }, { ...capa('cabmov', mov, 0, 1), seg: 3 }]; };   // una vuelta por el salon cada 60 s
+// Fondo de Standby sin las cabezas (para cuando el DJ sigue al animador por el salon): pared en fundido que sube de abajo
+// hacia arriba, mini al techo en contraste y frontales suavecitos
+function capasStandbyFondo(tonos){ const n = tonos.length;
+  const col = N(n).map(k => pasoColor({ ...grupos(djAbajo(), tonos[k]), ...grupos(djArriba(), tonos[k ? k - 1 : 0]) }, { perimetrales: 45, fondo: 45 }));
+  return [{ ...capa('col', col, 0, 1), seg: 4.5 }, ...capasMiniTecho(tonos), ...capasCabezasTecho(tonos, true)];
+}
+// Mini cabezas en Standby (Cote, 25 nov): pintan el TECHO moviendose suave, con colores del tema de la escena,
+// y los cambios de color se notan (cada 3 s, con un fundido corto). Van por tiempo: en Standby puede no haber musica.
+// las mini van en color de CONTRASTE con la pared (Cote, 25 nov), con mas movimiento (una vuelta cada 16 s)
+const CONTRASTE = { azul: 'ambar', cian: 'rosa', morado: 'amarillo', ambar: 'azul', rosa: 'cian', rojo: 'cian', verde: 'morado', amarillo: 'morado' };
+const capasMiniTecho = tema => [
+  { ...capa('minicol', N(tema.length * 2).map(k => pasoColor(grupos(djMini(), CONTRASTE[tema[k % tema.length]] || 'blanco'), { mini: 85, mini_columnas: 85 })), 0, 0.35), seg: 3 },
+  { ...capa('mini', N(8).map(k => { const a = k / 8 * 2 * Math.PI, p = 128 + 105 * Math.sin(a), t = 18 + 16 * Math.sin(2 * a + 1);
+      return pasoPos({ mini: { pan: p, tilt: t }, mini_columnas: { pan: 255 - p, tilt: t } }); }), 0, 1), seg: 2 }];
+const djPrevia = (cs, k) => pasoColor({ ...blancoFrente(), ...grupos(djMini(), cs[(k + 1) % cs.length]), ...grupos(djArriba(), cs[k % cs.length]), ...grupos(djAbajo(), cs[(k + 1) % cs.length]) },
+  { perimetrales: 70, fondo: 70, mini: 80, mini_columnas: 80 });
+// Locura: cada equipo con un color distinto (sin repetir mientras alcancen los colores)
+const djDistintos = () => { const c = [...VIVOS].sort(() => Math.random() - 0.5), o = {};
+  [...djCabezas(), ...djMini(), ...djPared()].forEach((id, j) => o[id] = c[j % c.length]); return o; };
+const movFrente = () => capa('frente', N(4).map(k => pasoPos(djPosEsc(...[[0, 0], [2, 1], [0, 2], [-2, 1]][k]))), 4, 1);   // movimiento chico en el escenario
+
+const DJ_ESCENAS = [
+  // ---------- STANDBY ----------
+  { grupo: 'Standby', n: 'Azul', i: '🌙', g: 'linear-gradient(135deg,#0a1a4a,#2b55ff)',
+    capas: () => [capa('col', [0, 1].map(k => djSuave(['azul', 'azul'], k)), 16, 1), ...capasMiniTecho(['azul', 'cian', 'morado']), ...capasCabezasTecho(['azul', 'cian', 'morado'])] },
+  { grupo: 'Standby', n: 'Atardecer', i: '🌅', g: 'linear-gradient(135deg,#ff8a00,#ff3fa0)',
+    capas: () => [capa('col', [0, 1].map(k => djSuave(['ambar', 'rosa'], k)), 16, 1), ...capasMiniTecho(['ambar', 'rosa', 'rojo']), ...capasCabezasTecho(['ambar', 'rosa', 'rojo'])] },
+  { grupo: 'Standby', n: 'Lavanda', i: '🪻', g: 'linear-gradient(135deg,#9b3cff,#2b55ff)',
+    capas: () => [capa('col', [0, 1].map(k => djSuave(['morado', 'azul'], k)), 16, 1), ...capasMiniTecho(['morado', 'rosa', 'azul']), ...capasCabezasTecho(['morado', 'rosa', 'azul'])] },
+  { grupo: 'Standby', n: 'Agua', i: '💧', g: 'linear-gradient(135deg,#22e5ff,#22dd55)',
+    capas: () => [capa('col', [0, 1].map(k => djSuave(['cian', 'verde'], k)), 16, 1), ...capasMiniTecho(['cian', 'verde', 'azul']), ...capasCabezasTecho(['cian', 'verde', 'azul'])] },
+  // ---------- PREVIA (piano bar): blanco de frente siempre ----------
+  { grupo: 'Previa', n: 'Piano bar', i: '🎹', g: 'radial-gradient(circle at 50% 30%,#ffd9a0,#ff8a00 60%,#3a1a00)',
+    capas: () => [capa('col', N(4).map(k => djPrevia(['ambar', 'rosa'], k)), 16, 1), capa('mov', [pasoPos(djPosEsc())], 16), capa('mini', N(6).map(() => pasoPos(djMiniSuave())), 8, 1)] },
+  { grupo: 'Previa', n: 'Jazz azul', i: '🎷', g: 'radial-gradient(circle at 50% 30%,#ffd9a0,#2b55ff 60%,#0a1033)',
+    capas: () => [capa('col', N(4).map(k => djPrevia(['azul', 'cian'], k)), 16, 1), capa('mov', [pasoPos(djPosEsc())], 16), capa('mini', N(6).map(() => pasoPos(djMiniSuave())), 8, 1)] },
+  { grupo: 'Previa', n: 'Vino', i: '🍷', g: 'radial-gradient(circle at 50% 30%,#ffd9a0,#9b1030 60%,#2a0010)',
+    capas: () => [capa('col', N(4).map(k => djPrevia(['rojo', 'morado'], k)), 16, 1), capa('mov', [pasoPos(djPosEsc())], 16), capa('mini', N(6).map(() => pasoPos(djMiniSuave())), 8, 1)] },
+  { grupo: 'Previa', n: 'Dorado', i: '✨', g: 'radial-gradient(circle at 50% 30%,#fff3c4,#ffbe00 60%,#3a2a00)',
+    capas: () => [capa('col', N(4).map(k => djPrevia(['amarillo', 'ambar'], k)), 16, 1), capa('mov', [pasoPos(djPosEsc())], 16), capa('mini', N(6).map(() => pasoPos(djMiniSuave())), 8, 1)] },
+  // ---------- SHOW: blanco de frente siempre, fondo libre ----------
+  { grupo: 'Show', n: 'Colores', i: '🎤', g: 'linear-gradient(135deg,#ff2a2a,#ffd9a0 50%,#2b55ff)',
+    capas: () => [capa('col', N(12).map(() => pasoColor({ ...blancoFrente(), ...grupos(djMini(), elegir(VIVOS)), ...grupos(djArriba(), elegir(VIVOS)), ...grupos(djAbajo(), elegir(VIVOS)) })), 1),
+      movFrente(), capa('mini', N(12).map(() => pasoPos(grupos(djMini(), posMini()))), 1, 0.3)] },
+  { grupo: 'Show', n: 'Estrobo', i: '⚡', g: 'repeating-linear-gradient(90deg,#fff 0 8px,#222 8px 16px)',
+    capas: () => { const c = elegir(VIVOS);
+      return [capa('col', N(8).map(k => pasoColor({ ...blancoFrente(), ...grupos(djMini(), k % 2 ? 'blanco' : c), ...grupos(djArriba(), k % 2 ? null : 'blanco'), ...grupos(djAbajo(), k % 2 ? c : null) })), 0.25),
+        movFrente(), capa('mini', N(12).map(() => pasoPos(grupos(djMini(), posMini()))), 0.5, 0.2)]; } },
+  { grupo: 'Show', n: 'Arriba/abajo', i: '↕️', g: 'linear-gradient(180deg,#9b3cff 50%,#22e5ff 50%)',
+    capas: () => { const pares = [['morado', 'cian'], ['rojo', 'amarillo'], ['azul', 'rosa'], ['verde', 'morado']];
+      return [capa('col', N(8).map(k => { const [x, y] = pares[Math.floor(k / 2) % 4]; return pasoColor({ ...blancoFrente(), ...grupos(djMini(), k % 2 ? x : y),
+          ...grupos(djArriba(), k % 2 ? x : y), ...grupos(djAbajo(), k % 2 ? y : x) }); }), 1),
+        movFrente(), capa('mini', N(8).map(() => pasoPos(grupos(djMini(), posMini()))), 1, 0.5)]; } },
+  { grupo: 'Show', n: 'Arcoíris', i: '🌈', g: 'linear-gradient(135deg,#ff2a2a,#ffbe00,#22dd55,#22e5ff,#9b3cff)',
+    capas: () => { const c = ['rojo', 'ambar', 'amarillo', 'verde', 'cian', 'azul', 'morado', 'rosa'];
+      return [capa('col', c.map((x, k) => pasoColor({ ...blancoFrente(), ...grupos(djMini(), c[(k + 4) % 8]), ...grupos(djArriba(), x), ...grupos(djAbajo(), c[(k + 2) % 8]) })), 1, 0.6),
+        movFrente(), capa('mini', N(8).map(() => pasoPos(grupos(djMini(), posMini()))), 2, 0.7)]; } },
+  // ---------- FIESTA: libre, todo sincronizado ----------
+  { grupo: 'Fiesta', n: 'Fiesta', i: '🎉', g: 'linear-gradient(135deg,#ff2a2a,#ffbe00,#22dd55,#2b55ff,#9b3cff)',
+    capas: () => [capa('col', N(16).map(() => { const c = elegir(VIVOS); return pasoColor({ ...grupos(djCabezas(), c), ...grupos(djMini(), c), ...grupos(djPared(), c), frontales: null }); }), 1),
+      capa('mov', N(12).map(() => pasoPos({ ...posCab('salon'), ...grupos(djMini(), posMini()) })), 2, 0.55)] },
+  { grupo: 'Fiesta', n: 'Disco', i: '🪩', g: 'radial-gradient(circle at 40% 35%,#fff 0 4px,transparent 5px),linear-gradient(135deg,#9b3cff,#2b55ff)',
+    capas: () => [capa('col', N(8).map(k => pasoColor({ ...grupos(djCabezas(), 'blanco'), ...grupos(djMini(), k % 2 ? 'blanco' : 'morado'),
+        ...grupos(djPared(), ['morado', 'azul', 'rosa', 'cian'][k % 4]), frontales: null }, { perimetrales: 70, fondo: 70 })), 1),
+      capa('mov', N(16).map(() => pasoPos({ ...posCab('salon'), ...grupos(djMini(), posMini()) })), 1, 0.25)] },
+  { grupo: 'Fiesta', n: 'Pista', i: '💃', g: 'radial-gradient(circle,#ff3fa0,#2b55ff)',
+    capas: () => [capa('col', N(8).map(k => { const c = k % 2 ? 'rosa' : 'cian'; return pasoColor({ ...grupos(djCabezas(), c), ...grupos(djMini(), c), ...grupos(djPared(), k % 2 ? 'cian' : 'rosa'), frontales: null }); }), 1),
+      capa('mov', N(8).map(() => pasoPos({ ...posCabJuntas('pista'), ...grupos(djMini(), posMini()) })), 2, 0.5)] },
+  { grupo: 'Fiesta', n: 'Destello', i: '💥', g: 'linear-gradient(135deg,#fff,#ff3fa0,#22e5ff)',
+    capas: () => [capa('col', N(8).map(k => { const c = elegir(VIVOS); return pasoColor(k % 2 ? { ...grupos(djCabezas(), null), ...grupos(djMini(), null), ...grupos(djPared(), null), frontales: null }
+        : { ...grupos(djCabezas(), c), ...grupos(djMini(), 'blanco'), ...grupos(djPared(), c), frontales: null }); }), 0.5),
+      capa('mov', N(8).map(() => pasoPos({ ...posCab('salon'), ...grupos(djMini(), posMini()) })), 2, 0)] },
+  // ---------- LOCURA (Cote, 25 nov: el grupo mas loco; los grupos van creciendo del primero al quinto) ----------
+  { grupo: 'Locura', n: 'Explosión', i: '🎆', g: 'conic-gradient(#ff2a2a,#ffbe00,#22dd55,#22e5ff,#2b55ff,#9b3cff,#ff3fa0,#ff2a2a)',
+    capas: () => [capa('col', N(16).map(k => k % 4 === 3
+        ? pasoColor({ ...todos('blanco'), frontales: 'blanco' })
+        : pasoColor({ ...djDistintos(), frontales: elegir(VIVOS) })), 0.5),
+      capa('mov', N(16).map(() => pasoPos({ ...posCab('salon'), ...grupos(djMini(), posMini()) })), 1, 0.15)] },
+  { grupo: 'Locura', n: 'Tormenta', i: '🌩️', g: 'linear-gradient(160deg,#0a1033 40%,#fff 45%,#0a1033 50%,#2b55ff)',
+    capas: () => { const oscuro = () => pasoColor({ ...grupos(djCabezas(), 'azul'), ...grupos(djMini(), 'azul'), ...grupos(djPared(), 'azul'), frontales: null },
+        { seguidor1: 25, seguidor2: 25, seguidor3: 25, perimetrales: 30, fondo: 30, mini: 20, mini_columnas: 20 });
+      const rayo = () => { const o = {}; djLibres().forEach(id => o[id] = Math.random() < 0.55 ? 'blanco' : null); o.frontales = Math.random() < 0.5 ? 'blanco' : null; return pasoColor(o); };
+      const pasos = []; N(4).forEach(() => { pasos.push(oscuro(), oscuro(), rayo(), oscuro(), rayo(), rayo(), oscuro(), oscuro()); });
+      return [capa('col', pasos, 0.25), capa('mov', N(12).map(() => pasoPos({ ...posCab('salon'), ...grupos(djMini(), posMini()) })), 1, 0.3)]; } },
+  { grupo: 'Locura', n: 'Caleidoscopio', i: '🔮', g: 'conic-gradient(from 45deg,#ff3fa0,#22e5ff,#ffbe00,#9b3cff,#22dd55,#ff3fa0)',
+    capas: () => { const c = ['rojo', 'ambar', 'amarillo', 'verde', 'cian', 'azul', 'morado', 'rosa'], ids = djLibres();
+      const col = N(16).map(k => { const o = {}; ids.forEach((id, j) => o[id] = c[(k + j * 3) % 8]); return pasoColor(o); });
+      const mov = N(16).map(() => { const p = azar(10, 245), t = azar(0, 90);
+        return pasoPos({ ...posCab('salon'), mini: { pan: p, tilt: t }, mini_columnas: { pan: 255 - p, tilt: t } }); });
+      return [capa('col', col, 0.25, 0.3), capa('mov', mov, 0.5, 0.4)]; } },
+  { grupo: 'Locura', n: 'Clímax', i: '🚀', g: 'repeating-linear-gradient(45deg,#fff 0 10px,#ff2a2a 10px 20px,#ffbe00 20px 30px,#2b55ff 30px 40px)',
+    capas: () => [capa('col', N(16).map(k => k % 2 ? pasoColor({ ...todos('blanco'), frontales: 'blanco' })
+        : pasoColor({ ...djDistintos(), frontales: elegir(VIVOS) })), 0.25),
+      capa('mov', N(16).map(k => pasoPos({ ...(k % 4 === 0 ? posCabJuntas('pista') : posCab('salon')), ...grupos(djMini(), posMini()) })), 0.5, 0.1)] }
+];
+// Automatico: cambia entre las escenas del MISMO grupo (en la previa nunca salta a una de fiesta)
+const djGrupo = () => { const g = (DJ_ESCENAS[djEstado.escena] || {}).grupo || 'Fiesta';
+  if (g === 'Standby') return [];                                     // en Standby el Automatico es un fundido continuo, no salta de escena
+  return DJ_ESCENAS.map((e, i) => e.grupo === g ? i : -1).filter(i => i >= 0); };
+/* Standby con Automatico (Cote, 25 nov): el fondo cambia suave de color, en fundido continuo, y el color "sube" de abajo
+   (perimetrales) hacia arriba (focos de fondo). Va por tiempo (no por el ritmo) para que siempre sea parejo.
+   Cabezas grandes y frontales apagados; mini cabezas lentas. Parte del color de la escena de Standby elegida. */
+const STANDBY_TONOS = ['azul', 'morado', 'rosa', 'ambar', 'cian', 'verde'];
+const STANDBY_INICIO = { Azul: 'azul', Atardecer: 'ambar', Lavanda: 'morado', Agua: 'cian' };
+function capasStandbyAuto(e){
+  const k0 = Math.max(0, STANDBY_TONOS.indexOf(STANDBY_INICIO[e.n] || 'azul')), n = STANDBY_TONOS.length;
+  const tono = k => STANDBY_TONOS[(k0 + k + n) % n];
+  // fondo: el color sube de abajo hacia arriba; las mini pintan el techo con cambios que se notan (cada 3 s)
+  const col = N(n).map(k => pasoColor({ ...grupos(djAbajo(), tono(k)), ...grupos(djArriba(), tono(k ? k - 1 : 0)) },   // parte igual que la escena: sin salto
+    { perimetrales: 45, fondo: 45 }));
+  const tonos = N(n).map(k => tono(k));
+  return [{ ...capa('col', col, 0, 1), seg: 4.5 },                   // 4,5 s por tono (Cote: 9 s era muy lento), fundido completo
+          ...capasMiniTecho(tonos), ...capasCabezasTecho(tonos)];
+}
+
+async function djAplicar(i, auto){
+  const e = DJ_ESCENAS[i]; if (!e || !conf) return;
+  djEstado.escena = i; master = +$('djInt').value; djPintar();
+  // vista previa (Cote, 25 nov): en Previa y Show hay alguien en el escenario; en Standby, Fiesta y Locura no
+  V.escenarioVacio = !['Previa', 'Show'].includes(e.grupo); V.sucio = true;
+  // en Standby la toma mira un poco mas arriba, para ver como las luces pintan el techo
+  djEstado.tomaTecho = e.grupo === 'Standby';
+  if (!document.body.classList.contains('dj-cabezas')) djToma();
+  if (!auto) djServidor({ escena: i, int: master });            // los demas aparatos ven la misma escena
+  const capas = djEstado.auto && e.grupo === 'Standby' ? capasStandbyAuto(e) : e.capas(), seg = 60 / djEstado.bpm;
+  await efecto('todos', {todos: 'off'});
+  // lo que no tocan las capas queda apagado (y los canales fijos de cada equipo en su valor)
+  const base = {}; conf.grupos.forEach(g => Object.assign(base, valoresGrupo(g, {color: null, intensidad: 0})));
+  capas.forEach(c => Object.keys(c.pasos[0] || {}).forEach(k => delete base[k]));
+  djSeguidas().forEach(id => Object.assign(base, valoresGrupo(grupo(id))));   // las cabezas que sigue el DJ quedan como estan
+  enviar(base, 0);
+  capas.forEach(c => efecto(c.id, {tipo: 'sec', pasos: pasosTxt(c.pasos), t: (c.seg != null ? c.seg : c.ritmo * seg).toFixed(3), fx: c.fx, ritmo: c.ritmo}));
+}
+function djPintar(){
+  document.querySelectorAll('#djEsc .djb').forEach((b, i) => b.classList.toggle('act', i === djEstado.escena));
+  $('djAuto').classList.toggle('act', djEstado.auto);
+}
+/* Estado compartido en el Dell (Cote, 25 nov): el DJ se mueve con su celular y un computador fijo (el de OBS, con la
+   mezcla por la entrada de linea) escucha la musica. Escena, Automatico e intensidad son los mismos en todos los
+   aparatos; el Automatico lo hace el Dell: cada 3 minutos el primer aparato que pregunta aplica la escena nueva. */
+async function djServidor(params){
+  const q = new URLSearchParams(params || {});
+  if (djEstado.auto) q.set('turno', djGrupo().join(','));
+  if (ritmo.mic) q.set('estacion', '1');
+  let r; try { r = await api('/api/dj?' + q); } catch(e){ return; }
+  djEstado.auto = !!r.auto;
+  if (r.aplicar && r.escena >= 0){ djEstado.bpm = r.bpm || djEstado.bpm; djAplicar(r.escena, true); }
+  else if (r.escena !== djEstado.escena){ djEstado.escena = r.escena; }
+  if (document.activeElement !== $('djInt') && r.int && +$('djInt').value !== r.int){ $('djInt').value = r.int; $('djIntTxt').textContent = r.int + '%'; }
+  // ritmo que llega al Dell (de este aparato o de la estacion)
+  const lat = $('djLatido');
+  const local = ritmo.on || ritmo.mic;                                  // los pulsos los manda este aparato: Tap ya late con cada uno
+  if (r.ritmo){ djEstado.bpm = r.bpm; $('djBpm').textContent = r.bpm + ' BPM';
+    const anim = `${(60 / r.bpm).toFixed(3)}s infinite`;
+    if (!local){ lat.style.animation = 'djlatir ' + anim; if ($('djTap').dataset.anim !== anim){ $('djTap').style.animation = 'djtap ' + anim; $('djTap').dataset.anim = anim; } } }
+  else { lat.style.animation = ''; $('djTap').style.animation = ''; $('djTap').dataset.anim = ''; if (!ritmo.on) $('djBpm').textContent = '—'; }
+  if (!ritmo.mic && !ritmo.on) $('djAviso').textContent = r.estacion ? (r.ritmo ? 'Ritmo desde la estación: ' + r.bpm + ' BPM' : 'La estación está conectada, sin música por ahora')
+    : 'Nadie está escuchando la música: abrir el panel en el computador de la mezcla y tocar 🎤 Ritmo (o usar Tap)';
+  // en el celular del DJ, si ya hay una estacion escuchando, no hace falta elegir la entrada de audio
+  document.querySelector('.djent').style.display = r.estacion && !ritmo.mic ? 'none' : '';
+  djPintar();
+}
+$('djAuto').onclick = () => { djEstado.auto = !djEstado.auto; djPintar(); djServidor({ auto: djEstado.auto ? '1' : '0' });
+  // en Standby, prender o apagar el Automatico cambia al fundido continuo (o vuelve a la escena fija) en el acto
+  const e = DJ_ESCENAS[djEstado.escena]; if (e && e.grupo === 'Standby') djAplicar(djEstado.escena, true); };
+$('djApagar').onclick = async () => { djEstado.auto = false; djEstado.escena = -1; djPintar(); djServidor({ auto: '0', escena: '-1' });
+  try { pintarEstado(await api('/api/apagar?f=1')); } catch(e){ sinConexion(); } };
+$('djInt').oninput = () => { $('djIntTxt').textContent = $('djInt').value + '%'; };
+$('djInt').onchange = () => { djServidor({ int: $('djInt').value }); if (djEstado.escena >= 0) djAplicar(djEstado.escena, true); };
+
+/* ---------- Ritmo: reloj de golpes que se ajusta a la musica ---------- */
+const ritmo = { on: false, P: 0.5, prox: 0, rtt: 0.08, golpes: [], taps: [], mic: null, ultOnset: 0 };
+function enviarPulso(){
+  marcarPulso();
+  if (DEMO){ simPulso(); return; }
+  const t0 = performance.now();
+  fetch('/api/pulso', {cache: 'no-store', credentials: 'same-origin'}).then(() => {
+    ritmo.rtt = ritmo.rtt * 0.8 + ((performance.now() - t0) / 1000) * 0.2; }).catch(() => {});
+}
+function marcarPulso(){
+  const l = $('djLatido'), t = $('djTap');
+  l.classList.add('on'); t.style.animation = ''; t.classList.add('pulso');
+  setTimeout(() => { l.classList.remove('on'); t.classList.remove('pulso'); }, 110);
+}
+function relojRitmo(){
+  if (!ritmo.on || !ritmo.prox) return;
+  const ahora = performance.now() / 1000;
+  if (ahora - ritmo.prox > 1) ritmo.prox = ahora + ritmo.P;            // pantalla dormida: no mandar golpes atrasados de una vez
+  // se manda un poco antes, para que llegue al Dell justo en el golpe (la mitad del tiempo de ida y vuelta)
+  while (ahora >= ritmo.prox - ritmo.rtt / 2){ enviarPulso(); ritmo.prox += ritmo.P; }
+}
+setInterval(relojRitmo, 8);
+function fijarTempo(P){
+  P = Math.max(0.3, Math.min(1.0, P));
+  ritmo.P = P; djEstado.bpm = Math.round(60 / P); $('djBpm').textContent = djEstado.bpm + ' BPM';
+}
+// Tap: tocar al ritmo de la musica (4 toques fijan el tempo)
+$('djTap').onclick = () => {
+  const t = performance.now() / 1000;
+  ritmo.taps = ritmo.taps.filter(x => t - x < 2.5); ritmo.taps.push(t);
+  if (ritmo.taps.length >= 2){
+    const ints = ritmo.taps.slice(1).map((x, k) => x - ritmo.taps[k]).sort((a, b) => a - b);
+    fijarTempo(ints[Math.floor(ints.length / 2)]);
+  }
+  ritmo.on = true; ritmo.prox = t + ritmo.P; enviarPulso();
+  if (!ritmo.mic) $('djAviso').textContent = 'Ritmo a mano: ' + djEstado.bpm + ' BPM. Toca 4 veces al compás para ajustarlo.';
+};
+// Micro: escucha el bombo (graves) y la caja (medios-agudos); con los golpes calcula el tempo y corrige el compas
+$('djMic').onclick = async () => {
+  if (ritmo.mic){ ritmo.mic.stop(); ritmo.mic = null; ritmo.on = false; $('djMic').classList.remove('act'); $('djBpm').textContent = '—'; $('djAviso').textContent = ''; return; }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    $('djAviso').textContent = 'Este navegador no deja usar el micrófono aquí. Abrir https://luces.krbstage.cl/dj (o en el Dell: http://localhost:8080/dj). Mientras, usa Tap.';
+    return;
+  }
+  try { ritmo.mic = await escucharMusica(); $('djMic').classList.add('act'); $('djAviso').textContent = 'Escuchando la música… (este aparato es la estación de ritmo)'; djServidor(); }
+  catch(e){ $('djAviso').textContent = 'No se pudo usar el micrófono (' + (e.name || e.message) + '). Usa Tap.'; }
+};
+// Deteccion en el proceso de audio (AudioWorklet): sigue funcionando aunque la ventana quede detras de OBS
+const RITMO_WORKLET = `
+class KrbRitmo extends AudioWorkletProcessor {
+  constructor(){ super(); this.acc = [0, 0]; this.n = 0; this.hist = [[], []]; this.ult = [-9, -9]; this.onsets = [];
+    this.P = 0.5; this.prox = 0; this.on = false; this.ultOnset = -99; this.lead = 0.04; this.cuenta = 0;
+    this.port.onmessage = e => { if (e.data.lead != null) this.lead = e.data.lead; }; }
+  detectar(k, e, t, umbral){
+    const h = this.hist[k], prom = h.length ? h.reduce((a, b) => a + b) / h.length : e;
+    h.push(e); if (h.length > 35) h.shift();
+    if (e > prom * umbral && e > 0.004 && t - this.ult[k] > 0.22){ this.ult[k] = t; return true; } return false;
+  }
+  analizar(t, eB, eC){
+    if (++this.cuenta % 4 === 0) this.port.postMessage({ nivel: eB });
+    const gB = this.detectar(0, eB, t, 1.45), gC = this.detectar(1, eC, t, 1.6);
+    if (!gB && !gC) return;
+    const o = this.onsets; o.push({ t, b: gB }); while (o.length && t - o[0].t > 8) o.shift();
+    this.ultOnset = t;
+    const hist = new Array(80).fill(0);
+    for (let i = 0; i < o.length; i++) for (let j = i + 1; j < o.length; j++){
+      let d = o[j].t - o[i].t; if (d < 0.2 || d > 2.4) continue;
+      while (d > 0.8) d /= 2; while (d < 0.4) d *= 2;
+      const k = Math.round((d - 0.4) / 0.005);
+      for (let w = -2; w <= 2; w++) if (hist[k + w] != null) hist[k + w] += (o[i].b && o[j].b ? 2 : 1) * (3 - Math.abs(w));
+    }
+    let m = 0; for (let k = 1; k < 80; k++) if (hist[k] > hist[m]) m = k;
+    if (o.length >= 6 && hist[m] > 0){ const P = 0.4 + m * 0.005; if (Math.abs(P - this.P) > 0.004){ this.P = P; this.port.postMessage({ bpm: Math.round(60 / P) }); } }
+    if (!this.on && o.length >= 6){ this.on = true; this.prox = t + this.P; this.port.postMessage({ activo: 1 }); }
+    if (this.on && gB){ let err = t - (this.prox - this.P); if (err > this.P / 2) err -= this.P; if (Math.abs(err) < this.P * 0.3) this.prox += err * 0.35; }
+  }
+  process(inputs){
+    const inp = inputs[0]; const t = currentTime;
+    if (inp && inp.length){ const a = inp[0], b = inp[1] || inp[0];
+      for (let i = 0; i < a.length; i++){ this.acc[0] += a[i] * a[i]; this.acc[1] += b[i] * b[i]; }
+      this.n += a.length;
+      if (this.n >= 1024){ const eB = Math.sqrt(this.acc[0] / this.n), eC = Math.sqrt(this.acc[1] / this.n); this.acc = [0, 0]; this.n = 0; this.analizar(t, eB, eC); } }
+    if (this.on){
+      if (t - this.prox > 1) this.prox = t + this.P;
+      while (t >= this.prox - this.lead){ this.port.postMessage({ golpe: 1 }); this.prox += this.P; }
+      if (t - this.ultOnset > 6){ this.on = false; this.port.postMessage({ silencio: 1 }); }
+    }
+    return true;
+  }
+}
+registerProcessor('krb-ritmo', KrbRitmo);`;
+// La entrada guardada se busca por su id y, si cambio, por su nombre
+async function entradaGuardada(){
+  let g = {}; try { g = JSON.parse(localStorage.getItem('krb_dj_entrada2') || '{}'); } catch(e){}
+  // estacion fija: la entrada que se eligio al instalarla (nombre de Windows), si no se cambio despues en el panel
+  const pedida = ESTACION && PARAMS.get('entrada');
+  if (pedida && !g.manual) g = { nombre: pedida, parecido: true };
+  // la mezcla llega SIEMPRE por la entrada de linea del computador (Cote, 25 nov): si no se eligio otra a mano, esa
+  const linea = /l[ií]nea|line/i;
+  try { const ins = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput');
+    const deLinea = ins.find(x => linea.test(x.label));
+    if (!g.manual && deLinea && (!g.nombre || g.nombre === 'linea')) return deLinea.deviceId;
+    if (!g.id && !g.nombre) return '';
+    const n = (g.nombre || '').toLowerCase();
+    const d = ins.find(x => x.deviceId === g.id) || ins.find(x => n && x.label.toLowerCase() === n) ||
+      (g.parecido && n ? ins.find(x => x.label && (x.label.toLowerCase().includes(n) || n.includes(x.label.toLowerCase()))) : null);
+    return d ? d.deviceId : (g.id || ''); }
+  catch(e){ return g.id || ''; }
+}
+async function escucharMusica(){
+  if (!(window.AudioWorkletNode)) return escucharMusicaSimple();
+  const elegida = await entradaGuardada();
+  const pedir = id => navigator.mediaDevices.getUserMedia({ audio: { deviceId: id ? { exact: id } : undefined,
+    echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+  let stream; try { stream = await pedir(elegida); } catch(e){ if (!elegida) throw e; stream = await pedir(''); }
+  listarEntradas();
+  const ctx = new AudioContext(); if (ctx.resume) ctx.resume();
+  await ctx.audioWorklet.addModule(URL.createObjectURL(new Blob([RITMO_WORKLET], { type: 'text/javascript' })));
+  const src = ctx.createMediaStreamSource(stream);
+  const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 140;                 // bombo
+  const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2200; bp.Q.value = 0.9; // caja
+  const mez = ctx.createChannelMerger(2); src.connect(lp); src.connect(bp); lp.connect(mez, 0, 0); bp.connect(mez, 0, 1);
+  const nodo = new AudioWorkletNode(ctx, 'krb-ritmo', { numberOfInputs: 1, numberOfOutputs: 1, channelCount: 2, channelCountMode: 'explicit' });
+  mez.connect(nodo);
+  const mudo = ctx.createGain(); mudo.gain.value = 0; nodo.connect(mudo); mudo.connect(ctx.destination);   // para que el proceso corra
+  nodo.port.onmessage = e => { const d = e.data;
+    if (d.golpe) enviarPulso();
+    if (d.bpm){ fijarTempo(60 / d.bpm); $('djAviso').textContent = 'Escuchando la música · ' + d.bpm + ' BPM'; }
+    if (d.nivel != null) $('djNivel').style.width = Math.min(100, Math.round(d.nivel * 400)) + '%';
+    if (d.silencio) $('djAviso').textContent = 'Sin música: las luces siguen solas';
+  };
+  const lead = setInterval(() => nodo.port.postMessage({ lead: ritmo.rtt / 2 }), 2000);
+  ritmo.on = false;                                                                              // el reloj lo lleva el proceso de audio
+  return { vivo: () => ctx.state !== 'closed' && stream.getAudioTracks().some(x => x.readyState === 'live'),
+    id: () => { const t = stream.getAudioTracks()[0]; return (t && t.getSettings && t.getSettings().deviceId) || ''; }, stop(){ clearInterval(lead); nodo.port.onmessage = null; stream.getTracks().forEach(x => x.stop()); ctx.close(); $('djNivel').style.width = '0'; } };
+}
+async function escucharMusicaSimple(){
+  // Entrada elegida (Cote, 25 nov: la mezcla completa entra por la entrada de linea del computador de OBS)
+  const elegida = await entradaGuardada();
+  const pedir = id => navigator.mediaDevices.getUserMedia({ audio: { deviceId: id ? { exact: id } : undefined,
+    echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+  let stream; try { stream = await pedir(elegida); } catch(e){ if (!elegida) throw e; stream = await pedir(''); }
+  listarEntradas();
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const src = ctx.createMediaStreamSource(stream);
+  if (ctx.resume) ctx.resume();
+  const banda = (tipo, f, q, n) => { const b = ctx.createBiquadFilter(); b.type = tipo; b.frequency.value = f; if (q) b.Q.value = q;
+    const a = ctx.createAnalyser(); a.fftSize = n; src.connect(b); b.connect(a); return { a, buf: new Float32Array(n), hist: [], ult: 0 }; };
+  const bombo = banda('lowpass', 140, 0, 1024), caja = banda('bandpass', 2200, 0.9, 512);
+  const onsets = [];
+  const nivel = c => { c.a.getFloatTimeDomainData(c.buf); let e = 0; for (let i = 0; i < c.buf.length; i++) e += c.buf[i] * c.buf[i]; return Math.sqrt(e / c.buf.length); };
+  const detectar = (c, t, umbral) => {
+    const e = nivel(c), prom = c.hist.length ? c.hist.reduce((a, b) => a + b) / c.hist.length : e;
+    c.hist.push(e); if (c.hist.length > 60) c.hist.shift();                          // ~0,8 s de historia
+    if (e > prom * umbral && e > 0.004 && t - c.ult > 0.22){ c.ult = t; return true; }
+    return false;
+  };
+  const tick = setInterval(() => {
+    const t = performance.now() / 1000;
+    const golpeB = detectar(bombo, t, 1.45), golpeC = detectar(caja, t, 1.6);
+    const nv = bombo.hist[bombo.hist.length - 1] || 0; $('djNivel').style.width = Math.min(100, Math.round(nv * 400)) + '%';
+    if (!golpeB && !golpeC) return;
+    onsets.push({ t, b: golpeB }); while (onsets.length && t - onsets[0].t > 8) onsets.shift();
+    ritmo.ultOnset = t;
+    // tempo: los intervalos entre golpes, llevados a 80-150 BPM, y el mas repetido
+    const hist = new Array(80).fill(0);                                              // 0,40 a 0,80 s en pasos de 5 ms
+    for (let i = 0; i < onsets.length; i++) for (let j = i + 1; j < onsets.length; j++){
+      let d = onsets[j].t - onsets[i].t; if (d < 0.2 || d > 2.4) continue;
+      while (d > 0.8) d /= 2; while (d < 0.4) d *= 2;
+      const k = Math.round((d - 0.4) / 0.005); for (let w = -2; w <= 2; w++) if (hist[k + w] != null) hist[k + w] += (onsets[i].b && onsets[j].b ? 2 : 1) * (3 - Math.abs(w));
+    }
+    let mejor = 0; hist.forEach((v, k) => { if (v > hist[mejor]) mejor = k; });
+    if (onsets.length >= 6 && hist[mejor] > 0) fijarTempo(0.4 + mejor * 0.005);
+    // compas: el bombo corrige la fase del reloj (sin saltos)
+    if (!ritmo.on && onsets.length >= 6){ ritmo.on = true; ritmo.prox = t + ritmo.P; }
+    if (ritmo.on && golpeB){
+      let err = t - (ritmo.prox - ritmo.P); if (err > ritmo.P / 2) err -= ritmo.P;
+      if (Math.abs(err) < ritmo.P * 0.3) ritmo.prox += err * 0.35;
+    }
+    $('djAviso').textContent = 'Escuchando la música · ' + djEstado.bpm + ' BPM';
+  }, 12);
+  // si se deja de escuchar musica 6 s, el reloj se detiene (las luces siguen solas a su tiempo)
+  const vigila = setInterval(() => { if (ritmo.on && performance.now() / 1000 - ritmo.ultOnset > 6){ ritmo.on = false; $('djAviso').textContent = 'Sin música: las luces siguen solas'; } }, 1000);
+  return { stop(){ clearInterval(tick); clearInterval(vigila); stream.getTracks().forEach(x => x.stop()); ctx.close(); $('djNivel').style.width = '0'; } };
+}
+// Lista de entradas de audio del aparato (los nombres aparecen despues de dar permiso al microfono)
+async function listarEntradas(){
+  if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+  const elegida = await entradaGuardada();
+  const sel = $('djEntrada'), ins = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput' && d.deviceId !== 'default' && d.deviceId !== 'communications');
+  sel.innerHTML = '<option value="">Micrófono (predeterminado)</option>' +
+    ins.map((d, k) => `<option value="${d.deviceId}">${(d.label || 'Entrada ' + (k + 1)).replace(/[<>&"]/g, '')}</option>`).join('');
+  sel.value = ins.some(d => d.deviceId === elegida) ? elegida : '';
+}
+$('djEntrada').onchange = async () => {
+  try { const o = $('djEntrada').selectedOptions[0]; localStorage.setItem('krb_dj_entrada2', JSON.stringify({ id: o.value, nombre: o.value ? o.textContent : '', manual: true })); } catch(e){}
+  if (ritmo.mic){ ritmo.mic.stop(); ritmo.mic = null; try { ritmo.mic = await escucharMusica(); $('djAviso').textContent = 'Escuchando: ' + $('djEntrada').selectedOptions[0].textContent; } catch(e){ $('djMic').classList.remove('act'); $('djAviso').textContent = 'No se pudo usar esa entrada (' + (e.name || e.message) + ')'; } }
+};
+
+/* ---------- Pagina «Cabezas»: el DJ sigue a una persona por el salon con el dedo (Cote, 25 nov) ----------
+   La superficie es el salon sin dibujo: arriba el escenario, abajo el fondo; a los lados el pasillo y las cocinas.
+   Arriba se ve el salon completo desde arriba, con el anillo donde apuntan las cabezas. */
+function djPagina(cab){
+  document.body.classList.toggle('dj-cabezas', cab);
+  $('djPagEsc').classList.toggle('act', !cab); $('djPagCab').classList.toggle('act', cab);
+  if (cab) vistaSalonArriba(); else djToma();
+  $('djFrente').textContent = cab ? '⟲ Salón' : '⟲ De frente';
+  V.sucio = true;
+}
+function djToma(){ if (djEstado.tomaTecho) plano([0, 1.4, 11], [0, 4.2, -1]); else tomaFija(); V.sucio = true; }
+function vistaSalonArriba(){
+  // el salon completo visto desde arriba, con el escenario arriba de la pantalla
+  V.objetivo = deSalon(-0.5, 15); V.dist = 46; V.pitch = 1.45;
+  const a = deSalon(0, 0), b = deSalon(0, 10);
+  V.yaw = Math.atan2(b[0] - a[0], b[2] - a[2]);
+}
+$('djPagEsc').onclick = () => djPagina(false);
+$('djPagCab').onclick = () => djPagina(true);
+// Punto del piso que queda bajo el dedo (la misma camara que dibuja la vista 3D)
+function pisoBajo(x, y){
+  const r = $('djVista').getBoundingClientRect(); if (!r.width || !r.height) return null;
+  const cp = Math.cos(V.pitch), sp = Math.sin(V.pitch);
+  const ojo = add(V.objetivo, [Math.sin(V.yaw) * cp * V.dist, sp * V.dist, Math.cos(V.yaw) * cp * V.dist]);
+  const fw = norm(sub(V.objetivo, ojo)), rt = norm(cross(fw, [0, 1, 0])), up = cross(rt, fw);
+  const tv = Math.tan(V.fov / 2), nx = (x - r.left) / r.width * 2 - 1, ny = 1 - (y - r.top) / r.height * 2;
+  const dir = add(fw, add(mul(rt, nx * tv * r.width / r.height), mul(up, ny * tv)));
+  if (dir[1] >= -1e-3) return null;
+  const t = -ojo[1] / dir[1];
+  return add(ojo, mul(dir, t));
+}
+function djEncender(ids){
+  ids.forEach(id => { const z = zona(id); z.color = (conf.seguir && conf.seguir.color) || 'blanco_calido'; z.intensidad = 100; z.zoom = djSeg.ancho; });
+}
+function djTomar(){
+  // al empezar a seguir, esas cabezas salen de la escena (si no, la escena las seguiria moviendo)
+  if (djSeg.activo) return;
+  djSeg.activo = true;
+  djEncender(djSeguidas());
+  if (djEstado.escena >= 0) djAplicar(djEstado.escena, true); else enviarGrupos(djSeguidas(), 0);
+}
+function djApuntar(u, v){
+  const punto = puntoPiso(u, v), ids = djSeguidas();
+  const s = (v - CAL.v0) / (CAL.v1 - CAL.v0), t = (u - CAL.u0) / (CAL.u1 - CAL.u0);
+  ids.forEach(id => { const z = zona(id); if (!(z.intensidad > 0)) djEncender([id]);
+    if (!apuntarModelo(id, punto)) { calibrada(id) ? apuntar(id, s, t) : apuntarGeo(id, punto); } });
+  V.marca = punto; V.sucio = true; djSeg.punto = {u, v};
+  limitar('djseg', () => enviarGrupos(ids, 0));
+}
+(() => {
+  const capa = $('djToque'); let activo = false;
+  const mover = e => {
+    const p = pisoBajo(e.clientX, e.clientY); if (!p) return;
+    let [u, v] = aSalon(p);
+    u = Math.max(SALON.pasillo, Math.min(SALON.cocinas, u)); v = Math.max(-4, Math.min(SALON.largo, v));   // dentro del salon
+    const r = capa.getBoundingClientRect(), pt = $('djPunto');
+    pt.style.display = 'block'; pt.style.left = (e.clientX - r.left) + 'px'; pt.style.top = (e.clientY - r.top) + 'px';
+    djApuntar(u, v);
+  };
+  capa.addEventListener('pointerdown', e => { activo = true; capa.setPointerCapture(e.pointerId); capa.classList.add('drag'); djTomar(); mover(e); });
+  capa.addEventListener('pointermove', e => { if (activo) mover(e); });
+  const fin = () => { activo = false; capa.classList.remove('drag'); };
+  capa.addEventListener('pointerup', fin); capa.addEventListener('pointercancel', fin);
+})();
+document.querySelectorAll('#djSel button').forEach(b => b.onclick = () => {
+  const antes = djSeguidas();
+  djSeg.sel = b.dataset.c; document.querySelectorAll('#djSel button').forEach(x => x.classList.toggle('act', x === b));
+  // si ya se estaba siguiendo, las que quedan fuera vuelven a la escena y las nuevas se suman
+  if (djSeg.activo){ djEncender(djSeguidas().filter(id => !antes.includes(id)));
+    if (djEstado.escena >= 0) djAplicar(djEstado.escena, true); if (djSeg.punto) djApuntar(djSeg.punto.u, djSeg.punto.v); }
+});
+function djFijarAncho(v){
+  djSeg.ancho = v; $('djAncho').value = v;
+  const bs = [...document.querySelectorAll('[data-an]')], cerca = bs.reduce((a, b) => Math.abs(+b.dataset.an - v) < Math.abs(+a.dataset.an - v) ? b : a);
+  bs.forEach(b => b.classList.toggle('act', b === cerca));
+  if (djSeg.activo){ djSeguidas().forEach(id => zona(id).zoom = v); V.sucio = true; limitar('djancho', () => enviarGrupos(djSeguidas(), 0)); }
+}
+document.querySelectorAll('[data-an]').forEach(b => b.onclick = () => djFijarAncho(+b.dataset.an));
+$('djAncho').oninput = () => djFijarAncho(+$('djAncho').value);
+$('djSegOn').onclick = () => { djTomar(); djEncender(djSeguidas()); if (djSeg.punto) djApuntar(djSeg.punto.u, djSeg.punto.v); else enviarGrupos(djSeguidas(), 0); };
+$('djSoltar').onclick = () => {
+  if (!djSeg.activo) return;
+  djSeg.activo = false; V.marca = null; $('djPunto').style.display = 'none'; V.sucio = true;
+  if (djEstado.escena >= 0) djAplicar(djEstado.escena, true);
+  else { segIds().forEach(id => zona(id).intensidad = 0); enviarGrupos(segIds(), 1); }
+  toast('Las cabezas volvieron a la escena');
+};
+// Momentos de la Sala en el panel del DJ: con «Al publico» (el animador baja al salon en el bingo) se abre Cabezas y
+// las 3 cabezas quedan para seguirlo con el dedo; el fondo ya lo puso el Dell (como Standby) y no se toca.
+function djMomento(nombre){
+  if (nombre === 'bingo_al_publico'){
+    djSeg.sel = 'todas'; document.querySelectorAll('#djSel button').forEach(x => x.classList.toggle('act', x.dataset.c === 'todas'));
+    segIds().forEach(id => { const z = zona(id); z.color = 'blanco_calido'; z.intensidad = 100; z.zoom = djSeg.ancho; });
+    djSeg.activo = true; djSeg.porMomento = true; djEstado.escena = -1; djPintar(); djPagina(true);
+    toast('El animador bajó al público: síguelo con el dedo');
+  } else if (djSeg.porMomento){
+    djSeg.activo = false; djSeg.porMomento = false; V.marca = null; djPagina(false);
+  }
+}
+function iniciarDJ(){
+  // la vista 3D (lo que de verdad sale por el cable) arriba, con la toma fija del escenario de frente
+  // (en la estacion de ritmo no: corre en el computador de OBS y no debe quitarle fuerza a la transmision)
+  if (ESTACION){ $('djVista').style.display = 'none'; $('vista').classList.add('oculta'); }
+  else { $('djVista').insertBefore($('vista'), $('djFrente'));
+    $('vista').classList.remove('oculta'); $('vista').style.setProperty('--vh', '100%'); }
+  tomaFija(); V.sucio = true;
+  $('djFrente').onclick = () => { document.body.classList.contains('dj-cabezas') ? vistaSalonArriba() : djToma(); V.sucio = true; };
+  const cont = $('djEsc'); cont.innerHTML = '';
+  DJ_ESCENAS.forEach((e, i) => {
+    if (!i || DJ_ESCENAS[i - 1].grupo !== e.grupo){ const t = document.createElement('div'); t.className = 'djgr'; t.textContent = e.grupo; cont.appendChild(t); }
+    const b = document.createElement('button'); b.className = 'djb'; b.style.setProperty('--g', e.g);
+    b.innerHTML = `<i>${e.i}</i><span>${e.n}</span>`; b.onclick = () => djAplicar(i); cont.appendChild(b); });
+  // el estado de conexion del panel normal se copia al del DJ
+  new MutationObserver(() => { $('djDot').className = $('dot').className; $('djPillTxt').textContent = $('pillTxt').textContent; })
+    .observe($('pill'), { subtree: true, childList: true, attributes: true, characterData: true });
+  djPintar(); listarEntradas();
+  djServidor(); setInterval(() => djServidor(), 2500);
+  if (ESTACION) iniciarEstacion();
+}
+// Estacion fija: prende Ritmo sola y, si se corta (se desenchufo la entrada, el navegador la cerro), vuelve a partir
+function iniciarEstacion(){
+  document.querySelector('.djtop b').textContent = 'KRB · Estación de ritmo';
+  const prender = async () => {
+    // la primera vez los nombres de las entradas no se conocen hasta abrir una: si ahora se encuentra la pedida, se cambia a esa
+    if (ritmo.mic && ritmo.mic.vivo && ritmo.mic.vivo()){ const q = await entradaGuardada(); if (!q || !ritmo.mic.id || ritmo.mic.id() === q) return; }
+    if (ritmo.mic){ try { ritmo.mic.stop(); } catch(e){} ritmo.mic = null; }
+    try { ritmo.mic = await escucharMusica(); $('djMic').classList.add('act'); $('djAviso').textContent = 'Estación de ritmo escuchando · ' + ($('djEntrada').selectedOptions[0] || {}).textContent; djServidor(); }
+    catch(e){ $('djMic').classList.remove('act'); $('djAviso').textContent = 'La estación no pudo abrir la entrada de audio (' + (e.name || e.message) + '). Reintenta en 15 s.'; }
+  };
+  prender(); setTimeout(prender, 3000); setInterval(prender, 15000);
+  // la pagina completa se vuelve a cargar una vez al dia (por si el navegador acumula algo)
+  // (solo si el Dell responde, para no quedar en una pagina de error)
+  setInterval(async () => { if (performance.now() < 24 * 3600 * 1000) return;
+    try { const r = await fetch('/api/dj', { cache: 'no-store', credentials: 'same-origin' }); if (r.ok) location.reload(); } catch(e){} }, 10 * 60 * 1000);
+}
+
 /* ---------- Inicio ---------- */
 (async () => {
   try { conf = await api(DEMO ? 'luces.json' : '/luces.json'); }
   catch(e){ if (!pidiendo) document.querySelector('main').innerHTML = '<p class="help">No se pudo leer luces.json desde el Dell. ¿Está abierto INICIAR.bat?</p>'; return; }
-  try { datos = await api('/api/datos'); if (!datos.calibracion) datos.calibracion = {}; } catch(e){}
+  try { datos = await api('/api/datos'); if (!datos.calibracion) datos.calibracion = {}; datosLeidos = true; } catch(e){}
   conf.grupos.forEach(g => zonas[g.id] = {color:null, intensidad:0});
-  pintarDirecciones(); dibujarPlano(); pintarTodo(); pintarProgramas(); pintarVistas(); pintarJuegos();
+  pintarDirecciones(); dibujarPlano(); pintarTodo(); pintarProgramas(); pintarVistas(); pintarJuegos(); pintarPosiciones();
   await publicarMomentos();
   if (DEMO) iniciarDemo();
+  if (DJ) iniciarDJ();
   V.yaw = giroSalon() * 0.6; V.dist = 11; V.pitch = 0.2;   // vista inicial: desde el salon, en diagonal
   sondear(); setInterval(sondear, 3000); sondearVista(); V.sucio = true;
 })();
