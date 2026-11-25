@@ -2545,11 +2545,15 @@ const STANDBY_INICIO = { Azul: 'azul', Atardecer: 'ambar', Lavanda: 'morado', Ag
 function capasStandbyAuto(e){
   const k0 = Math.max(0, STANDBY_TONOS.indexOf(STANDBY_INICIO[e.n] || 'azul')), n = STANDBY_TONOS.length;
   const tono = k => STANDBY_TONOS[(k0 + k + n) % n];
+  // mini cabezas: hacen su trabajo (Cote, 25 nov): su propio tono (uno adelante del fondo, tambien en fundido), al 75 %,
+  // y un recorrido amplio y lento por el escenario, las del escenario y las de las columnas en espejo
   const col = N(n).map(k => pasoColor({ ...grupos(djCabezas(), null), frontales: null,
-    ...grupos(djAbajo(), tono(k)), ...grupos(djArriba(), tono(k ? k - 1 : 0)), ...grupos(djMini(), tono(k ? k - 1 : 0)) },   // parte igual que la escena: sin salto
-    { perimetrales: 45, fondo: 45, mini: 30, mini_columnas: 30 }));
+    ...grupos(djAbajo(), tono(k)), ...grupos(djArriba(), tono(k ? k - 1 : 0)), ...grupos(djMini(), tono(k ? k + 1 : 0)) },   // parte igual que la escena: sin salto
+    { perimetrales: 45, fondo: 45, mini: 75, mini_columnas: 75 }));
+  const arco = N(8).map(k => { const a = k / 8 * 2 * Math.PI, p = 128 + 95 * Math.sin(a), t = 30 + 28 * Math.sin(2 * a + 1);
+    return pasoPos({ mini: { pan: p, tilt: t }, mini_columnas: { pan: 255 - p, tilt: t } }); });
   return [{ ...capa('col', col, 0, 1), seg: 9 },                     // 9 s por tono, fundido completo entre uno y otro
-          { ...capa('mini', N(6).map(() => pasoPos(djMiniSuave())), 0, 1), seg: 7 }];
+          { ...capa('mini', arco, 0, 1), seg: 5 }];                  // una vuelta amplia y suave cada 40 s
 }
 
 async function djAplicar(i, auto){
