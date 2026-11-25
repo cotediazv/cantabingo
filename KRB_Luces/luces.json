@@ -101,7 +101,8 @@
       "fijos": {}
     },
     {
-      "id": "perimetrales", "nombre": "Perimetrales PAR (4)", "escaner": 9, "direccion": 129, "tipo": "par",
+      "id": "perimetrales", "nombre": "Perimetrales PAR (4)", "escaner": 6, "direccion": 81, "tipo": "par",
+      "_direccion": "81 = probado en Kennedy (24 nov): con la 81 se prenden los cuatro. La tabla de la consola decia 129.",
       "canales": { "dimmer": 1, "r": 2, "g": 3, "b": 4, "w": 5 },
       "fijos": {}
     },

@@ -31,13 +31,38 @@ foreach ($f in $programa) {
   if ((Test-Path $src) -and ((Resolve-Path $src).Path -ne (Join-Path $Destino $f))) { Copy-Item $src (Join-Path $Destino $f) -Force }
 }
 
-# Configuracion: no se pisa si ya existe
+# Configuracion: se usa la version nueva (direcciones y canales probados en Kennedy), pero se conserva lo
+# propio de este Dell: la clave de acceso y la salida (tipo de cable / puerto). El archivo anterior queda como respaldo.
 $cfgDestino = Join-Path $Destino "luces.json"
 $cfgOrigen = Join-Path $origen "luces.json"
 if ((Resolve-Path $cfgOrigen).Path -ne $cfgDestino) {
   if (Test-Path $cfgDestino) {
-    Copy-Item $cfgOrigen (Join-Path $Destino "luces.nuevo.json") -Force
-    Write-Host "  luces.json ya existia: se mantuvo el tuyo. La version nueva quedo como luces.nuevo.json" -ForegroundColor DarkYellow
+    $viejoTxt = [IO.File]::ReadAllText($cfgDestino)
+    $nuevoTxt = [IO.File]::ReadAllText($cfgOrigen)
+    try {
+      $viejo = $viejoTxt | ConvertFrom-Json
+      # texto para meter dentro de comillas JSON y como reemplazo de regex ($ se escribe $$)
+      $esc = { param($s) (($s -replace '\\', '\\' -replace '"', '\"').Replace('$', '$$')) }
+      if ($viejo.acceso -and $viejo.acceso.clave) {
+        $nuevoTxt = [regex]::Replace($nuevoTxt, '"clave":\s*"[^"]*"', ('"clave": "' + (& $esc ([string]$viejo.acceso.clave)) + '"'), 1)
+      }
+      if ($viejo.acceso -and $viejo.acceso.pedir_en_wifi_local -ne $null) {
+        $nuevoTxt = [regex]::Replace($nuevoTxt, '"pedir_en_wifi_local":\s*(true|false)', ('"pedir_en_wifi_local": ' + ([string]$viejo.acceso.pedir_en_wifi_local).ToLower()), 1)
+      }
+      if ($viejo.salida -and $viejo.salida.tipo) {
+        $nuevoTxt = [regex]::Replace($nuevoTxt, '("salida":\s*\{[^}]*?"tipo":\s*)"[^"]*"', ('$1"' + (& $esc ([string]$viejo.salida.tipo)) + '"'), 1)
+      }
+      if ($viejo.salida -and $viejo.salida.puerto) {
+        $nuevoTxt = [regex]::Replace($nuevoTxt, '("salida":\s*\{[^}]*?"puerto":\s*)"[^"]*"', ('$1"' + (& $esc ([string]$viejo.salida.puerto)) + '"'), 1)
+      }
+      $null = $nuevoTxt | ConvertFrom-Json            # que quede un JSON valido
+      [IO.File]::WriteAllText((Join-Path $Destino "luces.anterior.json"), $viejoTxt, (New-Object Text.UTF8Encoding $false))
+      [IO.File]::WriteAllText($cfgDestino, $nuevoTxt, (New-Object Text.UTF8Encoding $false))
+      Write-Host "  luces.json actualizado (se mantuvo la clave). El anterior quedo como luces.anterior.json" -ForegroundColor Green
+    } catch {
+      Copy-Item $cfgOrigen (Join-Path $Destino "luces.nuevo.json") -Force
+      Write-Host "  No se pudo actualizar luces.json; se mantuvo el tuyo. La version nueva quedo como luces.nuevo.json" -ForegroundColor DarkYellow
+    }
   } else {
     Copy-Item $cfgOrigen $cfgDestino
   }
