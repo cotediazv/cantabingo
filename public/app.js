@@ -5,12 +5,20 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':
 const app = $('#app');
 // Pedido de Cote (21 nov): al dar a conocer un ganador, un premio o una información, el animador también lo ve en su
 // panel, grande, para leerlo en voz alta (lo mismo que está en la pantalla del local)
-// El ranking de la Trivia del Rosco desplegado en pantalla, también grande en el panel (pedido de Cote, 21 nov)
-window.rankAnnHtml = (rank, players, final) => `<div class="panel ann rank-ann"><small>📣 En pantalla ahora</small><span class="ann-t">🏅 Ranking de la Trivia del Rosco · ${final ? 'resultados finales' : 'resultados parciales'}</span>
+// El ranking de la Trivia del Rosko desplegado en pantalla, también grande en el panel (pedido de Cote, 21 nov)
+window.rankAnnHtml = (rank, players, final, title = 'la Trivia del Rosko') => `<div class="panel ann rank-ann"><small>📣 En pantalla ahora</small><span class="ann-t">🏅 Ranking de ${esc(title)} · ${final ? 'resultados finales' : 'resultados parciales'}</span>
   ${rank.length ? `<ol class="rank-ann-list">${rank.map((t, i) => `<li class="${i < 3 ? 'top' : ''}"><em>${i + 1}.º</em><b>${esc(t.name)}</b><i>${t.score} pts</i></li>`).join('')}</ol>` : '<span class="ann-l">Todavía nadie suma puntos</span>'}
   <span class="ann-l">${players} ${players === 1 ? 'persona jugando' : 'personas jugando'}</span></div>`;
 window.annHtml = (title, names, lines = []) => `<div class="panel ann"><small>📣 Para anunciar</small><span class="ann-t">${esc(title)}</span>${names.map((n) => `<b class="ann-n">${esc(n)}</b>`).join('')}${lines.filter(Boolean).map((l) => `<span class="ann-l">${esc(l)}</span>`).join('')}</div>`;
-const store = {
+// Demo del GC Master: `?como=<token>` muestra el celular de esa persona (de la sala simulada) con una memoria aparte,
+// sin tocar la del navegador del moderador
+const COMO = new URLSearchParams(location.search).get('como');
+const memo = {};
+const store = COMO ? {
+  get: (k) => (k.startsWith('tok_') ? COMO : k in memo ? memo[k] : null),
+  set: (k, v) => { memo[k] = String(v); },
+  del: (k) => { delete memo[k]; },
+} : {
   get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
   set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* sin almacenamiento */ } },
   del: (k) => { try { localStorage.removeItem(k); } catch { /* sin almacenamiento */ } },
@@ -27,6 +35,72 @@ async function api(method, url, body) {
   if (!res.ok) throw Object.assign(new Error(data.error || 'Error inesperado'), { status: res.status });
   return data;
 }
+// Aviso inmediato del servidor (pedido de Cote, 22 nov: que el GC y los efectos respondan fluido): las pantallas siguen
+// preguntando cada pocos segundos qué mostrar, pero además escuchan /api/live y, apenas algo cambia (escenario, GC de la
+// sala light, un efecto), vuelven a preguntar en el acto. window.onAviso(fn) anota una función y devuelve cómo quitarla.
+// Los monitores del GC Master (?mon=1) no abren su propia conexión (son varios en una misma página): la página que los
+// contiene les pasa el aviso, y cada una lo pasa a las que tenga dentro.
+window.onAviso = (() => {
+  const fns = new Set(); let es = null; let t = null;
+  const relay = () => { for (const f of document.querySelectorAll('iframe')) { try { f.contentWindow.postMessage('krb-aviso', location.origin); } catch (e) { /* marco de otro sitio */ } } };
+  const fire = () => { clearTimeout(t); t = setTimeout(() => { fns.forEach((f) => { try { f(); } catch (e) { /* cada pantalla se cuida sola */ } }); relay(); }, 20); };
+  if (window.__mon) window.addEventListener('message', (e) => { if (e.origin === location.origin && e.data === 'krb-aviso') fire(); });
+  const sync = () => {
+    if (fns.size && !es && window.EventSource && !window.__mon) { try { es = new EventSource('/api/live'); es.onmessage = fire; } catch (e) { es = null; } }
+    else if (!fns.size && es) { es.close(); es = null; }
+  };
+  return (fn) => { fns.add(fn); sync(); return () => { fns.delete(fn); sync(); }; };
+})();
+// El ganador del juego anterior no se queda arriba del panel (pedido de Cote, 24 nov: «desde el momento en que ya está
+// la votación, no es necesario que arriba siga apareciendo el ganador del concurso anterior»): en los paneles del
+// animador se anota qué está en pantalla (<html data-stage>) y los recuadros de ganador de un juego se esconden cuando
+// la pantalla ya muestra otra cosa (estilos al final de styles.css). Solo con sesión de moderador: no en celulares.
+(() => {
+  if (window.__mon) return;
+  let cur = null; let live = false;
+  const tick = async () => {
+    if (document.hidden || !store.get('adminToken')) return; // el moderador puede entrar después de abrir la página
+    if (!live) { live = true; window.onAviso(tick); }
+    const r = await api('GET', '/api/stage').catch(() => null);
+    if (r && r.show !== cur) { cur = r.show; document.documentElement.dataset.stage = cur || 'none'; }
+  };
+  setInterval(tick, 3000); tick();
+})();
+// «GC PER» (pedido de Cote, 22 nov): el texto escrito en el GC Master. Lo que va entre comillas ("…", “…” o «…») sale
+// destacado en dorado y las comillas no se ven. `card` arma la misma franja del GC de la sala light; `over` la agrega
+// encima de una pantalla del local (tablero, de pie, verticales) sin quitar lo que muestra.
+window.gcPer = (() => {
+  const RE = /"([^"]+)"|“([^”]+)”|«([^»]+)»/g;
+  const NAMES = { kennedy: 'Mercado Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' };
+  const html = (text) => { const s = String(text || ''); let out = ''; let i = 0; let m; RE.lastIndex = 0; while ((m = RE.exec(s))) { out += `${esc(s.slice(i, m.index))}<mark>${esc(m[1] || m[2] || m[3])}</mark>`; i = RE.lastIndex; } return out + esc(s.slice(i)); };
+  const plain = (text) => String(text || '').replace(RE, (m, a, b, c) => a || b || c);
+  const card = (venue, text) => { const n = plain(text).length; const h = html(text);
+    return `<div class="lg-card lg-bottom lg-info lg-custom${h.includes('<mark>') ? ' has-hl' : ''}"><div class="lg-tag"><small>${esc(NAMES[venue] || '')}</small><b>KRB Stage</b></div>
+      <div class="lg-main">${n <= 30 ? `<b style="--n:${Math.max(10, n)}">${h}</b>` : `<span class="lg-line">${h}</span>`}</div></div>`; };
+  let shown = '';
+  // Para que la franja no tape nada (QR, últimas filas del bingo), lo que la pantalla muestra se achica un poco hacia
+  // arriba mientras la franja está puesta: se mide el alto de la franja y se deja en --per-k (clase per-on del body)
+  const room = () => {
+    const c = document.querySelector('#gcper .lg-card'); if (!c) return;
+    const top = c.getBoundingClientRect().top; if (!(top > 0)) return;
+    document.body.style.setProperty('--per-k', String(Math.max(0.7, Math.min(1, (top - innerHeight * 0.012) / innerHeight)).toFixed(4)));
+    document.body.classList.add('per-on');
+  };
+  window.addEventListener('resize', room);
+  const over = (text, venue) => {
+    const key = text ? `${venue}|${text}|${window.t2 && window.t2() ? 1 : 0}` : '';
+    let el = document.getElementById('gcper');
+    if (!text) { if (el) { el.remove(); document.body.classList.remove('per-on'); document.body.style.removeProperty('--per-k'); } shown = ''; return; }
+    if (el && key === shown) return;
+    if (!el) { el = document.createElement('div'); el.id = 'gcper'; document.body.appendChild(el); }
+    shown = key; el.className = `gcper-over th-${venue || 'kennedy'}`; el.innerHTML = `<div id="lg" class="th-${venue || 'kennedy'}">${card(venue, text)}</div>`;
+    room(); setTimeout(room, 400); setTimeout(room, 1500); // otra vez cuando terminan de cargar las letras
+  };
+  return { html, plain, card, over };
+})();
+// Marca al azar de este navegador (sin datos personales): sirve para contar a los conectados sin repetir y para saber,
+// en el registro de clientes, cuántas veces vuelve el mismo celular
+window.vid = () => { let v = store.get('vid'); if (!v) { v = rnd(8); store.set('vid', v); } return v; };
 let toastTimer;
 function toast(msg) {
   const t = $('#toast');
@@ -138,14 +212,35 @@ function speak(text) {
 function subscribe(sid, onState, onGone, asAdmin = false, token = '') {
   const query = asAdmin ? `?admin=${encodeURIComponent(store.get('adminToken') || '')}` : token ? `?token=${encodeURIComponent(token)}` : '';
   const es = new EventSource(`/api/sessions/${sid}/events${query}`);
-  es.onmessage = (e) => { const st = JSON.parse(e.data); if (st.closed) { es.close(); onGone(); } else onState(st); };
+  es.onmessage = (e) => { const st = JSON.parse(e.data); if (st.closed) { es.close(); onGone(); } else { onState(st); if (!asAdmin) window.figSplash(st); } };
   es.onerror = () => { fetch(`/api/sessions/${sid}`).then((r) => { if (r.status === 404) { es.close(); onGone(); } }).catch(() => {}); };
   return () => es.close();
 }
+// La figura del bingo en grande (pedido de Cote, 24 nov: «desde el momento en que se elige la figura, debería aparecer
+// en pantalla completa por unos 3 o 4 segundos, en todos los dispositivos, la figura completa que se va a hacer»): GC,
+// tablero, pantalla de pie y celulares (no el panel del animador). Se muestra una sola vez por figura elegida; si la
+// figura tiene varias formas (por ejemplo «Línea (cualquiera)»), van pasando
+window.figSplash = (st) => {
+  if (!st || !st.figAt || !st.patterns || !st.patterns[0] || window.__figShown === st.figAt) return;
+  const left = 3800 - ((st.now || Date.now()) - st.figAt);
+  if (left < 600) return;
+  const P = PATTERNS.byId[st.patterns[0]];
+  if (!P) return;
+  window.__figShown = st.figAt;
+  const grid = (m) => Array.from({ length: 25 }, (_, i) => `<i class="${m & (1 << i) ? 'x' : ''}"></i>`).join('');
+  const el = document.createElement('div');
+  el.id = 'figsplash'; el.className = `th-${st.theme || 'frida'}`;
+  el.innerHTML = `<div class="fs-card"><small>La figura de este bingo</small><div class="fs-grid">${grid(P.variants[0])}</div><b>${esc(P.name)}</b></div>`;
+  document.body.appendChild(el);
+  let k = 0;
+  const t = P.variants.length > 1 ? setInterval(() => { k = (k + 1) % P.variants.length; const g = el.querySelector('.fs-grid'); if (g) g.innerHTML = grid(P.variants[k]); }, 650) : null;
+  setTimeout(() => { el.classList.add('fs-out'); }, left - 400);
+  setTimeout(() => { clearInterval(t); el.remove(); }, left);
+};
 // Enlaces fijos: siempre llevan a la sesión activa, así el QR no cambia de una partida a otra
 // La sala se llama «Los Juegos de Frida»; dentro del bingo, el juego se llama «El Bingo de Frida»
 function bingoName(name) { return String(name || '').replace(/^Los Juegos de /, 'El Bingo de '); }
-const joinUrl = () => `${location.origin}${location.pathname}#/jugar`;
+const joinUrl = () => `${window.pubBase()}#/jugar`; // el QR del público: a la dirección elegida en el Centro de control
 const boardUrl = () => `${location.origin}${location.pathname}#/tablero`;
 const gcUrl = () => `${location.origin}${location.pathname}#/gc`;
 const stageUrl = () => `${location.origin}${location.pathname}#/escena`;
@@ -226,9 +321,9 @@ const isAdmin = async () => Boolean(store.get('adminToken')) && (await api('GET'
 
 // Catálogo de juegos de la plataforma. Para sumar uno: agregar aquí su entrada y sus vistas.
 const GAMES = [
-  { id: 'bingo', icon: '🎮', name: 'Crea sala de juegos', desc: 'Bingo, El Rosco, El Festival y El objeto más extraño.', href: '#/nuevo' },
-  { id: 'rueda', hidden: true, icon: '🎡', name: 'El Rosco', desc: 'Un rosco de letras por concursante, con reloj. Tú marcas acierto, fallo o paso; el público ve el rosco y la pregunta.', href: '#/ruedas' },
-  { id: 'sorteo', hidden: true, icon: '🎲', name: 'Sorteo de concursantes', desc: 'Elige al azar, entre quienes jugaron el bingo, a los concursantes de El Rosco. Se ve en pantalla.', href: '#/sorteoctl' },
+  { id: 'bingo', icon: '🎮', name: 'Crea sala de juegos', desc: 'Bingo, El Rosko, El Festival y El objeto más extraño.', href: '#/nuevo' },
+  { id: 'rueda', hidden: true, icon: '🎡', name: 'El Rosko', desc: 'Un rosko de letras por concursante, con reloj. Tú marcas acierto, fallo o paso; el público ve el rosko y la pregunta.', href: '#/ruedas' },
+  { id: 'sorteo', hidden: true, icon: '🎲', name: 'Sorteo de concursantes', desc: 'Elige al azar, entre quienes jugaron el bingo, a los concursantes de El Rosko. Se ve en pantalla.', href: '#/sorteoctl' },
 ];
 
 views.home = async () => {
@@ -246,9 +341,51 @@ views.home = async () => {
         <p class="muted small home-note">Hay una sala abierta. Para crear otra, primero ciérrala en el Centro de control.</p>`
     : '<a class="home-create" href="#/nuevo"><span>🎮</span>Crear sala de juegos</a>'}
       <a class="home-control home-control-sm" href="#/control">🎛️ Centro de control</a>
+      <a class="home-control home-control-sm home-sim" href="#/simulada">🤖 Crear sala simulada</a>
       <p style="margin-top:28px"><button id="logout">Cerrar sesión de moderador</button></p>
     </div>`;
   $('#logout').onclick = () => { store.del('adminToken'); route(); };
+  // Si la sala abierta es simulada, se dice al lado de «Continuar»
+  const sim = await api('GET', '/api/sim').catch(() => null);
+  const go = document.querySelector('.home-create.open');
+  if (sim && sim.on && go && open && sim.sid === open.id) go.insertAdjacentHTML('beforeend', `<small class="home-simtag">🤖 Sala simulada · ${sim.n} personas virtuales</small>`);
+  return undefined;
+};
+
+// Sala simulada (pedido de Cote, 23 nov: «crear sala simulada… 120 personas virtuales jugando de manera como lo hacen las
+// personas… para poder probar los juegos de buena manera»): una sala de juegos normal, con personas virtuales que entran
+// y juegan todos los juegos solas (ver simulador.js). Se termina cerrando la sala en el Centro de control.
+views.simulada = async () => {
+  if (!(await isAdmin())) return viewLogin();
+  if ((await activeSessions()).length) { toast('Ya hay una sala abierta: ciérrala en el Centro de control para crear la sala simulada'); location.hash = '#/'; return undefined; }
+  app.innerHTML = `<p class="back"><a href="#/">← Inicio</a></p><h1>🤖 Crear sala simulada</h1>
+    <form class="panel fields" id="f">
+      <p class="wide muted">Una sala de juegos de verdad, con personas virtuales que entran solas y juegan todos los juegos como lo haría el público: bingo, El Rosko, el sorteo de concursantes, El Festival, El objeto más extraño, la votación del juego y El último en pie. Tú la manejas igual que siempre. Para terminar, cierra la sala en el Centro de control.</p>
+      <div class="wide"><span class="f" style="margin-bottom:6px">¿De qué local?</span>
+        <div class="seg" id="venues" role="tablist">
+          <button type="button" data-venue="frida" class="on">Frida</button><button type="button" data-venue="tobalaba">Tobalaba</button><button type="button" data-venue="kennedy">Mercado Kennedy</button>
+        </div>
+        <p class="muted small" style="margin-top:8px">Las pantallas de ese local que estén en «Automático» también van a mostrar los juegos.</p></div>
+      <label class="f">Personas virtuales <span class="hint">de 5 a 300</span><input type="number" name="n" min="5" max="300" value="120" required></label>
+      <div class="wide"><button class="primary big paso">🤖 Crear sala simulada</button></div>
+    </form>`;
+  const f = $('#f'); let venue = 'frida';
+  const NAMES = { frida: 'Los Juegos de Frida', tobalaba: 'Los Juegos de Tobalaba', kennedy: 'Los Juegos de Mercado Kennedy' };
+  $('#venues').onclick = (e) => { const v = e.target.dataset.venue; if (!v) return; venue = v; $$('#venues button').forEach((b) => b.classList.toggle('on', b.dataset.venue === v)); };
+  f.onsubmit = async (e) => {
+    e.preventDefault();
+    const btn = f.querySelector('button.primary'); btn.disabled = true; btn.textContent = '⏳ Entrando las personas virtuales…';
+    const n = Math.max(5, Math.min(300, Number(f.n.value) || 120));
+    try {
+      const p = await api('POST', '/api/projects', { name: NAMES[venue], theme: venue, count: Math.max(320, n + 20), format: 'numbers', values: 75, headers: 'BINGO', freeCenter: false, startNumber: 1 });
+      let s;
+      try { s = await api('POST', `/api/projects/${p.id}/session`, { name: p.name, theme: venue, password: '', cardsPerPlayer: 1, isPublic: true, showName: true, patterns: ['linea'] }); } catch (err) { await api('DELETE', `/api/projects/${p.id}`).catch(() => {}); throw err; }
+      const r = await api('POST', '/api/sim/start', { sid: s.id, n });
+      store.set('lastBingo', p.id);
+      toast(`Sala simulada lista: ${r.n} personas virtuales jugando`);
+      location.hash = '#/juegos';
+    } catch (err) { fail(err); btn.disabled = false; btn.textContent = '🤖 Crear sala simulada'; }
+  };
   return undefined;
 };
 
@@ -266,9 +403,10 @@ views.control = async () => {
       <p class="muted small">La pantalla cambia sola al activar un bingo, lanzar un sorteo o cargar un rosco. Aquí puedes cambiarla a mano.</p>
       <div class="control-grid" id="stage">
         <button data-show="bingo"><span>🎱</span>Bingo</button><button data-show="sorteo"><span>🎲</span>Sorteo</button>
-        <button data-show="rueda"><span>🎡</span>El Rosco</button><button data-show="qr"><span>📱</span>QR en pantalla completa</button>
+        <button data-show="rueda"><span>🎡</span>El Rosko</button><button data-show="qr"><span>📱</span>QR en pantalla completa</button>
         <button data-show="karaoke"><span>🎤</span>Karaoke</button><button data-show="show"><span>⭐</span>Show</button>
         <button data-show="voto"><span>🗳️</span>Votación</button><button data-show="insta"><span>📸</span>Instagram</button>
+        <button data-show="desafio" class="wide"><span>🏆</span>¿Quién quiere ser ganador?</button>
         <button data-show="none" class="wide"><span>⬛</span>Nada</button>
       </div>
       <div class="ctl-links">
@@ -469,7 +607,8 @@ views.juegos = async () => {
   if (!open) { location.hash = '#/'; return undefined; }
   store.set('lastBingo', open.projectId);
   // Pedido de Cote (21 nov): al crear la sala, tres botones y nada más (Manual, Por sorteo, Por votación)
-  app.innerHTML = `<p class="back"><a href="#/">← Inicio</a></p><div id="jg-cur"></div>${activitiesNav('', { lobby: true })}`;
+  app.innerHTML = `<p class="back"><a href="#/">← Inicio</a></p><div id="jg-sim"></div><div id="jg-cur"></div>${activitiesNav('', { lobby: true })}
+    <p class="ep-link"><a class="btn" href="#/enpiectl">🧪 Juego en prueba: 🧍 El último en pie</a> <a class="btn" href="#/desafioctl">🧪 Juego en prueba: 🏆 ¿Quién quiere ser ganador?</a></p>`;
   const venue = open.theme || 'frida';
   const paint = async () => {
     const st = await api('GET', `/api/sessions/${open.id}/host/state`).catch((err) => (err.status === 404 ? 'cerrada' : null));
@@ -477,13 +616,14 @@ views.juegos = async () => {
     if (!st || !$('#jg-cur')) return;
     // Si hay un juego en curso, se vuelve a él con un botón grande y el menú queda plegado (para no sortear otro por error)
     const cur = st.current;
-    const info = cur && GAME_INFO(venue)[cur.game];
+    const info = cur && (cur.game === 'enpie' ? { icon: '🧍', name: 'El último en pie', href: '#/enpiectl' } : cur.game === 'desafio' ? { icon: '🏆', name: '¿Quién quiere ser ganador?', href: '#/desafioctl' } : GAME_INFO(venue)[cur.game]);
     const href = !cur ? '' : cur.game === 'bingo' ? `#/anfitrion/${open.projectId}` : cur.wheel ? `#/ruedactl/${cur.wheel}` : info.href;
-    const html = cur ? `<a class="home-create open ctl-go" href="${href}"><span>▶</span>Volver al juego en curso: ${info.icon} ${esc(info.name)}</a>` : '';
+    const html = cur ? `<a class="home-create open ctl-go paso" data-paso="8" href="${href}"><span>▶</span>Volver al juego en curso: ${info.icon} ${esc(info.name)}</a>` : '';
     if ($('#jg-cur').innerHTML !== html) $('#jg-cur').innerHTML = html;
     window.setNavFold(!!cur);
   };
   await paint();
+  api('GET', '/api/sim').then((sim) => { if (sim && sim.on && sim.sid === open.id && $('#jg-sim')) $('#jg-sim').innerHTML = `<p class="sim-bar">🤖 <b>Sala simulada</b> · ${sim.n} personas virtuales jugando. Para terminar, cierra la sala en el Centro de control.</p>`; }).catch(() => {});
   const t = setInterval(() => { paint(); paintGameNav(); }, 4000); // también lo que se haga desde otro equipo (iPad)
   return () => clearInterval(t);
 };
@@ -497,7 +637,7 @@ views.figura = async (pid) => {
   if (info.started) { location.replace(`#/anfitrion/${pid}`); return undefined; }
   app.innerHTML = `<p class="back"><a href="#/juegos">← Juegos</a></p><h1>${esc(bingoName(p.name))}</h1>
     <form class="panel" id="f"><h2>¿Qué figura se juega?</h2>${patternPicker(info.patterns)}
-      <button class="primary big">Empezar el bingo</button></form>`;
+      <button class="primary big paso">Empezar el bingo</button></form>`;
   $('#f').onsubmit = async (e) => {
     e.preventDefault();
     const patterns = readPatterns(e.target);
@@ -552,12 +692,12 @@ window.fitOneLine = (el, min = 9) => {
   let fs = parseFloat(getComputedStyle(el).fontSize) || 20;
   while (el.scrollWidth > el.clientWidth + 1 && fs > min) { fs -= 1; el.style.fontSize = `${fs}px`; }
 };
-// Instrucciones de El Rosco: las usan el panel (wheel-ui.js) y los celulares
+// Instrucciones de El Rosko: las usan el panel (wheel-ui.js) y los celulares
 window.ROSCO_HOWTO = [
   '3 participantes.',
   'Todos juegan desde las mesas.',
-  '<b>Premio mayor</b> para el que gana El Rosco.',
-  '<b>Premio especial</b> para el ganador del público que juega la Trivia del Rosco.',
+  '<b>Premio mayor</b> para el que gana El Rosko.',
+  '<b>Premio especial</b> para el ganador del público que juega la Trivia del Rosko.',
 ];
 const BINGO_HOWTO = [
   'Todos juegan desde las mesas, con su cartón en el celular.',
@@ -566,7 +706,7 @@ const BINGO_HOWTO = [
 ]
 async function hostConsole(p) {
   const sid = p.sessionId;
-  store.set('lastBingo', p.id); // para el botón «Volver al bingo» del sorteo y del rosco
+  store.set('lastBingo', p.id); // para el botón «Volver al bingo» del sorteo y del rosko
   const act = (action, body) => api('POST', `/api/sessions/${sid}/host/${action}`, body || {}).catch(fail);
   let st = null;
   let manual = false;
@@ -584,15 +724,16 @@ async function hostConsole(p) {
             <div id="final"></div>
             <div id="tie-result"></div>
             <p class="tie-hint" id="tie-hint" hidden>Hay un empate: primero desempata por sorteo.</p>
-            <button class="primary" id="tiebreak" hidden>🎲 Desempatar por sorteo</button>
+            <button class="primary paso" data-paso="1" id="tiebreak" hidden>🎲 Desempatar por sorteo</button>
             <div class="win-actions" id="win-actions" hidden>
-              <button id="confirmwin">✔ Confirmar ganador</button>
+              <button id="confirmwin" class="paso" data-paso="2">✔ Confirmar ganador</button>
               <button id="keepplaying">▶ Seguir jugando</button>
             </div>
             <div id="win-confirmed" hidden>${activitiesNav('bingo')}</div>
           </div>
           <div class="row" style="justify-content:center;margin-top:16px"><button id="bigqr"></button></div>
-          <div class="row" style="justify-content:center;margin-top:12px"><button class="primary big" id="gen">Generar un número</button></div>
+          <div class="row" style="justify-content:center;margin-top:12px"><button class="primary big paso" id="gen">Generar un número</button></div>
+          <p class="publico-hint" id="publico-hint" hidden>Llevas los primeros números desde el escenario. Ahora baja al público: anda mesa por mesa preguntando los números y vuelve al escenario cuando haya ganador.</p>
           <div class="row" style="justify-content:center;margin-top:14px">
             <label class="small" hidden>Pausa <input type="number" id="interval" min="5" max="60" value="10" style="width:70px"> s</label>
             <label class="check" hidden><input type="checkbox" id="stop" checked> Detener al completarse un cartón</label>
@@ -621,9 +762,15 @@ async function hostConsole(p) {
     $('#count').style.display = manual ? '' : 'none';
     $('#board').style.display = manual ? '' : 'none';
     $('#history').innerHTML = st.drawn.map((v) => `<span>${esc(plain(st, v))}</span>`).join('') || '<span class="muted">Aún no se ha generado ningún valor.</span>';
-    $('#gen').disabled = st.drawn.length >= st.values || st.auto.on || st.winConfirmed; // ganador confirmado = sorteo terminado
+    $('#gen').disabled = st.drawn.length >= st.values || (st.auto.on && !(st.publico && st.publico.due)) || st.winConfirmed; // ganador confirmado = sorteo terminado
     $('#auto').disabled = !!st.winConfirmed;
-    $('#gen').textContent = st.winConfirmed ? 'Sorteo terminado' : 'Generar un número';
+    // «Anda al público» (pedido de Cote, 24 nov, para las luces): después de los primeros ocho números, el mismo botón verde
+    // pide bajar al público y no deja seguir hasta aceptarlo; las luces pasan a seguir al animador por el salón
+    const publico = !!(st.publico && st.publico.due);
+    $('#gen').dataset.publico = publico ? '1' : '';
+    $('#publico-hint').hidden = !publico;
+    $('#gen').textContent = st.winConfirmed ? 'Sorteo terminado' : publico ? '🚶 Anda al público' : 'Generar un número';
+    $('#gen').classList.toggle('paso', !st.winConfirmed); // con el ganador confirmado ya no es el paso que sigue
     $('#auto').textContent = st.auto.on ? '⏸ Detener automático' : '▶ Modo automático';
     $('#auto').classList.toggle('on', st.auto.on);
     $('#manual').classList.toggle('on', manual);
@@ -675,7 +822,7 @@ async function hostConsole(p) {
     $('#final').innerHTML = st.finalists ? `<p><b>Selección final:</b> ${st.finalists.map((c) => '#' + (p.startNumber + c - 1)).join(', ') || 'no hay cartones validados'}</p>` : '';
     if (st.drawn.length !== spoken) { if (spoken >= 0 && st.drawn.length > spoken) speak(speakText(st, st.drawn.at(-1))); spoken = st.drawn.length; }
   };
-  $('#gen').onclick = () => act('draw');
+  $('#gen').onclick = () => act($('#gen').dataset.publico ? 'publico' : 'draw');
   $('#confirmwin').onclick = () => act('confirmwin');
   $('#keepplaying').onclick = () => act('keepplaying');
   $('#tiebreak').onclick = () => api('POST', '/api/raffle/tiebreak', { sid }).catch(fail);
@@ -702,7 +849,7 @@ views.ronda = async (pid) => {
       <h2>Ronda ${next}: ¿qué figura se juega?</h2>
       ${patternPicker(info.patterns)}
       <p class="muted small">Se borran los números sorteados y las marcas de la ronda ${info.round}. Cada participante sigue con su mismo cartón.</p>
-      <button class="primary big">Iniciar la ronda ${next}</button>
+      <button class="primary big paso">Iniciar la ronda ${next}</button>
     </form>`;
   $('#f').onsubmit = async (e) => {
     e.preventDefault();
@@ -762,7 +909,7 @@ views.jugar = async (sid) => {
   const key = `tok_${sid}`;
   let me = null;
   const token = store.get(key);
-  if (token) me = await api('POST', `/api/sessions/${sid}/join`, { token }).catch(() => null);
+  if (token) me = await api('POST', `/api/sessions/${sid}/join`, { token, vid: window.vid() }).catch(() => null);
   if (!me) {
     let info;
     try { info = await api('GET', `/api/sessions/${sid}`); } catch { backToStart(); return undefined; }
@@ -778,7 +925,7 @@ views.jugar = async (sid) => {
     $('#f').onsubmit = async (e) => {
       e.preventDefault();
       try {
-        const r = await api('POST', `/api/sessions/${sid}/join`, Object.fromEntries(new FormData(e.target)));
+        const r = await api('POST', `/api/sessions/${sid}/join`, { ...Object.fromEntries(new FormData(e.target)), vid: window.vid() });
         store.set(key, r.token);
         store.set('playerFirst', e.target.name.value.trim());
         store.set('playerLast', e.target.surname.value.trim());
@@ -800,16 +947,18 @@ views.jugar = async (sid) => {
     <div class="prosco" id="prosco" hidden></div>
     <div class="pkar" id="pkar" hidden></div>
     <div class="pvote" id="pvote" hidden></div>
+    <div class="pvote penpie" id="penpie" hidden></div>
     <div class="pvote pinsta" id="pinsta" hidden></div>
     <div class="pvote pgvote" id="pgvote" hidden></div>
     <div class="pvote pact" id="pact" hidden></div>
+    <div class="pvote pdesafio" id="pdesafio" hidden></div>
     <div id="bingo-bottom"><button class="primary big" id="sync" style="margin-top:16px">↻ Actualizar y marcar lo que falta</button>
     <p class="muted small" style="margin-top:8px">Marca por ti los valores ya anunciados que se te pasaron.</p>
     <div class="panel" style="margin-top:20px"><h2 id="title" style="margin:0"></h2><span class="muted small" id="meta"></span><div id="pats" style="margin-top:8px"></div></div></div>
     <div class="live" id="live"><div id="live-player"></div>
       <div class="live-bar"><button type="button" id="live-audio">🔇 Activar audio</button><button type="button" id="live-full">⛶ Pantalla completa</button><button type="button" id="live-sync" class="wide">↻ Poner al día el video</button></div></div>
     <div id="kids-slot">${window.krbKidsButton ? window.krbKidsButton() : '<a class="btn kids-entry" href="#/kids">🧸 <b>KRB Kids</b><span>Zona de niños</span></a>'}</div>`;
-  // Durante El Rosco: se guarda el cartón y quedan el video y, debajo, la pregunta en juego
+  // Durante El Rosko: se guarda el cartón y quedan el video y, debajo, la pregunta en juego
   let roscoEs = null;
   let roscoId = null;
   let rosco = null;
@@ -819,7 +968,7 @@ views.jugar = async (sid) => {
     const c = rosco.players[rosco.turn];
     return rosco.runningSince ? c.remainingMs - (Date.now() - rosco.gotAt + rosco.now - rosco.runningSince) : c.remainingMs;
   };
-  // Rosco en línea: lo que esta persona respondió (pregunta → alternativa), en orden, y su puntaje
+  // Rosko en línea: lo que esta persona respondió (pregunta → alternativa), en orden, y su puntaje
   let crowdMine = {};
   let crowdOrder = [];
   let crowdInfo = null;
@@ -846,14 +995,18 @@ views.jugar = async (sid) => {
     return play;
   };
   const drawRosco = () => {
-    if (!rosco) { $('#prosco').innerHTML = '<p class="muted">Cargando El Rosco…</p>'; return; }
+    if (!rosco) { $('#prosco').innerHTML = '<p class="muted">Cargando El Rosko…</p>'; return; }
     const c = rosco.players[rosco.turn];
     const reveal = ''; // en el celular no se muestra la respuesta correcta: solo si la propia alternativa fue verde o roja
-    // Pedido de Cote (21 nov): el ganador de la Trivia del Rosco también en los celulares (y si es esta persona, ¡ganaste!)
-    const cw = rosco.crowdWinner;
-    const crowdWin = cw ? (cw.none ? '<div class="prosco-win">🏅 Trivia del Rosco<small>Esta vez nadie sumó puntos</small></div>'
-      : `<div class="prosco-win">🏅 ${esc(cw.name)}<small>${String(cw.name).toLowerCase() === String(me.name || '').toLowerCase() ? '¡Ganaste la Trivia del Rosco!' : '¡Ganó la Trivia del Rosco!'} ${cw.score} puntos</small></div>`) : '';
-    const body = crowdWin + (rosco.winner ? `<div class="prosco-win">🏆 ${esc(rosco.winner.name)}<small>${rosco.winner.full ? '¡Completó el rosco!' : '¡Ganó El Rosco!'}</small></div>`
+    // Pedido de Cote (21 nov): el ganador de la Trivia del Rosko también en los celulares (y si es esta persona, ¡ganaste!)
+    const cw0 = rosco.crowdWinner;
+    // Mientras gira la «tómbola» del ganador de la Trivia en pantalla, el celular no adelanta el nombre (Cote, 24 nov)
+    const cwRollLeft = cw0 && !cw0.none && cw0.rollMs ? cw0.rollMs - ((rosco.now || Date.now()) - cw0.at) : 0;
+    if (cwRollLeft > 200) { clearTimeout(window.__pcwT); window.__pcwT = setTimeout(() => { if (rosco && rosco.crowdWinner === cw0) { rosco = { ...rosco, now: (rosco.now || Date.now()) + cwRollLeft + 100 }; drawRosco(); } }, cwRollLeft + 100); }
+    const cw = cwRollLeft > 200 ? null : cw0;
+    const crowdWin = cwRollLeft > 200 ? '<div class="prosco-win">🥁 Trivia del Rosko<small>¡Ya viene el ganador! Mira la pantalla</small></div>' : cw ? (cw.none ? '<div class="prosco-win">🏅 Trivia del Rosko<small>Esta vez nadie sumó puntos</small></div>'
+      : `<div class="prosco-win">🏅 ${esc(cw.name)}<small>${String(cw.name).toLowerCase() === String(me.name || '').toLowerCase() ? '¡Ganaste la Trivia del Rosko!' : '¡Ganó la Trivia del Rosko!'} ${cw.score} puntos</small></div>`) : '';
+    const body = crowdWin + (rosco.winner ? `<div class="prosco-win">🏆 ${esc(rosco.winner.name)}<small>${rosco.winner.full ? '¡Completó el rosko!' : '¡Ganó El Rosko!'}</small></div>`
       : rosco.tie ? `<div class="prosco-wait">Empate entre ${rosco.tie.names.map(esc).join(' y ')}. Se define por sorteo.</div>`
       : rosco.finished ? '<div class="prosco-wait">Juego terminado</div>'
       : `<div class="prosco-q"><span class="prosco-letter">${esc(rosco.letters[c.current])}</span>
@@ -865,10 +1018,10 @@ views.jugar = async (sid) => {
       ${mine && !inTop ? `<div class="you"><em>${mine.rank}.º</em><span>${esc(me.name)}</span><b>${mine.score}</b></div>` : ''}</div>` : '';
     // Pedido de Cote (21 nov): al desplegar el ranking de la Trivia (botón del animador), también sale en todos los celulares
     const meName = String(me.name || '').toLowerCase();
-    const rankBox = rosco.rank ? `<div class="pcrowd-rank"><small>🏅 Trivia del Rosco · Top 10</small><b>${rosco.crowdWinner || rosco.winner ? 'Resultados finales' : 'Resultados parciales'}</b>
+    const rankBox = rosco.rank ? `<div class="pcrowd-rank"><small>🏅 Trivia del Rosko · Top 10</small><b>${rosco.crowdWinner || rosco.winner ? 'Resultados finales' : 'Resultados parciales'}</b>
       ${rosco.rank.length ? rosco.rank.map((t, i) => `<div class="${String(t.name).toLowerCase() === meName ? 'me' : ''}"><em>${i + 1}.º</em><span>${esc(t.name)}</span><b>${t.score}</b></div>`).join('') : '<p class="muted">Todavía nadie suma puntos</p>'}
       ${mine && mine.rank > 10 && mine.score > 0 ? `<div class="you"><em>${mine.rank}.º</em><span>${esc(me.name)}</span><b>${mine.score}</b></div>` : ''}</div>` : '';
-    $('#prosco').innerHTML = `<div class="prosco-head big"><b>Trivia del Rosco</b><span></span><span class="prosco-clock" id="prosco-clock">${rosco.winner || rosco.finished ? '' : fmtClock(roscoLeft())}</span></div>
+    $('#prosco').innerHTML = `<div class="prosco-head big"><b>Trivia del Rosko</b><span></span><span class="prosco-clock" id="prosco-clock">${rosco.winner || rosco.finished ? '' : fmtClock(roscoLeft())}</span></div>
       ${rankBox}${body}${reveal}${crowdHTML()}
       ${top}`;
   };
@@ -953,6 +1106,27 @@ views.jugar = async (sid) => {
   // Pedido de Cote (21 nov): en todo momento el celular muestra el nombre de la actividad y lo que viene; el cartón del
   // bingo solo mientras se juega el bingo. Sorteo de concursantes, sorteo del próximo juego, QR, show o espera entre juegos
   let actTimer = null; let actKey = ''; let actShown = ''; let actSoon = null;
+  // «El último en pie» (versión de prueba): el celular muestra la pregunta, sus vidas y el ranking
+  let epTimer = null; let epRev = null;
+  const syncEnpie = () => {
+    const on = st.stage === 'enpie';
+    $('#penpie').hidden = !on;
+    if (on && !epTimer) { window.phoneEnpie.reset(); epRev = null; epTimer = setInterval(() => window.phoneEnpie.draw(sid, me.token), 6000); }
+    if (on && epRev !== st.enpieRev) { epRev = st.enpieRev; window.phoneEnpie.draw(sid, me.token); }
+    if (!on && epTimer) { clearInterval(epTimer); epTimer = null; }
+    return on;
+  };
+  // ¿Quién quiere ser ganador?: se guarda el cartón; los botones A, B, C y D aparecen con la pregunta al público (desafio-ui.js)
+  let desafioTimer = null;
+  let desafioRev = null;
+  const syncDesafio = () => {
+    const on = st.stage === 'desafio';
+    $('#pdesafio').hidden = !on;
+    if (on && !desafioTimer) { window.phoneDesafio.reset(); desafioRev = null; desafioTimer = setInterval(() => window.phoneDesafio.draw(sid, me.token), 8000); }
+    if (on && desafioRev !== st.desafioRev) { desafioRev = st.desafioRev; window.phoneDesafio.draw(sid, me.token); }
+    if (!on && desafioTimer) { clearInterval(desafioTimer); desafioTimer = null; }
+    return on;
+  };
   const actOf = () => {
     const s = st.stage || 'bingo';
     if (['sorteo', 'juego', 'qr', 'show', 'none'].includes(s)) return s;
@@ -975,9 +1149,9 @@ views.jugar = async (sid) => {
       clearTimeout(actSoon);
       if (rolling) actSoon = setTimeout(drawAct, Math.max(0, r.roll.at + (r.rollMs || 6000) + 500 - (r.now || Date.now())) + 100 + Math.random() * 900);
       if (r.mode === 'tie') {
-        const isRosco = r.roll && r.roll.game === 'rosco'; // El Rosco usa el mismo sorteo para su desempate
-        head = isRosco ? '🎡 El Rosco · Desempate' : '🎲 Desempate del bingo';
-        body = `<p class="pvote-wait">${rolling ? '🎲 Sorteando en pantalla…' : r.roll && r.roll.winner ? `${isRosco ? 'Ganó El Rosco' : 'Ganó el desempate'}:<br><b>${esc(r.roll.winner)}</b>` : isRosco ? 'Se sortea el ganador entre los concursantes empatados.' : 'Se sortea el ganador entre los cartones empatados.'}</p>`;
+        const isRosco = r.roll && r.roll.game === 'rosco'; // El Rosko usa el mismo sorteo para su desempate
+        head = isRosco ? '🎡 El Rosko · Desempate' : '🎲 Desempate del bingo';
+        body = `<p class="pvote-wait">${rolling ? '🎲 Sorteando en pantalla…' : r.roll && r.roll.winner ? `${isRosco ? 'Ganó El Rosko' : 'Ganó el desempate'}:<br><b>${esc(r.roll.winner)}</b>` : isRosco ? 'Se sortea el ganador entre los concursantes empatados.' : 'Se sortea el ganador entre los cartones empatados.'}</p>`;
       } else {
         const picked = r.picked || [];
         const same = (n) => String(n).toLowerCase() === String(me.name || '').toLowerCase();
@@ -985,16 +1159,22 @@ views.jugar = async (sid) => {
         const seen = rolling ? picked.filter((n) => n !== r.roll.winner) : picked; // mientras gira la tómbola no se adelanta el nombre
         const myState = myName ? (r.confirm || {})[myName] : null;
         const iDeclined = (r.declined || []).some(same);
-        head = '🎲 Sorteo de concursantes · El Rosco';
+        // El mismo sorteo sirve para El Rosko y para ¿Quién quiere ser ganador? (principal y suplente; pedido de Cote, 25 nov)
+        const des = r.game === 'desafio';
+        const gName = des ? '¿Quién quiere ser ganador?' : 'El Rosko';
+        const trivia = des ? 'la Trivia del Ganador' : 'la Trivia del Rosko';
+        const role = (i) => `${i + 1}.º`;
+        const myRole = myName && des && picked.indexOf(myName) > 0 ? ' como reemplazo' : '';
+        head = `🎲 Sorteo de concursantes · ${gName}`;
         // Pedido de Cote (21 nov): quien sale sorteado confirma si quiere jugar en el escenario o prefiere jugar online
-        body = (myName && myState !== 'ok' ? `<div class="pvote-win">🎉 ¡Saliste sorteado!<small>Para jugar El Rosco en nuestro escenario</small></div>
+        body = (myName && myState !== 'ok' ? `<div class="pvote-win">🎉 ¡Saliste sorteado${myRole}!<small>Para jugar ${gName} en nuestro escenario</small></div>
             <p class="pvote-ask">¿Quieres jugar?</p><div class="pact-yesno"><button type="button" class="primary big" data-raffle="1">✅ Sí, quiero jugar</button><button type="button" class="big" data-raffle="0">🙅 No, gracias, prefiero jugar online</button></div>`
-          : myName ? '<div class="pvote-win">✅ ¡Confirmado!<small>Acércate a nuestro escenario para jugar El Rosco</small></div>'
-            : iDeclined ? '<p class="pvote-ask">👍 Elegiste jugar online<b>Juega la Trivia del Rosco desde tu celular</b></p>'
+          : myName ? `<div class="pvote-win">✅ ¡Confirmado${myRole}!<small>Acércate a nuestro escenario para jugar ${gName}</small></div>`
+            : iDeclined ? `<p class="pvote-ask">👍 Elegiste jugar online<b>Juega ${trivia} desde tu celular</b></p>`
               : '<p class="pvote-ask">¡Prepárate!<b>Puedes salir elegido para participar en nuestro escenario</b></p>') +
           (rolling ? '<p class="pvote-wait">🎲 Sorteando en pantalla…</p>' : '') +
-          (seen.length ? `<div class="pact-list"><small>Ya salieron</small>${seen.map((n, i) => `<p><em>${i + 1}.º</em><span>${esc(n)}</span><i>${(r.confirm || {})[n] === 'ok' ? '✅' : '⏳'}</i></p>`).join('')}</div>` : '') +
-          '<p class="pact-next">Después: <b>🎡 El Rosco</b> · y tú juegas la Trivia del Rosco desde el celular</p>';
+          (seen.length ? `<div class="pact-list"><small>Ya salieron</small>${seen.map((n, i) => `<p><em>${role(i)}</em><span>${esc(n)}</span><i>${(r.confirm || {})[n] === 'ok' ? '✅' : '⏳'}</i></p>`).join('')}</div>` : '') +
+          `<p class="pact-next">Después: <b>${des ? '🏆' : '🎡'} ${gName}</b> · y tú juegas ${trivia} desde el celular</p>`;
       }
     } else if (k === 'juego') {
       const g = await api('GET', '/api/gamedraw').catch(() => null);
@@ -1019,11 +1199,11 @@ views.jugar = async (sid) => {
         : `<p class="pvote-ask">¡Tenemos ganador!${names.map((n) => `<b>${esc(n)}</b>`).join('')}</p>`) +
         '<p class="pact-next">Ya viene el próximo juego</p>';
     } else if (k === 'rueda') {
-      head = '🎡 El Rosco';
+      head = '🎡 El Rosko';
       body = '<p class="pvote-wait">Ya viene el sorteo de concursantes: ¡puedes salir elegido para participar en nuestro escenario!</p>';
     } else {
       head = `🎮 Los Juegos de ${venueShort()}`;
-      body = '<p class="pvote-ask">¡Ya estás en la sala!<b>Mira la pantalla: ya viene el próximo juego</b></p><p class="pact-next">Bingo, El Rosco, El Festival o El objeto más extraño</p>';
+      body = '<p class="pvote-ask">¡Ya estás en la sala!<b>Mira la pantalla: ya viene el próximo juego</b></p><p class="pact-next">Bingo, El Rosko, El Festival o El objeto más extraño</p>';
     }
     const html = `<div class="pvote-head"><b>${esc(head)}</b></div>${body}`;
     if (html !== actShown) { actShown = html; box.innerHTML = html; }
@@ -1053,8 +1233,8 @@ views.jugar = async (sid) => {
     return on;
   };
   // Instrucciones en el celular (pedido de Cote, 20 nov): al empezar cada juego (y al entrar a la sala) aparecen
-  // 2 segundos las instrucciones del juego en curso: Bingo (cada ronda), El Rosco, El Festival o El objeto más extraño
-  // Cada juego tiene su propia clave: bingo por ronda (desde que se elige la figura), El Rosco por rosco cargado y la votación
+  // 2 segundos las instrucciones del juego en curso: Bingo (cada ronda), El Rosko, El Festival o El objeto más extraño
+  // Cada juego tiene su propia clave: bingo por ronda (desde que se elige la figura), El Rosko por rosco cargado y la votación
   // por concurso (voteGen); cada clave se muestra una sola vez (volver a un juego que sigue no las repite)
   let howtoKey = null;
   const howtoShown = new Set();
@@ -1075,28 +1255,29 @@ views.jugar = async (sid) => {
   };
   const syncHowto = async () => {
     const s = st.stage || 'bingo';
-    const key = st.stageDone ? null : s === 'rueda' && st.roscoId ? `rosco:${st.roscoId}` : s === 'voto' ? `voto:${st.voteGen}` : s === 'bingo' && st.started && !st.winConfirmed ? `bingo:${st.round}` : null;
+    const key = st.stageDone ? null : s === 'desafio' && st.desafioGen ? `desafio:${st.desafioGen}` : s === 'rueda' && st.roscoId ? `rosco:${st.roscoId}` : s === 'voto' ? `voto:${st.voteGen}` : s === 'bingo' && st.started && !st.winConfirmed ? `bingo:${st.round}` : null;
     if (!key || howtoShown.has(key)) return;
     howtoShown.add(key); howtoKey = key;
     if (key.startsWith('voto')) {
       const v = await api('GET', '/api/vote').catch(() => null);
       if (!v || !window.voteHowto || howtoKey !== key) return;
       const h = window.voteHowto(v); phoneHowto(h.title, h.lines);
-    } else if (key.startsWith('rosco')) phoneHowto('El Rosco', window.ROSCO_HOWTO);
+    } else if (key.startsWith('rosco')) phoneHowto('El Rosko', window.ROSCO_HOWTO);
+    else if (key.startsWith('desafio')) phoneHowto('¿Quién quiere ser ganador?', window.DESAFIO_HOWTO);
     else phoneHowto(bingoName(st.name), BINGO_HOWTO);
   };
   // Pedido de Cote (21 nov): el botón de KRB Kids no aparece durante los juegos, solo en los intermedios (sala abierta
   // esperando, QR, show, karaoke, sorteo o votación del próximo juego, y cuando un juego ya terminó)
   const syncKids = () => {
     const s = st.stage || 'bingo';
-    const inGame = (s === 'bingo' && st.started && !st.winConfirmed) || s === 'sorteo' || (s === 'rueda' && !!st.roscoId && !st.stageDone) || (s === 'voto' && !st.stageDone);
+    const inGame = (s === 'bingo' && st.started && !st.winConfirmed) || s === 'sorteo' || (s === 'rueda' && !!st.roscoId && !st.stageDone) || (s === 'voto' && !st.stageDone) || (s === 'enpie' && !st.stageDone) || (s === 'desafio' && !st.stageDone);
     const slot = $('#kids-slot');
     if (slot) slot.hidden = inGame;
   };
   const syncStage = () => {
     syncHowto();
     syncKids();
-    const kar = syncKar() | syncVote() | syncInsta() | syncGvote() | syncAct();
+    const kar = syncKar() | syncVote() | syncEnpie() | syncInsta() | syncGvote() | syncAct() | syncDesafio();
     const on = (st.stage === 'rueda' && !!st.roscoId) || kar;
     $('#bingo-top').hidden = on;
     $('#bingo-bottom').hidden = on;
@@ -1108,7 +1289,7 @@ views.jugar = async (sid) => {
     roscoId = st.roscoId;
     drawRosco();
     roscoEs = new EventSource(`/api/wheels/${roscoId}/events`);
-    roscoEs.onmessage = (e) => { rosco = { ...JSON.parse(e.data), gotAt: Date.now() }; drawRosco(); crowdSoon(); };
+    roscoEs.onmessage = (e) => { const d = JSON.parse(e.data); if (d.closed || !d.players) { stopRosco(); return; } rosco = { ...d, gotAt: Date.now() }; drawRosco(); crowdSoon(); }; // un rosko borrado avisa «closed»
     // Tocar una alternativa: queda marcada al instante y se envía; solo se puede responder una vez por pregunta
     $('#prosco').onclick = async (e) => {
       const b = e.target.closest('[data-crowd]');
@@ -1234,7 +1415,7 @@ views.jugar = async (sid) => {
   const onFs = () => { if (!document.fullscreenElement && $('#live') && $('#live').classList.contains('full') && $('#live').requestFullscreen) setFull(false); };
   document.addEventListener('fullscreenchange', onFs);
   const off = subscribe(sid, (s) => { st = s; render(); startLive(); }, () => { store.del(key); backToStart(); }, false, me.token);
-  return () => { off(); stopRosco(); clearInterval(karTimer); clearInterval(voteTimer); clearInterval(instaOn); clearInterval(gvTimer); window.phoneGvote.stop(); clearInterval(actTimer); liveFor = null; player = null; document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('visibilitychange', onBack); document.body.classList.remove('live-open'); };
+  return () => { off(); stopRosco(); clearInterval(karTimer); clearInterval(voteTimer); clearInterval(instaOn); clearInterval(gvTimer); window.phoneGvote.stop(); clearInterval(actTimer); clearInterval(desafioTimer); liveFor = null; player = null; document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('visibilitychange', onBack); document.body.classList.remove('live-open'); };
 };
 // Canal de Twitch de cada local (uno por local: KRB Stage en Frida, KRB Stage Kennedy en Kennedy, KRB Stage 3 en Tobalaba)
 const LIVE_CHANNELS = { frida: 'krbstage', kennedy: 'krbstagekennedy', tobalaba: 'krbstage3' };
@@ -1312,7 +1493,8 @@ const sfx = (() => {
     // Acierto: campanita brillante de dos notas
     hit: () => { note(1319, 0, 0.5, 'sine', 0.35); note(2637, 0, 0.35, 'sine', 0.12); note(1760, 0.12, 0.8, 'sine', 0.35); note(3520, 0.12, 0.5, 'sine', 0.1); },
     // Fallo: zumbador grave
-    miss: () => { note(160, 0, 0.6, 'sawtooth', 0.28); note(113, 0, 0.6, 'square', 0.16); },
+    // Incorrecta (Cote, 24 nov: no se oía): zumbido de dos tonos que bajan, en tonos medios para que suene en cualquier parlante
+    miss: () => { note(415, 0, 0.3, 'sawtooth', 0.3, 370); note(830, 0, 0.3, 'square', 0.07, 740); note(311, 0.32, 0.6, 'sawtooth', 0.32, 262); note(622, 0.32, 0.6, 'square', 0.08, 523); },
     // Paso: nota corta que baja
     pass: () => { note(660, 0, 0.22, 'triangle', 0.25, 330); },
     // Bolita del bingo: campanita tipo triángulo, muy suave y con cola larga
@@ -1340,6 +1522,8 @@ const sfx = (() => {
       note(55, t, 0.9, 'sawtooth', 0.35); note(2400, t, 1.2, 'square', 0.06, 900); note(1800, t + 0.02, 1.1, 'sine', 0.08, 700);
     },
     // Ganador: fanfarria ascendente con acorde final
+    // Temblor (El último en pie): el piso se sacude y la gente cae
+    rumble: () => { noise(0, 1.5, 0.5, 140, 0.7); noise(0.1, 1.2, 0.25, 420, 0.6); note(52, 0, 1.4, 'sawtooth', 0.3, 34); note(70, 0.2, 1.1, 'triangle', 0.25, 45); },
     win: () => {
       [523, 659, 784].forEach((f, i) => { note(f, i * 0.14, 0.2, 'sawtooth', 0.16); note(f, i * 0.14, 0.2, 'square', 0.08); });
       [1047, 784, 659, 523].forEach((f) => { note(f, 0.42, 1.6, 'sawtooth', 0.13); note(f * 2, 0.42, 1.2, 'sine', 0.06); });
@@ -1347,11 +1531,40 @@ const sfx = (() => {
     },
   };
   const play = (name) => { if (ready() && sounds[name]) { try { sounds[name](); } catch { /* sin audio */ } } };
-  return { unlock, ready, play, played: [], ticks: 0 };
+  // Redoble de tambores sostenido (pedido de Cote, 23 nov: «cuando se va a revelar el ganador del Festival… tiene que haber
+  // un redoble de tambores que suene»): golpes de caja hechos con ruido (se oyen bien en cualquier parlante; el redoble
+  // anterior era de tonos graves, casi mudo en parlantes chicos), cada vez más rápidos y fuertes, que siguen sonando hasta
+  // que se revela al ganador (tope 45 s); al parar, un golpe de platillo.
+  let noiseBuf = null; let rollTimer = null;
+  const noise = (at, dur, vol, freq, q) => {
+    if (!noiseBuf) { noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+    const t = Math.max(ctx.currentTime, ctx.currentTime + at);
+    const src = ctx.createBufferSource(); src.buffer = noiseBuf; src.loop = true;
+    const f = ctx.createBiquadFilter(); f.type = q ? 'bandpass' : 'highpass'; f.frequency.value = freq; if (q) f.Q.value = q;
+    const g = ctx.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(f).connect(g).connect(ctx.destination); src.start(t, Math.random() * 0.5); src.stop(t + dur + 0.05);
+  };
+  const snare = (at, vol) => { noise(at, 0.085, vol, 2200, 0.9); note(210, Math.max(0, at), 0.06, 'triangle', vol * 0.5, 150); };
+  const roll = (on) => {
+    const was = !!rollTimer;
+    clearInterval(rollTimer); rollTimer = null;
+    if (!on) { if (was && ready()) { try { noise(0, 1.6, 0.3, 5200, 0); note(60, 0, 0.5, 'sine', 0.4, 40); } catch { /* sin audio */ } } return; }
+    if (!ready()) return;
+    const t0 = ctx.currentTime; let next = 0.02;
+    const sched = () => {
+      try {
+        const now = ctx.currentTime - t0;
+        if (now > 45) { roll(false); return; }
+        while (next < now + 0.7) { const k = Math.min(1, next / 3.5); snare(next - now, 0.1 + 0.26 * k); next += 0.11 - 0.062 * k; }
+      } catch { /* sin audio */ }
+    };
+    sched(); rollTimer = setInterval(sched, 250);
+  };
+  return { unlock, ready, play, roll, rolling: () => !!rollTimer, played: [], ticks: 0 };
 })();
 
 // Tablero del DJ: pantalla completa (no transparente) que sigue sola lo que está pasando,
-// igual que la gráfica de OBS: bingo, sorteo o desempate, El Rosco.
+// igual que la gráfica de OBS: bingo, sorteo o desempate, El Rosko.
 views.tablero = async () => {
   let current = null;
   let stop = null;
@@ -1372,11 +1585,15 @@ views.tablero = async () => {
   document.addEventListener('keydown', enableSound);
   if (!mute) sfx.unlock(); // donde el navegador lo permite sin tocar (pantallas en modo quiosco), queda activo de inmediato
   setTimeout(paintSound, 300);
+  let again = false; // llegó un aviso mientras se armaba la pantalla: se vuelve a mirar al terminar
   const apply = async () => {
-    if (busy) return;
+    if (busy) { again = true; return; }
     busy = true;
     try {
-      const show = (await api('GET', '/api/stage').catch(() => ({}))).show || current || 'none';
+      const sr = await api('GET', '/api/stage').catch(() => null);
+      const show = (sr && sr.show) || current || 'none';
+      // GC PER: en el tablero se agrega como una franja abajo, sin quitar lo que se muestra
+      if (sr) window.gcPer.over(sr.per && sr.per.on ? sr.per.text : '', document.body.dataset.venue || '');
       if (show !== current) {
         current = show;
         if (typeof stop === 'function') stop();
@@ -1387,19 +1604,22 @@ views.tablero = async () => {
         else if (show === 'qr') stop = await views.qrFull();
         else if (show === 'karaoke') stop = await views.karaokeFull();
         else if (show === 'voto') stop = await views.votoFull();
+        else if (show === 'enpie') stop = await views.enpieFull();
+        else if (show === 'desafio') stop = await views.desafioFull();
         else if (show === 'juego') stop = await views.juegoDraw('full');
         else if (show === 'votojuego') stop = await views.gameVote('full'); // el QR va dentro del cuadro
         else if (show === 'insta') stop = await views.instaFull();
         else if (show === 'show') stop = await views.showFull();
         else stop = await views.bingoFull(); // bingo, o la portada si no hay nada en juego
-        joinQr({ sorteo: 'tr', rueda: 'tr', show: 'br' }[show]);
+        joinQr({ sorteo: 'tr', rueda: 'tr', show: 'br', enpie: 'br' }[show]);
       }
       mark();
-    } finally { busy = false; }
+    } finally { busy = false; if (again) { again = false; apply(); } }
   };
   await apply();
   const timer = setInterval(apply, 2000);
-  return () => { clearInterval(timer); if (typeof stop === 'function') stop(); joinQr(); document.body.classList.remove('full'); soundBtn.remove(); document.removeEventListener('pointerdown', enableSound); document.removeEventListener('keydown', enableSound); };
+  const offAviso = window.onAviso(apply);
+  return () => { clearInterval(timer); offAviso(); window.gcPer.over(''); if (typeof stop === 'function') stop(); joinQr(); document.body.classList.remove('full'); soundBtn.remove(); document.removeEventListener('pointerdown', enableSound); document.removeEventListener('keydown', enableSound); };
 };
 
 // Tablero para una pantalla puesta de pie (girada 90° a la izquierda) que recibe la señal horizontal de siempre:
@@ -1407,7 +1627,7 @@ views.tablero = async () => {
 // igual que se hace con los videos para esa pantalla. Va sin sonido.
 views['tablero-v'] = async () => {
   document.body.classList.add('rot-screen');
-  app.innerHTML = `<iframe class="rot-frame" title="Tablero vertical" src="${location.pathname}?mudo=1#/tablero"></iframe>`;
+  app.innerHTML = `<iframe class="rot-frame" title="Tablero vertical" src="${location.pathname}?mudo=1${window.__mon || ''}#/tablero"></iframe>`;
   return () => document.body.classList.remove('rot-screen');
 };
 
@@ -1621,7 +1841,7 @@ views.karaokectl = async (local) => {
 // más abajo, las demás actividades
 const GAME_INFO = (venue) => ({
   bingo: { icon: '🎱', name: 'Bingo', href: '' },
-  rosco: { icon: '🎡', name: 'El Rosco', href: '#/sorteoctl' },
+  rosco: { icon: '🎡', name: 'El Rosko', href: '#/sorteoctl' },
   festival: { icon: '🎤', name: `El Festival de ${{ frida: 'Frida', kennedy: 'Mercado Kennedy', tobalaba: 'Tobalaba' }[venue] || 'Frida'}`, href: '#/votoctl/festival' },
   objeto: { icon: '🗳️', name: 'El objeto más extraño', href: '#/votoctl/objeto' },
 });
@@ -1632,7 +1852,7 @@ const GAME_INFO = (venue) => ({
 function activitiesNav(current, opts = {}) {
   const games = [
     ['bingo', '<button type="button" data-back-bingo data-game="bingo"><span>🎱</span>Bingo</button>'],
-    ['rosco', '<a class="btn" data-game="rosco" href="#/sorteoctl"><span>🎡</span>El Rosco</a>'],
+    ['rosco', '<a class="btn" data-game="rosco" href="#/sorteoctl"><span>🎡</span>El Rosko</a>'],
     ['festival', '<a class="btn" data-game="festival" href="#/votoctl/festival"><span>🎤</span><b class="g-fest">El Festival</b></a>'],
     ['objeto', '<a class="btn" data-game="objeto" href="#/votoctl/objeto"><span>🗳️</span>El objeto más extraño</a>'],
   ];
@@ -1640,6 +1860,7 @@ function activitiesNav(current, opts = {}) {
     ['show', '<a class="btn" href="#/showctl"><span>⭐</span>Show</a>'],
     ['karaoke', '<a class="btn" href="#/karaokectl"><span>🎤</span>Karaoke</a>'],
     ['insta', '<a class="btn" href="#/instactl"><span>📸</span>Instagram</a>'],
+    ['desafio', '<a class="btn" href="#/desafioctl"><span>🏆</span>¿Quién quiere ser ganador?</a>'],
     ['qr', '<button type="button" data-stage-qr><span>📱</span>QR en pantalla completa</button>'],
   ];
   setTimeout(paintGameNav, 0);
@@ -1647,7 +1868,7 @@ function activitiesNav(current, opts = {}) {
     <div class="g-modes" role="tablist"><button type="button" role="tab" data-draw-mode="manual"><span>👆</span>Manual</button><button type="button" role="tab" data-draw-mode="sorteo"><span>🎲</span>Por sorteo</button><button type="button" role="tab" data-draw-mode="votacion"><span>🗳️</span>Por votación</button></div>
     <section class="g-body"><p class="g-free-title">👆 Toca el siguiente juego</p><section class="g-vote"></section>
     <div class="g-plan"><div class="g-slots"></div><label>¿Cuántos juegos vamos a sortear?<input type="number" class="g-total" min="1" max="10" value="3"></label></div>
-    <button type="button" class="primary big g-draw" data-game-draw>🎲 Sortear juego</button>
+    <button type="button" class="primary big g-draw paso" data-paso="9" data-game-draw>🎲 Sortear juego</button>
     <button type="button" class="g-undo" data-game-undo disabled>↩️ Deshacer</button>
     <p class="g-direct" hidden>…o toca un juego para elegirlo directo, sin tómbola</p>
     <div class="g-games">${games.map(([k, h]) => (k === current ? h.replace(/data-game="/, 'aria-current="true" data-game="') : h)).join('')}</div></section>
@@ -1743,7 +1964,7 @@ document.addEventListener('click', async (e) => {
   applyNavOpen(false); // se despliega al instante, sin esperar al servidor
   const g = await api('GET', '/api/gamedraw').catch(() => null);
   if (!g || (g.how || (g.free ? 'manual' : 'sorteo')) !== how) { try { await api('POST', '/api/gamedraw/mode', { how }); } catch (err) { fail(err); } }
-  if (how === 'votacion' && window.startGvIntro) await window.startGvIntro(); // primero, en pantalla, las reglas y cada juego (pedido de Cote)
+  // «Por votación» ya no parte sola la presentación (Cote, 24 nov): el animador toca «Iniciar instrucciones»
   paintGameNav();
 });
 // Deshacer (pedido de Cote): vuelve el sorteo de juegos al paso anterior (antes de «Iniciar sorteo», de la tómbola
@@ -1900,34 +2121,72 @@ views.escena = async () => {
   let stop = null;
   let busy = false;
   document.body.classList.add('obs');
+  let again = false; // llegó un aviso mientras se armaba la pantalla: se vuelve a mirar al terminar
   const apply = async () => {
-    if (busy) return;
+    if (busy) { again = true; return; }
     busy = true;
     try {
-      const show = (await api('GET', '/api/stage').catch(() => ({}))).show || current || 'none';
+      const sr = await api('GET', '/api/stage').catch(() => null);
+      // GC PER: en el GC de OBS el texto va en la franja de abajo, en lugar del GC, hasta que se toque otro botón
+      const per = sr && sr.per && sr.per.on ? sr.per.text : '';
+      const show = !sr ? (current || 'none') : per ? `per:${document.body.dataset.venue || ''}:${per}` : sr.show || current || 'none';
       if (show !== current) {
         current = show;
         if (typeof stop === 'function') stop();
         stop = null;
         app.innerHTML = '';
-        if (show === 'bingo') stop = await views.gc();
+        if (per) {
+          const v = document.body.dataset.venue || 'kennedy';
+          document.body.classList.add('gc-screen');
+          app.innerHTML = `<div id="lg" class="th-${v}">${window.gcPer.card(v, per)}</div>`;
+          stop = () => document.body.classList.remove('gc-screen');
+        } else if (show === 'bingo') stop = await views.gc();
         else if (show === 'rueda') stop = await views.obs();
         else if (show === 'sorteo') stop = await views.sorteo();
         else if (show === 'qr') stop = await views.qrBig();
         else if (show === 'karaoke') stop = await views.karaokeGC();
         else if (show === 'voto') stop = await views.votoGC();
+        else if (show === 'enpie') stop = await views.enpieGC();
+        else if (show === 'desafio') stop = await views.desafioGC();
         else if (show === 'juego') stop = await views.juegoDraw('gc');
         else if (show === 'votojuego') stop = await views.gameVote('gc');
         else if (show === 'insta') stop = await views.instaGC();
         else if (show === 'show') stop = await views.showGC();
-        joinQr({ sorteo: 'br', rueda: 'bl', show: 'above', votojuego: 'br' }[show]);
+        joinQr({ sorteo: 'br', rueda: 'bl', show: 'above', votojuego: 'br', enpie: 'above', desafio: 'tl' }[show]);
         document.body.classList.add('obs');
       }
-    } finally { busy = false; }
+      if (sr) carton(!!sr.carton);
+    } finally { busy = false; if (again) { again = false; apply(); } }
+  };
+  // «Cartón al centro» (pregunta 20 de Cote, 24 nov): en una pausa, la franja de abajo se cambia por un cartón mediano al
+  // centro con la información del juego en ese momento, el QR y el nombre del juego
+  let cartonT = null;
+  const carton = (on) => {
+    let el = document.getElementById('carton');
+    if (!on) { if (el) el.remove(); document.body.classList.remove('carton-on'); clearInterval(cartonT); cartonT = null; return; }
+    if (!el) {
+      el = document.createElement('div'); el.id = 'carton';
+      el.innerHTML = `<div class="ct-card"><div class="ct-info"><small class="ct-title"></small><span class="ct-small"></span><b class="ct-big"></b><div class="ct-lines"></div></div><div class="ct-qr">${qr(joinUrl())}<span>Escanea el código QR con tu celular</span></div></div>`;
+      document.body.appendChild(el); document.body.classList.add('carton-on');
+    }
+    const paint = async () => {
+      const c = await api('GET', '/api/carton').catch(() => null);
+      const box = document.getElementById('carton');
+      if (!c || !box) return;
+      box.className = `th-${c.venue}`;
+      const set = (sel, t) => { const x = box.querySelector(sel); if (x && x.textContent !== t) x.textContent = t; };
+      set('.ct-title', window.sinEmoji(c.title)); set('.ct-small', c.small || ''); set('.ct-big', c.big || '');
+      const lines = c.lines.map((l) => `<p>${esc(l)}</p>`).join('');
+      const lb = box.querySelector('.ct-lines'); if (lb.innerHTML !== lines) lb.innerHTML = lines;
+      box.querySelectorAll('.ct-title, .ct-big').forEach((x) => window.fitOneLine(x));
+    };
+    paint();
+    if (!cartonT) cartonT = setInterval(paint, 1500);
   };
   await apply();
   const timer = setInterval(apply, 2000);
-  return () => { clearInterval(timer); if (typeof stop === 'function') stop(); joinQr(); document.body.classList.remove('obs'); };
+  const offAviso = window.onAviso(apply);
+  return () => { clearInterval(timer); offAviso(); if (typeof stop === 'function') stop(); joinQr(); carton(false); document.body.classList.remove('obs'); };
 };
 
 // Red de seguridad para los nombres en pantalla: el CSS ya calcula la letra según el largo, pero si un
@@ -1955,6 +2214,7 @@ async function route() {
   app.onclick = null;
   const [name, arg] = location.hash.replace(/^#\/?/, '').split('/');
   const screen = !arg && (name === 'gc' || name === 'obs') ? 'escena' : name;
+  document.body.dataset.view = screen || 'home'; // qué vista es (el celular del público lleva el diseño nuevo: tema-celular.css)
   const view = views[screen || 'home'] || views.home;
   window.scrollTo(0, 0);
   try { cleanup = await view(arg); } catch (e) {
@@ -1969,7 +2229,11 @@ window.addEventListener('DOMContentLoaded', route);
 // Logo del local en las pantallas de sus actividades (pedido de Cote: el de Mercado Kennedy, siempre en las
 // actividades de Kennedy). Solo en pantallas (tablero, OBS, GC de la sala light, karaoke de la pantalla vertical),
 // nunca en celulares ni paneles. El local sale de la dirección (#/light-gc/kennedy) o de la sala completa abierta.
-const VENUE_LOGOS = { kennedy: 'logo-kennedy.png' };
+const VENUE_LOGOS = { kennedy: 'logo-kennedy.png', frida: 'logo-frida.png' }; // el de Frida Kahlo lo mandó Cote el 23 nov
+// Frida (Cote, 23 nov: «y esto encima»): el dibujo azul va encima de las letras. Donde hay espacio (GC de OBS, arriba a la
+// derecha) va así, más alto que el de KRB Stage; en la franja de abajo de los tableros y pantallas de pie no cabe un logo
+// alto, así que ahí el dibujo va al lado de las letras, al mismo alto.
+const VENUE_LOGOS_STRIP = { frida: 'logo-frida-h.png' };
 const SCREEN_ROUTES = ['tablero', 'escena', 'gc', 'obs', 'light-gc', 'karaoke-v', 'light-v'];
 let venueOfSala = '';
 let venueAt = 0;
@@ -1995,14 +2259,15 @@ async function syncVenueMark() {
   if ((document.body.dataset.venue || '') !== v) document.body.dataset.venue = v;
   paintVenueBg();
   let el = document.getElementById('venue-mark');
-  const src = VENUE_LOGOS[v];
+  const strip = document.body.classList.contains('full');
+  const src = (strip && VENUE_LOGOS_STRIP[v]) || VENUE_LOGOS[v];
   if (!src) { if (el) el.remove(); document.body.classList.remove('has-vm'); return; }
   // Los dos logos juntos y al mismo alto, separados por una línea: KRB Stage | Mercado Kennedy
   if (!el) { el = document.createElement('div'); el.id = 'venue-mark'; el.setAttribute('aria-hidden', 'true'); document.body.appendChild(el); }
   if (el.dataset.src !== src) { el.dataset.src = src; el.innerHTML = `<img src="krb-stage.svg" alt=""><i></i><img src="${src}" alt="">`; }
   // Dónde va: en el tablero, en una franja abajo que se le deja libre; en OBS, arriba a la derecha (en el bingo, sobre la bolita)
   const spot = document.body.classList.contains('full') ? 'full' : document.getElementById('gc') ? 'obs-bingo' : 'obs';
-  el.className = `venue-mark vm-${spot}`;
+  el.className = `venue-mark vm-${spot}${v === 'frida' && !strip ? ' vm-alto' : ''}`;
   document.body.classList.add('has-vm');
 }
 window.addEventListener('hashchange', () => { setTimeout(syncVenueMark, 50); setTimeout(syncVenueMark, 700); }); // la segunda, cuando la pantalla ya se armó
@@ -2094,9 +2359,13 @@ const neuralBg = (() => {
   const weak = (navigator.deviceMemory && navigator.deviceMemory <= 2) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2);
   let c = null; let x = null; let mode = ''; let W = 0; let H = 0; let k = 1; let pts = []; let pulses = []; let raf = 0; let last = 0;
   let colors = PALETTES.frida; let boxes = []; let holes = []; let boxesAt = 0;
+  // Para que las pantallas vayan fluidas en cualquier equipo (pedido de Cote, 22 nov): si no hay nada que dibujar no se
+  // toca el lienzo (así el navegador no trabaja de más); en los monitores del GC Master (?mon=1) el fondo animado no va;
+  // y si el equipo no da abasto (menos de 22 cuadros por segundo de forma sostenida) se apaga solo y el fondo queda quieto
+  const MON = document.documentElement.classList.contains('mon');
+  let blank = true; let slow = false; let fT = 0; let fN = 0; let fPrev = 0; let bad = 0; let retry = 5;
   const build = () => {
-    const dpr = Math.min(2, devicePixelRatio || 1);
-    W = innerWidth; H = innerHeight; c.width = W * dpr; c.height = H * dpr; x.setTransform(dpr, 0, 0, dpr, 0, 0);
+    W = innerWidth; H = innerHeight; cw = -1; frameTo(0, 0, W, H); // en los GC se ajusta después a la zona de los recuadros
     k = Math.max(1, Math.min(W, H) / 700); // más grande que antes (pedido de Cote)
     // Pocos destellos a la vez, repartidos (pedido de Cote: uno acá, otro abajo, otro arriba; no cientos, que se ve sucio)
     let n = Math.round(Math.min(18, (W * H) / (60000 * k * k)));
@@ -2113,38 +2382,74 @@ const neuralBg = (() => {
     return { x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - 0.5) * 0.5 * k, vy: (Math.random() - 0.5) * 0.5 * k, c: Math.floor(Math.random() * 5), life, age: anyAge ? Math.random() * life : 0 };
   };
   const alphaOf = (a) => { const f = a.age / a.life; return f < 0.2 ? f / 0.2 : f > 0.75 ? Math.max(0, (1 - f) / 0.25) : 1; };
+  // El lienzo ocupa toda la pantalla en los tableros; en los GC, solo la zona donde están los recuadros (así el navegador
+  // recompone un pedazo y no la pantalla entera en cada cuadro). Se dibuja siempre en las coordenadas de la página.
+  let ox = 0; let oy = 0; let cw = -1; let ch = -1;
+  const frameTo = (l, t, w, h) => {
+    if (l === ox && t === oy && w === cw && h === ch) return;
+    const dpr = Math.min(2, devicePixelRatio || 1);
+    ox = l; oy = t; cw = w; ch = h;
+    c.width = Math.max(1, Math.round(w * dpr)); c.height = Math.max(1, Math.round(h * dpr));
+    if (mode === 'gc') Object.assign(c.style, { left: `${l}px`, top: `${t}px`, right: 'auto', bottom: 'auto', width: `${w}px`, height: `${h}px` });
+    x.setTransform(dpr, 0, 0, dpr, -l * dpr, -t * dpr); blank = true;
+  };
+  const inside = (o, b) => o.left <= b.left && o.top <= b.top && o.right >= b.right && o.bottom >= b.bottom;
   const readBoxes = () => {
-    boxes = Array.from(document.querySelectorAll(BOXES)).map((e) => ({ r: e.getBoundingClientRect(), rad: parseFloat(getComputedStyle(e).borderRadius) || 0 })).filter((b) => b.r.width > 0 && b.r.height > 0);
+    const shown = c && getComputedStyle(c).display !== 'none';
+    boxes = !shown ? [] : Array.from(document.querySelectorAll(BOXES)).map((e) => ({ r: e.getBoundingClientRect(), rad: parseFloat(getComputedStyle(e).borderRadius) || 0 })).filter((b) => b.r.width > 0 && b.r.height > 0);
+    // un recuadro que está entero dentro de otro no se dibuja aparte (quedaría con doble brillo)
+    boxes = boxes.filter((b, i) => !boxes.some((o, n) => n !== i && inside(o.r, b.r) && !(inside(b.r, o.r) && n > i)));
     holes = Array.from(document.querySelectorAll(NO_FX)).map((e) => e.getBoundingClientRect()).filter((r) => r.width > 0);
     boxesAt = Date.now();
+    if (boxes.length) {
+      // la zona que abarcan los recuadros, en pasos de 16 px para no rehacer el lienzo por cambios mínimos
+      const l = Math.max(0, Math.floor(Math.min(...boxes.map((b) => b.r.left)) / 16) * 16); const t = Math.max(0, Math.floor(Math.min(...boxes.map((b) => b.r.top)) / 16) * 16);
+      const r = Math.min(W, Math.ceil(Math.max(...boxes.map((b) => b.r.right)) / 16) * 16); const bt = Math.min(H, Math.ceil(Math.max(...boxes.map((b) => b.r.bottom)) / 16) * 16);
+      if (r > l && bt > t) frameTo(l, t, r - l, bt - t); else boxes = [];
+    }
   };
   const path = (r, rad) => { if (x.roundRect) x.roundRect(r.left, r.top, r.width, r.height, Math.min(rad, r.height / 2)); else x.rect(r.left, r.top, r.width, r.height); };
   const draw = () => {
     const R = 200 * k;
-    x.clearRect(0, 0, W, H);
     if (mode === 'gc') {
       if (Date.now() - boxesAt > 600) readBoxes();
-      if (!boxes.length) return;
-      x.save(); x.beginPath(); for (const b of boxes) path(b.r, b.rad); x.clip();
+      if (!boxes.length) { if (!blank) { x.clearRect(ox, oy, cw, ch); blank = true; } return; } // nada que dibujar: el lienzo queda quieto
     }
-    x.lineWidth = 2.2 * k;
+    blank = false;
+    x.clearRect(ox, oy, cw, ch);
+    // los tramos entre neuronas cercanas se calculan una vez por cuadro
+    const segs = [];
     for (let i = 0; i < pts.length; i++) {
       const a = pts[i];
       for (let j = i + 1; j < pts.length; j++) {
         const b = pts[j]; const d = Math.hypot(a.x - b.x, a.y - b.y);
-        if (d < R) { x.strokeStyle = `rgba(243,238,230,${(1 - d / R) * (mode === 'gc' ? 0.45 : 0.38) * Math.min(alphaOf(a), alphaOf(b))})`; x.beginPath(); x.moveTo(a.x, a.y); x.lineTo(b.x, b.y); x.stroke(); }
+        if (d < R) segs.push([a.x, a.y, b.x, b.y, (1 - d / R) * (mode === 'gc' ? 0.45 : 0.38) * Math.min(alphaOf(a), alphaOf(b))]);
       }
     }
-    for (const p of pulses) {
-      const px = p.a.x + (p.b.x - p.a.x) * p.t; const py = p.a.y + (p.b.y - p.a.y) * p.t;
-      x.globalAlpha = Math.min(alphaOf(p.a), alphaOf(p.b));
-      x.strokeStyle = `${colors[p.a.c]}aa`; x.lineWidth = 3 * k; x.beginPath(); x.moveTo(p.a.x, p.a.y); x.lineTo(px, py); x.stroke();
-      x.fillStyle = colors[p.a.c]; x.beginPath(); x.arc(px, py, 6.5 * k, 0, 7); x.fill();
+    // dibuja lo que toca la zona (l, t, r, b); lo que queda fuera ni se intenta
+    const m = 8 * k;
+    const net = (l, t, r, b) => {
+      x.lineWidth = 2.2 * k;
+      for (const s of segs) {
+        if (Math.max(s[0], s[2]) < l - m || Math.min(s[0], s[2]) > r + m || Math.max(s[1], s[3]) < t - m || Math.min(s[1], s[3]) > b + m) continue;
+        x.strokeStyle = `rgba(243,238,230,${s[4]})`; x.beginPath(); x.moveTo(s[0], s[1]); x.lineTo(s[2], s[3]); x.stroke();
+      }
+      for (const p of pulses) {
+        const px = p.a.x + (p.b.x - p.a.x) * p.t; const py = p.a.y + (p.b.y - p.a.y) * p.t;
+        if (Math.max(p.a.x, px) < l - m || Math.min(p.a.x, px) > r + m || Math.max(p.a.y, py) < t - m || Math.min(p.a.y, py) > b + m) continue;
+        x.globalAlpha = Math.min(alphaOf(p.a), alphaOf(p.b));
+        x.strokeStyle = `${colors[p.a.c]}aa`; x.lineWidth = 3 * k; x.beginPath(); x.moveTo(p.a.x, p.a.y); x.lineTo(px, py); x.stroke();
+        x.fillStyle = colors[p.a.c]; x.beginPath(); x.arc(px, py, 6.5 * k, 0, 7); x.fill();
+        x.globalAlpha = 1;
+      }
+      for (const a of pts) { if (a.x < l - m || a.x > r + m || a.y < t - m || a.y > b + m) continue; x.globalAlpha = 0.9 * alphaOf(a); x.fillStyle = colors[a.c]; x.beginPath(); x.arc(a.x, a.y, 5.5 * k, 0, 7); x.fill(); }
       x.globalAlpha = 1;
-    }
-    for (const a of pts) { x.globalAlpha = 0.9 * alphaOf(a); x.fillStyle = colors[a.c]; x.beginPath(); x.arc(a.x, a.y, 5.5 * k, 0, 7); x.fill(); }
-    x.globalAlpha = 1;
-    if (mode === 'gc') { x.restore(); for (const h of holes) x.clearRect(h.left - 2, h.top - 2, h.width + 4, h.height + 4); }
+    };
+    if (mode !== 'gc') { net(-1e9, -1e9, 1e9, 1e9); return; }
+    // En los GC: recuadro por recuadro, con un recorte simple cada uno (recortar todo junto con una sola forma compuesta
+    // era carísimo: más de un núcleo y medio de trabajo permanente en el GC de El Rosko)
+    for (const bx of boxes) { x.save(); x.beginPath(); path(bx.r, bx.rad); x.clip(); net(bx.r.left, bx.r.top, bx.r.right, bx.r.bottom); x.restore(); }
+    for (const h of holes) x.clearRect(h.left - 2, h.top - 2, h.width + 4, h.height + 4);
   };
   const newPulse = () => {
     if (!pts.length) return;
@@ -2156,7 +2461,11 @@ const neuralBg = (() => {
     raf = 0;
     if (!c || document.hidden) return;
     raf = requestAnimationFrame(step);
-    if (now - last < 33) return; // 30 cuadros por segundo como máximo
+    // Vigilante: cuenta los cuadros que el equipo logra dar; con 3 tramos seguidos de 3 s bajo 22 por segundo, se apaga
+    const gap = now - fPrev; fPrev = now;
+    if (gap > 0 && gap < 400) { fT += gap; fN++; } else { fT = 0; fN = 0; } // un salto largo es una pausa (pantalla oculta), no lentitud
+    if (fT >= 3000) { bad = fT / fN > 45 && now > 15000 ? bad + 1 : 0; fT = 0; fN = 0; if (bad >= 3) { goSlow(); return; } }
+    if (now - last < 29) return; // 30 cuadros por segundo como máximo
     last = now;
     for (let i = 0; i < pts.length; i++) {
       const a = pts[i];
@@ -2170,9 +2479,16 @@ const neuralBg = (() => {
     draw();
   };
   const stop = () => { cancelAnimationFrame(raf); raf = 0; if (c) c.remove(); c = null; mode = ''; };
+  // Equipo lento: sin fondo animado (clase «lento»: el fondo de las pantallas también queda quieto). Se vuelve a probar
+  // a los 5 min, después a los 20 y de ahí cada hora, por si la lentitud fue pasajera
+  const goSlow = () => {
+    slow = true; document.documentElement.classList.add('lento'); stop();
+    setTimeout(() => { slow = false; document.documentElement.classList.remove('lento'); sync(); }, retry * 60000);
+    retry = retry < 20 ? 20 : 60;
+  };
   const sync = () => {
     const cl = document.body.classList;
-    const want = cl.contains('full') ? 'full' : cl.contains('obs') ? 'gc' : '';
+    const want = MON || slow ? '' : cl.contains('full') ? 'full' : cl.contains('obs') ? 'gc' : '';
     colors = PALETTES[document.body.dataset.venue] || PALETTES.frida;
     if (want === mode) return;
     stop();
@@ -2181,7 +2497,7 @@ const neuralBg = (() => {
     c = document.createElement('canvas'); c.id = 'neural-bg'; c.setAttribute('aria-hidden', 'true');
     if (mode === 'gc') c.className = 'neural-gc';
     document.body.insertBefore(c, document.body.firstChild);
-    x = c.getContext('2d'); build();
+    x = c.getContext('2d'); build(); blank = true; fT = 0; fN = 0; bad = 0;
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) { for (let i = 0; i < 10; i++) newPulse(); pulses.forEach((p, i) => { p.t = 0.3 + (i % 5) * 0.12; }); draw(); } else raf = requestAnimationFrame(step);
   };
   addEventListener('resize', () => { if (c) { build(); boxesAt = 0; draw(); } });
@@ -2218,7 +2534,7 @@ if (new URLSearchParams(location.search).has('diag')) {
 // Pedido de Cote (20 nov): botoncito «Refrescar página» en todos los paneles del moderador (en la aplicación instalada
 // no hay cómo recargar). El Centro de control ya lo trae en su encabezado.
 (() => {
-  const PANELS = /^#\/?($|juegos|figura|anfitrion|ronda|proyectos|nuevo|admin|votoctl|ruedactl|ruedas|sorteoctl|karaokectl|showctl|instactl|light$|consola|verticalctl)/;
+  const PANELS = /^#\/?($|juegos|simulada|figura|anfitrion|ronda|proyectos|nuevo|admin|votoctl|enpiectl|desafioctl|ruedactl|ruedas|sorteoctl|karaokectl|showctl|instactl|light$|consola|verticalctl)/;
   const sync = () => {
     let b = document.getElementById('ctl-reload-fixed');
     const on = PANELS.test(location.hash || '#/') && !document.body.classList.contains('full') && !document.body.classList.contains('obs') && !!store.get('adminToken');
@@ -2233,4 +2549,52 @@ if (new URLSearchParams(location.search).has('diag')) {
   };
   window.addEventListener('hashchange', () => setTimeout(sync, 300));
   setTimeout(sync, 600);
+})();
+
+// «Cartón al centro» (pregunta 20 de Cote, 24 nov): botón en los paneles de los juegos (arriba, junto a «Refrescar»):
+// en una pausa cambia la franja del GC de OBS por un cartón al centro con la información del juego, el QR y su nombre;
+// el mismo botón lo quita y sale solo cuando cambia lo que está en pantalla
+(() => {
+  const GAMES = /^#\/?(juegos|anfitrion|admin|votoctl|enpiectl|desafioctl|ruedactl|ruedas|sorteoctl)/;
+  let on = false;
+  const paint = () => { const b = document.getElementById('ctl-carton'); if (b) { b.classList.toggle('on', on); b.textContent = on ? '🗂️ Cartón al centro: quitar' : '🗂️ Cartón al centro'; } };
+  const sync = async () => {
+    let b = document.getElementById('ctl-carton');
+    const show = GAMES.test(location.hash || '') && !document.body.classList.contains('full') && !document.body.classList.contains('obs') && !!store.get('adminToken');
+    if (!show) { if (b) b.remove(); return; }
+    if (!b) {
+      b = document.createElement('button'); b.id = 'ctl-carton'; b.type = 'button'; b.className = 'ctl-reload ctl-carton';
+      b.onclick = async () => { try { const r = await api('POST', '/api/carton', { on: !on }); on = !!r.on; paint(); toast(on ? '🗂️ Cartón al centro en el GC' : 'Volvió la franja del GC'); } catch (err) { fail(err); } };
+      document.body.appendChild(b);
+    }
+    const r = await api('GET', '/api/stage').catch(() => null);
+    if (r) on = !!r.carton;
+    paint();
+  };
+  window.addEventListener('hashchange', () => setTimeout(sync, 300));
+  setTimeout(sync, 700); setInterval(() => { if (document.getElementById('ctl-carton') && !document.hidden) sync(); }, 4000);
+})();
+
+// ---------- El botón que sigue: siempre verde y siempre en el mismo lugar ----------
+// Pedido de Cote (23 nov): «el botón que el animador tiene que apretar tiene que estar en verde… debería estar siempre en
+// el mismo lugar». Los paneles marcan con la clase «paso» el botón del paso que sigue (bingo: generar número, desempatar,
+// confirmar ganador; sorteo de concursantes; Festival y objeto; sorteo y votación del juego; volver al juego en curso).
+// Aquí se elige uno solo (el de menor «data-paso»; primero los que se pueden apretar) y se deja fijo arriba de la
+// página, a todo el ancho; el resto del panel baja lo que mide el botón. El Rosko queda como está (ahí son 3 botones).
+(() => {
+  let queued = false; let cur = null;
+  const pick = () => {
+    queued = false;
+    const all = [...app.querySelectorAll('.paso')].filter((b) => b.getClientRects().length);
+    const pri = (b) => Number(b.dataset.paso || 5);
+    const best = all.filter((b) => !b.disabled).sort((x, y) => pri(x) - pri(y))[0] || all.sort((x, y) => pri(x) - pri(y))[0] || null;
+    if (best !== cur) { if (cur) cur.classList.remove('paso-fijo'); cur = best; if (cur) cur.classList.add('paso-fijo'); }
+    document.body.classList.toggle('con-paso', !!cur);
+    const h = cur ? `${Math.ceil(cur.getBoundingClientRect().height)}px` : '';
+    if (document.documentElement.style.getPropertyValue('--paso-h') !== h) document.documentElement.style.setProperty('--paso-h', h);
+  };
+  const later = () => { if (!queued) { queued = true; requestAnimationFrame(pick); } };
+  // al redibujarse un panel el botón nuevo queda fijo antes de que se pinte la pantalla (sin saltos)
+  new MutationObserver(() => { if (!queued) pick(); }).observe(app, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'disabled', 'class', 'open'] });
+  window.addEventListener('resize', later);
 })();

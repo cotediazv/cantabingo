@@ -398,3 +398,19 @@ html.t2 #vg .vk-tie span { font: 800 2.7vh/1.3 var(--t-txt); color: var(--t-text
 html.t2 #vf .vf-main > .vf-tie { order: 9; margin-top: 2.4vh; padding: 0 3vh; font: 800 2.9vh/1.3 var(--t-txt); color: var(--t-texto); text-wrap: balance; }
 html.t2 #vf .vf-tie .t { margin-bottom: 1vh; font: 700 2.1vh/1.2 var(--t-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--t-foco); }
 @media (orientation: portrait) { html.t2 #vf .vf-main > .vf-tie { font-size: 3.4vw; } html.t2 #vf .vf-tie .t { font-size: 2.6vw; } }
+
+/* «El último en pie» (versión de prueba): letras de la marca */
+html.t2 #ep .ep-top > b, html.t2 #ep .ep-q > b, html.t2 #ep .ep-intro b, html.t2 #ep .ep-win b, html.t2 #ep .ep-clock, html.t2 #ep .ep-rank li b, html.t2 #epg .epg-tag b, html.t2 #epg .epg-main > b, html.t2 #epg .epg-side b { font-family: var(--t-disp); letter-spacing: .01em; }
+html.t2 #ep .ep-q > b, html.t2 #epg .epg-main > b { text-transform: uppercase; }
+html.t2 #ep .ep-c, html.t2 #ep .ep-tag, html.t2 #ep .ep-side > small, html.t2 #ep .ep-intro small, html.t2 #ep .ep-win small, html.t2 #epg small { font-family: var(--t-mono); }
+html.t2 #ep .ep-opt, html.t2 #ep .ep-intro ul, html.t2 #epg .epg-opts { font-family: var(--t-txt); }
+html.t2 #ep .ep-n b, html.t2 #ep .ep-f b { font-family: var(--t-disp); } html.t2 #ep .ep-n span, html.t2 #ep .ep-f span, html.t2 #ep .ep-cut > small, html.t2 #ep .ep-fin > small { font-family: var(--t-mono); }
+html.t2 #ep .ep-side.wait > b { font-family: var(--t-disp); }
+html.t2 #ep .ep-crowd-n b, html.t2 #ep .ep-crowd-n span, html.t2 #ep .ep-crowd-b b { font-family: var(--t-disp); } html.t2 #ep .ep-crowd-b span, html.t2 #ep .ep-crowd-s { font-family: var(--t-mono); }
+/* La votación del juego en el GC en franja baja (Cote, 24 nov) */
+html.t2 #gv.gv-gc .gv-card { padding: 2vh 3vh 1.6vh; }
+html.t2 #gv.gv-gc .gv-big { font-size: 4.4vh; }
+html.t2 #gv.gv-gc .gv-in b { font-size: min(3.6vh, 2.6vw); }
+html.t2 #gv.gv-gc .gv-name { font-size: 1.9vh; }
+html.t2 #gv.gv-gc .gv-intro .gv-lines { font-size: 1.9vh; }
+html.t2 #gv.gv-gc .gv-intro .gv-lines li { margin-bottom: .5vh; }

@@ -25,7 +25,7 @@
   views.vertical = async (local) => {
     const v = pick(local);
     document.body.classList.add('rot-screen');
-    app.innerHTML = `<iframe class="rot-frame" title="Pantalla vertical" src="${location.pathname}?mudo=1#/vertical-in/${v}"></iframe>`;
+    app.innerHTML = `<iframe class="rot-frame" title="Pantalla vertical" src="${location.pathname}?mudo=1${window.__mon || ''}#/vertical-in/${v}"></iframe>`;
     return () => document.body.classList.remove('rot-screen');
   };
 
@@ -43,9 +43,11 @@
     let ver = 0;
     let alive = true;
     let lightId = '';
+    let seq = 0; // si dos lecturas se cruzan (la de cada 3 s y la del aviso inmediato), vale solo la última
     const apply = async () => {
+      const n = ++seq;
       const st = await api('GET', `/api/vertical/${v}`).catch(() => null);
-      if (!alive || !st) return;
+      if (!alive || !st || n !== seq) return;
       if (st.video !== ver) {
         ver = st.video;
         // La página web (krbstage.cl) puede pasar una copia liviana del mismo video (?liviano=<dirección>&lver=<versión>),
@@ -64,24 +66,28 @@
       // Fondo de la sala light cuando toca; sin video subido y sin actividad en este local: el logo (no el tablero de la
       // sala abierta, que puede ser de otro local)
       const want = st.show === 'video' ? 'video' : st.show === 'light' ? `#/light-v/${venue}` : st.show === 'light-qr' ? `#/light-v/${venue}/qr` : st.show === 'light-show' ? `#/light-v/${venue}/show` : st.show === 'light-kar' ? `#/light-v/${venue}/karaoke` : st.show === 'karaoke' ? `#/karaoke-v/${venue}/${lightId}` : !st.activity ? 'video' : '#/tablero';
+      // GC PER: se agrega como una franja abajo, sobre lo que la pantalla esté mostrando (si adentro va el tablero de la
+      // sala de juegos, la franja de la sala la pone el mismo tablero)
+      window.gcPer.over(st.per && !(st.per.from === 'main' && /^#\/tablero/.test(want)) ? st.per.text : '', venue);
       if (want === shown) return;
       shown = want;
       const isVideo = want === 'video';
       video.hidden = !isVideo || !ver;
       empty.hidden = !isVideo || !!ver;
       frame.hidden = isVideo;
-      if (isVideo) { frame.src = 'about:blank'; if (ver) video.play().catch(() => {}); } else { video.pause(); frame.src = `${location.pathname}?mudo=1${want}`; }
+      if (isVideo) { frame.src = 'about:blank'; if (ver) video.play().catch(() => {}); } else { video.pause(); frame.src = `${location.pathname}?mudo=1${window.__mon || ''}${want}`; }
     };
     await apply();
     const timer = setInterval(apply, 3000);
-    return () => { alive = false; clearInterval(timer); document.body.classList.remove('vert-in'); };
+    const offAviso = window.onAviso(apply);
+    return () => { alive = false; clearInterval(timer); offAviso(); window.gcPer.over(''); document.body.classList.remove('vert-in'); };
   };
 
   // Karaoke de la sala light de un local a pantalla completa (lo usa la pantalla vertical)
   views['karaoke-v'] = async () => {
     const [, local, id] = location.hash.replace(/^#\/?/, '').split('/'); // #/karaoke-v/<local>/<sala light>
     document.body.classList.add('full');
-    const stop = await views.karaokeFull(pick(local), id ? `${base()}#/l/${id}` : '');
+    const stop = await views.karaokeFull(pick(local), id ? `${window.pubBase()}#/l/${id}` : '');
     return () => { document.body.classList.remove('full'); if (typeof stop === 'function') stop(); };
   };
 

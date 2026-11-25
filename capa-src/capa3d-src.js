@@ -25,6 +25,10 @@ function create(canvas, fontData, opts) {
   const font = new Font(fontData);
   const group = new Group(); scene.add(group);
   let meshes = [];
+  // Una pieza mínima (no se ve) que queda siempre en la escena: así el programa de dibujo se prepara una sola vez, con
+  // «warm()» al abrir el GC, y el primer texto no se queda pegado mientras el computador lo prepara
+  const keep = new Mesh(new TextGeometry('A', { font, size: 10, depth: 2 }), new MeshStandardMaterial({ color: 0xffffff, metalness: 0.85, roughness: 0.22 }));
+  keep.scale.setScalar(0.0001); scene.add(keep);
 
   function setText(lines, colors) {
     meshes.forEach((m) => { group.remove(m); m.geometry.dispose(); m.material.forEach((x) => x.dispose()); });
@@ -53,19 +57,30 @@ function create(canvas, fontData, opts) {
     camera.position.z = Math.max(600, (fit / 2) / Math.tan((32 * Math.PI / 180) / 2) + 200);
   }
 
+  let kNow = opts.scale || Math.min(window.devicePixelRatio || 1, 1.5); // a qué tamaño se dibuja (1 = el de la pantalla)
   function resize() {
     const w = canvas.clientWidth || 1280, h = canvas.clientHeight || 720;
     // con «scale» se dibuja más chico y el navegador lo estira: mucho más liviano para el computador de OBS
-    const k = opts.scale || Math.min(window.devicePixelRatio || 1, 1.5);
+    const k = kNow;
     renderer.setPixelRatio(1);
     renderer.setSize(Math.round(w * k), Math.round(h * k), false);
     camera.aspect = w / h; camera.updateProjectionMatrix();
   }
 
-  let t0 = 0, raf = 0, running = false, dur = 0;
+  let t0 = 0, raf = 0, running = false, dur = 0, shown = 0, slowT = 0, slowN = 0;
+  // con «fps» se dibuja como máximo esa cantidad de cuadros por segundo (OBS transmite a 30: a 60 era el doble de trabajo)
+  const gapMin = opts.fps ? 1000 / opts.fps - 4 : 0;
   function frame(now) {
     if (!running) return;
     if (!t0) t0 = now;
+    if (gapMin && now - shown < gapMin && !(dur && (now - t0) / 1000 >= dur)) { raf = requestAnimationFrame(frame); return; }
+    // Si el computador no alcanza a dibujar 22 cuadros por segundo, se dibuja más chico (el navegador lo estira): se ve
+    // un poco menos nítido pero fluido. Queda así para los textos siguientes.
+    const gap = now - shown;
+    // (se cuentan los cuadros lentos de cada 12: un tirón aislado, como el del primer cuadro, no cuenta)
+    if (shown && gap < 400) { slowN++; if (gap > 45) slowT++; } else { slowT = 0; slowN = 0; }
+    if (slowN >= 12) { const many = slowT >= 8; slowT = 0; slowN = 0; if (many && kNow > 0.42) { kNow = Math.max(0.4, kNow * 0.75); resize(); } }
+    shown = now;
     const t = (now - t0) / 1000;
     // con duración: al final gira hacia afuera, se achica y deja la pantalla limpia
     if (dur && t >= dur) { running = false; renderer.clear(); return; }
@@ -82,9 +97,12 @@ function create(canvas, fontData, opts) {
   return {
     gpu,
     setText,
-    start() { resize(); t0 = 0; dur = 0; running = true; cancelAnimationFrame(raf); raf = requestAnimationFrame(frame); },
+    scale() { return kNow; },
+    // prepara el dibujo (compila los programas de la tarjeta de video) sin mostrar nada
+    warm() { try { resize(); renderer.compile(scene, camera); renderer.render(scene, camera); renderer.clear(); } catch (e) { /* se prepara al usarse */ } },
+    start() { resize(); t0 = 0; dur = 0; shown = 0; running = true; cancelAnimationFrame(raf); raf = requestAnimationFrame(frame); },
     // lo muestra «ms» milisegundos: entra girando, se mece y sale solo
-    play(ms) { resize(); t0 = 0; dur = ms / 1000; running = true; cancelAnimationFrame(raf); raf = requestAnimationFrame(frame); },
+    play(ms) { resize(); t0 = 0; dur = ms / 1000; shown = 0; running = true; cancelAnimationFrame(raf); raf = requestAnimationFrame(frame); },
     stop() { running = false; cancelAnimationFrame(raf); try { renderer.clear(); } catch (e) { /* nada */ } },
     resize,
   };

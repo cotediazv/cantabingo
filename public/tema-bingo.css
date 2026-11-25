@@ -75,7 +75,7 @@ html.t2 #gc .gc-prev[hidden] { order: 1; display: flex !important; /* styles.css
 html.t2 #gc .ball.gcprev { --d: 8vh; background: #1c1828; }
 /* Antes del primer número */
 html.t2 #gc .gc-prev[hidden]:empty { display: none !important; }
-html.t2 #gc .gc-soon { order: 2; position: static; inset: auto; display: block; margin: 0 -1.3vh -1.3vh 0; padding: 1.8vh 3vh 1.8vh 2.4vh; text-align: left; background: rgba(12, 11, 18, .96); border-left: .6vh solid var(--t-foco);
+html.t2 #gc .gc-soon { order: 2; position: static; top: auto; right: auto; bottom: auto; left: auto; display: block; margin: 0 -1.3vh -1.3vh 0; padding: 1.8vh 3vh 1.8vh 2.4vh; text-align: left; background: rgba(12, 11, 18, .96); border-left: .6vh solid var(--t-foco);
   font: 900 4.6vh/1.1 var(--t-disp); text-transform: uppercase; color: var(--t-foco); text-shadow: none; animation: none; }
 /* «A continuación» y los logos, arriba */
 html.t2 #gc .next-up { position: absolute; left: 5vh; right: auto; top: 5vh; bottom: auto; transform: none; max-width: 100vh; gap: 1.6vh; padding: 1.1vh 2.2vh 1.1vh 1.8vh; border: 0; border-left: .5vh solid var(--t-c); border-radius: 0; clip-path: none;
@@ -302,4 +302,12 @@ html.t2 .join-qr b { font: 800 1.55vh/1.2 var(--t-txt); letter-spacing: 0; text-
   html.t2 #fb .bwin::before, html.t2 #fb .fb-row > span.last, html.t2 #gc .gc-ballwrap.pop, html.t2 #fb .fb-ballwrap.pop { animation: none; }
   html.t2 #gc .gc-winlow { animation: t2b-sale .01s linear 15s forwards; }
   html.t2 #gc .gc-winlow.hold { animation: none; }
+}
+
+/* Pantalla de pie: la figura un poco más grande (pedido de Cote, 25 nov: «se ve bien, pero más grande») */
+@media (orientation: portrait) and (min-width: 300px) {
+  html.t2 #fb .fb-figure { gap: .5vh 2vh; }
+  html.t2 #fb .fb-figure > span { font-size: 1.5vh; }
+  html.t2 #fb .fb-figure .gc-grid { width: 9vh; gap: .35vh; }
+  html.t2 #fb .fb-figure b { font-size: 3.5vh; }
 }

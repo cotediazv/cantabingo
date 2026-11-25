@@ -1,6 +1,6 @@
 // Presentación de los juegos antes de votar (pedido de Cote, 21 nov): al entrar en «Por votación», primero salen las
 // reglas para el público y después cada juego, uno por uno, con un dibujo simple de cómo funciona; al final, «¡A votar!».
-// Pasan solas cada 10 segundos (el animador puede adelantar con «Siguiente» o iniciar la votación cuando quiera).
+// Las pasa el animador, paso a paso (pedido de Cote, 24 nov), con «Siguiente»; después de la última parte la votación.
 // Escrito en JavaScript antiguo (ES5): lo usan la plataforma completa y la pantalla liviana (pv.html) de los navegadores
 // antiguos. Los dibujos son SVG; en la plataforma completa se mueven con las animaciones de styles.css (.gi …).
 (function (root) {
@@ -10,7 +10,7 @@
     return [
       { key: 'reglas', icon: '🗳️', title: '¡Tú eliges el próximo juego!', lines: ['Entra a la sala escaneando el código QR', 'Cuando parta la votación, toca en tu celular el juego que quieres', 'Tienes 30 segundos y puedes cambiar tu voto', 'Gana el que tenga más de la mitad de los votos; si ninguno, segunda vuelta entre los 2 más votados'] },
       { key: 'bingo', icon: '🎱', title: 'Bingo', lines: ['Cada uno tiene su cartón en el celular', 'Marca los números que van saliendo', 'Gana quien completa primero la figura: línea, cruz, corazón…'] },
-      { key: 'rosco', icon: '🎡', title: 'El Rosco', lines: ['Sorteamos 3 concursantes entre los conectados', 'Una pregunta por cada letra, contra el reloj: 2 minutos cada uno', 'Gana quien acierta más letras. Tú juegas la Trivia del Rosco desde el celular'] },
+      { key: 'rosco', icon: '🎡', title: 'El Rosko', lines: ['Sorteamos 3 concursantes entre los conectados', 'Una pregunta por cada letra, contra el reloj: 2 minutos cada uno', 'Gana quien acierta más letras. Tú juegas la Trivia del Rosko desde el celular'] },
       { key: 'festival', icon: '🎤', title: 'El Festival de ' + (venueShort || 'Frida'), lines: ['Concurso de karaoke: te inscribes desde el celular con tu canción', 'Cantas una canción corta y el público pone nota del 1 al 10', 'Gana el mejor promedio'] },
       { key: 'objeto', icon: '🗳️', title: 'El objeto más extraño', lines: ['Te inscribes desde el celular con el objeto más raro que tengas a mano', 'Lo muestras en el escenario y el público pone nota del 1 al 10', 'Los 2 mejores van a la gran final y el público elige al ganador'] },
       { key: 'votar', icon: '🗳️', title: '¡A votar!', lines: ['La votación dura 30 segundos', 'Toca en tu celular el juego que quieres jugar'] },
@@ -70,6 +70,7 @@
   // Lámina que toca según el tiempo: parte en «step» y avanza sola cada MS; la última queda hasta que parte la votación
   function stepOf(intro, now) {
     if (!intro) return 0;
+    if (intro.current != null) return intro.current; // paso a paso: la que eligió el animador (Cote, 24 nov)
     var n = (intro.step || 0) + Math.floor(Math.max(0, now - intro.at) / MS);
     return Math.min(n, 5);
   }

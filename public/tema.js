@@ -16,11 +16,30 @@
     window.dispatchEvent(new CustomEvent('tema', { detail: { on } }));
   };
   let last = null;
+  // Dirección de los QR (pedido de Cote, 22 nov: juegos.krbstage.cl): llega junto con el diseño. Si cambia mientras una
+  // pantalla con QR está abierta (tablero, GC, pantallas del local), esa pantalla se recarga sola una vez para rehacer
+  // sus QR (solo si la dirección quedó guardada en el navegador: así nunca se recarga en círculo).
+  let pub = null;
+  const setPub = (u) => {
+    const was = window.__pub || ''; window.__pub = u; let kept = false;
+    try { localStorage.setItem('pub', u); kept = localStorage.getItem('pub') === u; } catch (e) { kept = false; }
+    if (u !== was && kept && document.querySelector('body.full, body.obs, body.vert-in, body.rot-screen')) location.reload();
+  };
   const sync = async () => {
     try {
       const r = await (await fetch('/api/tema', { cache: 'no-store' })).json();
+      if (typeof r.pub === 'string' && r.pub !== pub) { pub = r.pub; setPub(r.pub); paintPub(); }
       if (typeof r.on === 'boolean' && r.on !== last) { last = r.on; set(r.on); paint(); }
     } catch (e) { /* sin conexión: queda como está */ }
+  };
+  // Centro de control: a dónde apuntan los QR
+  const PUBS = [['', 'cantabingo.onrender.com', 'la de siempre'], ['https://saladejuegos.krbstage.cl', 'saladejuegos.krbstage.cl', 'la de los participantes']];
+  const paintPub = () => {
+    const box = document.getElementById('pub-box');
+    if (!box || pub === null) return;
+    box.innerHTML = `<h2>Dirección de los QR</h2>
+      <p class="muted small">A dónde lleva el código QR que escanea el público. La sala es la misma en las dos; las direcciones de OBS y de las pantallas no cambian. Antes de cambiar, se comprueba que la dirección responde.</p>
+      <div class="row">${PUBS.map(([u, name, nota]) => `<button type="button" class="${pub === u ? 'primary' : ''}" data-pub="${u}">${name}${pub === u ? ' · puesta' : ` · ${nota}`}</button>`).join('')}</div>`;
   };
   // Centro de control: recuadro para encender o apagar el diseño nuevo
   const paint = () => {
@@ -41,6 +60,13 @@
       try { const r = await api('POST', '/api/tema', { on: b.dataset.tema === '1' }); last = r.on; set(r.on); paint(); toast(r.on ? 'Diseño nuevo en todas las pantallas' : 'Diseño anterior en todas las pantallas'); } catch (err) { toast(err.message); }
     };
     paint();
+    const pbox = document.createElement('div'); pbox.className = 'panel'; pbox.id = 'pub-box';
+    box.parentNode.insertBefore(pbox, box.nextSibling);
+    pbox.onclick = async (e) => {
+      const b = e.target.closest('button[data-pub]'); if (!b || b.dataset.pub === pub) return;
+      try { b.disabled = true; const r = await api('POST', '/api/pub', { url: b.dataset.pub }); pub = r.pub; setPub(r.pub); paintPub(); toast(r.pub ? `Los QR ahora llevan a ${r.pub.replace('https://', '')}` : 'Los QR vuelven a cantabingo.onrender.com'); } catch (err) { toast(err.message); paintPub(); }
+    };
+    paintPub();
   };
   sync(); setInterval(sync, 10000); setInterval(mount, 1000);
 })();

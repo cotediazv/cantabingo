@@ -15,6 +15,11 @@
   let stopNow = null; // corta la pieza que está en pantalla
   let gl = null; // el 3D se crea una sola vez y se reutiliza
   let glTried = false;
+  // Para que vaya fluido en cualquier equipo (pedido de Cote, 22 nov): los efectos se dibujan a 30 cuadros por segundo, que
+  // es lo que transmite OBS (a 60 el computador hacía el doble de trabajo sin que se viera); en los monitores del GC
+  // Master (?mon=1) van a 15 y el texto sale plano, para no dibujar el 3D dos veces en el mismo computador
+  const MON = document.documentElement.classList.contains('mon');
+  const FRAME = MON ? 62 : 29; // milisegundos mínimos entre cuadros
 
   // Solo en los GC de OBS; el local sale de la ruta o del que ya calculó la página (sala de juegos)
   const where = () => {
@@ -52,11 +57,12 @@
     const step = setup(g, 1280, 720, (COL[venue] || COL.kennedy)[0]);
     let raf = 0; let t0 = 0; let prev = 0;
     const loop = (now) => {
-      if (!t0) { t0 = now; prev = now; }
-      const dt = Math.min(0.05, (now - prev) / 1000); prev = now;
+      raf = requestAnimationFrame(loop);
+      if (!t0) { t0 = now; prev = now - 33; }
+      if (now - prev < FRAME) return;
+      const dt = Math.min(0.1, (now - prev) / 1000); prev = now;
       g.clearRect(0, 0, 1280, 720);
       step((now - t0) / 1000, dt);
-      raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     timed(el, DUR[kind], () => cancelAnimationFrame(raf));
@@ -153,13 +159,13 @@
   };
   const loadScript = (src) => new Promise((ok, no) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = no; document.head.appendChild(s); });
   const ready3d = async () => {
-    if (gl || glTried) return gl;
+    if (gl || glTried || MON) return gl;
     glTried = true;
     try {
       if (!window.Capa3D) await loadScript('capa/capa3d.js');
       const font = await (await fetch('capa/fuente-3d.json')).json();
       const canvas = document.createElement('canvas'); canvas.className = 'cp-gl';
-      gl = { canvas, api: window.Capa3D.create(canvas, font, { scale: 0.75 }) };
+      gl = { canvas, api: window.Capa3D.create(canvas, font, { scale: 0.75, fps: 30 }) };
     } catch (e) { gl = null; }
     return gl;
   };
@@ -191,12 +197,12 @@
     else if (c.kind === 'luces') luces();
   };
 
-  let busy = false;
+  let busy = false; let again = false;
   const tick = async () => {
     const v = where();
     if (!v) { if (venue) { clear(); const el = document.getElementById('capa'); if (el) el.remove(); venue = ''; last = null; } return; }
     if (v !== venue) { clear(); venue = v; last = null; }
-    if (busy) return;
+    if (busy) { again = true; return; }
     busy = true;
     try {
       const c = await (await fetch(`/api/capa?local=${v}`, { cache: 'no-store' })).json();
@@ -206,10 +212,15 @@
       last = c.id;
       // solo lo recién disparado (si la página estuvo sin conexión, no sale algo viejo de golpe)
       if (c.kind === 'off' || c.now - c.at > 6000) clear(); else play(c);
-    } catch (e) { /* sin conexión: se reintenta */ } finally { busy = false; }
+    } catch (e) { /* sin conexión: se reintenta */ } finally { busy = false; if (again) { again = false; tick(); } }
   };
   setInterval(tick, 1000);
-  // A los 8 s de abierto el GC se dejan bajadas las piezas del 3D, para que el primer texto no se demore en salir
-  setTimeout(() => { if (where()) { fetch('capa/capa3d.js').catch(() => {}); fetch('capa/fuente-3d.json').catch(() => {}); } }, 8000);
+  // y al instante cuando el servidor avisa de un disparo (solo en los GC: where() dice si esta página lo es)
+  let offAviso = null;
+  const listen = () => { const on = !!where(); if (on && !offAviso && window.onAviso) offAviso = window.onAviso(tick); else if (!on && offAviso) { offAviso(); offAviso = null; } };
+  setInterval(listen, 2000); setTimeout(listen, 0);
+  // A los 8 s de abierto el GC se deja listo el 3D (piezas bajadas y dibujo preparado), para que el primer texto salga
+  // de inmediato y no se quede pegado mientras el computador lo prepara
+  setTimeout(() => { if (where() && !MON) ready3d().then((g) => { if (g && g.api.warm) g.api.warm(); }).catch(() => {}); }, 8000);
   window.addEventListener('hashchange', () => setTimeout(tick, 300));
 })();

@@ -170,18 +170,20 @@ const currentGame = (s) => {
     // Termina con el ganador aceptado y el de la Trivia ya mostrado (pedido de Cote: el ganador de la Trivia sale sí o sí)
     return w && !(w.winAccepted && (w.crowd || {}).winner) ? { game: 'rosco', wheel: w.id } : null;
   }
-  if (st === 'sorteo') { // el desempate (del bingo o de El Rosco) usa el mismo sorteo
+  if (st === 'sorteo') { // el desempate (del bingo o de El Rosko) usa el mismo sorteo
     const r = db.raffle || {};
-    if (r.mode !== 'tie') return { game: 'rosco' };
+    if (r.mode !== 'tie') return { game: r.game === 'desafio' ? 'desafio' : 'rosco' }; // el sorteo del principal y el suplente vuelve al panel de ¿Quién quiere ser ganador?
     if ((r.tie || {}).game !== 'rosco') return { game: 'bingo' };
     const w = Object.values(db.wheels || {}).sort((x, y) => y.created - x.created)[0];
-    return w ? { game: 'rosco', wheel: w.id } : { game: 'rosco' }; // vuelve al panel de El Rosco, donde se acepta al ganador
+    return w ? { game: 'rosco', wheel: w.id } : { game: 'rosco' }; // vuelve al panel de El Rosko, donde se acepta al ganador
   }
   if (st === 'voto') { const v = db.vote || {}; return v.winner ? null : { game: v.mode === 'karaoke' ? 'festival' : 'objeto' }; }
+  if (st === 'enpie') { const e = db.enpie || {}; return e.phase && e.phase !== 'done' ? { game: 'enpie' } : null; }
+  if (st === 'desafio') { const d = db.desafio || {}; return d.phase && d.phase !== 'setup' && d.phase !== 'end' ? { game: 'desafio' } : null; }
   if (st === 'bingo') return bingoStarted(s) && !roundOver(s) ? { game: 'bingo' } : null;
   return null;
 };
-function publicState(s, full = false) {
+function publicState(s, full = false) { // eslint-disable-line complexity
   const p = db.projects[s.projectId];
   const results = full ? s.results : s.results.filter((r) => r.validated && !r.dismissed).map((r) => ({ cardNo: r.cardNo, pattern: r.pattern, validated: true, name: r.name }));
   return {
@@ -189,18 +191,22 @@ function publicState(s, full = false) {
     format: p.format, headers: p.headers, values: p.values, items: p.items, showName: s.showName,
     gc: s.gc || gcDefaults(), startNumber: p.startNumber, theme: s.theme || 'frida',
     // Celebración a pantalla completa mientras haya ganadores y el moderador no la haya quitado
-    bigQr: !!s.bigQr, tieWinner: s.tieWinner || null, rollMs: 6500,
+    bigQr: !!s.bigQr, tieWinner: s.tieWinner || null, rollMs: 6500, figAt: s.figAt || 0,
     celebrate: !s.hideWin && s.results.some((r) => r.validated && !r.dismissed),
-    // Durante El Rosco los celulares cambian el cartón por las preguntas del rosco en curso
+    // Durante El Rosko los celulares cambian el cartón por las preguntas del rosko en curso
     stage: db.stage || 'bingo', roscoId: db.stage === 'rueda' ? (Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).id || null : null,
     celebrateAt: s.celebrateAt || 0,
     voteRev: (db.vote || {}).rev || 0, // los celulares vuelven a leer la votación cuando cambia
+    desafioRev: (db.desafio || {}).rev || 0, // ídem para ¿Quién quiere ser ganador? (la Trivia del público)
+    desafioGen: (db.desafio || {}).gen || 0, // cada partida de ¿Quién quiere ser ganador?: sus instrucciones en el celular
+    enpieRev: (db.enpie || {}).rev || 0, // «El último en pie» (versión de prueba): los celulares vuelven a leer cuando cambia
     voteGen: (db.vote || {}).gen || 0, // cambia con cada concurso nuevo (El Festival u objeto): los celulares muestran sus instrucciones
     gameVoteRev: (db.gameVote || {}).rev || 0, // votación del juego: cambia al abrir o cerrar cada vuelta (no con cada voto)
     // El juego en pantalla ya terminó (concurso con ganador o rosco con ganador aceptado): los celulares no muestran sus instrucciones
-    stageDone: db.stage === 'voto' ? !!(db.vote || {}).winner : db.stage === 'rueda' ? !!(Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).winAccepted : false,
+    stageDone: db.stage === 'enpie' ? (db.enpie || {}).phase === 'done' : db.stage === 'desafio' ? (db.desafio || {}).phase === 'end' && !!((db.desafio || {}).crowd || {}).winner : db.stage === 'voto' ? !!(db.vote || {}).winner : db.stage === 'rueda' ? !!(Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).winAccepted : false,
     winConfirmed: roundOver(s), winConfirmedAt: s.confirmedAt || 0, now: Date.now(),
-    started: bingoStarted(s), // el bingo de esta ronda empezó (figura elegida o ya hay números); antes, la sala espera el primer juego
+    started: bingoStarted(s),
+    publico: { at: PUBLICO_AT, due: needsPublico(s), done: s.publicoRound === s.round }, // «Anda al público» (luces) // el bingo de esta ronda empezó (figura elegida o ya hay números); antes, la sala espera el primer juego
     patterns: s.patterns, drawn: s.drawn, results, finalists: s.finalists || null,
     auto: s.auto, cardsPerPlayer: s.cardsPerPlayer, totalCards: p.cards.length,
     players: Object.values(s.players).length,
@@ -229,8 +235,13 @@ function broadcast(s, now = false) {
 function stopAuto(s) { clearInterval(timers[s.id]); delete timers[s.id]; s.auto.on = false; }
 // Con el ganador confirmado el sorteo terminó: no salen más números hasta la siguiente ronda
 const roundOver = (s) => s.results.some((r) => r.confirmed && !r.dismissed);
+// «Anda al público» (pedido de Cote, 24 nov, para las luces): después de los primeros ocho números del bingo, el
+// animador tiene que bajar al público antes de seguir; el panel no deja sacar el noveno número hasta que lo acepta.
+const PUBLICO_AT = 8;
+const needsPublico = (s) => s.drawn.length >= PUBLICO_AT && s.publicoRound !== s.round && !roundOver(s);
 function draw(s, value) {
   if (roundOver(s)) return false;
+  if (needsPublico(s)) { stopAuto(s); return false; }
   const p = db.projects[s.projectId];
   if (value == null) {
     const drawn = new Set(s.drawn);
@@ -240,9 +251,11 @@ function draw(s, value) {
     value = left[crypto.randomInt(left.length)];
   } else if (!(value >= 1 && value <= p.values) || s.drawn.includes(value)) return false;
   s.drawn.push(value);
+  require('./momentos.js').emit('bingo_numero');
   if (db.stage === 'qr') setStage('bingo');
   s.bigQr = false; // al salir el primer número se retira el QR grande de la pantalla
   const added = evaluate(s);
+  if (added) require('./momentos.js').emit('bingo_ganador_aparece'); // hay ganador: las luces vuelven al escenario
   if ((added && s.auto.stopOnWin) || s.drawn.length >= p.values) stopAuto(s);
   return true;
 }
@@ -267,11 +280,13 @@ function resetEvent() {
   db.raffle = { picked: [], roll: null };
   wheel.clear();
   vote.clear();
+  desafio.clear(); // ¿Quién quiere ser ganador? y su Trivia
   db.stage = 'bingo';
+  if (db.gcper) db.gcper.on = false;
 }
 setInterval(() => {
   for (const s of Object.values(db.sessions)) if (Date.now() > s.expires) closeSession(s);
-  // Roscos sueltos (creados sin sala abierta) también vencen a las 8 horas
+  // Roskos sueltos (creados sin sala abierta) también vencen a las 8 horas
   if (wheel.clear(Date.now() - SESSION_HOURS * 3600e3)) save();
   // Sin sala abierta no debe quedar gente en la lista del sorteo (por ejemplo, de una jornada anterior)
   if (!Object.keys(db.sessions).length && (Object.keys(db.people || {}).length || ((db.raffle || {}).picked || []).length)) {
@@ -285,6 +300,8 @@ setInterval(() => {
 const app = express();
 app.set('trust proxy', 1); // detrás del proxy del hosting, para ver la IP real
 app.use(express.json({ limit: '1mb' }));
+// Programación KRB (Code 3): plataforma aparte para la cartelera y los turnos (va antes de las páginas de la sala)
+require('./programacion.js')({ app, dir: path.dirname(DATA_FILE) });
 // Sin caché: así cada celular recibe siempre la última versión publicada
 app.use(express.static(path.join(__dirname, 'public'), { setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache') }));
 // Enlace corto de la pantalla vertical de Kennedy (pedido de Cote: fácil de escribir con el control del decodificador;
@@ -344,6 +361,9 @@ function validToken(token) {
   return Number(exp) > Date.now() && crypto.timingSafeEqual(sha(sig), sha(sign(exp)));
 }
 const requireAdmin = (req, res, next) => (validToken(req.get('x-admin')) ? next() : fail(res, 401, 'Inicia sesión como moderador'));
+// Registro de clientes (pedido de Cote, 22 nov): va antes de las rutas, porque mira pasar lo que el público hace desde el
+// celular (entrar, responder la Trivia, votar, pedir canciones…) y lo anota en la ficha de cada persona (clientes.js)
+require('./clientes.js')({ app, db, requireAdmin, dir: path.dirname(DATA_FILE), port: PORT });
 const attempts = {}; // ip -> { n, until }: frena los intentos de adivinar la contraseña
 
 // ---------- Acceso del equipo de cada local (sala light) ----------
@@ -473,14 +493,16 @@ app.post('/api/projects/:id/session', (req, res) => {
   // Una sola sala a la vez: mientras haya una abierta no se puede activar otra
   const open = Object.values(db.sessions)[0];
   if (open) return fail(res, 409, `Ya hay una sala abierta (${open.name}). Ciérrala en el Centro de control para crear otra.`);
-  res.json({ id: startSession(p, req.body || {}).id });
+  const started = startSession(p, req.body || {});
+  require('./momentos.js').emit('sala_abierta');
+  res.json({ id: started.id });
 });
 function startSession(p, b) {
   const s = {
     id: shortId(), projectId: p.id, name: str(b.name, 50, p.name), password: str(b.password, 40),
     cardsPerPlayer: clamp(b.cardsPerPlayer, 1, 4, 1),
     showName: b.showName !== false, isPublic: b.isPublic !== false, patterns: cleanPatterns(b.patterns),
-    bigQr: true, // la sesión parte mostrando el QR en grande para que la gente entre
+    bigQr: false, // el bingo parte con su GC (corrección de Cote, 24 nov); el QR grande se pone con su botón
     theme: ['frida', 'tobalaba', 'kennedy'].includes(b.theme) ? b.theme : 'frida', // colores de la gráfica según el local
     gc: { ...gcDefaults() }, // textos de la gráfica de OBS: se heredan de la última sesión
     round: 1, drawn: [], results: [], marks: {}, players: {}, finalists: null,
@@ -504,7 +526,13 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
   switch (req.params.action) {
     case 'draw':
       if (roundOver(s)) return fail(res, 400, 'El ganador ya fue confirmado: para seguir hay que iniciar la siguiente ronda');
+      if (needsPublico(s)) return fail(res, 409, 'Primero anda al público: toca «Anda al público»');
       if (!draw(s, b.value == null ? null : parseInt(b.value, 10))) return fail(res, 400, 'No se pudo generar ese valor');
+      break;
+    case 'publico': // el animador acepta bajar al público: las luces pasan a seguirlo
+      if (s.drawn.length < PUBLICO_AT) return fail(res, 409, `Todavía no: se baja al público después de los primeros ${PUBLICO_AT} números`);
+      s.publicoRound = s.round;
+      require('./momentos.js').emit('bingo_al_publico');
       break;
     case 'auto':
       stopAuto(s);
@@ -532,6 +560,8 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
       }
       stopAuto(s);
       s.confirmedAt = Date.now();
+      festejo('final'); // la cortina y el confeti en el GC
+      require('./momentos.js').emit('bingo_ganador_confirmado'); require('./momentos.js').emitLater('premio_entrega', PREMIO_MS);
       // Quien no fue confirmado queda fuera: el cartel muestra solo al ganador aceptado
       for (const r of s.results) if (!r.confirmed) r.dismissed = true;
       if (tied) { s.hideWin = false; setStage('bingo'); } // vuelve la gráfica del bingo, con la celebración del ganador único
@@ -548,6 +578,7 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
       if (s.drawn.length || roundOver(s)) return fail(res, 400, 'El bingo ya empezó: la figura se cambia en la ronda siguiente');
       s.patterns = cleanPatterns(b.patterns);
       s.figRound = s.round; // figura elegida: el bingo de esta ronda empezó
+      s.figAt = Date.now(); // las pantallas y los celulares muestran la figura en grande unos segundos (Cote, 24 nov)
       break;
     case 'hidewin': s.hideWin = b.hide !== false; break; // quitar o volver a mostrar la celebración en pantalla
     case 'gc':
@@ -629,7 +660,7 @@ app.post('/api/sessions/:sid/join', (req, res) => {
     if (!cards.length) return fail(res, 409, 'Ya no quedan cartones disponibles en esta sesión');
     token = id(12);
     pl = s.players[token] = { name: `${first} ${last}`, first, cards, place };
-    // Lista de participantes para el sorteo de concursantes del rosco (sin repetir nombres)
+    // Lista de participantes para el sorteo de concursantes del rosko (sin repetir nombres)
     (db.people ||= {})[pl.name.toLowerCase().replace(/\s+/g, ' ')] = { name: pl.name, at: Date.now() };
     evaluate(s);
     broadcast(s);
@@ -697,21 +728,83 @@ app.get('/api/sessions/:sid/events', (req, res) => {
 
 // Segundo juego de la plataforma
 // Pantalla única de OBS: qué gráfica se muestra ahora. Cambia sola al activar un bingo,
-// crear un rosco o lanzar un sorteo; el moderador también puede cambiarla a mano.
-const STAGES = ['bingo', 'rueda', 'sorteo', 'qr', 'karaoke', 'show', 'voto', 'insta', 'juego', 'votojuego', 'none'];
-// Pedido de Cote: el juego que está en actividad tiene prioridad. Mientras haya un rosco en juego, la pantalla queda en
-// El Rosco aunque se apriete otra cosa (un botón del bingo, el escenario a mano o el karaoke automático); al terminar
-// el rosco (ganador, empate o se acabó), todo vuelve a funcionar como siempre. Devuelve false si no se cambió.
-let roscoRef = null; // El Rosco (wheel.js), una vez cargado
+// crear un rosko o lanzar un sorteo; el moderador también puede cambiarla a mano.
+const STAGES = ['bingo', 'rueda', 'sorteo', 'qr', 'karaoke', 'show', 'voto', 'insta', 'juego', 'votojuego', 'enpie', 'desafio', 'none'];
+// Pedido de Cote: el juego que está en actividad tiene prioridad. Mientras haya un rosko en juego, la pantalla queda en
+// El Rosko aunque se apriete otra cosa (un botón del bingo, el escenario a mano o el karaoke automático); al terminar
+// el rosko (ganador, empate o se acabó), todo vuelve a funcionar como siempre. Devuelve false si no se cambió.
+let roscoRef = null; // El Rosko (wheel.js), una vez cargado
+// Aviso inmediato a las pantallas (pedido de Cote, 22 nov: que el GC y los efectos respondan fluido). Las pantallas (GC de
+// OBS, tableros, pantallas de los locales y la capa gráfica) preguntaban cada 1 a 3 segundos qué mostrar; ahora además
+// quedan escuchando aquí y, cuando cambia el escenario, el GC de una sala light o se dispara un efecto, vuelven a
+// preguntar al instante. Si esta conexión falla, siguen preguntando cada pocos segundos como siempre.
+const avisoClients = new Set();
+const aviso = () => { for (const res of avisoClients) res.write('data: cambio\n\n'); };
+app.get('/api/live', (req, res) => {
+  res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
+  res.flushHeaders();
+  res.write('data: hola\n\n');
+  avisoClients.add(res);
+  const ping = setInterval(() => res.write(': ping\n\n'), 25000);
+  req.on('close', () => { clearInterval(ping); avisoClients.delete(res); });
+});
 const roscoLock = (show) => show !== 'rueda' && !!roscoRef && roscoRef.inPlay();
+// «GC PER» de la sala de juegos (pedido de Cote, 22 nov: «que vuelva al panel de control la opción de GC personalizado…
+// «GC PER»… puesto en el lugar donde normalmente va el GC»): un texto escrito en el GC Master que sale en la franja de
+// abajo del GC de OBS, en lugar del GC, y que en el tablero, la pantalla de pie y las pantallas del local se agrega como
+// una franja sin quitar lo que muestran. Lo que va entre comillas sale destacado (las comillas no se ven). No es un
+// escenario: `db.stage` no cambia (celulares y juegos siguen igual); se apaga al tocar cualquier botón del GC o cuando
+// un juego cambia el escenario. En las salas light es el escenario `custom` de siempre (light.js).
+const perClean = (s) => String(s == null ? '' : s).replace(/[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
+const perMain = () => { const g = db.gcper || {}; return { on: !!(g.on && g.text), text: g.text || '' }; };
+const perOff = () => { if (db.gcper && db.gcper.on) { db.gcper.on = false; save(); return true; } return false; };
+// El texto que les toca a las pantallas de un local: el de la sala de juegos si la sala abierta es de ese local; si no,
+// el GC PER de su sala light
+const perOf = (venue) => {
+  const main = Object.values(db.sessions)[0]; const m = perMain();
+  if (m.on && main && (main.theme || 'frida') === venue) return { text: m.text, from: 'main' };
+  const l = (db.lights || {})[venue];
+  return l && l.stage === 'custom' && l.text ? { text: l.text, from: 'light' } : null;
+};
 const setStage = (show) => {
-  if (roscoLock(show)) { if (db.stage !== 'rueda') { db.stage = 'rueda'; save(); for (const s of Object.values(db.sessions)) broadcast(s); } return false; }
+  if (roscoLock(show)) { if (db.stage !== 'rueda') { db.stage = 'rueda'; save(); for (const s of Object.values(db.sessions)) broadcast(s); aviso(); } return false; }
   const changed = db.stage !== show;
+  const famBefore = familyOf(db.stage);
   db.stage = show;
+  if (changed && familyOf(show) && familyOf(show) !== famBefore) cortinaJuego(); // se cargó otro juego: la cortina
+  if (changed) { perOff(); if (db.carton) db.carton.on = false; } // un juego tomó la pantalla: el GC PER y el cartón salen
   save();
   if (changed) for (const s of Object.values(db.sessions)) broadcast(s); // los celulares se enteran del cambio de juego
+  if (changed) aviso(); // y las pantallas, al instante
 };
-const wheel = require('./wheel.js')({ app, db, save, requireAdmin, fail, setStage, findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null });
+// Confeti en el GC de OBS cada vez que hay un ganador (pedido de Cote, 23 nov: «tiene que haber confeti en el GC cada vez
+// que haya un ganador»): bingo (ganador confirmado), El Rosko y su Trivia, El Festival y El objeto más extraño. Es el
+// mismo efecto «Confeti» de la capa gráfica, disparado solo, en el local de la sala abierta.
+let capaFire = () => {};
+// Luces: después de la secuencia del ganador viene la entrega del premio (Cote, 24 nov: «después de la celebración, sube
+// el ganador y le entregan el vino: fondo rojo»; y «puede ser en el botón cuando se acepta el ganador»)
+const PREMIO_MS = 9000;
+// Antes del ganador final de cada juego, la cortina (pedido de Cote, 25 nov: «esa transición quisiera que la usáramos al
+// momento de cargar un juego, siempre, y antes de dar el ganador final»): primero la cortina y, cuando sale, el confeti
+// (la capa muestra un efecto a la vez). festejo('final') = cortina + confeti; festejo() = solo confeti
+let festejoT = null;
+const festejo = (kind) => {
+  const s = Object.values(db.sessions)[0]; if (!s) return;
+  const v = s.theme || 'frida';
+  clearTimeout(festejoT);
+  if (kind === 'final') { capaFire(v, 'cortina'); festejoT = setTimeout(() => capaFire(v, 'confeti'), 3500); } else capaFire(v, 'confeti');
+};
+// Al cargar un juego, siempre, la cortina (pedido de Cote, 25 nov): cuando la pantalla pasa a otro juego. El sorteo de
+// concursantes es parte de El Rosko (o de ¿Quién quiere ser ganador?) y el desempate, del juego que desempata
+const familyOf = (st) => {
+  if (st === 'bingo') return 'bingo';
+  if (st === 'rueda') return 'rosco';
+  if (st === 'sorteo') { const r = db.raffle || {}; return r.mode === 'tie' ? ((r.tie || {}).game === 'rosco' ? 'rosco' : 'bingo') : r.game === 'desafio' ? 'desafio' : 'rosco'; }
+  return ['voto', 'desafio', 'enpie'].includes(st) ? (st === 'voto' ? `voto:${(db.vote || {}).mode || ''}` : st) : null;
+};
+const cortinaJuego = () => { const s = Object.values(db.sessions)[0]; if (s) capaFire(s.theme || 'frida', 'cortina'); };
+require('./momentos.js').init({ app, db, aviso }); // momentos de los juegos para las luces (lista acordada con Code 4)
+const wheel = require('./wheel.js')({ app, db, save, requireAdmin, fail, setStage, festejo, findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null });
 roscoRef = wheel;
 // Tras corregir un nombre, se vuelve a enviar el estado a todas las pantallas abiertas
 const refreshAll = () => { Object.values(db.sessions).forEach((s) => broadcast(s)); wheel.refresh(); };
@@ -726,29 +819,59 @@ const connectedNames = () => {
   }
   return out;
 };
-require('./raffle.js')({ app, db, save, requireAdmin, fail, setStage, refreshAll, connectedNames });
+require('./raffle.js')({ app, db, save, requireAdmin, fail, setStage, refreshAll, connectedNames, festejo });
 
 let lightApi = null; // sala light (light.js): se conecta más abajo
 const karaoke = require('./karaoke.js')({ app, db, save, requireAdmin, requireLocal, fail, salaVenue: () => (Object.values(db.sessions)[0] || {}).theme || '',
   findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || (lightApi ? lightApi.findPlayer(sid, token) : null),
   lightVenue: (sid) => (lightApi ? lightApi.venueOf(sid) : ''), extraVenues: () => (lightApi ? lightApi.pollVenues() : []) });
 // Votación del público (nota del 1 al 10 desde el celular)
-const vote = require('./vote.js')({ app, db, save, requireAdmin, fail, setStage,
+const vote = require('./vote.js')({ app, db, save, requireAdmin, fail, setStage, festejo,
+  findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null,
+  venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
+  notify: () => Object.values(db.sessions).forEach((s) => broadcast(s)) });
+// «¿Quién quiere ser ganador?» (antes «billonario»): trivia de 12 escalones con un concursante en el escenario
+const desafio = require('./desafio.js')({ app, db, save, requireAdmin, fail, setStage, festejo,
   findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null,
   venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
   notify: () => Object.values(db.sessions).forEach((s) => broadcast(s)) });
 // «Síguenos en Instagram»: la cuenta del local de la sala abierta
 const insta = require('./insta.js')({ app, db, save, requireAdmin, fail, venue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
 // Sala light: karaoke, show y cartelera en otro local, al mismo tiempo que la sala principal
-lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta });
-require('./capa.js')({ app, requireLocal, fail }); // capa gráfica sobre la cámara (botones del GC Master)
-require('./vertical.js')({ app, db, save, requireAdmin, fail, karaoke, dir: path.dirname(DATA_FILE) }); // pantalla vertical: video del mes y actividades
+lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta, aviso });
+// «El último en pie», versión de prueba (pedido de Cote, 23 nov)
+require('./enpie.js')({ app, db, save, requireAdmin, fail, setStage, festejo,
+  findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null,
+  venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
+  notify: () => { Object.values(db.sessions).forEach((s) => broadcast(s)); aviso(); } });
+capaFire = require('./capa.js')({ app, requireLocal, fail, aviso }).fire; // capa gráfica sobre la cámara (botones del GC Master)
+require('./vertical.js')({ app, db, save, requireAdmin, fail, karaoke, perOf, dir: path.dirname(DATA_FILE) }); // pantalla vertical: video del mes y actividades
+// Conectados (pedido de Cote, 22 nov): números en vivo por local, gráfico de las últimas 3 horas y registro por jornada
+require('./conectados.js')({ app, db, save, requireAdmin, port: process.env.PORT || 3000,
+  // personas de la sala de juegos de ese local: conectadas ahora (con la sala abierta en el celular) e inscritas en total
+  salaOf: (venue) => {
+    const s = Object.values(db.sessions)[0];
+    if (!s || s.sim || (s.theme || 'frida') !== venue) return { now: 0, total: 0 }; // la sala simulada no cuenta en «Conectados»
+    const on = new Set([...(clients[s.id] || [])].map((r) => r.playerToken).filter((t) => t && s.players[t]));
+    return { now: on.size, total: Object.keys(s.players || {}).length };
+  } });
+// Sala simulada (pedido de Cote, 23 nov): personas virtuales que juegan todo, para probar los juegos sin celulares.
+// Cuentan como conectadas (como quien tiene su cartón abierto) con una conexión de mentira, sin red de por medio.
+const fakeConns = new Map();
+const fakeConnect = (sid, token) => {
+  const set = (clients[sid] ||= new Set());
+  const k = `${sid}:${token}`; const old = fakeConns.get(k);
+  if (old && set.has(old)) return;
+  const r = { fake: true, playerToken: token, isAdmin: false, write() {}, end() {} };
+  fakeConns.set(k, r); set.add(r);
+};
+require('./simulador.js')({ app, db, save, requireAdmin, fail, port: PORT, placesFor: (v) => karaoke.placesFor(v), fakeConnect, wheel });
 require('./youtube.js')({ app }); // últimos videos del canal, para la página web
 require('./twitch.js')({ app }); // videos y transmisiones en vivo de Twitch, para la página web
 require('./instagram-web.js')({ app, db, save, insta }); // últimos videos de Instagram de cada local, para la página web
 
 // Consola general: en qué está cada local (sala principal o sala light), su bloque del horario y su karaoke
-const STAGE_NAMES = { bingo: 'Bingo', rueda: 'El Rosco', sorteo: 'Sorteo', qr: 'QR grande', karaoke: 'Karaoke', show: 'Show', voto: 'Votación', insta: 'Instagram', juego: 'Sorteo de juegos', votojuego: 'Votación del juego', none: 'Nada', cartelera: 'Cartelera de la semana', custom: 'GC personalizable', info: 'Información que va cambiando' };
+const STAGE_NAMES = { bingo: 'Bingo', rueda: 'El Rosko', sorteo: 'Sorteo', qr: 'QR grande', karaoke: 'Karaoke', show: 'Show', voto: 'Votación', enpie: 'El último en pie', desafio: '¿Quién quiere ser ganador?', insta: 'Instagram', juego: 'Sorteo de juegos', votojuego: 'Votación del juego', none: 'Nada', cartelera: 'Cartelera de la semana', custom: 'GC personalizable', info: 'Información que va cambiando' };
 app.get('/api/consola', requireAdmin, async (_req, res) => {
   const main = Object.values(db.sessions)[0] || null;
   const out = await Promise.all(['kennedy', 'frida', 'tobalaba'].map(async (v) => {
@@ -763,19 +886,21 @@ app.get('/api/consola', requireAdmin, async (_req, res) => {
       karaoke: karaoke.nowOf(v),
     };
   }));
+  // con el GC PER puesto, el botón encendido en el GC Master es ese (el escenario de la sala no cambia)
+  for (const o of out) if (o.main) { const m = perMain(); o.main.perText = m.text; if (m.on) { o.main.stage = 'per'; o.main.stageName = 'GC PER'; } }
   res.json({ locales: out, at: Date.now() });
 });
 // Programación del local del día: el de la sala abierta o, si no hay, el elegido en la sección Karaoke
 require('./agenda.js')({ app, db, save, requireAdmin, fail, currentVenue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
 
 // Sorteo del siguiente juego (pedido de Cote): la sala parte en Juegos, sin bingo (21 nov), y se sortea entre todos los juegos
-// (Bingo, El Rosco, El Festival y El objeto más extraño; el karaoke no es un juego), el bingo incluido desde el primer
+// (Bingo, El Rosko, El Festival y El objeto más extraño; el karaoke no es un juego), el bingo incluido desde el primer
 // sorteo. El juego que sale queda bloqueado solo para el sorteo siguiente y después vuelve a estar disponible.
 // El sorteo se ve en el tablero y en el GC (escenario «juego»).
 const DRAW_GAMES = ['bingo', 'rosco', 'festival', 'objeto'];
 db.gameDraw ||= { played: [], last: null };
 if (!db.gameDraw.rule2) { db.gameDraw.played = db.gameDraw.last ? [db.gameDraw.last.game] : []; db.gameDraw.rule2 = true; }
-const drawPub = () => ({ ...db.gameDraw, how: howOf(), free: howOf() === 'manual', undo: undefined, undoable: !!(db.gameDraw.undo || []).length, games: DRAW_GAMES, venue: (Object.values(db.sessions)[0] || {}).theme || 'frida', now: Date.now() });
+const drawPub = () => ({ ...db.gameDraw, total: Math.max(db.gameDraw.total || 3, (db.gameDraw.list || []).length + 1), how: howOf(), free: howOf() === 'manual', undo: undefined, undoable: !!(db.gameDraw.undo || []).length, games: DRAW_GAMES, venue: (Object.values(db.sessions)[0] || {}).theme || 'frida', now: Date.now() });
 app.get('/api/gamedraw', (_req, res) => res.json(drawPub()));
 // Cuántos juegos se sortean esa noche (pedido de Cote): 1.º, 2.º, 3.º… sorteados
 db.gameDraw.list ||= [];
@@ -827,6 +952,7 @@ app.post('/api/gamedraw/free', requireAdmin, (req, res) => {
     startContest(game); // un concurso del mismo tipo sin ganador no se borra: tocarlo en el menú solo vuelve a su panel
     setStage('voto'); // las pantallas y los celulares pasan de inmediato al juego elegido
   }
+  if (game === 'bingo' && familyOf(db.stage) === 'bingo') cortinaJuego(); // la pantalla ya estaba en el bingo: igual se carga con la cortina
   db.gameDraw.seq = (db.gameDraw.seq || 0) + 1;
   save();
   res.json(db.gameDraw);
@@ -856,11 +982,12 @@ app.post('/api/gamedraw/undo', requireAdmin, (_req, res) => {
 app.post('/api/gamedraw/ready', requireAdmin, (_req, res) => {
   if (!notFree(res)) return;
   const g = db.gameDraw;
-  if (g.list.length >= g.total) return fail(res, 409, `Ya se sortearon los ${g.total} juegos de la noche`);
+  if (g.list.length >= g.total) g.total = g.list.length + 1; // el sorteo nunca se bloquea (pedido de Cote, 24 nov): la noche suma un juego más
   drawSnap(g);
   g.ready = { at: Date.now(), pool: DRAW_GAMES.filter((x) => !(g.last && g.last.game === x)) };
   save();
-  if (setStage('juego') === false) return fail(res, 409, 'El Rosco está en juego: el sorteo se verá cuando termine la partida');
+  require('./momentos.js').emit('juego_siguiente');
+  if (setStage('juego') === false) return fail(res, 409, 'El Rosko está en juego: el sorteo se verá cuando termine la partida');
   res.json(db.gameDraw);
 });
 app.post('/api/gamedraw/pick', requireAdmin, (req, res) => {
@@ -868,10 +995,12 @@ app.post('/api/gamedraw/pick', requireAdmin, (req, res) => {
   const g = db.gameDraw;
   const game = String((req.body || {}).game);
   if (!DRAW_GAMES.includes(game)) return fail(res, 400, 'Juego no válido');
-  if (g.list.length >= g.total) return fail(res, 409, `Ya se sortearon los ${g.total} juegos de la noche`);
+  if (g.list.length >= g.total) g.total = g.list.length + 1; // el sorteo nunca se bloquea (pedido de Cote, 24 nov): la noche suma un juego más
   drawSnap(g);
   g.played = [game]; g.list.push(game); g.ready = null; g.seq = (g.seq || 0) + 1;
+  if (g.list.length >= g.total) g.total = g.list.length + 1;
   g.last = { game, pool: [game], at: Date.now(), direct: true };
+  require('./momentos.js').emit('juego_siguiente');
   if (game === 'festival' || game === 'objeto') startContest(game);
   save();
   setStage('juego');
@@ -880,22 +1009,24 @@ app.post('/api/gamedraw/pick', requireAdmin, (req, res) => {
 app.post('/api/gamedraw', requireAdmin, (_req, res) => {
   if (!notFree(res)) return;
   const g = db.gameDraw;
-  if (g.list.length >= g.total) return fail(res, 409, `Ya se sortearon los ${g.total} juegos de la noche`);
+  if (g.list.length >= g.total) g.total = g.list.length + 1; // el sorteo nunca se bloquea (pedido de Cote, 24 nov): la noche suma un juego más
   const pool = DRAW_GAMES.filter((x) => !(g.last && g.last.game === x)); // el que salió recién queda fuera de este sorteo
   drawSnap(g);
   const game = pool[crypto.randomInt(pool.length)];
   g.played = [game]; // bloqueado solo para el sorteo siguiente
   g.list.push(game); // queda en su número (1.º, 2.º…) en la pantalla
+  if (g.list.length >= g.total) g.total = g.list.length + 1; // siempre queda el sorteo siguiente disponible
   g.ready = null; g.seq = (g.seq || 0) + 1;
   g.last = { game, pool, at: Date.now() };
   if (game === 'festival' || game === 'objeto') startContest(game); // la votación queda lista con su título
   save();
-  if (setStage('juego') === false) return fail(res, 409, 'El Rosco está en juego: el sorteo se verá cuando termine la partida');
+  require('./momentos.js').emit('tombola_gira'); require('./momentos.js').emitLater('tombola_resultado', 4800);
+  if (setStage('juego') === false) return fail(res, 409, 'El Rosko está en juego: el sorteo se verá cuando termine la partida');
   res.json(db.gameDraw);
 });
 
 // Elegir el juego por votación del público (pedido de Cote, 21 nov): 30 segundos para votar desde el celular entre
-// los juegos (Bingo, El Rosco, El Festival y El objeto más extraño). Gana el que tiene más de la mitad de los votos
+// los juegos (Bingo, El Rosko, El Festival y El objeto más extraño). Gana el que tiene más de la mitad de los votos
 // (50 % + 1, mayoría simple); si ninguno lo logra, hay segunda vuelta de 30 segundos entre los 2 primeros. Los empates
 // (para pasar a la segunda vuelta o en la segunda vuelta) se deciden por sorteo. Se ve en el tablero y en el GC
 // (escenario «votojuego») con un gráfico en círculo por juego, con sus votos y su porcentaje. Un voto por celular en
@@ -905,7 +1036,8 @@ const GV_MS = 30000;
 // Presentación antes de votar (pedido de Cote, 21 nov): las reglas para el público y cada juego con su dibujo, una lámina
 // cada 10 s (public/gameintro.js); el animador puede adelantar («Siguiente») o iniciar la votación cuando quiera
 const INTRO_MS = 10000; const INTRO_LAST = 5;
-const introStep = (g) => (g.intro ? Math.min(INTRO_LAST, (g.intro.step || 0) + Math.floor(Math.max(0, Date.now() - g.intro.at) / INTRO_MS)) : 0);
+// Paso a paso (pedido de Cote, 24 nov: «que las maneje el animador, para que sea fluido»): ya no avanzan solas
+const introStep = (g) => (g.intro ? Math.min(INTRO_LAST, g.intro.step || 0) : 0);
 function gvBlank() {
   const old = db.gameVote || {};
   return { id: old.id || 0, rev: (old.rev || 0) + 1, phase: 'idle', round: 0, options: [], votes: {}, until: 0, counts: null, total: 0, runoff: null, tie2: false, winner: null, tie: false, empty: false, decidedAt: 0 };
@@ -977,7 +1109,7 @@ app.post('/api/gamevote/start', requireAdmin, (_req, res) => {
   const g = db.gameVote;
   if (g.phase === 'voting' && Date.now() >= g.until) gvClose(); // la vuelta ya terminó: primero se cuentan sus votos
   if (g.phase === 'voting' && Date.now() < g.until) return fail(res, 409, 'Ya hay una votación abierta');
-  if (roscoLock('votojuego')) return fail(res, 409, 'El Rosco está en juego: la votación se hace cuando termine la partida');
+  if (roscoLock('votojuego')) return fail(res, 409, 'El Rosko está en juego: la votación se hace cuando termine la partida');
   const second = g.phase === 'result' && Array.isArray(g.runoff) && g.runoff.length === 2;
   Object.assign(g, { phase: 'voting', round: second ? 2 : 1, options: second ? g.runoff.slice() : DRAW_GAMES.slice(), votes: {}, until: Date.now() + GV_MS,
     counts: null, total: 0, winner: null, tie: false, empty: false, decidedAt: 0 });
@@ -995,7 +1127,7 @@ app.post('/api/gamevote/intro', requireAdmin, (_req, res) => {
   if (!Object.keys(db.sessions).length) return fail(res, 409, 'Primero crea la sala de juegos');
   const g = db.gameVote;
   if (g.phase === 'voting' && Date.now() < g.until) return fail(res, 409, 'Hay una votación abierta');
-  if (roscoLock('votojuego')) return fail(res, 409, 'El Rosco está en juego: la presentación se hace cuando termine la partida');
+  if (roscoLock('votojuego')) return fail(res, 409, 'El Rosko está en juego: la presentación se hace cuando termine la partida');
   gvStopTimer();
   Object.assign(g, { phase: 'intro', intro: { at: Date.now(), step: 0 }, round: 0, options: DRAW_GAMES.slice(), votes: {}, until: 0, counts: null, total: 0, runoff: null, tie2: false, winner: null, tie: false, empty: false, decidedAt: 0 });
   g.rev++;
@@ -1036,16 +1168,112 @@ app.post('/api/gamevote/reset', requireAdmin, (_req, res) => {
 
 // Leer la pantalla actual es público, para que la fuente de OBS no necesite iniciar sesión; cambiarla es del moderador.
 // Diseño nuevo de las pantallas (pedido de Cote, 22 nov): encendido salvo que se apague en el Centro de control
-app.get('/api/tema', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json({ on: db.tema !== false }); });
+app.get('/api/tema', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json({ on: db.tema !== false, pub: db.pubUrl || '' }); });
 app.post('/api/tema', requireAdmin, (req, res) => { db.tema = (req.body || {}).on !== false; save(); res.json({ on: db.tema }); });
-app.get('/api/stage', (_req, res) => res.json({ show: roscoLock(db.stage) ? 'rueda' : STAGES.includes(db.stage) ? db.stage : 'bingo' }));
+// Dirección de los QR (pedido de Cote, 22 nov: llevar a la gente a krbstage.cl; eligió la opción A, juegos.krbstage.cl):
+// la sala es la misma y las direcciones de siempre siguen funcionando (OBS, pantallas y decodificadores no se tocan);
+// lo único que cambia es a dónde apuntan los QR que ve el público. Se elige en el Centro de control y, antes de
+// aceptarla, el servidor comprueba que esa dirección responde de verdad (así un QR nunca queda apuntando a la nada).
+const PUB_URLS = ['https://saladejuegos.krbstage.cl', 'https://juegos.krbstage.cl']; // saladejuegos: la que Cote quiere para el QR y los participantes (23 nov)
+app.post('/api/pub', requireAdmin, async (req, res) => {
+  const url = String((req.body || {}).url || '');
+  if (url && !PUB_URLS.includes(url)) return fail(res, 400, 'Dirección no permitida');
+  if (url && !process.env.PUB_SIN_PRUEBA) {
+    try {
+      const r = await fetch(`${url}/api/tema`, { signal: AbortSignal.timeout(8000) });
+      const j = await r.json();
+      if (!r.ok || typeof j.on !== 'boolean') throw new Error('no es la sala');
+    } catch (e) { return fail(res, 409, `${url.replace('https://', '')} todavía no responde (puede faltar el certificado). Los QR siguen como estaban.`); }
+  }
+  db.pubUrl = url; save(); aviso();
+  res.json({ pub: url });
+});
+app.get('/api/stage', (_req, res) => res.json({ show: roscoLock(db.stage) ? 'rueda' : STAGES.includes(db.stage) ? db.stage : 'bingo', per: perMain(), carton: !!(db.carton && db.carton.on) }));
+// «Cartón al centro» (pregunta 20 de Cote, 24 nov: «1 lo que recomienda, 2 siempre el QR y el nombre del juego»): en una
+// pausa, el GC de OBS cambia la franja de abajo por un cartón mediano al centro con la información del juego en ese
+// momento, el QR y el nombre del juego. Se pone y se quita con el mismo botón; sale solo cuando cambia lo que está en
+// pantalla. Lo que muestra lo arma cartonInfo() según el juego en pantalla.
+db.carton ||= { on: false };
+const cartonInfo = () => {
+  const s = Object.values(db.sessions)[0];
+  const st = roscoLock(db.stage) ? 'rueda' : db.stage;
+  const out = { on: !!db.carton.on, stage: st, venue: s ? s.theme || 'frida' : 'frida', title: s ? s.name : 'Sala de juegos', lines: [], big: '', small: '' };
+  if (!s) return out;
+  if (st === 'bingo') {
+    const p = db.projects[s.projectId] || {};
+    out.title = String(s.name || '').replace(/^Los Juegos de /, 'El Bingo de ');
+    const v = s.drawn[s.drawn.length - 1];
+    const per = (p.values || 75) / 5;
+    const letter = (x) => (p.format === 'numbers' && p.headers ? String(p.headers)[Math.min(4, Math.floor((x - 1) / per))] || '' : '');
+    out.big = v != null ? `${letter(v)} ${v}`.trim() : '¡Ya comienza!';
+    out.small = v != null ? 'Último número' : 'Pon tu nombre y apellido y participa';
+    if (s.drawn.length > 1) out.lines.push(`Anteriores: ${s.drawn.slice(-6, -1).reverse().join(' · ')}`);
+    const pat = (PATTERNS.byId || {})[(s.patterns || [])[0]];
+    if (pat) out.lines.push(`Figura: ${pat.name}`);
+    out.lines.push(`Van ${s.drawn.length} de ${p.values || 75} · ${Object.keys(s.players || {}).length} participantes`);
+  } else if (st === 'rueda') {
+    out.title = 'El Rosko';
+    const w = Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0];
+    if (w) {
+      const c = w.players[w.turn];
+      out.big = c ? c.name : 'El Rosko'; out.small = c ? 'Es el turno de' : '';
+      for (const x of w.players) out.lines.push(`${x.name}: ${x.status.filter((y) => y === 'hit').length} aciertos · ${Math.ceil(Math.max(0, x.remainingMs) / 1000)} s`);
+    }
+  } else if (st === 'voto') {
+    const v = db.vote || {};
+    out.title = v.mode === 'karaoke' ? (v.title || `El Festival de ${({ kennedy: 'Mercado Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' })[out.venue] || ''}`) : (v.title || 'El objeto más extraño');
+    const id = v.open || v.onstage; const p = (v.players || []).find((x) => x.id === id);
+    out.big = p ? p.name : v.winner ? v.winner.name : '¡Participa!'; out.small = p ? (v.mode === 'karaoke' ? 'En el escenario' : 'Presenta su objeto') : v.winner ? 'Ganó' : '';
+    if (p && p.thing) out.lines.push(p.thing);
+    const done = (v.players || []).filter((x) => x.done).length;
+    if ((v.players || []).length) out.lines.push(`${done} de ${v.players.length} participantes ya pasaron`);
+  } else if (st === 'enpie') {
+    const e = db.enpie || {};
+    out.title = 'El último en pie';
+    const pl = Object.values(e.players || {}); const up = pl.filter((x) => x.up).length;
+    out.big = `${up} de pie`; out.small = e.n ? `Pregunta ${e.n}` : '';
+    out.lines.push(`${pl.length - up} en la banca`);
+  } else if (st === 'desafio') {
+    const d = db.desafio || {};
+    out.title = '¿Quién quiere ser ganador?';
+    out.big = d.player || '¡Ya comienza!'; out.small = d.player ? ((d.team || []).length > 1 ? `Participante ${(d.team || []).length} de 4` : 'Concursante') : '';
+    if (d.step) out.lines.push(`Va por la pregunta ${d.step} de 12 · etapa ${Math.ceil(d.step / 4)}${(d.prizes || [])[Math.ceil(d.step / 4) - 1] ? `: ${d.prizes[Math.ceil(d.step / 4) - 1]}` : ''}`);
+    const crowd = new Set(Object.values((d.crowd || {}).ans || {}).flatMap((by) => Object.keys(by))).size;
+    if (crowd) out.lines.push(`${crowd} ${crowd === 1 ? 'persona juega' : 'personas juegan'} la Trivia desde el celular`);
+  } else {
+    out.title = st === 'juego' ? 'El próximo juego' : st === 'votojuego' ? 'Votación del próximo juego' : st === 'sorteo' ? 'Sorteo de concursantes' : s.name;
+    out.big = 'Escanea el código QR'; out.small = 'con tu celular y participa';
+  }
+  return out;
+};
+app.get('/api/carton', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json(cartonInfo()); });
+app.post('/api/carton', requireAdmin, (req, res) => {
+  db.carton.on = (req.body || {}).on !== false;
+  save(); aviso();
+  res.json(cartonInfo());
+});
+app.post('/api/gcper', requireAdmin, (req, res) => {
+  const b = req.body || {};
+  const text = b.text != null ? perClean(b.text) : perMain().text;
+  if (b.on !== false && !text) return fail(res, 400, 'Escribe el texto del GC PER');
+  db.gcper = { on: b.on !== false, text };
+  save(); aviso();
+  res.json(perMain());
+});
 app.post('/api/stage', requireAdmin, (req, res) => {
   const show = String((req.body || {}).show);
   if (!STAGES.includes(show)) return fail(res, 400, 'Opción no válida');
-  if (setStage(show) === false) return fail(res, 409, 'El Rosco está en juego: la pantalla sigue en El Rosco hasta que termine la partida');
+  if (setStage(show) === false) return fail(res, 409, 'El Rosko está en juego: la pantalla sigue en El Rosko hasta que termine la partida');
+  if (perOff()) aviso(); // tocar un botón del GC saca el GC PER, aunque el escenario sea el mismo
   if (show === 'karaoke') karaoke.refresh(); // primera lectura inmediata, sin esperar al siguiente ciclo
   res.json({ show });
 });
+
+// La hora para el karaoke del jueves y las salas automáticas. En las pruebas automáticas, KRB_FECHA (fecha ISO) fija
+// desde qué momento corre el reloj, para simular cualquier día; sin KRB_FECHA (en Render) es la hora real.
+const RELOJ_DESDE = Date.now();
+const RELOJ_BASE = process.env.KRB_FECHA ? Date.parse(process.env.KRB_FECHA) : NaN;
+const ahora = () => new Date(Number.isNaN(RELOJ_BASE) ? Date.now() : RELOJ_BASE + (Date.now() - RELOJ_DESDE));
 
 // Pedido de Cote: todos los jueves a las 21:45 (hora de Chile), si la sala abierta es la de Kennedy, el escenario
 // pasa solo a Karaoke, para que el público siga pidiendo canciones desde su celular. Una vez por jueves; después
@@ -1053,13 +1281,13 @@ app.post('/api/stage', requireAdmin, (req, res) => {
 const AUTO_KARAOKE = { venue: 'kennedy', dow: 'Thu', from: 21 * 60 + 45, until: 22 * 60 };
 setInterval(() => {
   const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
-    .formatToParts(new Date()).map((x) => [x.type, x.value]));
+    .formatToParts(ahora()).map((x) => [x.type, x.value]));
   const min = +p.hour * 60 + +p.minute;
   const day = `${p.year}-${p.month}-${p.day}`;
   if (p.weekday !== AUTO_KARAOKE.dow || min < AUTO_KARAOKE.from || min >= AUTO_KARAOKE.until || db.autoKaraoke === day) return;
   const s = Object.values(db.sessions)[0];
   if (!s || s.theme !== AUTO_KARAOKE.venue) return;
-  if (roscoLock('karaoke')) return; // con El Rosco en juego se espera a que termine (hasta las 22:00)
+  if (roscoLock('karaoke')) return; // con El Rosko en juego se espera a que termine (hasta las 22:00)
   db.autoKaraoke = day;
   if (db.stage !== 'karaoke') { setStage('karaoke'); karaoke.refresh(); console.log('Escenario a Karaoke automático (jueves 21:45, Mercado Kennedy)'); }
   save();
@@ -1078,10 +1306,10 @@ const AUTO_SALAS = [
 ];
 // Fin de los juegos (pedido de Cote, 20 nov): Tobalaba a las 22:45 y Frida (domingo) a las 17:00 la sala del local se
 // cierra sola, aunque se haya creado a mano. Kennedy (21:30) no se cierra: los jueves a las 21:45 pasa sola a Karaoke
-// para que el público siga pidiendo canciones. Si a esa hora hay un rosco en juego, se espera a que termine.
+// para que el público siga pidiendo canciones. Si a esa hora hay un rosko en juego, se espera a que termine.
 function autoSala() {
   const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
-    .formatToParts(new Date()).map((x) => [x.type, x.value]));
+    .formatToParts(ahora()).map((x) => [x.type, x.value]));
   const min = +p.hour * 60 + +p.minute;
   const a = AUTO_SALAS.find((x) => x.dow === p.weekday && min >= x.from);
   if (!a) return;

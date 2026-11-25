@@ -5,7 +5,7 @@
    TODO va bajo «html.t2»: con el interruptor del Centro de control (o ?tema=0) se quita esa clase y vuelve el diseño
    anterior, sin tocar nada más. Este archivo tiene la base compartida; cada familia de pantallas tiene el suyo:
    tema-bingo.css, tema-light.css (sala light, karaoke y show), tema-rosco.css (El Rosco y sorteo de concursantes) y
-   tema-juegos.css (Festival, objeto, sorteo y votación del juego, Instagram). No usar blur ni 3D con CSS: el computador
+   tema-juegos.css (Festival, objeto, sorteo y votación del juego, Instagram) y tema-desafio.css (¿Quién quiere ser ganador?). No usar blur ni 3D con CSS: el computador
    de OBS es modesto (se probó el 22 nov); solo transform y opacity en las animaciones. */
 html.t2 {
   --t-noche: #0c0b12; --t-fondo: #07060c; --t-tarima: #15131e; --t-tarima2: #1c1828; --t-linea: #2a2636; --t-texto: #f3eee6; --t-tenue: #a59fb0; --t-foco: #f4bf5a; --t-foco-tinta: #1a1407;
@@ -27,9 +27,13 @@ html.t2 body.full { background: transparent; color: var(--t-texto); }
 html.t2 body.full::before { top: -25%; right: -25%; bottom: -25%; left: -25%;
   background: radial-gradient(circle at 26% 22%, color-mix(in srgb, var(--t-c) 46%, transparent) 0, transparent 40%), radial-gradient(circle at 78% 82%, rgba(244, 191, 90, .22) 0, transparent 38%),
     repeating-linear-gradient(115deg, rgba(255, 255, 255, .028) 0 1px, transparent 1px 3.2vh), linear-gradient(160deg, #15131e, #0c0b12 55%, #07060c);
-  animation: t2foco 18s ease-in-out infinite alternate; }
+  animation: t2foco 18s steps(108) infinite alternate; } /* se mueve tan lento que basta con 6 pasos por segundo: se ve igual y el navegador trabaja la décima parte */
 @keyframes t2foco { from { transform: translate(0, 0) scale(1); } to { transform: translate(3%, 2%) scale(1.08); } }
 @media (prefers-reduced-motion: reduce) { html.t2 body.full::before { animation: none; } }
+
+/* Las «neuronas» de los GC: sobre los recuadros oscuros del diseño nuevo se ven igual sin la mezcla «screen», que obligaba
+   al navegador a recomponer toda la pantalla en cada cuadro (pesado para el computador de OBS) */
+html.t2 #neural-bg.neural-gc { mix-blend-mode: normal; }
 
 /* Logos del local (KRB Stage | local): un poco más grandes y sin sombra pesada */
 html.t2 .venue-mark { filter: none; }
@@ -53,3 +57,22 @@ html.t2 #capa .cp-flat b { font-family: "Big Shoulders Display", "Arial Narrow",
 
 /* Botón «Activar sonido» de las pantallas: recto y oscuro, con el dorado de la marca (mismo tamaño y lugar de siempre) */
 html.t2 .sound-btn { border-radius: 0; background: #0c0b12; color: #f4bf5a; border: .3vh solid #f4bf5a; box-shadow: none; font-family: "Manrope", system-ui, sans-serif; }
+
+/* La figura del bingo en grande (Cote, 24 nov): letras y color del local del diseño nuevo */
+html.t2 #figsplash small { font-family: var(--t-mono); color: var(--t-foco); }
+html.t2 #figsplash b { font-family: var(--t-disp); font-weight: 800; letter-spacing: .01em; }
+html.t2 #figsplash .fs-grid { border-radius: 0; border-color: var(--t-c, var(--t-foco)); }
+html.t2 #figsplash .fs-grid i.x { background: var(--t-c, var(--t-foco)); box-shadow: 0 0 min(2vh, 3vw) color-mix(in srgb, var(--t-c, var(--t-foco)) 55%, transparent); }
+
+/* Tómbola del sorteo de participantes (Cote, 24 nov): letras y colores del diseño nuevo */
+html.t2 #vroll .vr-card { border-top-color: var(--t-c, var(--t-foco)); }
+html.t2 #vroll small { font-family: var(--t-mono); color: var(--t-foco); }
+html.t2 #vroll b, html.t2 #vroll li { font-family: var(--t-disp); font-weight: 800; letter-spacing: .01em; }
+
+/* «Cartón al centro» (Cote, 24 nov): letras y colores del diseño nuevo */
+html.t2 #carton .ct-card { border-top-color: var(--t-c, var(--t-foco)); clip-path: polygon(0 0, 100% 0, 100% calc(100% - 3vh), calc(100% - 3vh) 100%, 0 100%); }
+html.t2 #carton .ct-title { font-family: var(--t-mono); font-weight: 700; color: var(--t-foco); letter-spacing: .12em; }
+html.t2 #carton .ct-small, html.t2 #carton .ct-lines p { font-family: var(--t-txt); }
+html.t2 #carton .ct-big { font-family: var(--t-disp); font-weight: 800; letter-spacing: .01em; }
+/* La cortina, en negro (pedido de Cote, 25 nov) */
+html.t2 #capa .cp-cur i, html.t2 #capa .cp-cur i:nth-child(n) { background: #000; }

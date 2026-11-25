@@ -326,3 +326,6 @@ html.t2 body.full #rf .rf-card.win .rf-name { background: linear-gradient(180deg
   html.t2 .obs-question.pop, html.t2 .obs-side .obs-question.pop, html.t2 .obs-reveal.pop, html.t2 .obs-side .obs-reveal.pop, html.t2 .obs-question.pop::before, html.t2 .obs-flash, html.t2 .obs-rankside .obs-rank, html.t2 .pw-rank,
   html.t2 body.full .win-card, html.t2 body.obs .win-card, html.t2 body.full .win-screen::before, html.t2 #rf .rf-card.pop, html.t2 body.full #rf .rf-card.win, html.t2 body.full.wheel-screen #pw.pw-idle .pw-plain { animation: none; }
 }
+/* Sorteo de ¿Quién quiere ser ganador? (pedido de Cote, 25 nov): la etiqueta dice «Principal» o «Suplente», no un número */
+html.t2 #rf .rf-picked.rf-des b { width: auto; padding: 0 1.6vh; font-family: var(--t-mono); font-size: 2.2vh; letter-spacing: .14em; }
+html.t2 body.full #rf .rf-picked.rf-des b { width: auto; font-size: 3vh; }

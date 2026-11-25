@@ -6,6 +6,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>KRB Stage · Pantalla</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&display=swap">
+<!-- Letras del diseño nuevo (pedido de Cote, 22 nov): solo se usan con la clase «t2» puesta en <html> -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Manrope:wght@500;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
 <!--
   Pantalla de los locales, versión liviana (pedido de Cote, 21 nov): la misma pantalla vertical, escrita para navegadores
   antiguos (el Chrome del decodificador de Kennedy y el iPad viejo con iOS 9.3.5). JavaScript antiguo (ES5, sin flechas,
@@ -25,6 +27,11 @@
   #cv.th-frida { background: #3a0b3f; background: -webkit-linear-gradient(290deg, #2a0a3a, #8a1f6b 55%, #2a0a3a); background: linear-gradient(160deg, #2a0a3a, #8a1f6b 55%, #2a0a3a); }
   #cv.th-tobalaba { background: #3b0508; background: -webkit-linear-gradient(290deg, #2a0406, #8f1d1d 55%, #2a0406); background: linear-gradient(160deg, #2a0406, #8f1d1d 55%, #2a0406); }
   .hide { display: none !important; }
+  /* «GC PER» (pedido de Cote, 22 nov): el texto escrito en el GC Master, como una franja abajo, sobre lo que se esté mostrando; lo que va entre comillas sale en amarillo */
+  #per { position: absolute; left: 2.5rem; right: 2.5rem; bottom: 2.2rem; z-index: 40; padding: 1.3rem 2.2rem 1.1rem; border-top: .45rem solid #f4bf5a; background: #0c0b12; background: rgba(12, 11, 18, .96); color: #fff; font-size: 2.6rem; font-weight: 900; line-height: 1.2; text-align: center; }
+  #per b { color: #f4bf5a; font-weight: 900; }
+  /* con la franja puesta, lo que se muestra se achica hacia arriba para que no tape nada (el video no) */
+  #cv.per #view { -webkit-transform: scale(.87); transform: scale(.87); -webkit-transform-origin: 50% 0; transform-origin: 50% 0; }
   #vid { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: #000; object-fit: cover; }
   #tap { position: absolute; left: 4rem; right: 4rem; bottom: 10rem; padding: 2rem; border-radius: 2rem; background: rgba(0, 0, 0, .7); text-align: center; font-size: 3rem; font-weight: 700; }
   #view { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
@@ -33,6 +40,14 @@
   #marks img { height: 3.2rem; vertical-align: middle; margin: 0 1rem; }
   #marks i { display: inline-block; width: .2rem; height: 3rem; background: rgba(255, 255, 255, .6); vertical-align: middle; }
   .abs { position: absolute; left: 3rem; right: 3rem; text-align: center; }
+  /* La figura del bingo en grande al elegirla (Cote, 24 nov) */
+  .pv-fs { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 50; background: #0c0b12; text-align: center; padding-top: 18rem; box-sizing: border-box; }
+  .pv-fs-t { font-size: 3.6rem; font-weight: 700; letter-spacing: .3rem; text-transform: uppercase; color: #f4bf5a; margin-bottom: 4rem; }
+  .pv-fs-g { display: inline-block; padding: 1.6rem; border: .3rem solid rgba(255,255,255,.3); }
+  .pv-fs-g div { height: 9.6rem; white-space: nowrap; }
+  .pv-fs-g i { display: inline-block; width: 8.4rem; height: 8.4rem; margin: .6rem; background: rgba(255,255,255,.14); }
+  .pv-fs-g i.x { background: #f4bf5a; }
+  .pv-fs-n { display: block; margin: 4rem 3rem 0; font-size: 8rem; font-weight: 900; text-transform: uppercase; color: #fff; }
   .fit { white-space: nowrap; overflow: hidden; }
   .gold { color: #ffc400; }
   .card { background: rgba(8, 6, 26, .78); border: .5rem solid #ffc400; border-radius: 3rem; }
@@ -117,7 +132,230 @@
   .qr-foot .qrp { margin-top: 1rem; color: #fff; font-size: 2.2rem; }
   /* Botón «Pantalla completa» (pedido de Cote, 21 nov): aparece al tocar la pantalla y se esconde solo a los 8 s */
   #fs { position: absolute; right: 2rem; top: 2rem; z-index: 50; margin: 0; padding: 1.4rem 2.4rem; border: .3rem solid #ffc400; border-radius: 1.6rem; background: #000; background: rgba(0, 0, 0, .78); color: #fff; font-family: 'Fredoka', 'Trebuchet MS', Arial, sans-serif; font-size: 2.8rem; font-weight: 700; line-height: 1.1; -webkit-appearance: none; cursor: pointer; }
+  /* Emisión en vivo de la pantalla (pedido de Cote, 25 nov): durante los juegos, la imagen real de la pantalla vertical
+     llega en tiempo real desde el emisor y se pone encima; si no llega, sigue la vista de esta página */
+  #emi { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 45; background: #000; object-fit: contain; display: none; }
+  #cv.emi-on #emi { display: block; }
+  #cv.emi-on #view, #cv.emi-on #per, #cv.emi-on #marks { visibility: hidden; }
   #diag { position: fixed; left: 0; right: 0; bottom: 0; z-index: 99; margin: 0; padding: 8px; font: 12px/1.35 monospace; background: #fff; color: #000; white-space: pre-wrap; word-wrap: break-word; max-height: 45%; overflow: auto; }
+
+  /* ================= Diseño nuevo (pedido de Cote, 22 nov: «Me gusta, aplícalo a todo») =================
+     La línea gráfica de public/propuesta.html (pantalla vertical): fondo de noche, foco dorado, el color de cada local,
+     letras Big Shoulders Display (títulos y nombres), Manrope (textos) y JetBrains Mono (horas y etiquetas), formas rectas.
+     TODO va bajo «.t2» (clase de <html>): con el interruptor del Centro de control apagado (/api/tema) o con ?tema=0 se
+     quita la clase y la página queda exactamente como antes. Escrito para navegadores antiguos: sin flex, grid, inset,
+     aspect-ratio, min(), clamp(), variables, color-mix ni clip-path (los cortes en diagonal son triángulos hechos con
+     bordes); los colores van escritos directo y los del local se repiten por local (.th-kennedy, .th-frida, .th-tobalaba).
+     Colores: noche #0c0b12, tarima #15131e, líneas #2a2636, texto #f3eee6, tenue #a59fb0, foco #f4bf5a;
+     Kennedy #47b8e6 (texto encima #06131a), Frida #e0338f y Tobalaba #e5413a (texto encima blanco). */
+  #t2pre { position: absolute; left: 0; top: 0; width: 0; height: 0; overflow: hidden; opacity: 0; } /* hace cargar las letras nuevas al abrir la página */
+  .t2 #t2pre b { font-family: "Big Shoulders Display", sans-serif; font-weight: 900; }
+  .t2 #t2pre s { font-family: "Big Shoulders Display", sans-serif; font-weight: 800; }
+  .t2 #t2pre i { font-family: "Manrope", sans-serif; font-weight: 700; }
+  .t2 #t2pre u { font-family: "Manrope", sans-serif; font-weight: 800; }
+  .t2 #t2pre em { font-family: "JetBrains Mono", monospace; font-weight: 700; }
+  @-webkit-keyframes pv2entra { from { opacity: 0; -webkit-transform: translateX(-2.4rem); } to { opacity: 1; -webkit-transform: none; } }
+  @keyframes pv2entra { from { opacity: 0; transform: translateX(-2.4rem); } to { opacity: 1; transform: none; } }
+  @-webkit-keyframes pv2bola { from { opacity: 0; -webkit-transform: scale(.72); } to { opacity: 1; -webkit-transform: none; } }
+  @keyframes pv2bola { from { opacity: 0; transform: scale(.72); } to { opacity: 1; transform: none; } }
+  @-webkit-keyframes pv2pulso { 50% { opacity: .3; } }
+  @keyframes pv2pulso { 50% { opacity: .3; } }
+
+  /* ----- base: fondo, logos y piezas compartidas ----- */
+  .t2, .t2 body { background: #07060c; color: #f3eee6; font-family: "Manrope", "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  .t2 #cv { background: #0c0b12; color: #f3eee6; }
+  .t2 #cv.th-kennedy { background: #0c0b12; background: radial-gradient(circle at 20% 10%, rgba(71, 184, 230, .46) 0, rgba(71, 184, 230, 0) 48%), radial-gradient(circle at 86% 94%, rgba(244, 191, 90, .22) 0, rgba(244, 191, 90, 0) 42%), repeating-linear-gradient(115deg, rgba(255, 255, 255, .03) 0, rgba(255, 255, 255, .03) 1px, rgba(255, 255, 255, 0) 1px, rgba(255, 255, 255, 0) 3.2rem), linear-gradient(160deg, #15131e, #0c0b12 55%, #07060c); }
+  .t2 #cv.th-frida { background: #0c0b12; background: radial-gradient(circle at 20% 10%, rgba(224, 51, 143, .46) 0, rgba(224, 51, 143, 0) 48%), radial-gradient(circle at 86% 94%, rgba(244, 191, 90, .22) 0, rgba(244, 191, 90, 0) 42%), repeating-linear-gradient(115deg, rgba(255, 255, 255, .03) 0, rgba(255, 255, 255, .03) 1px, rgba(255, 255, 255, 0) 1px, rgba(255, 255, 255, 0) 3.2rem), linear-gradient(160deg, #15131e, #0c0b12 55%, #07060c); }
+  .t2 #cv.th-tobalaba { background: #0c0b12; background: radial-gradient(circle at 20% 10%, rgba(229, 65, 58, .46) 0, rgba(229, 65, 58, 0) 48%), radial-gradient(circle at 86% 94%, rgba(244, 191, 90, .22) 0, rgba(244, 191, 90, 0) 42%), repeating-linear-gradient(115deg, rgba(255, 255, 255, .03) 0, rgba(255, 255, 255, .03) 1px, rgba(255, 255, 255, 0) 1px, rgba(255, 255, 255, 0) 3.2rem), linear-gradient(160deg, #15131e, #0c0b12 55%, #07060c); }
+  /* los logos van arriba, al centro (como en la propuesta); todo lo demás parte más abajo */
+  .t2 #marks { top: 2.6rem; bottom: auto; height: 3rem; }
+  .t2 #marks img { height: 3rem; margin: 0 .9rem; }
+  .t2 #marks i { width: .2rem; height: 2.6rem; background: rgba(255, 255, 255, .5); }
+  .t2 .gold { color: #f4bf5a; }
+  .t2 .card { background: #15131e; background: rgba(21, 19, 30, .88); border: .12rem solid #2a2636; border-radius: 0; }
+  .t2 .qrw { border-radius: 0; padding: 1rem; }
+  .t2 .fit { padding-top: .1em; padding-bottom: .1em; } /* espacio para las tildes de las mayúsculas y las colas de las letras (la línea recorta lo que sobresale) */
+  .t2 .g-sub { font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 2rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #f4bf5a; }
+  .t2 .mid { font-family: "Manrope", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 3.2rem; font-weight: 800; line-height: 1.15; }
+  .t2 .big { font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 8rem; font-weight: 900; line-height: 1; text-transform: uppercase; letter-spacing: .005em; }
+  .t2 .clock { font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 6.4rem; font-weight: 700; line-height: 1.25; color: #f4bf5a; }
+  /* línea fina con degradado (color del local → foco) bajo cada encabezado */
+  .t2 .lv-top::after, .t2 .kf-top::after, .t2 .g-title::after, .t2 .g-main::after, .t2 .gv-head::after { content: ""; display: block; height: .22rem; margin-top: 1.3rem; background: #f4bf5a; }
+  .t2 .th-kennedy .lv-top::after, .t2 .th-kennedy .kf-top::after, .t2 .th-kennedy .g-title::after, .t2 .th-kennedy .g-main::after, .t2 .th-kennedy .gv-head::after { background: linear-gradient(90deg, rgba(71, 184, 230, 0), #47b8e6 22%, #f4bf5a 78%, rgba(244, 191, 90, 0)); }
+  .t2 .th-frida .lv-top::after, .t2 .th-frida .kf-top::after, .t2 .th-frida .g-title::after, .t2 .th-frida .g-main::after, .t2 .th-frida .gv-head::after { background: linear-gradient(90deg, rgba(224, 51, 143, 0), #e0338f 22%, #f4bf5a 78%, rgba(244, 191, 90, 0)); }
+  .t2 .th-tobalaba .lv-top::after, .t2 .th-tobalaba .kf-top::after, .t2 .th-tobalaba .g-title::after, .t2 .th-tobalaba .g-main::after, .t2 .th-tobalaba .gv-head::after { background: linear-gradient(90deg, rgba(229, 65, 58, 0), #e5413a 22%, #f4bf5a 78%, rgba(244, 191, 90, 0)); }
+  /* etiquetas tipo «pestaña»: recuadro dorado (o del color del local) con el corte en diagonal hecho con un triángulo de bordes */
+  .t2 .lv-slide h2, .t2 .kf-now small, .t2 .v-body .mid.gold, .t2 .r-win .g-sub, .t2 .g-tagw span { display: inline-block; position: relative; margin: 0 1.1em 0 0; padding: .45em .5em .45em .9em; background: #f4bf5a; color: #1a1407; font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 1.8rem; font-weight: 700; line-height: 1.2; letter-spacing: .16em; text-transform: uppercase; text-align: left; white-space: nowrap; }
+  .t2 .lv-slide h2::after, .t2 .kf-now small::after, .t2 .v-body .mid.gold::after, .t2 .r-win .g-sub::after, .t2 .g-tagw span::after { content: ""; position: absolute; left: 100%; top: 0; width: 0; height: 0; margin-left: -1px; border-top: 2.1em solid #f4bf5a; border-right: 1.1em solid transparent; }
+  .t2 .th-kennedy .kf-now small { background: #47b8e6; color: #06131a; } .t2 .th-kennedy .kf-now small::after { border-top-color: #47b8e6; }
+  .t2 .th-frida .kf-now small { background: #e0338f; color: #fff; } .t2 .th-frida .kf-now small::after { border-top-color: #e0338f; }
+  .t2 .th-tobalaba .kf-now small { background: #e5413a; color: #fff; } .t2 .th-tobalaba .kf-now small::after { border-top-color: #e5413a; }
+  /* el QR: recuadro blanco a todo el ancho, con la frase al lado */
+  .t2 .lv-qr, .t2 .qr-foot, .t2 .kf-qr { height: auto; padding: 1.6rem; background: #fff; text-align: left; white-space: nowrap; }
+  .t2 .lv-qr { bottom: 3rem; } .t2 .qr-foot { bottom: 3rem; }
+  .t2 .lv-qr .qrw, .t2 .qr-foot .qrw, .t2 .kf-qr .qrw { width: 15rem; padding: 0; vertical-align: middle; }
+  .t2 .lv-qrtext, .t2 .qr-foot .qrp, .t2 .kf-qr .qrp { display: inline-block; vertical-align: middle; width: 30rem; margin: 0 0 0 1.8rem; white-space: normal; text-align: left; }
+  .t2 .lv-qrtext b, .t2 .qr-foot .qrp, .t2 .kf-qr .qrp { font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 3.7rem; font-weight: 900; line-height: .98; letter-spacing: .005em; text-transform: uppercase; color: #0c0b12; }
+  .t2 .lv-qrtext span { margin-top: .8rem; font-family: "Manrope", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 1.7rem; font-weight: 800; line-height: 1.25; color: #4b4656; }
+  .t2 #fs { border: .2rem solid #f4bf5a; border-radius: 0; background: #0c0b12; background: rgba(12, 11, 18, .92); color: #f3eee6; font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 2rem; letter-spacing: .12em; text-transform: uppercase; }
+
+  /* ----- información del local ----- */
+  .t2 .lv-top { top: 7.4rem !important; }
+  .t2 .lv-top small { font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 1.7rem; font-weight: 700; line-height: 1.2; letter-spacing: .26em; color: #f4bf5a; }
+  .t2 .lv-top b { margin-top: .3rem; font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 6.8rem; font-weight: 900; line-height: 1; letter-spacing: .005em; text-transform: uppercase; }
+  .t2 .lv-top span { margin-top: .3rem; font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 3.3rem; font-weight: 800; line-height: 1.05; letter-spacing: .02em; text-transform: uppercase; color: #f4bf5a; }
+  .t2 .lv-card { top: 24.4rem; bottom: 23.4rem; padding: 0 0 3rem; background: none; border: 0; }
+  .t2 .lv-card.noqr { bottom: 3rem !important; }
+  .t2 .lv-card.noqr #lvin { font-size: 1.15em; } /* sin QR hay más alto: todo un poco más grande (si no cabe, se achica igual) */
+  .t2 .lv-slide { text-align: left; }
+  .t2 #lvin { -webkit-animation: pv2entra .5s ease-out both; animation: pv2entra .5s ease-out both; }
+  .t2 .lv-slide h2 { margin-bottom: .9em; font-size: 1.8em; }
+  .t2 .lv-now { margin: 0 0 1.2em; padding: 1.5em 1.7em 1.7em; text-align: left; background: #15131e; background: rgba(21, 19, 30, .88); border-left: .5em solid #2a2636; }
+  .t2 .th-kennedy h2 + .lv-now { border-left-color: #47b8e6; background: #1b3340; background: linear-gradient(135deg, rgba(71, 184, 230, .36), rgba(21, 19, 30, .9) 72%); }
+  .t2 .th-frida h2 + .lv-now { border-left-color: #e0338f; background: #3a1730; background: linear-gradient(135deg, rgba(224, 51, 143, .36), rgba(21, 19, 30, .9) 72%); }
+  .t2 .th-tobalaba h2 + .lv-now { border-left-color: #e5413a; background: #3a1a1c; background: linear-gradient(135deg, rgba(229, 65, 58, .36), rgba(21, 19, 30, .9) 72%); }
+  .t2 .lv-now small { font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 1.6em; font-weight: 700; letter-spacing: .18em; color: #f4bf5a; }
+  .t2 .lv-now b { margin-top: .12em; font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 6em; font-weight: 900; line-height: 1; letter-spacing: .005em; text-transform: uppercase; }
+  .t2 .lv-now > span { margin-top: .35em; font-family: "Manrope", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 2.3em; font-weight: 700; line-height: 1.2; color: #a59fb0; }
+  .t2 .lv-by { margin-top: .3em; font-family: "Manrope", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: .46em; font-weight: 800; line-height: 1.2; letter-spacing: 0; text-transform: none; color: #f4bf5a; }
+  .t2 .lv-now b .lv-by { font-size: .42em; }
+  .t2 .lv-by small, .t2 .lv-now b .lv-by small { display: inline; font-family: inherit; font-size: 1em; font-weight: 700; letter-spacing: 0; text-transform: none; color: #a59fb0; }
+  .t2 p.lv-now { margin: 1em 0 1.3em; padding: 0; background: none; border: 0; text-align: center; }
+  .t2 p.lv-now > span { margin: 0; color: #f3eee6; }
+  .t2 .lv-slide h2.lv-qh { display: block; margin: 0 0 .32em; padding: 0; background: none; color: #f3eee6; font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 5.6em; font-weight: 900; line-height: 1; letter-spacing: .005em; text-align: center; white-space: normal; }
+  .t2 .lv-slide h2.lv-qh::after { display: none; }
+  .t2 .lv-bigqr .qrw { width: 34em; padding: 1.2em; } /* en «em»: se achica con el recuadro si además va la lista */
+  .t2 .lv-bigqr .qrw img { height: 31.6em; } /* el alto queda reservado antes de que cargue la imagen (el centrado se calcula al dibujar) */
+  .t2 .lv-list li, .t2 .lv-hours li, .t2 .lv-week li { margin: 0 0 .7em; padding: 1em 1.4em; font-size: 1em; line-height: 1.1; color: #f3eee6; background: #15131e; background: rgba(21, 19, 30, .88); border-left: .5em solid #2a2636; }
+  .t2 .lv-list li b, .t2 .lv-hours li b, .t2 .lv-week li b { font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 3.3em; font-weight: 900; line-height: 1; letter-spacing: .005em; text-transform: uppercase; }
+  .t2 .lv-list li b, .t2 .lv-week li b { display: block; }
+  .t2 .lv-list li span { margin-top: .25em; font-family: "Manrope", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 1.7em; font-weight: 700; color: #a59fb0; }
+  .t2 .lv-hours li { display: table; width: 100%; }
+  .t2 .lv-hours li em { display: table-cell; min-width: 0; margin: 0; padding-right: .8em; vertical-align: middle; white-space: nowrap; font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 2em; font-weight: 700; color: #f4bf5a; }
+  .t2 .lv-hours li b { display: table-cell; width: 100%; vertical-align: middle; }
+  .t2 .lv-week li em { display: block; min-width: 0; margin: 0 0 .3em; font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 1.5em; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: #f4bf5a; }
+  .t2 .th-kennedy .lv-hours li.on, .t2 .th-kennedy .lv-week li.on { border-left-color: #47b8e6; background: #1b3340; background: linear-gradient(90deg, rgba(71, 184, 230, .34), rgba(21, 19, 30, .88) 72%); }
+  .t2 .th-frida .lv-hours li.on, .t2 .th-frida .lv-week li.on { border-left-color: #e0338f; background: #3a1730; background: linear-gradient(90deg, rgba(224, 51, 143, .34), rgba(21, 19, 30, .88) 72%); }
+  .t2 .th-tobalaba .lv-hours li.on, .t2 .th-tobalaba .lv-week li.on { border-left-color: #e5413a; background: #3a1a1c; background: linear-gradient(90deg, rgba(229, 65, 58, .34), rgba(21, 19, 30, .88) 72%); }
+  .t2 .lv-flyer img { border-radius: 0; border: .12rem solid #2a2636; }
+  .t2 .lv-dots { bottom: 0; }
+  .t2 .lv-dots i { width: 2.4rem; height: .36rem; margin: 0 .3rem; border-radius: 0; background: rgba(255, 255, 255, .2); }
+  .t2 .lv-dots i.on { background: #f4bf5a; }
+
+  /* ----- karaoke a pantalla completa ----- */
+  .t2 .kf-top { top: 7.4rem !important; }
+  .t2 .kf-top b { font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-weight: 900; line-height: 1; letter-spacing: .005em; text-transform: uppercase; }
+  .t2 .kf-top .g-sub { display: block; margin-top: .5rem; font-size: 1.7rem; letter-spacing: .24em; }
+  .t2 .kf-now { top: 21rem; height: auto; padding: 1.8rem 2rem 2rem; text-align: left; border: 0; border-left: .5rem solid #2a2636; }
+  .t2 .th-kennedy .kf-now { border-left-color: #47b8e6; background: #1b3340; background: linear-gradient(135deg, rgba(71, 184, 230, .4), rgba(21, 19, 30, .92) 72%); }
+  .t2 .th-frida .kf-now { border-left-color: #e0338f; background: #3a1730; background: linear-gradient(135deg, rgba(224, 51, 143, .4), rgba(21, 19, 30, .92) 72%); }
+  .t2 .th-tobalaba .kf-now { border-left-color: #e5413a; background: #3a1a1c; background: linear-gradient(135deg, rgba(229, 65, 58, .4), rgba(21, 19, 30, .92) 72%); }
+  .t2 .kf-now small { font-size: 1.7rem; }
+  .t2 .kf-now b { margin-top: 1rem; font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 7.4rem; font-weight: 900; line-height: 1; letter-spacing: .005em; text-transform: uppercase; }
+  .t2 .kf-now span { margin-top: .5rem; font-family: "Manrope", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 2.8rem; font-weight: 700; line-height: 1.2; color: #f3eee6; }
+  .t2 .kf-now i { margin-top: .2rem; font-family: "Manrope", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 2.2rem; font-style: normal; font-weight: 700; line-height: 1.2; color: #a59fb0; }
+  .t2 .kf-bottom { top: 45.5rem; bottom: 3rem; white-space: normal; }
+  .t2 .kf-next { display: block; width: auto; }
+  .t2 .kf-next small { margin-bottom: 1rem; font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 1.7rem; font-weight: 700; letter-spacing: .2em; text-transform: uppercase; color: #f4bf5a; }
+  .t2 .kf-next p { position: relative; margin: 0 0 .7rem; padding: 1rem 1.4rem 1rem 5.2rem; font-size: 1rem; line-height: 1.1; background: #15131e; background: rgba(21, 19, 30, .88); border: .12rem solid #2a2636; }
+  .t2 .kf-next p em { position: absolute; left: 1.6rem; top: 50%; margin: -1.3rem 0 0; font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 2.3rem; line-height: 2.6rem; color: #f4bf5a; }
+  .t2 .kf-next p b { display: block; font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 3.2rem; font-weight: 900; line-height: 1; letter-spacing: .005em; text-transform: uppercase; }
+  .t2 .kf-next p span { margin-top: .3rem; font-family: "Manrope", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 1.7rem; font-weight: 700; color: #a59fb0; }
+  .t2 .kf-qr { position: absolute; left: 0; right: 0; bottom: 0; width: auto; margin: 0; }
+  .t2 .kf-now { -webkit-animation: pv2entra .5s ease-out both; animation: pv2entra .5s ease-out both; }
+
+  /* ----- juegos de la sala completa ----- */
+  .t2 .g-title { top: 7.4rem; font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 6.6rem; font-weight: 900; line-height: 1; letter-spacing: .005em; text-transform: uppercase; }
+  .t2 .g-over { top: 7.4rem !important; color: #f4bf5a !important; font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 1.7rem !important; font-weight: 700; line-height: 1.2; letter-spacing: .26em; }
+  .t2 .g-over::after { display: none; }
+  .t2 .g-main { top: 10rem !important; font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-weight: 900 !important; line-height: 1; letter-spacing: .005em; text-transform: uppercase; }
+  .t2 .g-tagw { font-size: 1rem; line-height: 1; letter-spacing: 0; }
+  .t2 .g-tagw::after { display: none; }
+  .t2 .g-tagw span { font-size: 2rem; }
+  /* filas (ranking, listas, casilleros) */
+  .t2 .rows li { position: relative; margin: 0 0 .2em; padding: .3em .42em; border-radius: 0; background: #15131e; background: rgba(21, 19, 30, .88); border: .12rem solid #2a2636; border-left: .5rem solid #2a2636; font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 3.4rem; font-weight: 800; line-height: 1.05; letter-spacing: .01em; text-transform: uppercase; white-space: normal; overflow: visible; }
+  .t2 .rows li.top { font-size: 3.9rem; }
+  .t2 .th-kennedy .rows li.top { border-left-color: #47b8e6; } .t2 .th-frida .rows li.top { border-left-color: #e0338f; } .t2 .th-tobalaba .rows li.top { border-left-color: #e5413a; }
+  .t2 .rows li em { width: 3.4em; font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: .62em; color: #f4bf5a; text-indent: 0; vertical-align: .14em; }
+  .t2 .rows li i { font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: .8em; color: #f4bf5a; text-indent: 0; }
+  .t2 .rk li { padding-left: 2.56em; text-indent: -2.108em; } /* el nombre que no cabe sigue en otra línea, alineado con el nombre (nunca se corta) */
+  .t2 .sc li { padding-right: 4.4em; }
+  .t2 .sc li i { position: absolute; right: .5em; top: 50%; float: none; margin: -.6em 0 0; line-height: 1.2; }
+  .t2 .rows li.off { opacity: .6; }
+  .t2 .g-box { top: 19.5rem !important; bottom: 23rem !important; overflow: hidden; }
+  .t2 .g-box .rows li, .t2 .g-box .rows li.top { font-size: 3em; }
+  /* bingo */
+  .t2 .ball { top: 21rem; width: 28rem; height: 28rem; margin-left: -14rem; border: 0; color: #0c0b12; background: #efeae0; background: radial-gradient(circle at 34% 28%, #fff, #e9e4da 58%, #b9b2a4); -webkit-animation: pv2bola .45s ease-out both; animation: pv2bola .45s ease-out both; }
+  .t2 .th-kennedy .ball { box-shadow: 0 0 0 1.5rem #47b8e6, 0 2rem 4rem 1rem rgba(0, 0, 0, .5); }
+  .t2 .th-frida .ball { box-shadow: 0 0 0 1.5rem #e0338f, 0 2rem 4rem 1rem rgba(0, 0, 0, .5); }
+  .t2 .th-tobalaba .ball { box-shadow: 0 0 0 1.5rem #e5413a, 0 2rem 4rem 1rem rgba(0, 0, 0, .5); }
+  .t2 .ball small { height: 3.6rem; margin-top: 2.4rem; font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 3.4rem; line-height: 3.6rem; color: #55505f; }
+  .t2 .ball b { font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 17rem; font-weight: 900; line-height: 1; }
+  .t2 .ball b.soon { padding: .1em 2.4rem; line-height: 1.12; text-transform: uppercase; white-space: normal; }
+  .t2 .prev { top: 54rem; }
+  .t2 .prev span { width: 6.2rem; height: 6.2rem; margin: 0 .5rem; background: #1c1828; color: #f3eee6; box-shadow: 0 0 0 .25rem #2a2636; font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 3.4rem; font-weight: 900; line-height: 6.2rem; }
+  .t2 .b-fig { top: 63.5rem !important; }
+  .t2 .b-fig .mid { font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 4.8rem; font-weight: 900; line-height: 1; letter-spacing: .005em; text-transform: uppercase; }
+  .t2 .b-fig .g-sub { margin-top: .7rem; }
+  .t2 .b-win { top: 18rem !important; }
+  .t2 .b-win b { display: block; }
+  .t2 .b-figw { top: 38.5rem !important; }
+  .t2 .b-names { top: 43.5rem !important; }
+  .t2 .b-one b { white-space: normal; } /* un solo ganador: el nombre grande, en las líneas que necesite */
+  .t2 .b-names b { font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-weight: 900; line-height: 1.05; letter-spacing: .005em; text-transform: uppercase; }
+  /* QR grande (para entrar a la sala) */
+  .t2 .q-head b.mid, .t2 .bq-head b.mid { white-space: normal; font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 5.8rem; font-weight: 900; line-height: 1; letter-spacing: .005em; text-transform: uppercase; }
+  .t2 .q-head { top: 15rem !important; } .t2 .q-qr { top: 30rem !important; } .t2 .q-qr .qrw { width: 44rem !important; padding: 1.2rem; } .t2 .q-sub { top: 80rem !important; }
+  .t2 .bq-head { top: 18.5rem !important; } .t2 .bq-qr { top: 32.5rem !important; } .t2 .bq-qr .qrw { width: 40rem !important; padding: 1.2rem; } .t2 .bq-sub { top: 76.5rem !important; }
+  .t2 .q-sub, .t2 .bq-sub { font-size: 3rem; color: #f3eee6; }
+  /* sorteos */
+  .t2 .r-roll { top: 30rem !important; font-size: 9rem; -webkit-animation: pv2pulso 1.2s ease-in-out infinite; animation: pv2pulso 1.2s ease-in-out infinite; }
+  .t2 .r-win { top: 25rem !important; }
+  .t2 .r-win .g-sub { font-size: 2rem; }
+  .t2 .r-win .big { margin-top: 1.6rem; font-size: 7.2rem; white-space: normal; } /* el nombre entero y grande, en las líneas que necesite */
+  .t2 .r-list { top: 20rem !important; } .t2 .r-list.r-low { top: 46rem !important; }
+  .t2 .d-pool { top: 19.5rem !important; } .t2 .d-pool .rows li { font-size: 4.3rem; }
+  .t2 .d-pool .rows li, .t2 .d-list .rows li { white-space: nowrap; overflow: hidden; } /* una línea: si no cabe, se achica la letra */
+  .t2 .d-win { top: 25rem !important; } .t2 .d-win .big { font-size: 8.6rem; white-space: normal; }
+  .t2 .d-list { top: 57rem !important; }
+  /* El Festival y El objeto más extraño */
+  .t2 .v-body { top: 19.5rem !important; bottom: 23rem !important; overflow: hidden; }
+  /* los tamaños van en «em»: si el contenido no cabe en el alto, se achica todo junto (fitbox) */
+  .t2 .v-body .mid.gold { margin-top: .2em; font-size: 2em; }
+  .t2 .v-hero { top: 26rem !important; } /* sin lista (un nombre, un aviso): el bloque va más al centro */
+  .t2 .v-body .big { margin-top: .2em; font-size: 6.8em; white-space: normal; } /* el nombre entero y grande, en las líneas que necesite */
+  .t2 .v-body b.big + b.big { margin-top: .3em; padding-top: .34em; border-top: .12rem solid #2a2636; }
+  .t2 .v-body .clock { font-size: 6.4em; }
+  .t2 .v-body .big.gold { margin-top: 0; font-size: 12em; line-height: .95; }
+  .t2 .v-body .v-thing { margin-top: .2em; color: #a59fb0 !important; font-size: 2.7em; font-weight: 700; }
+  .t2 .v-body .v-note { margin-top: .33em; font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; font-size: 3.6em; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #f4bf5a; }
+  .t2 .v-drum { color: #f4bf5a; }
+  .t2 .v-body .v-msg { font-family: "Big Shoulders Display", "Arial Narrow", "HelveticaNeue-CondensedBold", "Roboto Condensed", sans-serif-condensed, Impact, sans-serif; font-size: 7.4em; font-weight: 900; line-height: 1; letter-spacing: .005em; text-transform: uppercase; }
+  .t2 .v-body .rows { margin-top: 1.6rem !important; }
+  .t2 .v-body .rows li { font-size: 3.1em; }
+  .t2 .v-th { display: block; margin-top: .15em; font-family: "Manrope", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: .52em; font-weight: 700; letter-spacing: 0; text-transform: none; color: #a59fb0; }
+  /* votación del juego y su presentación */
+  .t2 .gv-head { top: 7.4rem !important; }
+  .t2 .gv-head .g-sub { color: #f4bf5a !important; font-size: 1.7rem; line-height: 1.2; letter-spacing: .24em; }
+  .t2 .gv-head .big { margin-top: .3rem; }
+  .t2 .gv-head .mid { margin-top: .5rem; font-size: 2.6rem; font-weight: 700; color: #a59fb0; }
+  .t2 .gv-head .mid b { font-family: "JetBrains Mono", Menlo, Consolas, "Courier New", monospace; }
+  .t2 .gv-bars { top: 26rem !important; }
+  .t2 .gv-bars .g-sub { margin-top: 1.4rem; color: #a59fb0; }
+  .t2 .rows li.bar, .t2 .rows li.bar.top { margin-bottom: .32em; padding: .5em .5em; font-size: 3.1rem; white-space: nowrap; overflow: hidden; }
+  .t2 .rows li.bar i { font-size: .62em; line-height: 1.7; }
+  .t2 .bar u { opacity: .6; }
+  .t2 .th-kennedy .bar u { background: #47b8e6 !important; } .t2 .th-frida .bar u { background: #e0338f !important; } .t2 .th-tobalaba .bar u { background: #e5413a !important; }
+  .t2 .gi-art { top: 23.5rem !important; }
+  .t2 .gi-art div { width: 33rem !important; }
+  .t2 #pvlines { top: 46.5rem !important; bottom: 23rem !important; }
+  .t2 #pvlines .rows li { padding: .5em .7em; font-family: "Manrope", "Helvetica Neue", Helvetica, Arial, sans-serif; font-size: 2.5em !important; font-weight: 700; line-height: 1.25; letter-spacing: 0; text-transform: none; }
+  /* show e Instagram */
+  .t2 .s-tag { top: 25rem !important; } .t2 .s-hero { top: 31rem !important; }
+  .t2 .s-hero .big { font-size: 10.5rem; line-height: .96; white-space: normal; }
+  .t2 .s-hero .lv-by { margin-top: 1.4rem; font-size: 3.4rem; }
+  .t2 .i-tag { top: 30rem !important; } .t2 .i-hero { top: 36rem !important; }
+  .t2 .i-hero .big { font-size: 9rem; text-transform: none; }
 </style>
 </head>
 <body>
@@ -126,8 +364,11 @@
   <div id="tap" class="hide">▶ Toca la pantalla para iniciar el video</div>
   <button id="fs" class="hide" type="button">📺 Pantalla completa</button>
   <div id="view"></div>
+  <div id="per" class="hide"></div>
   <div id="marks"></div>
+  <video id="emi" muted autoplay playsinline webkit-playsinline></video>
 </div>
+<div id="t2pre"><b>.</b><s>.</s><i>.</i><u>.</u><em>.</em></div>
 <script src="gameintro.js"></script>
 <script>
 (function () {
@@ -144,13 +385,27 @@
   var VENUE = SCREENS[P][0];
   var NAMES = { kennedy: 'Mercado Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' }; // nombre del local (pedido de Cote, 21 nov)
   var SHORT = { kennedy: 'Mercado Kennedy', frida: 'Frida', tobalaba: 'Tobalaba' }; // en los juegos también «Mercado Kennedy» (pedido de Cote, 21 nov)
+  // Casillas de cada figura (las mismas de cc.html), para mostrar la figura en grande al elegirla (Cote, 24 nov)
+  var FIGMASK = {"linea":31,"horizontal":31,"vertical":1082401,"diagonal":17043521,"dos-lineas":1023,"esquinas":17825809,"sello":99,"cruz":4357252,"marco":33080895,"cuadro":469440,"diamante":4539716,"piramide":32968704,"piramide-inv":4575,"reloj":32969183,"corazon":4685802,"estrella":18168804,"lleno":33554431,"a":18415150,"b":16301615,"c":32539711,"d":16303663,"e":32554047,"f":1096767,"g":33092671,"h":18415153,"i":32641183,"j":6594847,"k":18128177,"l":32539681,"m":18405233,"n":18667121,"o":15255086,"p":1097263,"q":23385646,"r":18136623,"s":33061951,"t":4329631,"u":33080881,"v":4539953,"w":18732593,"x":18157905,"y":4329809,"z":32575775};
   var FIG = { linea: 'Línea (cualquiera)', horizontal: 'Línea horizontal', vertical: 'Línea vertical', diagonal: 'Diagonal', 'dos-lineas': 'Dos líneas', esquinas: 'Cuatro esquinas', sello: 'Sello (2×2 en una esquina)', cruz: 'Cruz', marco: 'Marco', cuadro: 'Cuadro central', diamante: 'Diamante', piramide: 'Pirámide', 'piramide-inv': 'Pirámide invertida', reloj: 'Reloj de arena', corazon: 'Corazón', estrella: 'Estrella', lleno: 'Cartón lleno' };
-  var GAMES = { bingo: ['🎱', 'Bingo'], rosco: ['🎡', 'El Rosco'], festival: ['🎤', 'El Festival de ' + SHORT[VENUE]], objeto: ['🗳️', 'El objeto más extraño'] };
+  var GAMES = { bingo: ['🎱', 'Bingo'], rosco: ['🎡', 'El Rosko'], festival: ['🎤', 'El Festival de ' + SHORT[VENUE]], objeto: ['🗳️', 'El objeto más extraño'] };
   var GVC = { bingo: '#ff2e93', rosco: '#9b6bff', festival: '#ffc400', objeto: '#19d6b0' };
   var offset = 0;
-  var cv = $('cv'); var view = $('view'); var vid = $('vid'); var tap = $('tap');
+  var cv = $('cv'); var view = $('view'); var vid = $('vid'); var tap = $('tap'); var perShown = ''; // texto del GC PER que está puesto
+  // ---------- Diseño nuevo (pedido de Cote, 22 nov) ----------
+  // Va con la clase «t2» en <html> (todo su CSS está bajo «.t2»). Se apaga y se enciende en el Centro de control
+  // (/api/tema; se pregunta al cargar y cada minuto; si no responde, queda como estaba) y ?tema=0 o ?tema=1 en la
+  // dirección lo deja fijo. Al cargar, antes de tener respuesta, parte encendido.
+  var T2 = Q.tema !== '0';
+  document.documentElement.className = T2 ? 't2' : '';
+  function tv(a, b) { return T2 ? b : a; } // valor del diseño anterior o del nuevo
+  // En el diseño nuevo las etiquetas van sin emojis
+  function se(s) { return T2 ? String(s).replace(/(?:[\uD83C-\uDBFF][\uDC00-\uDFFF]|[\u2300-\u23FF\u2600-\u27BF\u2B00-\u2BFF])[\uFE0F\u200D]*/g, '').replace(/\s{2,}/g, ' ').replace(/^\s+|\s+$/g, '') : s; }
+  function gname(k) { return (T2 ? '' : GAMES[k][0] + ' ') + h(GAMES[k][1]); } // nombre del juego (con su ícono en el diseño anterior)
   function now() { return new Date().getTime() + offset; }
-  function origin() { return location.protocol + '//' + location.host; }
+  // Dirección de los QR: la que se elige en el Centro de control (juegos.krbstage.cl); si no hay, esta misma
+  var PUB = '';
+  function origin() { return PUB || (location.protocol + '//' + location.host); }
   function qrImg(url) { return '<img alt="Código QR" src="/api/qr?text=' + encodeURIComponent(url) + '">'; }
   function clock(ms) { var s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
   function cap(t) { return String(t || '').toLowerCase().replace(/(^|[\s:(«"\-])([a-záéíóúñü])/g, function (m, a, b) { return a + b.toUpperCase(); }); }
@@ -218,13 +473,18 @@
     var rot = Q.girar === '1' && W > H;
     var cw = rot ? H : W; var ch = rot ? W : H;
     cv.style.width = cw + 'px'; cv.style.height = ch + 'px';
-    cv.className = (rot ? 'rot ' : '') + 'th-' + VENUE + (cw > ch * 0.75 ? ' wide' : '');
+    cv.className = (rot ? 'rot ' : '') + 'th-' + VENUE + (cw > ch * 0.75 ? ' wide' : '') + (perShown ? ' per' : '');
     document.documentElement.style.fontSize = Math.min(ch / 100, cw / 56.25).toFixed(3) + 'px';
     fitAll();
   }
   window.onresize = layout;
   layout();
-  $('marks').innerHTML = '<img src="krb-stage.svg" alt="KRB Stage">' + (VENUE === 'kennedy' ? '<i></i><img src="logo-kennedy.png" alt="Mercado Kennedy">' : '');
+  // Las letras del diseño nuevo pueden terminar de cargar después de dibujar: se vuelve a ajustar el tamaño de los textos
+  // (solo con el diseño nuevo puesto: el anterior queda tal como estaba)
+  function refit() { if (T2) fitAll(); }
+  window.addEventListener('load', refit, false);
+  try { if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', refit, false); } catch (e) { /* nada */ }
+  $('marks').innerHTML = '<img src="krb-stage.svg" alt="KRB Stage">' + (VENUE === 'kennedy' ? '<i></i><img src="logo-kennedy.png" alt="Mercado Kennedy">' : VENUE === 'frida' ? '<i></i><img src="logo-frida-h.png" alt="Frida Kahlo">' : '');
 
   // ---------- Temporizadores de cada vista ----------
   var viewTimers = []; var stageTimers = [];
@@ -250,6 +510,8 @@
   // (iOS 9) eso no existe: el botón abre el video en la pantalla completa del iPad. El botón aparece al tocar la pantalla
   // (o mover el mouse o apretar una tecla del control) y se esconde solo a los 8 segundos, para no quedar a la vista del público.
   var fsBtn = $('fs'); var fsHide = null; var fsFirst = true;
+  var FS_TXT = fsBtn.innerHTML;
+  fsBtn.innerHTML = se(FS_TXT);
   var IOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   function fsEl() { return document.fullscreenElement || document.webkitFullscreenElement || document.webkitCurrentFullScreenElement || document.mozFullScreenElement || document.msFullscreenElement || null; }
   function fsReq() { var el = document.documentElement; return el.requestFullscreen || el.webkitRequestFullscreen || el.webkitRequestFullScreen || el.mozRequestFullScreen || el.msRequestFullscreen || null; }
@@ -353,13 +615,13 @@
     view.innerHTML = '<div class="abs lv-top" style="top:4rem"><small>Esta noche en</small><b class="fit">' + h(NAMES[VENUE]) + '</b><span id="lvshow" class="fit hide"></span></div>' +
       '<div class="lv-card card"><div class="lv-slide" id="lvslide"></div><div class="lv-dots" id="lvdots"></div></div>' +
       '<div class="lv-qr" id="lvfoot"><div class="qrw" id="lvqr"></div><div class="lv-qrtext"><b>Escanea el código QR con tu celular</b><span>Pide tu canción de karaoke y espera tu turno</span></div></div>';
-    if (focus === 'qr' || !withQr) { $('lvfoot').className = 'lv-qr hide'; view.querySelector('.lv-card').style.bottom = '6rem'; }
+    if (focus === 'qr' || !withQr) { $('lvfoot').className = 'lv-qr hide'; view.querySelector('.lv-card').style.bottom = '6rem'; view.querySelector('.lv-card').className += ' noqr'; }
     lightJoin(function (url) { var b = $('lvqr'); if (b && withQr) b.innerHTML = qrImg(url); paint(); });
     function slides() {
       var out = []; var i;
       var list = (kar && kar.list) || [];
       if (focus === 'qr') {
-        var s = '<h2>📱 Escanea el código QR con tu celular</h2><div class="lv-bigqr" style="text-align:center"><div class="qrw">' + (lightUrl ? qrImg(lightUrl) : '') + '</div></div><p class="lv-now"><span>Pide tu canción de karaoke y espera tu turno</span></p>';
+        var s = '<h2 class="lv-qh">📱 Escanea el código QR con tu celular</h2><div class="lv-bigqr" style="text-align:center"><div class="qrw">' + (lightUrl ? qrImg(lightUrl) : '') + '</div></div><p class="lv-now"><span>Pide tu canción de karaoke y espera tu turno</span></p>';
         if (list.length) { s += '<h2>🎤 Próximos en cantar</h2><ol class="lv-list">'; for (i = 0; i < list.length && i < 4; i++) s += '<li><b>' + h(list[i].name) + '</b><span>' + h(list[i].song) + '</span></li>'; s += '</ol>'; }
         return [s];
       }
@@ -425,7 +687,7 @@
       if (flyers.length && focus !== 'qr' && !/(^| )wide( |$)/.test(cv.className)) all.push('<div class="lv-flyer"><img id="lvfly" alt="" src="' + h(flyers[turn % flyers.length].url) + '"></div>');
       var at = idx % all.length;
       slide.style.paddingTop = '0';
-      slide.innerHTML = '<div id="lvin">' + all[at] + '</div>';
+      slide.innerHTML = '<div id="lvin">' + (T2 ? all[at].replace(/(<h2[^>]*>)([^<]*)(<\/h2>)/g, function (m, a, t, z) { return a + se(t) + z; }) : all[at]) + '</div>'; // diseño nuevo: títulos sin emoji
       var fly = $('lvfly');
       if (fly) {
         fly.style.maxHeight = Math.floor(slide.clientHeight * 0.9) + 'px';
@@ -437,7 +699,7 @@
       if (all.length > 1) for (var i = 0; i < all.length; i++) dots += '<i class="' + (i === at ? 'on' : '') + '"></i>';
       $('lvdots').innerHTML = dots;
       var sh = $('lvshow');
-      if (cart && cart.show) { sh.className = 'fit'; sh.innerHTML = '⭐ ' + h(cap(cart.show)); fitLine(sh); } else sh.className = 'fit hide';
+      if (cart && cart.show) { sh.className = 'fit'; sh.innerHTML = tv('⭐ ', '') + h(cap(cart.show)); fitLine(sh); } else sh.className = 'fit hide';
       fitLine(view.querySelector('.lv-top b'));
     }
     function loadCart() { get('/api/light/cartelera?local=' + VENUE, function (c) { if (c) { cart = c; paint(); } }); }
@@ -459,10 +721,10 @@
       if (sig === last) return;
       last = sig;
       var nx = '';
-      for (var i = 1; i < list.length && i < 4; i++) nx += '<p><em>' + (i + 1) + '</em><b>' + h(list[i].name) + '</b><span>' + h(list[i].song) + (list[i].artist ? ' · ' + h(list[i].artist) : '') + '</span></p>';
-      view.innerHTML = '<div class="abs" style="top:4rem"><b class="fit" style="display:block;font-size:5.6rem">Karaoke ' + h(NAMES[venue]) + '</b><span class="g-sub">' + (st.total ? st.total + ' en la lista' : 'Lista abierta') + '</span></div>' +
-        '<div class="kf-now card">' + (a ? '<small>🎤 Ahora canta</small><b class="fit">' + h(a.name) + '</b><span class="fit">' + h(a.song) + '</span>' + (a.artist ? '<i class="fit">' + h(a.artist) + '</i>' : '')
-          : '<small>🎤 Karaoke</small><b>¡Pide tu canción!</b><span>Desde el celular</span>') + '</div>' +
+      for (var i = 1; i < list.length && i < 4; i++) nx += '<p><em>' + (i + 1) + '</em><b' + tv('', ' class="fit"') + '>' + h(list[i].name) + '</b><span>' + h(list[i].song) + (list[i].artist ? ' · ' + h(list[i].artist) : '') + '</span></p>';
+      view.innerHTML = '<div class="abs kf-top" style="top:4rem"><b class="fit" style="display:block;font-size:' + tv('5.6', '6.6') + 'rem">Karaoke ' + h(NAMES[venue]) + '</b><span class="g-sub">' + (st.total ? st.total + ' en la lista' : 'Lista abierta') + '</span></div>' +
+        '<div class="kf-now card">' + (a ? '<small>' + se('🎤 Ahora canta') + '</small><b class="fit">' + h(a.name) + '</b><span class="fit">' + h(a.song) + '</span>' + (a.artist ? '<i class="fit">' + h(a.artist) + '</i>' : '')
+          : '<small>' + se('🎤 Karaoke') + '</small><b>¡Pide tu canción!</b><span>Desde el celular</span>') + '</div>' +
         '<div class="kf-bottom"><div class="kf-next">' + (nx ? '<small>Luego vienen</small>' + nx : '') + '</div><div class="kf-qr"><div class="qrw">' + qrImg(joinUrl) + '</div><div class="qrp">Escanea el código QR con tu celular</div></div></div>';
       fitAll();
     }
@@ -486,6 +748,8 @@
         else if (stage === 'rueda') sRosco();
         else if (stage === 'sorteo') sRaffle();
         else if (stage === 'voto') sVote();
+        else if (stage === 'enpie') sEnpie();
+        else if (stage === 'desafio') sDesafio();
         else if (stage === 'juego') sDraw();
         else if (stage === 'votojuego') sGameVote();
         else if (stage === 'karaoke') viewKaraoke(VENUE, origin() + '/#/jugar', stageTimers);
@@ -501,9 +765,9 @@
   var JOIN = function () { return origin() + '/#/jugar'; };
   function qrFoot(text) { return '<div class="abs qr-foot"><div class="qrw">' + qrImg(JOIN()) + '</div><div class="qrp">' + h(text || 'Escanea el código QR con tu celular') + '</div></div>'; }
   function sQr() {
-    view.innerHTML = '<div class="abs" style="top:8rem"><b class="big" style="display:block">📱</b><b class="mid fit" style="display:block">Escanea el código QR con tu celular</b></div>' +
-      '<div class="abs" style="top:30rem"><div class="qrw" style="width:40rem">' + qrImg(JOIN()) + '</div></div>' +
-      '<div class="abs mid" style="top:78rem">pon tu nombre, apellido y participa</div>';
+    view.innerHTML = '<div class="abs q-head" style="top:8rem"><b class="big" style="display:block">' + se('📱') + '</b><b class="mid fit" style="display:block">Escanea el código QR con tu celular</b></div>' +
+      '<div class="abs q-qr" style="top:30rem"><div class="qrw" style="width:40rem">' + qrImg(JOIN()) + '</div></div>' +
+      '<div class="abs mid q-sub" style="top:78rem">pon tu nombre, apellido y participa</div>';
     fitAll();
   }
   function letra(st, v) { var hs = String(st.headers || 'BINGO'); for (var c = 0; c < 5; c++) if (v <= Math.floor(((c + 1) * (st.values || 75)) / 5)) return hs.charAt(c); return hs.charAt(4); }
@@ -521,24 +785,39 @@
       if (st.celebrate) {
         var names = []; var seen = {};
         for (var i = 0; i < (st.results || []).length; i++) { var r = st.results[i]; if (r.name && !seen[r.name]) { seen[r.name] = 1; names.push(r.name); } }
-        o += '<div class="abs" style="top:16rem"><b class="big gold" style="font-size:12rem">¡BINGO!</b></div><div class="abs" style="top:34rem">';
-        for (var n = 0; n < names.length && n < 6; n++) o += '<b class="mid fit" style="display:block;font-size:5rem">' + h(names[n]) + '</b>';
-        o += '</div><div class="abs g-sub" style="top:74rem">' + h(fig) + '</div>' + qrFoot();
+        o += '<div class="abs b-win" style="top:16rem"><b class="big gold' + tv('', ' fit') + '" style="font-size:' + tv('12', '16') + 'rem">¡BINGO!</b></div><div class="abs b-names' + (names.length === 1 ? ' b-one' : '') + '" style="top:34rem">';
+        for (var n = 0; n < names.length && n < 6; n++) o += '<b class="mid fit" style="display:block;font-size:' + tv('5', names.length === 1 ? '6.8' : '4.8') + 'rem">' + h(names[n]) + '</b>';
+        o += '</div><div class="abs g-sub b-figw" style="top:74rem">' + h(fig) + '</div>' + qrFoot();
       } else if (st.bigQr && !drawn.length) {
-        o += '<div class="abs" style="top:14rem"><b class="mid fit" style="display:block">Escanea el código QR con tu celular</b></div><div class="abs" style="top:22rem"><div class="qrw" style="width:44rem">' + qrImg(JOIN()) + '</div></div>' +
-          '<div class="abs mid" style="top:74rem">pon tu nombre, apellido y participa</div>';
+        o += '<div class="abs bq-head" style="top:14rem"><b class="mid fit" style="display:block">Escanea el código QR con tu celular</b></div><div class="abs bq-qr" style="top:22rem"><div class="qrw" style="width:44rem">' + qrImg(JOIN()) + '</div></div>' +
+          '<div class="abs mid bq-sub" style="top:74rem">pon tu nombre, apellido y participa</div>';
       } else {
         var v = drawn.length ? drawn[drawn.length - 1] : null;
-        o += '<div class="ball">' + (v != null ? '<small>' + (st.format === 'numbers' ? letra(st, v) : '') + '</small><b>' + h(v) + '</b>' : '<small>&nbsp;</small><b style="font-size:6rem;margin-top:4rem">¡Ya comienza!</b>') + '</div>';
+        o += '<div class="ball">' + (v != null ? '<small>' + (st.format === 'numbers' ? letra(st, v) : '') + '</small><b>' + h(v) + '</b>' : '<small>&nbsp;</small><b class="soon' + tv('', ' fit') + '" style="font-size:' + tv('6', '5.6') + 'rem;margin-top:' + tv('4', '2.6') + 'rem">¡Ya comienza!</b>') + '</div>';
         if (drawn.length > 1) { o += '<div class="abs prev">'; for (var k = drawn.length - 2; k >= 0 && k >= drawn.length - 7; k--) o += '<span>' + h(drawn[k]) + '</span>'; o += '</div>'; }
-        o += '<div class="abs" style="top:58.5rem"><div class="mid fit">Figura: ' + h(fig) + '</div><div class="g-sub">' + drawn.length + ' de ' + (st.values || 75) + '</div></div>' + qrFoot();
+        o += '<div class="abs b-fig" style="top:58.5rem"><div class="mid fit">Figura: ' + h(fig) + '</div><div class="g-sub">' + drawn.length + ' de ' + (st.values || 75) + '</div></div>' + qrFoot();
       }
       view.innerHTML = o;
       fitAll();
     }
+    // La figura del bingo en grande unos segundos al elegirla (pedido de Cote, 24 nov: «en todos los dispositivos»)
+    var figShown = 0;
+    function figSplash(st) {
+      if (!st.figAt || st.figAt === figShown) return;
+      var left = 3800 - ((st.now || new Date().getTime()) - st.figAt);
+      if (left < 600) return;
+      figShown = st.figAt;
+      var pid = (st.patterns || [])[0] || ''; var m = FIGMASK[pid] || 0;
+      var o = '<div class="pv-fs"><div class="pv-fs-t">La figura de este bingo</div><div class="pv-fs-g">';
+      for (var r = 0; r < 5; r++) { o += '<div>'; for (var c = 0; c < 5; c++) o += '<i class="' + (m & (1 << (r * 5 + c)) ? 'x' : '') + '"></i>'; o += '</div>'; }
+      o += '</div><b class="pv-fs-n fit">' + h(FIG[pid] || (pid.length === 1 ? 'Figura ' + pid.toUpperCase() : pid)) + '</b></div>';
+      var el = document.createElement('div'); el.innerHTML = o; el = el.firstChild;
+      view.appendChild(el); fitAll();
+      setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, left);
+    }
     function load() {
       if (!sid) { get('/api/current', function (r) { var s = r && r.sessions && r.sessions[0]; if (s) { sid = s.id; load(); } }); return; }
-      get('/api/sessions/' + sid + '/state', function (st) { if (st && cur === 'sala') paint(st); else if (!st) sid = ''; });
+      get('/api/sessions/' + sid + '/state', function (st) { if (st && cur === 'sala') { paint(st); figSplash(st); } else if (!st) sid = ''; });
     }
     load();
     every(stageTimers, 2000, load);
@@ -550,11 +829,12 @@
       if (sig === last) return;
       last = sig;
       var list = r.list || [];
-      var o = '<div class="abs g-title" style="font-size:3.4rem;color:#ffc400">Resultados</div><div class="abs fit" style="top:9rem;font-size:5.4rem;font-weight:700">La Trivia del Rosco</div><div class="abs" style="top:19rem;bottom:32rem"><ol class="rows">';
+      var o = '<div class="abs g-title g-over" style="font-size:3.4rem;color:#ffc400">Resultados</div><div class="abs fit g-main" style="top:9rem;font-size:' + tv('5.4', '6.6') + 'rem;font-weight:700">La Trivia del Rosko</div><div class="abs g-box' + tv('', ' fitbox') + '" style="top:19rem;bottom:32rem"><ol class="rows rk sc">';
       if (!list.length) o += '<li style="text-align:center">Responde desde tu celular</li>';
       for (var i = 0; i < list.length && i < 10; i++) o += '<li class="' + (i < 3 ? 'top' : '') + '"><em>' + (i + 1) + '.º</em>' + h(list[i].name) + '<i>' + h(list[i].score) + '</i></li>';
       o += '</ol></div>' + qrFoot();
       view.innerHTML = o;
+      if (T2) fitAll(); // diseño nuevo: los nombres van enteros (siguen en otra línea) y la lista se achica si no cabe
     }
     function load() {
       // /api/wheel-current es público (la lista /api/wheels es solo del moderador)
@@ -571,19 +851,105 @@
       var sig = JSON.stringify([r.picked, rolling, r.mode, r.roll && r.roll.winner]);
       if (sig === last) return;
       last = sig;
-      var isRosco = r.mode === 'tie' && r.roll && r.roll.game === 'rosco'; // El Rosco usa el mismo sorteo para su desempate
-      var o = '<div class="abs g-title fit">' + (isRosco ? '🏆 ¡Ganador de El Rosco!' : r.mode === 'tie' ? 'Desempate del bingo' : '🎲 Sorteo de concursantes') + '</div>';
-      if (rolling) o += '<div class="abs big gold" style="top:30rem">🎲 Sorteando…</div>';
-      else if (r.mode === 'tie' && r.roll && r.roll.winner) o += '<div class="abs" style="top:28rem"><div class="g-sub">Ganó</div><b class="big fit" style="display:block">' + h(r.roll.winner) + '</b></div>';
+      var isRosco = r.mode === 'tie' && r.roll && r.roll.game === 'rosco'; // El Rosko usa el mismo sorteo para su desempate
+      var isDes = r.mode !== 'tie' && r.game === 'desafio'; // ¿Quién quiere ser ganador?: el principal y el suplente (pedido de Cote, 25 nov)
+      var o = '<div class="abs g-title fit">' + se(isRosco ? '🏆 ¡Ganador de El Rosko!' : r.mode === 'tie' ? 'Desempate del bingo' : isDes ? '🎲 ¿Quién quiere ser ganador? · Sorteo' : '🎲 Sorteo de concursantes') + '</div>';
+      if (rolling) o += '<div class="abs big gold r-roll' + tv('', ' fit') + '" style="top:30rem">' + se('🎲 Sorteando…') + '</div>';
+      else if (r.mode === 'tie' && r.roll && r.roll.winner) o += '<div class="abs r-win" style="top:28rem"><div class="g-sub">Ganó</div><b class="big fit" style="display:block">' + h(r.roll.winner) + '</b></div>';
       var picked = [];
       for (var k = 0; k < (r.picked || []).length; k++) if (!(rolling && r.roll && r.picked[k] === r.roll.winner)) picked.push(r.picked[k]); // mientras gira, sin adelantar el nombre
-      if (picked.length) { o += '<div class="abs" style="top:' + (rolling ? 44 : 22) + 'rem"><ol class="rows">'; for (var i = 0; i < picked.length; i++) o += '<li class="top"><em>' + (i + 1) + '.º</em>' + h(picked[i]) + '</li>'; o += '</ol></div>'; }
+      if (picked.length) { o += '<div class="abs r-list' + (rolling ? ' r-low' : '') + '" style="top:' + (rolling ? 44 : 22) + 'rem"><ol class="rows rk">'; for (var i = 0; i < picked.length; i++) o += '<li class="top"><em>' + (i + 1) + '.º</em>' + h(picked[i]) + '</li>'; o += '</ol></div>'; }
       o += qrFoot();
       view.innerHTML = o;
+      if (T2) fitAll(); // diseño nuevo: el título y el nombre se achican si no caben
     }
     function load() { get('/api/raffle', function (r) { if (r && cur === 'sala') paint(r); }); }
     load();
     every(stageTimers, 1500, load);
+  }
+  // «El último en pie» (versión de prueba, 23 nov): la pregunta con sus alternativas, cuántos quedan y el ranking
+  function sEnpie() {
+    var last = ''; var st = null; var L = ['A', 'B', 'C'];
+    function paint() {
+      var s = st; var secs = s.until ? Math.max(0, Math.ceil((s.until - s.now - (new Date().getTime() - s.got)) / 1000)) : 0;
+      var sig = JSON.stringify([s.rev, s.phase, secs]);
+      if (sig === last) return;
+      last = sig;
+      var o = '<div class="abs g-title fit">El último en pie</div><div class="abs v-body" style="top:16rem">';
+      o += '<div class="mid gold">' + s.standing + ' en pie · ' + s.bench + (s.direct || s.phase === 'final' || s.phase === 'done' ? ' fuera' : ' en la banca') + '</div>';
+      var k; var fp;
+      if (s.phase === 'done') o += '<div class="big gold fit" style="margin-top:3rem">' + (s.winner ? '¡Ganó!' : 'Fin del juego') + '</div><b class="big fit" style="display:block">' + h(s.winner ? s.winner.name : 'Nadie quedó en pie') + '</b>';
+      else if (s.phase === 'final' && s.fin) { o += '<div class="mid" style="margin-top:2.4rem">La final · en el escenario</div><ol class="rows" style="margin-top:2rem">'; fp = s.fin.players || []; for (k = 0; k < fp.length; k++) o += '<li' + (fp[k].out ? ' style="opacity:.4"' : '') + '>' + h(fp[k].name) + '<i>' + (fp[k].out ? 'Eliminado' : k === s.fin.turn ? 'Su turno' : 'En pie') + '</i></li>'; o += '</ol>'; }
+      else if (s.phase === 'cut' && s.cut) o += '<div class="mid" style="margin-top:2.4rem">Fin de la ronda ' + s.cut.round + '</div><b class="big fit" style="display:block;margin-top:2rem">' + s.cut.standing + ' en pie</b><div class="mid">' + s.cut.bench + ' en la banca</div>' + (s.cut.round > 1 ? '<div class="mid" style="margin-top:2rem">' + s.cut.fell + ' pasaron a la banca</div><div class="mid">' + s.cut.back + ' salieron de la banca</div>' : '') + (s.cut.last ? '<div class="mid gold" style="margin-top:2rem">Recta final: todos con una sola vida</div>' : '');
+      else if (s.phase === 'lobby' || !s.q) o += '<b class="big fit" style="display:block;margin-top:3rem">Tienes 3 vidas</b><div class="mid" style="margin-top:2rem">Todos juegan desde su celular</div><div class="mid">Sin vidas vas a la banca; con 3 buenas de 4 vuelves</div><div class="mid">Los 3 últimos van a la final</div>';
+      else {
+        o += '<div class="mid" style="margin-top:2.4rem">' + (s.direct ? 'Recta final' : 'Ronda ' + s.round + ' · pregunta ' + s.inRound + ' de ' + s.perRound) + '</div><b class="mid" style="display:block;font-size:4.4rem;line-height:1.1;margin:1rem 3rem 2rem">' + h(s.q.text) + '</b><ol class="rows">';
+        for (var i = 0; i < s.q.opts.length; i++) o += '<li' + (s.q.correct === i ? ' style="background:#16a34a;color:#fff"' : s.q.correct != null ? ' style="opacity:.4"' : '') + '><em>' + L[i] + '</em>' + h(s.q.opts[i]) + '</li>';
+        o += '</ol>';
+        if (s.phase === 'question') o += '<div class="mid gold" style="margin-top:2.4rem">Contesta en tu celular</div>';
+        else { o += '<ol class="rows" style="margin-top:2.4rem">'; for (k = 0; k < (s.top || []).length && k < 5; k++) o += '<li><em>' + (k + 1) + '</em>' + h(s.top[k].name) + '<i>' + (s.top[k].up ? s.top[k].lives + ' ♥' : (s.direct ? 'fuera' : 'banca')) + '</i></li>'; o += '</ol>'; }
+      }
+      o += '</div>' + qrFoot();
+      view.innerHTML = o;
+      fitAll();
+    }
+    function load() { get('/api/enpie', function (r) { if (r && cur === 'sala') { r.got = new Date().getTime(); st = r; paint(); } }); }
+    load();
+    every(stageTimers, 2000, load);
+    every(stageTimers, 500, function () { if (st) paint(); });
+  }
+  // ¿Quién quiere ser ganador? (antes «billonario»; pedido de Gabriel, 25 nov; nombre, 12 preguntas y suplente: Cote, 25 nov): el concursante, la pregunta con sus 4 alternativas, el público (la Trivia,
+  // el comodín y la llamada), el ranking y el ganador de la Trivia. Misma información que el tablero, en la versión liviana.
+  function sDesafio() {
+    var last = ''; var st = null; var L = ['A', 'B', 'C', 'D'];
+    function left(until, s) { return until ? Math.max(0, Math.ceil((until - s.now - (new Date().getTime() - s.got)) / 1000)) : 0; }
+    function paint() {
+      var s = st; var a = s.audience; var k;
+      var aud = a && a.open ? left(a.until, s) : 0; var call = left(s.phoneUntil, s);
+      var cw = s.crowdWinner; var rolling = cw && !cw.none && cw.rollMs && (s.now - cw.at) + (new Date().getTime() - s.got) < cw.rollMs;
+      var sig = JSON.stringify([s.rev, aud, call, rolling]);
+      if (sig === last) return;
+      last = sig;
+      var o = '<div class="abs g-title fit">¿Quién quiere ser ganador?</div><div class="abs v-body" style="top:16rem">';
+      if (s.player && s.phase !== 'setup' && s.phase !== 'swap') o += '<div class="mid gold">' + h(s.player) + '</div>';
+      if (s.phase === 'setup') o += '<b class="big fit" style="display:block;margin-top:3rem">¡Muy pronto!</b><div class="mid" style="margin-top:2rem">Juega desde tu celular</div><div class="mid">Más rápido, más puntos</div>';
+      else if (s.rank) {
+        o += '<div class="mid" style="margin-top:2rem">La Trivia del Ganador</div><div class="mid gold">' + (s.phase === 'end' ? 'Resultados finales' : 'Resultados parciales') + '</div><ol class="rows rk sc" style="margin-top:2rem">';
+        for (k = 0; k < s.rank.length && k < 10; k++) o += '<li><em>' + (k + 1) + '.º</em>' + h(s.rank[k].name) + '<i>' + s.rank[k].score + '</i></li>';
+        o += '</ol>' + (s.rank.length ? '' : '<div class="mid">Todavía nadie suma puntos</div>');
+      } else if (s.phase === 'end' && cw) {
+        if (rolling) o += '<div class="mid" style="margin-top:3rem">Y el ganador de la Trivia es…</div><div class="big gold" style="margin-top:2rem">' + se('🥁') + '</div>';
+        else if (cw.none) o += '<div class="mid" style="margin-top:3rem">La Trivia del Ganador</div><b class="big fit" style="display:block">Nadie sumó puntos</b>';
+        else o += '<div class="mid gold" style="margin-top:3rem">Premio especial · Ganó la Trivia</div><b class="big fit" style="display:block">' + h(cw.name) + '</b><div class="mid">' + cw.score + ' puntos · ' + cw.hits + (cw.hits === 1 ? ' acierto' : ' aciertos') + '</div>';
+      } else if (s.phase === 'end') {
+        o += '<b class="big gold fit" style="display:block;margin-top:3rem">' + ({ won: '¡Ganó los 3 premios!', retired: 'Se retira', lost: 'Fin del juego' }[s.outcome] || '') + '</b><div class="mid" style="margin-top:2rem">Se lleva: ' + h(s.won || 'el aplauso del público') + '</div>';
+      } else if (s.phase === 'swap') {
+        o += '<div class="mid" style="margin-top:2rem">' + h(s.out) + ' quedó fuera</div><b class="big fit" style="display:block;margin-top:2rem">Sorteamos un reemplazo</b><div class="mid" style="margin-top:2rem">Sigue desde la pregunta ' + s.step + '</div>';
+      } else if (s.phase === 'subintro') {
+        o += '<div class="mid gold" style="margin-top:2rem">Entra el reemplazo</div><div class="mid" style="margin-top:2rem">Sigue desde la pregunta ' + s.step + '</div>';
+      } else if (s.phase === 'intro' || !s.q) {
+        o += '<div class="mid" style="margin-top:1rem">Premios: ' + h(s.prizes.join(' · ')) + '</div>';
+        o += '<b class="big fit" style="display:block;margin-top:3rem">' + s.steps + ' preguntas</b><div class="mid" style="margin-top:2rem">4 comodines · ¡a subir la escalera!</div><div class="mid gold" style="margin-top:2rem">Tú también juegas desde tu celular</div>';
+      } else {
+        o += '<div class="mid" style="margin-top:1.2rem">Pregunta ' + s.step + ' de ' + s.steps + '</div><b class="mid" style="display:block;font-size:3.8rem;line-height:1.1;margin:1rem 3rem 1.6rem">' + h(s.q.text) + '</b><ol class="rows">';
+        for (var i = 0; i < 4; i++) {
+          var gone = s.hidden.indexOf(i) >= 0;
+          var style = s.correct === i ? 'background:#16a34a;color:#fff' : s.correct != null && s.chosen === i ? 'background:#d92f36;color:#fff' : s.chosen === i ? 'background:#f4bf5a;color:#1a1407' : s.correct != null ? 'opacity:.35' : '';
+          if (!gone) o += '<li style="padding:.8rem 2rem;margin-bottom:1rem' + (style ? ';' + style : '') + '"><em>' + L[i] + '</em>' + h(s.q.options[i]) + (a && a.pct ? '<i>' + a.pct[i] + '%</i>' : '') + '</li>'; // las que quitó el 50:50 no se muestran
+        }
+        o += '</ol>';
+        if (aud) o += '<div class="mid gold" style="margin-top:2rem">Pregunta al público · quedan ' + aud + ' s</div>';
+        else if (call) o += '<div class="mid gold" style="margin-top:2rem">Llamada · quedan ' + call + ' s</div>';
+        else if (s.crowd && s.crowd.open) o += '<div class="mid gold" style="margin-top:2rem">Responde en tu celular · ' + s.crowd.answered + (s.crowd.answered === 1 ? ' respuesta' : ' respuestas') + '</div>';
+      }
+      o += '</div>' + qrFoot();
+      view.innerHTML = o;
+      fitAll();
+    }
+    function load() { get('/api/desafio', function (r) { if (r && cur === 'sala') { r.got = new Date().getTime(); st = r; paint(); } }); }
+    load();
+    every(stageTimers, 2000, load);
+    every(stageTimers, 500, function () { if (st) paint(); });
   }
   function sVote() {
     var last = ''; var st = null;
@@ -593,18 +959,20 @@
       if (sig === last) return;
       last = sig;
       var left = s.clockUntil ? clock(s.clockUntil - now()) : '';
-      var o = '<div class="abs g-title fit">' + h(s.title) + '</div><div class="abs" style="top:16rem">';
-      var thing = function (p) { return p && p.thing ? '<div class="mid fit" style="color:#ffd76a">' + h(p.thing) + '</div>' : ''; };
-      if (s.phase === 'winner' && s.winner) o += '<div class="big gold">🏆 ¡Ganó!</div><b class="big fit" style="display:block">' + h(s.winner.name) + '</b>' + thing(s.winner) + (s.winner.score != null ? '<div class="mid">Nota ' + dec(s.winner.score) + '</div>' : '') + (s.tie ? '<div class="mid">' + h(s.tie.title + '. ' + s.tie.why) + '</div>' : '');
-      else if (s.phase === 'final' && s.final && s.final.drum) o += '<div class="big gold">🥁</div><div class="mid">¡Redoble de tambores!</div>';
-      else if (s.phase === 'final' && s.final) { o += '<div class="mid gold">Gran final</div>'; for (var f = 0; f < (s.final.players || []).length; f++) o += '<b class="big fit" style="display:block;font-size:5.4rem">' + h(s.final.players[f].name) + '</b>'; if (left && s.final.open) o += '<div class="clock">' + left + '</div>'; }
-      else if (s.phase === 'results') { o += '<div class="mid gold">🏆 Resultados</div><ol class="rows" style="margin-top:2rem">'; var pl = s.places || []; for (var i = pl.length - 1; i >= 0; i--) o += '<li><em>' + pl[i].place + '.º</em>' + h(pl[i].name) + (pl[i].score != null ? '<i>' + dec(pl[i].score) + '</i>' : '') + '</li>'; o += '</ol>'; }
-      else if (s.open) o += '<div class="mid gold">🗳️ Vota desde tu celular</div><b class="big fit" style="display:block">' + h(s.open.name) + '</b>' + thing(s.open) + (left ? '<div class="clock">' + left + '</div>' : '');
-      else if (s.onstage) o += '<div class="mid gold">🎤 En el escenario</div><b class="big fit" style="display:block">' + h(s.onstage.name) + '</b>' + thing(s.onstage);
-      else if (s.signup) { o += '<div class="mid gold">📝 Inscripciones abiertas</div>' + (left ? '<div class="clock">' + left + '</div>' : '') + '<ol class="rows" style="margin-top:2rem">'; var ps = s.players || []; for (var k = 0; k < ps.length && k < 8; k++) o += '<li>' + h(ps[k].name) + (ps[k].thing ? ' · ' + h(ps[k].thing) : '') + '</li>'; o += '</ol>'; }
-      else if (s.last) o += '<div class="mid">Ya viene el siguiente participante</div>';
-      else { o += '<div class="mid gold">Participantes</div><ol class="rows" style="margin-top:2rem">'; var pp = s.players || []; for (var m = 0; m < pp.length && m < 8; m++) o += '<li>' + h(pp[m].name) + (pp[m].thing ? ' · ' + h(pp[m].thing) : '') + '</li>'; o += '</ol>'; }
+      var o = '<div class="abs g-title fit">' + h(s.title) + '</div><div class="abs v-body' + tv('', ' fitbox') + '" style="top:16rem">';
+      var thing = function (p) { return p && p.thing ? '<div class="mid fit v-thing" style="color:#ffd76a">' + h(p.thing) + '</div>' : ''; };
+      var row = function (p) { return h(p.name) + (p.thing ? tv(' · ' + h(p.thing), '<span class="v-th">' + h(p.thing) + '</span>') : ''); }; // nombre · canción u objeto (en el diseño nuevo, en una línea aparte)
+      if (s.phase === 'winner' && s.winner) o += '<div class="big gold' + tv('', ' fit') + '">' + se('🏆 ¡Ganó!') + '</div><b class="big fit" style="display:block">' + h(s.winner.name) + '</b>' + thing(s.winner) + (s.winner.score != null ? '<div class="mid v-note">Nota ' + dec(s.winner.score) + '</div>' : '') + (s.tie ? '<div class="mid">' + h(s.tie.title + '. ' + s.tie.why) + '</div>' : '');
+      else if (s.phase === 'final' && s.final && s.final.drum) o += '<div class="big gold">' + se('🥁') + '</div><div class="mid v-msg v-drum">¡Redoble de tambores!</div>';
+      else if (s.phase === 'final' && s.final) { o += '<div class="mid gold">Gran final</div>'; for (var f = 0; f < (s.final.players || []).length; f++) o += '<b class="big fit" style="display:block;font-size:' + tv('5.4rem', '5.8em') + '">' + h(s.final.players[f].name) + '</b>'; if (left && s.final.open) o += '<div class="clock">' + left + '</div>'; }
+      else if (s.phase === 'results') { o += '<div class="mid gold">' + se('🏆 Resultados') + '</div><ol class="rows rk sc" style="margin-top:2rem">'; var pl = s.places || []; for (var i = pl.length - 1; i >= 0; i--) o += '<li><em>' + pl[i].place + '.º</em>' + h(pl[i].name) + (pl[i].score != null ? '<i>' + dec(pl[i].score) + '</i>' : '') + '</li>'; o += '</ol>'; }
+      else if (s.open) o += '<div class="mid gold">' + se('🗳️ Vota desde tu celular') + '</div><b class="big fit" style="display:block">' + h(s.open.name) + '</b>' + thing(s.open) + (left ? '<div class="clock">' + left + '</div>' : '');
+      else if (s.onstage) o += '<div class="mid gold">' + se('🎤 En el escenario') + '</div><b class="big fit" style="display:block">' + h(s.onstage.name) + '</b>' + thing(s.onstage);
+      else if (s.signup) { o += '<div class="mid gold">' + se('📝 Inscripciones abiertas') + '</div>' + (left ? '<div class="clock">' + left + '</div>' : '') + '<ol class="rows" style="margin-top:2rem">'; var ps = s.players || []; for (var k = 0; k < ps.length && k < 8; k++) o += '<li>' + row(ps[k]) + '</li>'; o += '</ol>'; }
+      else if (s.last) o += '<div class="mid v-msg">Ya viene el siguiente participante</div>';
+      else { o += '<div class="mid gold">Participantes</div><ol class="rows" style="margin-top:2rem">'; var pp = s.players || []; for (var m = 0; m < pp.length && m < 8; m++) o += '<li>' + row(pp[m]) + '</li>'; o += '</ol>'; }
       o += '</div>' + qrFoot();
+      if (T2 && o.indexOf('<ol') < 0) o = o.replace('abs v-body', 'abs v-body v-hero'); // diseño nuevo: sin lista, el bloque va más al centro
       view.innerHTML = o;
       fitAll();
     }
@@ -623,11 +991,11 @@
       last = sig;
       var o = '';
       var n = ready ? g.list.length + 1 : g.list.length;
-      if (ready) { o += '<div class="abs g-title fit">🎲 Sorteo del ' + n + '.º juego</div><div class="abs" style="top:16rem"><ol class="rows">'; for (var i = 0; i < g.ready.pool.length; i++) o += '<li class="top fit">' + GAMES[g.ready.pool[i]][0] + ' ' + h(GAMES[g.ready.pool[i]][1]) + '</li>'; o += '</ol></div>'; }
-      else if (rolling) o += '<div class="abs g-title fit">🎲 Sorteo del ' + n + '.º juego</div><div class="abs big gold" style="top:30rem">🎲 Sorteando…</div>';
-      else if (g.last) o += '<div class="abs g-title fit">🎲 El ' + n + '.º juego es</div><div class="abs" style="top:22rem"><b class="big fit gold" style="display:block">' + GAMES[g.last.game][0] + ' ' + h(GAMES[g.last.game][1]) + '</b></div>';
-      o += '<div class="abs" style="top:52rem"><ol class="rows">';
-      for (var k = 0; k < g.total; k++) o += '<li class="fit"><em>' + (k + 1) + '.º</em>' + (g.list[k] ? GAMES[g.list[k]][0] + ' ' + h(GAMES[g.list[k]][1]) : '🔒') + '</li>';
+      if (ready) { o += '<div class="abs g-title fit">' + tv('🎲 ', '') + 'Sorteo del ' + n + '.º juego</div><div class="abs d-pool" style="top:16rem"><ol class="rows">'; for (var i = 0; i < g.ready.pool.length; i++) o += '<li class="top fit">' + gname(g.ready.pool[i]) + '</li>'; o += '</ol></div>'; }
+      else if (rolling) o += '<div class="abs g-title fit">' + tv('🎲 ', '') + 'Sorteo del ' + n + '.º juego</div><div class="abs big gold r-roll' + tv('', ' fit') + '" style="top:30rem">' + se('🎲 Sorteando…') + '</div>';
+      else if (g.last) o += '<div class="abs g-title fit">' + tv('🎲 ', '') + 'El ' + n + '.º juego es</div><div class="abs d-win" style="top:22rem"><b class="big fit gold" style="display:block">' + gname(g.last.game) + '</b></div>';
+      o += '<div class="abs d-list" style="top:52rem"><ol class="rows rk">';
+      for (var k = 0; k < g.total; k++) o += '<li class="fit' + (g.list[k] ? '' : ' off') + '"><em>' + (k + 1) + '.º</em>' + (g.list[k] ? gname(g.list[k]) : tv('🔒', '—')) + '</li>';
       o += '</ol></div>';
       view.innerHTML = o;
       fitAll();
@@ -645,8 +1013,8 @@
       if (k === introShown) return;
       introShown = k;
       var sl = GI.slides(SHORT[VENUE])[k];
-      var o = '<div class="abs" style="top:4rem"><div class="g-sub" style="color:#ffc400;text-transform:uppercase">📢 Antes de votar · ' + (k + 1) + ' de 6</div><b class="big fit" style="display:block;font-size:5.4rem">' + sl.icon + ' ' + h(sl.title) + '</b></div>' +
-        '<div class="abs" style="top:16rem"><div style="width:36rem;margin:0 auto">' + GI.art(sl.key) + '</div></div><div class="abs" id="pvlines" style="top:41rem;bottom:32rem;text-align:left;overflow:hidden"><ul class="rows">';
+      var o = '<div class="abs gv-head" style="top:4rem"><div class="g-sub" style="color:#ffc400;text-transform:uppercase">' + tv('📢 ', '') + 'Antes de votar · ' + (k + 1) + ' de 6</div><b class="big fit" style="display:block;font-size:' + tv('5.4', '6.6') + 'rem">' + tv(sl.icon + ' ', '') + h(sl.title) + '</b></div>' +
+        '<div class="abs gi-art" style="top:16rem"><div style="width:36rem;margin:0 auto">' + GI.art(sl.key) + '</div></div><div class="abs" id="pvlines" style="top:41rem;bottom:32rem;text-align:left;overflow:hidden"><ul class="rows">';
       for (var i = 0; i < sl.lines.length; i++) o += '<li style="white-space:normal;font-size:3em">' + h(sl.lines[i]) + '</li>'; // en «em»: se achica junto con el recuadro si no cabe
       o += '</ul></div>' + qrFoot();
       view.innerHTML = o;
@@ -658,14 +1026,14 @@
       if (g.phase === 'intro') { paintIntro(); return; }
       introShown = -1;
       var opts = g.options && g.options.length ? g.options : ['bingo', 'rosco', 'festival', 'objeto'];
-      var top = g.phase === 'voting' ? (g.round === 2 ? '🗳️ Segunda vuelta' : '🗳️ Votación') : '🗳️ Resultado de la votación';
-      var big = g.phase === 'done' && g.winner ? '🏆 ¡Ganó ' + GAMES[g.winner][0] + ' ' + h(GAMES[g.winner][1]) + '!' : g.phase === 'result' && g.empty ? 'Nadie votó' : g.phase === 'result' && g.runoff ? 'Nadie superó el 50%' : '¿Qué juego quieren jugar?';
-      var line = g.phase === 'voting' ? 'Quedan <b class="gold">' + clock(g.until - now()) + '</b>' : g.phase === 'result' && g.runoff ? 'Segunda vuelta: ' + GAMES[g.runoff[0]][0] + ' ' + h(GAMES[g.runoff[0]][1]) + ' y ' + GAMES[g.runoff[1]][0] + ' ' + h(GAMES[g.runoff[1]][1]) : g.tie ? 'Empate en la segunda vuelta: se decidió por sorteo' : '';
-      var o = '<div class="abs" style="top:4rem"><div class="g-sub" style="color:#ffc400;text-transform:uppercase">' + top + '</div><b class="big fit" style="display:block;font-size:5.4rem">' + big + '</b>' + (line ? '<div class="mid fit">' + line + '</div>' : '') + '</div><div class="abs" style="top:24rem"><ol class="rows">';
+      var top = se(g.phase === 'voting' ? (g.round === 2 ? '🗳️ Segunda vuelta' : '🗳️ Votación') : '🗳️ Resultado de la votación');
+      var big = g.phase === 'done' && g.winner ? tv('🏆 ', '') + '¡Ganó ' + gname(g.winner) + '!' : g.phase === 'result' && g.empty ? 'Nadie votó' : g.phase === 'result' && g.runoff ? 'Nadie superó el 50%' : '¿Qué juego quieren jugar?';
+      var line = g.phase === 'voting' ? 'Quedan <b class="gold">' + clock(g.until - now()) + '</b>' : g.phase === 'result' && g.runoff ? 'Segunda vuelta: ' + gname(g.runoff[0]) + ' y ' + gname(g.runoff[1]) : g.tie ? 'Empate en la segunda vuelta: se decidió por sorteo' : '';
+      var o = '<div class="abs gv-head" style="top:4rem"><div class="g-sub" style="color:#ffc400;text-transform:uppercase">' + top + '</div><b class="big fit" style="display:block;font-size:' + tv('5.4', '6.6') + 'rem">' + big + '</b>' + (line ? '<div class="mid fit">' + line + '</div>' : '') + '</div><div class="abs gv-bars" style="top:24rem"><ol class="rows">';
       for (var i = 0; i < opts.length; i++) {
         var k = opts[i]; var n = (g.counts || {})[k] || 0; var p = pct(n, g.total);
         var dim = (g.phase === 'done' && k !== g.winner) || (g.phase === 'result' && g.runoff && g.runoff.indexOf(k) < 0);
-        o += '<li class="bar top" style="' + (dim ? 'opacity:.45' : '') + '"><u style="width:' + p.toFixed(1) + '%;background:' + GVC[k] + '"></u><span>' + GAMES[k][0] + ' ' + h(GAMES[k][1]) + '</span><i>' + fmtPct(p) + ' · ' + votos(n) + '</i></li>';
+        o += '<li class="bar top" style="' + (dim ? 'opacity:.45' : '') + '"><u style="width:' + p.toFixed(1) + '%;background:' + GVC[k] + '"></u><span>' + gname(k) + '</span><i>' + fmtPct(p) + ' · ' + votos(n) + '</i></li>';
       }
       o += '</ol><div class="g-sub">' + (g.total ? votos(g.total) + ' en total' : '') + '</div></div>' + qrFoot();
       view.innerHTML = o;
@@ -678,23 +1046,44 @@
   function sShow() {
     get('/api/light/cartelera?local=' + VENUE, function (c) {
       if (cur !== 'sala') return;
-      view.innerHTML = '<div class="abs g-title">⭐ El show de esta noche</div><div class="abs" style="top:30rem"><b class="big" style="display:block">' + (c && c.show ? showHtml(c.show) : 'KRB Stage') + '</b></div>' + qrFoot();
+      view.innerHTML = '<div class="abs g-title g-tagw s-tag"><span>' + se('⭐ El show de esta noche') + '</span></div><div class="abs s-hero" style="top:30rem"><b class="big' + tv('', ' fit') + '" style="display:block">' + (c && c.show ? showHtml(c.show) : 'KRB Stage') + '</b></div>' + qrFoot();
       fitAll();
     });
   }
   function sInsta() {
     get('/api/insta', function (r) {
       if (cur !== 'sala') return;
-      view.innerHTML = '<div class="abs g-title">📸 Síguenos en Instagram</div><div class="abs" style="top:34rem"><b class="big fit gold" style="display:block">@' + h((r && r.handle) || 'krbstage') + '</b></div>' + qrFoot();
+      view.innerHTML = '<div class="abs g-title g-tagw i-tag"><span>' + se('📸 Síguenos en Instagram') + '</span></div><div class="abs i-hero" style="top:34rem"><b class="big fit gold" style="display:block">@' + h((r && r.handle) || 'krbstage') + '</b></div>' + qrFoot();
       fitAll();
     });
   }
 
+  // ---------- Diseño nuevo: encendido o apagado desde el Centro de control ----------
+  function temaSet(on) {
+    if (on === T2) return;
+    T2 = on;
+    document.documentElement.className = T2 ? 't2' : '';
+    fsBtn.innerHTML = se(FS_TXT);
+    layout();
+    if (cur && cur !== 'video' && cur !== 'logo') go(cur); // se vuelve a dibujar la vista con el otro diseño
+  }
+  function temaLoad() { get('/api/tema', function (r) { if (r && typeof r.on === 'boolean') temaSet(r.on); }); }
+  if (Q.tema !== '0' && Q.tema !== '1') { temaLoad(); setInterval(temaLoad, 60000); }
+
   // ---------- Qué mostrar (las mismas reglas que la pantalla completa) ----------
+  // «GC PER»: lo que va entre comillas ("…", “…” o «…») sale destacado y las comillas no se ven
+  var perEl = document.getElementById('per'); perShown = '';
+  function perHtml(t) {
+    var re = /"([^"]+)"|\u201c([^\u201d]+)\u201d|\u00ab([^\u00bb]+)\u00bb/g; var out = ''; var i = 0; var m;
+    while ((m = re.exec(t))) { out += h(t.slice(i, m.index)) + '<b>' + h(m[1] || m[2] || m[3]) + '</b>'; i = re.lastIndex; }
+    return out + h(t.slice(i));
+  }
   function tick() {
     get('/api/vertical/' + P, function (st) {
       if (!st) return;
       lastOk = new Date().getTime();
+      var pt = st.per && st.per.text ? String(st.per.text) : '';
+      if (pt !== perShown) { perShown = pt; perEl.className = pt ? '' : 'hide'; perEl.innerHTML = perHtml(pt); cv.className = cv.className.replace(/ per\b/, '') + (pt ? ' per' : ''); }
       if (st.video !== ver) {
         ver = st.video;
         if (ver) { vid.src = Q.liviano && Q.lver === String(ver) ? Q.liviano : '/vertical/' + P + '.mp4?v=' + ver; if (cur === 'video') play(); } else vid.removeAttribute('src');
@@ -703,8 +1092,61 @@
       if (show === 'light') show = { karaoke: st.karaokeNow ? 'karaoke' : 'light-kar', qr: 'light-qr', show: 'light-show' }[st.lightStage] || 'light';
       var want = show === 'video' ? (ver ? 'video' : 'logo') : show === 'light' ? 'info' : show === 'light-qr' ? 'info-qr' : show === 'light-show' ? 'info-show' : show === 'light-kar' ? 'info-kar' : show === 'karaoke' ? 'karaoke' : !st.activity ? (ver ? 'video' : 'logo') : 'sala';
       if (want !== cur) go(want);
+      eUrl = eTest || st.emision || '';
+      emiWant();
     });
   }
+  // ---------- Emisión en vivo (WHEP de Cloudflare) ----------
+  // Solo con la sala en pantalla y la dirección configurada; la imagen se pone encima apenas el video empieza a andar.
+  // Si se corta, vuelve al instante la vista de esta página y se reintenta cada 15 s.
+  var emi = $('emi'); var epc = null; var eOn = false; var eTimer = null; var eUrl = '';
+  // Prueba del decodificador (?senal=kennedy, frida o tobalaba): muestra encima, todo el tiempo, la transmisión propia
+  // de ese local (la misma de krbstage.cl), para comprobar que el decodificador recibe la señal en tiempo real
+  var SENAL = { kennedy: 'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/c24ccde66ad7d935841dd934d9b3e1cf/webRTC/play', frida: 'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/2c9c627707b0fbc53e20c611f84235a0/webRTC/play', tobalaba: 'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/9c4d261a1b6c2fb79842b6d3821b9018/webRTC/play' };
+  var eTest = SENAL[Q.senal] || '';
+  function emiStop() {
+    clearTimeout(eTimer); eTimer = null;
+    if (epc) { try { epc.close(); } catch (e) { /* nada */ } epc = null; }
+    if (eOn) { eOn = false; cv.className = cv.className.replace(/ emi-on\b/, ''); }
+    try { if ('srcObject' in emi) emi.srcObject = null; else emi.removeAttribute('src'); } catch (e) { /* nada */ }
+  }
+  function emiWant() { if ((cur === 'sala' || eTest) && eUrl) { if (!epc && !eTimer) emiStart(); } else if (epc || eOn || eTimer) emiStop(); }
+  function emiStart() {
+    if (!window.RTCPeerConnection || !window.Promise) return;
+    var pc; try { pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.cloudflare.com:3478' }], bundlePolicy: 'max-bundle' }); } catch (e) { return; }
+    epc = pc;
+    var again = function (ms) { if (epc !== pc) return; emiStop(); eTimer = setTimeout(function () { eTimer = null; emiWant(); }, ms); };
+    var got = function (stream) {
+      if (epc !== pc || !stream) return;
+      if ('srcObject' in emi) emi.srcObject = stream; else emi.src = URL.createObjectURL(stream);
+      var pl = emi.play(); if (pl && pl['catch']) pl['catch'](function () { /* nada */ });
+    };
+    if ('ontrack' in pc) pc.ontrack = function (e) { got(e.streams && e.streams[0] ? e.streams[0] : new MediaStream([e.track])); };
+    else pc.onaddstream = function (e) { got(e.stream); };
+    pc.oniceconnectionstatechange = function () { var c = pc.iceConnectionState; if (c === 'failed' || c === 'disconnected' || c === 'closed') again(5000); };
+    var opts = {};
+    try { pc.addTransceiver('video', { direction: 'recvonly' }); } catch (e) { opts = { offerToReceiveVideo: true }; }
+    var limit = setTimeout(function () { if (epc === pc && !eOn) again(15000); }, 12000);
+    pc.createOffer(opts).then(function (o) { return pc.setLocalDescription(o); }).then(function () {
+      return new Promise(function (r) {
+        if (pc.iceGatheringState === 'complete') return r();
+        var t = setTimeout(r, 1500);
+        pc.onicegatheringstatechange = function () { if (pc.iceGatheringState === 'complete') { clearTimeout(t); r(); } };
+      });
+    }).then(function () {
+      return new Promise(function (ok, bad) {
+        var x = new XMLHttpRequest();
+        x.open('POST', eUrl, true); x.setRequestHeader('Content-Type', 'application/sdp'); x.timeout = 10000;
+        x.onreadystatechange = function () { if (x.readyState !== 4) return; if (x.status >= 200 && x.status < 300) ok(x.responseText); else bad(new Error('WHEP ' + x.status)); };
+        x.ontimeout = function () { bad(new Error('WHEP sin respuesta')); };
+        x.send(pc.localDescription.sdp);
+      });
+    }).then(function (sdp) { return pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: sdp })); })['catch'](function () { clearTimeout(limit); again(15000); });
+  }
+  emi.addEventListener('playing', function () { if (epc && !eOn) { eOn = true; cv.className += ' emi-on'; } });
+  emi.addEventListener('error', function () { if (eOn) { emiStop(); eTimer = setTimeout(function () { eTimer = null; emiWant(); }, 5000); } });
+  function pubLoad() { get('/api/tema', function (r) { if (r && typeof r.pub === 'string') PUB = r.pub; }); }
+  pubLoad(); setInterval(pubLoad, 300000);
   tick();
   setInterval(tick, 3000);
   // Versión nueva publicada (pedido de Cote, 21 nov: que la pantalla se actualice sin tener que apretar nada): cada minuto
@@ -736,7 +1178,7 @@
   // Revisión: con ?diag=1, el navegador y los errores
   if (Q.diag) {
     var d = document.createElement('pre'); d.id = 'diag'; document.body.appendChild(d);
-    setInterval(function () { d.textContent = navigator.userAgent + '\nventana ' + window.innerWidth + 'x' + window.innerHeight + ' · pantalla ' + P + ' · vista ' + cur + ' · video ' + ver + (vid.paused ? ' (detenido)' : ' (andando)') + '\nerrores: ' + (errs.length ? errs.join(' | ') : 'ninguno'); }, 1500);
+    setInterval(function () { d.textContent = navigator.userAgent + '\nventana ' + window.innerWidth + 'x' + window.innerHeight + ' · pantalla ' + P + ' · vista ' + cur + ' · video ' + ver + (vid.paused ? ' (detenido)' : ' (andando)') + '\nemisión ' + (eUrl ? (eOn ? 'en pantalla' : epc ? 'conectando' : 'esperando') : 'sin configurar') + (window.RTCPeerConnection ? '' : ' (este navegador no tiene WebRTC)') + '\nerrores: ' + (errs.length ? errs.join(' | ') : 'ninguno'); }, 1500);
   }
 })();
 </script>

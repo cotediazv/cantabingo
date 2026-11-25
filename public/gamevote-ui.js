@@ -105,7 +105,7 @@
     const tick = () => {
       if (g && g.phase === 'intro') { paint(); return; } // la lámina avanza sola
       const el = $('#gv .gv-clock');
-      if (el && g && g.phase === 'voting') { const left = g.until - (Date.now() + off); el.textContent = left > 0 ? clock(left) : 'contando votos…'; }
+      if (el && g && g.phase === 'voting') { const left = g.until - (Date.now() + off); const t = left > 0 ? clock(left) : 'contando votos…'; if (el.textContent !== t) el.textContent = t; }
     };
     const load = async () => {
       const r = await api('GET', '/api/gamevote').catch(() => null);
@@ -180,6 +180,7 @@
   // ---------- Panel del animador: recuadro de la pestaña «Por votación» en el menú de juegos ----------
   let panelT = null; let lastSeen = null;
   window.addEventListener('hashchange', () => { lastSeen = null; }); // al cambiar de vista se olvida lo visto
+  window.addEventListener('hashchange', () => clearTimeout(window.gameDrawGo)); // al cambiar de vista se cancela el salto
   const goGame = (k, info) => { if (k === 'bingo') backToBingo(); else location.hash = info[k].href; };
   window.startGvIntro = async () => {
     const g = await api('GET', '/api/gamevote').catch(() => null);
@@ -200,25 +201,29 @@
     let html;
     const introBtn = '<button type="button" class="g-undo" data-gv-intro>📢 Presentar los juegos en pantalla</button>';
     if (g.phase === 'intro') {
-      const k = introNow(g, off); const sl = introSlide(g, k);
-      html = `<p class="gvp-now">📢 En pantalla: ${sl ? `${sl.icon} ${esc(sl.title)}` : ''} (${k + 1} de 6)</p><p class="gvp-help">Las reglas y cada juego pasan solos cada 10 segundos. Cuando quieras, inicia la votación.</p>
-        <button type="button" class="primary big g-draw" data-gv-start>🗳️ Iniciar votación (30 s)</button>
-        <button type="button" class="g-undo" data-gv-next ${k >= 5 ? 'disabled' : ''}>⏭ Siguiente</button>${cancel}`;
+      // Paso a paso (pedido de Cote, 24 nov): el animador va pasando cada explicación con el botón verde y, después de la
+      // última, recién parte la votación
+      const k = introNow(g, off); const sl = introSlide(g, k); const nx = introSlide(g, k + 1);
+      html = `<p class="gvp-now">📢 En pantalla: ${sl ? `${sl.icon} ${esc(sl.title)}` : ''} (${k + 1} de 6)</p>
+        ${k < 5 ? `<button type="button" class="primary big g-draw paso" data-paso="9" data-gv-next>▶ Siguiente: ${nx ? `${nx.icon} ${esc(nx.title)}` : ''}</button>
+        <button type="button" class="g-undo" data-gv-start>🗳️ Saltar a la votación</button>`
+    : '<button type="button" class="primary big g-draw paso" data-paso="9" data-gv-start>🗳️ Iniciar votación (30 s)</button>'}${cancel}`;
     } else if (g.phase === 'voting') {
       html = `<p class="gvp-now">🗳️ ${g.round === 2 ? 'Segunda vuelta' : 'Votación abierta'} · quedan <b>${clock(g.until - (Date.now() + off))}</b> · ${votos(g.total)}</p>${rows}
         <button type="button" class="primary big g-draw" disabled>🗳️ Votando…</button>${cancel}`;
     } else if (g.phase === 'result' && g.empty) {
-      html = `<p class="gvp-now">Nadie votó.</p><button type="button" class="primary big g-draw" data-gv-start>🗳️ Repetir votación (30 s)</button>${cancel}`;
+      html = `<p class="gvp-now">Nadie votó.</p><button type="button" class="primary big g-draw paso" data-paso="9" data-gv-start>🗳️ Repetir votación (30 s)</button>${cancel}`;
     } else if (g.phase === 'result' && g.runoff) {
       html = `<p class="gvp-now">Nadie superó el 50%. Segunda vuelta: ${nameOf(info, g.runoff[0])} y ${nameOf(info, g.runoff[1])}${g.tie2 ? ' (empate en el 2.º lugar: se sorteó)' : ''}.</p>${rows}
-        <button type="button" class="primary big g-draw" data-gv-start>🗳️ Iniciar segunda vuelta (30 s)</button>${cancel}`;
+        <button type="button" class="primary big g-draw paso" data-paso="9" data-gv-start>🗳️ Iniciar segunda vuelta (30 s)</button>${cancel}`;
     } else if (g.phase === 'done' && g.winner) {
       html = `<p class="gvp-win">🏆 Ganó ${nameOf(info, g.winner)}${g.tie ? ' (empate: se decidió por sorteo)' : ''}</p>${rows}
-        <button type="button" class="primary big g-draw" data-gv-go="${g.winner}">▶ Ir a ${nameOf(info, g.winner)}</button>
+        <button type="button" class="primary big g-draw paso" data-paso="9" data-gv-go="${g.winner}">▶ Ir a ${nameOf(info, g.winner)}</button>
         ${introBtn}<button type="button" class="g-undo" data-gv-start>🗳️ Nueva votación (30 s)</button>`;
     } else {
-      html = `<p class="gvp-help">El público elige el próximo juego desde su celular, en 30 segundos. Gana el juego con más de la mitad de los votos; si ninguno lo logra, hay segunda vuelta entre los 2 primeros.</p>
-        <button type="button" class="primary big g-draw" data-gv-start>🗳️ Iniciar votación (30 s)</button>${introBtn}`;
+      html = `<p class="gvp-help">El público elige el próximo juego desde su celular, en 30 segundos. Gana el juego con más de la mitad de los votos; si ninguno lo logra, hay segunda vuelta entre los 2 primeros. Primero, las instrucciones de cada juego en pantalla, paso a paso.</p>
+        <button type="button" class="primary big g-draw paso" data-paso="9" data-gv-intro>📢 Iniciar instrucciones</button>
+        <button type="button" class="g-undo" data-gv-start>🗳️ Iniciar votación sin instrucciones (30 s)</button>`;
     }
     boxes.forEach((b) => { if (b.dataset.h !== html) { b.dataset.h = html; b.innerHTML = html; } }); // solo si cambió (no se pierde un toque)
     // Cuando se decide el ganador mientras el panel mira la votación, el panel pasa solo a ese juego (como el sorteo);
@@ -227,7 +232,10 @@
     if (shown && lastSeen && lastSeen.id === g.id && lastSeen.phase === 'voting' && g.phase === 'done' && g.winner && Date.now() + off - g.decidedAt < 12000) {
       toast(`🗳️ Ganó ${info[g.winner].icon} ${info[g.winner].name}. En unos segundos pasamos al juego…`);
       clearTimeout(window.gameDrawGo);
-      window.gameDrawGo = setTimeout(() => goGame(g.winner, info), 8000);
+      // Si en esos segundos el animador ya eligió otra cosa (Cote, 24 nov: ganó El Rosko, eligió el bingo a mano y el
+      // panel lo sacó del bingo), no se salta: solo si sigue en la misma vista
+      const here = location.hash;
+      window.gameDrawGo = setTimeout(() => { if (location.hash === here) goGame(g.winner, info); }, 8000);
     }
     lastSeen = { id: g.id, phase: g.phase };
     // Reloj y votos en vivo cada segundo; fuera de la votación, cada 3 s (por si otro equipo la abre, p. ej. el iPad)

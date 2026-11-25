@@ -17,7 +17,7 @@
   const setClock = (st) => { if (st.clockUntil !== clockKey) { clockKey = st.clockUntil; if (st.clockUntil) clockEnd = Date.now() + (st.clockUntil - st.now); } }; // al cerrarse se conserva la hora de término, para saber si fue antes de tiempo
   const clockLeft = () => Math.max(0, clockEnd - Date.now());
   const clockText = () => { const s = Math.ceil(clockLeft() / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
-  setInterval(() => { if (clockKey) for (const el of document.querySelectorAll('.v-clock')) el.textContent = clockText(); }, 200);
+  setInterval(() => { if (clockKey) { const t = clockText(); for (const el of document.querySelectorAll('.v-clock')) if (el.textContent !== t) el.textContent = t; } }, 200);
   const thing = (p) => (p.thing ? `<i class="v-thing">${esc(p.thing)}</i>` : '');
   const withThing = (p) => (p.thing ? `${p.name} · ${p.thing}` : p.name);
   const isK = (st) => st.mode === 'karaoke';
@@ -30,7 +30,7 @@
     'Al terminar la votación, se muestran en pantalla <b>5 notas del público al azar</b>, que no determinan el promedio. El promedio se conoce al final del concurso.',
     'Gana el mejor <b>promedio</b>.',
   ] : [
-    'Cada participante presenta su objeto.',
+    `${st.max} participantes muestran su objeto. Si se inscriben más, sorteo.`,
     'Todos votan desde las mesas: nota del 1 al 10.',
     'Gran final entre los dos primeros.',
   ]);
@@ -80,44 +80,56 @@
         // (instrucciones y cupos) se ve solo antes de abrir las inscripciones.
         const next = st.players.find((p) => !p.done);
         const voted = st.players.some((p) => p.done) || st.onstage || st.open;
+        // Mientras gira la tómbola del sorteo en pantalla, el panel no adelanta a los sorteados (Cote, 24 nov)
+        const dr = st.drawRoll;
+        if (dr && window.__vrKey !== dr.at) { window.__vrKey = dr.at; window.__vrEnd = Date.now() + dr.ms - (st.now - dr.at); } // fin, en la hora de este equipo
+        const rollLeft = dr ? window.__vrEnd - Date.now() : 0;
+        const rolling = rollLeft > 300;
+        if (rolling) { clearTimeout(window.__vrT); window.__vrT = setTimeout(() => { last = ''; paint(); }, rollLeft + 200); }
         const who = (p, label) => `<div class="vc-now"><small>${label}</small><b>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}</div>`;
+        // Pedido de Cote (24 nov): el animador ve lo mismo que está en pantalla; el siguiente participante aparece en el
+        // panel recién cuando sube (así no lee el nombre del que viene en lugar del que está en el escenario)
+        const soon = (label) => `<div class="vc-now"><small>${label}</small><span>Su nombre sale en pantalla y aquí al tocar «Iniciar participante»</span></div>`;
         let step;
-        if (st.open) step = `${who(st.open, `🗳️ Votación abierta · <span class="v-clock">${clockText()}</span> · ${st.counts[st.open.id] || 0} votos`)}<button class="primary big" data-act="close">Cerrar votación</button>`;
+        if (st.open && isK(st)) step = `${who(st.open, `🎤 Cantando · 🗳️ votación abierta · ${st.counts[st.open.id] || 0} votos`)}<button class="primary big paso" data-act="close">🏁 Terminó la canción · Terminar votación</button>`; // El Festival (Cote, 23 nov): se vota durante la canción, sin tiempo
+        else if (st.open) step = `${who(st.open, `🗳️ Votación abierta · <span class="v-clock">${clockText()}</span> · ${st.counts[st.open.id] || 0} votos`)}<button class="primary big paso" data-act="close">Cerrar votación</button>`;
         else if (st.signup) step = `<div class="vc-signup on"><p><b>📲 Inscripciones abiertas · <span class="v-clock">${clockText()}</span></b></p><button data-act="signup">Cerrar</button></div>`;
-        else if (!st.players.length) step = '<button class="primary big" data-act="signup" data-on="1">📲 Abrir inscripciones</button>';
-        else if (st.overflow) step = `<button class="primary big" data-act="draw">🎲 Sortear los ${st.max} que cantan (se inscribieron ${st.players.length})</button>`;
-        else if (next && st.onstage && st.onstage.id === next.id) step = `${who(next, isK(st) ? '🎤 En el escenario' : '🗳️ Presentando su objeto')}<button class="primary big" data-act="open" data-id="${next.id}">🗳️ Iniciar votación</button>`;
-        else if (next) step = `${who(next, voted ? 'Ya viene el siguiente participante' : 'Primer participante')}<button class="primary big" data-act="present" data-id="${next.id}">🎤 Iniciar participante</button>`;
-        else if (st.players.length >= 2) step = '<button class="primary big" data-act="results">🏁 Pasar a los resultados</button>';
+        else if (!st.players.length) step = '<button class="primary big paso" data-act="signup" data-on="1">📲 Abrir inscripciones</button>';
+        else if (st.overflow) step = `<button class="primary big paso" data-act="draw">🎲 Sortear los ${st.max} que ${isK(st) ? 'cantan' : 'participan'} (se inscribieron ${st.players.length})</button>`;
+        else if (next && isK(st)) step = `${st.onstage && st.onstage.id === next.id ? who(next, '🎤 En el escenario') : soon(voted ? 'Ya viene el siguiente participante' : 'Primer participante')}<button class="primary big paso" data-act="open" data-id="${next.id}">🎤 Iniciar participante</button>`; // un solo botón: parte la canción y la votación
+        else if (next && st.onstage && st.onstage.id === next.id) step = `${who(next, isK(st) ? '🎤 En el escenario' : '🗳️ Presentando su objeto')}<button class="primary big paso" data-act="open" data-id="${next.id}">🗳️ Iniciar votación</button>`;
+        else if (next) step = `${soon(voted ? 'Ya viene el siguiente participante' : 'Primer participante')}<button class="primary big paso" data-act="present" data-id="${next.id}">🎤 Iniciar participante</button>`;
+        else if (st.players.length >= 2) step = '<button class="primary big paso" data-act="results">🏁 Pasar a los resultados</button>';
         else step = '<p class="muted">Se necesitan al menos 2 participantes.</p><button class="big" data-act="signup" data-on="1">📲 Abrir inscripciones otra vez</button>';
-        html = `${want && st.mode !== want ? `<div class="vc-read"><small>Hay un concurso de «${esc(st.title)}» en curso</small><button class="primary big" data-act="reset">Empezar ${want === 'karaoke' ? esc(fest(st)) : 'El objeto más extraño'} (borra el anterior)</button></div>` : ''}
+        html = `${want && st.mode !== want ? `<div class="vc-read"><small>Hay un concurso de «${esc(st.title)}» en curso</small><button class="primary big paso" data-paso="1" data-act="reset">Empezar ${want === 'karaoke' ? esc(fest(st)) : 'El objeto más extraño'} (borra el anterior)</button></div>` : ''}
           ${!st.signup && !st.players.length ? `<label class="f vc-max ${isK(st) ? 'ask' : ''}">${isK(st) ? '¿Cuántos participantes van a cantar?' : 'Cupos (máximo de participantes)'}<input type="number" id="vc-max" min="2" max="30" value="${st.max}"></label>` : ''}
           ${st.sample ? `<div class="vc-read"><small>Notas al azar en pantalla (sin el promedio)</small>${notesHTML(st, 'vc-notes')}</div>` : ''}
           <div class="vc-step">${step}</div>
           ${st.players.length && !voted && !st.signup ? '<button class="vc-again" data-act="signup" data-on="1">Abrir inscripciones otra vez</button>' : ''}
-          ${st.players.length ? `<div class="vc-list vc-mini">${st.players.map((p) => {
+          ${rolling ? '<div class="vc-read"><small>🎲 Sorteando en pantalla…</small><span>Los sorteados aparecen aquí cuando termina la tómbola</span></div>' : ''}
+          ${st.players.length && !rolling ? `<div class="vc-list vc-mini">${st.players.map((p) => {
     const on = st.open && st.open.id === p.id;
     const up = st.onstage && st.onstage.id === p.id;
     return `<div class="vc-row ${on || up ? 'on' : ''}"><p><b>${nm(p)}</b>${thing(p)}</p><em>${on ? '🗳️' : up ? '🎤' : p.done ? `✔ ${st.counts[p.id]} votos` : ''}</em>${!p.done && !on && !up ? `<button class="vc-x" data-act="remove" data-id="${p.id}" aria-label="Quitar a ${esc(p.name)}">✕</button>` : ''}</div>`;
   }).join('')}</div>` : ''}`;
       } else if (st.phase === 'results') {
         html = `<h2>Resultados</h2>
-          ${st.next ? `<div class="vc-read"><small>Viene · solo lo ves tú, hasta que lo reveles</small><em>${ord(st.next.place)}</em><b>${esc(st.next.name)}</b>${st.next.thing ? `<span>${esc(st.next.thing)}</span>` : ''}<i>Nota ${note(st.next.score, st.next.dec)}</i></div>
-            <button class="primary big" data-act="reveal">Revelar ${ord(st.next.place)}</button>`
-    : `<div class="vc-read"><small>Quedan las dos finalistas</small>${st.final.players.map((p) => `<b>${esc(p.name)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}`).join('<em class="vs">y</em>')}</div>
-            <button class="primary big" data-act="final">${isK(st) ? '🥁 Redoble de tambores: los dos finalistas' : '⚔️ Gran final: abrir votación'}</button>`}
+          ${st.next ? `<div class="vc-read"><small>Lo que viene (el nombre sale en pantalla y aquí al revelarlo, pedido de Cote)</small><em>${ord(st.next.place)}</em></div>
+            <button class="primary big paso" data-act="reveal">Revelar ${ord(st.next.place)}</button>`
+    : `<div class="vc-read"><small>Quedan los dos finalistas</small><span>Sus nombres salen en pantalla y aquí al tocar el botón</span></div>
+            <button class="primary big paso" data-act="final">${isK(st) ? '🥁 Redoble de tambores: los dos finalistas' : '⚔️ Gran final: abrir votación'}</button>`}
           <div class="vc-list">${[...st.places].reverse().map((p) => `<div class="vc-row"><p><b>${ord(p.place)} · ${esc(p.name)}</b>${thing(p)}<small>Nota ${note(p.score, p.dec)}</small></p></div>`).join('')}</div>`;
       } else if (st.phase === 'final' && isK(st)) {
         html = `<h2>🥁 Redoble de tambores</h2>
           <div class="vc-read"><small>Los dos finalistas están en pantalla</small>${st.final.players.map((p) => `<b>${esc(p.name)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}`).join('<em class="vs">y</em>')}</div>
-          <button class="primary big" data-act="winner" style="margin-top:12px">🏆 Revelar al gran ganador</button>`;
+          <button class="primary big paso" data-act="winner" style="margin-top:12px">🏆 Revelar al gran ganador</button>`;
       } else if (st.phase === 'final') {
         const total = Object.values(st.tally).reduce((a, b) => a + b, 0);
         html = `<h2>Gran final</h2>
           <div class="vc-list">${st.final.players.map((p) => `<div class="vc-row"><p><b>${esc(p.name)}</b>${thing(p)}<small>${st.final.open ? `Recibiendo votos · <span class="v-clock">${clockText()}</span>` : `${st.tally[p.id]} votos (solo lo ves tú)`}</small></p></div>`).join('')}</div>
           <p class="muted small" style="margin-top:6px">${total} votos en la gran final</p>
-          ${st.final.open ? '<button class="primary big" data-act="closefinal" style="margin-top:12px">Cerrar votación</button>'
-    : '<button class="primary big" data-act="winner" style="margin-top:12px">🏆 Revelar quién ganó</button><button class="big" data-act="final" style="margin-top:10px">Reabrir votación</button>'}`;
+          ${st.final.open ? '<button class="primary big paso" data-act="closefinal" style="margin-top:12px">Cerrar votación</button>'
+    : '<button class="primary big paso" data-act="winner" style="margin-top:12px">🏆 Revelar quién ganó</button><button class="big" data-act="final" style="margin-top:10px">Reabrir votación</button>'}`;
       } else if (isK(st)) {
         html = `<h2>🏆 Ganó ${esc(st.winner.name)} · ${note(st.winner.score, st.winner.dec)}</h2>
           <div class="vc-list">${st.second ? `<div class="vc-row"><p><b>2.º lugar · ${esc(st.second.name)}</b>${thing(st.second)}<small>Nota ${note(st.second.score, st.second.dec)}</small></p></div>` : ''}
@@ -193,9 +205,9 @@
       else if (st.open) {
         body = `<p class="pvote-ask">Pon tu nota a<b>${nm(st.open)}</b>${thing(st.open)}</p>
           <div class="pvote-keys">${Array.from({ length: 10 }, (_, i) => `<button type="button" data-v="${i + 1}" data-id="${st.open.id}" class="${st.mine === i + 1 ? 'on' : ''}">${i + 1}</button>`).join('')}</div>
-          <p class="pvote-clock">Quedan <b class="v-clock">${clockText()}</b></p>
+          ${st.clockUntil ? `<p class="pvote-clock">Quedan <b class="v-clock">${clockText()}</b></p>` : '<p class="pvote-clock">Vota mientras canta: la votación se cierra al terminar la canción.</p>'}
           ${st.mine ? `<p class="pvote-ok">✔ Tu nota: ${st.mine}. Puedes cambiarla mientras la votación esté abierta.</p>` : '<p class="muted small" style="text-align:center">1 es la nota más baja y 10 la más alta.</p>'}`;
-      } else if (st.me && isK(st) && st.overflow) body = `<div class="pvote-in">✔ Estás inscrito<b>${esc(st.me.thing)}</b><small>Se inscribieron más personas que los cupos: haremos un sorteo. ¡Mira la pantalla!</small></div>`;
+      } else if (st.me && st.overflow) body = `<div class="pvote-in">✔ Estás inscrito<b>${esc(st.me.thing)}</b><small>Se inscribieron más personas que los cupos: haremos un sorteo. ¡Mira la pantalla!</small></div>`;
       else if (st.me) body = `<div class="pvote-in">✔ Estás en la lista<b>${badge(st.me.no)}${esc(st.me.thing)}</b><small>Atento al llamado del animador para subir al escenario.</small></div>`;
       else if (st.signup && st.room) {
         body = `<form id="pv-join"><p class="pvote-ask">${isK(st) ? '¿Quieres cantar?<b>¡Inscríbete con tu canción!</b>' : '¿Quieres participar?<b>¡Sube a nuestro escenario!</b>'}</p>
@@ -238,6 +250,36 @@
   };
 
   // ---------- Pantallas ----------
+  // Tómbola del sorteo de participantes (pedido de Cote, 24 nov: «al momento de sortear los participantes tiene que haber
+  // un sorteo en pantalla, con el redoble de tambores»; en El Festival «que vaya sacando a los sorteados de a uno, pero
+  // rápido»): una capa encima de la pantalla que saca un nombre cada 1,3 s; mientras gira, la lista final queda oculta
+  let rollAt = 0;
+  const voteRoll = (st) => {
+    const r = st.drawRoll;
+    if (!r || rollAt === r.at) return;
+    const left = r.ms - (st.now - r.at);
+    if (left < 400) return;
+    rollAt = r.at;
+    const step = (r.ms - 900) / r.picks.length;
+    const t0 = Date.now() - (r.ms - left); // el comienzo de la tómbola en la hora de este equipo
+    const full = document.body.classList.contains('full');
+    const el = document.createElement('div');
+    el.id = 'vroll'; el.className = `th-${st.venue} ${full ? 'vr-full' : 'vr-gc'}`;
+    el.innerHTML = `<div class="vr-card"><small>${esc(title(st))} · Sorteo de participantes</small><b>${window.sinEmoji(isK(st) ? '🎲 ¿Quiénes cantan?' : '🎲 ¿Quiénes participan?')}</b><ol>${r.picks.map(() => '<li>·</li>').join('')}</ol></div>`;
+    document.body.appendChild(el); document.body.classList.add('vroll-on');
+    if (full) { sfx.unlock(); sfx.roll(true); }
+    const lis = el.querySelectorAll('li');
+    const spin = setInterval(() => {
+      const t = Date.now() - t0; const k = Math.min(r.picks.length, Math.floor(t / step));
+      lis.forEach((li, i) => {
+        if (i < k) { if (!li.classList.contains('ok')) { li.classList.add('ok'); li.textContent = r.picks[i]; } } else if (i === k) { li.className = 'spin'; li.textContent = r.pool[Math.floor(Math.random() * r.pool.length)]; }
+      });
+      if (t >= r.ms) {
+        clearInterval(spin); if (full) { sfx.roll(false); sfx.play('win'); }
+        el.classList.add('vr-out'); document.body.classList.remove('vroll-on'); setTimeout(() => el.remove(), 450);
+      }
+    }, 70);
+  };
   const follow = (paint) => {
     let last = '';
     let alive = true;
@@ -245,6 +287,7 @@
       const st = await api('GET', '/api/vote').catch(() => null);
       if (!alive || !st) return;
       setClock(st);
+      voteRoll(st);
       const celebrating = st.winner && st.now - st.winAt < CELEBRATE_MS;
       const s = JSON.stringify([st.rev, celebrating]);
       if (s === last) return;
@@ -284,8 +327,9 @@
         : { tag: 'Resultados', main: 'Vamos desde el último lugar', sub: 'hasta la gran final', side: ['🏁', `${st.players.length} participantes`] };
     }
     if (st.onstage) return { tag: isK(st) ? 'En el escenario' : 'Presenta su objeto', no: st.onstage.no, main: st.onstage.name, featured: !!st.onstage.thing, sub: st.onstage.thing || '', side: isK(st) ? ['🎤', '¡Aplausos!'] : ['🗳️', 'Atentos'] };
+    if (st.open && !st.clockUntil) return { tag: 'Votación abierta', no: st.open.no, main: st.open.name, featured: !!st.open.thing, sub: st.open.thing || 'Pon tu nota del 1 al 10 desde tu celular', side: ['🗳️', 'Vota del 1 al 10'], qr: true }; // El Festival: se vota durante la canción, sin reloj
     if (st.open) return { tag: 'Votación abierta', no: st.open.no, main: st.open.name, featured: !!st.open.thing, sub: st.open.thing || 'Pon tu nota del 1 al 10 desde tu celular', clock: 'Vota del 1 al 10', qr: true };
-    if (st.drawn) return { tag: 'Sorteo de participantes', main: window.sinEmoji('🎲 ¡Ellos cantan!'), sub: 'Prepárense para subir al escenario', list: st.drawn, side: ['🎤', `${st.drawn.length} cantan`] };
+    if (st.drawn) return { tag: 'Sorteo de participantes', main: window.sinEmoji(isK(st) ? '🎲 ¡Ellos cantan!' : '🎲 ¡Ellos participan!'), sub: isK(st) ? 'Prepárense para subir al escenario' : 'Prepárense para mostrar su objeto', list: st.drawn, side: [isK(st) ? '🎤' : '🎁', `${st.drawn.length} ${isK(st) ? 'cantan' : 'participan'}`] };
     if (st.last && st.sample && st.sample.length) return { tag: 'Notas del público', no: st.last.no, main: st.last.name, sub: st.last.thing || '', notes: true };
     if (st.last) {
       const next = st.players.find((p) => !p.done);
@@ -309,7 +353,6 @@
     app.innerHTML = '<div id="vg"></div><div id="vg-win"></div>';
     let swap = null;
     let sceneKey = '';
-    let drumHeard = null;
     // Diseño nuevo: los nombres van siempre enteros; si con la letra nueva alguno no cabe en su línea, se achica
     const fitGC = () => { if (window.t2 && window.t2()) document.querySelectorAll('#vg .vg-main > b, #vg .vg-main > span, #vg .vg-side > b').forEach((el) => window.fitOneLine(el)); };
     const stop = follow((st, celebrating) => {
@@ -330,13 +373,13 @@
       // Si solo cambió un detalle (llegó otro inscrito), se actualiza en el lugar, sin sacar y volver a entrar el zócalo
       const key = celebrating ? '' : JSON.stringify([s.tag, s.main, s.sub, !!s.qr, !!s.notes]);
       // Redoble de tambores (concurso de karaoke) también en el GC, para la transmisión
-      if (s.drum && drumHeard !== st.rev) { drumHeard = st.rev; sfx.unlock(); sfx.play('drum'); }
+      if (s.drum) { if (!sfx.rolling()) { sfx.unlock(); sfx.roll(true); } } else if (sfx.rolling()) sfx.roll(false); // suena hasta que se revela al ganador
       if (key && key === sceneKey && box.classList.contains('on')) { box.classList.add('t2q'); box.innerHTML = html; fitGC(); return; } // t2q: en el diseño nuevo, sin repetir la entrada
       sceneKey = key;
       box.className = `th-${st.venue}`;
       swap = setTimeout(() => { if ($('#vg')) { $('#vg').innerHTML = html; $('#vg').className = `th-${st.venue} ${html ? 'on' : ''}`; fitGC(); whenFonts(fitGC); } }, box.innerHTML ? 650 : 0);
     });
-    return () => { stop(); clearTimeout(swap); document.body.classList.remove('obs', 'gc-screen'); };
+    return () => { stop(); clearTimeout(swap); sfx.roll(false); document.body.classList.remove('obs', 'gc-screen'); };
   };
 
   // Tablero del DJ: lo mismo a pantalla completa, con la lista de participantes al costado
@@ -370,7 +413,8 @@
       const s = scene(st, celebrating);
       // Sonidos: redoble al revelar un lugar y fanfarria al conocerse quién ganó
       const cue = st.phase === 'winner' ? 'win' : st.phase === 'final' && st.final && st.final.drum ? 'drum' : st.phase === 'results' && st.places.length ? `place${st.places.length}` : '';
-      if (!first && cue && cue !== heard) sfx.play(cue === 'win' ? 'win' : cue === 'drum' ? 'drum' : 'hit');
+      if (cue === 'drum') { if (!sfx.rolling()) sfx.roll(true); } else if (sfx.rolling()) sfx.roll(false); // el redoble suena hasta que se revela al ganador
+      if (!first && cue && cue !== heard && cue !== 'drum') sfx.play(cue === 'win' ? 'win' : 'hit');
       heard = cue;
       const key = JSON.stringify([s.tag, s.main, s.sub, !!s.notes, !!s.list, celebrating]);
       box.className = `th-${st.venue}${key !== sceneKey ? ' t2in' : ''}`;
@@ -391,6 +435,6 @@
       fitAll();
       whenFonts(fitAll);
     });
-    return () => { stop(); ticking = 0; clearTimeout(tickTimer); };
+    return () => { stop(); ticking = 0; clearTimeout(tickTimer); sfx.roll(false); };
   };
 })();

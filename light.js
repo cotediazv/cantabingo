@@ -17,7 +17,7 @@ const NIGHT_STARTS = 6; // la noche cambia a las 6 AM, igual que el karaoke
 const DAYS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 const GLOSA_MS = 10 * 60e3; // la GLOSA se relee cada 10 minutos
 
-module.exports = function light({ app, db, save, requireAdmin, requireLocal = requireAdmin, fail, karaoke, insta }) {
+module.exports = function light({ app, db, save, requireAdmin, requireLocal = requireAdmin, fail, karaoke, insta, aviso = () => {} }) {
   // Una sala light por local (Kennedy, Frida y Tobalaba pueden estar abiertas a la vez)
   db.lights ||= {};
   if (db.light) { db.lights[db.light.venue] = db.light; db.light = null; } // salas guardadas antes de este cambio
@@ -147,6 +147,7 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
     db.lights[v].video = false; // cambiar el GC apaga el switch «Video cartelera» (pedido de Cote, 21 nov)
     save();
     if (show === 'karaoke' || show === 'qr') karaoke.refreshVenue(v);
+    aviso(); // las pantallas cambian al instante
     res.json(pub(v));
   });
   // Switch «Video cartelera» (pedido de Cote, 21 nov): deja puesto en la pantalla vertical del local (versión completa y
@@ -157,6 +158,7 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
     if (!db.lights[v]) return fail(res, 404, 'No hay una sala light abierta en este local');
     db.lights[v].video = !!b.on;
     save();
+    aviso();
     res.json(pub(v));
   });
 

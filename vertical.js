@@ -22,7 +22,7 @@ const SCREENS = { kennedy: 'kennedy', frida: 'frida', 'tobalaba-v': 'tobalaba', 
 const MODES = ['auto', 'video', 'actividad'];
 const MAX_BYTES = 300 * 1024 * 1024; // 300 MB por video
 
-module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, karaoke }) {
+module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, karaoke, perOf = () => null }) {
   db.vertical ||= {}; // local -> { video: número de versión (fecha de subida), size, mode }
   const file = (v) => path.join(dir, `vertical-${v}.mp4`);
   const conf = (v) => (db.vertical[v] ||= { video: 0, size: 0, mode: 'auto' });
@@ -96,15 +96,17 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
   for (const v of Object.keys(SCREENS)) { const c = db.vertical[v]; if (c && c.opt && (c.opt.state === 'procesando' || c.opt.state === 'esperando')) { c.opt = { ...c.opt, state: 'error' }; save(); } try { fs.rmSync(`${file(v)}.optimizando.mp4`, { force: true }); } catch { /* nada */ } }
 
   // Qué actividad hay ahora en el local: la sala de juegos completa de ese local abierta y con algo en juego
-  // (pedido de Cote: si la sala está abierta pero sin bingo, El Rosco ni otro juego en curso, se ve la información
+  // (pedido de Cote: si la sala está abierta pero sin bingo, El Rosko ni otro juego en curso, se ve la información
   // del local con los shows que vienen). En el bingo cuenta como «en juego» si ya salieron números, si está el QR
-  // grande para entrar o si hay ganador en pantalla.
+  // grande para entrar, si hay ganador en pantalla o si ya se eligió la figura.
   const activityOf = (v) => {
     const s = Object.values(db.sessions)[0];
     if (!s || (s.theme || 'frida') !== v || !db.stage || db.stage === 'none') return null;
     if (db.stage === 'bingo') {
       const celebrate = !s.hideWin && (s.results || []).some((r) => r.validated && !r.dismissed);
-      return (s.drawn || []).length || s.bigQr || celebrate ? 'sala' : null;
+      // también desde que se elige la figura (Cote, 24 nov: la figura se ve en grande «en todos los dispositivos»)
+      const started = s.figRound === s.round;
+      return (s.drawn || []).length || s.bigQr || celebrate || started ? 'sala' : null;
     }
     if (db.stage === 'rueda') return Object.keys(db.wheels || {}).length ? 'sala' : null;
     return 'sala'; // sorteo, votación, karaoke, show, Instagram o QR: el animador lo puso en pantalla
@@ -151,7 +153,11 @@ module.exports = function vertical({ app, db, save, requireAdmin, fail, dir, kar
     const lightVideo = !!(LIGHT_SCREENS[v] && ((db.lights || {})[venue] || {}).video);
     if (lightVideo && hasVideo) show = 'video';
     // lightStage: lo que el equipo eligió en el panel de la sala light del local; la pantalla lo sigue cuando muestra la información
-    return { screen: v, venue: SCREENS[v], name: VENUES[SCREENS[v]], lightVideo: lightVideo && hasVideo, opt: c.opt || null, optimiza: !!FFMPEG, lightStage: ((db.lights || {})[venue] || {}).stage || 'cartelera', karaokeNow: !!karaoke.nowOf(venue).now, mode: c.mode, activity: act, show, video: hasVideo ? c.video : 0, size: hasVideo ? c.size : 0 };
+    // Emisión en vivo de la pantalla (pedido de Cote, 25 nov): dirección pública de reproducción (WHEP) del canal de
+    // Cloudflare, en la variable de entorno EMISION_<PANTALLA> de Render (ej. EMISION_KENNEDY). Con ella, durante los
+    // juegos la pantalla liviana (pv.html) muestra la emisión en tiempo real que manda emisor/emisor.js
+    const emi = String(process.env[`EMISION_${v.toUpperCase().replace(/-/g, '_')}`] || '');
+    return { emision: /^(https:\/\/|http:\/\/localhost[:/])[^\s"'<>]+$/.test(emi) ? emi : '', screen: v, venue: SCREENS[v], name: VENUES[SCREENS[v]], per: perOf(venue), lightVideo: lightVideo && hasVideo, opt: c.opt || null, optimiza: !!FFMPEG, lightStage: ((db.lights || {})[venue] || {}).stage || 'cartelera', karaokeNow: !!karaoke.nowOf(venue).now, mode: c.mode, activity: act, show, video: hasVideo ? c.video : 0, size: hasVideo ? c.size : 0 };
   };
 
   app.get('/api/vertical/:local', (req, res) => {

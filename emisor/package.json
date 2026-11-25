@@ -1,0 +1,8 @@
+{
+  "name": "krb-emisor",
+  "private": true,
+  "description": "Emite en tiempo real la pantalla vertical de un local (Cron Job de Render)",
+  "main": "emisor.js",
+  "scripts": { "start": "node emisor.js" },
+  "dependencies": { "playwright": "1.63.0" }
+}

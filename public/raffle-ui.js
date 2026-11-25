@@ -1,18 +1,23 @@
 /* global views, app, $, esc, api, fail, toast, isAdmin, viewLogin, BACK_BINGO */
-// Sorteo de concursantes para El Rosco: panel del moderador y animación para la pantalla de OBS.
+// Sorteo de concursantes para El Rosko: panel del moderador y animación para la pantalla de OBS.
 (() => {
   // ---------- Moderador ----------
-  views.sorteoctl = async () => {
+  // El mismo sorteo sirve para El Rosko (#/sorteoctl: 3 concursantes) y para ¿Quién quiere ser ganador?
+  // (#/sorteoctl/desafio: un participante a la vez; el primero y, cuando alguien pierde, su reemplazo; hasta 4)
+  views.sorteoctl = async (arg) => {
     if (!(await isAdmin())) return viewLogin();
-    app.innerHTML = `<h1>Sorteo de concursantes</h1>
+    const des = arg === 'desafio';
+    const G = des ? { name: '¿Quién quiere ser ganador?', n: 4, role: (i) => (i === 0 ? 'primer participante' : `reemplazo (participante ${i + 1} de 4)`), Role: (i) => `${i + 1}.` }
+      : { name: 'El Rosko', n: 3, role: (i) => `concursante (${i + 1}.º de 3)`, Role: (i) => `${i + 1}.` };
+    app.innerHTML = `<h1>Sorteo de concursantes${des ? ` · ${G.name}` : ''}</h1>
       <div class="cols">
         <div class="panel">
           <div id="rf-ann"></div>
-          <p style="margin:14px 0"><button class="primary big rf-main" id="rf-draw">🎲 Sortear un concursante</button></p>
+          <p style="margin:14px 0"><button class="primary big rf-main paso" id="rf-draw">🎲 Sortear un concursante</button></p>
           <h2>Concursantes elegidos</h2>
           <div id="rf-picked" style="margin:10px 0"></div>
           <div class="row">
-            <button class="primary" id="rf-create" hidden>✔ Aceptar y cargar El Rosco</button>
+            <button class="primary" id="rf-create" hidden>✔ Aceptar y cargar ${G.name}</button>
             <button id="rf-reset">Empezar de nuevo</button>
           </div>
         </div>
@@ -24,7 +29,7 @@
       </div>${BACK_BINGO}`;
     let picked = [];
     if (typeof paintGameNav === 'function') paintGameNav(); // el menú de juegos (BACK_BINGO) se completa al entrar
-    api('POST', '/api/raffle/open').catch(() => {});
+    api('POST', '/api/raffle/open', { game: des ? 'desafio' : 'rosco' }).catch(() => {});
     const load = async () => {
       const [r, p] = await Promise.all([api('GET', '/api/raffle'), api('GET', '/api/people')]);
       picked = r.picked;
@@ -34,7 +39,7 @@
         || '<p class="muted">Aún no hay nadie. Aparecerán al unirse al bingo.</p>';
       const cf = r.confirm || {};
       const allOk = picked.length > 0 && picked.every((n) => cf[n] === 'ok');
-      $('#rf-picked').innerHTML = picked.length ? picked.map((n, i) => `<div class="row between" style="padding:8px 0;border-bottom:1px solid var(--line)"><b>${i + 1}. ${esc(n)} <small class="rf-st ${cf[n] === 'ok' ? 'ok' : ''}">${cf[n] === 'ok' ? '✅ Confirmó' : '⏳ Esperando que confirme en su celular'}</small></b>${cf[n] === 'ok' ? '' : `<button data-confirm="${esc(n)}">✔ Confirmar a mano</button>`}<span class="row" style="gap:6px"><button data-edit="${esc(n)}">✏️ Editar</button><button data-remove="${esc(n)}">Quitar</button></span></div>`).join('')
+      $('#rf-picked').innerHTML = picked.length ? picked.map((n, i) => `<div class="row between" style="padding:8px 0;border-bottom:1px solid var(--line)"><b>${G.Role(i)} ${esc(n)} <small class="rf-st ${cf[n] === 'ok' ? 'ok' : ''}">${cf[n] === 'ok' ? '✅ Confirmó' : '⏳ Esperando que confirme en su celular'}</small></b>${cf[n] === 'ok' ? '' : `<button data-confirm="${esc(n)}">✔ Confirmar a mano</button>`}<span class="row" style="gap:6px"><button data-edit="${esc(n)}">✏️ Editar</button><button data-remove="${esc(n)}">Quitar</button></span></div>`).join('')
         : '<p class="muted">Todavía no has sorteado a nadie.</p>';
       // Pedido de Cote (21 nov): el concursante que salió, grande para anunciarlo (cuando la tómbola ya terminó en pantalla)
       const off = (r.now || Date.now()) - Date.now();
@@ -45,23 +50,37 @@
       if ($('#rf-ann').dataset.k !== annKey) {
         $('#rf-ann').dataset.k = annKey;
         $('#rf-ann').innerHTML = rolling ? '<div class="panel ann"><small>📣 Para anunciar</small><span class="ann-t">🎲 Sorteando en pantalla…</span></div>'
-          : picked.length ? window.annHtml(`🎲 Salió sorteado · ${picked.length}.º de 3 para El Rosco`, [lastP], [cf[lastP] === 'ok' ? '✅ ¡Confirmó! Que se acerque a nuestro escenario' : '⏳ Esperando que confirme en su celular si quiere jugar'])
+          : picked.length ? window.annHtml(des ? `🎲 Salió sorteado · ${G.role(picked.length - 1)} de ${G.name}` : `🎲 Salió sorteado · ${picked.length}.º de 3 para El Rosko`, [lastP], [cf[lastP] === 'ok' ? '✅ ¡Confirmó! Que se acerque a nuestro escenario' : '⏳ Esperando que confirme en su celular si quiere jugar'])
           : '';
         if (!rolling && dec.length) $('#rf-ann').insertAdjacentHTML('beforeend', `<p class="rf-dec">🙅 Prefirieron jugar online (no entran al sorteo): ${dec.map(esc).join(', ')}</p>`);
         if (rolling) setTimeout(load, r.roll.at + (r.rollMs || 6000) - (Date.now() + off) + 300);
       }
-      // Pedido de Cote (20 nov): un solo botón que avanza: sortear a los 3 concursantes y, con los 3, cargar El Rosco
-      const full = picked.length >= 3;
-      // Con los 3 elegidos, El Rosco se carga cuando los 3 confirmaron (pedido de Cote, 21 nov)
-      $('#rf-draw').textContent = full ? (allOk ? '✔ Cargar El Rosco con los 3' : '⏳ Esperando que confirmen en su celular') : `🎲 Sortear concursante (${picked.length + 1}.º de 3)`;
+      // Pedido de Cote (20 nov): un solo botón que avanza: sortear a los 3 concursantes y, con los 3, cargar El Rosko
+      // ¿Quién quiere ser ganador?: uno a la vez; el que salió y confirmó sube al escenario (si es reemplazo, sigue desde
+      // la pregunta en que quedó el anterior)
+      const dg = des ? await api('GET', '/api/desafio').catch(() => null) : null;
+      const waiting = des && dg && picked.length > (dg.team || []).length; // el último sorteado todavía no sube
+      const full = des ? waiting || picked.length >= G.n : picked.length >= G.n;
+      const lastOk = lastP && cf[lastP] === 'ok';
+      // Con los 3 elegidos, El Rosko se carga cuando los 3 confirmaron (pedido de Cote, 21 nov)
+      $('#rf-draw').textContent = des ? (waiting ? (lastOk ? `✔ Que suba al escenario: ${lastP}` : '⏳ Esperando que confirme en su celular') : full ? 'Ya jugaron los 4 participantes' : `🎲 Sortear ${G.role(picked.length)}`)
+        : full ? (allOk ? '✔ Cargar El Rosko con los 3' : '⏳ Esperando que confirmen en su celular') : `🎲 Sortear ${G.role(picked.length)}`;
       $('#rf-draw').dataset.load = full ? '1' : '';
-      $('#rf-draw').disabled = full ? !allOk : p.connected.filter((n) => !picked.includes(n) && !dec.includes(n)).length === 0;
-      $('#rf-create').hidden = full || !picked.length;
-      $('#rf-create').textContent = `✔ Cargar El Rosco con ${picked.length}`;
+      $('#rf-draw').dataset.sube = waiting && lastOk ? lastP : '';
+      $('#rf-draw').dataset.swap = waiting && lastOk && dg && dg.phase === 'swap' ? '1' : '';
+      $('#rf-draw').disabled = des ? (waiting ? !lastOk : full || p.connected.filter((n) => !picked.includes(n) && !dec.includes(n)).length === 0)
+        : full ? !allOk : p.connected.filter((n) => !picked.includes(n) && !dec.includes(n)).length === 0;
+      $('#rf-create').hidden = full || !picked.length || des; // ¿Quién quiere ser ganador? necesita a los 2
+      $('#rf-create').textContent = `✔ Cargar El Rosko con ${picked.length}`;
       $('#rf-create').disabled = !allOk;
     };
     $('#rf-draw').onclick = async () => {
-      if ($('#rf-draw').dataset.load) { $('#rf-create').click(); return; }
+      const d = $('#rf-draw').dataset;
+      if (des && d.sube) { // sube al escenario: si es un reemplazo, entra en la partida; si es el primero, va al formulario del juego
+        if (d.swap) { try { await api('POST', '/api/desafio/host', { action: 'sub', player: d.sube }); } catch (err) { fail(err); return; } }
+        location.hash = '#/desafioctl'; return;
+      }
+      if (d.load) { $('#rf-create').click(); return; }
       try { await api('POST', '/api/raffle/draw'); toast('Sorteando en pantalla…'); await load(); } catch (err) { fail(err); }
     };
     // Corregir un nombre mal escrito o inapropiado; el cambio llega también al bingo y al rosco
@@ -89,8 +108,9 @@
       await load();
     };
     $('#rf-create').onclick = async () => {
+      if (des) { location.hash = '#/desafioctl'; return; } // el panel del juego toma a los 2 confirmados (principal y suplente)
       try {
-        const w = await api('POST', '/api/wheels', { name: 'El Rosco', players: picked });
+        const w = await api('POST', '/api/wheels', { name: 'El Rosko', players: picked });
         location.hash = `#/ruedactl/${w.id}`;
       } catch (err) { fail(err); }
     };
@@ -110,18 +130,22 @@
       const colors = ['#ff4fa3', '#ff9a3d', '#ffe14d', '#3fe08f', '#35c6ff', '#9b5cff'];
       return `<div class="confetti">${Array.from({ length: 50 }, (_, i) => `<i style="left:${(Math.random() * 100).toFixed(1)}%;background:${colors[i % colors.length]};animation-delay:${(Math.random() * 2).toFixed(2)}s;animation-duration:${(3 + Math.random() * 3).toFixed(2)}s"></i>`).join('')}</div>`;
     };
-    const list = (names) => { $('#rf-list').innerHTML = names.map((n, i) => `<span><b>${i + 1}</b>${esc(n)}</span>`).join(''); };
+    let isDes = false; // sorteo de ¿Quién quiere ser ganador?: un participante a la vez (hasta 4)
+    const list = (names) => { $('#rf-list').classList.remove('rf-des'); $('#rf-list').innerHTML = names.map((n, i) => `<span><b>${i + 1}</b>${esc(n)}</span>`).join(''); };
     const reveal = (st, celebrate) => {
-      $('#rf-stage').innerHTML = `${celebrate ? confetti() : ''}<div class="rf-card win ${celebrate ? 'pop' : ''}"><span class="rf-kicker">${window.sinEmoji(st.mode === 'tie' ? (st.roll.game === 'rosco' ? '🏆 ¡Ganador de El Rosco!' : '🏆 ¡Ganador del bingo!') : '🎉 ¡A jugar El Rosco!')}</span><span class="rf-name" style="--n:${st.roll.winner.length}">${esc(st.roll.winner)}</span></div>`;
+      const des = st.game === 'desafio'; const at = st.picked.indexOf(st.roll.winner);
+      const kick = st.mode === 'tie' ? (st.roll.game === 'rosco' ? '🏆 ¡Ganador de El Rosko!' : '🏆 ¡Ganador del bingo!') : des ? (at > 0 ? `🎉 Reemplazo · participante ${at + 1} de 4` : '🎉 Primer participante') : '🎉 ¡A jugar El Rosko!';
+      $('#rf-stage').innerHTML = `${celebrate ? confetti() : ''}<div class="rf-card win ${celebrate ? 'pop' : ''}"><span class="rf-kicker">${window.sinEmoji(kick)}</span><span class="rf-name" style="--n:${st.roll.winner.length}">${esc(st.roll.winner)}</span></div>`;
       list(st.picked);
     };
     const poll = async () => {
       const st = await api('GET', '/api/raffle').catch(() => null);
       if (!st) return;
-      $('#rf-title').textContent = st.mode === 'tie' ? 'Desempate' : 'Sorteo de concursantes';
+      isDes = st.mode !== 'tie' && st.game === 'desafio';
+      $('#rf-title').textContent = st.mode === 'tie' ? 'Desempate' : isDes ? '¿Quién quiere ser ganador? · Sorteo' : 'Sorteo de concursantes';
       if (!st.roll) {
         clearTimeout(spin); spin = null; shownRoll = 0;
-        $('#rf-stage').innerHTML = `<div class="rf-card"><span class="rf-dice">🎲</span><span class="rf-kicker">${st.pool} participantes</span><span class="rf-name small">¿Quién jugará El Rosco?</span></div>`;
+        $('#rf-stage').innerHTML = `<div class="rf-card"><span class="rf-dice">🎲</span><span class="rf-kicker">${st.pool} participantes</span><span class="rf-name small">${isDes ? (st.picked.length ? '¿Quién será el reemplazo?' : '¿Quién será el primer participante?') : '¿Quién jugará El Rosko?'}</span></div>`;
         list(st.picked);
         return;
       }
@@ -132,7 +156,7 @@
       if (left <= 200) { reveal(st, false); return; } // ya había terminado: se muestra el resultado sin animar
       // Mientras gira no se muestra todavía al elegido en la lista de abajo
       list(st.picked.filter((n) => n !== st.roll.winner));
-      const rollingText = st.mode === 'tie' ? `Sorteando entre ${st.pool} ${st.roll.game === 'rosco' ? 'concursantes empatados' : 'ganadores'}…` : 'Sorteando…';
+      const rollingText = st.mode === 'tie' ? `Sorteando entre ${st.pool} ${st.roll.game === 'rosco' ? 'concursantes empatados' : 'ganadores'}…` : isDes ? (st.picked.indexOf(st.roll.winner) > 0 ? 'Sorteando al reemplazo…' : 'Sorteando al primer participante…') : 'Sorteando…';
       $('#rf-stage').innerHTML = `<div class="rf-card rolling"><span class="rf-kicker">${rollingText}</span><span class="rf-reel" id="rf-prev"></span><span class="rf-name" id="rf-roll"></span><span class="rf-reel" id="rf-next"></span></div>`;
       let i = 0;
       const end = Date.now() + left;

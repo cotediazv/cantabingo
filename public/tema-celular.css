@@ -1,0 +1,79 @@
+/* Diseño nuevo en el celular del público (misión de Cote, 24 nov: «la vista del celular del público tiene que verse con
+   la estética nueva que tenemos. Hay que unificar todo»). La misma línea de las pantallas y del GC: fondo noche, foco
+   dorado, el color del local, Big Shoulders en títulos y nombres, Manrope en los textos y formas rectas. Solo colores,
+   letras y formas: no se mueve nada de lugar. Vale para el celular de la sala de juegos (#/jugar) y el de la sala light
+   (#/l/…); con el interruptor en «Diseño anterior» (o en navegadores antiguos) queda como antes. Cada regla empieza con
+   html.t2 y la vista. */
+
+html.t2 body[data-view="jugar"], html.t2 body[data-view="l"] {
+  --bg: #0c0b12; --surface: #15131e; --raised: #1c1828; --ink: #f3eee6; --muted: #a59fb0; --line: #2a2636;
+  --primary: #f4bf5a; --primary-ink: #1a1407; --link: #f4bf5a; --mark: #f4bf5a; --win: #2fbf71; --radius: 0px;
+  background: radial-gradient(120% 60% at 50% -10%, color-mix(in srgb, var(--t-c, #f4bf5a) 22%, transparent), transparent 70%) #0c0b12 fixed;
+  font-family: var(--t-txt);
+}
+/* Títulos y nombres: Big Shoulders en mayúsculas */
+html.t2 body[data-view="jugar"] :is(h1, h2, .prosco-head b, .pkar-turn, .prosco-win, .pcrowd-rank > b, .ann-t, .ann-n),
+html.t2 body[data-view="l"] :is(h1, h2) {
+  font-family: var(--t-disp); font-weight: 800; letter-spacing: .01em; text-transform: uppercase;
+}
+html.t2 body[data-view="jugar"] h1, html.t2 body[data-view="l"] h1 { line-height: 1.02; }
+/* Recuadros: rectos, con la línea del color del local arriba */
+html.t2 body[data-view="jugar"] :is(.panel, .now, .card, .pvote, .prosco, .pkar),
+html.t2 body[data-view="l"] .panel {
+  border-radius: 0; border-color: var(--line); box-shadow: none;
+}
+html.t2 body[data-view="jugar"] :is(.panel, .now, .pvote, .prosco, .pkar),
+html.t2 body[data-view="l"] .panel { border-top: 3px solid var(--t-c, var(--t-foco)); }
+/* Botones: rectos; el principal en el dorado de la marca */
+html.t2 body[data-view="jugar"] :is(button, .btn):not(.cell),
+html.t2 body[data-view="l"] :is(button, .btn) { border-radius: 0; }
+html.t2 body[data-view="jugar"] :is(button.primary, .btn.primary),
+html.t2 body[data-view="l"] :is(button.primary, .btn.primary) {
+  font-family: var(--t-disp); font-weight: 800; letter-spacing: .04em; text-transform: uppercase;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%);
+}
+/* Campos para escribir */
+html.t2 body[data-view="jugar"] :is(input, select, textarea),
+html.t2 body[data-view="l"] :is(input, select, textarea) { border-radius: 0; background: #0c0b12; border-color: var(--line); color: var(--ink); }
+html.t2 body[data-view="jugar"] :is(input, select, textarea):focus,
+html.t2 body[data-view="l"] :is(input, select, textarea):focus { outline: none; border-color: var(--t-foco); }
+/* El cartón del bingo */
+html.t2 body[data-view="jugar"] .card { border: 1px solid var(--line); border-top: 3px solid var(--t-c, var(--t-foco)); }
+html.t2 body[data-view="jugar"] .card-top { font-family: var(--t-mono); font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; }
+html.t2 body[data-view="jugar"] .card-top .left { color: var(--t-foco); }
+html.t2 body[data-view="jugar"] .grid5.head span { border-radius: 0; background: var(--t-c, var(--t-foco)); color: var(--t-onc, #0c0b12); font-family: var(--t-disp); font-weight: 800; }
+html.t2 body[data-view="jugar"] .cell { border-radius: 0; background: #1c1828; border-color: #2a2636; font-family: var(--t-disp); font-weight: 700; }
+html.t2 body[data-view="jugar"] .cell.hint { background: #272235; }
+html.t2 body[data-view="jugar"] .cell.marked { background: var(--t-foco); border-color: var(--t-foco); color: #1a1407; }
+html.t2 body[data-view="jugar"] .cell.green, html.t2 body[data-view="jugar"] .cell.free.green { background: var(--win); border-color: var(--win); color: #06140c; }
+html.t2 body[data-view="jugar"] .cell.free { background: #2a2636; font-family: var(--t-mono); }
+/* Lo que va saliendo: la bolita y los números anteriores */
+html.t2 body[data-view="jugar"] .now { background: rgba(21, 19, 30, .96); }
+html.t2 body[data-view="jugar"] .history span { border-radius: 0; border-color: var(--line); font-family: var(--t-mono); }
+/* Etiquetas chicas: JetBrains Mono */
+html.t2 body[data-view="jugar"] :is(.pcrowd > small, .pcrowd-top > small, .pcrowd-rank > small, .ann > small) { font-family: var(--t-mono); letter-spacing: .1em; text-transform: uppercase; color: var(--t-foco); }
+/* El Rosko y su Trivia */
+html.t2 body[data-view="jugar"] .prosco { background: linear-gradient(180deg, #1c1828, #15131e); }
+html.t2 body[data-view="jugar"] .prosco-head b { color: var(--t-foco); }
+html.t2 body[data-view="jugar"] .prosco-clock { border-radius: 0; font-family: var(--t-mono); }
+html.t2 body[data-view="jugar"] .prosco-letter { background: var(--t-c, var(--t-foco)); color: var(--t-onc, #0c0b12); font-family: var(--t-disp); }
+html.t2 body[data-view="jugar"] .pcrowd button { border-radius: 0; background: #0c0b12; border-color: #3a3550; font-family: var(--t-txt); font-weight: 800; }
+html.t2 body[data-view="jugar"] .pcrowd button:not(:disabled):active { border-color: var(--t-foco); }
+html.t2 body[data-view="jugar"] :is(.pcrowd-top, .pcrowd-rank) > div { border-radius: 0; }
+/* Avisos y lo que viene */
+html.t2 body[data-view="jugar"] :is(.ann, .pact) { border-radius: 0; }
+html.t2 body[data-view="jugar"] .toast, html.t2 body[data-view="l"] .toast { border-radius: 0; }
+/* Las votaciones del celular (El Festival, El objeto, la votación del juego, El último en pie, lo que viene): sin el
+   fondo morado; el mismo recuadro noche con la línea del local */
+html.t2 body[data-view="jugar"] .pvote { background: linear-gradient(180deg, #1c1828, #15131e); border: 1px solid var(--line); border-top: 3px solid var(--t-c, var(--t-foco)); border-radius: 0; }
+html.t2 body[data-view="jugar"] .pvote-head b { font-family: var(--t-disp); font-weight: 800; letter-spacing: .02em; text-transform: uppercase; color: var(--t-foco); }
+html.t2 body[data-view="jugar"] :is(.pvote-ask b, .pvote-win, .pvote-in b, .pgv-intro > b) { font-family: var(--t-disp); font-weight: 800; letter-spacing: .01em; text-transform: uppercase; }
+html.t2 body[data-view="jugar"] :is(.pvote-win, .pvote-place b, .pvote-clock b, .pact .pact-list small, .pgvote .pgv-step) { color: var(--t-foco); }
+html.t2 body[data-view="jugar"] .pvote-clock b { font-family: var(--t-mono); }
+html.t2 body[data-view="jugar"] .pvote-ask .v-thing { border-radius: 0; background: var(--t-foco); color: #1a1407; clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 0 100%); }
+html.t2 body[data-view="jugar"] :is(.pvote-keys button, .pvote-duel button, .pgvote .pgv-opts button, .pact .pact-yesno button) { border-radius: 0; background: #0c0b12; border-color: #3a3550; font-family: var(--t-disp); font-weight: 800; }
+html.t2 body[data-view="jugar"] :is(.pvote-keys button.on, .pvote-duel button.on) { background: var(--t-foco); border-color: var(--t-foco); color: #1a1407; }
+html.t2 body[data-view="jugar"] .pgvote .pgv-opts button { font-family: var(--t-txt); font-weight: 800; }
+html.t2 body[data-view="jugar"] :is(.pvote-place, .pact .pact-list p) { border-radius: 0; background: rgba(255, 255, 255, .05); }
+html.t2 body[data-view="jugar"] .pact .pact-list em { color: var(--t-foco); }
+html.t2 body[data-view="jugar"] .pgvote .pgv-opts button { border-left: 8px solid var(--c); }

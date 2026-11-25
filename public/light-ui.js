@@ -3,7 +3,7 @@
 // sala principal y sin tocarla. Panel (#/light), GC para OBS (#/light-gc) y celular del público (#/l/<sala>).
 (() => {
   const VENUES = { kennedy: 'Mercado Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' }; // el local se llama Mercado Kennedy (pedido de Cote, 21 nov)
-  const lightJoin = (id) => `${location.origin}${location.pathname}#/l/${id}`;
+  const lightJoin = (id) => `${window.pubBase()}#/l/${id}`;
   const gcUrl = (v) => `${location.origin}${location.pathname}#/light-gc/${v}`;
   const teamUrl = (v) => `${location.origin}${location.pathname}#/equipo/${v}`;
   // ¿Quién maneja este panel? El moderador, o el equipo del local (clave del equipo)
@@ -119,7 +119,7 @@
         const q = (k) => card.querySelector(`[data-k="${k}"]`);
         const src = l.light ? `#/light-gc/${l.venue}` : l.main ? '#/escena' : '';
         const frame = q('frame');
-        if ((frame.dataset.src || '') !== src) { frame.dataset.src = src; frame.src = src ? `${location.pathname}?mudo=1${src}` : 'about:blank'; }
+        if ((frame.dataset.src || '') !== src) { frame.dataset.src = src; frame.src = src ? `${location.pathname}?mudo=1${window.__mon || ''}${src}` : 'about:blank'; }
         frame.hidden = !src; q('off').hidden = !!src;
         q('badge').textContent = l.light && l.main ? 'Sala principal + light' : l.light ? 'Sala light' : l.main ? 'Sala principal' : 'Cerrado';
         q('badge').className = `cs-badge ${l.light || l.main ? 'on' : ''}`;
@@ -151,16 +151,18 @@
     let sub = null; // la vista del karaoke, cuando está en pantalla
     let alive = true;
     const stopSub = () => { if (typeof sub === 'function') sub(); sub = null; };
+    let seq = 0; // si dos lecturas se cruzan (la de cada 2,5 s y la del aviso inmediato), vale solo la última
     const tick = async () => {
+      const n = ++seq;
       // Con local (#/light-gc/kennedy) muestra esa sala; sin local, la primera abierta
       const st = await api('GET', `/api/light${VENUES[venue] ? `?local=${venue}` : ''}`).catch(() => null);
-      if (!alive || !st) return;
+      if (!alive || !st || n !== seq) return;
       const stage = st.open ? st.stage : 'none';
       let c = null;
       if (stage === 'show' || stage === 'cartelera' || stage === 'info') c = await api('GET', `/api/light/cartelera?local=${st.venue}`).catch(() => null);
       let k = null;
       if (stage === 'qr') k = await api('GET', `/api/karaoke?local=${st.venue}`).catch(() => null);
-      if (!alive) return;
+      if (!alive || n !== seq) return;
       const sig = JSON.stringify([stage, st.id, st.venue, stage === 'custom' ? st.text : '', c && [c.show, c.current, c.next, c.week, c.blocks, c.month], k && k.list.map((p) => [p.name, p.song]), stage === 'info' ? Math.floor(Date.now() / 9000) : 0, t2on()]); // t2on: al cambiar de diseño se vuelve a dibujar
       if (sig === shown) return;
       const wasKaraoke = shown.startsWith('["karaoke"');
@@ -177,9 +179,7 @@
       if (stage === 'custom') {
         // GC personalizable: el texto escrito en el panel, en la franja de abajo (corto: grande; largo: en líneas)
         const t = String(st.text || '');
-        box.innerHTML = `<div class="lg-card lg-bottom lg-info lg-custom">
-          <div class="lg-tag"><small>${esc(VENUES[st.venue] || '')}</small><b>KRB Stage</b></div>
-          <div class="lg-main">${t.length <= 30 ? `<b style="--n:${Math.max(10, t.length)}">${esc(t)}</b>` : `<span class="lg-line">${esc(t)}</span>`}</div></div>`;
+        box.innerHTML = window.gcPer.card(st.venue, t); // lo que va entre comillas sale destacado (pedido de Cote, 22 nov)
       } else if (stage === 'show') {
         box.innerHTML = `<div class="lg-card lg-bottom">
           <div class="lg-tag"><small>${esc(c ? c.name : '')}</small><b>${c && c.show ? se('⭐ Show de hoy') : 'Esta noche'}</b></div>
@@ -213,17 +213,23 @@
     };
     await tick();
     const timer = setInterval(tick, 2500);
-    return () => { alive = false; clearInterval(timer); stopSub(); document.body.classList.remove('obs', 'gc-screen'); };
+    const offAviso = window.onAviso(tick); // el cambio de GC llega al instante
+    return () => { alive = false; clearInterval(timer); offAviso(); stopSub(); document.body.classList.remove('obs', 'gc-screen'); };
   };
 
   // ---------- Celular del público ----------
   views.l = async (id) => {
     const info = await api('GET', `/api/light/${encodeURIComponent(id || '')}`).catch(() => null);
     if (!info) { app.innerHTML = '<div class="panel"><h1>Esta sala ya terminó</h1><p class="muted">Pide al equipo el código QR de la sala de hoy.</p></div>'; return undefined; }
+    // «Conectados» (pedido de Cote, 22 nov): mientras la sala light está abierta en el celular, avisa cada 45 s para
+    // contarla (una marca al azar del navegador, sin datos personales; se corta sola al salir de esta pantalla)
+    { const here = location.hash; const vid = window.vid();
+      const ping = () => { if (location.hash !== here) return clearInterval(tPing); if (!document.hidden) fetch(`/api/web/viendo?que=light&local=${info.venue}&id=${vid}`).catch(() => {}); return undefined; };
+      const tPing = setInterval(ping, 45000); setTimeout(ping, 1500); }
     const key = `light-${id}`;
     let me = null;
     try { me = JSON.parse(store.get(key) || 'null'); } catch { me = null; }
-    if (me && me.token) me = await api('POST', `/api/light/${id}/join`, { token: me.token }).catch(() => null);
+    if (me && me.token) me = await api('POST', `/api/light/${id}/join`, { token: me.token, vid: window.vid() }).catch(() => null);
     const joinForm = () => {
       app.innerHTML = `<div class="panel"><h1 style="margin-top:0">${esc(info.title)}</h1><p class="muted">Entra con tu nombre para pedir canciones de karaoke y ver la cartelera.</p>
         <form id="lj" class="fields" style="grid-template-columns:1fr">
@@ -233,7 +239,7 @@
           <button class="primary big">Entrar</button></form></div><p class="lm-web">Ve los registros en vivo de esta y todas las noches en <a href="https://krbstage.cl" target="_blank" rel="noopener"><b>krbstage.cl</b></a></p>`;
       $('#lj').onsubmit = async (e) => {
         e.preventDefault();
-        try { me = await api('POST', `/api/light/${id}/join`, Object.fromEntries(new FormData(e.target))); store.set(key, JSON.stringify({ token: me.token })); main(); } catch (err) { fail(err); }
+        try { me = await api('POST', `/api/light/${id}/join`, { ...Object.fromEntries(new FormData(e.target)), vid: window.vid() }); store.set(key, JSON.stringify({ token: me.token })); main(); } catch (err) { fail(err); }
       };
     };
     let tab = 'karaoke';
@@ -365,7 +371,7 @@
     let joinUrl = '';
     const light = await api('GET', `/api/light?local=${v}`).catch(() => null);
     if (location.hash !== mine) return () => {};
-    if (light && light.id) { joinUrl = `${location.origin}${location.pathname}#/l/${light.id}`; $('.lv-qrbox').innerHTML = qr(joinUrl); }
+    if (light && light.id) { joinUrl = `${window.pubBase()}#/l/${light.id}`; $('.lv-qrbox').innerHTML = qr(joinUrl); }
     // Qué recuadros hay para mostrar (solo los que tienen algo)
     const slides = () => {
       const out = [];

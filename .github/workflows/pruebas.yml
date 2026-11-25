@@ -1,0 +1,17 @@
+# Pruebas automáticas en cada subida a GitHub (todas las ramas) y en cada PR.
+# Solo las pruebas de API y de compatibilidad: las de pantalla (npm run test:e2e) se corren en el Mac,
+# porque sus capturas de referencia son de ese sistema. No publica nada: Render sigue publicando solo desde main.
+name: Pruebas
+on: [push, pull_request]
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
