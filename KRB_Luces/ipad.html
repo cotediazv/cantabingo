@@ -205,19 +205,18 @@
   .djpag{display:flex;background:#121419;border-radius:10px;padding:3px;gap:3px}
   .djpag button{border:0;background:transparent;color:var(--mut);font-size:13px;font-weight:700;padding:6px 10px;border-radius:8px;cursor:pointer}
   .djpag button.act{background:var(--card);color:var(--txt);box-shadow:inset 0 0 0 1px var(--line)}
-  #djCab{display:none;flex:1;min-height:0;flex-direction:column;gap:6px}
+  #djCab{display:none;flex:0 0 auto;flex-direction:column;gap:6px}
   body.dj-cabezas #djCab{display:flex}
+  body.dj-cabezas .djvista{flex:1 1 auto}
+  body.dj-cabezas .djint{display:none}
+  #djToque{display:none;position:absolute;inset:0;z-index:2;touch-action:none;cursor:crosshair}
+  body.dj-cabezas #djToque{display:block}
+  #djToqueAyuda{position:absolute;left:8px;top:8px;right:90px;font-size:11px;color:#fff;background:#0009;padding:4px 8px;border-radius:8px;pointer-events:none}
+  #djToque.drag #djToqueAyuda{display:none}
   body.dj-cabezas #djEsc, body.dj-cabezas .djctl, body.dj-cabezas .djent{display:none !important}
   .djsel{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
   .djsel button{border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:10px;padding:7px 2px;font-size:13px;font-weight:700}
   .djsel button.act{background:#2a3f6e;border-color:var(--acc)}
-  .djpad{position:relative;flex:1;min-height:120px;border-radius:14px;touch-action:none;cursor:crosshair;overflow:hidden;
-    background:radial-gradient(circle,#ffffff14 1px,transparent 1.5px) 0 0/22px 22px,#0f1116;box-shadow:inset 0 0 0 1px var(--line)}
-  .djpad.drag{box-shadow:inset 0 0 0 2px var(--acc)}
-  .djpad .ref{position:absolute;font-size:10px;letter-spacing:.12em;color:#ffffff55;font-weight:700;pointer-events:none}
-  .djpad .ref.a{top:6px;left:50%;transform:translateX(-50%)} .djpad .ref.b{bottom:6px;left:50%;transform:translateX(-50%)}
-  .djpad .ref.c{left:6px;top:50%;transform:translateY(-50%) rotate(-90deg);transform-origin:left top}
-  .djpad .ref.d{right:6px;top:50%;transform:translateY(-50%) rotate(90deg);transform-origin:right top}
   #djPunto{position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 14px #ffd9a0;display:none;pointer-events:none;background:#ffd9a033}
   .djancho{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mut)}
   .djancho button{border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:9px;padding:6px 8px;font-size:12px;font-weight:700}
@@ -256,11 +255,10 @@
 <div id="dj">
   <div class="djtop"><b>KRB · DJ</b><div class="djpag"><button id="djPagEsc" class="act">Escenas</button><button id="djPagCab">Cabezas</button></div><span id="djLatido" title="Ritmo"></span><span id="djBpm" style="font-size:13px;color:var(--mut);min-width:64px">—</span>
     <div class="pill" id="djPill"><span class="dot" id="djDot"></span><span id="djPillTxt">…</span></div></div>
-  <div class="djvista" id="djVista"><button id="djFrente">⟲ De frente</button></div>
+  <div class="djvista" id="djVista"><div id="djToque"><div id="djPunto"></div><span id="djToqueAyuda">Pasa el dedo por el salón</span></div><button id="djFrente">⟲ De frente</button></div>
   <div class="djesc" id="djEsc"></div>
   <div id="djCab">
     <div class="djsel" id="djSel"><button data-c="0">Cabeza 1</button><button data-c="1">Cabeza 2</button><button data-c="2">Cabeza 3</button><button data-c="todas" class="act">Las 3</button></div>
-    <div class="djpad" id="djPad"><span class="ref a">ESCENARIO</span><span class="ref b">FONDO</span><span class="ref c">PASILLO</span><span class="ref d">COCINAS</span><div id="djPunto"></div></div>
     <div class="djancho">Ancho <button data-an="8">Angosto</button><button data-an="50" class="act">Medio</button><button data-an="92">Ancho</button><input type="range" id="djAncho" min="0" max="100" value="50"></div>
     <div class="djacc"><button class="djc" id="djSegOn">💡 Encender cabezas</button><button class="djc" id="djSoltar">↩ Soltar · vuelven a la escena</button></div>
   </div>
@@ -2788,7 +2786,6 @@ $('djEntrada').onchange = async () => {
 /* ---------- Pagina «Cabezas»: el DJ sigue a una persona por el salon con el dedo (Cote, 25 nov) ----------
    La superficie es el salon sin dibujo: arriba el escenario, abajo el fondo; a los lados el pasillo y las cocinas.
    Arriba se ve el salon completo desde arriba, con el anillo donde apuntan las cabezas. */
-const DJPAD = { v0: -2, v1: 30, u0: -6.5, u1: 5.2 };   // metros del salon que cubre la superficie (largo y ancho)
 function djPagina(cab){
   document.body.classList.toggle('dj-cabezas', cab);
   $('djPagEsc').classList.toggle('act', !cab); $('djPagCab').classList.toggle('act', cab);
@@ -2797,13 +2794,25 @@ function djPagina(cab){
   V.sucio = true;
 }
 function vistaSalonArriba(){
-  // el salon visto desde arriba, con el escenario arriba de la pantalla (igual que la superficie)
-  V.objetivo = deSalon(-0.5, 14); V.dist = 34; V.pitch = 1.35;
-  const a = deSalon(0, 0), b = deSalon(0, 10);                       // direccion del largo del salon
+  // el salon completo visto desde arriba, con el escenario arriba de la pantalla
+  V.objetivo = deSalon(-0.5, 15); V.dist = 46; V.pitch = 1.45;
+  const a = deSalon(0, 0), b = deSalon(0, 10);
   V.yaw = Math.atan2(b[0] - a[0], b[2] - a[2]);
 }
 $('djPagEsc').onclick = () => djPagina(false);
 $('djPagCab').onclick = () => djPagina(true);
+// Punto del piso que queda bajo el dedo (la misma camara que dibuja la vista 3D)
+function pisoBajo(x, y){
+  const r = $('djVista').getBoundingClientRect(); if (!r.width || !r.height) return null;
+  const cp = Math.cos(V.pitch), sp = Math.sin(V.pitch);
+  const ojo = add(V.objetivo, [Math.sin(V.yaw) * cp * V.dist, sp * V.dist, Math.cos(V.yaw) * cp * V.dist]);
+  const fw = norm(sub(V.objetivo, ojo)), rt = norm(cross(fw, [0, 1, 0])), up = cross(rt, fw);
+  const tv = Math.tan(V.fov / 2), nx = (x - r.left) / r.width * 2 - 1, ny = 1 - (y - r.top) / r.height * 2;
+  const dir = add(fw, add(mul(rt, nx * tv * r.width / r.height), mul(up, ny * tv)));
+  if (dir[1] >= -1e-3) return null;
+  const t = -ojo[1] / dir[1];
+  return add(ojo, mul(dir, t));
+}
 function djEncender(ids){
   ids.forEach(id => { const z = zona(id); z.color = (conf.seguir && conf.seguir.color) || 'blanco_calido'; z.intensidad = 100; z.zoom = djSeg.ancho; });
 }
@@ -2814,31 +2823,35 @@ function djTomar(){
   djEncender(djSeguidas());
   if (djEstado.escena >= 0) djAplicar(djEstado.escena, true); else enviarGrupos(djSeguidas(), 0);
 }
-function djApuntar(fx, fy){
-  const v = DJPAD.v0 + fy * (DJPAD.v1 - DJPAD.v0), u = DJPAD.u0 + fx * (DJPAD.u1 - DJPAD.u0);   // izquierda pasillo, derecha cocinas
+function djApuntar(u, v){
   const punto = puntoPiso(u, v), ids = djSeguidas();
   const s = (v - CAL.v0) / (CAL.v1 - CAL.v0), t = (u - CAL.u0) / (CAL.u1 - CAL.u0);
   ids.forEach(id => { const z = zona(id); if (!(z.intensidad > 0)) djEncender([id]);
     if (!apuntarModelo(id, punto)) { calibrada(id) ? apuntar(id, s, t) : apuntarGeo(id, punto); } });
-  V.marca = punto; V.sucio = true; djSeg.punto = {fx, fy};
-  const pt = $('djPunto'); pt.style.display = 'block'; pt.style.left = (fx * 100) + '%'; pt.style.top = (fy * 100) + '%';
+  V.marca = punto; V.sucio = true; djSeg.punto = {u, v};
   limitar('djseg', () => enviarGrupos(ids, 0));
 }
 (() => {
-  const pad = $('djPad'); let activo = false;
-  const mover = e => { const r = pad.getBoundingClientRect();
-    djApuntar(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)), Math.max(0, Math.min(1, (e.clientY - r.top) / r.height))); };
-  pad.addEventListener('pointerdown', e => { activo = true; pad.setPointerCapture(e.pointerId); pad.classList.add('drag'); djTomar(); mover(e); });
-  pad.addEventListener('pointermove', e => { if (activo) mover(e); });
-  const fin = () => { activo = false; pad.classList.remove('drag'); };
-  pad.addEventListener('pointerup', fin); pad.addEventListener('pointercancel', fin);
+  const capa = $('djToque'); let activo = false;
+  const mover = e => {
+    const p = pisoBajo(e.clientX, e.clientY); if (!p) return;
+    let [u, v] = aSalon(p);
+    u = Math.max(SALON.pasillo, Math.min(SALON.cocinas, u)); v = Math.max(-4, Math.min(SALON.largo, v));   // dentro del salon
+    const r = capa.getBoundingClientRect(), pt = $('djPunto');
+    pt.style.display = 'block'; pt.style.left = (e.clientX - r.left) + 'px'; pt.style.top = (e.clientY - r.top) + 'px';
+    djApuntar(u, v);
+  };
+  capa.addEventListener('pointerdown', e => { activo = true; capa.setPointerCapture(e.pointerId); capa.classList.add('drag'); djTomar(); mover(e); });
+  capa.addEventListener('pointermove', e => { if (activo) mover(e); });
+  const fin = () => { activo = false; capa.classList.remove('drag'); };
+  capa.addEventListener('pointerup', fin); capa.addEventListener('pointercancel', fin);
 })();
 document.querySelectorAll('#djSel button').forEach(b => b.onclick = () => {
   const antes = djSeguidas();
   djSeg.sel = b.dataset.c; document.querySelectorAll('#djSel button').forEach(x => x.classList.toggle('act', x === b));
   // si ya se estaba siguiendo, las que quedan fuera vuelven a la escena y las nuevas se suman
   if (djSeg.activo){ djEncender(djSeguidas().filter(id => !antes.includes(id)));
-    if (djEstado.escena >= 0) djAplicar(djEstado.escena, true); if (djSeg.punto) djApuntar(djSeg.punto.fx, djSeg.punto.fy); }
+    if (djEstado.escena >= 0) djAplicar(djEstado.escena, true); if (djSeg.punto) djApuntar(djSeg.punto.u, djSeg.punto.v); }
 });
 function djFijarAncho(v){
   djSeg.ancho = v; $('djAncho').value = v;
@@ -2848,7 +2861,7 @@ function djFijarAncho(v){
 }
 document.querySelectorAll('[data-an]').forEach(b => b.onclick = () => djFijarAncho(+b.dataset.an));
 $('djAncho').oninput = () => djFijarAncho(+$('djAncho').value);
-$('djSegOn').onclick = () => { djTomar(); djEncender(djSeguidas()); if (djSeg.punto) djApuntar(djSeg.punto.fx, djSeg.punto.fy); else enviarGrupos(djSeguidas(), 0); };
+$('djSegOn').onclick = () => { djTomar(); djEncender(djSeguidas()); if (djSeg.punto) djApuntar(djSeg.punto.u, djSeg.punto.v); else enviarGrupos(djSeguidas(), 0); };
 $('djSoltar').onclick = () => {
   if (!djSeg.activo) return;
   djSeg.activo = false; V.marca = null; $('djPunto').style.display = 'none'; V.sucio = true;
