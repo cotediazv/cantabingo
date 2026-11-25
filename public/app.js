@@ -1163,8 +1163,8 @@ views.jugar = async (sid) => {
         const des = r.game === 'desafio';
         const gName = des ? '¿Quién quiere ser ganador?' : 'El Rosko';
         const trivia = des ? 'la Trivia del Ganador' : 'la Trivia del Rosko';
-        const role = (i) => (des ? (i === 0 ? 'Principal' : 'Suplente') : `${i + 1}.º`);
-        const myRole = myName && des ? (picked.indexOf(myName) === 0 ? ' como participante principal' : ' como suplente') : '';
+        const role = (i) => `${i + 1}.º`;
+        const myRole = myName && des && picked.indexOf(myName) > 0 ? ' como reemplazo' : '';
         head = `🎲 Sorteo de concursantes · ${gName}`;
         // Pedido de Cote (21 nov): quien sale sorteado confirma si quiere jugar en el escenario o prefiere jugar online
         body = (myName && myState !== 'ok' ? `<div class="pvote-win">🎉 ¡Saliste sorteado${myRole}!<small>Para jugar ${gName} en nuestro escenario</small></div>

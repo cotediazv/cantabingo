@@ -74,3 +74,5 @@ html.t2 #carton .ct-card { border-top-color: var(--t-c, var(--t-foco)); clip-pat
 html.t2 #carton .ct-title { font-family: var(--t-mono); font-weight: 700; color: var(--t-foco); letter-spacing: .12em; }
 html.t2 #carton .ct-small, html.t2 #carton .ct-lines p { font-family: var(--t-txt); }
 html.t2 #carton .ct-big { font-family: var(--t-disp); font-weight: 800; letter-spacing: .01em; }
+/* La cortina, en negro (pedido de Cote, 25 nov) */
+html.t2 #capa .cp-cur i, html.t2 #capa .cp-cur i:nth-child(n) { background: #000; }

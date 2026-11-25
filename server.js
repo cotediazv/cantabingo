@@ -560,7 +560,7 @@ app.post('/api/sessions/:sid/host/:action', (req, res) => {
       }
       stopAuto(s);
       s.confirmedAt = Date.now();
-      festejo(); // confeti en el GC
+      festejo('final'); // la cortina y el confeti en el GC
       require('./momentos.js').emit('bingo_ganador_confirmado'); require('./momentos.js').emitLater('premio_entrega', PREMIO_MS);
       // Quien no fue confirmado queda fuera: el cartel muestra solo al ganador aceptado
       for (const r of s.results) if (!r.confirmed) r.dismissed = true;
@@ -769,7 +769,9 @@ const perOf = (venue) => {
 const setStage = (show) => {
   if (roscoLock(show)) { if (db.stage !== 'rueda') { db.stage = 'rueda'; save(); for (const s of Object.values(db.sessions)) broadcast(s); aviso(); } return false; }
   const changed = db.stage !== show;
+  const famBefore = familyOf(db.stage);
   db.stage = show;
+  if (changed && familyOf(show) && familyOf(show) !== famBefore) cortinaJuego(); // se cargó otro juego: la cortina
   if (changed) { perOff(); if (db.carton) db.carton.on = false; } // un juego tomó la pantalla: el GC PER y el cartón salen
   save();
   if (changed) for (const s of Object.values(db.sessions)) broadcast(s); // los celulares se enteran del cambio de juego
@@ -782,7 +784,25 @@ let capaFire = () => {};
 // Luces: después de la secuencia del ganador viene la entrega del premio (Cote, 24 nov: «después de la celebración, sube
 // el ganador y le entregan el vino: fondo rojo»; y «puede ser en el botón cuando se acepta el ganador»)
 const PREMIO_MS = 9000;
-const festejo = () => { const s = Object.values(db.sessions)[0]; if (s) capaFire(s.theme || 'frida', 'confeti'); };
+// Antes del ganador final de cada juego, la cortina (pedido de Cote, 25 nov: «esa transición quisiera que la usáramos al
+// momento de cargar un juego, siempre, y antes de dar el ganador final»): primero la cortina y, cuando sale, el confeti
+// (la capa muestra un efecto a la vez). festejo('final') = cortina + confeti; festejo() = solo confeti
+let festejoT = null;
+const festejo = (kind) => {
+  const s = Object.values(db.sessions)[0]; if (!s) return;
+  const v = s.theme || 'frida';
+  clearTimeout(festejoT);
+  if (kind === 'final') { capaFire(v, 'cortina'); festejoT = setTimeout(() => capaFire(v, 'confeti'), 3500); } else capaFire(v, 'confeti');
+};
+// Al cargar un juego, siempre, la cortina (pedido de Cote, 25 nov): cuando la pantalla pasa a otro juego. El sorteo de
+// concursantes es parte de El Rosko (o de ¿Quién quiere ser ganador?) y el desempate, del juego que desempata
+const familyOf = (st) => {
+  if (st === 'bingo') return 'bingo';
+  if (st === 'rueda') return 'rosco';
+  if (st === 'sorteo') { const r = db.raffle || {}; return r.mode === 'tie' ? ((r.tie || {}).game === 'rosco' ? 'rosco' : 'bingo') : r.game === 'desafio' ? 'desafio' : 'rosco'; }
+  return ['voto', 'desafio', 'enpie'].includes(st) ? (st === 'voto' ? `voto:${(db.vote || {}).mode || ''}` : st) : null;
+};
+const cortinaJuego = () => { const s = Object.values(db.sessions)[0]; if (s) capaFire(s.theme || 'frida', 'cortina'); };
 require('./momentos.js').init({ app, db, aviso }); // momentos de los juegos para las luces (lista acordada con Code 4)
 const wheel = require('./wheel.js')({ app, db, save, requireAdmin, fail, setStage, festejo, findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null });
 roscoRef = wheel;
@@ -932,6 +952,7 @@ app.post('/api/gamedraw/free', requireAdmin, (req, res) => {
     startContest(game); // un concurso del mismo tipo sin ganador no se borra: tocarlo en el menú solo vuelve a su panel
     setStage('voto'); // las pantallas y los celulares pasan de inmediato al juego elegido
   }
+  if (game === 'bingo' && familyOf(db.stage) === 'bingo') cortinaJuego(); // la pantalla ya estaba en el bingo: igual se carga con la cortina
   db.gameDraw.seq = (db.gameDraw.seq || 0) + 1;
   save();
   res.json(db.gameDraw);
@@ -1215,9 +1236,8 @@ const cartonInfo = () => {
   } else if (st === 'desafio') {
     const d = db.desafio || {};
     out.title = '¿Quién quiere ser ganador?';
-    out.big = d.player || '¡Ya comienza!'; out.small = d.player ? (d.subIn ? 'Suplente en juego' : 'Concursante') : '';
-    if (d.sub && !d.subIn && d.phase !== 'end') out.lines.push(`Suplente: ${d.sub}`);
-    if (d.step) out.lines.push(`Va por la pregunta ${d.step} de ${(d.prizes || []).length || 12}${(d.prizes || [])[d.step - 1] ? ` · ${d.prizes[d.step - 1]}` : ''}`);
+    out.big = d.player || '¡Ya comienza!'; out.small = d.player ? ((d.team || []).length > 1 ? `Participante ${(d.team || []).length} de 4` : 'Concursante') : '';
+    if (d.step) out.lines.push(`Va por la pregunta ${d.step} de 12 · etapa ${Math.ceil(d.step / 4)}${(d.prizes || [])[Math.ceil(d.step / 4) - 1] ? `: ${d.prizes[Math.ceil(d.step / 4) - 1]}` : ''}`);
     const crowd = new Set(Object.values((d.crowd || {}).ans || {}).flatMap((by) => Object.keys(by))).size;
     if (crowd) out.lines.push(`${crowd} ${crowd === 1 ? 'persona juega' : 'personas juegan'} la Trivia desde el celular`);
   } else {

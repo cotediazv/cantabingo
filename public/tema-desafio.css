@@ -251,3 +251,9 @@ html.t2 body[data-view="jugar"] .pcrowd-top > div.me, html.t2 body[data-view="ju
 }
 /* Suplente (pedido de Cote, 25 nov): su nombre en la presentación y cuando entra, en el dorado de la marca */
 html.t2 #df .d-cover > span.d-sub b { color: var(--t-foco); }
+/* Premios por etapa (pedido de Cote, 25 nov): en la escalera solo las preguntas 4, 8 y 12 llevan su premio, y la
+   presentación muestra los 3 premios de hoy */
+html.t2 #df .d-ladder li b, html.t2 #dg .d-ladder li b { font-size: .8em; line-height: 1.05; white-space: normal; }
+html.t2 #df .d-prizes { display: grid; gap: 1.2vh; width: min(100%, 90vh); margin: 1vh 0 0; padding: 0; list-style: none; }
+html.t2 #df .d-prizes li { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 2vh; padding: 1.2vh 2vh; background: rgba(255, 255, 255, .05); border-left: .5vh solid var(--t-foco); font: 800 3.4vh/1.15 var(--t-disp); text-transform: uppercase; color: #fff; text-align: left; }
+html.t2 #df .d-prizes em { font: 700 1.8vh/1 var(--t-mono); letter-spacing: .14em; color: var(--t-foco); font-style: normal; }

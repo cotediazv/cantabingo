@@ -335,7 +335,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       }
       s.phase = 'winner';
       s.winAt = Date.now();
-      festejo(); // confeti en el GC de OBS (pedido de Cote, 23 nov)
+      festejo('final'); // la cortina y el confeti en el GC de OBS (pedidos de Cote, 23 y 25 nov)
       require('./momentos.js').emit(karaoke() ? 'festival_ganador' : 'objeto_ganador'); require('./momentos.js').emitLater('premio_entrega', 9000); // luces
       return null;
     },

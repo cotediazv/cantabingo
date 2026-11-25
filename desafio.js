@@ -3,9 +3,13 @@
 // El animador maneja todo desde su panel (#/desafioctl); el público ve la pantalla grande y solo vota
 // desde el celular cuando se usa el comodín «Pregunta al público».
 // Fases: setup → intro → question → locked → reveal → (question siguiente…) → end (won / retired / lost).
-// Suplente (pedido de Cote, 25 nov): antes de empezar se sortean dos personas, el participante principal y el suplente.
-// Juega solo el principal; si pierde, en lugar de terminar pasa a la fase «swap» (entra el suplente) y el suplente sigue
-// desde ese mismo escalón, con todo lo ganado hasta ahí, como si él hubiera llegado. Si el suplente pierde, termina.
+// Reemplazos (pedido de Cote, 25 nov: «hay que llamar a un participante a la vez… tenemos hasta 4 posibilidades»): el
+// primer participante sale de un sorteo; si pierde, la partida no termina: fase «swap», se sortea a un reemplazo del
+// público (otro sorteo de concursantes), sube (fase «subintro») y sigue desde la misma pregunta, con lo ganado hasta ahí.
+// Hasta 4 participantes en total; si pierde el cuarto, termina.
+// Premios por etapa (pedido de Cote, 25 nov): 3 etapas de 4 preguntas; pasar la etapa 1 (pregunta 4) da el premio 1,
+// la etapa 2 (pregunta 8) el premio 2 y la etapa 3 (pregunta 12) el premio 3: quien gana el juego se lleva los 3. Los 3
+// premios se escriben al empezar (dependen de lo que den los restaurantes; quedan guardados para la próxima vez).
 // «La Trivia del Ganador» (antes «del Billonario»; pedido de Gabriel, 25 nov, como la Trivia del Rosko): el público responde cada pregunta
 // desde el celular hasta la respuesta definitiva del concursante; vale más responder rápido y los puntos se suman al
 // revelar. El comodín «Pregunta al público» muestra el porcentaje de esas mismas respuestas y cierra la pregunta a los
@@ -19,8 +23,9 @@ const LETTERS = ['A', 'B', 'C', 'D'];
 const AUDIENCE_MS = Number(process.env.DESAFIO_AUDIENCE_MS) || 20000; // votación del público: 20 s
 const PHONE_MS = 30000; // llamada a un amigo: 30 s
 const GRACE_MS = 1000; // margen para los votos que venían en camino al llegar a cero
-const DEFAULT_PRIZES = ['100', '200', '300', '500', '1.000', '2.000', '5.000', '10.000', '25.000', '50.000', '100.000', '250.000'].map((x) => `${x} puntos`);
-const DEFAULT_SAFE = [5];
+const STAGE = 4; // preguntas por etapa
+const DEFAULT_PRIZES = ['Premio 1', 'Premio 2', 'Premio 3'];
+const MAX_TEAM = 4; // participantes por partida: el primero y hasta 3 reemplazos
 const CROWD_ROLL_MS = 5500; // la «tómbola» del ganador de la Trivia (igual que en El Rosko)
 const points = (ms) => Math.max(40, Math.round(100 - (ms / 1000) * 6)); // 100 al instante, baja 6 por segundo, mínimo 40
 // Dificultad según el escalón: 1 a 4 fácil, 5 a 8 medio, 9 a 12 difícil (los mismos 3 niveles de las luces de Code 4)
@@ -28,7 +33,7 @@ const levelOf = (step) => (step <= 4 ? 'f' : step <= 8 ? 'm' : 'd');
 
 module.exports = function desafio({ app, db, save, requireAdmin, fail, setStage, findPlayer, venue, notify, festejo = () => {} }) {
   const blank = () => ({
-    rev: ((db.desafio || {}).rev || 0) + 1, phase: 'setup', player: '', first: '', sub: '', subIn: false, lostAt: 0, prizes: [...DEFAULT_PRIZES], safe: [...DEFAULT_SAFE],
+    rev: ((db.desafio || {}).rev || 0) + 1, phase: 'setup', player: '', team: [], lostAt: 0, out: '', prizes: [...(db.desafioPrizes || DEFAULT_PRIZES)],
     step: 0, q: null, chosen: null, hidden: [], outcome: null, used: { fifty: false, audience: false, phone: false, swap: false },
     audience: null, phoneUntil: 0, seen: [],
     // Trivia del público: pregunta en juego (qid), desde cuándo se ve, si se puede responder, respuestas por pregunta,
@@ -38,6 +43,7 @@ module.exports = function desafio({ app, db, save, requireAdmin, fail, setStage,
   db.desafio ||= blank();
   if (!db.desafio.crowd) Object.assign(db.desafio, { qid: 0, shownAt: 0, open: false, crowd: { ans: {}, solved: {}, winner: null }, rankShow: false }); // partidas guardadas antes de la Trivia
   db.desafioUsed ||= {}; // cuántas veces ha salido cada pregunta del banco
+  if (!Array.isArray(db.desafio.team) || (db.desafio.prizes || []).length !== 3) Object.assign(db.desafio, blank(), { rev: db.desafio.rev }); // partidas guardadas con la escalera anterior
   const g = () => db.desafio;
   let audienceTimer = null;
   const changed = () => { g().rev++; save(); notify(); };
@@ -68,16 +74,11 @@ module.exports = function desafio({ app, db, save, requireAdmin, fail, setStage,
     s.phoneUntil = 0;
   }
 
-  // Premio que se lleva: al perder, el último escalón seguro ya superado; al retirarse, el último acertado
-  const prizeAt = (step) => (step >= 1 ? g().prizes[step - 1] : '');
-  const safeBelow = (step) => Math.max(0, ...g().safe.filter((x) => x < step));
-  const wonPrize = () => {
-    const s = g();
-    if (s.outcome === 'won') return prizeAt(STEPS);
-    if (s.outcome === 'retired') return prizeAt(s.step - 1);
-    if (s.outcome === 'lost') return prizeAt(safeBelow(s.step));
-    return '';
-  };
+  // Lo que se lleva quien termina: los premios de las etapas ya pasadas (las 3 si ganó)
+  const stagesDone = () => { const s = g(); return s.outcome === 'won' ? 3 : Math.floor(Math.max(0, s.step - 1) / STAGE); };
+  const wonList = () => (g().phase === 'end' ? g().prizes.slice(0, stagesDone()) : []);
+  const andJoin = (a) => (a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} y ${a[a.length - 1]}`);
+  const wonPrize = () => andJoin(wonList());
 
   // Respuestas del público a la pregunta en juego: el comodín «Pregunta al público» muestra su porcentaje
   const tally = () => {
@@ -119,13 +120,13 @@ module.exports = function desafio({ app, db, save, requireAdmin, fail, setStage,
     const t = tally();
     return {
       rev: s.rev, now: Date.now(), venue: venue(), title: TITLE, phase: s.phase, player: s.player,
-      first: s.first || s.player, sub: s.sub || '', subIn: !!s.subIn, lostAt: s.lostAt || 0,
-      prizes: s.prizes, safe: s.safe, step: s.step, steps: STEPS,
+      team: s.team, turn: s.team.length, maxTeam: MAX_TEAM, out: s.out || '', lostAt: s.lostAt || 0,
+      prizes: s.prizes, stage: STAGE, step: s.step, steps: STEPS, stageOf: s.step ? Math.ceil(s.step / STAGE) : 0,
       q: s.q ? { text: s.q.text, options: s.q.options, level: s.q.level } : null,
       hidden: s.hidden, chosen: s.phase === 'locked' || shown ? s.chosen : null,
       correct: shown && s.q ? s.q.correct : null,
       right: shown && s.q && s.chosen != null ? s.chosen === s.q.correct : null,
-      outcome: s.outcome, won: wonPrize(), used: s.used,
+      outcome: s.outcome, won: wonPrize(), wonList: wonList(), used: s.used,
       audience: s.audience ? { open: !!s.audience.open, until: s.audience.until, ms: AUDIENCE_MS, total: t.total, pct: s.audience.open ? null : t.pct } : null,
       phoneUntil: s.phoneUntil, phoneMs: PHONE_MS,
       // La Trivia del Billonario
@@ -155,7 +156,7 @@ module.exports = function desafio({ app, db, save, requireAdmin, fail, setStage,
   // Panel del animador: además, la respuesta correcta y los votos del público en vivo
   const hostState = () => {
     const s = g();
-    return { ...pub(), answer: s.q ? s.q.correct : null, pick: s.chosen, live: tally(), defaults: { prizes: DEFAULT_PRIZES, safe: DEFAULT_SAFE } };
+    return { ...pub(), answer: s.q ? s.q.correct : null, pick: s.chosen, live: tally(), defaults: { prizes: db.desafioPrizes || DEFAULT_PRIZES } };
   };
   app.get('/api/desafio/host', requireAdmin, (_req, res) => res.json(hostState()));
 
@@ -195,27 +196,34 @@ module.exports = function desafio({ app, db, save, requireAdmin, fail, setStage,
   armAudience(); // tras un reinicio, la votación que estaba abierta se cierra a su hora
 
   const actions = {
-    // Prepara la partida: concursante, premios y escalones seguros. En pantalla queda la presentación.
+    // Prepara la partida: el primer participante y los 3 premios. En pantalla queda la presentación (con los premios).
     new(s, b) {
       const player = clean(b.player, 40).toLocaleUpperCase('es');
-      if (!player) throw new Error('Escribe el nombre del participante principal');
-      const sub = clean(b.sub, 40).toLocaleUpperCase('es');
-      if (sub && sub === player) throw new Error('El suplente tiene que ser otra persona');
-      const prizes = Array.isArray(b.prizes) ? b.prizes.slice(0, STEPS).map((p, i) => clean(p, 30) || DEFAULT_PRIZES[i]) : [...DEFAULT_PRIZES];
-      while (prizes.length < STEPS) prizes.push(DEFAULT_PRIZES[prizes.length]);
-      const safe = Array.isArray(b.safe) ? [...new Set(b.safe.map(Number).filter((x) => Number.isInteger(x) && x >= 1 && x < STEPS))].sort((x, y) => x - y) : [...DEFAULT_SAFE];
+      if (!player) throw new Error('Escribe el nombre del participante');
+      const prizes = [0, 1, 2].map((i) => clean((b.prizes || [])[i], 60) || (db.desafioPrizes || DEFAULT_PRIZES)[i] || DEFAULT_PRIZES[i]);
+      db.desafioPrizes = prizes; // quedan escritos para la próxima partida
       clearTimeout(audienceTimer);
-      Object.assign(s, blank(), { rev: s.rev, phase: 'intro', player, first: player, sub, prizes, safe, gen: Date.now() }); // gen: cada partida (instrucciones en el celular)
+      Object.assign(s, blank(), { rev: s.rev, phase: 'intro', player, team: [player], prizes, gen: Date.now() }); // gen: cada partida (instrucciones en el celular)
+      setStage('desafio');
+    },
+    // Sube el reemplazo que salió en el sorteo: sigue desde la pregunta en que quedó el anterior
+    sub(s, b) {
+      if (s.phase !== 'swap') throw new Error('Todavía no hay que reemplazar a nadie');
+      const player = clean(b.player, 40).toLocaleUpperCase('es');
+      if (!player) throw new Error('Falta el nombre del reemplazo');
+      if (s.team.includes(player)) throw new Error('Esa persona ya jugó en esta partida');
+      s.team.push(player); s.player = player; s.phase = 'subintro';
       setStage('desafio');
     },
     // Desde la presentación o tras acertar: la pregunta siguiente
     next(s) {
       s.rankShow = false; // «Iniciar pregunta» recoge el ranking (como en El Rosko)
       if (s.phase === 'intro') { s.step = 1; deal(1); s.phase = 'question'; return; }
-      if (s.phase === 'swap') { s.player = s.sub; s.subIn = true; deal(s.step); s.phase = 'question'; return; } // el suplente sigue en el mismo escalón
+      if (s.phase === 'subintro') { deal(s.step); s.phase = 'question'; return; } // el reemplazo sigue en la misma pregunta (otra pregunta del mismo nivel)
+      if (s.phase === 'swap') throw new Error('Primero sortea al reemplazo');
       if (s.phase !== 'reveal') throw new Error('Primero revela la respuesta');
       if (s.chosen !== s.q.correct) {
-        if (s.sub && !s.subIn) { s.lostAt = s.step; s.phase = 'swap'; return; } // perdió el principal: entra el suplente
+        if (s.team.length < MAX_TEAM) { s.lostAt = s.step; s.out = s.player; s.phase = 'swap'; return; } // perdió: se sortea un reemplazo
         s.outcome = 'lost'; s.phase = 'end'; return;
       }
       if (s.step >= STEPS) { s.outcome = 'won'; s.phase = 'end'; return; }
@@ -295,7 +303,10 @@ module.exports = function desafio({ app, db, save, requireAdmin, fail, setStage,
       s.crowd.winner = { name: pick.name, score: pick.score, hits: pick.hits, players: standings().table.length, at: Date.now(), roll: table.slice(0, 8).map((t) => t.name), rollMs: CROWD_ROLL_MS };
       s.rankShow = false;
     },
-    reset(s) { clearTimeout(audienceTimer); Object.assign(s, blank(), { rev: s.rev }); },
+    reset(s) {
+      clearTimeout(audienceTimer); Object.assign(s, blank(), { rev: s.rev });
+      if (db.raffle && db.raffle.game === 'desafio') Object.assign(db.raffle, { picked: [], roll: null, confirm: {}, declined: [] }); // la próxima partida parte con un sorteo nuevo
+    },
   };
 
   app.post('/api/desafio/host', requireAdmin, (req, res) => {
@@ -311,13 +322,13 @@ module.exports = function desafio({ app, db, save, requireAdmin, fail, setStage,
     // les asigne luces en su suite (mientras tanto las luces no hacen nada con ellos)
     // Pedidos de Cote por Code 4 (25 nov): el escalón va con cada pregunta (las luces cambian en 3 niveles: 1 a 4, 5 a 8 y
     // 9 a 12), y avisos para la presentación (también cuando entra el suplente), el 50:50 y el retiro
-    const name = b.action === 'new' || (b.action === 'next' && s.phase === 'swap') ? 'desafio_presenta'
+    const name = b.action === 'new' || b.action === 'sub' ? 'desafio_presenta'
       : b.action === 'next' && s.phase === 'question' ? 'desafio_pregunta' : b.action === 'swap' ? 'desafio_pregunta'
         : b.action === 'lock' ? 'desafio_definitiva' : b.action === 'reveal' ? (s.chosen === s.q.correct ? 'desafio_correcta' : 'desafio_incorrecta')
           : b.action === 'audience' ? 'desafio_publico' : b.action === 'phone' ? 'desafio_llamada' : b.action === 'fifty' ? 'desafio_5050'
             : b.action === 'retire' ? 'desafio_retiro' : b.action === 'rank' ? (s.rankShow ? 'desafio_ranking' : 'desafio_ranking_fin') : '';
     if (name) m.emit(name, name === 'desafio_pregunta' ? { escalon: s.step } : undefined);
-    if (before !== 'end' && s.phase === 'end' && s.outcome === 'won') { m.emit('desafio_ganador'); m.emitLater('premio_entrega', 9000); festejo(); }
+    if (before !== 'end' && s.phase === 'end' && s.outcome === 'won') { m.emit('desafio_ganador'); m.emitLater('premio_entrega', 9000); festejo('final'); }
     // Luces y confeti con el ganador de la Trivia (como en El Rosko): la tómbola gira y, al detenerse, el ganador
     const cw = s.crowd.winner;
     if (b.action === 'crowdwin' && cw && !cw.none) {

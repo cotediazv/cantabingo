@@ -32,7 +32,7 @@ test('la sala parte sin bingo: se elige la figura y recién ahí el bingo empez�
   await close(sid);
 });
 
-test('ganador del bingo: confeti en el GC del local', async () => {
+test('ganador del bingo: la cortina y después el confeti en el GC del local', async () => {
   const { sid } = await srv.openRoom({ theme: 'kennedy', count: 1 });
   const p = await srv.join(sid);
   const live = srv.sse(`/api/sessions/${sid}/events?token=${p.token}`);
@@ -47,9 +47,12 @@ test('ganador del bingo: confeti en el GC del local', async () => {
   await srv.admin.post(`/api/sessions/${sid}/host/publico`);
   for (const v of cells.slice(8)) await srv.admin.post(`/api/sessions/${sid}/host/draw`, { value: v });
   await srv.admin.post(`/api/sessions/${sid}/host/confirmwin`);
+  // Pedido de Cote (25 nov): antes del ganador final, la cortina; cuando sale, el confeti
   const capa = await srv.ok('GET', '/api/capa?local=kennedy');
-  assert.equal(capa.kind, 'confeti');
+  assert.equal(capa.kind, 'cortina');
   assert.ok(capa.id > before0);
+  await new Promise((r) => setTimeout(r, 3700));
+  assert.equal((await srv.ok('GET', '/api/capa?local=kennedy')).kind, 'confeti');
   await live.close();
   await close(sid);
 });

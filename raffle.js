@@ -5,8 +5,9 @@ const crypto = require('crypto');
 const ROLL_MS = 6500; // cuánto dura la animación antes de revelar el nombre
 const MAX_PICKS = 4; // un rosko admite hasta 4 concursantes
 // Para qué juego se sortea (pedido de Cote, 25 nov): El Rosko (3 concursantes, hasta 4) o ¿Quién quiere ser ganador?
-// (2: el participante principal y el suplente). El juego del sorteo queda en db.raffle.game.
-const GAMES = { rosco: { max: MAX_PICKS }, desafio: { max: 2 } };
+// (uno a la vez: el primer participante y, cada vez que alguien pierde, un reemplazo; hasta 4). El juego del sorteo
+// queda en db.raffle.game.
+const GAMES = { rosco: { max: MAX_PICKS }, desafio: { max: 4 } };
 const gameOf = (r) => (GAMES[r.game] ? r.game : 'rosco');
 
 module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, refreshAll, connectedNames, festejo = () => {} }) {
@@ -85,7 +86,7 @@ module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, 
   app.post('/api/raffle/draw', requireAdmin, (_req, res) => {
     const r = db.raffle;
     const max = GAMES[gameOf(r)].max;
-    if (r.picked.length >= max) return fail(res, 400, max === 2 ? 'Ya están sorteados el principal y el suplente' : `Ya hay ${max} concursantes elegidos`);
+    if (r.picked.length >= max) return fail(res, 400, gameOf(r) === 'desafio' ? 'Ya se sortearon los 4 participantes de esta partida' : `Ya hay ${max} concursantes elegidos`);
     if (r.roll && Date.now() - r.roll.at < ROLL_MS) return fail(res, 400, 'Espera a que termine el sorteo en curso');
     const all = names();
     // Solo entran al sorteo quienes están conectados en este momento

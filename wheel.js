@@ -452,7 +452,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     if (error) return fail(res, 400, error);
     // Confeti en el GC cuando aparece el ganador de El Rosko o el de la Trivia (pedido de Cote, 23 nov)
     const cw = (w.crowd || {}).winner;
-    if (!had && winnerOf(w) >= 0) festejo();
+    if (!had && winnerOf(w) >= 0) festejo('final');
     if (!hadCrowd && cw && !cw.none) setTimeout(festejo, CROWD_ROLL_MS); // el de la Trivia, cuando la tómbola se detiene
     broadcast(w);
     // El estado completo en la respuesta: el panel del iPad se dibuja al instante, sin volver a leer (pedido de Cote, 21 nov)
@@ -478,7 +478,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     db.raffle.mode = 'tie';
     setStage('sorteo');
     broadcast(w);
-    setTimeout(() => { broadcast(w); festejo(); }, TIE_ROLL_MS + 200);
+    setTimeout(() => { broadcast(w); festejo('final'); }, TIE_ROLL_MS + 200);
     require('./momentos.js').emit('tombola_gira'); require('./momentos.js').emitLater('tombola_resultado', TIE_ROLL_MS); // al terminar la tómbola, el panel recibe al ganador
     res.json({ ok: true });
   });

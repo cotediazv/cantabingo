@@ -94,8 +94,8 @@ module.exports = function simulador({ app, db, save, requireAdmin, fail, port, p
       const t = byName(s, e.winner && e.winner.name); if (t) return { token: t, why: 'ganó El último en pie' };
     }
     if (st === 'desafio' && db.desafio) { // ¿Quién quiere ser ganador?: quien está jugando (el principal o, si entró, el suplente)
-      const d = db.desafio; const t = byName(s, d.phase === 'swap' ? d.sub : d.player);
-      if (t) return { token: t, why: d.subIn || d.phase === 'swap' ? 'el suplente en ¿Quién quiere ser ganador?' : 'en ¿Quién quiere ser ganador?' };
+      const d = db.desafio; const t = d.phase === 'swap' ? null : byName(s, d.player);
+      if (t) return { token: t, why: (d.team || []).length > 1 ? 'el reemplazo en ¿Quién quiere ser ganador?' : 'en ¿Quién quiere ser ganador?' };
     }
     if (st === 'sorteo') {
       const r = db.raffle || {};

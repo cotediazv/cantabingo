@@ -105,7 +105,7 @@ module.exports = function enpie({ app, db, save, requireAdmin, fail, setStage, f
     if (s.fin.players.length <= 1) { win(s, s.fin.players[0] || null); return; }
     finQuestion(s);
   };
-  const win = (s, p) => { s.phase = 'done'; s.winner = p ? { name: p.name } : null; if (s.fin) s.fin.q = null; if (p) festejo(); };
+  const win = (s, p) => { s.phase = 'done'; s.winner = p ? { name: p.name } : null; if (s.fin) s.fin.q = null; if (p) festejo('final'); };
   // Los que pasan a la final: los que siguen en pie y, si faltan cupos, los mejores de «extra» (más aciertos, más rápidos)
   const toFinal = (s, extra) => {
     const ups = order(s).filter((p) => p.up).map((p) => p.token);

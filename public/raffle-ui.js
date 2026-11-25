@@ -3,11 +3,11 @@
 (() => {
   // ---------- Moderador ----------
   // El mismo sorteo sirve para El Rosko (#/sorteoctl: 3 concursantes) y para ¿Quién quiere ser ganador?
-  // (#/sorteoctl/desafio: el participante principal y el suplente; pedido de Cote, 25 nov)
+  // (#/sorteoctl/desafio: un participante a la vez; el primero y, cuando alguien pierde, su reemplazo; hasta 4)
   views.sorteoctl = async (arg) => {
     if (!(await isAdmin())) return viewLogin();
     const des = arg === 'desafio';
-    const G = des ? { name: '¿Quién quiere ser ganador?', n: 2, role: (i) => (i === 0 ? 'participante principal' : 'suplente'), Role: (i) => (i === 0 ? 'Principal' : 'Suplente') }
+    const G = des ? { name: '¿Quién quiere ser ganador?', n: 4, role: (i) => (i === 0 ? 'primer participante' : `reemplazo (participante ${i + 1} de 4)`), Role: (i) => `${i + 1}.` }
       : { name: 'El Rosko', n: 3, role: (i) => `concursante (${i + 1}.º de 3)`, Role: (i) => `${i + 1}.` };
     app.innerHTML = `<h1>Sorteo de concursantes${des ? ` · ${G.name}` : ''}</h1>
       <div class="cols">
@@ -56,17 +56,31 @@
         if (rolling) setTimeout(load, r.roll.at + (r.rollMs || 6000) - (Date.now() + off) + 300);
       }
       // Pedido de Cote (20 nov): un solo botón que avanza: sortear a los 3 concursantes y, con los 3, cargar El Rosko
-      const full = picked.length >= G.n;
-      // Con los 3 elegidos, El Rosko se carga cuando los 3 confirmaron (pedido de Cote, 21 nov); igual con los 2 de ¿Quién quiere ser ganador?
-      $('#rf-draw').textContent = full ? (allOk ? (des ? `✔ Cargar ${G.name} con los 2` : '✔ Cargar El Rosko con los 3') : '⏳ Esperando que confirmen en su celular') : `🎲 Sortear ${G.role(picked.length)}`;
+      // ¿Quién quiere ser ganador?: uno a la vez; el que salió y confirmó sube al escenario (si es reemplazo, sigue desde
+      // la pregunta en que quedó el anterior)
+      const dg = des ? await api('GET', '/api/desafio').catch(() => null) : null;
+      const waiting = des && dg && picked.length > (dg.team || []).length; // el último sorteado todavía no sube
+      const full = des ? waiting || picked.length >= G.n : picked.length >= G.n;
+      const lastOk = lastP && cf[lastP] === 'ok';
+      // Con los 3 elegidos, El Rosko se carga cuando los 3 confirmaron (pedido de Cote, 21 nov)
+      $('#rf-draw').textContent = des ? (waiting ? (lastOk ? `✔ Que suba al escenario: ${lastP}` : '⏳ Esperando que confirme en su celular') : full ? 'Ya jugaron los 4 participantes' : `🎲 Sortear ${G.role(picked.length)}`)
+        : full ? (allOk ? '✔ Cargar El Rosko con los 3' : '⏳ Esperando que confirmen en su celular') : `🎲 Sortear ${G.role(picked.length)}`;
       $('#rf-draw').dataset.load = full ? '1' : '';
-      $('#rf-draw').disabled = full ? !allOk : p.connected.filter((n) => !picked.includes(n) && !dec.includes(n)).length === 0;
+      $('#rf-draw').dataset.sube = waiting && lastOk ? lastP : '';
+      $('#rf-draw').dataset.swap = waiting && lastOk && dg && dg.phase === 'swap' ? '1' : '';
+      $('#rf-draw').disabled = des ? (waiting ? !lastOk : full || p.connected.filter((n) => !picked.includes(n) && !dec.includes(n)).length === 0)
+        : full ? !allOk : p.connected.filter((n) => !picked.includes(n) && !dec.includes(n)).length === 0;
       $('#rf-create').hidden = full || !picked.length || des; // ¿Quién quiere ser ganador? necesita a los 2
       $('#rf-create').textContent = `✔ Cargar El Rosko con ${picked.length}`;
       $('#rf-create').disabled = !allOk;
     };
     $('#rf-draw').onclick = async () => {
-      if ($('#rf-draw').dataset.load) { $('#rf-create').click(); return; }
+      const d = $('#rf-draw').dataset;
+      if (des && d.sube) { // sube al escenario: si es un reemplazo, entra en la partida; si es el primero, va al formulario del juego
+        if (d.swap) { try { await api('POST', '/api/desafio/host', { action: 'sub', player: d.sube }); } catch (err) { fail(err); return; } }
+        location.hash = '#/desafioctl'; return;
+      }
+      if (d.load) { $('#rf-create').click(); return; }
       try { await api('POST', '/api/raffle/draw'); toast('Sorteando en pantalla…'); await load(); } catch (err) { fail(err); }
     };
     // Corregir un nombre mal escrito o inapropiado; el cambio llega también al bingo y al rosco
@@ -116,11 +130,11 @@
       const colors = ['#ff4fa3', '#ff9a3d', '#ffe14d', '#3fe08f', '#35c6ff', '#9b5cff'];
       return `<div class="confetti">${Array.from({ length: 50 }, (_, i) => `<i style="left:${(Math.random() * 100).toFixed(1)}%;background:${colors[i % colors.length]};animation-delay:${(Math.random() * 2).toFixed(2)}s;animation-duration:${(3 + Math.random() * 3).toFixed(2)}s"></i>`).join('')}</div>`;
     };
-    let isDes = false; // sorteo de ¿Quién quiere ser ganador?: los 2 van como «Principal» y «Suplente»
-    const list = (names) => { $('#rf-list').classList.toggle('rf-des', isDes); $('#rf-list').innerHTML = names.map((n, i) => `<span><b>${isDes ? (i === 0 ? 'Principal' : 'Suplente') : i + 1}</b>${esc(n)}</span>`).join(''); };
+    let isDes = false; // sorteo de ¿Quién quiere ser ganador?: un participante a la vez (hasta 4)
+    const list = (names) => { $('#rf-list').classList.remove('rf-des'); $('#rf-list').innerHTML = names.map((n, i) => `<span><b>${i + 1}</b>${esc(n)}</span>`).join(''); };
     const reveal = (st, celebrate) => {
       const des = st.game === 'desafio'; const at = st.picked.indexOf(st.roll.winner);
-      const kick = st.mode === 'tie' ? (st.roll.game === 'rosco' ? '🏆 ¡Ganador de El Rosko!' : '🏆 ¡Ganador del bingo!') : des ? (at === 1 ? '🎉 Suplente' : '🎉 Participante principal') : '🎉 ¡A jugar El Rosko!';
+      const kick = st.mode === 'tie' ? (st.roll.game === 'rosco' ? '🏆 ¡Ganador de El Rosko!' : '🏆 ¡Ganador del bingo!') : des ? (at > 0 ? `🎉 Reemplazo · participante ${at + 1} de 4` : '🎉 Primer participante') : '🎉 ¡A jugar El Rosko!';
       $('#rf-stage').innerHTML = `${celebrate ? confetti() : ''}<div class="rf-card win ${celebrate ? 'pop' : ''}"><span class="rf-kicker">${window.sinEmoji(kick)}</span><span class="rf-name" style="--n:${st.roll.winner.length}">${esc(st.roll.winner)}</span></div>`;
       list(st.picked);
     };
@@ -131,7 +145,7 @@
       $('#rf-title').textContent = st.mode === 'tie' ? 'Desempate' : isDes ? '¿Quién quiere ser ganador? · Sorteo' : 'Sorteo de concursantes';
       if (!st.roll) {
         clearTimeout(spin); spin = null; shownRoll = 0;
-        $('#rf-stage').innerHTML = `<div class="rf-card"><span class="rf-dice">🎲</span><span class="rf-kicker">${st.pool} participantes</span><span class="rf-name small">${isDes ? (st.picked.length ? '¿Quién será el suplente?' : '¿Quién será el participante principal?') : '¿Quién jugará El Rosko?'}</span></div>`;
+        $('#rf-stage').innerHTML = `<div class="rf-card"><span class="rf-dice">🎲</span><span class="rf-kicker">${st.pool} participantes</span><span class="rf-name small">${isDes ? (st.picked.length ? '¿Quién será el reemplazo?' : '¿Quién será el primer participante?') : '¿Quién jugará El Rosko?'}</span></div>`;
         list(st.picked);
         return;
       }
@@ -142,7 +156,7 @@
       if (left <= 200) { reveal(st, false); return; } // ya había terminado: se muestra el resultado sin animar
       // Mientras gira no se muestra todavía al elegido en la lista de abajo
       list(st.picked.filter((n) => n !== st.roll.winner));
-      const rollingText = st.mode === 'tie' ? `Sorteando entre ${st.pool} ${st.roll.game === 'rosco' ? 'concursantes empatados' : 'ganadores'}…` : isDes ? (st.picked.indexOf(st.roll.winner) === 1 ? 'Sorteando al suplente…' : 'Sorteando al participante principal…') : 'Sorteando…';
+      const rollingText = st.mode === 'tie' ? `Sorteando entre ${st.pool} ${st.roll.game === 'rosco' ? 'concursantes empatados' : 'ganadores'}…` : isDes ? (st.picked.indexOf(st.roll.winner) > 0 ? 'Sorteando al reemplazo…' : 'Sorteando al primer participante…') : 'Sorteando…';
       $('#rf-stage').innerHTML = `<div class="rf-card rolling"><span class="rf-kicker">${rollingText}</span><span class="rf-reel" id="rf-prev"></span><span class="rf-name" id="rf-roll"></span><span class="rf-reel" id="rf-next"></span></div>`;
       let i = 0;
       const end = Date.now() + left;

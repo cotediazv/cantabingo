@@ -1,5 +1,5 @@
 // ¿Quién quiere ser ganador? (antes «billonario»): escalera de 12 preguntas, comodines, voto del público desde el celular,
-// premios y el suplente (pedido de Cote, 25 nov).
+// premios por etapa y reemplazos (pedidos de Cote, 25 nov).
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const { startServer, sleep } = require('../helpers');
@@ -20,7 +20,7 @@ const pub = () => srv.ok('GET', '/api/desafio');
 const answerRight = async () => { const st = await srv.admin.get('/api/desafio/host'); await h('lock', { choice: st.answer }); await h('reveal'); return h('next'); };
 
 test('partida con comodines: la respuesta nunca se filtra antes de revelar', async () => {
-  assert.equal(await hErr('new', { player: '  ' }), 'Escribe el nombre del participante principal');
+  assert.equal(await hErr('new', { player: '  ' }), 'Escribe el nombre del participante');
   let st = await h('new', { player: 'Camila Rojas', safe: [3, 6] });
   assert.equal(st.phase, 'intro');
   assert.equal(st.player, 'CAMILA ROJAS');
@@ -75,87 +75,49 @@ test('partida con comodines: la respuesta nunca se filtra antes de revelar', asy
   assert.deepEqual(st.used, { fifty: true, audience: true, phone: true, swap: true });
 });
 
-test('premios: pierde bajo el escalón seguro, se retira, gana todo, pierde en la primera', async () => {
-  // Pierde en la 5 con seguros en 3 y 6 → se lleva el premio del 3
-  await h('new', { player: 'Pierde', safe: [3, 6] });
+// Premios por etapa (pedido de Cote, 25 nov): pasar la pregunta 4 da el premio 1, la 8 el premio 2 y ganar (la 12) el
+// premio 3; quien gana se lleva los 3. Los premios se escriben al empezar y quedan para la próxima vez.
+// Reemplazos: si alguien pierde, se sortea otro participante que sigue desde la misma pregunta; hasta 4 en total.
+const wrong = async () => { const st = await srv.admin.get('/api/desafio/host'); await h('lock', { choice: (st.answer + 1) % 4 }); await h('reveal'); return h('next'); };
+test('premios por etapa: se retira, gana los 3, y los premios quedan escritos', async () => {
+  let st = await h('new', { player: 'Retira', prizes: ['Una pizza', 'Un vino', 'Una cena'] });
+  assert.deepEqual(st.prizes, ['Una pizza', 'Un vino', 'Una cena']);
+  assert.equal(st.steps, 12);
   await h('next');
-  for (let i = 1; i < 5; i++) await answerRight();
-  let st = await srv.admin.get('/api/desafio/host');
-  assert.equal(st.step, 5);
-  await h('lock', { choice: (st.answer + 1) % 4 });
-  await h('reveal');
-  st = await h('next');
-  assert.equal(st.outcome, 'lost');
-  assert.equal(st.won, '300 puntos');
-  assert.equal(st.correct, st.answer); // al terminar se muestra cuál era
-
-  // Se retira en la 4 → se lleva el de la 3
-  await h('new', { player: 'Retira' });
+  for (let i = 1; i < 6; i++) await answerRight();
+  st = await h('retire'); // se retira en la 6: pasó la etapa 1
+  assert.equal(st.outcome, 'retired'); assert.equal(st.won, 'Una pizza'); assert.deepEqual(st.wonList, ['Una pizza']);
+  st = await h('new', { player: 'Gana' }); // sin escribirlos, quedan los de la vez anterior
+  assert.deepEqual(st.prizes, ['Una pizza', 'Un vino', 'Una cena']);
   await h('next');
-  for (let i = 1; i < 4; i++) await answerRight();
-  st = await h('retire');
-  assert.equal(st.outcome, 'retired');
-  assert.equal(st.won, '300 puntos');
-
-  // Gana las 12 sin repetir preguntas; la dificultad sube (1 a 4 fácil, 5 a 8 medio, 9 a 12 difícil)
-  await h('new', { player: 'Gana', prizes: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', 'Un auto'] });
-  await h('next');
-  const seen = new Set();
-  const levels = [];
-  for (let i = 0; i < 12; i++) {
-    st = await srv.admin.get('/api/desafio/host');
-    seen.add(st.q.text); levels.push(st.q.level);
-    st = await answerRight();
-  }
+  const seen = new Set(); const levels = [];
+  for (let i = 0; i < 12; i++) { st = await srv.admin.get('/api/desafio/host'); seen.add(st.q.text); levels.push(st.q.level); st = await answerRight(); }
   assert.equal(seen.size, 12);
   assert.deepEqual(levels, ['f', 'f', 'f', 'f', 'm', 'm', 'm', 'm', 'd', 'd', 'd', 'd']);
-  assert.equal(st.outcome, 'won');
-  assert.equal(st.won, 'Un auto');
-
-  // Pierde en la primera → nada
-  await h('new', { player: 'Nada' });
-  st = await h('next');
-  await h('lock', { choice: (st.answer + 1) % 4 });
-  await h('unlock');
-  await h('lock', { choice: (st.answer + 1) % 4 });
-  await h('reveal');
-  st = await h('next');
-  assert.equal(st.won, '');
-
-  st = await h('reset');
-  assert.equal(st.phase, 'setup');
+  assert.equal(st.outcome, 'won'); assert.equal(st.won, 'Una pizza, Un vino y Una cena');
+  await h('reset');
 });
 
-// Suplente (pedido de Cote, 25 nov): si el principal pierde, entra el suplente y sigue desde ese escalón con lo ganado
-test('suplente: entra cuando pierde el principal, sigue en el mismo escalón y se lleva los premios', async () => {
-  assert.equal(await hErr('new', { player: 'Ana', sub: 'ana' }), 'El suplente tiene que ser otra persona');
-  let st = await h('new', { player: 'Ana', sub: 'Luis' });
-  assert.equal(st.player, 'ANA'); assert.equal(st.sub, 'LUIS'); assert.equal(st.steps, 12);
+test('reemplazos: hasta 4 participantes, cada uno sigue desde la pregunta en que quedó el anterior', async () => {
+  let st = await h('new', { player: 'Ana', prizes: ['P1', 'P2', 'P3'] });
+  assert.deepEqual(st.team, ['ANA']);
   await h('next');
-  for (let i = 1; i < 4; i++) await answerRight();
-  st = await srv.admin.get('/api/desafio/host');
-  assert.equal(st.step, 4);
-  await h('lock', { choice: (st.answer + 1) % 4 });
-  await h('reveal');
+  for (let i = 1; i < 6; i++) await answerRight();
+  st = await wrong(); // pierde en la 6
+  assert.equal(st.phase, 'swap'); assert.equal(st.outcome, null); assert.equal(st.out, 'ANA');
+  assert.equal((await srv.admin.call('POST', '/api/desafio/host', { action: 'next' })).status, 400); // primero el sorteo del reemplazo
+  assert.equal(await hErr('sub', { player: 'ana' }), 'Esa persona ya jugó en esta partida');
+  st = await h('sub', { player: 'Luis' });
+  assert.equal(st.phase, 'subintro'); assert.equal(st.player, 'LUIS'); assert.equal(st.step, 6);
   st = await h('next');
-  assert.equal(st.phase, 'swap'); // no termina: entra el suplente
-  assert.equal(st.outcome, null);
-  assert.equal(st.first, 'ANA');
-  st = await h('next');
-  assert.equal(st.phase, 'question'); assert.equal(st.step, 4); // misma pregunta del escalón, otra pregunta
-  assert.equal(st.player, 'LUIS'); assert.equal(st.subIn, true);
-  for (let i = 4; i < 6; i++) await answerRight();
-  st = await h('retire'); // se retira en la 6: se lleva el premio de la 5, como si él hubiera llegado
-  assert.equal(st.outcome, 'retired'); assert.equal(st.won, '1.000 puntos'); assert.equal(st.player, 'LUIS');
-  // Si el suplente también pierde, termina
-  await h('new', { player: 'Ana', sub: 'Luis' });
-  st = await h('next');
-  await h('lock', { choice: (st.answer + 1) % 4 }); await h('reveal');
-  st = await h('next'); assert.equal(st.phase, 'swap');
-  st = await h('next');
-  await h('lock', { choice: (st.answer + 1) % 4 }); await h('reveal');
-  st = await h('next');
-  assert.equal(st.phase, 'end'); assert.equal(st.outcome, 'lost'); assert.equal(st.won, '');
+  assert.equal(st.phase, 'question'); assert.equal(st.step, 6); // misma pregunta del escalón (otra pregunta)
+  st = await wrong(); assert.equal(st.phase, 'swap');
+  await h('sub', { player: 'Pedro' }); await h('next');
+  st = await wrong(); assert.equal(st.phase, 'swap');
+  await h('sub', { player: 'Rosa' }); await h('next');
+  assert.deepEqual((await srv.admin.get('/api/desafio/host')).team, ['ANA', 'LUIS', 'PEDRO', 'ROSA']);
+  st = await wrong(); // el cuarto pierde: termina, con el premio de la etapa ya pasada
+  assert.equal(st.phase, 'end'); assert.equal(st.outcome, 'lost'); assert.equal(st.won, 'P1'); assert.equal(st.player, 'ROSA');
   await h('reset');
 });
 
