@@ -8,6 +8,22 @@ param([string]$Config = "")
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
+$configDada = $Config -ne ""
+
+# Si ya habia otra copia de la suite abierta (por ejemplo la que se abre sola al prender Windows), se cierra:
+# dos copias se pelean el cable USB-DMX y una queda "sin cable" (Kennedy, 24 nov).
+try {
+  $yo = $MyInvocation.MyCommand.Path
+  Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction Stop | Where-Object {
+    $_.ProcessId -ne $PID -and $_.CommandLine -and $_.CommandLine -like "*$yo*" -and
+    (($configDada -and $_.CommandLine -like "*$Config*") -or (-not $configDada -and $_.CommandLine -notlike "*-Config*"))
+  } | ForEach-Object {
+    Write-Host ("  Se cerro una copia anterior de la suite (proceso " + $_.ProcessId + ").") -ForegroundColor DarkYellow
+    Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+  }
+  Start-Sleep -Milliseconds 800
+} catch {}
+
 if ($Config -eq "") { $Config = Join-Path $root "luces.json" }
 $cfg = Get-Content $Config -Raw -Encoding UTF8 | ConvertFrom-Json
 

@@ -24,7 +24,7 @@ New-Item -ItemType Directory -Force -Path $Destino | Out-Null
 # Archivos del programa: siempre se actualizan
 # (momentos.txt = las luces de cada momento de los juegos, para que el GC Master funcione aunque nadie haya abierto el iPad;
 #  el iPad lo vuelve a generar desde luces.json cada vez que se abre)
-$programa = @("INICIAR.bat", "krb_luces.ps1", "ipad.html", "vista3d.js", "instalar.ps1", "INSTALAR.bat", "internet.ps1", "CONFIGURAR_INTERNET.bat", "LEEME.txt", "momentos.txt", "lib\three.module.min.js", "lib\three-LICENSE.txt")
+$programa = @("INICIAR.bat", "INICIAR_OCULTO.vbs", "DETENER.bat", "krb_luces.ps1", "ipad.html", "vista3d.js", "instalar.ps1", "INSTALAR.bat", "internet.ps1", "CONFIGURAR_INTERNET.bat", "LEEME.txt", "momentos.txt", "lib\three.module.min.js", "lib\three-LICENSE.txt")
 New-Item -ItemType Directory -Force -Path (Join-Path $Destino "lib") | Out-Null
 foreach ($f in $programa) {
   $src = Join-Path $origen $f
@@ -77,23 +77,22 @@ if (-not $SinInicio) {
   $lnk = Join-Path $startup "Luces KRB.lnk"
   $sh = New-Object -ComObject WScript.Shell
   $s = $sh.CreateShortcut($lnk)
-  $s.TargetPath = Join-Path $Destino "INICIAR.bat"
+  $s.TargetPath = Join-Path $env:WINDIR "System32\wscript.exe"
+  $s.Arguments = '"' + (Join-Path $Destino "INICIAR_OCULTO.vbs") + '"'
   $s.WorkingDirectory = $Destino
-  $s.WindowStyle = 7          # minimizada
+  # sin ventana negra (Cote, 24 nov); para verla: INICIAR.bat; para detenerla: DETENER.bat
   $s.Description = "Luces KRB - servidor DMX"
   $s.Save()
-  Write-Host "  Arranque automatico: listo (se abre minimizado al prender Windows)." -ForegroundColor Green
+  Write-Host "  Arranque automatico: listo (se abre sola y oculta al prender Windows; DETENER.bat la para)." -ForegroundColor Green
 }
 
 Write-Host "  Instalacion lista." -ForegroundColor Green
 Write-Host ""
 if (-not $NoArrancar) {
-  $corriendo = Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction SilentlyContinue |
+  # La suite nueva cierra sola cualquier copia anterior (tambien la oculta), asi que se abre siempre
+  $viejas = Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction SilentlyContinue |
     Where-Object { $_.CommandLine -like "*krb_luces.ps1*" }
-  if ($corriendo) {
-    Write-Host "  La suite ya estaba abierta. Cierra esa ventana y abre INICIAR.bat en $Destino para usar la version nueva." -ForegroundColor DarkYellow
-  } else {
-    Start-Process -FilePath (Join-Path $Destino "INICIAR.bat") -WorkingDirectory $Destino -WindowStyle Minimized
-    Write-Host "  Se abrio la suite (ventana minimizada en la barra de tareas)."
-  }
+  $viejas | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+  Start-Process -FilePath (Join-Path $Destino "INICIAR.bat") -WorkingDirectory $Destino -WindowStyle Minimized
+  Write-Host "  Se abrio la suite nueva (ventana minimizada en la barra de tareas)."
 }

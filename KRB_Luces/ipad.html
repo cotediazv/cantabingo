@@ -239,6 +239,7 @@
   <section class="tab" id="juegos">
     <p class="help"><b>Solo para la Sala de juegos de Mercado Kennedy.</b> Cada botón es un momento del juego. Más adelante el GC Master los dispara solo (Code 1); mientras tanto se pueden tocar aquí.
       <br>Momento actual: <b id="momActual">—</b></p>
+    <div class="fxrow"><button class="big" id="detenerTodo" style="border-color:#ff5a5a">⏹ Detener todo<small>Para los efectos (mini cabezas, estrobos, colores) y apaga las luces</small></button></div>
     <div id="juegosLista"></div>
   </section>
 
@@ -414,7 +415,11 @@ function valoresGrupo(g, zOverride){
   const col = on ? (conf.colores[z.color] || {}) : {};
   const k = on ? (z.intensidad / 100) * (master / 100) : 0;
   const rgbw = ['r','g','b','w'];
-  if (ch.dimmer){
+  if (ch.dimmer && g.dimmer_pleno){
+    // Mini cabezas de Kennedy: el master abajo de 255 hace estrobo. Va en 255 (o 0) y la intensidad se da con los colores.
+    out[base + ch.dimmer] = k > 0 ? 255 : 0;
+    rgbw.forEach(c => { if (ch[c]) out[base + ch[c]] = Math.round((col[c] || 0) * k); });
+  } else if (ch.dimmer){
     out[base + ch.dimmer] = Math.round(255 * k);
     rgbw.forEach(c => { if (ch[c]) out[base + ch[c]] = on ? (col[c] || 0) : 0; });
   } else {
@@ -998,7 +1003,7 @@ function pintarCanales(){
     row.innerHTML = `<div><b>Canal ${i + 1}</b><small>DMX ${ch}${nombres[i + 1] ? ' · ' + nombres[i + 1] : ''}</small></div>
       <input type="range" min="0" max="255" value="${v}"><div class="v">${v}</div>`;
     const r = row.querySelector('input'), t = row.querySelector('.v');
-    r.oninput = () => { t.textContent = r.value; canales[ch - 1] = +r.value; limitar('c' + ch, () => enviar({[ch]: +r.value}, 0)); };
+    r.oninput = () => { detenerParaProbar(); t.textContent = r.value; canales[ch - 1] = +r.value; limitar('c' + ch, () => enviar({[ch]: +r.value}, 0)); };
     list.appendChild(row);
   }
 }
@@ -1013,6 +1018,7 @@ function pintarDirecciones(){
 }
 $('addr').onchange = pintarCanales;
 const poner16 = val => {
+  detenerParaProbar();
   const inicio = Math.max(1, Math.min(497, +$('addr').value || 1)), v = {};
   for (let i = 0; i < 16; i++){ v[inicio + i] = val; canales[inicio + i - 1] = val; }
   enviar(v, 0); pintarCanales();
@@ -1036,6 +1042,15 @@ $('blackout').onclick = async () => {
   try { pintarEstado(await api('/api/apagar?f=' + fade)); toast('Todo apagado'); } catch(e){ sinConexion(); }
   pintarTodo();
 };
+// Detener todo (Cote, 24 nov: no encontraba como parar las mini cabezas): lo mismo que APAGAR TODO, tambien en Juegos
+if ($('detenerTodo')) $('detenerTodo').onclick = () => $('blackout').click();
+// En "Probar canales" los efectos (por ejemplo las mini cabezas moviendose) pisaban los canales: se detienen al probar
+let avisoProbar = 0;
+function detenerParaProbar(){
+  if (!efectosActivos.length) return;
+  efectosActivos = []; efecto('todos', {todos:'off'});
+  if (Date.now() - avisoProbar > 5000){ avisoProbar = Date.now(); toast('Efectos detenidos para probar canales'); }
+}
 
 /* ---------- Pestanas ---------- */
 /* Camara para Seguir: zona de las cabezas 1-3 (primer restaurante), orientada igual que el mapa */
