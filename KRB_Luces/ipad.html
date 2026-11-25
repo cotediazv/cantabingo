@@ -293,6 +293,13 @@
       <button class="chip" id="segEscenario">Al escenario</button>
       <button class="chip" id="segOff">Apagar</button>
     </div>
+    <!-- Posiciones reales de cada cabeza (Kennedy, 24 nov): se apuntan a mano y se guardan; las usan escenas y juegos -->
+    <div class="row">
+      <button class="chip" id="guardarEsc">💾 Guardar como «escenario»</button>
+      <button class="chip" id="guardarPub">💾 Guardar como «público»</button>
+      <button class="chip" id="borrarPos">Borrar posiciones guardadas</button>
+    </div>
+    <p class="help" id="posGuardadas"></p>
   </section>
 
   <!-- ===== ZONAS ===== -->
@@ -442,6 +449,9 @@ function zoomPara(id, punto, radio){
   return Math.max(3, Math.min(100, Math.round((ang - 0.05) / 0.22 * 100)));
 }
 function fijarPosicion(z, nombre, id){
+  // 1) Si esa cabeza tiene la posicion guardada a mano en el local (Seguir → Guardar), se usa esa
+  const g = id && datos && datos.posiciones && datos.posiciones[id] && datos.posiciones[id][nombre];
+  if (g){ z.posicion = nombre; z.pan = g.pan; z.tilt = g.tilt; if (g.zoom != null) z.zoom = g.zoom; return; }
   // Cabezas del salon (miran a las cocinas): "escenario" y "publico" se calculan por geometria hacia esos lugares
   if (id && (POS3D[id] || {}).columna != null && (nombre === 'escenario' || nombre === 'publico')){
     // Escenario (Cote, rev 209): bien dirigidas y sin iluminar al publico. Apuntan al pecho de la persona (no al piso,
@@ -877,6 +887,31 @@ $('segOn').onclick = () => accionSeguir(z => { z.color = (conf.seguir && conf.se
 $('segOff').onclick = () => accionSeguir(z => { z.intensidad = 0; });
 $('segPublico').onclick = () => accionSeguir((z, id) => { encenderSiApagada(id); fijarPosicion(z, 'publico', id); });
 $('segEscenario').onclick = () => accionSeguir((z, id) => { encenderSiApagada(id); fijarPosicion(z, 'escenario', id); });
+// Guardar donde esta apuntando ahora cada cabeza elegida (Cabeza 1, 2, 3 o las 3) como su "escenario" o "publico".
+// Se guarda en el Dell (datos.json) y se vuelven a armar los momentos de los juegos con esas posiciones.
+async function guardarPosicion(nombre){
+  datos.posiciones = datos.posiciones || {};
+  const ids = segActivos(), hechas = [];
+  ids.forEach(id => { const z = zona(id); if (z.pan == null) return;
+    datos.posiciones[id] = datos.posiciones[id] || {};
+    datos.posiciones[id][nombre] = {pan: Math.round(z.pan), tilt: Math.round(z.tilt), zoom: z.zoom != null ? z.zoom : null};
+    hechas.push(segIds().indexOf(id) + 1); });
+  if (!hechas.length) return toast('Primero apunta la cabeza (mapa o «A mano»)');
+  try { await guardarDatos(); await publicarMomentos(); toast('Guardado «' + nombre + '» de la cabeza ' + hechas.join(', ')); }
+  catch(e){ toast('No se pudo guardar en el Dell'); }
+  pintarPosiciones();
+}
+function pintarPosiciones(){
+  const p = datos.posiciones || {}, el = $('posGuardadas'); if (!el) return;
+  const txt = segIds().map((id, i) => { const q = p[id] || {}; return 'Cabeza ' + (i + 1) + ': ' + (q.escenario ? 'escenario ✓' : 'escenario —') + ' · ' + (q.publico ? 'público ✓' : 'público —'); });
+  el.textContent = 'Posiciones guardadas · ' + txt.join(' | ');
+}
+$('guardarEsc').onclick = () => guardarPosicion('escenario');
+$('guardarPub').onclick = () => guardarPosicion('publico');
+$('borrarPos').onclick = async () => {
+  if (!confirm('¿Borrar las posiciones guardadas de las cabezas?')) return;
+  datos.posiciones = {}; try { await guardarDatos(); await publicarMomentos(); } catch(e){} pintarPosiciones();
+};
 
 function pintarSeguir(){
   if (!conf) return;
@@ -2037,7 +2072,7 @@ function marcaAnimador(a){                                              // el an
   catch(e){ if (!pidiendo) document.querySelector('main').innerHTML = '<p class="help">No se pudo leer luces.json desde el Dell. ¿Está abierto INICIAR.bat?</p>'; return; }
   try { datos = await api('/api/datos'); if (!datos.calibracion) datos.calibracion = {}; } catch(e){}
   conf.grupos.forEach(g => zonas[g.id] = {color:null, intensidad:0});
-  pintarDirecciones(); dibujarPlano(); pintarTodo(); pintarProgramas(); pintarVistas(); pintarJuegos();
+  pintarDirecciones(); dibujarPlano(); pintarTodo(); pintarProgramas(); pintarVistas(); pintarJuegos(); pintarPosiciones();
   await publicarMomentos();
   if (DEMO) iniciarDemo();
   V.yaw = giroSalon() * 0.6; V.dist = 11; V.pitch = 0.2;   // vista inicial: desde el salon, en diagonal
