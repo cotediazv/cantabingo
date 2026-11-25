@@ -253,6 +253,41 @@ namespace KRB {
     }
   }
 
+  // ---------- Aviso al celular (Cote, 25 nov): si se desconecta el cable DMX en horario de funcionamiento ----------
+  // Llega como notificacion de la app ntfy (gratis, sin cuenta). El tema (como una clave) se crea al azar en el Dell
+  // y queda en aviso-celular.txt, nunca en el repositorio. Horario: jueves, viernes y sabado de 18:30 a 00:30.
+  public static class Aviso {
+    public static string Tema = "";
+    public static int[] Dias = new int[] { 4, 5, 6 };          // dia en que empieza la noche: 4 jueves, 5 viernes, 6 sabado
+    public static int Desde = 18 * 60 + 30, Hasta = 24 * 60 + 30; // minutos desde la medianoche del dia de la noche
+    public static bool EnHorario(DateTime t) {
+      DateTime d = t.AddHours(-6).Date;                        // lo de despues de medianoche es de la noche anterior
+      double m = (t - d).TotalMinutes;
+      return Array.IndexOf(Dias, (int)d.DayOfWeek) >= 0 && m >= Desde && m < Hasta;
+    }
+    public static void Mandar(string texto, bool urgente) {
+      if (Tema == "") return;
+      string tema = Tema;
+      new Thread(() => {
+        for (int i = 0; i < 4; i++) {
+          try {
+            ServicePointManager.SecurityProtocol |= (SecurityProtocolType)3072;   // TLS 1.2
+            HttpWebRequest r = (HttpWebRequest)WebRequest.Create("https://ntfy.sh/" + tema);
+            r.Method = "POST"; r.Timeout = 15000;
+            r.Headers["Title"] = "Luces KRB";
+            r.Headers["Priority"] = urgente ? "high" : "default";
+            r.Headers["Tags"] = urgente ? "warning" : "white_check_mark";
+            byte[] b = Encoding.UTF8.GetBytes(texto); r.ContentType = "text/plain; charset=utf-8"; r.ContentLength = b.Length;
+            using (Stream o = r.GetRequestStream()) o.Write(b, 0, b.Length);
+            using (WebResponse w = r.GetResponse()) {}
+            Bitacora.Anotar("Aviso al celular enviado: " + texto); return;
+          } catch { Thread.Sleep(20000); }
+        }
+        Bitacora.Anotar("No se pudo mandar el aviso al celular (sin internet?): " + texto);
+      }) { IsBackground = true }.Start();
+    }
+  }
+
   // ---------- Efectos que corren en el Dell (siguen aunque el iPad se bloquee) ----------
   public class Efecto {
     public string Tipo;                       // "seno" o "sec"
@@ -444,8 +479,20 @@ namespace KRB {
 
     static double ultimaRevision = 0;
     static bool conectadoAntes = false, ritmoAntes = false; static string errorAntes = "";
+    static DateTime sinCableDesde = DateTime.MinValue; static bool avisado = false;
     static void RevisarEstado() {
       if (Tipo == "simulacion") return;
+      // Aviso al celular: si lleva 20 s sin cable (no por un tiron de un segundo) en horario de funcionamiento
+      if (!Conectado) {
+        if (sinCableDesde == DateTime.MinValue) sinCableDesde = DateTime.Now;
+        if (!avisado && (DateTime.Now - sinCableDesde).TotalSeconds >= 20 && Aviso.EnHorario(DateTime.Now)) {
+          avisado = true;
+          Aviso.Mandar("Se desconect\u00f3 el cable de las luces (" + sinCableDesde.ToString("HH:mm") + "). Revisa el cable USB del Dell: desench\u00fafalo y vuelve a enchufarlo.", true);
+        }
+      } else {
+        if (avisado) Aviso.Mandar("Volvi\u00f3 el cable de las luces (" + DateTime.Now.ToString("HH:mm") + "). Todo funcionando.", false);
+        sinCableDesde = DateTime.MinValue; avisado = false;
+      }
       if (Conectado != conectadoAntes) { Bitacora.Anotar(Conectado ? "Cable DMX conectado (" + PuertoUsado + ")" : "CABLE DMX DESCONECTADO" + (Error != "" ? ": " + Error : "")); conectadoAntes = Conectado; }
       if (Error != errorAntes) { if (Error != "") Bitacora.Anotar("Problema con el cable: " + Error); errorAntes = Error; }
       bool r = ConRitmo;
@@ -751,6 +798,8 @@ namespace KRB {
       if (ruta == "/api/reconectar") { Dmx.Abrir(); Estado(s); return; }
       if (ruta == "/api/actualizar") { PedirActualizar = true; Bitacora.Anotar("Pidieron buscar actualizacion ahora");
         Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":true}")); return; }
+      if (ruta == "/api/aviso-prueba") { Aviso.Mandar("Aviso de prueba de las luces KRB. Si te lleg\u00f3, qued\u00f3 listo.", false);
+        Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":" + (Aviso.Tema != "" ? "true" : "false") + "}")); return; }
       if (ruta == "/api/estado") { Estado(s); return; }
       Enviar(s, "404 Not Found", "text/plain", Encoding.UTF8.GetBytes("No encontrado"));
     }
@@ -914,6 +963,7 @@ namespace KRB {
       b.Append(",\"error\":\"").Append(Esc(Dmx.Error)).Append("\"");
       b.Append(",\"carpeta\":\"").Append(Esc(Root)).Append("\"");
       b.Append(",\"version\":\"").Append(Esc(Version)).Append("\"");
+      b.Append(",\"aviso\":\"").Append(Esc(Aviso.Tema)).Append("\"");
       b.Append(",\"ritmo\":").Append(Dmx.ConRitmo ? "true" : "false").Append(",\"bpm\":").Append(Math.Round(Dmx.Bpm).ToString(System.Globalization.CultureInfo.InvariantCulture));
       b.Append(",\"tramas\":").Append(Dmx.Tramas).Append(",\"errores\":").Append(Dmx.Errores);
       b.Append(",\"momento\":\"").Append(Esc(MomentoActual)).Append("\",\"momentoN\":").Append(MomentoN);
@@ -996,6 +1046,16 @@ if ($cfg.acceso) {
 if ($cfg.momentos -and $cfg.momentos.sala) { [KRB.Web]::Sala = [string]$cfg.momentos.sala
 }
 [KRB.Bitacora]::Carpeta = $root
+# Aviso al celular: el tema de ntfy se crea una vez al azar y queda en aviso-celular.txt (no esta en el repositorio)
+try {
+  $pAviso = Join-Path $root "aviso-celular.txt"
+  if (-not (Test-Path $pAviso)) {
+    $letras = "abcdefghijkmnpqrstuvwxyz23456789"; $rnd = New-Object System.Random
+    $tema = "krb-luces-" + (-join (1..12 | ForEach-Object { $letras[$rnd.Next($letras.Length)] }))
+    Set-Content -Path $pAviso -Value $tema -Encoding ASCII
+  }
+  [KRB.Aviso]::Tema = (Get-Content $pAviso -Raw).Trim()
+} catch {}
 $estadoCable = if ([KRB.Dmx]::Conectado) { "cable conectado (" + [KRB.Dmx]::PuertoUsado + ")" } elseif ([KRB.Dmx]::Tipo -eq "simulacion") { "modo simulacion" } else { "SIN CABLE: " + [KRB.Dmx]::Error }
 [KRB.Bitacora]::Anotar("Se abrio la suite de luces (" + $estadoCable + ")")
 [KRB.Web]::CargarSesiones()

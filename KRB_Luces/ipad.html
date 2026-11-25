@@ -185,7 +185,7 @@
   #ayuda.on{display:block}
   #ayuda .caja{max-width:640px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px}
   #ayuda h2{margin:0 0 6px;font-size:19px} #ayuda h3{margin:14px 0 4px;font-size:15px;color:var(--warn)}
-  #ayuda p,#ayuda li{font-size:14px;line-height:1.45;color:var(--txt)} #ayuda ul{margin:4px 0;padding-left:18px}
+  #ayuda p,#ayuda li{font-size:14px;line-height:1.45;color:var(--txt)} #ayuda ul,#ayuda ol{margin:4px 0;padding-left:18px}
   #ayuda .fila{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
   #ayuda pre{white-space:pre-wrap;font:12px/1.5 ui-monospace,monospace;background:#0f1116;border:1px solid var(--line);border-radius:10px;padding:10px;max-height:55vh;overflow:auto}
   #ayuda select{background:#121419;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:6px}
@@ -506,6 +506,14 @@
     <h3>Versión de las luces</h3>
     <p>El Dell se actualiza solo (revisa cada 5 minutos si hay una versión nueva). Instalada: <b id="verDell">—</b></p>
     <div class="fila"><button class="chip" id="buscarAct">Buscar actualización ahora</button></div>
+    <h3>Aviso al celular si se corta el cable</h3>
+    <p>Jueves, viernes y sábado de 18:30 a 00:30: si el cable de las luces se desconecta, llega un aviso a la app <b>ntfy</b> (y otro cuando vuelve).</p>
+    <ol>
+      <li>Instala la app <b>ntfy</b> (App Store, gratis) y permite las notificaciones.</li>
+      <li>En la app toca <b>+</b> y escribe este tema: <b id="avisoTema">—</b></li>
+      <li>Toca <b>Mandar aviso de prueba</b>: te tiene que llegar en unos segundos.</li>
+    </ol>
+    <div class="fila"><button class="chip" id="avisoCopiar">Copiar el tema</button><button class="chip" id="avisoProbar">Mandar aviso de prueba</button></div>
     <h3>Registro de la noche</h3>
     <p>Lo que pasó cada noche (escenas, momentos, cable), con la hora.</p>
     <div class="fila"><button class="chip" id="verRegistro">Ver registro de esta noche</button><select id="regNoche" hidden></select></div>
@@ -1464,6 +1472,7 @@ function pintarEstado(e){
       if (ESTACION) setTimeout(() => location.reload(), 3000); else $('avisoVersion').hidden = false;
     }
     versionDell = e.version;
+    if (e.aviso) avisoTema = e.aviso;
   }
   if (CONTROL){ V.animador = e.animador || null; V.rosko = !!e.rosko; V.sucio = true; marcaAnimador(e.animador); }
   // «¿Quien quiere ser ganador?» en la vista 3D: el concursante y el animador sentados en sus lugares
@@ -3170,9 +3179,10 @@ function iniciarEscenasDJ(){
 
 /* ---------- Ayuda y registro de la noche ---------- */
 function anotar(t){ if (DEMO || CONTROL) return; fetch('/api/anotar?t=' + encodeURIComponent(t), {cache: 'no-store', credentials: 'same-origin'}).catch(() => {}); }
-let versionDell = '';
+let versionDell = '', avisoTema = '';
 function abrirAyuda(){
   $('verDell').textContent = DEMO ? 'versión de prueba (simulación)' : (versionDell || '—');
+  $('avisoTema').textContent = DEMO ? 'krb-luces-prueba (solo en el Dell)' : (avisoTema || '— (se crea al abrir la suite nueva)');
   $('ayudaDJ').hidden = !DJ; $('ayudaIpad').hidden = DJ;
   $('regTexto').hidden = true; $('regNoche').hidden = true; $('ayuda').classList.add('on');
 }
@@ -3189,6 +3199,14 @@ $('verRegistro').onclick = () => verRegistro();
 $('buscarAct').onclick = async () => {
   if (DEMO) return toast('En la versión de prueba no hay Dell que actualizar');
   try { await api('/api/actualizar'); toast('Buscando: si hay versión nueva, se instala sola en menos de un minuto'); } catch(e){ toast('No se pudo pedir al Dell'); }
+};
+$('avisoCopiar').onclick = async () => {
+  if (!avisoTema) return toast('El Dell todavía no tiene tema');
+  try { await navigator.clipboard.writeText(avisoTema); toast('Tema copiado: pégalo en la app ntfy'); } catch(e){ toast('Tema: ' + avisoTema); }
+};
+$('avisoProbar').onclick = async () => {
+  if (DEMO) return toast('En la versión de prueba no hay Dell que mande avisos');
+  try { const r = await api('/api/aviso-prueba'); toast(r.ok ? 'Aviso enviado: revisa la app ntfy' : 'El Dell todavía no tiene tema'); } catch(e){ toast('No se pudo pedir al Dell'); }
 };
 $('regNoche').onchange = () => verRegistro($('regNoche').value);
 

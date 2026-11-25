@@ -78,3 +78,10 @@ ACTUALIZACION AUTOMATICA (no hay que instalar cada vez)
     (unos segundos sin luces). En la ayuda del panel: version instalada y
     "Buscar actualizacion ahora" (tambien desde internet).
   - Cada actualizacion queda anotada en el registro de la noche.
+
+AVISO AL CELULAR SI SE CORTA EL CABLE (25 nov)
+- Jueves, viernes y sabado de 18:30 a 00:30: si el cable DMX lleva 20 segundos desconectado,
+  llega un aviso a la app ntfy del celular (y otro cuando vuelve). Queda tambien en el registro de la noche.
+- El tema de ntfy se crea solo al azar en el Dell (archivo aviso-celular.txt, no esta en el repositorio).
+  Se ve en el boton "?" del panel, con "Copiar el tema" y "Mandar aviso de prueba".
+- Si el Dell entero se apaga o pierde internet, este aviso no puede salir.

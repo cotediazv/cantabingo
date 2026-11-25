@@ -73,7 +73,7 @@ function Recuperar {
   }
 
   # 3) Tunel de internet y cloudflared: si faltan en la carpeta oficial
-  foreach ($n in @("tunel.yml", "cloudflared.exe")) {
+  foreach ($n in @("tunel.yml", "cloudflared.exe", "aviso-celular.txt")) {
     $dst = Join-Path $Destino $n
     if (Test-Path $dst) { continue }
     $src = $copias | ForEach-Object { Join-Path $_ $n } | Where-Object { Test-Path $_ } |
@@ -137,7 +137,7 @@ if ((Test-Path $cfgOrigen) -and (Resolve-Path $cfgOrigen).Path -ne $cfgDestino) 
   }
 }
 # El programa de Cloudflare y el tunel, si estan junto al instalador y faltan en la carpeta oficial
-foreach ($n in @("cloudflared.exe", "tunel.yml")) {
+foreach ($n in @("cloudflared.exe", "tunel.yml", "aviso-celular.txt")) {
   $src = Join-Path $origen $n
   if ((Test-Path $src) -and -not (Test-Path (Join-Path $Destino $n))) { Copy-Item $src $Destino }
 }
