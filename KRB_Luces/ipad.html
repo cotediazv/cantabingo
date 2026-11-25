@@ -2559,6 +2559,8 @@ function capasStandbyAuto(e){
 async function djAplicar(i, auto){
   const e = DJ_ESCENAS[i]; if (!e || !conf) return;
   djEstado.escena = i; master = +$('djInt').value; djPintar();
+  // vista previa: solo en el Show hay alguien en el escenario (Cote, 25 nov: en Standby, Previa, Fiesta y Locura no hay nadie)
+  V.escenarioVacio = e.grupo !== 'Show'; V.sucio = true;
   if (!auto) djServidor({ escena: i, int: master });            // los demas aparatos ven la misma escena
   const capas = djEstado.auto && e.grupo === 'Standby' ? capasStandbyAuto(e) : e.capas(), seg = 60 / djEstado.bpm;
   await efecto('todos', {todos: 'off'});

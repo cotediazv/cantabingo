@@ -438,7 +438,8 @@ function render(){
   actualizarFocos();
   const enSeguir = document.body.classList.contains('en-seguir') || document.body.classList.contains('dj-cabezas');
   const an = V.animador;
-  animadorObj.visible = !!an; artistaObj.visible = !an;          // mientras camina el animador, la artista fija no se muestra
+  // mientras camina el animador, la artista fija no se muestra; en el panel del DJ solo hay alguien en el escenario durante el Show
+  animadorObj.visible = !!an && !V.escenarioVacio; artistaObj.visible = !an && !V.escenarioVacio;
   roskoObj.visible = !!V.rosko;
   if (an){                                                     // camina: posicion, rumbo y piernas en movimiento
     animadorObj.position.set(an.p[0], an.p[1] + Math.abs(Math.sin(an.t * 6)) * 0.03, an.p[2]);
