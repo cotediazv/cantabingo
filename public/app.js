@@ -2146,7 +2146,7 @@ views.escena = async () => {
         else if (show === 'votojuego') stop = await views.gameVote('gc');
         else if (show === 'insta') stop = await views.instaGC();
         else if (show === 'show') stop = await views.showGC();
-        joinQr({ sorteo: 'br', rueda: 'bl', show: 'above', votojuego: 'br', enpie: 'above' }[show]);
+        joinQr({ sorteo: 'br', rueda: 'bl', show: 'above', votojuego: 'br', enpie: 'above', desafio: 'tl' }[show]);
         document.body.classList.add('obs');
       }
       if (sr) carton(!!sr.carton);

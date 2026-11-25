@@ -293,6 +293,8 @@
     return cw.none ? `<div class="d-cw"><span class="d-cup">🏅</span><small>${TRIVIA}</small><b ${n('Nadie sumó puntos')}>Nadie sumó puntos</b><span>¡En la próxima!</span></div>`
       : `<div class="d-cw">${full ? `<div class="confetti">${confetti()}</div>` : ''}<span class="d-cup">🏅</span><small>Premio especial · Ganó ${TRIVIA_L}</small><b ${n(cw.name)}>${esc(cw.name)}</b><span>${many(cw.score, 'punto', 'puntos')} · ${many(cw.hits, 'acierto', 'aciertos')}</span></div>`;
   };
+  // QR para entrar a la sala y jugar la Trivia (la frase de siempre)
+  const joinHTML = () => `<div class="d-join">${qr(joinUrl())}<p><b>Escanea el código QR con tu celular</b><span>y juega ${TRIVIA_L}</span></p></div>`;
   const phoneHTML = () => (left('phone') > 0 ? `<div class="d-aud open"><b>📞 Llamada</b><span>Quedan <i data-clock="phone">${secs('phone')}</i> s</span></div>` : '');
   const endHTML = (st) => {
     const won = st.outcome === 'won';
@@ -342,9 +344,9 @@
           ${optionsHTML(st)}
           <div class="d-foot">${audienceHTML(st)}${phoneHTML()}${crowdChip(st)}</div></section>`;
       }
-      box.innerHTML = `<header class="d-top"><b>🏆 ${esc(st.title)}</b>${st.player ? `<span>${esc(st.player)}</span>` : ''}</header>
+      box.innerHTML = `<header class="d-top"><b><i class="d-ico">🏆</i> ${esc(st.title)}</b>${st.player ? `<span>${esc(st.player)}</span>` : ''}</header>
         ${main}
-        ${st.rank && st.phase !== 'setup' && st.phase !== 'intro' ? '' : `<aside class="d-side">${st.phase === 'setup' ? `<div class="vf-qr">${qr(joinUrl())}<b>Únete desde tu celular</b></div>` : `${lifeIcons(st)}${ladder(st)}`}</aside>`}`;
+        ${st.rank && st.phase !== 'setup' && st.phase !== 'intro' ? '' : `<aside class="d-side">${st.phase === 'setup' ? joinHTML() : `${lifeIcons(st)}${ladder(st)}${joinHTML()}`}</aside>`}`;
     });
     return () => { stop(); stopTick(); };
   };

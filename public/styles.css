@@ -1127,6 +1127,7 @@ body.full #rf .rf-card.win .rf-name:not(.small) { font-size: min(21vh, calc(84vw
 .join-qr.tr { right: 2vw; top: 3vh; }
 .join-qr.above { right: 3vw; bottom: 27vh; }
 body.full .join-qr.br { bottom: 11vh; } /* en el tablero, sobre el botón «Activar sonido» */
+.join-qr.tl { left: 2vw; top: 3vh; } /* El Gran Desafío en OBS: arriba a la izquierda (abajo va la pregunta; a la derecha, la escalera) */
 .join-qr.bl { left: 2vw; bottom: 3.5vh; } /* rosco en OBS: abajo a la izquierda, lejos de la pregunta y la respuesta */
 
 /* ---------- Rosco en línea (el público juega desde el celular) ---------- */
@@ -3425,6 +3426,16 @@ body.con-paso #ctl-reload-fixed { top: calc(var(--paso-h, 64px) + 20px); }
 .d-bars p.gone { opacity: .25; }
 .d-side { min-width: 0; min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 2vh; }
 .d-side .vf-qr { align-self: center; }
+/* QR para entrar a la sala y jugar la Trivia: debajo de la escalera; antes de empezar, grande y solo */
+#df .d-side { grid-template-rows: auto minmax(0, 1fr) auto; }
+.d-join { display: flex; align-items: center; gap: 2vh; padding: 1.4vh; border-radius: 2vh; background: #fff; color: #14121c; }
+.d-join .qr { flex: none; display: block; width: 16vh; height: 16vh; border: 0; padding: 0; border-radius: 0; }
+.d-join p { margin: 0; display: grid; gap: .8vh; min-width: 0; }
+.d-join b { font-size: 2.6vh; font-weight: 900; line-height: 1.15; }
+.d-join span { font-size: 2vh; font-weight: 700; line-height: 1.2; }
+#df.ph-setup .d-side { grid-template-rows: minmax(0, 1fr); align-items: center; }
+#df.ph-setup .d-join { flex-direction: column; text-align: center; padding: 3vh; }
+#df.ph-setup .d-join .qr { width: 32vh; height: 32vh; }
 .d-life { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1vh; }
 .d-life span { display: grid; justify-items: center; gap: .3vh; padding: 1vh .4vh; border-radius: 2vh; background: var(--k-tag); border: .35vh solid var(--gc-yellow); font-size: 4.4vh; line-height: 1; }
 .d-life small { font-size: 1.6vh; font-weight: 800; text-transform: uppercase; text-align: center; line-height: 1.1; }
@@ -3444,7 +3455,7 @@ body.con-paso #ctl-reload-fixed { top: calc(var(--paso-h, 64px) + 20px); }
 .dg-side .d-ladder li { font-size: 2.6vh; }
 .dg-side .d-life span { font-size: 3.4vh; }
 .dg-side .d-life small { display: none; }
-.dg-extra { position: absolute; top: 3vh; left: 3vw; right: 28vw; display: grid; gap: 1.6vh; }
+.dg-extra { position: absolute; top: 3vh; left: calc(2vw + 23vh); right: 28vw; display: grid; gap: 1.6vh; } /* a la izquierda va el QR */
 .dg-extra .d-bars { height: 11vh; }
 .dg-bar { position: absolute; left: 3vw; right: 3vw; bottom: 3vh; display: grid; gap: 1.6vh; }
 .dg-bar .d-q { padding: 1.6vh 4vh; border-radius: 3vh; }
