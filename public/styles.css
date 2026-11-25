@@ -3751,3 +3751,67 @@ body.gm-compactpage .krb-mark { display: none; } /* el logo chico de la esquina 
 /* (diseño anterior) El último en pie y ¿Quién quiere ser ganador? en la pantalla de pie: título centrado */
 @media (max-aspect-ratio: 1/1) { #ep .ep-top { align-items: center; text-align: center; } #ep .ep-top > p { justify-content: center; } }
 #epg .epg-tag small { white-space: nowrap; }
+
+/* ---------- Sesión del animador (/animador; pedido de Cote, 25 nov) ----------
+   Teléfono primero y lo justo: la misma estética de todo (fondo noche, dorado de la marca, letras de la marca); el botón
+   verde del paso que sigue queda fijo en el tercio de abajo, al alcance del pulgar; en El Rosko, abajo, «Rosko en
+   pantalla» / «Iniciar pregunta» y Correcta (verde) / Incorrecta (rojo) / Pasa (amarillo); lo que todavía no toca, en
+   gris. Se esconde lo que no es del animador (cartón al centro, refrescar, Centro de control, otras actividades). */
+body.anim {
+  --bg: #0c0b12; --surface: #15131e; --raised: #1c1828; --ink: #f3eee6; --muted: #a59fb0; --line: #2a2636;
+  --primary: #f4bf5a; --primary-ink: #1a1407; --link: #f4bf5a; --mark: #f4bf5a; --win: #2fbf71;
+  --an-go: #22b35e; --an-no: #e0413a; --an-pass: #f2c230; --an-opt: #3b82f6;
+  background: #0c0b12; color: var(--ink);
+  font-family: 'Manrope', system-ui, sans-serif;
+}
+body.anim #app { max-width: 720px; padding-bottom: calc(150px + env(safe-area-inset-bottom)) !important; }
+body.anim.con-paso #app { padding-top: 12px !important; }
+body.anim .panel { background: var(--surface); border-color: var(--line); border-top: 3px solid #f4bf5a; }
+body.anim h1 { font-family: 'Big Shoulders Display', 'Manrope', sans-serif; font-weight: 800; text-transform: uppercase; letter-spacing: .01em; font-size: clamp(1.9rem, 8.5vw, 2.8rem); line-height: 1.02; color: #fff; }
+body.anim h2 { font-family: 'Big Shoulders Display', 'Manrope', sans-serif; font-weight: 800; text-transform: uppercase; letter-spacing: .02em; }
+body.anim :is(input, select, textarea) { background: #0c0b12; color: var(--ink); border-color: var(--line); }
+/* fuera lo que no es del animador */
+body.anim :is(#ctl-carton, #ctl-reload-fixed, #ctl-home-link, .ctl-reload, .home-control),
+body.anim .act-nav > small,
+body.anim .act-nav a[href="#/showctl"], body.anim .act-nav a[href="#/karaokectl"], body.anim .act-nav a[href="#/instactl"],
+body.anim .act-nav [data-stage-qr] { display: none !important; }
+/* el botón del paso que sigue: verde, grande, fijo abajo */
+body.anim .paso.paso-fijo {
+  top: auto; bottom: calc(12px + env(safe-area-inset-bottom)); width: calc(100vw - 24px); max-width: 700px;
+  min-height: 92px; padding: 16px 18px; font-size: 1.45rem; font-weight: 800; border-radius: 18px;
+  background: var(--an-go) !important; color: #fff !important; border: 0;
+  box-shadow: 0 0 0 6px #0c0b12, 0 -10px 30px rgba(0, 0, 0, .6);
+}
+body.anim .paso.paso-fijo:disabled { background: #4a4752 !important; color: #c9c5d0 !important; filter: none; opacity: 1; }
+/* El Rosko: los botones del paso, abajo (3 alternativas: verde, rojo, amarillo) */
+body.anim #rosco-ctl .w-flow, body.anim #rosco-ctl .w-keys {
+  position: fixed; left: 50%; transform: translateX(-50%); z-index: 60; width: calc(100vw - 24px); max-width: 700px; margin: 0; box-sizing: border-box;
+}
+body.anim #rosco-ctl .w-keys { bottom: calc(10px + env(safe-area-inset-bottom)); }
+body.anim #rosco-ctl .w-flow { bottom: calc(118px + env(safe-area-inset-bottom)); grid-template-columns: 1fr 1fr; }
+body.anim #rosco-ctl .w-keys button { padding: 24px 6px; font-size: 1.3rem; border-radius: 16px; }
+body.anim #rosco-ctl .w-keys kbd { display: none; }
+body.anim #rosco-ctl .w-hit { background: var(--an-go); }
+body.anim #rosco-ctl .w-miss { background: var(--an-no); }
+body.anim #rosco-ctl .w-pass { background: var(--an-pass); color: #1a1407; }
+body.anim #rosco-ctl .w-flow button { min-height: 68px; }
+body.anim #rosco-ctl .w-flow .w-show { background: var(--an-opt); color: #fff; }
+body.anim #rosco-ctl .w-flow .w-go { background: var(--an-go); color: #fff; }
+body.anim #rosco-ctl .w-flow button:disabled, body.anim #rosco-ctl .w-keys button:disabled { background: #4a4752; color: #c9c5d0; filter: none; opacity: 1; }
+body.anim #rosco-ctl .w-flow::before { content: ''; position: absolute; left: -12px; right: -12px; top: -12px; bottom: -130px; background: #0c0b12; z-index: -1; box-shadow: 0 -10px 30px rgba(0, 0, 0, .6); }
+body.anim:has(#rosco-ctl:not(.rosco-done)) #app { padding-bottom: calc(240px + env(safe-area-inset-bottom)) !important; }
+body.anim #rosco-ctl.rosco-done .w-flow::before { display: none; }
+/* letrero grande que hay que cerrar para hacer la acción («Baja al público») */
+#an-sign { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 200; background: rgba(6, 5, 10, .86); display: flex; align-items: flex-end; justify-content: center; padding: 16px 12px calc(16px + env(safe-area-inset-bottom)); }
+#an-sign .an-card { width: 100%; max-width: 700px; background: #f2c230; color: #1a1407; border-radius: 22px; padding: 26px 20px 18px; text-align: center; box-sizing: border-box; }
+#an-sign b { display: block; font-family: 'Big Shoulders Display', 'Manrope', sans-serif; font-weight: 900; text-transform: uppercase; font-size: clamp(2.4rem, 12vw, 3.6rem); line-height: 1; }
+#an-sign p { font-size: 1.15rem; margin: 14px 0 22px; }
+#an-sign button { width: 100%; min-height: 92px; font-size: 1.5rem; font-weight: 800; border-radius: 18px; border: 0; background: var(--an-go, #22b35e); color: #fff; }
+/* ingreso */
+.an-login { max-width: 420px; margin: 12vh auto 0; text-align: center; }
+.an-login .an-logo { width: 160px; display: block; margin: 0 auto 14px; }
+.an-login form { display: grid; gap: 12px; margin-top: 16px; }
+.an-login input { font-size: 1.3rem; padding: 14px; text-align: center; }
+.an-err { color: #ff8a80; min-height: 1.4em; }
+body.anim :is(.an-hide, #bigqr) { display: none !important; }
+body.anim #rosco-ctl :is(#w-reset, #w-newq), body.anim #rosco-ctl .w-keys ~ p.muted.small { display: none !important; }

@@ -62,6 +62,7 @@
     let st = null;
     let sig = '';
     let pick = null; // alternativa tocada, antes de confirmarla como respuesta definitiva
+    let resultsT = null; // los resultados del público: el ganador sale 8 s después del ranking
     const act = async (action, extra = {}) => { try { st = stamp(await api('POST', '/api/desafio/host', { action, ...extra })); sig = ''; paint(); return true; } catch (err) { fail(err); return false; } };
     const setupForm = () => {
       const prizes = st.defaults && st.defaults.prizes ? st.defaults.prizes : st.prizes;
@@ -153,7 +154,8 @@
       const cw = st.crowdWinner;
       const rankBox = st.rank ? window.rankAnnHtml(st.rank, st.rankPlayers, true, TRIVIA_L) : '';
       const rankBtn = `<button type="button" class="big dc-rankbtn ${st.rank ? 'on' : ''}" data-rank>${st.rank ? '🏅 Recoger ranking (está en pantalla)' : '🏅 Desplegar ranking final'}</button>`;
-      if (!cw) return `${rankBox}<button class="primary big" data-do="crowdwin">🏅 Mostrar ganador de ${TRIVIA_L}</button>${rankBtn}`;
+      // Resultados del público en un solo botón verde (pedido de Cote, 25 nov): ranking final 8 s y después el ganador
+      if (!cw) return `${rankBox}<button class="primary big paso" data-paso="2" data-results ${resultsT ? 'disabled' : ''}>${resultsT ? '🏅 Mostrando el ranking… en 8 s sale el ganador' : '🏅 Resultados del público: ranking y ganador'}</button>`;
       const left = rollLeft(st);
       if (left > 200) { setTimeout(() => { sig = ''; paint(); }, left + 50); return window.annHtml(`🥁 ${TRIVIA}`, ['Sorteando en pantalla…'], ['El nombre sale aquí cuando se detenga la tómbola']); }
       const ann = cw.none ? window.annHtml(`🏅 ${TRIVIA}`, ['Nadie sumó puntos'], [`Jugaron ${many(cw.players, 'persona', 'personas')}`])
@@ -164,6 +166,7 @@
       const b = e.target.closest('button');
       if (!b || b.disabled) return;
       if (b.hasAttribute('data-rank')) { await act('rank', { on: !st.rank }); return; }
+      if (b.hasAttribute('data-results')) { if (!st.rank) await act('rank', { on: true }); resultsT = setTimeout(async () => { resultsT = null; await act('crowdwin'); }, 8000); sig = ''; paint(); return; }
       if (b.dataset.pick != null) { pick = Number(b.dataset.pick); paint(); return; }
       if (b.hasAttribute('data-lock')) { if (await act('lock', { choice: pick })) pick = null; return; }
       if (b.dataset.life) {

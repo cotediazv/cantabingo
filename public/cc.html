@@ -305,7 +305,7 @@ function nav(current, inGame, lobby) {
       o += '</div><div class="count">¿Cuántos juegos vamos a sortear?<b>' + g.total + '</b>' + btn('−', 'total', d('n', g.total - 1), '', g.total <= 1) + btn('+', 'total', d('n', g.total + 1), '', g.total >= 10) + '</div></div>';
     }
     o += btn(full ? '✔ Ya se sortearon los ' + g.total + ' juegos' : ready ? '🎰 Girar la tómbola · ' + (g.list.length + 1) + '.º juego' : '🎲 Iniciar sorteo del ' + (g.list.length + 1) + '.º juego (de ' + g.total + ')', 'draw', '', 'big ' + (ready ? 'warn' : 'primary'), full);
-    o += '<div class="center">' + btn('↩️ Deshacer', 'undo', '', '', !g.undoable) + '</div>';
+    o += '<div class="center">' + btn('⬅️ Un paso atrás', 'undo', '', '', !g.undoable) + '</div>';
     if (ready) o += '<p class="center" style="color:#ffc400;font-weight:bold;margin:4px 0">…o toca un juego para elegirlo directo, sin tómbola</p>' + games(true);
   }
   if (!lobby) {
@@ -535,7 +535,7 @@ function renderRosco(w) {
     o += btn(w.onScreen ? '📺 Rosko en pantalla ✓' : '📺 Poner rosko en pantalla', 'roscoShow', '', 'big', step !== 1 || w.rankDue);
     o += btn(w.runningSince ? '⏱ Pregunta en curso' : '▶ Iniciar pregunta', 'wheel', d('x', 'start'), 'big primary', step !== 2 || w.rankDue);
     o += '<div class="row">' + btn('✔ Correcta', 'wheel', d('x', 'hit'), 'third ok', step !== 3) + btn('✘ Incorrecta', 'wheel', d('x', 'miss'), 'third bad', step !== 3) + btn('↷ Pasa', 'wheel', d('x', 'pass'), 'third warn', step !== 3) + '</div>';
-    o += '<div class="row">' + btn('↶ Deshacer', 'wheel', d('x', 'undo'), '', !w.canUndo) + (w.players.length > 1 ? btn('Cambiar turno', 'wheel', d('x', 'turn')) : '') + btn('Reiniciar', 'roscoReset', '', 'bad') + (w.fromBank ? btn('↻ Preguntas nuevas', 'newQ') : '') + '</div>';
+    o += '<div class="row">' + btn('⬅️ Un paso atrás', 'wheel', d('x', 'undo'), '', !w.canUndo) + (w.players.length > 1 ? btn('Cambiar turno', 'wheel', d('x', 'turn')) : '') + btn('Reiniciar', 'roscoReset', '', 'bad') + (w.fromBank ? btn('↻ Preguntas nuevas', 'newQ') : '') + '</div>';
   } else {
     if (w.winner) o += ann('🏆 Premio mayor · ' + (w.winner.full ? '¡Completó el rosko!' : 'Ganó El Rosko'), [w.winner.name], [many(w.winner.hits, 'acierto', 'aciertos') + ' · ' + many(w.winner.misses, 'fallo', 'fallos') + (w.winner.byDraw ? ' · salió en el desempate' : '')]);
     if (!w.crowdWinner) o += btn('🏅 Mostrar ganador de la Trivia del Rosko', 'wheel', d('x', 'crowdwin'), 'big primary');

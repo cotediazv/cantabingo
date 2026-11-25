@@ -330,6 +330,20 @@ app.get('/sala', (_req, res) => {
   });
 });
 
+// Sesión del animador (pedido de Cote, 25 nov: «un ingreso distinto… tanto en el celular como en la tablet… mostrar
+// solamente lo justo y necesario para él»; 26.1: dirección propia con una clave solo para animadores): /animador abre la
+// misma plataforma en modo animador (#/animador), con su propio nombre para guardarla en el inicio del teléfono
+app.get('/animador', (_req, res) => {
+  require('fs').readFile(path.join(__dirname, 'public', 'index.html'), 'utf8', (err, html) => {
+    if (err) return res.status(500).send('No se pudo abrir la página');
+    return res.set('Cache-Control', 'no-cache').type('html').send(html
+      .replace('href="manifest.webmanifest"', 'href="manifest-animador.webmanifest"')
+      .replace('content="Control KRB"', 'content="Animador KRB"')
+      .replace('<title>KRB Stage · Sala de juegos</title>', '<title>Animador KRB</title>')
+      .replace('<body>', '<body>\n  <script>if (!location.hash || location.hash === "#/") location.replace(location.pathname + location.search + "#/animador");</script>'));
+  });
+});
+
 const fail = (res, code, error) => res.status(code).json({ error });
 const summary = (p) => ({
   id: p.id, name: p.name, theme: p.theme || 'frida', format: p.format, count: p.cards.length, values: p.values,
@@ -434,6 +448,31 @@ app.post('/api/staff/login', (req, res) => {
   res.json({ token: `${v}.${exp}.${staffSign(v, exp)}`, venue: v });
 });
 app.get('/api/staff/me', (req, res) => res.json({ venue: staffVenue(req.get('x-staff')) }));
+// Clave del animador (pedido de Cote, 25 nov, 26.1): una sola, la pone el moderador en el Centro de control (se guarda
+// cifrada, nunca en el código). Con ella el animador entra por /animador y maneja los juegos de la sala (la misma
+// sesión que el moderador, pero su página muestra solo lo del juego)
+const ANIM_MS = 16 * 3600e3;
+app.get('/api/animador/clave', requireAdmin, (_req, res) => res.json({ hay: Boolean((db.animador || {}).hash) }));
+app.post('/api/animador/clave', requireAdmin, (req, res) => {
+  const clave = String((req.body || {}).clave || '').trim();
+  if (clave.length < 4) return fail(res, 400, 'La clave debe tener al menos 4 caracteres');
+  if (clave.toLowerCase() === 'admin') return fail(res, 400, 'Elige una clave distinta de «admin»');
+  const salt = crypto.randomBytes(16).toString('hex');
+  db.animador = { salt, hash: staffHash(clave, salt), at: Date.now() };
+  save();
+  res.json({ ok: true });
+});
+app.post('/api/animador/login', (req, res) => {
+  const k = db.animador || {};
+  if (!AUTH_READY || !k.hash) return fail(res, 503, 'Todavía no hay clave de animador. Pídesela a Cote.');
+  const a = attempts[`anim:${req.ip || 'x'}`] ||= { n: 0, until: 0 };
+  if (Date.now() < a.until) return fail(res, 429, 'Demasiados intentos. Espera 10 minutos.');
+  const ok = crypto.timingSafeEqual(Buffer.from(staffHash(String((req.body || {}).clave || ''), k.salt), 'hex'), Buffer.from(k.hash, 'hex'));
+  if (!ok) { a.n++; if (a.n >= 8) { a.n = 0; a.until = Date.now() + 10 * 60e3; } return fail(res, 401, 'Clave incorrecta'); }
+  a.n = 0;
+  const exp = Date.now() + ANIM_MS;
+  res.json({ token: `${exp}.${sign(exp)}` });
+});
 app.get('/api/me', (req, res) => res.json({ admin: validToken(req.get('x-admin')) }));
 app.use('/api/projects', requireAdmin);
 app.use('/api/sessions/:sid/host', requireAdmin);

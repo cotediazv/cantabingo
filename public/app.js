@@ -748,7 +748,7 @@ async function hostConsole(p) {
       </div>
       <div id="win-ann"></div>
       ${activitiesNav('bingo')}
-      <p class="small" style="text-align:center;margin-top:22px"><a href="#/admin/${p.id}">⚙️ Administración</a></p>
+      <p class="small an-hide" style="text-align:center;margin-top:22px"><a href="#/admin/${p.id}">⚙️ Administración</a></p>
     </div>`;
   const render = () => {
     $('#title').textContent = bingoName(st.name);
@@ -1869,7 +1869,7 @@ function activitiesNav(current, opts = {}) {
     <section class="g-body"><p class="g-free-title">👆 Toca el siguiente juego</p><section class="g-vote"></section>
     <div class="g-plan"><div class="g-slots"></div><label>¿Cuántos juegos vamos a sortear?<input type="number" class="g-total" min="1" max="10" value="3"></label></div>
     <button type="button" class="primary big g-draw paso" data-paso="9" data-game-draw>🎲 Sortear juego</button>
-    <button type="button" class="g-undo" data-game-undo disabled>↩️ Deshacer</button>
+    <button type="button" class="g-undo" data-game-undo disabled>⬅️ Un paso atrás</button>
     <p class="g-direct" hidden>…o toca un juego para elegirlo directo, sin tómbola</p>
     <div class="g-games">${games.map(([k, h]) => (k === current ? h.replace(/data-game="/, 'aria-current="true" data-game="') : h)).join('')}</div></section>
     ${opts.lobby ? '' : `<small>Otras actividades</small><div>${more.filter(([k]) => k !== current).map(([, h]) => h).join('')}</div>`}</div>`;

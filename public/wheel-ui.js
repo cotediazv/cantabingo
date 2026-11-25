@@ -164,7 +164,7 @@
           <button class="primary big w-accept" id="w-tie" hidden>🎲 Desempatar por sorteo</button>
           <button class="primary big w-accept" id="w-accept" data-do="acceptwin" hidden>✔ Aceptar ganador</button>
           <div id="w-accepted" hidden><div class="w-accepted">✔ Ganador aceptado</div>
-            <button class="primary big w-accept" id="w-crowd" data-do="crowdwin">🏅 Mostrar ganador de la Trivia del Rosko</button>
+            <button class="primary big w-accept paso" data-paso="2" id="w-crowd">🏅 Resultados del público: ranking y ganador</button>
             <div class="w-ann" id="w-crowd-res" hidden></div><div id="w-after" hidden>${BACK_BINGO}</div></div>
           <div class="w-flow">
             <button class="w-show" id="w-show"></button>
@@ -176,7 +176,7 @@
             <button class="w-pass" data-do="pass">↷ Pasa <kbd>P</kbd></button>
           </div>
           <div class="row" style="margin-top:14px">
-            <button data-do="undo" id="w-undo">↶ Deshacer</button>
+            <button data-do="undo" id="w-undo">⬅️ Un paso atrás</button>
             <button data-do="turn" id="w-swap">Cambiar turno</button>
             <button class="danger" id="w-reset">Reiniciar</button>
             ${fromBank ? '<button id="w-newq">↻ Preguntas nuevas</button>' : ''}
@@ -269,6 +269,15 @@
     $('#w-clock').onclick = toggleClock;
     $('#w-show').onclick = () => { if (stepOf(st) === 1) act('show', { on: true }); };
     $('#w-rank').onclick = () => act('rank', { on: !st.rank });
+    // Resultados del público en un solo botón verde (pedido de Cote, 25 nov: «hoy son dos procesos, primero la lista y
+    // después el ganador, y deberían ser uno»): despliega el ranking final, lo deja 8 s en pantalla y saca al ganador
+    // de la Trivia con su tómbola
+    $('#w-crowd').onclick = async () => {
+      const b = $('#w-crowd'); if (b.disabled) return;
+      b.disabled = true; b.textContent = '🏅 Mostrando el ranking… en 8 s sale el ganador';
+      if (!st.rank) await act('rank', { on: true });
+      setTimeout(async () => { await act('crowdwin'); b.disabled = false; b.textContent = '🏅 Resultados del público: ranking y ganador'; }, 8000);
+    };
     $('#w-tie').onclick = async () => { try { await api('POST', `/api/wheels/${id}/tiebreak`); } catch (err) { fail(err); } };
     $('#w-reset').onclick = () => { if (confirm('¿Reiniciar el rosko? Se borran aciertos, fallos y relojes.')) act('reset'); };
     if (fromBank) $('#w-newq').onclick = async () => {
