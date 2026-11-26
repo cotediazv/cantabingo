@@ -2300,9 +2300,18 @@ async function route() {
   const [name, arg] = location.hash.replace(/^#\/?/, '').split('/');
   const screen = !arg && (name === 'gc' || name === 'obs') ? 'escena' : name;
   document.body.dataset.view = screen || 'home'; // qué vista es (el celular del público lleva el diseño nuevo: tema-celular.css)
+  // Pantallas de los locales y GC (26 nov): si la página se abrió justo mientras la Sala se reiniciaba y no cargó el archivo
+  // de esa pantalla, no se muestra el inicio ni el ingreso del moderador (eso salió en las verticales): se vuelve a cargar
+  const isScreen = /^(vertical|vertical-in|pantalla|tablero|tablero-v|escena|light-gc|light-v|karaoke-v)$/.test(screen || '');
+  if (isScreen && !views[screen]) {
+    app.innerHTML = '';
+    setTimeout(() => location.reload(), 5000);
+    return;
+  }
   const view = views[screen || 'home'] || views.home;
   window.scrollTo(0, 0);
   try { cleanup = await view(arg); } catch (e) {
+    if (isScreen) { app.innerHTML = ''; setTimeout(() => location.reload(), 5000); return; } // una pantalla nunca muestra el ingreso ni un error: vuelve a intentar
     if (e.status === 401) return viewLogin(); // pantallas de moderador sin sesión iniciada
     app.innerHTML = `<div class="panel"><h1>No se pudo abrir esta página</h1><p>${esc(e.message)}</p><a class="btn primary" href="#/">Volver al inicio</a></div>`;
   }

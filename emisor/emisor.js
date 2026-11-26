@@ -139,7 +139,9 @@ const mandarFoto = async (page) => {
 };
 // La página es la de la Sala (26 nov: durante una publicación la Sala se reinicia; si la página se recargaba justo ahí quedaba
 // en «502 Bad Gateway» de Render y el emisor la transmitía así hasta el final del turno)
-const paginaOk = (page) => page.evaluate(() => !!document.getElementById('app') && !/\b50[234]\b|Bad Gateway|Service Unavailable/i.test(document.title)).catch(() => false);
+// También que de verdad esté la pantalla vertical (26 nov: tras otro reinicio la página quedó en el ingreso del moderador,
+// porque una parte del programa no alcanzó a cargar, y se transmitió eso a las verticales)
+const paginaOk = (page) => page.evaluate(() => !!document.querySelector('#app .vt') && !/\b50[234]\b|Bad Gateway|Service Unavailable/i.test(document.title)).catch(() => false);
 const vivo = (page) => page.evaluate(() => !!(window.__pc && ['connected', 'connecting'].includes(window.__pc.connectionState))).catch(() => false);
 const cortar = (page) => page.evaluate(async () => {
   try { const loc = window.__whipDel; if (window.__pc) window.__pc.close(); if (loc) await fetch(new URL(loc, window.__whipUrl).href, { method: 'DELETE' }); } catch (e) { /* nada */ }
