@@ -32,6 +32,7 @@
     window.addEventListener('tema', onTema);
 
     const draw = (st) => {
+      if (!$('#fb')) return; // la pantalla ya pasó a otro juego (llegó un aviso atrasado)
       $('#fb').className = `th-${st.theme}`;
       if (st.celebrate) {
         inPlay = false;

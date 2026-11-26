@@ -15,7 +15,10 @@
   ];
   const hearts = (n, max = 3) => '❤️'.repeat(Math.max(0, n)) + '🖤'.repeat(Math.max(0, max - n));
   const qTag = (st) => (st.direct ? `Recta final · pregunta ${st.n}` : `Ronda ${st.round} de ${st.rounds} · pregunta ${st.inRound} de ${st.perRound}`);
-  const counters = (st) => `<span class="ep-c up"><b>${st.standing}</b> en pie</span><span class="ep-c"><b>${st.bench}</b> ${st.direct || st.phase === 'final' || st.phase === 'done' ? 'fuera' : 'en la banca'}</span>`;
+  // En la final cuentan los finalistas que siguen en el escenario (el 3.º puede venir de los que cayeron en la última pregunta;
+  // simulación del 26 nov: arriba decía «2 en pie» con 3 finalistas)
+  const upOf = (st) => (st.phase === 'final' && st.fin && st.fin.players ? st.fin.players.filter((p) => !p.out).length : st.standing);
+  const counters = (st) => `<span class="ep-c up"><b>${upOf(st)}</b> en pie</span><span class="ep-c"><b>${st.standing + st.bench - upOf(st)}</b> ${st.direct || st.phase === 'final' || st.phase === 'done' ? 'fuera' : 'en la banca'}</span>`;
   // Reloj: cuenta local, sincronizada con la hora del servidor
   let end = 0; let endKey = 0;
   const setClock = (st) => { if (st.until !== endKey) { endKey = st.until; end = st.until ? Date.now() + (st.until - st.now) : 0; } };

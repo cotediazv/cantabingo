@@ -27,3 +27,17 @@ test('con El Rosko en juego, El último en pie y ¿Quién quiere ser ganador? no
   assert.equal((await srv.admin.call('POST', '/api/enpie/host', { action: 'new' })).status, 200);
   assert.equal((await srv.ok('GET', '/api/stage')).show, 'enpie');
 });
+
+test('cualquier paso de El último en pie y de ¿Quién quiere ser ganador? los vuelve a poner en pantalla', async () => {
+  await srv.admin.post('/api/enpie/host', { action: 'new' });
+  await srv.admin.post('/api/enpie/host', { action: 'next' }); // primera pregunta
+  await srv.admin.post('/api/stage', { show: 'qr' });
+  assert.equal((await srv.ok('GET', '/api/stage')).show, 'qr');
+  await srv.admin.post('/api/enpie/host', { action: 'close' }); // el animador sigue desde su panel
+  assert.equal((await srv.ok('GET', '/api/stage')).show, 'enpie');
+  await srv.admin.post('/api/desafio/host', { action: 'new', player: 'Carla Soto' });
+  assert.equal((await srv.ok('GET', '/api/stage')).show, 'desafio');
+  await srv.admin.post('/api/stage', { show: 'qr' });
+  await srv.admin.post('/api/desafio/host', { action: 'next' }); // primera pregunta
+  assert.equal((await srv.ok('GET', '/api/stage')).show, 'desafio');
+});

@@ -191,6 +191,9 @@ module.exports = function enpie({ placeOf = () => '', roscoBusy = () => false, a
       if (alive.length <= 1) win(s, alive[0] || null);
       else { do { f.turn = (f.turn + 1) % f.players.length; } while (f.players[f.turn].out); finQuestion(s); }
     } else return fail(res, 400, 'Acción desconocida');
+    // Cualquier paso del juego lo pone en pantalla, como en El Festival (simulación del 26 nov: la final se jugó desde el panel
+    // con la pantalla todavía en el juego anterior y nadie la vio)
+    if (db.stage !== 'enpie') setStage('enpie');
     changed();
     return res.json(pub('', true));
   });

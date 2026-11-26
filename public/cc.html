@@ -507,7 +507,7 @@ views.bingo = function () {
           o += '<div class="win"><h3>🏆 ' + (w.length === 1 ? '¡HAY UN GANADOR!' : '¡HAY ' + w.length + ' GANADORES!') + '</h3>';
           for (var k = 0; k < w.length; k++) o += '<b>' + h(w[k].name) + '<br><small>Cartón #' + (st.startNumber + w[k].cardNo - 1) + (w[k].place ? ' · 📍 ' + h(w[k].place) : '') + '</small></b>';
           var tieDone = st.tieWinner && new Date().getTime() + offset - st.tieWinner.at >= st.rollMs;
-          if (w.length > 1 && !st.tieWinner) o += '<p>Hay un empate: primero desempata por sorteo.</p>' + btn('🎲 Desempatar por sorteo', 'tieBingo', '', 'big warn');
+          if (w.length > 1 && !st.tieWinner) o += '<p>Hay un empate: primero desempata por sorteo.</p>' + btn('🎲 Desempatar por sorteo', 'tieBingo', '', 'big primary paso');
           else if (w.length > 1 && !tieDone) o += '<p>Sorteando el desempate en pantalla…</p>';
           else {
             if (st.tieWinner) o += '<p>Ganador del desempate: <b>' + h(st.tieWinner.name) + '</b></p>' + btn('🎲 Volver a desempatar', 'tieBingo', '');
@@ -704,7 +704,7 @@ function votoView(want) {
         else if (st.open) o += '<div class="now"><small>🗳️ Votación abierta · ' + (st.counts[st.open.id] || 0) + ' votos</small><b>' + h(st.open.name) + '</b><br><span class="muted">' + h(st.open.thing) + '</span></div>' + btn('Cerrar votación', 'vote', d('x', 'close'), 'big primary paso');
         else if (st.signup) o += '<div class="now"><small>📲 Inscripciones abiertas</small>' + st.players.length + ' inscritos</div>' + btn('Cerrar', 'vote', d('x', 'signup'), 'big');
         else if (!st.players.length) o += btn('📲 Abrir inscripciones', 'vote', d('x', 'signup') + d('on', '1'), 'big primary paso');
-        else if (st.overflow) o += btn('🎲 Sortear los ' + st.max + ' que ' + (isK ? 'cantan' : 'participan') + ' (se inscribieron ' + st.players.length + ')', 'vote', d('x', 'draw'), 'big warn');
+        else if (st.overflow) o += btn('🎲 Sortear los ' + st.max + ' que ' + (isK ? 'cantan' : 'participan') + ' (se inscribieron ' + st.players.length + ')', 'vote', d('x', 'draw'), 'big primary paso'); // el paso que sigue: verde y fijo, como en la plataforma (simulación, 26 nov)
         else if (next && isK) o += (st.onstage && st.onstage.id === next.id ? '<div class="now"><small>🎤 En el escenario</small><b>' + h(next.name) + '</b><br><span class="muted">' + h(next.thing) + (next.place ? ' · 📍 ' + h(next.place) : '') + '</span></div>' : soonV(voted)) + btn('🎤 Iniciar participante', 'vote', d('x', 'open') + d('id', next.id), 'big primary paso');
         else if (next && st.onstage && st.onstage.id === next.id) o += '<div class="now"><small>' + (isK ? '🎤 En el escenario' : '🗳️ Presentando su objeto') + '</small><b>' + h(next.name) + '</b><br><span class="muted">' + h(next.thing) + (next.place ? ' · 📍 ' + h(next.place) : '') + '</span></div>' + btn('🗳️ Iniciar votación', 'vote', d('x', 'open') + d('id', next.id), 'big primary paso');
         else if (next) o += soonV(voted) + btn('🎤 Iniciar participante', 'vote', d('x', 'present') + d('id', next.id), 'big primary paso');
@@ -719,9 +719,9 @@ function votoView(want) {
         else o += btn(isK ? '🥁 Redoble de tambores: los dos finalistas' : '⚔️ Gran final: abrir votación', 'vote', d('x', 'final'), 'big primary paso');
         for (var m = st.places.length - 1; m >= 0; m--) o += '<div class="item">' + ord(st.places[m].place) + ' · <b>' + h(st.places[m].name) + '</b></div>';
       } else if (st.phase === 'final') {
-        if (isK) o += '<h2>🥁 Redoble de tambores</h2>' + btn('🏆 Revelar al gran ganador', 'vote', d('x', 'winner'), 'big ok');
+        if (isK) o += '<h2>🥁 Redoble de tambores</h2>' + btn('🏆 Revelar al gran ganador', 'vote', d('x', 'winner'), 'big primary paso');
         else if (st.final.open) o += '<h2>Gran final</h2><p>Recibiendo votos…</p>' + btn('Cerrar votación', 'vote', d('x', 'closefinal'), 'big primary paso');
-        else o += '<h2>Gran final</h2>' + btn('🏆 Revelar quién ganó', 'vote', d('x', 'winner'), 'big ok') + btn('Reabrir votación', 'vote', d('x', 'final'), 'big');
+        else o += '<h2>Gran final</h2>' + btn('🏆 Revelar quién ganó', 'vote', d('x', 'winner'), 'big primary paso') + btn('Reabrir votación', 'vote', d('x', 'final'), 'big');
       }
       o += '</div>' + nav(want, startedV && st.phase !== 'winner') + '<p class="center">' + btn('🗑 Nuevo concurso (borra este)', 'voteReset', d('mode', mode), 'bad') + '</p>' + foot();
       render(o);

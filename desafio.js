@@ -324,6 +324,9 @@ module.exports = function desafio({ placeOf = () => '', roscoBusy = () => false,
     if (roscoBusy() && String(b.action) !== 'reset') return fail(res, 409, 'El Rosko está en juego: este juego se juega cuando termine la partida'); // la pantalla no puede cambiar (simulación, 26 nov)
     const before = g().phase;
     try { act(g(), b); } catch (err) { return fail(res, 400, err.message); }
+    // Cualquier paso de la partida la pone en pantalla, como en El Festival (simulación del 26 nov); el sorteo del reemplazo
+    // tiene su propia pantalla y «Terminar partida» la deja en blanco
+    if (db.stage !== 'desafio' && !['reset', 'rank'].includes(String(b.action)) && g().phase !== 'swap') setStage('desafio');
     changed();
     const s = g();
     const m = require('./momentos.js');

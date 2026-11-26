@@ -194,6 +194,7 @@
           <span class="muted">El público ve el rosko, el reloj y el marcador. La pregunta aparece solo mientras el reloj corre; la respuesta, nunca.</span></div>${qr(publicUrl())}</div></div>${BACK_BINGO}<p class="small an-hide" style="margin-top:12px"><a href="#/ruedas">Ver todos los roskos</a></p></div>`;
     if (typeof paintGameNav === 'function') paintGameNav(); // el menú de juegos (BACK_BINGO) se completa al entrar
     const render = () => {
+      if (!$('#w-name')) return; // el panel ya pasó a otra vista (un redibujo atrasado)
       const c = st.players[st.turn];
       $('#w-name').textContent = st.name;
       $('#w-turn').textContent = st.winner ? (st.winner.full ? `🏆 ${st.winner.name} completó el rosko` : `🏆 Gana ${st.winner.name} (${st.winner.hits} ✔ · ${st.winner.misses} ✘)${st.winner.byDraw ? ', por sorteo' : ''}`) : st.tie ? `Empate: ${window.yJoin(st.tie.names)}` : st.finished ? 'Juego terminado' : '';
