@@ -70,6 +70,8 @@
       $('#rf-draw').dataset.swap = waiting && lastOk && dg && dg.phase === 'swap' ? '1' : '';
       $('#rf-draw').disabled = des ? (waiting ? !lastOk : full || p.connected.filter((n) => !picked.includes(n) && !dec.includes(n)).length === 0)
         : full ? !allOk : p.connected.filter((n) => !picked.includes(n) && !dec.includes(n)).length === 0;
+      // Mientras gira la tómbola en pantalla no se puede volver a sortear (simulación del 26 nov: el botón quedaba activo y daba error)
+      if (rolling) { $('#rf-draw').disabled = true; $('#rf-draw').textContent = '🎲 Sorteando en pantalla…'; }
       $('#rf-create').hidden = full || !picked.length || des; // ¿Quién quiere ser ganador? necesita a los 2
       $('#rf-create').textContent = `✔ Cargar El Rosko con ${picked.length}`;
       $('#rf-create').disabled = !allOk;
@@ -141,7 +143,7 @@
     };
     const poll = async () => {
       const st = await api('GET', '/api/raffle').catch(() => null);
-      if (!st) return;
+      if (!st || !$('#rf-title')) return; // la pantalla ya pasó a otro juego mientras llegaba la respuesta
       isDes = st.mode !== 'tie' && st.game === 'desafio';
       PL = st.places || {};
       $('#rf-title').textContent = st.mode === 'tie' ? 'Desempate' : isDes ? '¿Quién quiere ser ganador? · Sorteo' : 'Sorteo de concursantes';

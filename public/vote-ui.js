@@ -93,7 +93,8 @@
         // panel recién cuando sube (así no lee el nombre del que viene en lugar del que está en el escenario)
         const soon = (label) => `<div class="vc-now"><small>${label}</small><span>Su nombre sale en pantalla y aquí al tocar «Iniciar participante»</span></div>`;
         let step;
-        if (st.open && isK(st)) step = `${who(st.open, `🎤 Cantando · 🗳️ votación abierta · ${st.counts[st.open.id] || 0} votos`)}<button class="primary big paso" data-act="close">🏁 Terminó la canción · Terminar votación</button>`; // El Festival (Cote, 23 nov): se vota durante la canción, sin tiempo
+        if (rolling) step = '<button class="primary big paso" disabled>🎲 Sorteando en pantalla…</button>'; // la tómbola sigue girando: no se sube a nadie todavía
+        else if (st.open && isK(st)) step = `${who(st.open, `🎤 Cantando · 🗳️ votación abierta · ${st.counts[st.open.id] || 0} votos`)}<button class="primary big paso" data-act="close">🏁 Terminó la canción · Terminar votación</button>`; // El Festival (Cote, 23 nov): se vota durante la canción, sin tiempo
         else if (st.open) step = `${who(st.open, `🗳️ Votación abierta · <span class="v-clock">${clockText()}</span> · ${st.counts[st.open.id] || 0} votos`)}<button class="primary big paso" data-act="close">Cerrar votación</button>`;
         else if (st.signup) step = `<div class="vc-signup on"><p><b>📲 Inscripciones abiertas · <span class="v-clock">${clockText()}</span></b></p><button data-act="signup">Cerrar</button></div>`;
         else if (!st.players.length) step = '<button class="primary big paso" data-act="signup" data-on="1">📲 Abrir inscripciones</button>';

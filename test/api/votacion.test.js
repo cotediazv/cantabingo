@@ -91,6 +91,10 @@ test('El Festival: inscripción con canción, sorteo de cupos, 5 notas y redoble
   st = await host('draw');
   assert.equal(st.players.length, 2);
   assert.equal(st.drawn.length, 2);
+  // Mientras gira la tómbola en pantalla no se sube a nadie (simulación del 26 nov)
+  assert.match(await host('open', { id: st.players[0].id }).then(() => '', (e) => e.message), /sorteo en pantalla/);
+  assert.match(await host('present').then(() => '', (e) => e.message), /sorteo en pantalla/);
+  await sleep(st.drawRoll.ms);
   for (const p of st.players) {
     await host('open', { id: p.id });
     for (const [i, x] of [[0, 8], [1, 6], [3, 10]]) await cast(people[i], x, p.id);

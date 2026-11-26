@@ -38,7 +38,7 @@ const BACK_OF = 4; const BACK_NEED = 3;
 const Q_MS = 10000; // solo para el desempate por rapidez: lo que se le cuenta a quien entra tarde
 const JOIN_UNTIL = 2; // quien contesta por primera vez en las 2 primeras preguntas entra con sus 3 vidas; después, a la banca
 
-module.exports = function enpie({ placeOf = () => '', app, db, save, requireAdmin, fail, setStage, findPlayer, notify = () => {}, festejo = () => {}, venue = () => 'frida' }) {
+module.exports = function enpie({ placeOf = () => '', roscoBusy = () => false, app, db, save, requireAdmin, fail, setStage, findPlayer, notify = () => {}, festejo = () => {}, venue = () => 'frida' }) {
   const POOL = BANK.filter((q) => (ALTS[q.a] || []).length >= 2);
   const blank = () => ({ rev: 1, gen: Date.now(), phase: 'lobby', n: 0, q: null, until: 0, used: [], players: {}, ans: {}, last: null, winner: null, cut: null, stat: { fell: 0, back: 0 }, fin: null });
   if (db.enpie && !db.enpie.stat) db.enpie = blank(); // un juego guardado con las reglas anteriores
@@ -163,6 +163,8 @@ module.exports = function enpie({ placeOf = () => '', app, db, save, requireAdmi
 
   app.post('/api/enpie/host', requireAdmin, (req, res) => {
     const b = req.body || {}; const action = String(b.action || ''); let s = g();
+    // Con El Rosko en juego la pantalla no puede cambiar: el juego no parte ni avanza (simulación del 26 nov: se jugaba sin que nadie lo viera)
+    if (roscoBusy()) return fail(res, 409, 'El Rosko está en juego: este juego se juega cuando termine la partida');
     if (action === 'new') { db.enpie = blank(); s = db.enpie; setStage('enpie'); } else if (action === 'next') {
       if (s.phase === 'done') return fail(res, 409, 'El juego ya terminó: empieza uno nuevo');
       if (s.phase === 'final') return fail(res, 409, 'La final se maneja con «Correcta» e «Incorrecta»');

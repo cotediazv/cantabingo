@@ -798,6 +798,10 @@ async function hostConsole(p) {
     $('#tiebreak').textContent = st.tieWinner ? '🎲 Volver a desempatar' : '🎲 Desempatar por sorteo';
     // El resultado se muestra al animador cuando la tómbola ya terminó en pantalla
     const tieDone = st.tieWinner && Date.now() - st.tieWinner.at >= st.rollMs;
+    // Con el desempate hecho, el paso que sigue (el botón verde) es «Confirmar ganador», no volver a desempatar; mientras
+    // gira la tómbola no se puede volver a sortear (simulación del 26 nov: el verde se quedaba en «Volver a desempatar»)
+    $('#tiebreak').classList.toggle('paso', !st.tieWinner);
+    $('#tiebreak').disabled = !!(st.tieWinner && !tieDone);
     $('#tie-result').innerHTML = !st.tieWinner ? '' : tieDone ? `<p class="tie-won">Ganador del desempate<b>${esc(st.tieWinner.name)}</b><small>Cartón #${p.startNumber + st.tieWinner.cardNo - 1}</small></p>` : '<p class="tie-won">Sorteando en pantalla…</p>';
     if (st.tieWinner && !tieDone) setTimeout(() => st && render(), st.rollMs - (Date.now() - st.tieWinner.at) + 100);
     // Dos opciones ante un ganador: confirmarlo o seguir jugando

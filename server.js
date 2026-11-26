@@ -971,7 +971,7 @@ const vote = require('./vote.js')({ placeOf, app, db, save, requireAdmin, fail, 
   venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
   notify: () => Object.values(db.sessions).forEach((s) => broadcast(s)) });
 // «¿Quién quiere ser ganador?» (antes «billonario»): trivia de 12 escalones con un concursante en el escenario
-const desafio = require('./desafio.js')({ placeOf, app, db, save, requireAdmin, fail, setStage, festejo,
+const desafio = require('./desafio.js')({ placeOf, roscoBusy: () => roscoLock('desafio'), app, db, save, requireAdmin, fail, setStage, festejo,
   findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null,
   venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
   notify: () => Object.values(db.sessions).forEach((s) => broadcast(s)) });
@@ -980,7 +980,7 @@ const insta = require('./insta.js')({ app, db, save, requireAdmin, fail, venue: 
 // Sala light: karaoke, show y cartelera en otro local, al mismo tiempo que la sala principal
 lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta, aviso });
 // «El último en pie», versión de prueba (pedido de Cote, 23 nov)
-require('./enpie.js')({ placeOf, app, db, save, requireAdmin, fail, setStage, festejo,
+require('./enpie.js')({ placeOf, roscoBusy: () => roscoLock('enpie'), app, db, save, requireAdmin, fail, setStage, festejo,
   findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null,
   venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
   notify: () => { Object.values(db.sessions).forEach((s) => broadcast(s)); aviso(); } });

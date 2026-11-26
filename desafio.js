@@ -31,7 +31,7 @@ const points = (ms) => Math.max(40, Math.round(100 - (ms / 1000) * 6)); // 100 a
 // Dificultad según el escalón: 1 a 4 fácil, 5 a 8 medio, 9 a 12 difícil (los mismos 3 niveles de las luces de Code 4)
 const levelOf = (step) => (step <= 4 ? 'f' : step <= 8 ? 'm' : 'd');
 
-module.exports = function desafio({ placeOf = () => '', app, db, save, requireAdmin, fail, setStage, findPlayer, venue, notify, festejo = () => {} }) {
+module.exports = function desafio({ placeOf = () => '', roscoBusy = () => false, app, db, save, requireAdmin, fail, setStage, findPlayer, venue, notify, festejo = () => {} }) {
   const blank = () => ({
     rev: ((db.desafio || {}).rev || 0) + 1, phase: 'setup', player: '', team: [], lostAt: 0, out: '', stageBy: [null, null, null], prizes: [...(db.desafioPrizes || DEFAULT_PRIZES)],
     step: 0, q: null, chosen: null, hidden: [], outcome: null, used: { fifty: false, audience: false, phone: false, swap: false },
@@ -321,6 +321,7 @@ module.exports = function desafio({ placeOf = () => '', app, db, save, requireAd
     const b = req.body || {};
     const act = actions[String(b.action)];
     if (!act) return fail(res, 400, 'Acción no válida');
+    if (roscoBusy() && String(b.action) !== 'reset') return fail(res, 409, 'El Rosko está en juego: este juego se juega cuando termine la partida'); // la pantalla no puede cambiar (simulación, 26 nov)
     const before = g().phase;
     try { act(g(), b); } catch (err) { return fail(res, 400, err.message); }
     changed();

@@ -26,6 +26,8 @@ const SIGNUP_MS = 90000; // El objeto más extraño: la inscripción dura 90 seg
 
 module.exports = function vote({ placeOf = () => '', app, db, save, requireAdmin, fail, setStage, findPlayer, venue, notify, festejo = () => {} }) {
   const DRAW_STEP_MS = 1300; // la tómbola del sorteo de participantes: uno cada 1,3 s
+  // Mientras gira la tómbola en pantalla no se sube a nadie (simulación del 26 nov: el botón verde se podía apretar y cortaba el sorteo)
+  const rollingNow = (s) => !!(s.drawRoll && Date.now() - s.drawRoll.at < s.drawRoll.ms - 300);
   const blank = (mode = 'objeto') => ({ mode, title: mode === 'karaoke' ? '' : TITLES[mode] || TITLE, max: mode === 'karaoke' ? K_MAX : O_MAX, players: [], open: null, last: null, sample: null, phase: 'voting', rank: [], revealed: 0, final: null, winner: null, winAt: 0, rev: ((db.vote || {}).rev || 0) + 1, gen: ((db.vote || {}).gen || 0) + 1 });
   db.vote ||= blank();
   // Arreglo (20 nov): un Festival empezado de nuevo quedaba con el título «El objeto más extraño»
@@ -232,6 +234,7 @@ module.exports = function vote({ placeOf = () => '', app, db, save, requireAdmin
     // después, el mismo botón del panel dice «Iniciar votación»
     present: (s, b) => {
       if (s.phase !== 'voting') return 'El concurso ya pasó a los resultados';
+      if (rollingNow(s)) return 'Espera que termine el sorteo en pantalla';
       if (s.open) return 'Primero cierra la votación en curso';
       if (s.players.length > cap()) return `Se inscribieron ${s.players.length}: primero sortea a los ${cap()} que ${s.mode === 'karaoke' ? 'cantan' : 'participan'}`;
       const p = by(b.id) || s.players.find((x) => !x.done);
@@ -243,6 +246,7 @@ module.exports = function vote({ placeOf = () => '', app, db, save, requireAdmin
     },
     open: (s, b) => {
       if (s.phase !== 'voting') return 'El concurso ya pasó a los resultados';
+      if (rollingNow(s)) return 'Espera que termine el sorteo en pantalla';
       if (!by(b.id)) return 'Ese participante ya no está';
       s.onstage = null;
       if (s.players.length > cap()) return `Se inscribieron ${s.players.length}: primero sortea a los ${cap()} que ${s.mode === 'karaoke' ? 'cantan' : 'participan'}`;

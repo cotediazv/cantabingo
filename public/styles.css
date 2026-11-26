@@ -3906,3 +3906,7 @@ body.lz-on { overflow: hidden; }
 .w-who .w-who-pl:empty { display: none; }
 .ep-f .ep-place, .ep-win .ep-place { display: block; margin: .2em 0; font-size: .55em; opacity: .85; color: inherit; font-weight: 700; }
 .ep-turn small + small, .ep-turn b + small { display: block; margin-top: 4px; }
+/* Modo animador, El Rosko: con el ranking obligatorio de la Trivia, ese es el paso que sigue: verde y abajo, encima de los
+   botones grises del rosko (simulación del 26 nov: quedaba más arriba, en amarillo, y había que buscarlo) */
+body.anim #rosco-ctl .w-rankbtn.due { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(118px + env(safe-area-inset-bottom)); z-index: 61; width: calc(100vw - 24px); max-width: 700px; min-height: 104px; margin: 0; background: var(--an-go); border-color: var(--an-go); color: #fff; animation: none; }
+

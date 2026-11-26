@@ -188,10 +188,10 @@
         </div>
         <div class="panel"><div class="wheels" id="w-wheels"></div></div>
       </div>
-      <div class="panel"><h2>Pantalla del público</h2>
+      <div class="panel an-hide"><h2>Pantalla del público</h2>
         <div class="row between"><div class="small"><b>Enlace para celulares o TV:</b> <a class="link" href="${publicUrl()}" target="_blank">${esc(publicUrl())}</a><br>
           <b>Fuente de navegador para OBS</b> (fondo transparente): <a class="link" href="${obsUrl()}" target="_blank">${esc(obsUrl())}</a><br>
-          <span class="muted">El público ve el rosko, el reloj y el marcador. La pregunta aparece solo mientras el reloj corre; la respuesta, nunca.</span></div>${qr(publicUrl())}</div></div>${BACK_BINGO}<p class="small" style="margin-top:12px"><a href="#/ruedas">Ver todos los roskos</a></p></div>`;
+          <span class="muted">El público ve el rosko, el reloj y el marcador. La pregunta aparece solo mientras el reloj corre; la respuesta, nunca.</span></div>${qr(publicUrl())}</div></div>${BACK_BINGO}<p class="small an-hide" style="margin-top:12px"><a href="#/ruedas">Ver todos los roskos</a></p></div>`;
     if (typeof paintGameNav === 'function') paintGameNav(); // el menú de juegos (BACK_BINGO) se completa al entrar
     const render = () => {
       const c = st.players[st.turn];

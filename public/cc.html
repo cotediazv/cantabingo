@@ -145,6 +145,8 @@
   .anim .wkeys .big + .big { margin-left: 2%; }
   .anim .wkeys .wshow, .anim .wkeys .primary { background: #22b35e; border-color: #22b35e; }
   .anim .wkeys .row { clear: both; }
+  /* Ranking obligatorio de El Rosko: es el paso que sigue, verde y abajo, encima de los botones grises (simulación, 26 nov) */
+  .anim .rankdue { position: fixed; left: 2%; width: 96%; bottom: 96px; z-index: 51; min-height: 72px; background: #22b35e; border-color: #22b35e; color: #fff; font-size: 20px; }
   .anim .wkeys .third { min-height: 84px; font-size: 22px; margin-bottom: 0; }
   .anim .wkeys .ok { background: #22b35e; border-color: #22b35e; }
   .anim .wkeys .bad { background: #e0413a; border-color: #e0413a; }
@@ -598,7 +600,7 @@ views.sorteoctl = function () {
           (rollingR ? '<div class="panel ann"><small>📣 PARA ANUNCIAR</small><span class="ann-t">🎲 Sorteando en pantalla…</span></div>' : picked.length ? ann('🎲 Salió sorteado · ' + picked.length + '.º de 3 para El Rosko', [lastP], [cf[lastP] === 'ok' ? '✅ ¡Confirmó! Que se acerque a nuestro escenario' : '⏳ Esperando que confirme en su celular si quiere jugar']) : '') +
           (!rollingR && dec.length ? '<p class="muted" style="text-align:center">🙅 Prefirieron jugar online (no entran al sorteo): ' + h(dec.join(', ')) + '</p>' : '') +
           '<div class="panel">' +
-          btn(full ? (allOk ? '✔ Cargar El Rosko con los 3' : '⏳ Esperando que confirmen en su celular') : '🎲 Sortear concursante (' + (picked.length + 1) + '.º de 3)', full ? 'loadRosco' : 'raffleDraw', '', 'big primary paso', full ? !allOk : !free) +
+          btn(rollingR ? '🎲 Sorteando en pantalla…' : full ? (allOk ? '✔ Cargar El Rosko con los 3' : '⏳ Esperando que confirmen en su celular') : '🎲 Sortear concursante (' + (picked.length + 1) + '.º de 3)', full ? 'loadRosco' : 'raffleDraw', '', 'big primary paso', rollingR || (full ? !allOk : !free)) +
           '<h2>Concursantes elegidos</h2>';
         for (var k = 0; k < picked.length; k++) o += '<div class="item"><b>' + (k + 1) + '. ' + h(picked[k]) + '</b>' + ((r.places || {})[picked[k]] ? ' <span class="muted">📍 ' + h(r.places[picked[k]]) + '</span>' : '') + ' <span class="muted">' + (cf[picked[k]] === 'ok' ? '✅ Confirmó' : '⏳ Esperando que confirme en su celular') + '</span><span class="r">' + (cf[picked[k]] === 'ok' ? '' : btn('✔ Confirmar a mano', 'confirmPick', d('n', picked[k]))) + btn('✏️ Editar', 'rename', d('n', picked[k])) + btn('Quitar', 'unpick', d('n', picked[k])) + '</span></div>';
         if (!picked.length) o += '<p class="muted">Todavía no has sorteado a nadie.</p>';
@@ -639,7 +641,7 @@ function renderRosco(w) {
       !w.runningSince ? '<span class="muted">Pulsa «Iniciar pregunta» para ver la pregunta de esta letra.</span>' : '<div class="qt">' + h(q.q || '') + '</div>' + (q.a ? '<div class="a"><small>Respuesta</small>' + h(q.a) + '</div>' : '')) + '</div>';
     if (w.tie && !w.tie.rolling) o += btn('🎲 Desempatar por sorteo', 'tieRosco', '', 'big warn');
     if (w.winner && !w.winAccepted) o += btn('✔ Aceptar ganador', 'wheel', d('x', 'acceptwin'), 'big ok');
-    if (w.rankDue && !w.runningSince) o += '<div class="ann" style="padding:12px;border-radius:14px;margin:8px 0"><b style="font-size:20px">📊 Terminaron ' + (w.rankEvery || 2) + ' rondas.</b><br>Antes de la próxima pregunta, despliega el ranking de la Trivia del Rosko en pantalla.</div>' + btn('📊 Terminaron ' + (w.rankEvery || 2) + ' rondas: despliega el ranking de la Trivia (obligatorio)', 'roscoRankOn', '', 'big warn');
+    if (w.rankDue && !w.runningSince) o += '<div class="ann" style="padding:12px;border-radius:14px;margin:8px 0"><b style="font-size:20px">📊 Terminaron ' + (w.rankEvery || 2) + ' rondas.</b><br>Antes de la próxima pregunta, despliega el ranking de la Trivia del Rosko en pantalla.</div>' + btn('📊 Terminaron ' + (w.rankEvery || 2) + ' rondas: despliega el ranking de la Trivia (obligatorio)', 'roscoRankOn', '', 'big warn rankdue');
     o += '<div class="wkeys">' + btn(w.onScreen ? '📺 Rosko en pantalla ✓' : '📺 Poner rosko en pantalla', 'roscoShow', '', 'big wshow', step !== 1 || w.rankDue);
     o += btn(w.runningSince ? '⏱ Pregunta en curso' : '▶ Iniciar pregunta', 'wheel', d('x', 'start'), 'big primary', step !== 2 || w.rankDue);
     o += '<div class="row">' + btn('✔ Correcta', 'wheel', d('x', 'hit'), 'third ok', step !== 3) + btn('✘ Incorrecta', 'wheel', d('x', 'miss'), 'third bad', step !== 3) + btn('↷ Pasa', 'wheel', d('x', 'pass'), 'third warn', step !== 3) + '</div></div>';
@@ -696,7 +698,9 @@ function votoView(want) {
         var voted = anyDone || st.onstage || st.open;
         if (!startedV) o += '<p>' + (isK ? '¿Cuántos participantes van a cantar?' : 'Cupos (máximo de participantes)') + ' <b style="font-size:28px">' + st.max + '</b> ' + btn('−', 'vote', d('x', 'max') + d('max', st.max - 1), '', st.max <= 2) + btn('+', 'vote', d('x', 'max') + d('max', st.max + 1), '', st.max >= 30) + '</p>';
         if (st.sample) { o += '<div class="now"><small>Notas al azar en pantalla (sin el promedio)</small>'; for (var sm = 0; sm < st.sample.length; sm++) o += '<b>' + st.sample[sm].note + '</b> <span class="muted">' + h(st.sample[sm].name) + '</span>  '; o += '</div>'; }
-        if (st.open && isK) o += '<div class="now"><small>🎤 Cantando · 🗳️ votación abierta · ' + (st.counts[st.open.id] || 0) + ' votos</small><b>' + h(st.open.name) + '</b><br><span class="muted">' + h(st.open.thing) + '</span></div>' + btn('🏁 Terminó la canción · Terminar votación', 'vote', d('x', 'close'), 'big primary paso');
+        var dr = st.drawRoll; var rolling = dr && dr.ms - (new Date().getTime() + offset - dr.at) > 300; // tómbola del sorteo en pantalla (Cote, 24 nov)
+        if (rolling) o += btn('🎲 Sorteando en pantalla…', 'noop', '', 'big primary paso', true); // la tómbola sigue girando: no se sube a nadie todavía (simulación, 26 nov)
+        else if (st.open && isK) o += '<div class="now"><small>🎤 Cantando · 🗳️ votación abierta · ' + (st.counts[st.open.id] || 0) + ' votos</small><b>' + h(st.open.name) + '</b><br><span class="muted">' + h(st.open.thing) + '</span></div>' + btn('🏁 Terminó la canción · Terminar votación', 'vote', d('x', 'close'), 'big primary paso');
         else if (st.open) o += '<div class="now"><small>🗳️ Votación abierta · ' + (st.counts[st.open.id] || 0) + ' votos</small><b>' + h(st.open.name) + '</b><br><span class="muted">' + h(st.open.thing) + '</span></div>' + btn('Cerrar votación', 'vote', d('x', 'close'), 'big primary paso');
         else if (st.signup) o += '<div class="now"><small>📲 Inscripciones abiertas</small>' + st.players.length + ' inscritos</div>' + btn('Cerrar', 'vote', d('x', 'signup'), 'big');
         else if (!st.players.length) o += btn('📲 Abrir inscripciones', 'vote', d('x', 'signup') + d('on', '1'), 'big primary paso');
@@ -707,7 +711,6 @@ function votoView(want) {
         else if (st.players.length >= 2) o += btn('🏁 Pasar a los resultados', 'vote', d('x', 'results'), 'big primary paso');
         else o += '<p class="muted">Se necesitan al menos 2 participantes.</p>' + btn('📲 Abrir inscripciones otra vez', 'vote', d('x', 'signup') + d('on', '1'), 'big');
         if (st.players.length && !voted && !st.signup) o += '<div class="center">' + btn('Abrir inscripciones otra vez', 'vote', d('x', 'signup') + d('on', '1')) + '</div>';
-        var dr = st.drawRoll; var rolling = dr && dr.ms - (new Date().getTime() + offset - dr.at) > 300; // tómbola del sorteo en pantalla (Cote, 24 nov)
         if (rolling) o += '<div class="now"><small>🎲 Sorteando en pantalla…</small><span class="muted">Los sorteados aparecen aquí cuando termina la tómbola</span></div>';
         else for (var k = 0; k < st.players.length; k++) { var p = st.players[k]; var on = st.open && st.open.id === p.id; var up = st.onstage && st.onstage.id === p.id; o += '<div class="item"><span class="r">' + (on ? '🗳️' : up ? '🎤' : p.done ? '<b style="color:#3fe08f">✔ ' + st.counts[p.id] + ' votos</b>' : btn('✕', 'vote', d('x', 'remove') + d('id', p.id))) + '</span><b>' + h(p.name) + '</b><br><span class="muted">' + h(p.thing) + '</span></div>'; }
       } else if (st.phase === 'results') {

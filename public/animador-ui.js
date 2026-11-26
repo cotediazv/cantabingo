@@ -79,6 +79,8 @@
   const howto = () => {
     const live = new Set();
     app.querySelectorAll('details.howto').forEach((d) => {
+      // con el juego ya empezado el panel esconde el recuadro: no se vuelve a mostrar al reabrir el panel (simulación, 26 nov)
+      if (d.closest('.bingo-started, .bingo-done, .rosco-started, .rosco-done')) return;
       const key = `${location.hash}|${d.textContent}`; live.add(key);
       if (seen.has(key) || document.getElementById('an-howto')) return;
       seen.add(key);
