@@ -883,6 +883,30 @@ app.post('/api/deco', (req, res) => {
   res.json({ ok: true });
 });
 app.get('/api/deco', requireAdmin, (_req, res) => res.json(Object.fromEntries(Object.entries(decos).map(([k, d]) => [k, { ...d, hace: Math.round((Date.now() - d.at) / 1000), que: d.emi ? 'la transmisión en vivo (emisión)' : (DECO_VISTAS[d.vista] || d.vista || '¿?') }]))));
+// Quién lee cada pantalla en los últimos 10 minutos (página y navegador), y recargar a distancia una pantalla (las páginas de
+// las pantallas se recargan solas cuando cambia `recargar` en /api/vertical/<pantalla>)
+app.get('/api/deco/lectores', requireAdmin, (req, res) => {
+  const v = String(req.query.p || 'kennedy');
+  res.json(Object.values(lectores[v] || {}).sort((a, b) => b.at - a.at).map((r) => ({ ...r, hace: Math.round((Date.now() - r.at) / 1000) })));
+});
+app.post('/api/deco/recargar', requireAdmin, (req, res) => {
+  const v = String((req.body || {}).p || 'kennedy').replace(/[^a-z-]/g, '').slice(0, 20);
+  db.decoReload = db.decoReload || {}; db.decoReload[v] = Date.now(); save(); aviso();
+  res.json({ ok: true, at: db.decoReload[v] });
+});
+// Foto de lo que está transmitiendo el emisor (26 nov: la emisión se veía negra; así se ve desde la casa qué página
+// abrió y si la captura sale negra). La manda el emisor cada minuto; solo en memoria, solo la última.
+let emisorFoto = null;
+app.post('/api/emisor/foto', express.raw({ type: 'image/jpeg', limit: '700kb' }), (req, res) => {
+  if (!Buffer.isBuffer(req.body) || req.body.length < 100) return res.json({ ok: false });
+  emisorFoto = { img: req.body, at: Date.now(), luz: Number(req.get('x-luz')), cap: String(req.get('x-cap') || '').slice(0, 80) };
+  res.json({ ok: true });
+});
+app.get('/api/emisor/foto', requireAdmin, (_req, res) => {
+  if (!emisorFoto) return fail(res, 404, 'Todavía no hay foto');
+  res.set('Cache-Control', 'no-store').set('x-at', String(emisorFoto.at)).set('x-luz', String(emisorFoto.luz)).set('x-cap', emisorFoto.cap).type('jpeg').send(emisorFoto.img);
+});
+app.get('/api/emisor/foto/info', requireAdmin, (_req, res) => res.json(emisorFoto ? { at: emisorFoto.at, hace: Math.round((Date.now() - emisorFoto.at) / 1000), luz: emisorFoto.luz, cap: emisorFoto.cap } : null));
 // Para la página de la emisión (/emision): solo si el emisor está encendido, sin nada secreto
 app.get('/api/emisor/estado', (_req, res) => res.json({ corriendo: Date.now() - emisor.latido < 90000, prueba: !!db.emisorPrueba }));
 app.post('/api/emisor/prueba', requireAdmin, (req, res) => { db.emisorPrueba = !!(req.body || {}).on; save(); setTimeout(() => emisorCheck(), 0); res.json({ prueba: db.emisorPrueba }); });
@@ -954,6 +978,20 @@ require('./enpie.js')({ app, db, save, requireAdmin, fail, setStage, festejo,
   venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
   notify: () => { Object.values(db.sessions).forEach((s) => broadcast(s)); aviso(); } });
 capaFire = require('./capa.js')({ app, requireLocal, fail, aviso }).fire; // capa gráfica sobre la cámara (botones del GC Master)
+// Quién está leyendo cada pantalla (26 nov, para saber desde la casa qué página tiene abierta el deco aunque sea una versión
+// antigua que no avisa): navegador, página y última vez. Solo en memoria.
+const lectores = {};
+app.get('/api/vertical/:local', (req, _res, next) => {
+  const v = String(req.params.local || '').slice(0, 20);
+  let ref = String(req.get('referer') || ''); try { const u = new URL(ref); ref = u.pathname + u.search.replace(/[?&](token|tk|como)=[^&]*/g, ''); } catch (e) { ref = ref ? '?' : ''; }
+  const ua = String(req.get('user-agent') || '').slice(0, 160);
+  const key = `${ua}|${ref}`;
+  const L = lectores[v] || (lectores[v] = {});
+  const r = L[key] || (L[key] = { ua, ref, n: 0, desde: Date.now() });
+  r.n++; r.at = Date.now();
+  for (const k of Object.keys(L)) if (Date.now() - L[k].at > 10 * 60000) delete L[k];
+  next();
+});
 require('./vertical.js')({ app, db, save, requireAdmin, fail, karaoke, perOf, dir: path.dirname(DATA_FILE) }); // pantalla vertical: video del mes y actividades
 // Conectados (pedido de Cote, 22 nov): números en vivo por local, gráfico de las últimas 3 horas y registro por jornada
 require('./conectados.js')({ app, db, save, requireAdmin, port: process.env.PORT || 3000,

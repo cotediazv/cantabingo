@@ -43,11 +43,14 @@
     let ver = 0;
     let alive = true;
     let lightId = '';
+    let recFirst = null;
     let seq = 0; // si dos lecturas se cruzan (la de cada 3 s y la del aviso inmediato), vale solo la última
     const apply = async () => {
       const n = ++seq;
       const st = await api('GET', `/api/vertical/${v}`).catch(() => null);
       if (!alive || !st || n !== seq) return;
+      // Recargar a distancia desde el Centro de control (26 nov)
+      if (recFirst === null) recFirst = st.recargar || 0; else if ((st.recargar || 0) !== recFirst) { location.reload(); return; }
       if (st.video !== ver) {
         ver = st.video;
         // La página web (krbstage.cl) puede pasar una copia liviana del mismo video (?liviano=<dirección>&lver=<versión>),

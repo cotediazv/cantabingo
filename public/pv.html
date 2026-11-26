@@ -1085,6 +1085,8 @@
     get('/api/vertical/' + P, function (st) {
       if (!st) return;
       lastOk = new Date().getTime();
+      // Recargar a distancia desde el Centro de control (26 nov): si cambia la marca, la página se recarga sola
+      if (recFirst === null) recFirst = st.recargar || 0; else if ((st.recargar || 0) !== recFirst) { location.reload(); return; }
       var pt = st.per && st.per.text ? String(st.per.text) : '';
       if (pt !== perShown) { perShown = pt; perEl.className = pt ? '' : 'hide'; perEl.innerHTML = perHtml(pt); cv.className = cv.className.replace(/ per\b/, '') + (pt ? ' per' : ''); }
       if (st.video !== ver) {
@@ -1151,7 +1153,7 @@
   emi.addEventListener('error', function () { if (eOn) { emiStop(); eTimer = setTimeout(function () { eTimer = null; emiWant(); }, 5000); } });
   // Aviso al Centro de control de qué está mostrando esta pantalla (pedido de Cote, 25 nov: «que la página del deco avise
   // en el Centro de control qué está mostrando, para verlo desde la casa sin depender de nadie»). Cada 30 s.
-  var repAt = 0;
+  var repAt = 0; var recFirst = null;
   function report() {
     var t = new Date().getTime(); if (t - repAt < 30000) return; repAt = t;
     var x = new XMLHttpRequest();

@@ -50,3 +50,24 @@ test('emisor: el modo prueba lo arranca sin juego', async () => {
     assert.equal(page.headers.get('location'), '/emision.html?p=kennedy');
   } finally { await srv2.stop(); mock2.close(); }
 });
+
+// Diagnóstico desde la casa (26 nov): quién lee la pantalla vertical, recargarla a distancia y la foto del emisor
+test('deco: lectores, recargar a distancia y foto del emisor', async () => {
+  const srv3 = await startServer();
+  try {
+    await fetch(`${srv3.url}/api/vertical/kennedy`, { headers: { referer: `${srv3.url}/pv.html?p=kennedy&girar=1`, 'user-agent': 'Deco de prueba Chrome/72.0' } });
+    const lec = await srv3.admin.get('/api/deco/lectores?p=kennedy');
+    assert.equal(lec[0].ref, '/pv.html?p=kennedy&girar=1');
+    assert.match(lec[0].ua, /Chrome\/72/);
+    assert.equal((await srv3.ok('GET', '/api/vertical/kennedy')).recargar, 0);
+    assert.equal((await srv3.call('POST', '/api/deco/recargar', { p: 'kennedy' })).status, 401);
+    await srv3.admin.post('/api/deco/recargar', { p: 'kennedy' });
+    assert.ok((await srv3.ok('GET', '/api/vertical/kennedy')).recargar > 0);
+    const jpg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff]), Buffer.alloc(300, 1)]);
+    const r = await fetch(`${srv3.url}/api/emisor/foto`, { method: 'POST', headers: { 'content-type': 'image/jpeg', 'x-luz': '42', 'x-cap': '1080x1920' }, body: jpg });
+    assert.equal(r.status, 200);
+    const info = await srv3.admin.get('/api/emisor/foto/info');
+    assert.equal(info.luz, 42); assert.equal(info.cap, '1080x1920');
+    assert.equal((await srv3.call('GET', '/api/emisor/foto')).status, 401);
+  } finally { await srv3.stop(); }
+});

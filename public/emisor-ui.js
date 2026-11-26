@@ -17,13 +17,29 @@
       : d.hace > 90 ? `⚪ El deco no avisa hace ${Math.round(d.hace / 60)} min (¿apagado o sin internet?). Lo último: mostraba ${esc(d.que)}`
         : d.emi ? '🟢 El deco está mostrando <b>la transmisión en vivo</b>'
           : `🟡 El deco está mostrando <b>${esc(d.que)}</b>, no la transmisión${d.vista === 'sala' ? (!d.rtc ? ' · su navegador no tiene WebRTC: no puede recibir la emisión' : !d.emiUrl ? ' · no tiene la dirección de la emisión' : d.intentando ? ' · está intentando conectarse a la emisión' : ' · reintenta cada 15 s') : ' · la transmisión se pone encima solo cuando la pantalla muestra los juegos de la sala'}`;
+    // Quién lee la pantalla vertical de Kennedy (aunque la página sea antigua y no avise) y la foto del emisor
+    const lec = (await api('GET', '/api/deco/lectores?p=kennedy').catch(() => [])) || [];
+    const quien = (r) => { const pag = /pv\.html/.test(r.ref) ? 'pantalla liviana (pv.html)' : r.ref === '' ? 'sin página (¿app o emisor?)' : /emisor=1/.test(r.ref) ? 'el emisor' : 'pantalla completa'; const nav = (/(Chrome|Firefox|Safari|Edg|OPR|SamsungBrowser|CrKey|Android)[\/ ][\d.]+/.exec(r.ua) || [r.ua.slice(0, 40)])[0]; return `${pag} · ${esc(nav)}${/Android/.test(r.ua) ? ' · Android' : ''} · hace ${r.hace} s`; };
+    const lecTxt = `<details class="emi-lec"><summary class="small">Quién está leyendo la pantalla vertical de Kennedy (${lec.length})</summary><ul class="small">${lec.map((r) => `<li>${quien(r)}<br><span class="muted">${esc(r.ua)} · ${esc(r.ref || '—')}</span></li>`).join('') || '<li class="muted">Nadie en los últimos 10 minutos</li>'}</ul></details>`;
+    const fi = await api('GET', '/api/emisor/foto/info').catch(() => null);
+    const fotoTxt = fi ? `<div class="emi-foto"><img alt="Lo que transmite el emisor" data-foto="${fi.at}"><div class="small"><b>Lo que está transmitiendo el emisor</b><br>foto de hace ${fi.hace} s${fi.cap ? ` · ${esc(fi.cap)}` : ''}<br>${fi.luz >= 0 ? (fi.luz < 6 ? '⚠️ La captura sale <b>negra</b> (la página sí se ve en la foto si no está negra)' : `luz de la captura: ${fi.luz} (no es negra)`) : 'no se pudo medir la captura'}</div></div>` : '<p class="muted small">Todavía no hay foto del emisor (la manda cada minuto mientras transmite).</p>';
     const decoTxt = `<p>${deco}${d && d.hace <= 90 ? ` <span class="muted small">· aviso hace ${d.hace} s${viejo ? ' · tiene una versión antigua de la página' : ''}</span>` : ''}</p>`;
     const estado = r.corriendo ? '🟢 Encendido' : '⚪ Apagado';
+    const wasOpen = !!(box.querySelector('.emi-lec') && box.querySelector('.emi-lec').open);
+    const oldImg = box.querySelector('img[data-foto]'); const oldFoto = oldImg ? [oldImg.dataset.foto, oldImg.src] : null;
     box.innerHTML = `<h2>📡 Emisión de la pantalla vertical · Mercado Kennedy</h2>
       <p class="muted small">${r.configurado ? '' : 'Falta poner RENDER_API_KEY y EMISOR_CRON en Render. '}El emisor parte solo cuando hay un juego en pantalla en Mercado Kennedy y se apaga a los 10 minutos sin juego. Con el <b>modo prueba</b> queda encendido y transmitiendo todo el tiempo (cada minuto encendido se cobra).</p>
       <p><b>${estado}</b>${r.prueba ? ' · <b>modo prueba puesto</b>' : ''}${r.error ? ` · <span class="muted small">Último error: ${esc(r.error)}</span>` : ''}</p>
       ${decoTxt}
+      <div class="row"><button type="button" data-emi-reload>↻ Recargar la pantalla vertical de Kennedy a distancia</button></div>
+      ${lecTxt}${fotoTxt}
       <div class="row"><button type="button" class="${r.prueba ? 'primary' : ''}" data-emi="1">🧪 Modo prueba: encendido siempre${r.prueba ? ' · puesto' : ''}</button><button type="button" class="${r.prueba ? '' : 'primary'}" data-emi="0">Solo con juegos${r.prueba ? '' : ' · puesto'}</button><a class="btn" href="/emision" target="_blank" rel="noopener">👁 Ver la emisión</a></div>`;
+    if (wasOpen) box.querySelector('.emi-lec').open = true;
+    const img = box.querySelector('img[data-foto]');
+    if (img) {
+      if (oldFoto && oldFoto[0] === img.dataset.foto) img.src = oldFoto[1];
+      else fetch(`/api/emisor/foto?t=${img.dataset.foto}`, { headers: { 'x-admin': store.get('adminToken') || '' } }).then((r) => (r.ok ? r.blob() : null)).then((bl) => { if (bl) img.src = URL.createObjectURL(bl); }).catch(() => {});
+    }
   };
   const mount = () => {
     if (!/^#\/control\b/.test(location.hash)) return;
@@ -38,6 +54,11 @@
   };
   const wire = (box) => {
     box.onclick = async (e) => {
+      if (e.target.closest('[data-emi-reload]')) {
+        if (!confirm('¿Recargar la pantalla vertical de Kennedy? Si está en pantalla completa, sale de ella.')) return;
+        try { await api('POST', '/api/deco/recargar', { p: 'kennedy' }); toast('Listo: la pantalla se recarga en unos segundos (si tiene la página nueva)'); } catch (err) { toast(err.message); }
+        return;
+      }
       const b = e.target.closest('button[data-emi]'); if (!b) return;
       busy = true;
       try { const r = await api('POST', '/api/emisor/prueba', { on: b.dataset.emi === '1' }); toast(r.prueba ? 'Modo prueba: el emisor queda encendido todo el tiempo (parte en 1 o 2 minutos)' : 'El emisor vuelve a encenderse solo con juegos'); } catch (err) { toast(err.message); }

@@ -67,6 +67,29 @@ const publicar = async (page) => page.evaluate(async ({ whip, w, h }) => {
   return window.__cap;
 }, { whip: WHIP_URL, w: W, h: H });
 
+// Cuánta luz tiene lo que se está enviando (0 = negro, 255 = blanco): se mide un cuadro de la captura misma
+const luzCaptura = (page) => page.evaluate(async () => {
+  try {
+    const tr = window.__pc && window.__pc.getSenders()[0] && window.__pc.getSenders()[0].track; if (!tr) return -1;
+    const v = window.__probe || (window.__probe = document.createElement('video'));
+    v.muted = true; v.srcObject = new MediaStream([tr]); await v.play().catch(() => {});
+    await new Promise((r) => setTimeout(r, 400));
+    const c = document.createElement('canvas'); c.width = 36; c.height = 64; const x = c.getContext('2d');
+    x.drawImage(v, 0, 0, 36, 64); const d = x.getImageData(0, 0, 36, 64).data; let t = 0;
+    for (let i = 0; i < d.length; i += 4) t += (d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11);
+    return Math.round(t / (d.length / 4));
+  } catch (e) { return -2; }
+}).catch(() => -3);
+// Foto de la página para el Centro de control de la Sala (cada minuto mientras transmite)
+const mandarFoto = async (page) => {
+  try {
+    const img = await page.screenshot({ type: 'jpeg', quality: 35, scale: 'css' });
+    const luz = await luzCaptura(page);
+    const cap = await page.evaluate(() => { const t = window.__pc && window.__pc.getSenders()[0].track.getSettings(); return t ? `${t.width}x${t.height} (página ${innerWidth}x${innerHeight})` : ''; }).catch(() => '');
+    await fetch(`${SITIO}/api/emisor/foto`, { method: 'POST', headers: { 'content-type': 'image/jpeg', 'x-luz': String(luz), 'x-cap': cap }, body: img });
+    log('Foto enviada · luz de la captura:', luz, '·', cap);
+  } catch (e) { log('No se pudo mandar la foto:', e.message); }
+};
 const vivo = (page) => page.evaluate(() => !!(window.__pc && ['connected', 'connecting'].includes(window.__pc.connectionState))).catch(() => false);
 const cortar = (page) => page.evaluate(async () => {
   try { const loc = window.__whipDel; if (window.__pc) window.__pc.close(); if (loc) await fetch(new URL(loc, window.__whipUrl).href, { method: 'DELETE' }); } catch (e) { /* nada */ }
@@ -124,9 +147,10 @@ for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { log('Detenido:'
     await cdp.detach().catch(() => {});
   };
   try {
-    let tLat = 0;
+    let tLat = 0; let tFoto = 0;
     while (!parar && Date.now() - inicio < MAX_MS && Date.now() - ultimoJuego < IDLE_MS) {
       if (Date.now() - tLat > 30000) { tLat = Date.now(); latido(); }
+      if (enviando && page && Date.now() - tFoto > 60000) { tFoto = Date.now(); await mandarFoto(page); }
       const st = await estado();
       const juego = st.juego;
       if (juego) ultimoJuego = Date.now();
