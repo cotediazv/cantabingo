@@ -463,7 +463,10 @@ function render(){
   const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
   if (renderer.getPixelRatio() !== dpr) renderer.setPixelRatio(dpr);
   const s = renderer.getSize(new THREE.Vector2());
-  if (s.x !== W || s.y !== H){ renderer.setSize(W, H, false); camera.aspect = W / H; camera.updateProjectionMatrix(); }
+  if (s.x !== W || s.y !== H) renderer.setSize(W, H, false);
+  // V.aspecto: el salon estirado para llenar el recuadro (pagina Cabezas del DJ, Cote 26 nov)
+  const asp = V.aspecto || W / H, fov = V.fov * 180 / Math.PI;
+  if (camera.aspect !== asp || camera.fov !== fov){ camera.aspect = asp; camera.fov = fov; camera.updateProjectionMatrix(); }
   // camara: misma orbita que la vista simple (V.yaw, V.pitch, V.dist, V.objetivo)
   const cp = Math.cos(V.pitch), sp = Math.sin(V.pitch);
   camera.position.set(V.objetivo[0] + Math.sin(V.yaw) * cp * V.dist, V.objetivo[1] + sp * V.dist, V.objetivo[2] + Math.cos(V.yaw) * cp * V.dist);

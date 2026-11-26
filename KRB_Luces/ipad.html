@@ -3072,16 +3072,23 @@ $('djEntrada').onchange = async () => {
 function djPagina(cab){
   document.body.classList.toggle('dj-cabezas', cab);
   $('djPagEsc').classList.toggle('act', !cab); $('djPagCab').classList.toggle('act', cab);
-  if (cab) vistaSalonArriba(); else djToma();
+  if (cab) vistaSalonArriba(); else { V.aspecto = null; V.fov = 52 * Math.PI / 180; djToma(); }
   $('djFrente').textContent = cab ? '⟲ Salón' : '⟲ De frente';
   V.sucio = true;
 }
 function djToma(){ if (djEstado.tomaTecho) plano([0, 1.4, 11], [0, 4.2, -1]); else tomaFija(); V.sucio = true; }
+// Salon completo visto desde arriba, EN HORIZONTAL con el escenario a la izquierda, llenando todo el recuadro
+// (Cote, 26 nov: «que el salon ocupe el rectangulo completo, para poder seguir como corresponde»): la imagen se estira
+// al tamano del recuadro (V.aspecto) y el dedo usa la misma cuenta, asi el punto calza donde se toca.
+const SALON_V0 = -6;                                                 // desde detras del escenario hasta el fondo del salon
 function vistaSalonArriba(){
-  // el salon completo visto desde arriba, con el escenario arriba de la pantalla
-  V.objetivo = deSalon(-0.5, 15); V.dist = 46; V.pitch = 1.45;
+  const ancho = SALON.cocinas - SALON.pasillo, largo = SALON.largo - SALON_V0;
+  V.objetivo = deSalon((SALON.cocinas + SALON.pasillo) / 2, (SALON.largo + SALON_V0) / 2); V.objetivo[1] = 0;
+  V.pitch = Math.PI / 2 - 0.004; V.aspecto = largo / (ancho * 1.12);
+  V.fov = 16 * Math.PI / 180;                                          // de muy arriba y con lente angosto: casi un plano, sin deformar lo alto
+  V.dist = (ancho * 1.12 / 2) / Math.tan(V.fov / 2);                  // con un margen: lo alto (columnas, escenario) se ve mas grande
   const a = deSalon(0, 0), b = deSalon(0, 10);
-  V.yaw = Math.atan2(b[0] - a[0], b[2] - a[2]);
+  V.yaw = Math.atan2(b[0] - a[0], b[2] - a[2]) - Math.PI / 2;
 }
 $('djPagEsc').onclick = () => djPagina(false);
 $('djPagCab').onclick = () => djPagina(true);
@@ -3092,7 +3099,7 @@ function pisoBajo(x, y){
   const ojo = add(V.objetivo, [Math.sin(V.yaw) * cp * V.dist, sp * V.dist, Math.cos(V.yaw) * cp * V.dist]);
   const fw = norm(sub(V.objetivo, ojo)), rt = norm(cross(fw, [0, 1, 0])), up = cross(rt, fw);
   const tv = Math.tan(V.fov / 2), nx = (x - r.left) / r.width * 2 - 1, ny = 1 - (y - r.top) / r.height * 2;
-  const dir = add(fw, add(mul(rt, nx * tv * r.width / r.height), mul(up, ny * tv)));
+  const dir = add(fw, add(mul(rt, nx * tv * (V.aspecto || r.width / r.height)), mul(up, ny * tv)));
   if (dir[1] >= -1e-3) return null;
   const t = -ojo[1] / dir[1];
   return add(ojo, mul(dir, t));
