@@ -392,9 +392,9 @@
     if (st && st.phase === 'reveal') {
       const k = `${(st.crowd && st.crowd.qid) || 0}|${st.step}|${st.q && st.q.text}`;
       if (!st.right) { sfx.music(null); return; }
-      // Pasó el premio 1 (pregunta 4): suena la cortina inicial como celebración (pedido de Cote, 26 nov: «cada vez que la
-      // persona pasa el premio 1, tiene que sonar la cortina inicial como celebración»), en lugar de la de la correcta
-      const fest = st.step === (st.stage || 4) ? INTRO : CORRECTA;
+      // Ganó un premio (preguntas 4, 8 y 12): suena la cortina inicial como celebración (pedido de Cote, 26 nov: «cada vez
+      // que pasa algún premio… 4, 8 y 12»), en lugar de la de la correcta
+      const fest = st.step && st.step % (st.stage || 4) === 0 ? INTRO : CORRECTA;
       if (revKey !== k && sfx.playing() !== fest) sfx.music(fest, { vol: 1 }); // si aún no estaba bajado, parte en el próximo segundo
       if (sfx.playing() === fest) revKey = k;
       return;
