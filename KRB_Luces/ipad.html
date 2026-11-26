@@ -3092,12 +3092,13 @@ function djToma(){ if (djEstado.tomaTecho) plano([0, 1.4, 11], [0, 4.2, -1]); el
 // al tamano del recuadro (V.aspecto) y el dedo usa la misma cuenta, asi el punto calza donde se toca.
 const SALON_V0 = -6;                                                 // desde detras del escenario hasta el fondo del salon
 function vistaSalonArriba(){
-  // celular de pie (GC Light del DJ): el salon en VERTICAL como antes, con el escenario arriba (Cote, 26 nov)
+  // celular de pie (GC Light del DJ): el salon en VERTICAL, con el escenario abajo (Cote, 26 nov)
   const r = $('djVista').getBoundingClientRect();
   if (r.height > r.width){
     V.aspecto = null; V.fov = 52 * Math.PI / 180;
-    V.objetivo = deSalon(-0.5, 15); V.dist = 46; V.pitch = 1.45;
-    const a = deSalon(0, 0), b = deSalon(0, 10); V.yaw = Math.atan2(b[0] - a[0], b[2] - a[2]); V.sucio = true; return;
+    V.objetivo = deSalon(-0.5, 13); V.dist = 46; V.pitch = 1.45;
+    // escenario ABAJO y el salon hacia arriba (Cote, 26 nov)
+    const a = deSalon(0, 0), b = deSalon(0, 10); V.yaw = Math.atan2(b[0] - a[0], b[2] - a[2]) + Math.PI; V.sucio = true; return;
   }
   // computador (o celular acostado): en horizontal
   const ancho = SALON.cocinas - SALON.pasillo, largo = SALON.largo - SALON_V0;
