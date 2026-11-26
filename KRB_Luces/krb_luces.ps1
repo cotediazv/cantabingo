@@ -483,6 +483,7 @@ namespace KRB {
     static bool conectadoAntes = false, ritmoAntes = false; static string errorAntes = "";
     static DateTime sinCableDesde = DateTime.MinValue; static bool avisado = false;
     static void RevisarEstado() {
+      Web.RevisarNocheMaster();
       if (Tipo == "simulacion") return;
       // Aviso al celular: si lleva 20 s sin cable (no por un tiron de un segundo) en horario de funcionamiento
       if (!Conectado) {
@@ -942,7 +943,10 @@ namespace KRB {
       lock (DJL) {
         string v;
         if ((v = Arg(query, "escena")) != null) { int.TryParse(v, out djEscena); djCambio = DateTime.UtcNow;
-          Bitacora.Anotar("DJ: escena " + (Arg(query, "nombre") ?? v)); }
+          string nom = Arg(query, "nombre") ?? v; Bitacora.Anotar("DJ: escena " + nom);
+          // Cote, 26 nov: la intensidad general baja se mantiene en Standby; al pasar a Previa, Show, Fiesta o Locura vuelve al 100 %
+          if (Arg(query, "nombre") != null && !nom.StartsWith("Standby") && Dmx.Master < 0.999) {
+            Dmx.Master = 1f; GuardarMaster(); Bitacora.Anotar("Intensidad general de vuelta al 100 % (" + nom + ")"); } }
         if ((v = Arg(query, "auto")) != null) { bool a = v == "1"; if (a != djAuto) Bitacora.Anotar("DJ: Automatico " + (a ? "encendido" : "apagado")); djAuto = a; if (djAuto) djCambio = DateTime.MinValue; }
         if ((v = Arg(query, "int")) != null) int.TryParse(v, out djInt);
         if (Arg(query, "estacion") == "1") djEstacion = DateTime.UtcNow;
@@ -970,9 +974,17 @@ namespace KRB {
     static void GuardarMaster() {
       try { File.WriteAllText(Path.Combine(Root, "intensidad.txt"), Math.Round(Dmx.Master * 100) + "|" + string.Join(",", Array.ConvertAll(Dmx.MasterCh, x => x.ToString()))); } catch {}
     }
+    // Al terminar la noche (6 de la manana) vuelve al 100 % (Cote, 26 nov). Lo revisa el Dell cada segundo.
+    static string nocheMaster = "";
+    public static void RevisarNocheMaster() {
+      string n = Bitacora.Noche(DateTime.Now);
+      if (nocheMaster != "" && n != nocheMaster && Dmx.Master < 0.999) { Dmx.Master = 1f; GuardarMaster(); Bitacora.Anotar("Intensidad general de vuelta al 100 % (termino la noche)"); }
+      nocheMaster = n;
+    }
     public static void CargarMaster() {
       try { string f = Path.Combine(Root, "intensidad.txt"); if (!File.Exists(f)) return;
         string[] p = File.ReadAllText(f).Trim().Split('|'); double v = Num(p[0], 100);
+        if (Bitacora.Noche(File.GetLastWriteTime(f)) != Bitacora.Noche(DateTime.Now)) v = 100;   // quedo de una noche anterior
         if (p.Length > 1 && p[1] != "") { List<int> l = new List<int>(); foreach (string x in p[1].Split(',')) { int c; if (int.TryParse(x, out c)) l.Add(c); } Dmx.MasterCh = l.ToArray(); }
         Dmx.Master = (float)Math.Max(0, Math.Min(1, v / 100)); } catch {}
     }

@@ -455,7 +455,7 @@
   </div>
   <div class="fade">
     <label>Fundido</label>
-    <div id="fadeBtns"><button data-f="0">0 s</button><button data-f="1" class="act">1 s</button><button data-f="3">3 s</button></div>
+    <div id="fadeBtns"><button data-f="0" class="act">0 s</button><button data-f="1">1 s</button><button data-f="3">3 s</button></div>
   </div>
   <button class="blackout" id="blackout">APAGAR TODO</button>
 </footer>
@@ -564,7 +564,7 @@ const MAPA = { v0:-7, v1:51, u0:6.5, u1:-9.5 };                      // todo el 
 const CAL = { v0:1.5, v1:25.5, u0:5, u1:-5.2 };      // zona de mesas donde se calibran las 4 esquinas
 const VEL = { parpadeo:[0.4, 0.2, 0.1], alternar:[4, 2, 1], mover:[12, 8, 4] };
 
-let conf = null, datos = {calibracion:{}}, master = 100, fade = 1, zonas = {}, escenaActiva = -1;
+let conf = null, datos = {calibracion:{}}, master = 100, fade = 0, zonas = {}, escenaActiva = -1;
 let canales = new Array(512).fill(0), efectosActivos = [], efectoPared = null, velEf = 1;
 
 /* ---------- Comunicacion con el Dell ---------- */
@@ -2820,7 +2820,10 @@ async function djAplicar(i, auto){
   djEstado.tomaTecho = e.grupo === 'Standby';
   if (DJ && !document.body.classList.contains('dj-cabezas')) djToma();
   if (!auto) djServidor({ escena: i, int: master, nombre: e.grupo + ' · ' + e.n });   // los demas aparatos ven la misma escena
-  const capas = djEstado.auto && e.grupo === 'Standby' ? capasStandbyAuto(e) : e.capas(), seg = 60 / djEstado.bpm;
+  // Standby a la mitad de la intensidad (Cote, 26 nov: «por lo menos al 50 % de la intensidad que estan actualmente»)
+  const mg = master; if (e.grupo === 'Standby') master = mg * 0.5;
+  let capas; try { capas = djEstado.auto && e.grupo === 'Standby' ? capasStandbyAuto(e) : e.capas(); } finally { master = mg; }
+  const seg = 60 / djEstado.bpm;
   await efecto('todos', {todos: 'off'});
   // lo que no tocan las capas queda apagado (y los canales fijos de cada equipo en su valor)
   const base = {}; conf.grupos.forEach(g => Object.assign(base, valoresGrupo(g, {color: null, intensidad: 0})));
