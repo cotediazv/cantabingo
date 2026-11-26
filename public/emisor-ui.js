@@ -18,6 +18,9 @@
         : d.emi ? '🟢 El deco está mostrando <b>la transmisión en vivo</b>'
           : d.cuadros ? '🟢 El deco está mostrando <b>el plan B: la imagen cuadro a cuadro</b> (una por segundo)'
           : `🟡 El deco está mostrando <b>${esc(d.que)}</b>, no la transmisión${d.vista === 'sala' ? (!d.rtc ? ' · su navegador no tiene WebRTC: no puede recibir la emisión' : !d.emiUrl ? ' · no tiene la dirección de la emisión' : d.intentando ? ' · está intentando conectarse a la emisión' : ' · reintenta cada 15 s') : ' · la transmisión se pone encima solo cuando la pantalla muestra los juegos de la sala'}`;
+    // Por qué el deco no toma el plan A (la transmisión en vivo): lo que el deco cuenta de sus intentos (26 nov)
+    const porQue = !d || d.hace > 90 || d.emi ? '' : `<p class="small"><b>Plan A (transmisión en vivo) en el deco:</b> ${!d.rtc ? '❌ su navegador <b>no tiene WebRTC</b>: no puede recibir la transmisión en vivo; ahí solo sirve el plan B'
+      : `${d.fallos ? `${d.fallos} intento${d.fallos === 1 ? '' : 's'} sin imagen` : 'sin intentos fallidos'}${d.err ? ` · último motivo: <b>${esc(d.err)}</b>` : ''}${d.ice ? ` · conexión: ${esc(d.ice)}` : ''}${d.vw ? ` · le llega video de ${d.vw}x${d.vh}` : ''}`}${d.soloA ? ' · está en «Solo plan A»' : ''}</p>`;
     // Quién lee la pantalla vertical de Kennedy (aunque la página sea antigua y no avise) y la foto del emisor
     const lec = (await api('GET', '/api/deco/lectores?p=kennedy').catch(() => [])) || [];
     const quien = (r) => { const pag = /pv\.html/.test(r.ref) ? 'pantalla liviana (pv.html)' : r.ref === '' ? 'sin página (¿app o emisor?)' : /emisor=1/.test(r.ref) ? 'el emisor' : 'pantalla completa'; const nav = (/(Chrome|Firefox|Safari|Edg|OPR|SamsungBrowser|CrKey|Android)[\/ ][\d.]+/.exec(r.ua) || [r.ua.slice(0, 40)])[0]; return `${pag} · ${esc(nav)}${/Android/.test(r.ua) ? ' · Android' : ''} · hace ${r.hace} s`; };
@@ -31,11 +34,11 @@
     box.innerHTML = `<h2>📡 Emisión de la pantalla vertical · Mercado Kennedy</h2>
       <p class="muted small">${r.configurado ? '' : 'Falta poner RENDER_API_KEY y EMISOR_CRON en Render. '}El emisor parte solo cuando hay un juego en pantalla en Mercado Kennedy y se apaga a los 10 minutos sin juego. Con el <b>modo prueba</b> queda encendido y transmitiendo todo el tiempo (cada minuto encendido se cobra).</p>
       <p><b>${estado}</b>${r.prueba ? ' · <b>modo prueba puesto</b>' : ''}${r.error ? ` · <span class="muted small">Último error: ${esc(r.error)}</span>` : ''}</p>
-      ${decoTxt}
+      ${decoTxt}${porQue}
       <div class="row"><button type="button" data-emi-reload>↻ Recargar la pantalla vertical de Kennedy a distancia</button></div>
       ${lecTxt}${fotoTxt}
-      <div class="emi-planb"><b>Plan B · imagen cuadro a cuadro</b> <span class="muted small">Para un deco que no puede mostrar la transmisión: el emisor manda una imagen por segundo de la misma pantalla y el deco la muestra (sirve en cualquier aparato). Se pone sola si el deco no tiene WebRTC o la transmisión no le llega; con este botón queda puesta siempre.${r.cuadro != null ? ` · última imagen hace ${r.cuadro} s` : ' · todavía no llegan imágenes'}</span>
-        <div class="row"><button type="button" class="${r.planB ? 'primary' : ''}" data-planb="1">🖼️ Plan B siempre${r.planB ? ' · puesto' : ''}</button><button type="button" class="${r.planB ? '' : 'primary'}" data-planb="0">Automático${r.planB ? '' : ' · puesto'}</button></div></div>
+      <div class="emi-planb"><b>Qué muestra el deco con un juego</b> <span class="muted small">Plan A = la transmisión en vivo (se ve igual que la pantalla completa). Plan B = una imagen por segundo de la misma pantalla (sirve en cualquier aparato). En «Automático» el plan B entra solo si el deco no tiene WebRTC o la transmisión no le llega en dos intentos.${r.cuadro != null ? ` · última imagen del plan B hace ${r.cuadro} s` : ' · todavía no llegan imágenes del plan B'}</span>
+        <div class="row">${[['a', '📡 Solo plan A'], ['auto', 'Automático'], ['b', '🖼️ Plan B siempre']].map(([m, t]) => `<button type="button" class="${r.modo === m ? 'primary' : ''}" data-modo="${m}">${t}${r.modo === m ? ' · puesto' : ''}</button>`).join('')}</div></div>
       <div class="row"><button type="button" class="${r.prueba ? 'primary' : ''}" data-emi="1">🧪 Modo prueba: encendido siempre${r.prueba ? ' · puesto' : ''}</button><button type="button" class="${r.prueba ? '' : 'primary'}" data-emi="0">Solo con juegos${r.prueba ? '' : ' · puesto'}</button><a class="btn" href="/emision" target="_blank" rel="noopener">👁 Ver la emisión</a></div>`;
     if (wasOpen) box.querySelector('.emi-lec').open = true;
     const img = box.querySelector('img[data-foto]');
@@ -62,10 +65,10 @@
         try { await api('POST', '/api/deco/recargar', { p: 'kennedy' }); toast('Listo: la pantalla se recarga en unos segundos (si tiene la página nueva)'); } catch (err) { toast(err.message); }
         return;
       }
-      const pb = e.target.closest('button[data-planb]');
+      const pb = e.target.closest('button[data-modo]');
       if (pb) {
         busy = true;
-        try { const r = await api('POST', '/api/emisor/planb', { on: pb.dataset.planb === '1' }); toast(r.planB ? 'Plan B puesto: el deco muestra la imagen cuadro a cuadro' : 'Automático: el deco usa la transmisión y, si no le llega, la imagen cuadro a cuadro'); } catch (err) { toast(err.message); }
+        try { const r = await api('POST', '/api/emisor/modo', { modo: pb.dataset.modo }); toast({ a: 'Solo plan A: el deco muestra solo la transmisión en vivo y sigue intentando (el plan B no entra)', auto: 'Automático: el deco usa la transmisión y, si no le llega, la imagen cuadro a cuadro', b: 'Plan B puesto: el deco muestra la imagen cuadro a cuadro' }[r.modo]); } catch (err) { toast(err.message); }
         busy = false; paint(box); return;
       }
       const b = e.target.closest('button[data-emi]'); if (!b) return;

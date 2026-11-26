@@ -91,5 +91,17 @@ test('plan B: el emisor manda imágenes con su marca y la pantalla vertical lo s
     await s.admin.post('/api/emisor/planb', { on: true });
     v = await s.ok('GET', '/api/vertical/kennedy');
     assert.equal(v.planB, true);
+    // «Solo plan A» (26 nov): el deco no usa nunca el plan B
+    await s.admin.post('/api/emisor/modo', { modo: 'a' });
+    v = await s.ok('GET', '/api/vertical/kennedy');
+    assert.equal(v.planB, false); assert.equal(v.soloA, true);
+    assert.equal((await s.admin.get('/api/emisor')).modo, 'a');
+    await s.admin.post('/api/emisor/modo', { modo: 'auto' });
+    v = await s.ok('GET', '/api/vertical/kennedy');
+    assert.equal(v.planB, false); assert.equal(v.soloA, false);
+    // el deco cuenta por qué no le llega la transmisión
+    await s.ok('POST', '/api/deco', { p: 'kennedy', vista: 'sala', rtc: true, fallos: 2, err: 'en 25 s no llegó imagen', ice: 'checking' });
+    const d = (await s.admin.get('/api/deco')).kennedy;
+    assert.equal(d.fallos, 2); assert.equal(d.err, 'en 25 s no llegó imagen'); assert.equal(d.ice, 'checking');
   } finally { await s.stop(); }
 });

@@ -936,7 +936,7 @@ const DECO_VISTAS = { video: 'el video de la cartelera', logo: 'el logo', sala: 
 app.post('/api/deco', (req, res) => {
   const b = req.body || {}; const p = String(b.p || '').toLowerCase().replace(/[^a-z-]/g, '').slice(0, 20);
   if (!p) return res.json({ ok: false });
-  decos[p] = { at: Date.now(), vista: String(b.vista || '').slice(0, 20), emi: !!b.emi, cuadros: !!b.cuadros, emiUrl: !!b.emiUrl, intentando: !!b.intentando, rtc: !!b.rtc, ver: String(b.ver || '').slice(0, 60), ua: String(b.ua || '').slice(0, 160), w: Number(b.w) || 0, h: Number(b.h) || 0 };
+  decos[p] = { at: Date.now(), vista: String(b.vista || '').slice(0, 20), emi: !!b.emi, cuadros: !!b.cuadros, emiUrl: !!b.emiUrl, intentando: !!b.intentando, rtc: !!b.rtc, fallos: Number(b.fallos) || 0, err: String(b.err || '').slice(0, 120), ice: String(b.ice || '').slice(0, 20), vw: Number(b.vw) || 0, vh: Number(b.vh) || 0, soloA: !!b.soloA, ver: String(b.ver || '').slice(0, 60), ua: String(b.ua || '').slice(0, 160), w: Number(b.w) || 0, h: Number(b.h) || 0 };
   res.json({ ok: true });
 });
 app.get('/api/deco', requireAdmin, (_req, res) => res.json(Object.fromEntries(Object.entries(decos).map(([k, d]) => [k, { ...d, hace: Math.round((Date.now() - d.at) / 1000), que: d.emi ? 'la transmisión en vivo (emisión)' : d.cuadros ? 'el plan B (imagen cuadro a cuadro)' : (DECO_VISTAS[d.vista] || d.vista || '¿?') }]))));
@@ -982,12 +982,19 @@ app.get('/api/emisor/cuadro.jpg', (_req, res) => {
   if (!emisorCuadro || Date.now() - emisorCuadro.at > 15000) return res.status(404).end();
   res.set('Cache-Control', 'no-store').type('jpeg').send(emisorCuadro.img);
 });
-app.post('/api/emisor/planb', requireAdmin, (req, res) => { db.emisorPlanB = !!(req.body || {}).on; save(); aviso(); res.json({ planB: db.emisorPlanB }); });
+// Modo del deco (Cote, 26 nov: «primero desactivar el plan B, probar y ajustar el plan A lo más posible»): 'auto' (la
+// transmisión y, si no le llega, el plan B), 'a' (solo la transmisión: el plan B no entra nunca) o 'b' (plan B siempre)
+const emisorModo = () => (['auto', 'a', 'b'].includes(db.emisorModo) ? db.emisorModo : db.emisorPlanB ? 'b' : 'auto');
+app.post('/api/emisor/modo', requireAdmin, (req, res) => {
+  const m = String((req.body || {}).modo || ''); if (!['auto', 'a', 'b'].includes(m)) return fail(res, 400, 'Modo desconocido');
+  db.emisorModo = m; db.emisorPlanB = m === 'b'; save(); aviso(); res.json({ modo: m, planB: m === 'b' });
+});
+app.post('/api/emisor/planb', requireAdmin, (req, res) => { db.emisorModo = (req.body || {}).on ? 'b' : 'auto'; db.emisorPlanB = db.emisorModo === 'b'; save(); aviso(); res.json({ planB: db.emisorPlanB, modo: db.emisorModo }); });
 app.get('/api/emisor/foto/info', requireAdmin, (_req, res) => res.json(emisorFoto ? { at: emisorFoto.at, hace: Math.round((Date.now() - emisorFoto.at) / 1000), luz: emisorFoto.luz, cap: emisorFoto.cap } : null));
 // Para la página de la emisión (/emision): solo si el emisor está encendido, sin nada secreto
 app.get('/api/emisor/estado', (_req, res) => res.json({ corriendo: Date.now() - emisor.latido < 90000, prueba: !!db.emisorPrueba }));
 app.post('/api/emisor/prueba', requireAdmin, (req, res) => { db.emisorPrueba = !!(req.body || {}).on; save(); setTimeout(() => emisorCheck(), 0); res.json({ prueba: db.emisorPrueba }); });
-app.get('/api/emisor', requireAdmin, (_req, res) => res.json({ planB: !!db.emisorPlanB, cuadro: emisorCuadro ? Math.round((Date.now() - emisorCuadro.at) / 1000) : null, corriendo: Date.now() - emisor.latido < 90000, prueba: !!db.emisorPrueba, latido: emisor.latido, pedido: emisor.pedido, error: emisor.error, configurado: !!(process.env.RENDER_API_KEY && process.env.EMISOR_CRON) }));
+app.get('/api/emisor', requireAdmin, (_req, res) => res.json({ planB: emisorModo() === 'b', modo: emisorModo(), cuadro: emisorCuadro ? Math.round((Date.now() - emisorCuadro.at) / 1000) : null, corriendo: Date.now() - emisor.latido < 90000, prueba: !!db.emisorPrueba, latido: emisor.latido, pedido: emisor.pedido, error: emisor.error, configurado: !!(process.env.RENDER_API_KEY && process.env.EMISOR_CRON) }));
 // Hay un juego de verdad en pantalla (no solo la sala abierta con el QR): lo mismo que hace pasar la pantalla vertical a la sala
 const juegoEnPantalla = (s) => {
   const st = db.stage;
@@ -1076,7 +1083,7 @@ app.get('/api/vertical/:local', (req, _res, next) => {
   for (const k of Object.keys(L)) if (Date.now() - L[k].at > 10 * 60000) delete L[k];
   next();
 });
-require('./vertical.js')({ cuadroOf: (v) => (emisorCuadro && emisorCuadro.p === v && Date.now() - emisorCuadro.at < 8000 ? emisorCuadro.at : 0), planB: () => !!db.emisorPlanB, app, db, save, requireAdmin, fail, karaoke, perOf, dir: path.dirname(DATA_FILE) }); // pantalla vertical: video del mes y actividades
+require('./vertical.js')({ cuadroOf: (v) => (emisorCuadro && emisorCuadro.p === v && Date.now() - emisorCuadro.at < 8000 ? emisorCuadro.at : 0), planB: () => emisorModo() === 'b', soloA: () => emisorModo() === 'a', app, db, save, requireAdmin, fail, karaoke, perOf, dir: path.dirname(DATA_FILE) }); // pantalla vertical: video del mes y actividades
 // Conectados (pedido de Cote, 22 nov): números en vivo por local, gráfico de las últimas 3 horas y registro por jornada
 require('./conectados.js')({ app, db, save, requireAdmin, port: process.env.PORT || 3000,
   // personas de la sala de juegos de ese local: conectadas ahora (con la sala abierta en el celular) e inscritas en total
