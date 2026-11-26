@@ -133,6 +133,42 @@
   .create.open { background: #1f9d55; }
   .center { text-align: center; }
   #msg { position: fixed; left: 10px; right: 10px; bottom: 10px; background: #000; color: #ffc400; padding: 12px; border-radius: 12px; font-size: 16px; display: none; text-align: center; z-index: 9; }
+  /* ---------- Modo animador (pedido de Cote, 25 nov): la misma estética oscura de la marca y lo justo ---------- */
+  body.anim { background: #0c0b12; padding-bottom: 300px; }
+  .anim .panel { background: #15131e; border-color: #2a2636; border-top: 3px solid #f4bf5a; border-radius: 14px; }
+  .anim h1 { font-size: 32px; text-transform: uppercase; letter-spacing: .5px; }
+  .anim .top button, .anim .howto, .anim a.btn[href="#/control"], .anim [data-a="bigqr"], .anim .otras { display: none; }
+  .anim .paso.fijo { top: auto; bottom: 10px; min-height: 84px; font-size: 24px; background: #22b35e; border-color: #22b35e; }
+  .anim .paso.fijo[disabled] { background: #4a4752; border-color: #4a4752; opacity: 1; -webkit-filter: none; filter: none; }
+  .anim .wkeys { position: fixed; left: 2%; width: 96%; bottom: 0; z-index: 50; background: #0c0b12; padding: 8px 0 10px; -webkit-box-shadow: 0 -10px 24px rgba(0,0,0,.7); box-shadow: 0 -10px 24px rgba(0,0,0,.7); overflow: hidden; }
+  .anim .wkeys .big { float: left; width: 49%; margin: 0 0 8px; min-height: 72px; font-size: 20px; }
+  .anim .wkeys .big + .big { margin-left: 2%; }
+  .anim .wkeys .wshow, .anim .wkeys .primary { background: #22b35e; border-color: #22b35e; }
+  .anim .wkeys .row { clear: both; }
+  .anim .wkeys .third { min-height: 84px; font-size: 22px; margin-bottom: 0; }
+  .anim .wkeys .ok { background: #22b35e; border-color: #22b35e; }
+  .anim .wkeys .bad { background: #e0413a; border-color: #e0413a; }
+  .anim .wkeys .warn { background: #f2c230; border-color: #f2c230; color: #1a1407; }
+  .anim .wkeys button[disabled] { background: #4a4752; border-color: #4a4752; color: #c9c5d0; opacity: 1; -webkit-filter: none; filter: none; }
+  #an-opts { position: fixed; top: 8px; right: 10px; z-index: 60; text-align: right; }
+  #an-opts .an-tab { font-size: 15px; padding: 8px 14px; margin: 0; background: #2a2636; border-color: #3a3548; }
+  #an-opts.open .an-tab { background: #f4bf5a; color: #1a1407; }
+  #an-opts .an-list { display: none; margin-top: 8px; padding: 10px; background: #15131e; border: 1px solid #3a3548; border-radius: 14px; text-align: left; min-width: 230px; }
+  #an-opts.open .an-list { display: block; }
+  #an-opts .an-list button { display: block; width: 100%; margin: 0 0 8px; text-align: left; float: none; }
+  .an-pop { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 200; background: rgba(6, 5, 10, .88); padding: 16px; overflow: auto; }
+  .an-card { max-width: 640px; margin: 12% auto 0; background: #15131e; border-top: 4px solid #f4bf5a; border-radius: 18px; padding: 22px 20px 18px; font-size: 22px; line-height: 1.35; }
+  .an-card b.t, .an-card .an-title { display: block; color: #f4bf5a; font-size: 28px; font-weight: bold; text-transform: uppercase; margin-bottom: 10px; }
+  .an-card li { margin: 8px 0; }
+  .an-card em { color: #f4bf5a; font-style: normal; font-weight: bold; }
+  .an-card .an-tap { display: block; text-align: center; margin-top: 16px; color: #a59fb0; font-size: 16px; }
+  .an-rk { margin: 0 0 8px; padding: 10px 12px; background: #1c1828; border-radius: 10px; font-weight: bold; overflow: hidden; word-wrap: break-word; }
+  .an-rk.top { background: #2a2416; }
+  .an-rk em { margin-right: 10px; }
+  .an-rk i { float: right; font-style: normal; color: #a59fb0; margin-left: 10px; }
+  .an-yellow { background: #f2c230; color: #1a1407; text-align: center; border-top: 0; }
+  .an-yellow .an-big { display: block; font-size: 44px; font-weight: bold; text-transform: uppercase; line-height: 1.05; }
+  .an-yellow .big { min-height: 84px; font-size: 24px; background: #22b35e; border-color: #22b35e; }
 </style>
 </head>
 <body>
@@ -312,9 +348,9 @@ function nav(current, inGame, lobby) {
     if (ready) o += '<p class="center" style="color:#ffc400;font-weight:bold;margin:4px 0">…o toca un juego para elegirlo directo, sin tómbola</p>' + games(true);
   }
   if (!lobby) {
-    o += '<div class="sec">OTRAS ACTIVIDADES</div><div class="row">' +
+    o += '<div class="otras"><div class="sec">OTRAS ACTIVIDADES</div><div class="row">' +
       btn('⭐<br>Show', 'stage', d('s', 'show'), 'game') + btn('🎤<br>Karaoke', 'goKaraoke', '', 'game' + (current === 'karaoke' ? ' cur' : '')) +
-      btn('📸<br>Instagram', 'stage', d('s', 'insta'), 'game') + btn('📱<br>QR en pantalla completa', 'stage', d('s', 'qr'), 'game') + '</div>';
+      btn('📸<br>Instagram', 'stage', d('s', 'insta'), 'game') + btn('📱<br>QR en pantalla completa', 'stage', d('s', 'qr'), 'game') + '</div></div>';
   }
   return o;
 }
@@ -326,10 +362,74 @@ function toGame(k) {
   go('#/' + k);
 }
 
+// ---------- Modo animador (pedido de Cote, 25 nov) ----------
+// «Necesito que quede igual de simple de usar que la versión del animador del cel». Igual que /animador en la plataforma:
+// el botón verde del paso que sigue abajo, al alcance del pulgar; en El Rosko los botones del paso abajo (verde, rojo,
+// amarillo); las instrucciones como aviso que se cierra tocando; «Un paso atrás», «Cambiar turno», «Reiniciar»,
+// «Preguntas nuevas» y «Selección manual» en la pestaña «⋯ Opciones» arriba; letrero «Baja al público»; «¿Seguro?» solo
+// en lo que no se puede deshacer; los 5 primeros del ranking como aviso; se esconde lo que no es del animador.
+var ANIM = false; try { ANIM = window.localStorage.getItem('ccAnim') === '1'; } catch (e) { ANIM = false; }
+function setAnim(on) { ANIM = !!on; try { if (on) window.localStorage.setItem('ccAnim', '1'); else window.localStorage.removeItem('ccAnim'); } catch (e) { /* nada */ } document.body.className = on ? 'anim' : ''; }
+if (ANIM) document.body.className = 'anim';
+function pop(id, html) {
+  var old = $(id); if (old) old.parentNode.removeChild(old);
+  var el = document.createElement('div'); el.id = id; el.className = 'an-pop';
+  el.innerHTML = '<div class="an-card">' + html + '<small class="an-tap">Toca para seguir</small></div>';
+  el.onclick = function () { if (el.parentNode) el.parentNode.removeChild(el); };
+  document.body.appendChild(el);
+}
+var howSeen = {}; var animOptsOpen = false; var pubDone = false;
+var OPTS_A = ['manual', 'roscoReset', 'newQ']; var OPTS_X = ['undo', 'turn'];
+function animAfter() {
+  var app = $('app'); var i;
+  // instrucciones: aviso una vez; si el recuadro se va y vuelve (otra ronda), sale de nuevo
+  var hs = app.querySelectorAll('.howto'); var live = {};
+  for (i = 0; i < hs.length; i++) {
+    var key = location.hash + '|' + hs[i].textContent; live[key] = 1;
+    if (!howSeen[key] && !$('an-how')) { howSeen[key] = 1; pop('an-how', hs[i].innerHTML); }
+  }
+  for (var k in howSeen) if (howSeen.hasOwnProperty(k) && !live[k]) delete howSeen[k];
+  // opciones adicionales arriba
+  var bs = app.querySelectorAll('button'); var mv = [];
+  for (i = 0; i < bs.length; i++) {
+    var a = bs[i].getAttribute('data-a'); var x = bs[i].getAttribute('data-x');
+    if (OPTS_A.indexOf(a) >= 0 || (a === 'wheel' && OPTS_X.indexOf(x) >= 0)) mv.push(bs[i]);
+  }
+  if (mv.length) {
+    var box = document.createElement('div'); box.id = 'an-opts'; box.className = animOptsOpen ? 'open' : '';
+    box.innerHTML = '<button type="button" class="an-tab" data-a="animOpts">⋯ Opciones</button><div class="an-list"></div>';
+    for (i = 0; i < mv.length; i++) box.lastChild.appendChild(mv[i]);
+    app.appendChild(box);
+  }
+  // letrero grande «Baja al público»: al cerrarlo se hace la acción
+  var pb = null; for (i = 0; i < bs.length; i++) if (bs[i].getAttribute('data-x') === 'publico' && !bs[i].disabled) pb = bs[i];
+  if (!pb) { pubDone = false; var os = $('an-sign'); if (os) os.parentNode.removeChild(os); }
+  else if (!pubDone && !$('an-sign')) {
+    var sg = document.createElement('div'); sg.id = 'an-sign'; sg.className = 'an-pop';
+    sg.innerHTML = '<div class="an-card an-yellow"><b class="an-big">🚶 Baja al público</b><p>Ahora el animador baja a las mesas. Las luces te siguen.</p>' + btn('✔ Listo, voy', 'animPublico', '', 'big paso') + '</div>';
+    document.body.appendChild(sg);
+  }
+}
+function anim_animOpts() { animOptsOpen = !animOptsOpen; var b = $('an-opts'); if (b) b.className = animOptsOpen ? 'open' : ''; };
+function anim_animPublico() { pubDone = true; var sg = $('an-sign'); if (sg) sg.parentNode.removeChild(sg); var s = sala(); if (s) act('POST', '/api/sessions/' + s.id + '/host/publico', {}); };
+// El Rosko: al desplegar el ranking de la Trivia, los 5 primeros como aviso
+var rankSeen = '';
+function animRank(w) {
+  if (!w.rank) { rankSeen = ''; return; }
+  var top = w.rank.slice(0, 5); var key = JSON.stringify(top);
+  if (key === rankSeen) return; rankSeen = key;
+  var o = '<b class="an-title">🏅 Ranking de la Trivia · los 5 primeros</b>';
+  if (!top.length) o += '<p>Todavía nadie suma puntos</p>';
+  for (var i = 0; i < top.length; i++) o += '<p class="an-rk' + (i < 3 ? ' top' : '') + '"><em>' + (i + 1) + '.º</em><i>' + top[i].score + ' pts</i>' + h(top[i].name) + '</p>';
+  pop('an-rank', o);
+}
+// Resultados del público en un solo botón verde: despliega el ranking y a los 8 s muestra al ganador de la Trivia
+function anim_crowdBoth() { if (!W) return; if (!W.rank) wheelAct({ action: 'rank', on: true }); setTimeout(function () { wheelAct({ action: 'crowdwin' }); }, 8000); toast('Ranking en pantalla; en 8 segundos, el ganador de la Trivia'); };
+
 // ---------- Vistas ----------
 var views = {};
 var poll = null; var tick = null;
-function render(html) { $('app').innerHTML = html; pasoCur = null; fijarPaso(); }
+function render(html) { $('app').innerHTML = html; if (ANIM) animAfter(); pasoCur = null; fijarPaso(); }
 // El botón que sigue queda fijo arriba: el primero del panel que se puede apretar (los del menú de juegos van al final)
 var pasoCur = null;
 function fijarPaso() {
@@ -339,12 +439,17 @@ function fijarPaso() {
   for (i = 0; i < all.length && !best; i++) if (all[i].offsetWidth) best = all[i];
   if (best !== pasoCur) { if (pasoCur) pasoCur.className = pasoCur.className.replace(/ ?fijo/g, ''); pasoCur = best; if (best) best.className += ' fijo'; }
   var pad = best ? (best.offsetHeight + 14) + 'px' : '';
+  if (ANIM) pad = ''; // modo animador: el botón va abajo y el espacio de abajo lo da la hoja de estilos
   if (app.style.paddingTop !== pad) app.style.paddingTop = pad;
 }
 setInterval(fijarPaso, 250);
 
 views.login = function () {
-  render('<div class="panel" style="margin-top:30px"><h1>Moderador</h1><p class="muted">Entra con tu usuario y clave.</p><input id="user" type="text" placeholder="Usuario" autocapitalize="off" autocorrect="off"><input id="pass" type="password" placeholder="Clave">' + btn('Entrar', 'login', '', 'big primary paso') + '</div>');
+  // Modo animador (pedido de Cote, 25 nov: «desde el iPad viejo… que quede igual de simple de usar que la versión del
+  // animador del celular»): /ca abre esta página para entrar con la clave del animador
+  var anim = /[?&]animador/.test(location.search) || S.loginAnim;
+  if (anim) { render('<div class="panel" style="margin-top:30px"><h1>Animador</h1><p class="muted">Entra con la clave del animador.</p><input id="aclave" type="password" placeholder="Clave del animador">' + btn('Entrar', 'loginAnim', '', 'big primary') + '<p class="center" style="margin-top:16px"><a href="#/login" data-a="loginMod">Entrar como moderador</a></p></div>'); return; }
+  render('<div class="panel" style="margin-top:30px"><h1>Moderador</h1><p class="muted">Entra con tu usuario y clave.</p><input id="user" type="text" placeholder="Usuario" autocapitalize="off" autocorrect="off"><input id="pass" type="password" placeholder="Clave">' + btn('Entrar', 'login', '', 'big primary') + '<p class="center" style="margin-top:16px"><a href="#/login" data-a="loginAnimView">Soy animador: entrar con la clave del animador</a></p></div>');
 };
 
 views.home = function () {
@@ -354,7 +459,7 @@ views.home = function () {
     render(topBar() + '<div class="home"><h1>KRB Stage · Sala de juegos</h1>' +
       (s ? '<a class="create open" href="#/juegos">▶<br>Continuar: ' + h(s.name) + '</a><p class="muted">Hay una sala abierta. Para crear otra, primero ciérrala en el Centro de control.</p>'
         : '<a class="create" href="#/nuevo">🎮<br>Crear sala de juegos</a>') +
-      '<p><a class="btn" href="#/control">🎛️ Centro de control</a></p><p style="margin-top:26px">' + btn('Cerrar sesión de moderador', 'logout') + '</p></div>');
+      '<p><a class="btn" href="#/control">🎛️ Centro de control</a></p><p style="margin-top:26px">' + btn(ANIM ? 'Cerrar sesión' : 'Cerrar sesión de moderador', 'logout') + '</p></div>');
   });
 };
 
@@ -535,13 +640,13 @@ function renderRosco(w) {
     if (w.tie && !w.tie.rolling) o += btn('🎲 Desempatar por sorteo', 'tieRosco', '', 'big warn');
     if (w.winner && !w.winAccepted) o += btn('✔ Aceptar ganador', 'wheel', d('x', 'acceptwin'), 'big ok');
     if (w.rankDue && !w.runningSince) o += '<div class="ann" style="padding:12px;border-radius:14px;margin:8px 0"><b style="font-size:20px">📊 Terminaron ' + (w.rankEvery || 2) + ' rondas.</b><br>Antes de la próxima pregunta, despliega el ranking de la Trivia del Rosko en pantalla.</div>' + btn('📊 Terminaron ' + (w.rankEvery || 2) + ' rondas: despliega el ranking de la Trivia (obligatorio)', 'roscoRankOn', '', 'big warn');
-    o += btn(w.onScreen ? '📺 Rosko en pantalla ✓' : '📺 Poner rosko en pantalla', 'roscoShow', '', 'big', step !== 1 || w.rankDue);
+    o += '<div class="wkeys">' + btn(w.onScreen ? '📺 Rosko en pantalla ✓' : '📺 Poner rosko en pantalla', 'roscoShow', '', 'big wshow', step !== 1 || w.rankDue);
     o += btn(w.runningSince ? '⏱ Pregunta en curso' : '▶ Iniciar pregunta', 'wheel', d('x', 'start'), 'big primary', step !== 2 || w.rankDue);
-    o += '<div class="row">' + btn('✔ Correcta', 'wheel', d('x', 'hit'), 'third ok', step !== 3) + btn('✘ Incorrecta', 'wheel', d('x', 'miss'), 'third bad', step !== 3) + btn('↷ Pasa', 'wheel', d('x', 'pass'), 'third warn', step !== 3) + '</div>';
+    o += '<div class="row">' + btn('✔ Correcta', 'wheel', d('x', 'hit'), 'third ok', step !== 3) + btn('✘ Incorrecta', 'wheel', d('x', 'miss'), 'third bad', step !== 3) + btn('↷ Pasa', 'wheel', d('x', 'pass'), 'third warn', step !== 3) + '</div></div>';
     o += '<div class="row">' + btn('⬅️ Un paso atrás', 'wheel', d('x', 'undo'), '', !w.canUndo) + (w.players.length > 1 ? btn('Cambiar turno', 'wheel', d('x', 'turn')) : '') + btn('Reiniciar', 'roscoReset', '', 'bad') + (w.fromBank ? btn('↻ Preguntas nuevas', 'newQ') : '') + '</div>';
   } else {
     if (w.winner) o += ann('🏆 Premio mayor · ' + (w.winner.full ? '¡Completó el rosko!' : 'Ganó El Rosko'), [w.winner.name], [many(w.winner.hits, 'acierto', 'aciertos') + ' · ' + many(w.winner.misses, 'fallo', 'fallos') + (w.winner.byDraw ? ' · salió en el desempate' : '')]);
-    if (!w.crowdWinner) o += btn('🏅 Mostrar ganador de la Trivia del Rosko', 'wheel', d('x', 'crowdwin'), 'big primary');
+    if (!w.crowdWinner) o += ANIM ? btn('🏅 Resultados del público: ranking y ganador', 'crowdBoth', '', 'big primary paso') : btn('🏅 Mostrar ganador de la Trivia del Rosko', 'wheel', d('x', 'crowdwin'), 'big primary');
     else o += w.crowdWinner.none ? ann('🏅 Trivia del Rosko', ['Nadie sumó puntos'], ['Jugaron ' + many(w.crowdWinner.players, 'persona', 'personas')]) : ann('🏅 Premio especial · Ganó la Trivia del Rosko', [w.crowdWinner.name], [many(w.crowdWinner.score, 'punto', 'puntos') + ' · ' + many(w.crowdWinner.hits, 'acierto', 'aciertos'), 'Jugaron ' + many(w.crowdWinner.players, 'persona', 'personas')]);
   }
   if (!(w.rankDue && !w.rank)) o += btn(w.rank ? '🏅 Recoger ranking (está en pantalla)' : w.rankLate ? '🔒 Últimos 60 segundos: el ranking se revela al final' : '🏅 Desplegar ranking de la Trivia (top 10)', 'roscoRank', '', 'big' + (w.rank ? ' on' : ''), !w.rank && w.rankLate); // con el ranking obligatorio, un solo botón (el de arriba)
@@ -549,6 +654,7 @@ function renderRosco(w) {
   // Pedido de Cote (21 nov): al final, sí o sí se muestra el ganador de la Trivia antes de seguir (sin menú hasta eso)
   o += '</div>' + (w.winAccepted && !w.crowdWinner ? '' : nav('rosco', started && !w.winAccepted)) + foot();
   render(o);
+  if (ANIM) animRank(w);
 }
 views.rosco = function () {
   var load = function () {
@@ -667,15 +773,26 @@ views.control = function () {
 
 // ---------- Acciones ----------
 var A = {};
+A.animOpts = anim_animOpts; A.animPublico = anim_animPublico; A.crowdBoth = anim_crowdBoth; // modo animador
 A.login = function () {
   toast('Entrando…');
   api('POST', '/api/login', { user: $('user').value, pass: $('pass').value }, function (err, r) {
     if (err) { toast(err); return; }
     token = r.token; try { window.localStorage.setItem('adminToken', token); } catch (e) { /* modo privado */ }
-    toast(''); go('#/');
+    setAnim(false); toast(''); go('#/');
   });
 };
-A.logout = function () { token = ''; try { window.localStorage.removeItem('adminToken'); } catch (e) { /* nada */ } go('#/login'); };
+A.logout = function () { token = ''; try { window.localStorage.removeItem('adminToken'); } catch (e) { /* nada */ } setAnim(false); go('#/login'); };
+A.loginAnimView = function () { S.loginAnim = true; views.login(); };
+A.loginMod = function () { S.loginAnim = false; if (/[?&]animador/.test(location.search)) { location.href = '/cc.html#/login'; return; } views.login(); };
+A.loginAnim = function () {
+  toast('Entrando…');
+  api('POST', '/api/animador/login', { clave: $('aclave').value }, function (err, r) {
+    if (err) { toast(err); return; }
+    token = r.token; try { window.localStorage.setItem('adminToken', token); } catch (e) { /* modo privado */ }
+    setAnim(true); toast(''); go('#/juegos');
+  });
+};
 A.crear = function (el) {
   var v = el.getAttribute('data-v'); var name = 'Los Juegos de ' + V[v];
   toast('Creando los cartones…');
@@ -806,6 +923,13 @@ document.onclick = function (e) {
   while (t && t !== document && !(t.getAttribute && t.getAttribute('data-a'))) t = t.parentNode;
   if (!t || t === document || t.disabled) return;
   var f = A[t.getAttribute('data-a')];
+  if (ANIM) { // «¿Seguro?» solo en lo que no se puede deshacer (30.1)
+    var x = t.getAttribute('data-x');
+    if (x === 'confirmwin' && !window.confirm('¿Seguro que confirmas a este ganador?')) return;
+    if (x === 'acceptwin' && !window.confirm('¿Seguro que aceptas al ganador?')) return;
+    var p = t; while (p && p !== document && p.id !== 'an-opts') p = p.parentNode;
+    if (p && p.id === 'an-opts' && t.getAttribute('data-a') !== 'animOpts') { animOptsOpen = false; p.className = ''; }
+  }
   if (f) { if (e.preventDefault) e.preventDefault(); f(t); }
 };
 
@@ -853,6 +977,7 @@ function route() {
   v(parts[1]);
 }
 window.onhashchange = route;
+if (/[?&]animador/.test(location.search) && !ANIM) token = ''; // /ca: entrar como animador (pide su clave)
 if (token) api('GET', '/api/me', null, function (err, r) { if (!err && r && r.admin) route(); else { token = ''; go('#/login'); } });
 else go('#/login');
 </script>

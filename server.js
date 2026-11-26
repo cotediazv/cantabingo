@@ -308,7 +308,7 @@ app.use(express.static(path.join(__dirname, 'public'), { setHeaders: (res) => re
 // solo esta, los demás enlaces siguen como están porque los OBS ya están configurados). Lo que vaya después de «?»
 // (por ejemplo ?diag=1) se mantiene.
 // /cc: Centro de control liviano para el iPad viejo (pedido de Cote, 21 nov; public/cc.html)
-const SHORT_LINKS = { vk: '#/vertical/kennedy', cc: '/cc.html', emision: '/emision.html?p=kennedy', emisor: '#/emisor' }; // /emision: ver la emisión de la vertical de Kennedy (26 nov)
+const SHORT_LINKS = { vk: '#/vertical/kennedy', cc: '/cc.html', emision: '/emision.html?p=kennedy', emisor: '#/emisor', ca: '/cc.html?animador=1#/login' }; // /ca: el animador en el iPad viejo (25 nov) // /emision: ver la emisión de la vertical de Kennedy (26 nov)
 app.get('/:short', (req, res, next) => {
   const to = SHORT_LINKS[String(req.params.short).toLowerCase()];
   if (!to) return next();
