@@ -99,6 +99,8 @@
       if (s === sig) return;
       if (st.phase === 'setup' && sig && JSON.parse(sig)[0] === 'setup') return; // no se borra lo que se está escribiendo
       sig = s;
+      // Con la partida en curso el menú de juegos queda plegado, como en los otros juegos (Cote, 26 nov, respuesta 34.1)
+      window.setNavFold(st.phase !== 'setup' && !(st.phase === 'end' && st.crowdWinner));
       const head = st.step ? `<p class="dc-step">${st.team.length > 1 ? `🔁 Participante ${st.team.length} de 4: <b>${esc(st.player)}</b> · ` : ''}Pregunta <b>${st.step}</b> de ${st.steps} · etapa ${stageOf(st.step)}: <b>${esc(prizeOf(st, st.step))}</b></p>` : '';
       const read = st.q ? `<p class="dc-read">${esc(st.q.text)}</p>` : '';
       // Trivia: ranking en pantalla (arriba, grande, como en El Rosko) y su botón
@@ -107,30 +109,30 @@
       if (st.phase === 'setup') box.innerHTML = setupForm();
       else if (st.phase === 'intro') {
         box.innerHTML = `<p class="dc-read">Primer participante: ${esc(st.player)}${st.place ? ` <small class="c-place">📍 ${esc(st.place)}</small>` : ''}</p><div class="dc-note">📣 Premios de hoy: <b>1)</b> ${esc(st.prizes[0])} · <b>2)</b> ${esc(st.prizes[1])} · <b>3)</b> ${esc(st.prizes[2])}<br>Quien gana el juego se lleva los 3.</div><p class="muted">En pantalla se ve la presentación con los premios.</p>
-          <button class="primary big" data-do="next">▶ Primera pregunta</button>`;
+          <button class="primary big paso" data-paso="1" data-do="next">▶ Primera pregunta</button>`;
       } else if (st.phase === 'question') {
         const chosen = pick != null && !st.hidden.includes(pick) ? pick : null;
         box.innerHTML = `${rankBox}${head}${read}${options(true)}
-          <button class="primary big" data-lock ${chosen == null ? 'disabled' : ''}>🔒 Respuesta definitiva${chosen != null ? `: ${L[chosen]}` : ''}</button>
+          <button class="primary big paso" data-paso="1" data-lock ${chosen == null ? 'disabled' : ''}>🔒 Respuesta definitiva${chosen != null ? `: ${L[chosen]}` : ''}</button>
           ${extras()}<h2 style="margin:18px 0 6px">Comodines</h2>${lifelines()}
           <button class="big dc-retire" data-do="retire">🏳 Se retira con ${esc(window.yJoin((st.prizeWinners || []).filter((x) => x.by === st.player).map((x) => x.prize)) || 'nada')}</button>${rankBtn}`;
       } else if (st.phase === 'locked') {
         box.innerHTML = `${rankBox}${head}${read}${options(false)}<p class="dc-note">Respuesta definitiva: <b>${L[st.pick]}</b>. En pantalla queda marcada, en suspenso.</p>
-          ${extras()}<button class="primary big" data-do="reveal">✨ Revelar</button>
+          ${extras()}<button class="primary big paso" data-paso="1" data-do="reveal">✨ Revelar</button>
           <button class="big" data-do="unlock" style="margin-top:8px">↩ Cambiar la respuesta</button>`;
       } else if (st.phase === 'reveal') {
         const ok = st.pick === st.answer;
         const subNext = !ok && st.team.length < st.maxTeam; // perdió: se sortea un reemplazo
         box.innerHTML = `${rankBox}${head}${read}${options(false)}<p class="dc-result ${ok ? 'ok' : 'bad'}">${ok ? (st.step % 4 === 0 ? `✔ ¡Correcta! Pasó la etapa ${stageOf(st.step)}: gana ${esc(prizeOf(st, st.step))}` : '✔ ¡Correcta!') : subNext ? `✘ Incorrecta · ${esc(st.player)} queda fuera<br>Sorteamos un reemplazo (${nth(st.team.length + 1)} de 4)` : `✘ Incorrecta · fin del juego`}</p>
-          <button class="primary big" data-do="next">${ok && st.step < st.steps ? `▶ Pregunta ${st.step + 1}` : subNext ? '🔁 Llamar a un reemplazo' : '🏁 Ver resultado'}</button>${rankBtn}`;
+          <button class="primary big paso" data-paso="1" data-do="next">${ok && st.step < st.steps ? `▶ Pregunta ${st.step + 1}` : subNext ? '🔁 Llamar a un reemplazo' : '🏁 Ver resultado'}</button>${rankBtn}`;
       } else if (st.phase === 'swap') {
         box.innerHTML = `${rankBox}<p class="dc-read">🔁 ${esc(st.out)} quedó fuera en la pregunta ${st.step}</p>
           <p class="dc-note">Sorteamos a un reemplazo del público (${nth(st.team.length + 1)} de 4). Sube al escenario y sigue desde esa misma pregunta, con lo ganado hasta ahora.</p>
-          <a class="btn primary big" href="#/sorteoctl/desafio">🎲 Sortear al reemplazo (${nth(st.team.length + 1)} de 4)</a>${rankBtn}`;
+          <a class="btn primary big paso" data-paso="1" href="#/sorteoctl/desafio">🎲 Sortear al reemplazo (${nth(st.team.length + 1)} de 4)</a>${rankBtn}`;
       } else if (st.phase === 'subintro') {
         box.innerHTML = `${rankBox}<p class="dc-read">🔁 Sube: ${esc(st.player)} (${nth(st.team.length)} de 4)${st.place ? ` <small class="c-place">📍 ${esc(st.place)}</small>` : ''}</p>
           <p class="dc-note">Sigue desde la pregunta ${st.step} · etapa ${stageOf(st.step)}: <b>${esc(prizeOf(st, st.step))}</b>. En pantalla se presenta al reemplazo.</p>
-          <button class="primary big" data-do="next">▶ Pregunta ${st.step} para ${esc(st.player)}</button>${rankBtn}`;
+          <button class="primary big paso" data-paso="1" data-do="next">▶ Pregunta ${st.step} para ${esc(st.player)}</button>${rankBtn}`;
       } else if (st.phase === 'end') {
         const txt = { won: `🏆 ¡${esc(st.player)} ganó el juego!`, retired: `🏳 ${esc(st.player)} se retiró`, lost: '✘ Fin del juego' }[st.outcome];
         box.innerHTML = `<p class="dc-result ${st.outcome === 'lost' ? 'bad' : 'ok'}">${txt}</p>

@@ -389,8 +389,8 @@
   // Casillas de cada figura (las mismas de cc.html), para mostrar la figura en grande al elegirla (Cote, 24 nov)
   var FIGMASK = {"linea":31,"horizontal":31,"vertical":1082401,"diagonal":17043521,"dos-lineas":1023,"esquinas":17825809,"sello":99,"cruz":4357252,"marco":33080895,"cuadro":469440,"diamante":4539716,"piramide":32968704,"piramide-inv":4575,"reloj":32969183,"corazon":4685802,"estrella":18168804,"lleno":33554431,"a":18415150,"b":16301615,"c":32539711,"d":16303663,"e":32554047,"f":1096767,"g":33092671,"h":18415153,"i":32641183,"j":6594847,"k":18128177,"l":32539681,"m":18405233,"n":18667121,"o":15255086,"p":1097263,"q":23385646,"r":18136623,"s":33061951,"t":4329631,"u":33080881,"v":4539953,"w":18732593,"x":18157905,"y":4329809,"z":32575775};
   var FIG = { linea: 'Línea (cualquiera)', horizontal: 'Línea horizontal', vertical: 'Línea vertical', diagonal: 'Diagonal', 'dos-lineas': 'Dos líneas', esquinas: 'Cuatro esquinas', sello: 'Sello (2×2 en una esquina)', cruz: 'Cruz', marco: 'Marco', cuadro: 'Cuadro central', diamante: 'Diamante', piramide: 'Pirámide', 'piramide-inv': 'Pirámide invertida', reloj: 'Reloj de arena', corazon: 'Corazón', estrella: 'Estrella', lleno: 'Cartón lleno' };
-  var GAMES = { bingo: ['🎱', 'Bingo'], rosco: ['🎡', 'El Rosko'], festival: ['🎤', 'El Festival de ' + SHORT[VENUE]], objeto: ['🗳️', 'El objeto más extraño'] };
-  var GVC = { bingo: '#ff2e93', rosco: '#9b6bff', festival: '#ffc400', objeto: '#19d6b0' };
+  var GAMES = { bingo: ['🎱', 'Bingo'], rosco: ['🎡', 'El Rosko'], festival: ['🎤', 'El Festival de ' + SHORT[VENUE]], objeto: ['🗳️', 'El objeto más extraño'], desafio: ['🏆', '¿Quién quiere ser ganador?'] };
+  var GVC = { bingo: '#ff2e93', rosco: '#9b6bff', festival: '#ffc400', objeto: '#19d6b0', desafio: '#ff7a1a' };
   var offset = 0;
   var cv = $('cv'); var view = $('view'); var vid = $('vid'); var tap = $('tap'); var perShown = ''; // texto del GC PER que está puesto
   // ---------- Diseño nuevo (pedido de Cote, 22 nov) ----------
@@ -977,6 +977,7 @@
       else if (s.onstage) o += '<div class="mid gold">' + se('🎤 En el escenario') + '</div><b class="big fit" style="display:block">' + h(s.onstage.name) + '</b>' + thing(s.onstage) + (s.onstage.place ? '<div class="mid"><small class="cplace">' + h(s.onstage.place) + '</small></div>' : '');
       else if (s.signup) { o += '<div class="mid gold">' + se('📝 Inscripciones abiertas') + '</div>' + (left ? '<div class="clock">' + left + '</div>' : '') + '<ol class="rows" style="margin-top:2rem">'; var ps = s.players || []; for (var k = 0; k < ps.length && k < 8; k++) o += '<li>' + row(ps[k]) + '</li>'; o += '</ol>'; }
       else if (s.last) o += '<div class="mid v-msg">Ya viene el siguiente participante</div>';
+      else if (s.overflow && !s.drawn) { o += '<div class="mid gold">Inscripciones cerradas · sorteamos a los ' + s.max + ' que participan</div><ol class="rows" style="margin-top:2rem">'; var po = s.players || []; for (var q = 0; q < po.length && q < 8; q++) o += '<li>' + row(po[q]) + '</li>'; o += '</ol>'; } // Cote, 26 nov, respuesta 35.1
       else { o += '<div class="mid gold">Participantes</div><ol class="rows" style="margin-top:2rem">'; var pp = s.players || []; for (var m = 0; m < pp.length && m < 8; m++) o += '<li>' + row(pp[m]) + '</li>'; o += '</ol>'; }
       o += '</div>' + qrFoot();
       if (T2 && o.indexOf('<ol') < 0) o = o.replace('abs v-body', 'abs v-body v-hero'); // diseño nuevo: sin lista, el bloque va más al centro
@@ -1020,7 +1021,7 @@
       if (k === introShown) return;
       introShown = k;
       var sl = GI.slides(SHORT[VENUE])[k];
-      var o = '<div class="abs gv-head" style="top:4rem"><div class="g-sub" style="color:#ffc400;text-transform:uppercase">' + tv('📢 ', '') + 'Antes de votar · ' + (k + 1) + ' de 6</div><b class="big fit" style="display:block;font-size:' + tv('5.4', '6.6') + 'rem">' + tv(sl.icon + ' ', '') + h(sl.title) + '</b></div>' +
+      var o = '<div class="abs gv-head" style="top:4rem"><div class="g-sub" style="color:#ffc400;text-transform:uppercase">' + tv('📢 ', '') + 'Antes de votar · ' + (k + 1) + ' de 7</div><b class="big fit" style="display:block;font-size:' + tv('5.4', '6.6') + 'rem">' + tv(sl.icon + ' ', '') + h(sl.title) + '</b></div>' +
         '<div class="abs gi-art" style="top:16rem"><div style="width:36rem;margin:0 auto">' + GI.art(sl.key) + '</div></div><div class="abs" id="pvlines" style="top:41rem;bottom:32rem;text-align:left;overflow:hidden"><ul class="rows">';
       for (var i = 0; i < sl.lines.length; i++) o += '<li style="white-space:normal;font-size:3em">' + h(sl.lines[i]) + '</li>'; // en «em»: se achica junto con el recuadro si no cabe
       o += '</ul></div>' + qrFoot();
@@ -1032,7 +1033,7 @@
       if (!g) return;
       if (g.phase === 'intro') { paintIntro(); return; }
       introShown = -1;
-      var opts = g.options && g.options.length ? g.options : ['bingo', 'rosco', 'festival', 'objeto'];
+      var opts = g.options && g.options.length ? g.options : ['bingo', 'rosco', 'festival', 'objeto', 'desafio'];
       var top = se(g.phase === 'voting' ? (g.round === 2 ? '🗳️ Segunda vuelta' : '🗳️ Votación') : '🗳️ Resultado de la votación');
       var big = g.phase === 'done' && g.winner ? tv('🏆 ', '') + '¡Ganó ' + gname(g.winner) + '!' : g.phase === 'result' && g.empty ? 'Nadie votó' : g.phase === 'result' && g.runoff ? 'Nadie superó el 50%' : '¿Qué juego quieren jugar?';
       var line = g.phase === 'voting' ? 'Quedan <b class="gold">' + clock(g.until - now()) + '</b>' : g.phase === 'result' && g.runoff ? 'Segunda vuelta: ' + gname(g.runoff[0]) + ' ' + eY(gname(g.runoff[1])) + ' ' + gname(g.runoff[1]) : g.tie ? 'Empate en la segunda vuelta: se decidió por sorteo' : '';

@@ -340,6 +340,8 @@
         : { tag: 'Votación cerrada', no: st.last.no, main: st.last.name, sub: st.last.thing || '¡Gracias por votar!', side: ['🏁', 'Ya vienen los resultados'] };
     }
     if (st.signup) return { tag: 'Inscripciones abiertas', main: isK(st) ? '¿Quieres cantar?' : '¿Quieres participar?', sub: isK(st) ? 'Inscríbete desde tu celular con tu canción y el artista' : 'Inscríbete desde tu celular', clock: 'Tiempo', qr: true };
+    // Más inscritos que cupos, antes del sorteo (Cote, 26 nov, respuesta 35.1: «Inscripciones cerradas · sorteamos a los N que participan»)
+    if (st.overflow && !st.drawn) return { tag: 'Inscripciones cerradas', main: `Sorteamos a los ${st.max} que participan`, sub: `Se inscribieron ${st.players.length} personas`, side: ['🎲', 'Sorteo'], qr: true };
     // Instrucciones del festival (pedido de Cote)
     if (isK(st)) return { tag: 'Cómo se juega', main: `Elegimos ${st.max} personas para cantar`, sub: 'Las canciones serán cortas en pro del tiempo', side: ['🎤', 'Nota del 1 al 10'], qr: true };
     return { tag: 'Votación del público', main: 'Prepárate para votar', sub: 'Pon tu nota del 1 al 10 desde tu celular', side: ['🗳️', '1 al 10'], qr: true };

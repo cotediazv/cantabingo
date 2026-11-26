@@ -1054,7 +1054,9 @@ require('./agenda.js')({ app, db, save, requireAdmin, fail, currentVenue: () => 
 // (Bingo, El Rosko, El Festival y El objeto más extraño; el karaoke no es un juego), el bingo incluido desde el primer
 // sorteo. El juego que sale queda bloqueado solo para el sorteo siguiente y después vuelve a estar disponible.
 // El sorteo se ve en el tablero y en el GC (escenario «juego»).
-const DRAW_GAMES = ['bingo', 'rosco', 'festival', 'objeto'];
+// ¿Quién quiere ser ganador? entra a los juegos disponibles (Manual, Por sorteo y Por votación): Cote, 26 nov, respuesta 34.1
+// («que lo deje dentro de los juegos ya disponibles, porque el juego ya está terminado»)
+const DRAW_GAMES = ['bingo', 'rosco', 'festival', 'objeto', 'desafio'];
 db.gameDraw ||= { played: [], last: null };
 if (!db.gameDraw.rule2) { db.gameDraw.played = db.gameDraw.last ? [db.gameDraw.last.game] : []; db.gameDraw.rule2 = true; }
 const drawPub = () => ({ ...db.gameDraw, total: Math.max(db.gameDraw.total || 3, (db.gameDraw.list || []).length + 1), how: howOf(), free: howOf() === 'manual', undo: undefined, undoable: !!(db.gameDraw.undo || []).length, games: DRAW_GAMES, venue: (Object.values(db.sessions)[0] || {}).theme || 'frida', now: Date.now() });
@@ -1093,6 +1095,12 @@ const startContest = (game) => {
   if ((v.players || []).length || v.signup) return; // otro concurso en curso: no se borra (el panel ofrece reemplazarlo)
   vote.start(mode);
 };
+// Cualquier juego elegido (a mano, por sorteo o por votación): El Festival y el objeto quedan con su concurso listo y
+// ¿Quién quiere ser ganador? con una partida nueva si la anterior ya terminó (una en curso no se borra)
+const startGame = (game) => {
+  if (game === 'festival' || game === 'objeto') startContest(game);
+  if (game === 'desafio') desafio.fresh();
+};
 // Cada pestaña permite solo su forma de elegir
 const notFree = (res) => {
   const h = howOf();
@@ -1109,6 +1117,7 @@ app.post('/api/gamedraw/free', requireAdmin, (req, res) => {
     startContest(game); // un concurso del mismo tipo sin ganador no se borra: tocarlo en el menú solo vuelve a su panel
     setStage('voto'); // las pantallas y los celulares pasan de inmediato al juego elegido
   }
+  if (game === 'desafio') startGame(game); // partida nueva si la anterior terminó; el panel lleva al sorteo del participante
   if (game === 'bingo' && familyOf(db.stage) === 'bingo') cortinaJuego(); // la pantalla ya estaba en el bingo: igual se carga con la cortina
   db.gameDraw.seq = (db.gameDraw.seq || 0) + 1;
   save();
@@ -1158,7 +1167,7 @@ app.post('/api/gamedraw/pick', requireAdmin, (req, res) => {
   if (g.list.length >= g.total) g.total = g.list.length + 1;
   g.last = { game, pool: [game], at: Date.now(), direct: true };
   require('./momentos.js').emit('juego_siguiente');
-  if (game === 'festival' || game === 'objeto') startContest(game);
+  startGame(game);
   save();
   setStage('juego');
   res.json(db.gameDraw);
@@ -1175,7 +1184,7 @@ app.post('/api/gamedraw', requireAdmin, (_req, res) => {
   if (g.list.length >= g.total) g.total = g.list.length + 1; // siempre queda el sorteo siguiente disponible
   g.ready = null; g.seq = (g.seq || 0) + 1;
   g.last = { game, pool, at: Date.now() };
-  if (game === 'festival' || game === 'objeto') startContest(game); // la votación queda lista con su título
+  startGame(game); // la votación queda lista con su título (o la partida nueva de ¿Quién quiere ser ganador?)
   save();
   require('./momentos.js').emit('tombola_gira'); require('./momentos.js').emitLater('tombola_resultado', 4800);
   if (setStage('juego') === false) return fail(res, 409, 'El Rosko está en juego: el sorteo se verá cuando termine la partida');
@@ -1192,7 +1201,7 @@ app.post('/api/gamedraw', requireAdmin, (_req, res) => {
 const GV_MS = 30000;
 // Presentación antes de votar (pedido de Cote, 21 nov): las reglas para el público y cada juego con su dibujo, una lámina
 // cada 10 s (public/gameintro.js); el animador puede adelantar («Siguiente») o iniciar la votación cuando quiera
-const INTRO_MS = 10000; const INTRO_LAST = 5;
+const INTRO_MS = 10000; const INTRO_LAST = 6; // reglas, los 5 juegos y «¡A votar!»
 // Paso a paso (pedido de Cote, 24 nov: «que las maneje el animador, para que sea fluido»): ya no avanzan solas
 const introStep = (g) => (g.intro ? Math.min(INTRO_LAST, g.intro.step || 0) : 0);
 function gvBlank() {
@@ -1229,7 +1238,7 @@ function gvClose() {
       g.phase = 'result'; g.runoff = [a, b]; g.tie2 = c !== undefined && counts[b] === counts[c];
     } else {
       g.phase = 'done'; g.winner = a; g.tie = g.round === 2 && counts[a] === counts[b]; g.decidedAt = Date.now();
-      if (a === 'festival' || a === 'objeto') startContest(a); // el concurso queda listo
+      startGame(a); // el concurso (o la partida) queda listo
     }
   }
   g.rev++;

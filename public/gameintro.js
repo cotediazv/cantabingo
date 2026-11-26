@@ -5,7 +5,7 @@
 // antiguos. Los dibujos son SVG; en la plataforma completa se mueven con las animaciones de styles.css (.gi …).
 (function (root) {
   var MS = 10000;
-  var C = { bingo: '#ff2e93', rosco: '#9b6bff', festival: '#ffc400', objeto: '#19d6b0' };
+  var C = { bingo: '#ff2e93', rosco: '#9b6bff', festival: '#ffc400', objeto: '#19d6b0', desafio: '#ff7a1a' };
   function slides(venueShort) {
     return [
       { key: 'reglas', icon: '🗳️', title: '¡Tú eliges el próximo juego!', lines: ['Entra a la sala escaneando el código QR', 'Cuando parta la votación, toca en tu celular el juego que quieres', 'Tienes 30 segundos y puedes cambiar tu voto', 'Gana el que tenga más de la mitad de los votos. Si ninguno completa el quórum, habrá segunda vuelta entre los dos más votados.'] },
@@ -13,6 +13,7 @@
       { key: 'rosco', icon: '🎡', title: 'El Rosko', lines: ['Sorteamos 3 concursantes entre los conectados', 'Una pregunta por cada letra, contra el reloj: 2 minutos cada uno', 'Gana quien acierta más letras. Tú juegas la Trivia del Rosko desde el celular'] },
       { key: 'festival', icon: '🎤', title: 'El Festival de ' + (venueShort || 'Frida'), lines: ['Concurso de karaoke: te inscribes desde el celular con tu canción', 'Cantas una canción corta y el público pone nota del 1 al 10', 'Gana el mejor promedio'] },
       { key: 'objeto', icon: '🗳️', title: 'El objeto más extraño', lines: ['Te inscribes desde el celular con el objeto más raro que tengas a mano', 'Lo muestras en el escenario y el público pone nota del 1 al 10', 'Los 2 mejores van a la gran final y el público elige al ganador'] },
+      { key: 'desafio', icon: '🏆', title: '¿Quién quiere ser ganador?', lines: ['Sorteamos un participante entre los conectados', 'Sube 12 preguntas con 4 alternativas, en 3 etapas: un premio por etapa', 'Tú juegas la Trivia del Ganador desde el celular'] },
       { key: 'votar', icon: '🗳️', title: '¡A votar!', lines: ['La votación dura 30 segundos', 'Toca en tu celular el juego que quieres jugar'] },
     ];
   }
@@ -60,9 +61,16 @@
         '<text x="70" y="112" text-anchor="middle" font-size="34" fill="#ffffff">?</text>' +
         '<circle class="gi-up" cx="60" cy="40" r="8" fill="' + C.objeto + '"/><rect class="gi-up" style="animation-delay:.7s" x="78" y="30" width="14" height="14" rx="3" fill="' + C.bingo + '"/><path class="gi-up" style="animation-delay:1.4s" d="M104 42 l8 -14 l8 14 z" fill="' + C.festival + '"/>' +
         '<rect x="140" y="34" width="66" height="54" rx="14" fill="' + C.objeto + '"/><text x="173" y="69" text-anchor="middle" font-size="24" fill="#1a1a1a">8,7</text><text x="173" y="112" text-anchor="middle" font-size="12" fill="#ffffff">gran final</text><text x="173" y="128" text-anchor="middle" font-size="12" fill="#ffffff">los 2 mejores</text>';
+    } else if (key === 'desafio') {
+      // escalera de 12 escalones con el que va subiendo y, al lado, las 4 alternativas
+      for (var e = 0; e < 6; e++) s += '<rect x="20" y="' + (114 - e * 19) + '" width="64" height="14" rx="3" fill="' + (e < 3 ? C.desafio : '#3a3466') + '"' + (e === 3 ? ' class="gi-pulse"' : '') + ' stroke="#ffffff" stroke-width="1.5"/>';
+      s += '<text x="52" y="' + (125 - 3 * 19) + '" text-anchor="middle" font-size="10" fill="#ffffff">4</text>';
+      var AB = ['A', 'B', 'C', 'D'];
+      for (var q = 0; q < 4; q++) s += '<rect' + (q === 2 ? ' class="gi-pulse"' : '') + ' x="' + (100 + (q % 2) * 58) + '" y="' + (44 + Math.floor(q / 2) * 34) + '" width="52" height="26" rx="6" fill="' + (q === 2 ? C.desafio : '#1b1838') + '" stroke="#ffffff" stroke-width="2"/><text x="' + (126 + (q % 2) * 58) + '" y="' + (62 + Math.floor(q / 2) * 34) + '" text-anchor="middle" font-size="14" fill="#ffffff">' + AB[q] + '</text>';
+      s += '<text x="155" y="30" text-anchor="middle" font-size="20" fill="#ffc400">🏆</text>';
     } else {
-      var ks = ['bingo', 'rosco', 'festival', 'objeto']; var hs = [62, 96, 48, 30];
-      for (var k = 0; k < 4; k++) s += '<rect class="gi-bar" style="animation-delay:' + (k * 0.2).toFixed(1) + 's" x="' + (30 + k * 44) + '" y="' + (120 - hs[k]) + '" width="30" height="' + hs[k] + '" rx="6" fill="' + C[ks[k]] + '"/>';
+      var ks = ['bingo', 'rosco', 'festival', 'objeto', 'desafio']; var hs = [62, 96, 48, 30, 74];
+      for (var k = 0; k < 5; k++) s += '<rect class="gi-bar" style="animation-delay:' + (k * 0.2).toFixed(1) + 's" x="' + (28 + k * 34) + '" y="' + (120 - hs[k]) + '" width="26" height="' + hs[k] + '" rx="6" fill="' + C[ks[k]] + '"/>';
       s += '<rect x="20" y="120" width="180" height="3" fill="#ffffff" opacity=".6"/><text x="110" y="18" text-anchor="middle" font-size="15" fill="#ffc400">30 segundos</text>';
     }
     return s + '</svg>';
@@ -72,7 +80,7 @@
     if (!intro) return 0;
     if (intro.current != null) return intro.current; // paso a paso: la que eligió el animador (Cote, 24 nov)
     var n = (intro.step || 0) + Math.floor(Math.max(0, now - intro.at) / MS);
-    return Math.min(n, 5);
+    return Math.min(n, 6);
   }
-  root.GAME_INTRO = { ms: MS, count: 6, slides: slides, art: art, stepOf: stepOf };
+  root.GAME_INTRO = { ms: MS, count: 7, slides: slides, art: art, stepOf: stepOf };
 })(this);

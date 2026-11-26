@@ -328,7 +328,7 @@ const isAdmin = async () => Boolean(store.get('adminToken')) && (await api('GET'
 
 // Catálogo de juegos de la plataforma. Para sumar uno: agregar aquí su entrada y sus vistas.
 const GAMES = [
-  { id: 'bingo', icon: '🎮', name: 'Crea sala de juegos', desc: 'Bingo, El Rosko, El Festival y El objeto más extraño.', href: '#/nuevo' },
+  { id: 'bingo', icon: '🎮', name: 'Crea sala de juegos', desc: 'Bingo, El Rosko, El Festival, El objeto más extraño y ¿Quién quiere ser ganador?', href: '#/nuevo' },
   { id: 'rueda', hidden: true, icon: '🎡', name: 'El Rosko', desc: 'Un rosko de letras por concursante, con reloj. Tú marcas acierto, fallo o paso; el público ve el rosko y la pregunta.', href: '#/ruedas' },
   { id: 'sorteo', hidden: true, icon: '🎲', name: 'Sorteo de concursantes', desc: 'Elige al azar, entre quienes jugaron el bingo, a los concursantes de El Rosko. Se ve en pantalla.', href: '#/sorteoctl' },
 ];
@@ -614,7 +614,7 @@ views.juegos = async () => {
   store.set('lastBingo', open.projectId);
   // Pedido de Cote (21 nov): al crear la sala, tres botones y nada más (Manual, Por sorteo, Por votación)
   app.innerHTML = `<p class="back"><a href="#/">← Inicio</a></p><div id="jg-sim"></div><div id="jg-cur"></div>${activitiesNav('', { lobby: true })}
-    <p class="ep-link"><a class="btn" href="#/enpiectl">🧪 Juego en prueba: 🧍 El último en pie</a> <a class="btn" href="#/desafioctl">🧪 Juego en prueba: 🏆 ¿Quién quiere ser ganador?</a></p>`;
+    <p class="ep-link"><a class="btn" href="#/enpiectl">🧪 Juego en prueba: 🧍 El último en pie</a></p>`;
   const venue = open.theme || 'frida';
   const paint = async () => {
     const st = await api('GET', `/api/sessions/${open.id}/host/state`).catch((err) => (err.status === 404 ? 'cerrada' : null));
@@ -1915,6 +1915,7 @@ const GAME_INFO = (venue) => ({
   rosco: { icon: '🎡', name: 'El Rosko', href: '#/sorteoctl' },
   festival: { icon: '🎤', name: `El Festival de ${{ frida: 'Frida', kennedy: 'Mercado Kennedy', tobalaba: 'Tobalaba' }[venue] || 'Frida'}`, href: '#/votoctl/festival' },
   objeto: { icon: '🗳️', name: 'El objeto más extraño', href: '#/votoctl/objeto' },
+  desafio: { icon: '🏆', name: '¿Quién quiere ser ganador?', href: '#/desafioctl' },
 });
 // Menú de juegos (pedido de Cote, 21 nov): tres botones grandes, «Manual», «Por sorteo» y «Por votación», y nada más;
 // al tocar uno se despliega lo de esa modalidad en su momento (Manual: los juegos para tocar; Por sorteo: cuántos juegos
@@ -1926,12 +1927,12 @@ function activitiesNav(current, opts = {}) {
     ['rosco', '<a class="btn" data-game="rosco" href="#/sorteoctl"><span>🎡</span>El Rosko</a>'],
     ['festival', '<a class="btn" data-game="festival" href="#/votoctl/festival"><span>🎤</span><b class="g-fest">El Festival</b></a>'],
     ['objeto', '<a class="btn" data-game="objeto" href="#/votoctl/objeto"><span>🗳️</span>El objeto más extraño</a>'],
+    ['desafio', '<a class="btn" data-game="desafio" href="#/desafioctl"><span>🏆</span>¿Quién quiere ser ganador?</a>'],
   ];
   const more = [
     ['show', '<a class="btn" href="#/showctl"><span>⭐</span>Show</a>'],
     ['karaoke', '<a class="btn" href="#/karaokectl"><span>🎤</span>Karaoke</a>'],
     ['insta', '<a class="btn" href="#/instactl"><span>📸</span>Instagram</a>'],
-    ['desafio', '<a class="btn" href="#/desafioctl"><span>🏆</span>¿Quién quiere ser ganador?</a>'],
     ['qr', '<button type="button" data-stage-qr><span>📱</span>QR en pantalla completa</button>'],
   ];
   setTimeout(paintGameNav, 0);

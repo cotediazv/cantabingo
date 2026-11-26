@@ -353,5 +353,8 @@ module.exports = function desafio({ placeOf = () => '', roscoBusy = () => false,
   // Al cerrar la sala (fin de la jornada) o abrir una nueva: la partida y la Trivia quedan en blanco, como los otros juegos.
   // El conteo de preguntas ya usadas (db.desafioUsed) se mantiene, para que no se repitan en las noches siguientes.
   const clear = () => { clearTimeout(audienceTimer); Object.assign(g(), blank(), { rev: (g().rev || 0) + 1 }); save(); };
-  return { refresh: () => notify(), clear };
+  // El juego salió elegido (a mano, en el sorteo o en la votación): si la partida anterior ya terminó, queda una nueva en
+  // blanco, con el sorteo del participante limpio; una partida en curso no se toca
+  const fresh = () => { if (g().phase !== 'end') return; actions.reset(g()); changed(); };
+  return { refresh: () => notify(), clear, fresh };
 };

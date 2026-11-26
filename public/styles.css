@@ -3910,3 +3910,12 @@ body.lz-on { overflow: hidden; }
    botones grises del rosko (simulación del 26 nov: quedaba más arriba, en amarillo, y había que buscarlo) */
 body.anim #rosco-ctl .w-rankbtn.due { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(118px + env(safe-area-inset-bottom)); z-index: 61; width: calc(100vw - 24px); max-width: 700px; min-height: 104px; margin: 0; background: var(--an-go); border-color: var(--an-go); color: #fff; animation: none; }
 
+
+/* ¿Quién quiere ser ganador? en los juegos disponibles (Cote, 26 nov, respuesta 34.1): con 5 juegos en 2 columnas, el
+   quinto va a lo ancho */
+.games-nav .g-games > :nth-child(5):last-child { grid-column: 1 / -1; }
+/* El paso que sigue también en verde cuando es un enlace con «btn primary» (Sortear participante, Sortear al reemplazo):
+   «.btn.primary» le ganaba al verde de «a.paso» */
+a.btn.paso, a.btn.primary.paso { background: #16a34a; border-color: #16a34a; color: #fff; font-weight: 800; }
+a.btn.paso:hover, a.btn.primary.paso:hover { background: #15803d; border-color: #15803d; }
+.pgvote .pgv-opts > :nth-child(5):last-child { grid-column: 1 / -1; }

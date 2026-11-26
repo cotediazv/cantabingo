@@ -260,9 +260,9 @@ var S = { sala: null, draw: null, foldOpen: false, navMode: null };
 function sala() { return S.sala && S.sala.length ? S.sala[0] : null; }
 
 // ---------- Menú de juegos (igual al de abajo de cada panel) ----------
-var GAMES = [['bingo', '🎱', 'Bingo'], ['rosco', '🎡', 'El Rosko'], ['festival', '🎤', 'El Festival'], ['objeto', '🗳️', 'El objeto más extraño']];
+var GAMES = [['bingo', '🎱', 'Bingo'], ['rosco', '🎡', 'El Rosko'], ['festival', '🎤', 'El Festival'], ['objeto', '🗳️', 'El objeto más extraño'], ['desafio', '🏆', '¿Quién quiere ser ganador?']];
 function festName() { var s = sala(); return 'El Festival de ' + ((s && V[s.theme]) || 'Frida'); }
-function gameName(k) { return k === 'festival' ? festName() : k === 'rosco' ? 'El Rosko' : k === 'objeto' ? 'El objeto más extraño' : 'Bingo'; }
+function gameName(k) { return k === 'festival' ? festName() : k === 'rosco' ? 'El Rosko' : k === 'objeto' ? 'El objeto más extraño' : k === 'desafio' ? '¿Quién quiere ser ganador?' : 'Bingo'; }
 function gameIcon(k) { for (var i = 0; i < GAMES.length; i++) if (GAMES[i][0] === k) return GAMES[i][1]; return ''; }
 // Pedido de Cote (21 nov): al dar a conocer un ganador, un premio o una información, el animador lo ve grande en su panel
 function ann(title, names, lines) {
@@ -282,14 +282,14 @@ function noteOf(x, d) { return Number(x).toFixed(d === 2 ? 2 : 1).replace('.', '
 // Cómo se elige el juego (pedido de Cote, 21 nov): «Manual», «Por sorteo» o «Por votación»
 function howOf(g) { return g ? (g.how || (g.free ? 'manual' : 'sorteo')) : 'sorteo'; }
 // Votación del juego: 30 s, gana el que pasa la mitad de los votos; si no, segunda vuelta entre los 2 primeros
-var GVC = { bingo: '#ff2e93', rosco: '#9b6bff', festival: '#ffc400', objeto: '#19d6b0' };
+var GVC = { bingo: '#ff2e93', rosco: '#9b6bff', festival: '#ffc400', objeto: '#19d6b0', desafio: '#ff7a1a' };
 function gvPct(n, t) { return t ? (n * 100) / t : 0; }
 function gvFmt(p) { var r = Math.round(p); return (r === 50 && p !== 50 ? p.toFixed(1).replace('.', ',') : r) + '%'; }
 function votos(n) { return n + (n === 1 ? ' voto' : ' votos'); }
 function gvHtml() {
   var g = S.gv;
   if (!g) return '<p class="gvhelp">Cargando la votación…</p>';
-  var opts = g.options && g.options.length ? g.options : ['bingo', 'rosco', 'festival', 'objeto'];
+  var opts = g.options && g.options.length ? g.options : ['bingo', 'rosco', 'festival', 'objeto', 'desafio'];
   var rows = '';
   for (var i = 0; i < opts.length; i++) {
     var k = opts[i]; var n = (g.counts || {})[k] || 0; var p = gvPct(n, g.total);
@@ -303,8 +303,8 @@ function gvHtml() {
     var k = window.GAME_INTRO && g.intro ? window.GAME_INTRO.stepOf(g.intro, new Date().getTime() + offset) : 0;
     var sl = window.GAME_INTRO ? window.GAME_INTRO.slides(V[(sala() || {}).theme] || 'Frida')[k] : null;
     var nx = window.GAME_INTRO ? window.GAME_INTRO.slides(V[(sala() || {}).theme] || 'Frida')[k + 1] : null; // paso a paso (Cote, 24 nov)
-    return '<p class="gvnow">📢 En pantalla: ' + (sl ? sl.icon + ' ' + h(sl.title) : '') + ' (' + (k + 1) + ' de 6)</p>' +
-      (k < 5 ? btn('▶ Siguiente: ' + (nx ? nx.icon + ' ' + h(nx.title) : ''), 'gvNext', '', 'big primary paso') + '<div class="center">' + btn('🗳️ Saltar a la votación', 'gvStart', '', '') + '</div>'
+    return '<p class="gvnow">📢 En pantalla: ' + (sl ? sl.icon + ' ' + h(sl.title) : '') + ' (' + (k + 1) + ' de 7)</p>' +
+      (k < 6 ? btn('▶ Siguiente: ' + (nx ? nx.icon + ' ' + h(nx.title) : ''), 'gvNext', '', 'big primary paso') + '<div class="center">' + btn('🗳️ Saltar a la votación', 'gvStart', '', '') + '</div>'
         : btn('🗳️ Iniciar votación (30 s)', 'gvStart', '', 'big primary paso')) + cancel;
   }
   if (g.phase === 'voting') return '<p class="gvnow">🗳️ ' + (g.round === 2 ? 'Segunda vuelta' : 'Votación abierta') + ' · quedan ' + clock(g.until - (new Date().getTime() + offset)) + ' · ' + votos(g.total) + '</p>' + rows + btn('🗳️ Votando…', 'none', '', 'big primary paso', true) + cancel;
@@ -731,6 +731,10 @@ function votoView(want) {
 }
 views.festival = function () { votoView('festival'); };
 views.objeto = function () { votoView('objeto'); };
+// ¿Quién quiere ser ganador? todavía no tiene panel en el iPad viejo: se maneja desde la plataforma o el teléfono del animador
+views.desafio = function () {
+  render(topBar(['#/juegos', 'Juegos']) + '<div class="panel"><h1>🏆 ¿Quién quiere ser ganador?</h1><p>Este juego todavía no se puede manejar desde este iPad.</p><p>Manéjalo desde el teléfono del animador (<b>cantabingo.onrender.com/animador</b>) o desde la plataforma completa (<b>cantabingo.onrender.com</b>).</p></div>' + nav('desafio', false, false) + foot());
+};
 
 views.karaoke = function () {
   if (S.fx !== location.hash) { S.fx = location.hash; api('POST', '/api/stage', { show: 'karaoke' }); } // solo al entrar (no al refrescar)

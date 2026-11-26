@@ -126,7 +126,7 @@ test('escenario: el moderador lo cambia, el QR se retira al sacar un número, y 
 test('sortear juego: total, iniciar, girar, elegir directo, deshacer', async () => {
   const { project, sid } = await srv.openRoom();
   let g = await srv.ok('GET', '/api/gamedraw');
-  assert.deepEqual(g.games, ['bingo', 'rosco', 'festival', 'objeto']);
+  assert.deepEqual(g.games, ['bingo', 'rosco', 'festival', 'objeto', 'desafio']);
   assert.equal(g.list.length, 0);
   assert.equal((await srv.admin.call('POST', '/api/gamedraw/total', { total: 0 })).status, 400);
   await srv.admin.post('/api/gamedraw/total', { total: 2 });

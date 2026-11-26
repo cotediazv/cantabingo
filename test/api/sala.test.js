@@ -79,7 +79,7 @@ test('elegir el juego: manual, sorteo y votación del público', async () => {
   assert.equal((await srv.call('POST', '/api/gamevote/vote', { sid, token: a.token, game: 'bingo' })).status, 409); // aún cerrada
   v = await srv.admin.post('/api/gamevote/start');
   assert.equal(v.phase, 'voting');
-  assert.deepEqual(v.options, ['bingo', 'rosco', 'festival', 'objeto']);
+  assert.deepEqual(v.options, ['bingo', 'rosco', 'festival', 'objeto', 'desafio']);
   assert.equal((await srv.call('POST', '/api/gamevote/vote', { sid, token: 'nadie', game: 'bingo' })).status, 403);
   assert.equal((await srv.call('POST', '/api/gamevote/vote', { sid, token: a.token, game: 'karaoke' })).status, 400);
   await srv.ok('POST', '/api/gamevote/vote', { sid, token: a.token, game: 'rosco' });

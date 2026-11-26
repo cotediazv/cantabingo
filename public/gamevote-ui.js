@@ -3,7 +3,7 @@
 // ninguno lo logra, hay segunda vuelta entre los 2 primeros. En el tablero y en el GC: un gráfico en círculo por juego,
 // con su porcentaje y sus votos. Servidor: /api/gamevote en server.js (escenario «votojuego»).
 (() => {
-  const COLORS = { bingo: '#ff2e93', rosco: '#9b6bff', festival: '#ffc400', objeto: '#19d6b0' };
+  const COLORS = { bingo: '#ff2e93', rosco: '#9b6bff', festival: '#ffc400', objeto: '#19d6b0', desafio: '#ff7a1a' };
   const C = 2 * Math.PI * 42; // largo del anillo (radio 42 en un cuadro de 100)
   const pctOf = (n, total) => (total ? (n * 100) / total : 0);
   // Porcentaje entero; justo en torno al 50 % va con un decimal, para que se vea si pasó la mitad o no
@@ -40,7 +40,7 @@
     }
     return { top: '🗳️ Votación', big: '¿Qué juego quieren jugar?', line: '' };
   };
-  const optionsOf = (g) => (g.options && g.options.length ? g.options : ['bingo', 'rosco', 'festival', 'objeto']);
+  const optionsOf = (g) => (g.options && g.options.length ? g.options : ['bingo', 'rosco', 'festival', 'objeto', 'desafio']);
   // Achica un texto de una línea hasta que quepa en su cuadro (nunca se corta)
   const fitText = (el) => {
     if (!el) return;
@@ -52,11 +52,11 @@
   // Presentación antes de votar (public/gameintro.js): lámina que toca y su contenido
   const introNow = (g, off) => (window.GAME_INTRO && g.intro ? window.GAME_INTRO.stepOf(g.intro, Date.now() + off) : 0);
   const introSlide = (g, i) => (window.GAME_INTRO ? window.GAME_INTRO.slides(({ frida: 'Frida', kennedy: 'Mercado Kennedy', tobalaba: 'Tobalaba' })[g.venue] || 'Frida')[i] : null);
-  const introDots = (i) => `<div class="gv-dots">${[0, 1, 2, 3, 4, 5].map((k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>`;
+  const introDots = (i) => `<div class="gv-dots">${[0, 1, 2, 3, 4, 5, 6].map((k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>`;
   const introHtml = (g, i, qrBox) => {
     const sl = introSlide(g, i);
     if (!sl) return '';
-    return `<div class="gv-card gv-intro"><div class="gv-main"><small class="gv-top">${window.sinEmoji(`📢 Antes de votar · ${i + 1} de 6`)}</small><b class="gv-big">${esc(window.sinEmoji(`${sl.icon} ${sl.title}`))}</b>
+    return `<div class="gv-card gv-intro"><div class="gv-main"><small class="gv-top">${window.sinEmoji(`📢 Antes de votar · ${i + 1} de 7`)}</small><b class="gv-big">${esc(window.sinEmoji(`${sl.icon} ${sl.title}`))}</b>
       <div class="gv-introbody"><div class="gi gv-art">${window.GAME_INTRO.art(sl.key)}</div><ul class="gv-lines">${sl.lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ul></div>${introDots(i)}</div>${qrBox}</div>`;
   };
 
@@ -140,7 +140,7 @@
       let body;
       if (g.phase === 'intro') {
         const sl = introSlide(g, step);
-        body = sl ? `<p class="pgv-step">Antes de votar · ${step + 1} de 6</p><div class="pgv-intro"><b>${sl.icon} ${esc(sl.title)}</b><div class="gi">${window.GAME_INTRO.art(sl.key)}</div>
+        body = sl ? `<p class="pgv-step">Antes de votar · ${step + 1} de 7</p><div class="pgv-intro"><b>${sl.icon} ${esc(sl.title)}</b><div class="gi">${window.GAME_INTRO.art(sl.key)}</div>
           <ul>${sl.lines.map((l) => `<li>${esc(l)}</li>`).join('')}</ul></div><p class="muted small" style="text-align:center">📺 También en la pantalla del local</p>` : '';
       } else if (g.phase === 'voting') {
         body = `<p class="pvote-ask">${g.round === 2 ? 'Segunda vuelta' : 'Votación'}<b>¿Qué juego quieres jugar?</b></p>
@@ -204,8 +204,8 @@
       // Paso a paso (pedido de Cote, 24 nov): el animador va pasando cada explicación con el botón verde y, después de la
       // última, recién parte la votación
       const k = introNow(g, off); const sl = introSlide(g, k); const nx = introSlide(g, k + 1);
-      html = `<p class="gvp-now">📢 En pantalla: ${sl ? `${sl.icon} ${esc(sl.title)}` : ''} (${k + 1} de 6)</p>
-        ${k < 5 ? `<button type="button" class="primary big g-draw paso" data-paso="9" data-gv-next>▶ Siguiente: ${nx ? `${nx.icon} ${esc(nx.title)}` : ''}</button>
+      html = `<p class="gvp-now">📢 En pantalla: ${sl ? `${sl.icon} ${esc(sl.title)}` : ''} (${k + 1} de 7)</p>
+        ${k < 6 ? `<button type="button" class="primary big g-draw paso" data-paso="9" data-gv-next>▶ Siguiente: ${nx ? `${nx.icon} ${esc(nx.title)}` : ''}</button>
         <button type="button" class="g-undo" data-gv-start>🗳️ Saltar a la votación</button>`
     : '<button type="button" class="primary big g-draw paso" data-paso="9" data-gv-start>🗳️ Iniciar votación (30 s)</button>'}${cancel}`;
     } else if (g.phase === 'voting') {
