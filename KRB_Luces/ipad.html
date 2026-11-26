@@ -249,6 +249,13 @@
   .djb{position:relative;border:0;border-radius:16px;color:#fff;font-weight:800;font-size:16px;cursor:pointer;overflow:hidden;
        background:var(--card);box-shadow:inset 0 0 0 1px var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px;min-height:70px;text-align:center}
   .djb i{font-style:normal;font-size:28px;line-height:1;position:relative}
+  /* En el computador (Cote, 26 nov): el icono AL LADO del nombre, no arriba; asi los botones no se cortan */
+  @media (min-width:700px){
+    .djb{flex-direction:row;gap:10px;padding:6px 12px}
+    .ipadDJ .djb{min-height:56px} .ipadDJ .djb.largo{gap:6px;padding:6px;font-size:14px}
+    body.dj .djb{gap:8px;font-size:14px}
+    body.dj .djb i{font-size:22px}
+  }
   .djb span{position:relative;text-shadow:0 1px 3px #000a}
   .djb::before{content:"";position:absolute;inset:0;background:var(--g);opacity:.32;transition:.2s}
   .djb.act{box-shadow:inset 0 0 0 3px #fff}
