@@ -15,7 +15,7 @@
     const viejo = d && tag && d.ver && d.ver !== tag;
     const deco = !d ? '⚪ El deco no ha avisado todavía (si está encendido, puede tener una versión antigua de la página: se pone al día sola cuando pasa a la cartelera, o al recargarla)'
       : d.hace > 90 ? `⚪ El deco no avisa hace ${Math.round(d.hace / 60)} min (¿apagado o sin internet?). Lo último: mostraba ${esc(d.que)}`
-        : d.emi ? '🟢 El deco está mostrando <b>la transmisión en vivo</b>'
+        : d.emi ? `🟢 El deco está mostrando <b>la transmisión en vivo</b>${d.vw ? ` · le llega de ${d.vw}x${d.vh}` : ''}${d.saltos ? ` · el video cambió de tamaño ${d.saltos} ${d.saltos === 1 ? 'vez' : 'veces'} (eso es la copia chica que salta)` : ''}`
           : d.cuadros ? '🟢 El deco está mostrando <b>el plan B: la imagen cuadro a cuadro</b> (una por segundo)'
           : `🟡 El deco está mostrando <b>${esc(d.que)}</b>, no la transmisión${d.vista === 'sala' ? (!d.rtc ? ' · su navegador no tiene WebRTC: no puede recibir la emisión' : !d.emiUrl ? ' · no tiene la dirección de la emisión' : d.intentando ? ' · está intentando conectarse a la emisión' : ' · reintenta cada 15 s') : ' · la transmisión se pone encima solo cuando la pantalla muestra los juegos de la sala'}`;
     // Por qué el deco no toma el plan A (la transmisión en vivo): lo que el deco cuenta de sus intentos (26 nov)
@@ -41,6 +41,8 @@
         <div class="row">${[['a', '📡 Solo plan A'], ['auto', 'Automático'], ['b', '🖼️ Plan B siempre']].map(([m, t]) => `<button type="button" class="${r.modo === m ? 'primary' : ''}" data-modo="${m}">${t}${r.modo === m ? ' · puesto' : ''}</button>`).join('')}</div></div>
       <div class="emi-planb"><b>Formato del video de la transmisión</b> <span class="muted small">VP8 lo recibe cualquier navegador con WebRTC; H.264 es más liviano para el deco, pero no todos lo reciben (Cloudflare responde 406). Al cambiarlo, la emisión se vuelve a partir sola.</span>
         <div class="row">${[['vp8', 'VP8 (recomendado)'], ['h264', 'H.264']].map(([c, t]) => `<button type="button" class="${r.codec === c ? 'primary' : ''}" data-codec="${c}">${t}${r.codec === c ? ' · puesto' : ''}</button>`).join('')}</div></div>
+      <div class="emi-planb"><b>Resolución de la transmisión</b> <span class="muted small">720×1280 le exige mucho menos al emisor y al deco y no salta; 1080×1920 se ve más nítido. Al cambiarla, el emisor se reinicia solo (1 o 2 minutos sin transmisión).</span>
+        <div class="row">${[[720, '720×1280 (recomendado)'], [1080, '1080×1920']].map(([v, t]) => `<button type="button" class="${r.res === v ? 'primary' : ''}" data-res="${v}">${t}${r.res === v ? ' · puesto' : ''}</button>`).join('')}</div></div>
       <div class="row"><button type="button" class="${r.prueba ? 'primary' : ''}" data-emi="1">🧪 Modo prueba: encendido siempre${r.prueba ? ' · puesto' : ''}</button><button type="button" class="${r.prueba ? '' : 'primary'}" data-emi="0">Solo con juegos${r.prueba ? '' : ' · puesto'}</button><a class="btn" href="/emision" target="_blank" rel="noopener">👁 Ver la emisión</a></div>`;
     if (wasOpen) box.querySelector('.emi-lec').open = true;
     const img = box.querySelector('img[data-foto]');
@@ -71,6 +73,13 @@
         if (!confirm('¿Reiniciar el emisor? La emisión se corta 1 o 2 minutos y vuelve sola.')) return;
         try { await api('POST', '/api/emisor/reiniciar'); toast('Listo: el emisor parte de nuevo en 1 o 2 minutos'); } catch (err) { toast(err.message); }
         return;
+      }
+      const rb = e.target.closest('button[data-res]');
+      if (rb) {
+        if (!confirm('¿Cambiar la resolución? El emisor se reinicia: 1 o 2 minutos sin transmisión.')) return;
+        busy = true;
+        try { const r = await api('POST', '/api/emisor/res', { res: Number(rb.dataset.res) }); toast(`Resolución ${r.res === 720 ? '720×1280' : '1080×1920'}: el emisor parte de nuevo en 1 o 2 minutos`); } catch (err) { toast(err.message); }
+        busy = false; paint(box); return;
       }
       const cb = e.target.closest('button[data-codec]');
       if (cb) {

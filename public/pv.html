@@ -1124,7 +1124,7 @@
   // ---------- Emisión en vivo (WHEP de Cloudflare) ----------
   // Solo con la sala en pantalla y la dirección configurada; la imagen se pone encima apenas el video empieza a andar.
   // Si se corta, vuelve al instante la vista de esta página y se reintenta cada 15 s.
-  var emi = $('emi'); var epc = null; var eOn = false; var eTimer = null; var eUrl = ''; var eErr = ''; var eIce = ''; var eCodecs = ''; var stSoloA = false; var stEmiVivo = false;
+  var emi = $('emi'); var epc = null; var eOn = false; var eTimer = null; var eUrl = ''; var eErr = ''; var eIce = ''; var eCodecs = ''; var stSoloA = false; var stEmiVivo = false; var eSaltos = 0;
   // Prueba del decodificador (?senal=kennedy, frida o tobalaba): muestra encima, todo el tiempo, la transmisión propia
   // de ese local (la misma de krbstage.cl), para comprobar que el decodificador recibe la señal en tiempo real
   var SENAL = { kennedy: 'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/c24ccde66ad7d935841dd934d9b3e1cf/webRTC/play', frida: 'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/2c9c627707b0fbc53e20c611f84235a0/webRTC/play', tobalaba: 'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/9c4d261a1b6c2fb79842b6d3821b9018/webRTC/play' };
@@ -1183,6 +1183,7 @@
   // Si la transmisión cambia de tamaño, se obliga al navegador a volver a acomodar el video a toda la pantalla (26 nov: el
   // deco de Kennedy dejaba por un momento una copia chica arriba a la izquierda)
   emi.addEventListener('resize', function () {
+    eSaltos++;
     try { var w = emi.style.width; emi.style.width = (parseInt(w, 10) - 1) + 'px'; setTimeout(function () { emi.style.width = w; }, 50); } catch (e) { /* nada */ }
   });
   // Navegadores antiguos que no avisan «playing» con la transmisión: si el video ya tiene imagen y avanza, se pone igual;
@@ -1230,7 +1231,7 @@
     var x = new XMLHttpRequest();
     try {
       x.open('POST', '/api/deco', true); x.setRequestHeader('Content-Type', 'application/json'); x.timeout = 10000;
-      x.send(JSON.stringify({ p: P, vista: cur, emi: !!(eOn && (cur === 'sala' || eTest)), cuadros: !!fOn, emiUrl: !!eUrl, intentando: !!(epc && !eOn), rtc: !!window.RTCPeerConnection, fallos: eFails, err: eErr, ice: epc ? (epc.iceConnectionState || '') : eIce, codecs: eCodecs, vw: emi.videoWidth || 0, vh: emi.videoHeight || 0, soloA: stSoloA, ver: myTag || '', ua: String(navigator.userAgent || '').slice(0, 160), w: window.innerWidth, h: window.innerHeight }));
+      x.send(JSON.stringify({ p: P, vista: cur, emi: !!(eOn && (cur === 'sala' || eTest)), cuadros: !!fOn, emiUrl: !!eUrl, intentando: !!(epc && !eOn), rtc: !!window.RTCPeerConnection, fallos: eFails, err: eErr, ice: epc ? (epc.iceConnectionState || '') : eIce, codecs: eCodecs, saltos: eSaltos, vw: emi.videoWidth || 0, vh: emi.videoHeight || 0, soloA: stSoloA, ver: myTag || '', ua: String(navigator.userAgent || '').slice(0, 160), w: window.innerWidth, h: window.innerHeight }));
     } catch (e) { /* nada */ }
   }
   function pubLoad() { get('/api/tema', function (r) { if (r && typeof r.pub === 'string') PUB = r.pub; }); }

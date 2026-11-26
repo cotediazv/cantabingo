@@ -17,8 +17,10 @@ const fs = require('fs');
 const SITIO = (process.env.SITIO || 'https://cantabingo.onrender.com').replace(/\/$/, '');
 const PANTALLA = process.env.PANTALLA || 'kennedy';
 const WHIP_URL = process.env.WHIP_URL || '';
-const RES = Number(process.env.RES) === 720 ? 720 : 1080;
-const W = RES, H = Math.round((RES * 16) / 9);
+// Resolución: la que se elige en /emisor (26 nov: con 1080 el deco de Kennedy mostraba por momentos una copia chica; 720 por
+// defecto); si la Sala no responde, la variable RES de Render
+let RES = Number(process.env.RES) === 720 ? 720 : 1080;
+let W = RES, H = Math.round((RES * 16) / 9);
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -105,7 +107,13 @@ const mandarFoto = async (page) => {
   try {
     const img = await page.screenshot({ type: 'jpeg', quality: 35, scale: 'css' });
     const luz = await luzCaptura(page);
-    const cap = await page.evaluate(() => { const t = window.__pc && window.__pc.getSenders()[0].track.getSettings(); return t ? `${t.width}x${t.height} (página ${innerWidth}x${innerHeight})` : ''; }).catch(() => '');
+    const cap = await page.evaluate(async () => {
+      const t = window.__pc && window.__pc.getSenders()[0].track.getSettings(); if (!t) return '';
+      // lo que de verdad sale hacia Cloudflare: tamaño, cuadros por segundo y si algo lo está limitando (26 nov)
+      let env = '';
+      try { (await window.__pc.getStats()).forEach((r) => { if (r.type === 'outbound-rtp' && r.kind === 'video') env = ` · enviando ${r.frameWidth || '?'}x${r.frameHeight || '?'} a ${Math.round(r.framesPerSecond || 0)} cps${r.qualityLimitationReason && r.qualityLimitationReason !== 'none' ? ` (limitado por ${r.qualityLimitationReason === 'cpu' ? 'la máquina' : r.qualityLimitationReason === 'bandwidth' ? 'la conexión' : r.qualityLimitationReason})` : ''} · cambios de tamaño ${r.qualityLimitationResolutionChanges || 0}`; }); } catch (e) { /* sin estadísticas */ }
+      return `captura ${t.width}x${t.height} (página ${innerWidth}x${innerHeight})${env}`;
+    }).catch(() => '');
     // Qué ve el navegador del emisor (26 nov: en Render la captura y la foto salían blancas, aquí no): la vista, el fondo,
     // cuánto texto tiene y el último error de la página
     const diag = await page.evaluate(() => { const b = document.body; return `${location.hash || location.pathname} · ${b ? (b.className || 'sin clase') : 'sin body'} · fondo ${b ? getComputedStyle(b).backgroundColor : '-'} · ${b ? b.innerText.replace(/\s+/g, ' ').trim().slice(0, 60) : ''}`; }).catch((e) => `sin respuesta de la página: ${e.message}`);
@@ -142,6 +150,9 @@ for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { log('Detenido:'
 (async () => {
   latido(); // de inmediato: así la Sala sabe que ya partió y no pide otro turno (pedirlo de nuevo cancela este)
   if (!WHIP_URL) { log('Falta WHIP_URL (la dirección de publicación del canal de Cloudflare).'); process.exit(1); }
+  const e0 = await pedir('/api/emisor/estado');
+  if (e0 && [720, 1080].includes(Number(e0.res))) { RES = Number(e0.res); W = RES; H = Math.round((RES * 16) / 9); }
+  if (e0 && ['vp8', 'h264'].includes(e0.codec)) codec = e0.codec;
   log(`Emisor de la pantalla ${PANTALLA}: ${W}x${H} a 30 cuadros; termina tras ${IDLE_MS / 60000} min sin juego`);
   await pantallaVirtual();
   log('Pantalla virtual lista:', process.env.DISPLAY);
