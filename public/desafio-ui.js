@@ -356,7 +356,7 @@
   const cues = (st, prev) => {
     if (!prev) return;
     if (st.phase === 'locked' && prev.phase !== 'locked') sfx.play('pass');
-    if (st.phase === 'reveal' && prev.phase !== 'reveal') sfx.play(st.right ? 'hit' : 'miss');
+    if (st.phase === 'reveal' && prev.phase !== 'reveal' && !st.right) sfx.play('miss'); // la correcta tiene su propia música
     if (st.phase === 'end' && prev.phase !== 'end' && st.outcome === 'won') sfx.play('win');
     if (st.phase === 'question' && prev.step !== st.step) sfx.play('chime');
   };
@@ -370,15 +370,23 @@
   // de a poco y entra la cortina de la pregunta
   const INTRO = 'audio/desafio-intro.mp3';
   let introGen = null;
-  // Música al revelar (pedido de Cote, 26 nov: «usa esta música para cuando se revele la pregunta»; 13 s): suena una vez
-  // cuando el animador toca «Revelar» y se ve si la respuesta era correcta; con la pregunta siguiente entra la cortina
+  // Suspenso y respuesta correcta (pedidos de Cote, 26 nov: «usa esta música para cuando se revele la pregunta», 13 s, y
+  // «esta al ser correcta», 8,7 s): la música del suspenso suena desde la respuesta definitiva hasta que el animador toca
+  // «Revelar» (se repite si demora más); al revelar, si es correcta suena la de la respuesta correcta; si no, se apaga
   const REVELA = 'audio/desafio-revela.mp3';
+  const CORRECTA = 'audio/desafio-correcta.mp3';
   let revKey = '';
   const cortina = (st) => {
+    if (st && st.phase === 'locked') {
+      if (sfx.playing() === CORTINA) qFrom = 8; // si se arrepiente, la cortina vuelve sin el golpe del comienzo
+      sfx.music(REVELA, { loop: 0, vol: 0.85 });
+      return;
+    }
     if (st && st.phase === 'reveal') {
       const k = `${(st.crowd && st.crowd.qid) || 0}|${st.step}|${st.q && st.q.text}`;
-      if (revKey !== k && sfx.playing() !== REVELA) sfx.music(REVELA, { vol: 0.85 }); // si aún no estaba bajado, parte en el próximo segundo
-      if (sfx.playing() === REVELA) revKey = k;
+      if (!st.right) { sfx.music(null); return; }
+      if (revKey !== k && sfx.playing() !== CORRECTA) sfx.music(CORRECTA, { vol: 0.9 }); // si aún no estaba bajado, parte en el próximo segundo
+      if (sfx.playing() === CORRECTA) revKey = k;
       return;
     }
     if (st && st.phase === 'intro') {
