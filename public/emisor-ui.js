@@ -15,7 +15,7 @@
     const viejo = d && tag && d.ver && d.ver !== tag;
     const deco = !d ? '⚪ El deco no ha avisado todavía (si está encendido, puede tener una versión antigua de la página: se pone al día sola cuando pasa a la cartelera, o al recargarla)'
       : d.hace > 90 ? `⚪ El deco no avisa hace ${Math.round(d.hace / 60)} min (¿apagado o sin internet?). Lo último: mostraba ${esc(d.que)}`
-        : d.emi ? `🟢 El deco está mostrando <b>la transmisión en vivo</b>${d.vw ? ` · le llega de ${d.vw}x${d.vh}` : ''}${d.saltos ? ` · el video cambió de tamaño ${d.saltos} ${d.saltos === 1 ? 'vez' : 'veces'} (eso es la copia chica que salta)` : ''}`
+        : d.emi ? `🟢 El deco está mostrando <b>la transmisión en vivo</b>${d.vw ? ` · le llega de ${d.vw}x${d.vh}` : ''}${d.w ? ` · pantalla del deco ${d.w}x${d.h}` : ''}${d.saltos ? ` · el video cambió de tamaño ${d.saltos} ${d.saltos === 1 ? 'vez' : 'veces'} (eso es la copia chica que salta)` : ''}`
           : d.cuadros ? '🟢 El deco está mostrando <b>el plan B: la imagen cuadro a cuadro</b> (una por segundo)'
           : `🟡 El deco está mostrando <b>${esc(d.que)}</b>, no la transmisión${d.vista === 'sala' ? (!d.rtc ? ' · su navegador no tiene WebRTC: no puede recibir la emisión' : !d.emiUrl ? ' · no tiene la dirección de la emisión' : d.intentando ? ' · está intentando conectarse a la emisión' : ' · reintenta cada 15 s') : ' · la transmisión se pone encima solo cuando la pantalla muestra los juegos de la sala'}`;
     // Por qué el deco no toma el plan A (la transmisión en vivo): lo que el deco cuenta de sus intentos (26 nov)

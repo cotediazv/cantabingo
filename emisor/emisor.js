@@ -58,7 +58,7 @@ const publicar = async (page) => page.evaluate(async ({ whip, w, h, codec }) => 
   const track = s.getVideoTracks()[0];
   track.contentHint = 'detail'; // texto y números nítidos: antes baja cuadros que resolución
   const pc = new RTCPeerConnection({ bundlePolicy: 'max-bundle' });
-  const tx = pc.addTransceiver(track, { direction: 'sendonly', sendEncodings: [{ maxBitrate: w >= 1080 ? 4500000 : 2500000, maxFramerate: 30 }] });
+  const tx = pc.addTransceiver(track, { direction: 'sendonly', sendEncodings: [{ maxBitrate: w >= 1080 ? 9000000 : 4500000, maxFramerate: 30 }] });
   // VP8 (lo recibe cualquier navegador con WebRTC) o H.264 (se decodifica en el chip, pero no todos lo reciben: el deco
   // de Kennedy respondía 406); Cloudflare acepta los dos. Solo se ofrece el elegido, para que no haya sorpresas
   try {
@@ -73,7 +73,22 @@ const publicar = async (page) => page.evaluate(async ({ whip, w, h, codec }) => 
   const res = await fetch(whip, { method: 'POST', headers: { 'content-type': 'application/sdp' }, body: pc.localDescription.sdp });
   if (!res.ok) throw new Error(`WHIP ${res.status}`);
   window.__whipDel = res.headers.get('location'); window.__whipUrl = whip;
-  await pc.setRemoteDescription({ type: 'answer', sdp: await res.text() });
+  // Más nitidez (26 nov, Cote: con 1080 «no se ve en Full HD, pero sí en HD»): se le dice al navegador que parta alto y no
+  // baje de un mínimo (por defecto parte a ~0,3 Mbps y sube de a poco), y se quita un tope que pudiera venir en la respuesta
+  const kb = w >= 1080 ? { min: 3000, start: 6000, max: 9000 } : { min: 1500, start: 3000, max: 4500 };
+  const nitido = (sdp) => {
+    let out = sdp.split('\r\n').filter((l) => !/^b=(AS|TIAS):/.test(l));
+    const pts = []; out.forEach((l) => { const m = /^a=rtpmap:(\d+) (VP8|VP9|H264)\//i.exec(l); if (m) pts.push(m[1]); });
+    const extra = `x-google-min-bitrate=${kb.min};x-google-start-bitrate=${kb.start};x-google-max-bitrate=${kb.max}`;
+    pts.forEach((pt) => {
+      const i = out.findIndex((l) => l.startsWith(`a=fmtp:${pt} `));
+      if (i >= 0) out[i] += `;${extra}`;
+      else { const j = out.findIndex((l) => l.startsWith(`a=rtpmap:${pt} `)); out.splice(j + 1, 0, `a=fmtp:${pt} ${extra}`); }
+    });
+    return out.join('\r\n');
+  };
+  const answer = await res.text();
+  try { await pc.setRemoteDescription({ type: 'answer', sdp: nitido(answer) }); } catch (e) { await pc.setRemoteDescription({ type: 'answer', sdp: answer }); }
   // Siempre la misma resolución (26 nov: en el deco de Kennedy, cuando el video bajaba por un momento a 720, se veía una
   // copia chica arriba a la izquierda): si falta máquina o conexión, baja los cuadros por segundo, no el tamaño
   try {
@@ -111,7 +126,7 @@ const mandarFoto = async (page) => {
       const t = window.__pc && window.__pc.getSenders()[0].track.getSettings(); if (!t) return '';
       // lo que de verdad sale hacia Cloudflare: tamaño, cuadros por segundo y si algo lo está limitando (26 nov)
       let env = '';
-      try { (await window.__pc.getStats()).forEach((r) => { if (r.type === 'outbound-rtp' && r.kind === 'video') env = ` · enviando ${r.frameWidth || '?'}x${r.frameHeight || '?'} a ${Math.round(r.framesPerSecond || 0)} cps${r.qualityLimitationReason && r.qualityLimitationReason !== 'none' ? ` (limitado por ${r.qualityLimitationReason === 'cpu' ? 'la máquina' : r.qualityLimitationReason === 'bandwidth' ? 'la conexión' : r.qualityLimitationReason})` : ''} · cambios de tamaño ${r.qualityLimitationResolutionChanges || 0}`; }); } catch (e) { /* sin estadísticas */ }
+      try { (await window.__pc.getStats()).forEach((r) => { if (r.type === 'outbound-rtp' && r.kind === 'video') env = ` · enviando ${r.frameWidth || '?'}x${r.frameHeight || '?'} a ${Math.round(r.framesPerSecond || 0)} cps${r.targetBitrate ? ` y ${(r.targetBitrate / 1e6).toFixed(1).replace('.', ',')} Mbps` : ''}${r.qualityLimitationReason && r.qualityLimitationReason !== 'none' ? ` (limitado por ${r.qualityLimitationReason === 'cpu' ? 'la máquina' : r.qualityLimitationReason === 'bandwidth' ? 'la conexión' : r.qualityLimitationReason})` : ''} · cambios de tamaño ${r.qualityLimitationResolutionChanges || 0}`; }); } catch (e) { /* sin estadísticas */ }
       return `captura ${t.width}x${t.height} (página ${innerWidth}x${innerHeight})${env}`;
     }).catch(() => '');
     // Qué ve el navegador del emisor (26 nov: en Render la captura y la foto salían blancas, aquí no): la vista, el fondo,
