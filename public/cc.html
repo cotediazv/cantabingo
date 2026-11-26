@@ -171,6 +171,15 @@
   .an-yellow { background: #f2c230; color: #1a1407; text-align: center; border-top: 0; }
   .an-yellow .an-big { display: block; font-size: 44px; font-weight: bold; text-transform: uppercase; line-height: 1.05; }
   .an-yellow .big { min-height: 84px; font-size: 24px; background: #22b35e; border-color: #22b35e; }
+  /* ¿Quién quiere ser ganador? (26 nov): las 4 alternativas de a dos, la correcta marcada para el animador */
+  .dopts { overflow: hidden; margin: 6px 0; }
+  .dopt { float: left; width: 48%; margin: 1%; min-height: 64px; text-align: left; padding: 10px 12px; font-size: 20px; border: 2px solid #3a3466; background: #1d1838; color: #fff; }
+  .dopt b { color: #ffc400; margin-right: 6px; }
+  .dopt small { display: block; color: #3fe08f; font-size: 15px; }
+  .dopt.cor { border-color: #3fe08f; }
+  .dopt.on { border-color: #ffc400; background: #3a2f08; }
+  .dopt.gone { opacity: .3; }
+  button.half { float: left; width: 48%; margin: 1%; }
 </style>
 </head>
 <body>
@@ -274,8 +283,8 @@ function ann(title, names, lines) {
   return o + '</div>';
 }
 // El ranking de la Trivia del Rosko desplegado en pantalla, también grande en el iPad (pedido de Cote, 21 nov)
-function rankAnn(rank, players, final) {
-  var o = '<div class="panel ann"><small>📣 EN PANTALLA AHORA</small><span class="ann-t">🏅 Ranking de la Trivia del Rosko · ' + (final ? 'resultados finales' : 'resultados parciales') + '</span>';
+function rankAnn(rank, players, final, title) {
+  var o = '<div class="panel ann"><small>📣 EN PANTALLA AHORA</small><span class="ann-t">🏅 Ranking de la ' + (title || 'Trivia del Rosko') + ' · ' + (final ? 'resultados finales' : 'resultados parciales') + '</span>';
   if (!rank.length) o += '<span class="ann-l">Todavía nadie suma puntos</span>';
   else { o += '<div class="rk">'; for (var i = 0; i < rank.length; i++) o += '<p' + (i < 3 ? ' class="top"' : '') + '><em>' + (i + 1) + '.º</em><i>' + rank[i].score + ' pts</i><b>' + h(rank[i].name) + '</b></p>'; o += '</div>'; }
   return o + '<span class="ann-l">' + players + (players === 1 ? ' persona jugando' : ' personas jugando') + '</span></div>';
@@ -383,7 +392,7 @@ function pop(id, html) {
   document.body.appendChild(el);
 }
 var howSeen = {}; var animOptsOpen = false; var pubDone = false;
-var OPTS_A = ['manual', 'roscoReset', 'newQ']; var OPTS_X = ['undo', 'turn'];
+var OPTS_A = ['manual', 'roscoReset', 'newQ', 'desReset']; var OPTS_X = ['undo', 'turn'];
 function animAfter() {
   var app = $('app'); var i;
   // instrucciones: aviso una vez; si el recuadro se va y vuelve (otra ronda), sale de nuevo
@@ -585,7 +594,8 @@ views.ronda = function () {
   });
 };
 
-views.sorteoctl = function () {
+views.sorteoctl = function (arg) {
+  if (arg === 'desafio') { sorteoDes(); return; }
   if (S.fx !== location.hash) { S.fx = location.hash; api('POST', '/api/raffle/open', null); } // solo al entrar (no al refrescar)
   var load = function () {
     api('GET', '/api/gamedraw', null, function (e0, g) { S.draw = g; });
@@ -733,9 +743,178 @@ function votoView(want) {
 }
 views.festival = function () { votoView('festival'); };
 views.objeto = function () { votoView('objeto'); };
-// ¿Quién quiere ser ganador? todavía no tiene panel en el iPad viejo: se maneja desde la plataforma o el teléfono del animador
+var A = {}; // acciones de los botones (data-a)
+// ---------- ¿Quién quiere ser ganador? (pedido de Cote, 26 nov: «hay que arreglar el botón… del iPad también») ----------
+// Los mismos pasos que el panel de la plataforma (public/desafio-ui.js), con el botón verde del paso que sigue: sortear al
+// participante, presentarlo, preguntas con sus 4 alternativas (la correcta marcada para el animador), respuesta
+// definitiva, revelar, comodines, retirarse, reemplazos y, al final, los resultados del público
+var DL = ['A', 'B', 'C', 'D'];
+var DES_HOWTO = ['Un concursante sube 12 preguntas en 3 etapas, con un premio por etapa. Si pierde, sorteamos a un reemplazo del público que sigue desde esa pregunta.',
+  'Tú también juegas: <b>responde cada pregunta desde tu celular</b> antes de la respuesta definitiva del concursante.',
+  'Mientras más rápido, más puntos. Se suman al revelar la respuesta.', '<b>Premio especial</b> para el ganador de la Trivia del Ganador.'];
+var DES_LIFE = [['fifty', '50:50', '✂️'], ['audience', 'Pregunta al público', '📱'], ['phone', 'Llamada', '📞'], ['swap', 'Cambiar pregunta', '🔄']];
+var desSt = null; var desPick = null; var desPrizes = null; var desRaf = null; var desBusy = false; var desResT = null;
+function desPrizeOf(st, step) { return st.prizes[Math.ceil(step / 4) - 1] || ''; }
+function desNth(n) { return n + '.º'; }
+function desRaffleFirst() { var r = desRaf; if (!r || r.mode === 'tie' || r.game !== 'desafio') return null; var f = (r.picked || [])[0]; return f ? { name: f, ok: (r.confirm || {})[f] === 'ok' } : null; }
+function desOpts(st, clickable) {
+  var o = '<div class="dopts">';
+  for (var i = 0; i < st.q.options.length; i++) {
+    var gone = st.hidden.indexOf(i) >= 0; var on = i === (st.pick != null ? st.pick : desPick);
+    var cls = 'dopt' + (i === st.answer ? ' cor' : '') + (gone ? ' gone' : '') + (on ? ' on' : '');
+    o += btn('<b>' + DL[i] + '</b> ' + h(st.q.options[i]) + (i === st.answer ? '<small>✔ correcta</small>' : ''), clickable && !gone ? 'desPickOpt' : 'none', d('i', i), cls, !clickable || gone);
+    if (i % 2 === 1) o += '<div style="clear:both"></div>'; // de a dos por fila, aunque una sea más alta
+  }
+  return o + '</div><div style="clear:both"></div>';
+}
+function desExtras(st) {
+  var o = '';
+  if (st.audience && st.live) {
+    o += '<div class="now"><small>📱 Pregunta al público · el público dice</small>';
+    for (var i = 0; i < 4; i++) o += '<div class="gvrow"><div class="bar" style="width:' + (st.live.pct[i] || 0) + '%;background:#ff7a1a"></div><b>' + (st.live.pct[i] || 0) + '% (' + (st.live.counts[i] || 0) + ')</b><span>' + DL[i] + '</span></div>';
+    o += '<span class="muted">' + many(st.live.total, 'respuesta', 'respuestas') + ' de la Trivia</span></div>';
+  } else if (st.crowd && (st.phase === 'question' || st.phase === 'locked')) {
+    o += '<p class="muted">📱 La Trivia del Ganador: <b>' + many(st.crowd.answered, 'respuesta', 'respuestas') + '</b> ' + (st.crowd.open ? '· abierta hasta la respuesta definitiva' : '· cerrada') + '</p>';
+  }
+  var left = st.phoneUntil - (new Date().getTime() + offset);
+  if (left > 0) o += '<div class="now"><small>📞 Llamada</small><b id="desphone">quedan ' + Math.ceil(left / 1000) + ' s</b> ' + btn('Terminar llamada', 'des', d('x', 'stopphone')) + '</div>';
+  return o;
+}
+function desRender(st) {
+  if (location.hash !== '#/desafio' || !st) return;
+  desSt = st;
+  var ins = document.querySelectorAll('[data-prize]'); if (ins.length) { desPrizes = []; for (var p = 0; p < ins.length; p++) desPrizes.push(ins[p].value); } // lo que se está escribiendo no se pierde
+  var o = topBar(['#/juegos', 'Juegos'], 1);
+  if (st.phase === 'setup' && !desRaffleFirst()) o += howto('¿Quién quiere ser ganador?', DES_HOWTO); // solo antes de sortear (al volver del sorteo no sale de nuevo)
+  o += '<div class="panel"><h1>🏆 ¿Quién quiere ser ganador?</h1>';
+  var head = st.step ? '<p>' + (st.team.length > 1 ? '🔁 Participante ' + st.team.length + ' de 4: <b>' + h(st.player) + '</b> · ' : '') + 'Pregunta <b>' + st.step + '</b> de ' + st.steps + ' · etapa ' + Math.ceil(st.step / 4) + ': <b style="color:#ffc400">' + h(desPrizeOf(st, st.step)) + '</b></p>' : '';
+  var read = st.q ? '<div class="q live"><div class="qt">' + h(st.q.text) + '</div></div>' : '';
+  var rankBox = st.rank ? rankAnn(st.rank, st.rankPlayers || 0, st.phase === 'end', 'Trivia del Ganador') : '';
+  var rankBtn = btn(st.rank ? '🏅 Recoger ranking (está en pantalla)' : '🏅 Desplegar ranking de la Trivia del Ganador', 'desRank', '', 'big' + (st.rank ? ' on' : ''));
+  if (st.phase === 'setup') {
+    var f = desRaffleFirst(); var pz = desPrizes || (st.defaults && st.defaults.prizes) || st.prizes;
+    if (f) o += '<div class="now"><small>Primer participante</small><b>' + h(f.name) + '</b> ' + (f.ok ? '✅ Confirmó' : '⏳ Esperando que confirme') + '</div>';
+    if (!f || !f.ok) o += btn('🎲 ' + (f ? 'Seguir con el sorteo' : 'Sortear participante'), 'desGoRaffle', '', 'big primary paso');
+    o += '<p class="muted">Premios de hoy: uno por cada etapa que se pasa. Quien gana el juego se lleva los 3.</p>';
+    var lab = ['al pasar la pregunta 4', 'al pasar la pregunta 8', 'al ganar (pregunta 12)'];
+    for (var k = 0; k < 3; k++) o += '<p><b style="color:#ffc400">Premio ' + (k + 1) + '</b> <span class="muted">' + lab[k] + '</span><br><input type="text" maxlength="60" data-prize="' + k + '" value="' + h(pz[k] || '') + '"></p>';
+    o += btn('▶ Presentar en pantalla', 'desNew', '', 'big primary' + (f && f.ok ? ' paso' : ''), !(f && f.ok));
+  } else if (st.phase === 'intro') {
+    o += '<div class="now"><small>Primer participante</small><b>' + h(st.player) + '</b>' + (st.place ? ' <span class="muted">📍 ' + h(st.place) + '</span>' : '') + '</div>' +
+      ann('📣 Premios de hoy', [], ['1) ' + st.prizes[0], '2) ' + st.prizes[1], '3) ' + st.prizes[2], 'Quien gana el juego se lleva los 3.']) + btn('▶ Primera pregunta', 'des', d('x', 'next'), 'big primary paso');
+  } else if (st.phase === 'question') {
+    var chosen = desPick != null && st.hidden.indexOf(desPick) < 0 ? desPick : null;
+    o += rankBox + head + read + desOpts(st, true) + btn('🔒 Respuesta definitiva' + (chosen != null ? ': ' + DL[chosen] : ''), 'des', d('x', 'lock'), 'big primary paso', chosen == null) + desExtras(st) + '<h2>Comodines</h2><div class="row">';
+    for (var l = 0; l < DES_LIFE.length; l++) o += btn(DES_LIFE[l][2] + ' ' + DES_LIFE[l][1] + (st.used[DES_LIFE[l][0]] ? '<br><small>Ya usado</small>' : ''), 'desLife', d('x', DES_LIFE[l][0]) + d('n', DES_LIFE[l][1]), 'half', st.used[DES_LIFE[l][0]]);
+    var mine = []; for (var w = 0; w < (st.prizeWinners || []).length; w++) if (st.prizeWinners[w].by === st.player) mine.push(st.prizeWinners[w].prize);
+    o += '</div>' + btn('🏳 Se retira con ' + h(yJoin(mine) || 'nada'), 'des', d('x', 'retire'), 'big') + rankBtn;
+  } else if (st.phase === 'locked') {
+    o += rankBox + head + read + desOpts(st, false) + '<p>Respuesta definitiva: <b>' + DL[st.pick] + '</b>. En pantalla queda marcada, en suspenso.</p>' + desExtras(st) +
+      btn('✨ Revelar', 'des', d('x', 'reveal'), 'big primary paso') + btn('↩ Cambiar la respuesta', 'des', d('x', 'unlock'), 'big');
+  } else if (st.phase === 'reveal') {
+    var ok = st.pick === st.answer; var subNext = !ok && st.team.length < st.maxTeam;
+    o += rankBox + head + read + desOpts(st, false) + '<div class="now"><b style="color:' + (ok ? '#3fe08f' : '#ff6b6b') + '">' + (ok ? (st.step % 4 === 0 ? '✔ ¡Correcta! Pasó la etapa ' + (st.step / 4) + ': gana ' + h(desPrizeOf(st, st.step)) : '✔ ¡Correcta!') : subNext ? '✘ Incorrecta · ' + h(st.player) + ' queda fuera. Sorteamos un reemplazo (' + desNth(st.team.length + 1) + ' de 4)' : '✘ Incorrecta · fin del juego') + '</b></div>' +
+      btn(ok && st.step < st.steps ? '▶ Pregunta ' + (st.step + 1) : subNext ? '🔁 Llamar a un reemplazo' : '🏁 Ver resultado', 'des', d('x', 'next'), 'big primary paso') + rankBtn;
+  } else if (st.phase === 'swap') {
+    o += rankBox + '<div class="now"><small>🔁 Reemplazo</small><b>' + h(st.out) + ' quedó fuera en la pregunta ' + st.step + '</b></div><p>Sorteamos a un reemplazo del público (' + desNth(st.team.length + 1) + ' de 4). Sube al escenario y sigue desde esa misma pregunta, con lo ganado hasta ahora.</p>' +
+      btn('🎲 Sortear al reemplazo (' + desNth(st.team.length + 1) + ' de 4)', 'desGoRaffle', '', 'big primary paso') + rankBtn;
+  } else if (st.phase === 'subintro') {
+    o += rankBox + '<div class="now"><small>🔁 Sube (' + desNth(st.team.length) + ' de 4)</small><b>' + h(st.player) + '</b>' + (st.place ? ' <span class="muted">📍 ' + h(st.place) + '</span>' : '') + '</div><p>Sigue desde la pregunta ' + st.step + ' · etapa ' + Math.ceil(st.step / 4) + ': <b>' + h(desPrizeOf(st, st.step)) + '</b>. En pantalla se presenta al reemplazo.</p>' +
+      btn('▶ Pregunta ' + st.step + ' para ' + h(st.player), 'des', d('x', 'next'), 'big primary paso') + rankBtn;
+  } else if (st.phase === 'end') {
+    var pw = []; for (var z = 0; z < (st.prizeWinners || []).length; z++) pw.push(st.prizeWinners[z].prize + ' para ' + st.prizeWinners[z].by);
+    o += ann({ won: '🏆 ¡' + st.player + ' ganó el juego!', retired: '🏳 ' + st.player + ' se retiró', lost: '✘ Fin del juego' }[st.outcome] || 'Fin del juego', [], pw.length ? pw : ['Esta vez no hubo premios']) +
+      (st.q ? '<p class="muted">La respuesta correcta era ' + DL[st.answer] + ': ' + h(st.q.options[st.answer]) + '</p>' : '');
+    var cw = st.crowdWinner;
+    var rolling = cw && cw.roll && cw.rollMs && new Date().getTime() + offset < cw.at + cw.rollMs;
+    if (!cw) o += rankBox + btn(desResT ? '🏅 Mostrando el ranking… en 8 s sale el ganador' : '🏅 Resultados del público: ranking y ganador', 'desResults', '', 'big primary paso', !!desResT);
+    else if (rolling) o += ann('🥁 Trivia del Ganador', ['Sorteando en pantalla…'], ['El nombre sale aquí cuando se detenga la tómbola']);
+    else o += (cw.none ? ann('🏅 Trivia del Ganador', ['Nadie sumó puntos'], ['Jugaron ' + many(cw.players, 'persona', 'personas')]) : ann('🏅 Premio especial · Ganó la Trivia del Ganador', [cw.name], [many(cw.score, 'punto', 'puntos') + ' · ' + many(cw.hits, 'acierto', 'aciertos'), 'Jugaron ' + many(cw.players, 'persona', 'personas')])) +
+      rankBox + rankBtn + btn('▶ Nueva partida', 'des', d('x', 'reset'), 'big');
+  }
+  var inGame = st.phase !== 'setup' && !(st.phase === 'end' && st.crowdWinner);
+  o += '</div>' + nav('desafio', inGame) + '<div class="center">' + btn('🗑 Terminar partida (vuelve a empezar)', 'desReset', '', '') + '</div>' + foot();
+  render(o);
+}
+function desAct(b) {
+  if (desBusy) return; desBusy = true; toast('Guardando…');
+  api('POST', '/api/desafio/host', b, function (err, r) {
+    desBusy = false; toast(err || '');
+    if (!err && r) { if (b.action === 'lock' || b.action === 'next' || b.action === 'unlock' || b.action === 'reset') desPick = null; if (b.action === 'reset') desPrizes = null; desRender(r); }
+  });
+}
 views.desafio = function () {
-  render(topBar(['#/juegos', 'Juegos']) + '<div class="panel"><h1>🏆 ¿Quién quiere ser ganador?</h1><p>Este juego todavía no se puede manejar desde este iPad.</p><p>Manéjalo desde el teléfono del animador (<b>cantabingo.onrender.com/animador</b>) o desde la plataforma completa (<b>cantabingo.onrender.com</b>).</p></div>' + nav('desafio', false, false) + foot());
+  var load = function () {
+    if (desBusy) return;
+    api('GET', '/api/desafio/host', null, function (err, st) {
+      if (err || !st) return;
+      if (st.phase !== 'setup') { desRender(st); return; }
+      api('GET', '/api/raffle', null, function (e2, r) { desRaf = r; desRender(st); });
+    });
+  };
+  load(); poll = setInterval(load, 1500);
+};
+A.des = function (el) {
+  var x = el.getAttribute('data-x'); var b = { action: x };
+  if (x === 'lock') b.choice = desPick;
+  if (x === 'retire' && !window.confirm('¿El concursante se retira con lo que lleva?')) return;
+  desAct(b);
+};
+A.desPickOpt = function (el) { desPick = Number(el.getAttribute('data-i')); desRender(desSt); };
+A.desLife = function (el) { if (window.confirm('¿Usar el comodín «' + el.getAttribute('data-n') + '»?')) desAct({ action: el.getAttribute('data-x') }); };
+A.desRank = function () { if (desSt) desAct({ action: 'rank', on: !desSt.rank }); };
+A.desGoRaffle = function () { go('#/sorteoctl/desafio'); };
+A.desReset = function () { if (window.confirm('¿Terminar esta partida y volver a empezar?')) desAct({ action: 'reset' }); };
+A.desNew = function () {
+  var f = desRaffleFirst(); if (!f || !f.ok) return;
+  var ins = document.querySelectorAll('[data-prize]'); var pz = []; for (var i = 0; i < ins.length; i++) pz.push(ins[i].value);
+  desAct({ action: 'new', player: f.name, prizes: pz });
+};
+// Resultados del público en un solo botón verde (como en la plataforma): el ranking final y, a los 8 s, el ganador
+A.desResults = function () {
+  if (!desSt || desResT) return;
+  if (!desSt.rank) desAct({ action: 'rank', on: true });
+  desResT = setTimeout(function () { desResT = null; desBusy = false; desAct({ action: 'crowdwin' }); }, 8000);
+  desRender(desSt);
+};
+// Sorteo del participante (uno a la vez, hasta 4): el que salió y confirmó sube al escenario; si es un reemplazo, entra
+// en la partida y sigue desde la pregunta en que quedó el anterior
+function sorteoDes() {
+  if (S.fx !== location.hash) { S.fx = location.hash; api('POST', '/api/raffle/open', { game: 'desafio' }); }
+  var load = function () {
+    api('GET', '/api/raffle', null, function (e1, r) {
+      api('GET', '/api/people', null, function (e2, p) {
+        api('GET', '/api/desafio', null, function (e3, dg) {
+          if (!r || !p || !dg || location.hash !== '#/sorteoctl/desafio') return;
+          var picked = r.game === 'desafio' && r.mode !== 'tie' ? r.picked || [] : []; var cf = r.confirm || {}; var dec = r.declined || [];
+          var free = 0; for (var i = 0; i < p.connected.length; i++) if (picked.indexOf(p.connected[i]) < 0 && dec.indexOf(p.connected[i]) < 0) free++;
+          var lastP = picked[picked.length - 1]; var lastOk = lastP && cf[lastP] === 'ok';
+          var waiting = picked.length > (dg.team || []).length; var full = picked.length >= 4;
+          var rolling = r.roll && new Date().getTime() + offset < r.roll.at + (r.rollMs || 6000);
+          var role = picked.length === 0 ? 'primer participante' : 'reemplazo (participante ' + (picked.length + 1) + ' de 4)';
+          var o = topBar(['#/desafio', '¿Quién quiere ser ganador?'], 1) + '<h1>Sorteo de concursantes · ¿Quién quiere ser ganador?</h1>' +
+            (rolling ? '<div class="panel ann"><small>📣 PARA ANUNCIAR</small><span class="ann-t">🎲 Sorteando en pantalla…</span></div>' : lastP ? ann('🎲 Salió sorteado · ' + (picked.length === 1 ? 'primer participante' : 'reemplazo (participante ' + picked.length + ' de 4)'), [lastP], [(r.places || {})[lastP] ? '📍 ' + r.places[lastP] : '', lastOk ? '✅ ¡Confirmó! Que se acerque a nuestro escenario' : '⏳ Esperando que confirme en su celular si quiere jugar']) : '') +
+            (!rolling && dec.length ? '<p class="muted" style="text-align:center">🙅 Prefirieron jugar online (no entran al sorteo): ' + h(dec.join(', ')) + '</p>' : '') + '<div class="panel">';
+          if (rolling) o += btn('🎲 Sorteando en pantalla…', 'none', '', 'big primary paso', true);
+          else if (waiting && lastOk) o += btn('✔ Que suba al escenario: ' + h(lastP), 'desSube', d('n', lastP) + (dg.phase === 'swap' ? d('swap', '1') : ''), 'big primary paso');
+          else if (waiting) o += btn('⏳ Esperando que confirme en su celular', 'none', '', 'big primary paso', true);
+          else if (full) o += btn('Ya jugaron los 4 participantes', 'none', '', 'big primary', true);
+          else o += btn('🎲 Sortear ' + role, 'raffleDraw', '', 'big primary paso', !free);
+          o += '<h2>Sorteados</h2>';
+          for (var k = 0; k < picked.length; k++) o += '<div class="item"><b>' + (k + 1) + '. ' + h(picked[k]) + '</b> <span class="muted">' + (cf[picked[k]] === 'ok' ? '✅ Confirmó' : '⏳ Esperando que confirme en su celular') + '</span><span class="r">' + (cf[picked[k]] === 'ok' ? '' : btn('✔ Confirmar a mano', 'confirmPick', d('n', picked[k]))) + btn('Quitar', 'unpick', d('n', picked[k])) + '</span></div>';
+          if (!picked.length) o += '<p class="muted">Todavía no has sorteado a nadie.</p>';
+          o += btn('Empezar de nuevo', 'raffleReset', '') + '</div><div class="panel"><b>▸ ' + p.connected.length + ' conectados ahora · ' + p.names.length + ' en la lista</b></div>' + nav('desafio', true) + foot();
+          render(o);
+        });
+      });
+    });
+  };
+  load(); poll = setInterval(load, 3000);
+}
+A.desSube = function (el) {
+  var n = el.getAttribute('data-n');
+  if (!el.getAttribute('data-swap')) { go('#/desafio'); return; }
+  api('POST', '/api/desafio/host', { action: 'sub', player: n }, function (err) { if (err) toast(err); else go('#/desafio'); });
 };
 
 views.karaoke = function () {
@@ -781,7 +960,7 @@ views.control = function () {
 };
 
 // ---------- Acciones ----------
-var A = {};
+A = A || {}; // ya creado antes del panel de ¿Quién quiere ser ganador?
 A.animOpts = anim_animOpts; A.animPublico = anim_animPublico; A.crowdBoth = anim_crowdBoth; // modo animador
 A.login = function () {
   toast('Entrando…');
