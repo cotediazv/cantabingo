@@ -1095,7 +1095,7 @@ app.get('/api/vertical/:local', (req, _res, next) => {
   for (const k of Object.keys(L)) if (Date.now() - L[k].at > 10 * 60000) delete L[k];
   next();
 });
-require('./vertical.js')({ cuadroOf: (v) => (emisorCuadro && emisorCuadro.p === v && Date.now() - emisorCuadro.at < 8000 ? emisorCuadro.at : 0), planB: () => emisorModo() === 'b', soloA: () => emisorModo() === 'a', app, db, save, requireAdmin, fail, karaoke, perOf, dir: path.dirname(DATA_FILE) }); // pantalla vertical: video del mes y actividades
+require('./vertical.js')({ cuadroOf: (v) => (emisorCuadro && emisorCuadro.p === v && Date.now() - emisorCuadro.at < 8000 ? emisorCuadro.at : 0), planB: () => emisorModo() === 'b', soloA: () => emisorModo() === 'a', emisorVivo: () => Date.now() - emisor.latido < 90000, app, db, save, requireAdmin, fail, karaoke, perOf, dir: path.dirname(DATA_FILE) }); // pantalla vertical: video del mes y actividades
 // Conectados (pedido de Cote, 22 nov): números en vivo por local, gráfico de las últimas 3 horas y registro por jornada
 require('./conectados.js')({ app, db, save, requireAdmin, port: process.env.PORT || 3000,
   // personas de la sala de juegos de ese local: conectadas ahora (con la sala abierta en el celular) e inscritas en total

@@ -22,7 +22,7 @@ const SCREENS = { kennedy: 'kennedy', frida: 'frida', 'tobalaba-v': 'tobalaba', 
 const MODES = ['auto', 'video', 'actividad'];
 const MAX_BYTES = 300 * 1024 * 1024; // 300 MB por video
 
-module.exports = function vertical({ cuadroOf = () => 0, planB = () => false, soloA = () => false, app, db, save, requireAdmin, fail, dir, karaoke, perOf = () => null }) {
+module.exports = function vertical({ cuadroOf = () => 0, planB = () => false, soloA = () => false, emisorVivo = () => false, app, db, save, requireAdmin, fail, dir, karaoke, perOf = () => null }) {
   db.vertical ||= {}; // local -> { video: número de versión (fecha de subida), size, mode }
   const file = (v) => path.join(dir, `vertical-${v}.mp4`);
   const conf = (v) => (db.vertical[v] ||= { video: 0, size: 0, mode: 'auto' });
@@ -157,7 +157,7 @@ module.exports = function vertical({ cuadroOf = () => 0, planB = () => false, so
     // Cloudflare, en la variable de entorno EMISION_<PANTALLA> de Render (ej. EMISION_KENNEDY). Con ella, durante los
     // juegos la pantalla liviana (pv.html) muestra la emisión en tiempo real que manda emisor/emisor.js
     const emi = String(process.env[`EMISION_${v.toUpperCase().replace(/-/g, '_')}`] || '');
-    return { cuadro: cuadroOf(v), planB: planB(), soloA: soloA(), recargar: (db.decoReload || {})[v] || 0, emision: /^(https:\/\/|http:\/\/localhost[:/])[^\s"'<>]+$/.test(emi) ? emi : '', screen: v, venue: SCREENS[v], name: VENUES[SCREENS[v]], per: perOf(venue), lightVideo: lightVideo && hasVideo, opt: c.opt || null, optimiza: !!FFMPEG, lightStage: ((db.lights || {})[venue] || {}).stage || 'cartelera', karaokeNow: !!karaoke.nowOf(venue).now, mode: c.mode, activity: act, show, video: hasVideo ? c.video : 0, size: hasVideo ? c.size : 0 };
+    return { cuadro: cuadroOf(v), planB: planB(), soloA: soloA(), emisorVivo: emisorVivo(), recargar: (db.decoReload || {})[v] || 0, emision: /^(https:\/\/|http:\/\/localhost[:/])[^\s"'<>]+$/.test(emi) ? emi : '', screen: v, venue: SCREENS[v], name: VENUES[SCREENS[v]], per: perOf(venue), lightVideo: lightVideo && hasVideo, opt: c.opt || null, optimiza: !!FFMPEG, lightStage: ((db.lights || {})[venue] || {}).stage || 'cartelera', karaokeNow: !!karaoke.nowOf(venue).now, mode: c.mode, activity: act, show, video: hasVideo ? c.video : 0, size: hasVideo ? c.size : 0 };
   };
 
   app.get('/api/vertical/:local', (req, res) => {

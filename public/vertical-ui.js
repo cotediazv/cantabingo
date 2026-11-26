@@ -39,6 +39,14 @@
     const video = $('.vt-video');
     const frame = $('.vt-act');
     const empty = $('.vt-empty');
+    // En el emisor (26 nov: la pantalla tardaba 9 s en cambiar): el tablero de la sala queda cargado de antemano, escondido,
+    // y al empezar un juego solo se muestra (sin esperar que cargue la página)
+    let tframe = null;
+    if (new URLSearchParams(location.search).get('emisor') === '1') {
+      tframe = document.createElement('iframe'); tframe.className = 'vt-act'; tframe.title = 'Juegos'; tframe.style.visibility = 'hidden';
+      tframe.src = `${location.pathname}?mudo=1${window.__mon || ''}#/tablero`;
+      $('.vt').appendChild(tframe);
+    }
     let shown = '';
     let ver = 0;
     let alive = true;
@@ -74,6 +82,10 @@
       window.gcPer.over(st.per && !(st.per.from === 'main' && /^#\/tablero/.test(want)) ? st.per.text : '', venue);
       if (want === shown) return;
       shown = want;
+      if (tframe) {
+        tframe.style.visibility = want === '#/tablero' ? '' : 'hidden';
+        if (want === '#/tablero') { frame.hidden = true; frame.src = 'about:blank'; video.hidden = true; empty.hidden = true; video.pause(); return; }
+      }
       const isVideo = want === 'video';
       video.hidden = !isVideo || !ver;
       empty.hidden = !isVideo || !!ver;

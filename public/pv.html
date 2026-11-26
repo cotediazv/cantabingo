@@ -137,6 +137,7 @@
      llega en tiempo real desde el emisor y se pone encima; si no llega, sigue la vista de esta página */
   #emi { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 45; background: #000; object-fit: contain; display: none; }
   #cv.emi-on #emi { display: block; }
+  #cv.emi-warm #emi { display: block; visibility: hidden; } /* conectada de antemano, lista para ponerse encima */
   #cv.emi-on #view, #cv.emi-on #per, #cv.emi-on #marks { visibility: hidden; }
   /* Plan B (26 nov): la imagen cuadro a cuadro que manda el emisor, para los aparatos sin WebRTC */
   #emf { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 44; background: #000; display: none; }
@@ -480,7 +481,7 @@
     var cw = rot ? H : W; var ch = rot ? W : H;
     cv.style.width = cw + 'px'; cv.style.height = ch + 'px';
     // conserva la transmisión y el plan B puestos (26 nov: al cambiar el tamaño, p. ej. con «Pantalla completa», se perdían)
-    var keep = (/ emi-on\b/.test(cv.className) ? ' emi-on' : '') + (/ emf-on\b/.test(cv.className) ? ' emf-on' : '');
+    var keep = (/ emi-on\b/.test(cv.className) ? ' emi-on' : '') + (/ emi-warm\b/.test(cv.className) ? ' emi-warm' : '') + (/ emf-on\b/.test(cv.className) ? ' emf-on' : '');
     cv.className = (rot ? 'rot ' : '') + 'th-' + VENUE + (cw > ch * 0.75 ? ' wide' : '') + (perShown ? ' per' : '') + keep;
     // la transmisión y la imagen del plan B, del tamaño exacto de la pantalla también en navegadores antiguos
     var em = document.getElementById('emi'); var ef = document.getElementById('emf');
@@ -599,6 +600,7 @@
   var cur = ''; var viewSeq = 0;
   function go(want) {
     cur = want; viewSeq++;
+    emiShow(); // la transmisión, si ya está conectada, se pone encima al instante al pasar a los juegos
     clearList(viewTimers); clearList(stageTimers);
     tap.className = 'hide';
     if (want !== 'video') { try { if (vid.webkitDisplayingFullscreen && vid.webkitExitFullscreen) vid.webkitExitFullscreen(); } catch (e) { /* nada */ } } // empieza un juego: sale de la pantalla completa del video
@@ -1114,7 +1116,7 @@
       var want = show === 'video' ? (ver ? 'video' : 'logo') : show === 'light' ? 'info' : show === 'light-qr' ? 'info-qr' : show === 'light-show' ? 'info-show' : show === 'light-kar' ? 'info-kar' : show === 'karaoke' ? 'karaoke' : !st.activity ? (ver ? 'video' : 'logo') : 'sala';
       if (want !== cur) go(want);
       eUrl = eTest || st.emision || '';
-      stCuadro = st.cuadro || 0; stPlanB = !!st.planB; stSoloA = !!st.soloA;
+      stCuadro = st.cuadro || 0; stPlanB = !!st.planB; stSoloA = !!st.soloA; stEmiVivo = !!st.emisorVivo;
       emiWant(); framesTick();
       report();
     });
@@ -1122,7 +1124,7 @@
   // ---------- Emisión en vivo (WHEP de Cloudflare) ----------
   // Solo con la sala en pantalla y la dirección configurada; la imagen se pone encima apenas el video empieza a andar.
   // Si se corta, vuelve al instante la vista de esta página y se reintenta cada 15 s.
-  var emi = $('emi'); var epc = null; var eOn = false; var eTimer = null; var eUrl = ''; var eErr = ''; var eIce = ''; var eCodecs = ''; var stSoloA = false;
+  var emi = $('emi'); var epc = null; var eOn = false; var eTimer = null; var eUrl = ''; var eErr = ''; var eIce = ''; var eCodecs = ''; var stSoloA = false; var stEmiVivo = false;
   // Prueba del decodificador (?senal=kennedy, frida o tobalaba): muestra encima, todo el tiempo, la transmisión propia
   // de ese local (la misma de krbstage.cl), para comprobar que el decodificador recibe la señal en tiempo real
   var SENAL = { kennedy: 'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/c24ccde66ad7d935841dd934d9b3e1cf/webRTC/play', frida: 'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/2c9c627707b0fbc53e20c611f84235a0/webRTC/play', tobalaba: 'https://customer-3bznxs0ex4mcn0j1.cloudflarestream.com/9c4d261a1b6c2fb79842b6d3821b9018/webRTC/play' };
@@ -1130,15 +1132,22 @@
   function emiStop() {
     clearTimeout(eTimer); eTimer = null;
     if (epc) { try { epc.close(); } catch (e) { /* nada */ } epc = null; }
-    if (eOn) { eOn = false; cv.className = cv.className.replace(/ emi-on\b/, ''); }
+    if (eOn) { eOn = false; emiShow(); }
     try { if ('srcObject' in emi) emi.srcObject = null; else emi.removeAttribute('src'); } catch (e) { /* nada */ }
   }
-  function emiWant() { if ((cur === 'sala' || eTest) && eUrl && !(stPlanB && !eTest)) { if (!epc && !eTimer) emiStart(); } else if (epc || eOn || eTimer) emiStop(); }
+  // Conectada de antemano (26 nov: la pantalla tardaba 9 s en cambiar, buena parte en armar la conexión): mientras el emisor
+  // está corriendo, la transmisión queda conectada aunque no esté en pantalla, y al pasar a los juegos se pone encima al tiro
+  function emiShow() {
+    var c = cv.className.replace(/ emi-on\b/, '').replace(/ emi-warm\b/, '');
+    if (eOn) c += (cur === 'sala' || eTest) ? ' emi-on' : ' emi-warm';
+    cv.className = c;
+  }
+  function emiWant() { if ((cur === 'sala' || eTest || stEmiVivo) && eUrl && !(stPlanB && !eTest)) { if (!epc && !eTimer) emiStart(); } else if (epc || eOn || eTimer) emiStop(); }
   function emiStart() {
     if (!window.RTCPeerConnection || !window.Promise) { eErr = !window.RTCPeerConnection ? 'el navegador no tiene WebRTC' : 'el navegador es muy antiguo (sin Promise)'; return; }
     var pc; try { pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.cloudflare.com:3478' }], bundlePolicy: 'max-bundle' }); } catch (e) { eErr = 'no pudo crear la conexión: ' + (e && e.message ? e.message : e); return; }
     epc = pc;
-    var again = function (ms, why) { if (epc !== pc) return; if (why) eErr = why; if (!eOn) eFails++; emiStop(); eTimer = setTimeout(function () { eTimer = null; emiWant(); }, ms); };
+    var again = function (ms, why) { if (epc !== pc) return; if (why) eErr = why; if (!eOn && cur === 'sala') eFails++; emiStop(); eTimer = setTimeout(function () { eTimer = null; emiWant(); }, ms); };
     var got = function (stream) {
       if (epc !== pc || !stream) return;
       if ('srcObject' in emi) emi.srcObject = stream; else emi.src = URL.createObjectURL(stream);
@@ -1169,7 +1178,7 @@
       });
     }).then(function (sdp) { return pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: sdp })); })['catch'](function (e) { clearTimeout(limit); again(15000, (e && e.message ? e.message : String(e)).slice(0, 100)); });
   }
-  function emiOnNow() { if (epc && !eOn) { eOn = true; eFails = 0; eErr = ''; cv.className += ' emi-on'; framesStop(); } }
+  function emiOnNow() { if (epc && !eOn) { eOn = true; eFails = 0; eErr = ''; emiShow(); framesStop(); } }
   emi.addEventListener('playing', emiOnNow);
   // Navegadores antiguos que no avisan «playing» con la transmisión: si el video ya tiene imagen y avanza, se pone igual;
   // si llegó la imagen pero está detenido, se le vuelve a pedir que parta
@@ -1216,13 +1225,17 @@
     var x = new XMLHttpRequest();
     try {
       x.open('POST', '/api/deco', true); x.setRequestHeader('Content-Type', 'application/json'); x.timeout = 10000;
-      x.send(JSON.stringify({ p: P, vista: cur, emi: !!eOn, cuadros: !!fOn, emiUrl: !!eUrl, intentando: !!(epc && !eOn), rtc: !!window.RTCPeerConnection, fallos: eFails, err: eErr, ice: epc ? (epc.iceConnectionState || '') : eIce, codecs: eCodecs, vw: emi.videoWidth || 0, vh: emi.videoHeight || 0, soloA: stSoloA, ver: myTag || '', ua: String(navigator.userAgent || '').slice(0, 160), w: window.innerWidth, h: window.innerHeight }));
+      x.send(JSON.stringify({ p: P, vista: cur, emi: !!(eOn && (cur === 'sala' || eTest)), cuadros: !!fOn, emiUrl: !!eUrl, intentando: !!(epc && !eOn), rtc: !!window.RTCPeerConnection, fallos: eFails, err: eErr, ice: epc ? (epc.iceConnectionState || '') : eIce, codecs: eCodecs, vw: emi.videoWidth || 0, vh: emi.videoHeight || 0, soloA: stSoloA, ver: myTag || '', ua: String(navigator.userAgent || '').slice(0, 160), w: window.innerWidth, h: window.innerHeight }));
     } catch (e) { /* nada */ }
   }
   function pubLoad() { get('/api/tema', function (r) { if (r && typeof r.pub === 'string') PUB = r.pub; }); }
   pubLoad(); setInterval(pubLoad, 300000);
   tick();
   setInterval(tick, 3000);
+  // Aviso inmediato del servidor cuando cambia lo que está en pantalla (26 nov: antes esperaba hasta 3 s)
+  try {
+    if (window.EventSource) { var esT = null; var es = new EventSource('/api/live'); es.onmessage = function () { clearTimeout(esT); esT = setTimeout(tick, 60); }; }
+  } catch (e) { /* sigue con la lectura de cada 3 s */ }
   // Versión nueva publicada (pedido de Cote, 21 nov: que la pantalla se actualice sin tener que apretar nada): cada minuto
   // se mira la marca de esta página en el servidor; si cambió, la pantalla se recarga sola. No lo hace en pantalla completa
   // (se perdería), en medio de los juegos, con el servidor sin responder, ni con el video puesto donde el video necesita

@@ -87,6 +87,7 @@ test('plan B: el emisor manda imágenes con su marca y la pantalla vertical lo s
     assert.equal((await post(lat.marca)).status, 200);
     assert.equal((await fetch(`${s.url}/api/emisor/cuadro.jpg`)).status, 200);
     let v = await s.ok('GET', '/api/vertical/kennedy');
+    assert.equal(v.emisorVivo, true); // con el emisor corriendo, el deco deja la transmisión conectada de antemano
     assert.ok(v.cuadro > 0); assert.equal(v.planB, false);
     await s.admin.post('/api/emisor/planb', { on: true });
     v = await s.ok('GET', '/api/vertical/kennedy');
