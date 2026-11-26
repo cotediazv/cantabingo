@@ -392,8 +392,11 @@
     if (st && st.phase === 'reveal') {
       const k = `${(st.crowd && st.crowd.qid) || 0}|${st.step}|${st.q && st.q.text}`;
       if (!st.right) { sfx.music(null); return; }
-      if (revKey !== k && sfx.playing() !== CORRECTA) sfx.music(CORRECTA, { vol: 1 }); // si aún no estaba bajado, parte en el próximo segundo
-      if (sfx.playing() === CORRECTA) revKey = k;
+      // Pasó el premio 1 (pregunta 4): suena la cortina inicial como celebración (pedido de Cote, 26 nov: «cada vez que la
+      // persona pasa el premio 1, tiene que sonar la cortina inicial como celebración»), en lugar de la de la correcta
+      const fest = st.step === (st.stage || 4) ? INTRO : CORRECTA;
+      if (revKey !== k && sfx.playing() !== fest) sfx.music(fest, { vol: 1 }); // si aún no estaba bajado, parte en el próximo segundo
+      if (sfx.playing() === fest) revKey = k;
       return;
     }
     // La música del comienzo la toca el tablero al cargarse el juego (Cote, 26 nov: «al iniciar el juego… ahí sale la
