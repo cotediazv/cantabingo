@@ -1003,23 +1003,29 @@ const juegoEnPantalla = (s) => {
   if (st === 'rueda') return Object.keys(db.wheels || {}).length > 0;
   return true;
 };
-const emisorCheck = () => {
+const emisorCheck = (forzar) => {
   const key = process.env.RENDER_API_KEY; const cron = process.env.EMISOR_CRON;
   const s = Object.values(db.sessions)[0];
   if (!key || !cron) return;
   // Modo prueba (Cote, 25 nov: «hoy necesita que se quede en prueba y prendido todo el tiempo»): el emisor corre y transmite
   // siempre, haya o no juego (se enciende y apaga en el Centro de control)
-  if (!db.emisorPrueba) {
+  if (!db.emisorPrueba && !forzar) {
     if (!s || (s.theme || 'frida') !== 'kennedy' || !juegoEnPantalla(s)) return;
     if (((db.vertical || {}).kennedy || {}).mode === 'video') return; // la pantalla está en «Siempre el video»: no se vería
   }
-  if (Date.now() - emisor.latido < 90000 || Date.now() - emisor.pedido < 10 * 60000) return; // ya corre, o se pidió hace poco (puede tardar minutos en partir; pedirlo de nuevo cancela el turno en curso)
+  if (!forzar && (Date.now() - emisor.latido < 90000 || Date.now() - emisor.pedido < 10 * 60000)) return; // ya corre, o se pidió hace poco (puede tardar minutos en partir; pedirlo de nuevo cancela el turno en curso)
   emisor.pedido = Date.now();
   fetch(`${process.env.RENDER_API_URL || 'https://api.render.com'}/v1/cron-jobs/${encodeURIComponent(cron)}/runs`, { method: 'POST', headers: { Authorization: `Bearer ${key}`, Accept: 'application/json' }, signal: AbortSignal.timeout(10000) })
     .then(async (r) => { emisor.error = r.ok ? '' : `Render respondió ${r.status}: ${(await r.text()).slice(0, 160)}`; if (!r.ok) console.log('Emisor:', emisor.error); })
     .catch((e) => { emisor.error = String(e.message || e); console.log('Emisor:', emisor.error); });
 };
 setInterval(emisorCheck, 30000);
+// «↻ Reiniciar el emisor» (26 nov): pide un turno nuevo a Render, que cancela el que está corriendo y parte de cero (con la
+// última versión del emisor). Para cuando la emisión quedó pegada en algo raro.
+app.post('/api/emisor/reiniciar', requireAdmin, (_req, res) => {
+  if (!process.env.RENDER_API_KEY || !process.env.EMISOR_CRON) return fail(res, 409, 'Falta poner RENDER_API_KEY y EMISOR_CRON en Render');
+  emisor.latido = 0; emisorCheck(true); res.json({ ok: true });
+});
 require('./momentos.js').init({ app, db, aviso }); // momentos de los juegos para las luces (lista acordada con Code 4)
 // Lugar donde está cada concursante (pedido de Cote, 26 nov: «mostrar bajo el nombre del concursante en Kennedy en qué
 // lugar está»): el que eligió al entrar a la sala (en Kennedy, el local del mercado); vacío si el local no pide lugar

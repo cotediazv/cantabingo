@@ -35,7 +35,7 @@
       <p class="muted small">${r.configurado ? '' : 'Falta poner RENDER_API_KEY y EMISOR_CRON en Render. '}El emisor parte solo cuando hay un juego en pantalla en Mercado Kennedy y se apaga a los 10 minutos sin juego. Con el <b>modo prueba</b> queda encendido y transmitiendo todo el tiempo (cada minuto encendido se cobra).</p>
       <p><b>${estado}</b>${r.prueba ? ' · <b>modo prueba puesto</b>' : ''}${r.error ? ` · <span class="muted small">Último error: ${esc(r.error)}</span>` : ''}</p>
       ${decoTxt}${porQue}
-      <div class="row"><button type="button" data-emi-reload>↻ Recargar la pantalla vertical de Kennedy a distancia</button></div>
+      <div class="row"><button type="button" data-emi-reload>↻ Recargar la pantalla vertical de Kennedy a distancia</button><button type="button" data-emi-restart>↻ Reiniciar el emisor</button></div>
       ${lecTxt}${fotoTxt}
       <div class="emi-planb"><b>Qué muestra el deco con un juego</b> <span class="muted small">Plan A = la transmisión en vivo (se ve igual que la pantalla completa). Plan B = una imagen por segundo de la misma pantalla (sirve en cualquier aparato). En «Automático» el plan B entra solo si el deco no tiene WebRTC o la transmisión no le llega en dos intentos.${r.cuadro != null ? ` · última imagen del plan B hace ${r.cuadro} s` : ' · todavía no llegan imágenes del plan B'}</span>
         <div class="row">${[['a', '📡 Solo plan A'], ['auto', 'Automático'], ['b', '🖼️ Plan B siempre']].map(([m, t]) => `<button type="button" class="${r.modo === m ? 'primary' : ''}" data-modo="${m}">${t}${r.modo === m ? ' · puesto' : ''}</button>`).join('')}</div></div>
@@ -63,6 +63,11 @@
       if (e.target.closest('[data-emi-reload]')) {
         if (!confirm('¿Recargar la pantalla vertical de Kennedy? Si está en pantalla completa, sale de ella.')) return;
         try { await api('POST', '/api/deco/recargar', { p: 'kennedy' }); toast('Listo: la pantalla se recarga en unos segundos (si tiene la página nueva)'); } catch (err) { toast(err.message); }
+        return;
+      }
+      if (e.target.closest('[data-emi-restart]')) {
+        if (!confirm('¿Reiniciar el emisor? La emisión se corta 1 o 2 minutos y vuelve sola.')) return;
+        try { await api('POST', '/api/emisor/reiniciar'); toast('Listo: el emisor parte de nuevo en 1 o 2 minutos'); } catch (err) { toast(err.message); }
         return;
       }
       const pb = e.target.closest('button[data-modo]');

@@ -102,6 +102,8 @@ test('plan B: el emisor manda imágenes con su marca y la pantalla vertical lo s
     // el deco cuenta por qué no le llega la transmisión
     await s.ok('POST', '/api/deco', { p: 'kennedy', vista: 'sala', rtc: true, fallos: 2, err: 'en 25 s no llegó imagen', ice: 'checking' });
     const d = (await s.admin.get('/api/deco')).kennedy;
+    // «Reiniciar el emisor»: sin las variables de Render avisa qué falta
+    assert.equal((await fetch(`${s.url}/api/emisor/reiniciar`, { method: 'POST' })).status, 401);
     assert.equal(d.fallos, 2); assert.equal(d.err, 'en 25 s no llegó imagen'); assert.equal(d.ice, 'checking');
   } finally { await s.stop(); }
 });

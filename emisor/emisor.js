@@ -100,6 +100,9 @@ const mandarFoto = async (page) => {
     log('Foto enviada · luz de la captura:', luz, '·', cap, '·', diag);
   } catch (e) { log('No se pudo mandar la foto:', e.message); }
 };
+// La página es la de la Sala (26 nov: durante una publicación la Sala se reinicia; si la página se recargaba justo ahí quedaba
+// en «502 Bad Gateway» de Render y el emisor la transmitía así hasta el final del turno)
+const paginaOk = (page) => page.evaluate(() => !!document.getElementById('app') && !/\b50[234]\b|Bad Gateway|Service Unavailable/i.test(document.title)).catch(() => false);
 const vivo = (page) => page.evaluate(() => !!(window.__pc && ['connected', 'connecting'].includes(window.__pc.connectionState))).catch(() => false);
 const cortar = (page) => page.evaluate(async () => {
   try { const loc = window.__whipDel; if (window.__pc) window.__pc.close(); if (loc) await fetch(new URL(loc, window.__whipUrl).href, { method: 'DELETE' }); } catch (e) { /* nada */ }
@@ -147,7 +150,7 @@ for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { log('Detenido:'
     while (!parar) {
       const t0 = Date.now();
       try {
-        if (page && clave()) {
+        if (page && clave() && await paginaOk(page)) {
           if (pageC !== page) { cdpC = await ctx.newCDPSession(page); pageC = page; }
           const { data } = await cdpC.send('Page.captureScreenshot', { format: 'jpeg', quality: 55, clip: { x: 0, y: 0, width: W, height: H, scale: 720 / W } });
           await fetch(`${SITIO}/api/emisor/cuadro`, { method: 'POST', headers: { 'content-type': 'image/jpeg', 'x-emisor': clave(), 'x-pantalla': PANTALLA }, body: Buffer.from(data, 'base64'), signal: AbortSignal.timeout(4000) });
@@ -199,6 +202,12 @@ for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { log('Detenido:'
             await browser.close().catch(() => {}); browser = await lanzar(true); modoNav = 'sin tarjeta gráfica';
           }
         }
+      }
+      if (page && !(await paginaOk(page))) {
+        log('La página no es la de la Sala (¿error 502 mientras la Sala se reiniciaba?): se vuelve a abrir');
+        ultimoError = 'la página quedó en un error del servidor; se volvió a abrir';
+        if (enviando) await cortar(page); enviando = false; if (ctx) { await ctx.close().catch(() => {}); ctx = null; page = null; }
+        await sleep(5000);
       }
       const st = await estado();
       const juego = st.juego;
