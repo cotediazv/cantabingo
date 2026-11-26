@@ -1,0 +1,5 @@
+Flyer tipo de un show por local (pedido de Cote, 26 nov), con la estetica de las pantallas de la Sala.
+Medidas: publicacion 1080x1350 e historia 1080x1920. Color y logo segun el local (kennedy, frida, tobalaba).
+Para usarlo: copiar aqui krb-stage.svg y los logos de public/, poner la foto del artista y cambiar los datos en jobs.json.
+Luego: node render.js (necesita Playwright). Salen <nombre>-post.png y <nombre>-historia.png.
+La foto no va en el repositorio (es publico).
