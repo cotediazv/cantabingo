@@ -370,7 +370,17 @@
   // de a poco y entra la cortina de la pregunta
   const INTRO = 'audio/desafio-intro.mp3';
   let introGen = null;
+  // Música al revelar (pedido de Cote, 26 nov: «usa esta música para cuando se revele la pregunta»; 13 s): suena una vez
+  // cuando el animador toca «Revelar» y se ve si la respuesta era correcta; con la pregunta siguiente entra la cortina
+  const REVELA = 'audio/desafio-revela.mp3';
+  let revKey = '';
   const cortina = (st) => {
+    if (st && st.phase === 'reveal') {
+      const k = `${(st.crowd && st.crowd.qid) || 0}|${st.step}|${st.q && st.q.text}`;
+      if (revKey !== k && sfx.playing() !== REVELA) sfx.music(REVELA, { vol: 0.85 }); // si aún no estaba bajado, parte en el próximo segundo
+      if (sfx.playing() === REVELA) revKey = k;
+      return;
+    }
     if (st && st.phase === 'intro') {
       if (introGen !== st.gen && sfx.playing() !== INTRO) sfx.music(INTRO, { vol: 0.8 }); // si aún no estaba bajado, parte en el próximo segundo
       if (sfx.playing() === INTRO) introGen = st.gen;
