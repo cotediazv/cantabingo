@@ -123,7 +123,7 @@ module.exports = function desafio({ placeOf = () => '', roscoBusy = () => false,
     const shown = s.phase === 'reveal' || s.phase === 'end';
     const t = tally();
     return {
-      rev: s.rev, now: Date.now(), venue: venue(), title: TITLE, phase: s.phase, player: s.player, place: placeOf(s.player),
+      rev: s.rev, gen: s.gen || 0, now: Date.now(), venue: venue(), title: TITLE, phase: s.phase, player: s.player, place: placeOf(s.player),
       team: s.team, turn: s.team.length, maxTeam: MAX_TEAM, out: s.out || '', lostAt: s.lostAt || 0,
       prizes: s.prizes, stage: STAGE, step: s.step, steps: STEPS, stageOf: s.step ? Math.ceil(s.step / STAGE) : 0,
       q: s.q ? { text: s.q.text, options: s.q.options, level: s.q.level } : null,

@@ -365,7 +365,17 @@
   // la pregunta dura más que el audio, sigue desde los 8 s. Si se arrepiente de la respuesta, vuelve sin el golpe inicial.
   const CORTINA = 'audio/desafio-pregunta.mp3';
   let qKey = ''; let qFrom = 0;
+  // Audio del comienzo (pedido de Cote, 26 nov: «poner este audio al iniciar ¿Quién quiere ser ganador?»): suena una vez
+  // por partida en el tablero cuando sale la presentación (Presentar en pantalla); al pasar a la primera pregunta se apaga
+  // de a poco y entra la cortina de la pregunta
+  const INTRO = 'audio/desafio-intro.mp3';
+  let introGen = null;
   const cortina = (st) => {
+    if (st && st.phase === 'intro') {
+      if (introGen !== st.gen && sfx.playing() !== INTRO) sfx.music(INTRO, { vol: 0.8 }); // si aún no estaba bajado, parte en el próximo segundo
+      if (sfx.playing() === INTRO) introGen = st.gen;
+      return;
+    }
     const key = st && st.phase === 'question' ? `${(st.crowd && st.crowd.qid) || 0}|${st.step}|${st.q && st.q.text}` : '';
     if (key && key !== qKey) { qKey = key; qFrom = 0; sfx.music(null); } // pregunta nueva: desde el comienzo
     if (!key) { if (sfx.playing() === CORTINA) qFrom = 8; sfx.music(null); return; }
