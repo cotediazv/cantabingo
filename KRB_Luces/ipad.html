@@ -2130,6 +2130,9 @@ const JUEGOS = [
   // - Tres niveles segun el escalon (2.1; 12 preguntas: 1-4, 5-8, 9-12), con las mini en blanco, lentas y rasantes (4).
   // - Correcta / incorrecta (3.3): destello de 1 s y despues el estilo del programa (se abre / cae a oscuro).
   { juego:'¿Quién quiere ser ganador?', momentos:[
+    { id:'desafio_inicio', nombre:'Inicio del juego (cortina, 15 s)', detalle:'Fiesta con estrobo: luces por todos lados con colores distintos y destellos blancos; a los 15 s queda el color base del juego',
+      g:() => ({}), fiesta:'Clímax', luego:[15, 'desafio_base'] },
+    { id:'desafio_base', nombre:'Color base del juego', igual:'desafio_pregunta' },
     { id:'desafio_presenta', nombre:'Presentación del concursante', detalle:'Las cabezas barren desde el público hasta el animador y el concursante; la pared sube en azul',
       g:() => ({...llaveDesafio(), ...pared('azul', 60), ...miniBlanca(80)}), rasante:true, barrido:{t:1.5, ids:['seguidor1', 'seguidor2']}, luego:[4, 'desafio_pregunta'] },
     { id:'desafio_pregunta', nombre:'Pregunta (escalones 1 a 4)', detalle:'Fondo azul suave con colores lentos, público iluminado suave; mini blancas rasantes',
@@ -2240,6 +2243,10 @@ function compilarMomento(m){
       conEspejos(['mini']).forEach(id => { const g = grupo(id); if (!g || !g.canales.pan) return; const b = g.direccion - 1;
         ef('mover:' + id, {tipo:'seno', ch:[b + g.canales.pan, b + g.canales.tilt].join(','), centro:'128,105',
           amp:(amplio ? '95,20' : '55,12'), periodo:(amplio ? 5 : 14)}); });
+    }
+    if (m.fiesta){                                                              // una escena del DJ (Locura), por tiempo (Cote, 26 nov: inicio de ¿Quién quiere ser ganador?)
+      const e = DJ_ESCENAS.find(x => x.n === m.fiesta);
+      if (e) e.capas().forEach(c => ef(c.id, {tipo:'sec', pasos:pasosTxt(c.pasos), t:(c.seg != null ? c.seg : c.ritmo * 60 / 128).toFixed(3), fx:c.fx}));
     }
     if (m.standby){                                                             // fondo como en Standby (sin tocar las cabezas)
       capasStandbyFondo(STANDBY_TONOS).forEach(c => ef(c.id, {tipo:'sec', pasos:pasosTxt(c.pasos), t:c.seg.toFixed(3), fx:c.fx}));
