@@ -358,6 +358,18 @@
     if (st.phase === 'end' && prev.phase !== 'end' && st.outcome === 'won') sfx.play('win');
     if (st.phase === 'question' && prev.step !== st.step) sfx.play('chime');
   };
+  // Cortina de la pregunta (pedido de Cote, 26 nov: «poner este audio en ¿Quién quiere ser ganador? cuando vayan a la
+  // pregunta»): suena en el tablero desde que aparece cada pregunta nueva hasta la respuesta definitiva (o el retiro); si
+  // la pregunta dura más que el audio, sigue desde los 8 s. Si se arrepiente de la respuesta, vuelve sin el golpe inicial.
+  const CORTINA = 'audio/desafio-pregunta.mp3';
+  let qKey = ''; let qFrom = 0;
+  const cortina = (st) => {
+    const key = st && st.phase === 'question' ? `${(st.crowd && st.crowd.qid) || 0}|${st.step}|${st.q && st.q.text}` : '';
+    if (key && key !== qKey) { qKey = key; qFrom = 0; sfx.music(null); } // pregunta nueva: desde el comienzo
+    if (!key) { if (sfx.playing() === CORTINA) qFrom = 8; sfx.music(null); return; }
+    sfx.music(CORTINA, { from: qFrom, loop: 8, vol: 0.7 });
+  };
+  let lastSt = null;
   let tickTimer = null;
   const ticking = () => {
     clearInterval(tickTimer);
@@ -367,8 +379,9 @@
       const on = left('aud') > 0 || left('phone') > 0;
       if (on) { sfx.play(flip ? 'softTock' : 'softTick'); flip = !flip; } else if (was) sfx.play('chime');
       was = on;
+      cortina(lastSt); // si el sonido se activó tarde o el audio terminó de bajar, parte aquí
     }, 1000);
-    return () => clearInterval(tickTimer);
+    return () => { clearInterval(tickTimer); lastSt = null; qKey = ''; sfx.music(null); };
   };
 
   // Tablero del local: pregunta y alternativas a la izquierda, escalera a la derecha
@@ -379,6 +392,7 @@
       const box = $('#df');
       if (!box) return;
       cues(st, prev);
+      lastSt = st; cortina(st);
       box.className = `th-${st.venue} ph-${st.phase}`;
       let main;
       if (st.phase === 'setup') main = `<section class="d-cover"><span class="d-cup">🏆</span><b style="--n:${Math.ceil(st.title.length / 2)}">${esc(st.title)}</b><span>¡Muy pronto!</span></section>`;

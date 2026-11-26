@@ -1566,7 +1566,32 @@ const sfx = (() => {
     };
     sched(); rollTimer = setInterval(sched, 250);
   };
-  return { unlock, ready, play, roll, rolling: () => !!rollTimer, played: [], ticks: 0 };
+  // Música de un archivo (pedido de Cote, 26 nov: la cortina de la pregunta en ¿Quién quiere ser ganador?): se baja una
+  // vez, suena con el mismo permiso de «Activar sonido», se repite desde `loop` segundos (sin volver a dar el golpe del
+  // comienzo) y al parar se apaga de a poco. music(url, {from, loop, vol}) / music(null) la detiene.
+  const bufs = {}; let cur = null;
+  const music = (url, o = {}) => {
+    if (cur && (!url || cur.url !== url)) {
+      const c = cur; cur = null;
+      try { const t = ctx.currentTime; c.g.gain.cancelScheduledValues(t); c.g.gain.setValueAtTime(c.g.gain.value, t); c.g.gain.linearRampToValueAtTime(0.0001, t + 1.2); c.src.stop(t + 1.3); } catch { /* sin audio */ }
+    }
+    if (!url || (cur && cur.url === url) || !ready()) return;
+    const go = (buf) => {
+      if (!ready() || (cur && cur.url === url)) return;
+      try {
+        const src = ctx.createBufferSource(); src.buffer = buf;
+        if (o.loop != null && o.loop < buf.duration - 1) { src.loop = true; src.loopStart = o.loop; src.loopEnd = buf.duration; }
+        const g = ctx.createGain(); g.gain.value = o.vol || 0.7;
+        src.connect(g).connect(ctx.destination); src.start(0, Math.min(o.from || 0, buf.duration - 1));
+        cur = { url, src, g };
+      } catch { /* sin audio */ }
+    };
+    if (bufs[url] && bufs[url].duration) { go(bufs[url]); return; }
+    if (bufs[url]) return; // bajando
+    bufs[url] = fetch(url).then((r) => r.arrayBuffer()).then((a) => new Promise((ok, ko) => ctx.decodeAudioData(a, ok, ko)))
+      .then((buf) => { bufs[url] = buf; }).catch(() => { delete bufs[url]; });
+  };
+  return { unlock, ready, play, roll, music, playing: () => (cur ? cur.url : ''), rolling: () => !!rollTimer, played: [], ticks: 0 };
 })();
 
 // Tablero del DJ: pantalla completa (no transparente) que sigue sola lo que está pasando,
