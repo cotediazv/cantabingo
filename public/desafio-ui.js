@@ -69,10 +69,9 @@
       // Pedido de Cote (25 nov): el primer participante sale de un sorteo, y los 3 premios (uno por etapa) se escriben cada
       // día, según lo que den los restaurantes (quedan escritos para la próxima vez)
       return `<div id="dc-raf" class="dc-raf"></div><form id="dc-new">
-        <label class="f">Primer participante<input type="text" id="dc-player" maxlength="40" required autocomplete="off" placeholder="Sale del sorteo (o escríbelo)"></label>
         <p class="muted small" style="margin:14px 0 6px">Premios de hoy: uno por cada etapa que se pasa. Quien gana el juego se lleva los 3.</p>
         <div class="dc-prizes dc-prizes3">${[0, 1, 2].map((i) => `<label><b>Premio ${i + 1}</b><span class="muted small">${['al pasar la pregunta 4', 'al pasar la pregunta 8', 'al ganar (pregunta 12)'][i]}</span><input type="text" data-prize="${i}" maxlength="60" value="${esc(prizes[i] || '')}" placeholder="Ej.: una tabla para compartir"></label>`).join('')}</div>
-        <button class="primary big" style="margin-top:14px">▶ Presentar en pantalla</button></form>`;
+        <button class="primary big" style="margin-top:14px" disabled>▶ Presentar en pantalla</button></form>`;
     };
     const lifelines = () => `<div class="dc-life">${LIFELINES.map(([k, name, icon]) => `<button type="button" data-life="${k}" ${st.used[k] ? 'disabled' : ''}><span>${icon}</span>${name}${st.used[k] ? '<small>Ya usado en esta partida</small>' : ''}</button>`).join('')}</div>`;
     const options = (clickable) => `<div class="dc-opts">${st.q.options.map((o, i) => {
@@ -145,7 +144,8 @@
           e.preventDefault();
           const prizes = [...form.querySelectorAll('[data-prize]')].sort((a, b) => a.dataset.prize - b.dataset.prize).map((x) => x.value);
           pick = null;
-          await act('new', { player: $('#dc-player').value, prizes });
+          if (!rafFirst) return;
+          await act('new', { player: rafFirst, prizes });
         };
       }
     };
@@ -180,7 +180,9 @@
     $('#dc-reset').onclick = async () => { if (confirm('¿Terminar esta partida y volver a empezar?')) { pick = null; await act('reset'); } };
     // Sorteo del primer participante (pedido de Cote, 25 nov): el panel muestra cómo va y, con el sorteado confirmado,
     // completa su nombre en el formulario
-    let rafSig = ''; let filled = '';
+    // Sin espacio para escribir el nombre (Cote, 25 nov: «quitar donde se escribe el nombre y reemplazar por el botón
+    // sortear participante»): el primer participante es el que sale del sorteo y confirma en su celular
+    let rafSig = ''; let rafFirst = '';
     const raffle = async () => {
       const el = $('#dc-raf');
       if (!el) return;
@@ -193,11 +195,11 @@
       if (sig !== rafSig) {
         rafSig = sig;
         el.innerHTML = first ? `<p class="dc-note">Primer participante: <b>${esc(first)}</b> ${done ? '✅ Confirmó' : '⏳ Esperando que confirme'}</p>` : '';
-        if (!done) el.insertAdjacentHTML('beforeend', `<a class="btn primary big paso" data-paso="1" href="#/sorteoctl/desafio">🎲 ${first ? 'Seguir con el sorteo' : 'Sortear al primer participante'}</a>`);
-        const go = $('#dc-new button.primary');
-        if (go) { go.classList.toggle('paso', done); go.dataset.paso = '1'; }
+        if (!done) el.insertAdjacentHTML('beforeend', `<a class="btn primary big paso" data-paso="1" href="#/sorteoctl/desafio">🎲 ${first ? 'Seguir con el sorteo' : 'Sortear participante'}</a>`);
       }
-      if (done && filled !== first) { filled = first; $('#dc-player').value = first; }
+      rafFirst = done ? first : '';
+      const go = $('#dc-new button.primary');
+      if (go) { go.disabled = !done; go.classList.toggle('paso', done); go.dataset.paso = '1'; }
     };
     const load = async () => { const r = await api('GET', '/api/desafio/host').catch(() => null); if (r) { st = stamp(r); paint(); if (st.phase === 'setup') raffle(); else rafSig = ''; } };
     await load();
