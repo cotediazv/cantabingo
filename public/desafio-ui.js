@@ -365,11 +365,10 @@
   // la pregunta dura más que el audio, sigue desde los 8 s. Si se arrepiente de la respuesta, vuelve sin el golpe inicial.
   const CORTINA = 'audio/desafio-pregunta.mp3';
   let qKey = ''; let qFrom = 0;
-  // Audio del comienzo (pedido de Cote, 26 nov: «poner este audio al iniciar ¿Quién quiere ser ganador?»): suena una vez
-  // por partida en el tablero cuando sale la presentación (Presentar en pantalla); al pasar a la primera pregunta se apaga
-  // de a poco y entra la cortina de la pregunta
+  // Audio del comienzo (pedido de Cote, 26 nov: «poner este audio al iniciar ¿Quién quiere ser ganador?»; corregido por el
+  // Registro: «al iniciar el juego… ahí sale la cortina»): lo toca el tablero (views.tablero) cuando el juego se carga en
+  // pantalla; al pasar a la primera pregunta se apaga de a poco y entra la cortina de la pregunta
   const INTRO = 'audio/desafio-intro.mp3';
-  let introGen = null;
   // Suspenso y respuesta correcta (pedidos de Cote, 26 nov: «usa esta música para cuando se revele la pregunta», 13 s, y
   // «esta al ser correcta», 8,7 s): la música del suspenso suena desde la respuesta definitiva hasta que el animador toca
   // «Revelar» (se repite si demora más); al revelar, si es correcta suena la de la respuesta correcta; si no, se apaga
@@ -397,11 +396,9 @@
       if (sfx.playing() === CORRECTA) revKey = k;
       return;
     }
-    if (st && st.phase === 'intro') {
-      if (introGen !== st.gen && sfx.playing() !== INTRO) sfx.music(INTRO, { vol: 0.8 }); // si aún no estaba bajado, parte en el próximo segundo
-      if (sfx.playing() === INTRO) introGen = st.gen;
-      return;
-    }
+    // La música del comienzo la toca el tablero al cargarse el juego (Cote, 26 nov: «al iniciar el juego… ahí sale la
+    // cortina», no al presentar al participante): aquí solo no se corta mientras no parte la primera pregunta
+    if (st && (st.phase === 'setup' || st.phase === 'intro') && sfx.playing() === INTRO) return;
     const key = st && st.phase === 'question' ? `${(st.crowd && st.crowd.qid) || 0}|${st.step}|${st.q && st.q.text}` : '';
     if (key && key !== qKey) { qKey = key; qFrom = 0; sfx.music(null); } // pregunta nueva: desde el comienzo
     if (!key) { if (sfx.playing() === CORTINA) qFrom = 8; sfx.music(null); return; }

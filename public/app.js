@@ -1606,6 +1606,7 @@ const sfx = (() => {
 // igual que la gráfica de OBS: bingo, sorteo o desempate, El Rosko.
 views.tablero = async () => {
   let current = null;
+  let desIntroSeen = null; // última carga de ¿Quién quiere ser ganador? ya vista (para tocar su música del comienzo una vez)
   let stop = null;
   let busy = false;
   const mark = () => { document.body.classList.add('full'); document.body.classList.remove('obs'); };
@@ -1633,6 +1634,14 @@ views.tablero = async () => {
       const show = (sr && sr.show) || current || 'none';
       // GC PER: en el tablero se agrega como una franja abajo, sin quitar lo que se muestra
       if (sr) window.gcPer.over(sr.per && sr.per.on ? sr.per.text : '', document.body.dataset.venue || '');
+      // Música del comienzo de ¿Quién quiere ser ganador? (Cote, 26 nov, por el Registro: «al iniciar el juego: desde el
+      // momento en que se pone ¿Quién quiere ser ganador? y se avanza, ahí sale la cortina»): una vez, cuando el juego se
+      // carga en pantalla (también si parte por el sorteo del participante); solo si fue hace menos de 20 s
+      if (sr && sr.desIntro && sr.desIntro !== desIntroSeen) {
+        const fresh = desIntroSeen !== null && sr.desIntroHace != null && sr.desIntroHace < 20000;
+        desIntroSeen = sr.desIntro;
+        if (fresh && !mute) { sfx.music('audio/desafio-intro.mp3', { vol: 0.8 }); setTimeout(() => { if (sfx.playing() !== 'audio/desafio-intro.mp3') sfx.music('audio/desafio-intro.mp3', { vol: 0.8 }); }, 1500); }
+      } else if (sr && desIntroSeen === null) desIntroSeen = sr.desIntro || 0;
       if (show !== current) {
         current = show;
         if (typeof stop === 'function') stop();

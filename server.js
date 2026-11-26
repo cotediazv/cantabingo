@@ -845,12 +845,14 @@ const perOf = (venue) => {
   const l = (db.lights || {})[venue];
   return l && l.stage === 'custom' && l.text ? { text: l.text, from: 'light' } : null;
 };
+// ¿Quién quiere ser ganador? se carga en pantalla (con la cortina): el tablero toca la música del comienzo (Cote, 26 nov)
+let desafioIntroAt = 0;
 const setStage = (show) => {
   if (roscoLock(show)) { if (db.stage !== 'rueda') { db.stage = 'rueda'; save(); for (const s of Object.values(db.sessions)) broadcast(s); aviso(); } return false; }
   const changed = db.stage !== show;
   const famBefore = familyOf(db.stage);
   db.stage = show;
-  if (changed && familyOf(show) && familyOf(show) !== famBefore) { cortinaJuego(); setTimeout(() => emisorCheck(), 0); } // se cargó otro juego: la cortina (y en Kennedy, el emisor de la pantalla vertical)
+  if (changed && familyOf(show) && familyOf(show) !== famBefore) { cortinaJuego(); setTimeout(() => emisorCheck(), 0); if (familyOf(show) === 'desafio') desafioIntroAt = Date.now(); } // se cargó otro juego: la cortina (y en Kennedy, el emisor de la pantalla vertical)
   if (changed) { perOff(); if (db.carton) db.carton.on = false; } // un juego tomó la pantalla: el GC PER y el cartón salen
   save();
   if (changed) for (const s of Object.values(db.sessions)) broadcast(s); // los celulares se enteran del cambio de juego
@@ -1426,7 +1428,7 @@ app.post('/api/pub', requireAdmin, async (req, res) => {
   db.pubUrl = url; save(); aviso();
   res.json({ pub: url });
 });
-app.get('/api/stage', (_req, res) => res.json({ show: roscoLock(db.stage) ? 'rueda' : STAGES.includes(db.stage) ? db.stage : 'bingo', per: perMain(), carton: !!(db.carton && db.carton.on) }));
+app.get('/api/stage', (_req, res) => res.json({ show: roscoLock(db.stage) ? 'rueda' : STAGES.includes(db.stage) ? db.stage : 'bingo', per: perMain(), carton: !!(db.carton && db.carton.on), desIntro: desafioIntroAt, desIntroHace: desafioIntroAt ? Date.now() - desafioIntroAt : null }));
 // «Cartón al centro» (pregunta 20 de Cote, 24 nov: «1 lo que recomienda, 2 siempre el QR y el nombre del juego»): en una
 // pausa, el GC de OBS cambia la franja de abajo por un cartón mediano al centro con la información del juego en ese
 // momento, el QR y el nombre del juego. Se pone y se quita con el mismo botón; sale solo cuando cambia lo que está en
