@@ -898,6 +898,10 @@ namespace KRB {
       List<string> acc;
       lock (ML) { if (!momentos.TryGetValue(nombre, out acc)) return false; }
       if (acc.Count == 0) return true;                                     // momento sin acciones (p. ej. bingo_numero): no cambia nada
+      // Mandan los juegos (Cote, 26 nov): si el DJ apago, cambio o bajo las luces, el momento nuevo del juego deja atras lo del DJ:
+      // se apaga su Automatico (si no, a los 3 minutos volveria su escena), su escena queda sin marcar y la intensidad general vuelve al 100 %
+      lock (DJL) { if (djAuto) Bitacora.Anotar("DJ: Automatico apagado (llego un momento de los juegos)"); djAuto = false; djEscena = -1; }
+      if (Dmx.Master < 0.999) { Dmx.Master = 1f; GuardarMaster(); Bitacora.Anotar("Intensidad general de vuelta al 100 % (momento de los juegos)"); }
       // "@previo" = volver al ultimo momento estable (p. ej. despues del verde de una correcta, al rojo del reloj).
       // Los momentos que terminan en "@previo" son de paso y no cuentan como estables.
       bool dePaso = acc.Contains("@previo") || acc.Contains("paso");      // "paso": destellos que despues vuelven a donde estaba
