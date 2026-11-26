@@ -2661,14 +2661,23 @@ function recorridoTecho(id, n){
     if (!apuntarModelo(id, p, zz)) apuntarGeo(id, p, zz);             // cada paso parte del anterior (sin vueltas)
     return { pan: zz.pan, tilt: zz.tilt, zoom: 70 }; });
 }
+// Techo del ESCENARIO (Cote, 26 nov: «en standby, las luces hacia el techo del escenario, que se vea bien bonito»):
+// cada cabeza da vueltas suaves por el techo sobre la tarima, desfasadas entre si para que no se junten.
+function recorridoEscenario(id, j, n){
+  const zz = {}, a0 = j * 2 * Math.PI / 3, sentido = j % 2 ? -1 : 1, rx = ESC_X - 0.8, cz = -1.8, rz = 1.5;
+  return N(n).map(k => { const a = a0 + sentido * k / n * 2 * Math.PI;
+    const p = [rx * Math.sin(a), TECHO, cz + rz * Math.cos(2 * a) * 0.6 + rz * 0.4 * Math.cos(a)];   // ocho suave sobre la tarima
+    if (!apuntarModelo(id, p, zz)) apuntarGeo(id, p, zz);             // cada paso parte del anterior (sin vueltas)
+    return { pan: zz.pan, tilt: zz.tilt, zoom: 70 }; });
+}
 const capasCabezasTecho = (tema, sinCabezas) => { const n = tema.length, cabs = sinCabezas ? [] : djCabezas();
   const col = N(n * 2).map(k => { const o = {}, int = { frontales: 30 };
     cabs.forEach((id, j) => { o[id] = tema[(k + j + 1) % n]; int[id] = 70; });
     o.frontales = tema[(k + 2) % n]; return pasoColor(o, int); });
   if (sinCabezas) return [{ ...capa('cabcol', col, 0, 0.6), seg: 4 }];
-  const rec = {}; cabs.forEach(id => rec[id] = recorridoTecho(id, 20));
+  const rec = {}; cabs.forEach((id, j) => rec[id] = recorridoEscenario(id, j, 20));
   const mov = N(20).map(k => { const o = {}; cabs.forEach(id => o[id] = rec[id][k]); return pasoPos(o); });
-  return [{ ...capa('cabcol', col, 0, 0.6), seg: 4 }, { ...capa('cabmov', mov, 0, 1), seg: 3 }]; };   // una vuelta por el salon cada 60 s
+  return [{ ...capa('cabcol', col, 0, 0.6), seg: 4 }, { ...capa('cabmov', mov, 0, 1), seg: 2 }]; };   // una vuelta por el techo del escenario cada 40 s
 // Fondo de Standby sin las cabezas (para cuando el DJ sigue al animador por el salon): pared en fundido que sube de abajo
 // hacia arriba, mini al techo en contraste y frontales suavecitos
 function capasStandbyFondo(tonos){ const n = tonos.length;
