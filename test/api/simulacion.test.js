@@ -41,3 +41,11 @@ test('cualquier paso de El último en pie y de ¿Quién quiere ser ganador? los 
   await srv.admin.post('/api/desafio/host', { action: 'next' }); // primera pregunta
   assert.equal((await srv.ok('GET', '/api/stage')).show, 'desafio');
 });
+
+test('/sala y /animador entran directo a su vista, sin el aviso de cambio de dirección que dibujaba la portada', async () => {
+  for (const [path, hash] of [['/sala', '#/master/movil'], ['/animador', '#/animador']]) {
+    const html = await (await fetch(srv.url + path)).text();
+    assert.ok(html.includes(`history.replaceState(null, "", location.pathname + location.search + "${hash}")`), path);
+    assert.ok(!html.includes(`location.replace(location.pathname + location.search + "${hash}")`), path);
+  }
+});

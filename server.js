@@ -317,6 +317,9 @@ app.get('/:short', (req, res, next) => {
   res.redirect(302, `/${i >= 0 ? req.originalUrl.slice(i) : ''}${to}`);
 });
 
+// (simulación del 26 nov: con location.replace el aviso de cambio de dirección llegaba antes de que cargaran todas las
+// partes de la página y a veces se dibujaba la portada encima; con history.replaceState no hay aviso y la página arranca
+// directo en la vista)
 // Sala de juegos en el teléfono (pedido de Cote, 22 nov): /sala abre la versión móvil del GC Master («Sala KRB») con su
 // propio nombre e inicio, para guardarla en la pantalla de inicio del iPhone aparte del Centro de control («Control KRB»)
 app.get('/sala', (_req, res) => {
@@ -326,7 +329,7 @@ app.get('/sala', (_req, res) => {
       .replace('href="manifest.webmanifest"', 'href="manifest-sala.webmanifest"')
       .replace('content="Control KRB"', 'content="Sala KRB"')
       .replace('<title>KRB Stage · Sala de juegos</title>', '<title>Sala KRB</title>')
-      .replace('<body>', '<body>\n  <script>if (!location.hash || location.hash === "#/") location.replace(location.pathname + location.search + "#/master/movil");</script>'));
+      .replace('<body>', '<body>\n  <script>if (!location.hash || location.hash === "#/") history.replaceState(null, "", location.pathname + location.search + "#/master/movil");</script>'));
   });
 });
 
@@ -340,7 +343,7 @@ app.get('/animador', (_req, res) => {
       .replace('href="manifest.webmanifest"', 'href="manifest-animador.webmanifest"')
       .replace('content="Control KRB"', 'content="Animador KRB"')
       .replace('<title>KRB Stage · Sala de juegos</title>', '<title>Animador KRB</title>')
-      .replace('<body>', '<body>\n  <script>if (!location.hash || location.hash === "#/") location.replace(location.pathname + location.search + "#/animador");</script>'));
+      .replace('<body>', '<body>\n  <script>if (!location.hash || location.hash === "#/") history.replaceState(null, "", location.pathname + location.search + "#/animador");</script>'));
   });
 });
 
