@@ -2093,6 +2093,10 @@ const JUEGOS = [
     { id:'bingo_al_publico', nombre:'Al público', detalle:'Fondo como Standby, 3 cabezas al público para seguir al animador (abre Seguir)',
       g:() => ({...pared('azul', 45), frontales:{color:'azul', intensidad:30}, ...cab('publico', 40, segIds()), mini:{color:'ambar', intensidad:85, posicion:'escenario'}}), standby:true },
     { id:'ganador_al_escenario', nombre:'Ganador al escenario', igual:'base_juegos' },
+    // Bingo (Cote, 26 nov): desde que el animador baja al publico (bolita 8) las cabezas son del DJ hasta la entrega del
+    // premio; el ganador y la celebracion cambian el resto de las luces pero NO mueven las cabezas
+    { id:'bingo_ganador_sala', nombre:'Ganador del bingo (las cabezas siguen con el DJ)', detalle:'Como Base juegos, sin tocar las cabezas', g:BASE, dejarCabezas:true },
+    { id:'bingo_celebracion', nombre:'Celebración del bingo (las cabezas siguen con el DJ)', detalle:'Pared cambiando de color a 148 BPM, sin tocar las cabezas', g:BASE, pared:{colores:CICLO, t:0.41}, dejarCabezas:true },
     { id:'celebracion_ganador', nombre:'Celebración', detalle:'Pared cambiando de color a 148 BPM', g:BASE, pared:{colores:CICLO, t:0.41} },
     { id:'entrega_premio', nombre:'Entrega del premio', detalle:'Pared roja, todo bien iluminado', g:() => ({...BASE(), ...pared('rojo', 100)}) } ]},
   { juego:'Tómbolas', momentos:[
@@ -2189,7 +2193,7 @@ const JUEGOS = [
 const ALIAS_SALA = {
   sala_abierta:'base_juegos', juego_siguiente:'base_juegos', bingo_numero:'nada',
   rosko_pantalla:'nada', rosko_pantalla_fin:'base_juegos',     // el rosco entra / sale de pantalla (la camara del demo cambia)
-  bingo_ganador_aparece:'ganador_al_escenario', bingo_ganador_confirmado:'celebracion_ganador', bingo_vuelve_escenario:'base_juegos',
+  bingo_ganador_aparece:'bingo_ganador_sala', bingo_ganador_confirmado:'bingo_celebracion', bingo_vuelve_escenario:'base_juegos',
   premio_entrega:'entrega_premio', rosko_ranking:'rosko_puntajes', rosko_ranking_fin:'base_juegos',
   objeto_votacion_fin:'base_juegos', objeto_final:'objeto_votacion', festival_despide:'base_juegos',
   festival_canta:'festival_cancion', festival_termina:'festival_tension',
@@ -2225,7 +2229,8 @@ function compilarMomento(m){
   const mGuard = master; master = 100;
   try {
     const zs = zonasDe(m), todo = {}, L = m.paso ? ['paso', '/api/efecto?todos=off'] : ['/api/efecto?todos=off'];   // paso: no cuenta como estable (vuelve con @previo)
-    conf.grupos.forEach(g => Object.assign(todo, valoresGrupo(g, zs[g.id])));
+    const dejar = m.dejarCabezas ? segIds() : [];                              // las cabezas que esta siguiendo el DJ no se tocan
+    conf.grupos.forEach(g => { if (!dejar.includes(g.id)) Object.assign(todo, valoresGrupo(g, zs[g.id])); });
     L.push('/api/set?d=' + serial(todo) + '&f=0');                           // cambios inmediatos, sin fundido (Cote, rev 185)
     const ef = (id, p) => L.push('/api/efecto?id=' + encodeURIComponent(id) + '&' + new URLSearchParams(p));
     conf.grupos.forEach(g => {                                                  // mini (u otras cabezas) en movimiento, mirando al techo
@@ -3189,7 +3194,7 @@ function djMomento(nombre){
     segIds().forEach(id => { const z = zona(id); z.color = 'blanco_calido'; z.intensidad = 100; z.zoom = djSeg.ancho; });
     djSeg.activo = true; djSeg.porMomento = true; djEstado.escena = -1; djPintar(); djPagina(true);
     toast('El animador bajó al público: síguelo con el dedo');
-  } else if (djSeg.porMomento){
+  } else if (djSeg.porMomento && !['bingo_ganador_aparece', 'bingo_ganador_confirmado', 'bingo_ganador_sala', 'bingo_celebracion'].includes(nombre)){   // sigue hasta la entrega del premio
     djSeg.activo = false; djSeg.porMomento = false; V.marca = null; djPagina(false);
   }
 }
