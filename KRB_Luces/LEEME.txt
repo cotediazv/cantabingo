@@ -85,3 +85,7 @@ AVISO AL CELULAR SI SE CORTA EL CABLE (25 nov)
 - El tema de ntfy se crea solo al azar en el Dell (archivo aviso-celular.txt, no esta en el repositorio).
   Se ve en el boton "?" del panel, con "Copiar el tema" y "Mandar aviso de prueba".
 - Si el Dell entero se apaga o pierde internet, este aviso no puede salir.
+
+INTENSIDAD GENERAL (26 nov)
+- La barra "Intensidad general" del panel la aplica el Dell a la salida: baja todo (escenas, momentos de los juegos,
+  efectos y escenas del DJ). Queda guardada en intensidad.txt (sigue igual si el Dell se reinicia).

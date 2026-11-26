@@ -477,6 +477,8 @@ namespace KRB {
       return r;
     }
 
+    public static volatile float Master = 1f;                  // 0 a 1
+    public static int[] MasterCh = new int[0];                 // canales de intensidad (dimmer, o los colores si no hay dimmer)
     static double ultimaRevision = 0;
     static bool conectadoAntes = false, ritmoAntes = false; static string errorAntes = "";
     static DateTime sinCableDesde = DateTime.MinValue; static bool avisado = false;
@@ -517,6 +519,9 @@ namespace KRB {
             frame[i] = (byte)Math.Round(cur[i]);
           }
           AplicarEfectos(frame);
+          // Intensidad general (Cote, 26 nov: «no funciona»): se aplica aca, a la salida, para que baje TODO
+          // (escenas, momentos de los juegos, efectos y escenas del DJ), no solo lo que manda el iPad directo
+          if (Master < 0.999) { int[] mc = MasterCh; for (int k = 0; k < mc.Length; k++) { int c = mc[k]; if (c >= 1 && c <= 512) frame[c] = (byte)Math.Round(frame[c] * Master); } }
           Array.Copy(frame, ultimo, 513);
           s = port;
         }
@@ -801,6 +806,11 @@ namespace KRB {
       if (ruta == "/api/reconectar") { Dmx.Abrir(); Estado(s); return; }
       if (ruta == "/api/actualizar") { PedirActualizar = true; Bitacora.Anotar("Pidieron buscar actualizacion ahora");
         Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":true}")); return; }
+      if (ruta == "/api/master") {                                    // intensidad general: ?v=0-100&ch=1,17,... (los canales los da el iPad)
+        double v = Num(Arg(query, "v"), -1); string chs = Arg(query, "ch");
+        if (chs != null) { List<int> l = new List<int>(); foreach (string x in chs.Split(',')) { int c; if (int.TryParse(x, out c) && c >= 1 && c <= 512) l.Add(c); } Dmx.MasterCh = l.ToArray(); }
+        if (v >= 0) { Dmx.Master = (float)Math.Min(1, v / 100); GuardarMaster(); }
+        Estado(s); return; }
       if (ruta == "/api/aviso-prueba") { Aviso.Mandar("Aviso de prueba de las luces KRB. Si te lleg\u00f3, qued\u00f3 listo.", false);
         Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":" + (Aviso.Tema != "" ? "true" : "false") + "}")); return; }
       if (ruta == "/api/estado") { Estado(s); return; }
@@ -956,6 +966,16 @@ namespace KRB {
       return System.Text.RegularExpressions.Regex.Matches(t, "\"(abajo|ei|ed|fi|fd)\"\\s*:").Count;
     }
 
+    // La intensidad general queda guardada (si el Dell se reinicia o se actualiza, sigue igual)
+    static void GuardarMaster() {
+      try { File.WriteAllText(Path.Combine(Root, "intensidad.txt"), Math.Round(Dmx.Master * 100) + "|" + string.Join(",", Array.ConvertAll(Dmx.MasterCh, x => x.ToString()))); } catch {}
+    }
+    public static void CargarMaster() {
+      try { string f = Path.Combine(Root, "intensidad.txt"); if (!File.Exists(f)) return;
+        string[] p = File.ReadAllText(f).Trim().Split('|'); double v = Num(p[0], 100);
+        if (p.Length > 1 && p[1] != "") { List<int> l = new List<int>(); foreach (string x in p[1].Split(',')) { int c; if (int.TryParse(x, out c)) l.Add(c); } Dmx.MasterCh = l.ToArray(); }
+        Dmx.Master = (float)Math.Max(0, Math.Min(1, v / 100)); } catch {}
+    }
     static string Esc(string t) { return (t ?? "").Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", " ").Replace("\n", " "); }
 
     static void Estado(NetworkStream s) {
@@ -967,6 +987,7 @@ namespace KRB {
       b.Append(",\"carpeta\":\"").Append(Esc(Root)).Append("\"");
       b.Append(",\"version\":\"").Append(Esc(Version)).Append("\"");
       b.Append(",\"aviso\":\"").Append(Esc(Aviso.Tema)).Append("\"");
+      b.Append(",\"master\":").Append(Math.Round(Dmx.Master * 100));
       b.Append(",\"ritmo\":").Append(Dmx.ConRitmo ? "true" : "false").Append(",\"bpm\":").Append(Math.Round(Dmx.Bpm).ToString(System.Globalization.CultureInfo.InvariantCulture));
       b.Append(",\"tramas\":").Append(Dmx.Tramas).Append(",\"errores\":").Append(Dmx.Errores);
       b.Append(",\"momento\":\"").Append(Esc(MomentoActual)).Append("\",\"momentoN\":").Append(MomentoN);
@@ -1062,6 +1083,7 @@ try {
 } catch {}
 $estadoCable = if ([KRB.Dmx]::Conectado) { "cable conectado (" + [KRB.Dmx]::PuertoUsado + ")" } elseif ([KRB.Dmx]::Tipo -eq "simulacion") { "modo simulacion" } else { "SIN CABLE: " + [KRB.Dmx]::Error }
 [KRB.Bitacora]::Anotar("Se abrio la suite de luces (" + $estadoCable + ")")
+[KRB.Web]::CargarMaster()
 [KRB.Web]::CargarSesiones()
 [KRB.Web]::CargarMomentos()
 [KRB.Web]::Start($puertoWeb)

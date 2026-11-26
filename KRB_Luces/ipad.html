@@ -1398,11 +1398,18 @@ $('cero16').onclick = () => poner16(0);
 $('max16').onclick = () => poner16(255);
 
 /* ---------- Barra inferior ---------- */
+// Intensidad general (Cote, 26 nov: «no funciona»): la aplica el Dell a la salida, asi baja TODO (escenas, momentos de
+// los juegos, efectos y escenas del DJ). Los canales que se bajan son los de intensidad: el dimmer o, si no tiene, los colores.
+const MASTER_DELL = !DEMO && !CONTROL;
+const canalesIntensidad = () => conf.grupos.flatMap(g => { const ch = g.canales || {}, b = g.direccion - 1;
+  return ch.dimmer && !g.dimmer_pleno ? [b + ch.dimmer] : ['r', 'g', 'b', 'w'].filter(c => ch[c]).map(c => b + ch[c]); });
+let masterMovido = 0;
 $('master').oninput = () => {
-  master = +$('master').value; $('masterTxt').textContent = master + '%';
-  limitar('master', () => enviarGrupos(todosLosIds(), 0));
+  const v = +$('master').value; $('masterTxt').textContent = v + '%'; masterMovido = Date.now();
+  if (MASTER_DELL){ limitar('master', () => api('/api/master?v=' + v + '&ch=' + canalesIntensidad().join(',')).then(pintarEstado).catch(() => {})); return; }
+  master = v; limitar('master', () => enviarGrupos(todosLosIds(), 0));
 };
-$('master').onchange = () => { if (efectoPared) efectoParedOn(efectoPared); };
+$('master').onchange = () => { if (!MASTER_DELL && efectoPared) efectoParedOn(efectoPared); };
 document.querySelectorAll('#fadeBtns button').forEach(b => b.onclick = () => {
   fade = +b.dataset.f; document.querySelectorAll('#fadeBtns button').forEach(x => x.classList.toggle('act', x === b));
 });
@@ -1458,6 +1465,9 @@ function pintarTodo(){ pintarEscenas(); pintarFondo(); pintarZonas(); pintarSegu
 
 /* ---------- Estado de la conexion ---------- */
 function pintarEstado(e){
+  // la intensidad general la guarda el Dell: todos los aparatos ven la misma (sin pisar al que la esta moviendo)
+  if (e && e.master != null && MASTER_DELL && !DJ && Date.now() - masterMovido > 2000 && +$('master').value !== e.master){
+    $('master').value = e.master; $('masterTxt').textContent = e.master + '%'; }
   if (e.canales) canales = e.canales;
   if (e.salida){ V.salida = e.salida; V.sucio = true; }
   if (e.efectos){ efectosActivos = e.efectos; pintarEfectos(); }
