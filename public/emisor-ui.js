@@ -16,6 +16,7 @@
     const deco = !d ? '⚪ El deco no ha avisado todavía (si está encendido, puede tener una versión antigua de la página: se pone al día sola cuando pasa a la cartelera, o al recargarla)'
       : d.hace > 90 ? `⚪ El deco no avisa hace ${Math.round(d.hace / 60)} min (¿apagado o sin internet?). Lo último: mostraba ${esc(d.que)}`
         : d.emi ? '🟢 El deco está mostrando <b>la transmisión en vivo</b>'
+          : d.cuadros ? '🟢 El deco está mostrando <b>el plan B: la imagen cuadro a cuadro</b> (una por segundo)'
           : `🟡 El deco está mostrando <b>${esc(d.que)}</b>, no la transmisión${d.vista === 'sala' ? (!d.rtc ? ' · su navegador no tiene WebRTC: no puede recibir la emisión' : !d.emiUrl ? ' · no tiene la dirección de la emisión' : d.intentando ? ' · está intentando conectarse a la emisión' : ' · reintenta cada 15 s') : ' · la transmisión se pone encima solo cuando la pantalla muestra los juegos de la sala'}`;
     // Quién lee la pantalla vertical de Kennedy (aunque la página sea antigua y no avise) y la foto del emisor
     const lec = (await api('GET', '/api/deco/lectores?p=kennedy').catch(() => [])) || [];
@@ -33,6 +34,8 @@
       ${decoTxt}
       <div class="row"><button type="button" data-emi-reload>↻ Recargar la pantalla vertical de Kennedy a distancia</button></div>
       ${lecTxt}${fotoTxt}
+      <div class="emi-planb"><b>Plan B · imagen cuadro a cuadro</b> <span class="muted small">Para un deco que no puede mostrar la transmisión: el emisor manda una imagen por segundo de la misma pantalla y el deco la muestra (sirve en cualquier aparato). Se pone sola si el deco no tiene WebRTC o la transmisión no le llega; con este botón queda puesta siempre.${r.cuadro != null ? ` · última imagen hace ${r.cuadro} s` : ' · todavía no llegan imágenes'}</span>
+        <div class="row"><button type="button" class="${r.planB ? 'primary' : ''}" data-planb="1">🖼️ Plan B siempre${r.planB ? ' · puesto' : ''}</button><button type="button" class="${r.planB ? '' : 'primary'}" data-planb="0">Automático${r.planB ? '' : ' · puesto'}</button></div></div>
       <div class="row"><button type="button" class="${r.prueba ? 'primary' : ''}" data-emi="1">🧪 Modo prueba: encendido siempre${r.prueba ? ' · puesto' : ''}</button><button type="button" class="${r.prueba ? '' : 'primary'}" data-emi="0">Solo con juegos${r.prueba ? '' : ' · puesto'}</button><a class="btn" href="/emision" target="_blank" rel="noopener">👁 Ver la emisión</a></div>`;
     if (wasOpen) box.querySelector('.emi-lec').open = true;
     const img = box.querySelector('img[data-foto]');
@@ -58,6 +61,12 @@
         if (!confirm('¿Recargar la pantalla vertical de Kennedy? Si está en pantalla completa, sale de ella.')) return;
         try { await api('POST', '/api/deco/recargar', { p: 'kennedy' }); toast('Listo: la pantalla se recarga en unos segundos (si tiene la página nueva)'); } catch (err) { toast(err.message); }
         return;
+      }
+      const pb = e.target.closest('button[data-planb]');
+      if (pb) {
+        busy = true;
+        try { const r = await api('POST', '/api/emisor/planb', { on: pb.dataset.planb === '1' }); toast(r.planB ? 'Plan B puesto: el deco muestra la imagen cuadro a cuadro' : 'Automático: el deco usa la transmisión y, si no le llega, la imagen cuadro a cuadro'); } catch (err) { toast(err.message); }
+        busy = false; paint(box); return;
       }
       const b = e.target.closest('button[data-emi]'); if (!b) return;
       busy = true;

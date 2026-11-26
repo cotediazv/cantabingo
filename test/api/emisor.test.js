@@ -71,3 +71,25 @@ test('deco: lectores, recargar a distancia y foto del emisor', async () => {
     assert.equal((await srv3.call('GET', '/api/emisor/foto')).status, 401);
   } finally { await srv3.stop(); }
 });
+
+// PLAN B (Cote, 26 nov): imagen cuadro a cuadro para el deco sin WebRTC; solo la acepta del emisor (marca del turno)
+test('plan B: el emisor manda imágenes con su marca y la pantalla vertical lo sabe', async () => {
+  const { startServer } = require('../helpers');
+  const s = await startServer();
+  try {
+    const jpg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff]), Buffer.alloc(300, 1)]);
+    const post = (k) => fetch(`${s.url}/api/emisor/cuadro`, { method: 'POST', headers: { 'content-type': 'image/jpeg', 'x-emisor': k, 'x-pantalla': 'kennedy' }, body: jpg });
+    assert.equal((await post('cualquiera')).status, 403);
+    const lat = await (await fetch(`${s.url}/api/emisor/latido`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pantalla: 'kennedy', run: 'turno1' }) })).json();
+    assert.ok(lat.marca);
+    const otra = await (await fetch(`${s.url}/api/emisor/latido`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pantalla: 'kennedy', run: 'turno1' }) })).json();
+    assert.equal(otra.marca, undefined); // se entrega una sola vez por turno
+    assert.equal((await post(lat.marca)).status, 200);
+    assert.equal((await fetch(`${s.url}/api/emisor/cuadro.jpg`)).status, 200);
+    let v = await s.ok('GET', '/api/vertical/kennedy');
+    assert.ok(v.cuadro > 0); assert.equal(v.planB, false);
+    await s.admin.post('/api/emisor/planb', { on: true });
+    v = await s.ok('GET', '/api/vertical/kennedy');
+    assert.equal(v.planB, true);
+  } finally { await s.stop(); }
+});

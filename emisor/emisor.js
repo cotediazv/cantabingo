@@ -27,7 +27,12 @@ const MAX_MS = 6 * 3600000;
 const IDLE_MS = (Number(process.env.SIN_JUEGO) || 10) * 60000;
 let ultimoJuego = Date.now(); // al partir se cuenta como si recién hubiera un juego (lo arrancó el servidor por eso)
 // Avisa al servidor de la Sala que está corriendo (así no lo vuelve a arrancar, lo que lo reiniciaría)
-const latido = () => fetch(`${SITIO}/api/emisor/latido`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pantalla: PANTALLA }) }).catch(() => {});
+// RUN: este turno del emisor; con el primer aviso la Sala entrega la marca para mandar las imágenes del plan B
+const RUN = Math.random().toString(36).slice(2, 12);
+let marca = '';
+const clave = () => process.env.EMISOR_CLAVE || marca;
+const latido = () => fetch(`${SITIO}/api/emisor/latido`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pantalla: PANTALLA, run: RUN }) })
+  .then((r) => r.json()).then((j) => { if (j && j.marca) marca = j.marca; }).catch(() => {});
 
 // Hay juego cuando la pantalla vertical muestra la sala de juegos (no la cartelera ni la información del local) y en la
 // sala no está el karaoke ni el show (no son juegos: esos los sigue mostrando el decodificador)
@@ -134,6 +139,23 @@ for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { log('Detenido:'
   });
   let browser = await lanzar(false);
   let reaperturas = 0;
+  // PLAN B (Cote, 26 nov: «otro formato, algo más antiguo»): una imagen por segundo de la misma página (720 de ancho,
+  // JPEG), para los decodificadores que no pueden mostrar la transmisión en vivo; la Sala la guarda y la pantalla liviana
+  // la muestra. Corre mientras la página está abierta (con juego o en modo prueba), aunque la transmisión no haya partido
+  let cdpC = null; let pageC = null;
+  const cuadros = async () => {
+    while (!parar) {
+      const t0 = Date.now();
+      try {
+        if (page && clave()) {
+          if (pageC !== page) { cdpC = await ctx.newCDPSession(page); pageC = page; }
+          const { data } = await cdpC.send('Page.captureScreenshot', { format: 'jpeg', quality: 55, clip: { x: 0, y: 0, width: W, height: H, scale: 720 / W } });
+          await fetch(`${SITIO}/api/emisor/cuadro`, { method: 'POST', headers: { 'content-type': 'image/jpeg', 'x-emisor': clave(), 'x-pantalla': PANTALLA }, body: Buffer.from(data, 'base64'), signal: AbortSignal.timeout(4000) });
+        }
+      } catch (e) { pageC = null; cdpC = null; }
+      await sleep(Math.max(200, 1000 - (Date.now() - t0)));
+    }
+  };
   let ctx = null, page = null, enviando = false;
   const abrir = async () => {
     if (ctx) await ctx.close().catch(() => {});
@@ -159,6 +181,7 @@ for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { log('Detenido:'
     }
     await cdp.detach().catch(() => {});
   };
+  cuadros();
   try {
     let tLat = 0; let tFoto = 0;
     while (!parar && Date.now() - inicio < MAX_MS && Date.now() - ultimoJuego < IDLE_MS) {

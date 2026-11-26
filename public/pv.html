@@ -138,6 +138,10 @@
   #emi { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 45; background: #000; object-fit: contain; display: none; }
   #cv.emi-on #emi { display: block; }
   #cv.emi-on #view, #cv.emi-on #per, #cv.emi-on #marks { visibility: hidden; }
+  /* Plan B (26 nov): la imagen cuadro a cuadro que manda el emisor, para los aparatos sin WebRTC */
+  #emf { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 44; background: #000; display: none; }
+  #cv.emf-on #emf { display: block; }
+  #cv.emf-on #view, #cv.emf-on #per, #cv.emf-on #marks { visibility: hidden; }
   #diag { position: fixed; left: 0; right: 0; bottom: 0; z-index: 99; margin: 0; padding: 8px; font: 12px/1.35 monospace; background: #fff; color: #000; white-space: pre-wrap; word-wrap: break-word; max-height: 45%; overflow: auto; }
 
   /* ================= Diseño nuevo (pedido de Cote, 22 nov: «Me gusta, aplícalo a todo») =================
@@ -368,6 +372,7 @@
   <div id="per" class="hide"></div>
   <div id="marks"></div>
   <video id="emi" muted autoplay playsinline webkit-playsinline></video>
+  <img id="emf" alt="">
 </div>
 <div id="t2pre"><b>.</b><s>.</s><i>.</i><u>.</u><em>.</em></div>
 <script src="gameintro.js"></script>
@@ -1103,7 +1108,8 @@
       var want = show === 'video' ? (ver ? 'video' : 'logo') : show === 'light' ? 'info' : show === 'light-qr' ? 'info-qr' : show === 'light-show' ? 'info-show' : show === 'light-kar' ? 'info-kar' : show === 'karaoke' ? 'karaoke' : !st.activity ? (ver ? 'video' : 'logo') : 'sala';
       if (want !== cur) go(want);
       eUrl = eTest || st.emision || '';
-      emiWant();
+      stCuadro = st.cuadro || 0; stPlanB = !!st.planB;
+      emiWant(); framesTick();
       report();
     });
   }
@@ -1121,12 +1127,12 @@
     if (eOn) { eOn = false; cv.className = cv.className.replace(/ emi-on\b/, ''); }
     try { if ('srcObject' in emi) emi.srcObject = null; else emi.removeAttribute('src'); } catch (e) { /* nada */ }
   }
-  function emiWant() { if ((cur === 'sala' || eTest) && eUrl) { if (!epc && !eTimer) emiStart(); } else if (epc || eOn || eTimer) emiStop(); }
+  function emiWant() { if ((cur === 'sala' || eTest) && eUrl && !(stPlanB && !eTest)) { if (!epc && !eTimer) emiStart(); } else if (epc || eOn || eTimer) emiStop(); }
   function emiStart() {
     if (!window.RTCPeerConnection || !window.Promise) return;
     var pc; try { pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.cloudflare.com:3478' }], bundlePolicy: 'max-bundle' }); } catch (e) { return; }
     epc = pc;
-    var again = function (ms) { if (epc !== pc) return; emiStop(); eTimer = setTimeout(function () { eTimer = null; emiWant(); }, ms); };
+    var again = function (ms) { if (epc !== pc) return; if (!eOn) eFails++; emiStop(); eTimer = setTimeout(function () { eTimer = null; emiWant(); }, ms); };
     var got = function (stream) {
       if (epc !== pc || !stream) return;
       if ('srcObject' in emi) emi.srcObject = stream; else emi.src = URL.createObjectURL(stream);
@@ -1154,7 +1160,29 @@
       });
     }).then(function (sdp) { return pc.setRemoteDescription(new RTCSessionDescription({ type: 'answer', sdp: sdp })); })['catch'](function () { clearTimeout(limit); again(15000); });
   }
-  emi.addEventListener('playing', function () { if (epc && !eOn) { eOn = true; cv.className += ' emi-on'; } });
+  emi.addEventListener('playing', function () { if (epc && !eOn) { eOn = true; eFails = 0; cv.className += ' emi-on'; framesStop(); } });
+  // ---------- Plan B: imagen cuadro a cuadro (Cote, 26 nov: «otro tipo de transmisión, otro formato, algo más antiguo») ----------
+  // Con los juegos de la sala en pantalla, si este aparato no tiene WebRTC, si la transmisión no llegó en dos intentos o si
+  // en /emisor está puesto el plan B, muestra la imagen que el emisor manda cada segundo (/api/emisor/cuadro.jpg). La imagen
+  // nueva se carga aparte y recién cargada reemplaza a la anterior (sin parpadeo). Si dejan de llegar, vuelve la vista normal.
+  var emf = $('emf'); var fOn = false; var fFails = 0; var eFails = 0; var stCuadro = 0; var stPlanB = false; var fBusy = false;
+  function framesWanted() { return cur === 'sala' && !!stCuadro && !eOn && (stPlanB || !window.RTCPeerConnection || !window.Promise || eFails >= 2); }
+  function framesStop() { fFails = 0; if (fOn) { fOn = false; cv.className = cv.className.replace(/ emf-on\b/, ''); } }
+  function framesTick() {
+    if (!framesWanted()) { framesStop(); return; }
+    if (fBusy) return;
+    fBusy = true;
+    var im = new Image(); var u = '/api/emisor/cuadro.jpg?t=' + new Date().getTime();
+    im.onload = function () {
+      fBusy = false; fFails = 0;
+      if (!framesWanted()) { framesStop(); return; }
+      im.id = 'emf'; emf.parentNode.replaceChild(im, emf); emf = im;
+      if (!fOn) { fOn = true; cv.className += ' emf-on'; }
+    };
+    im.onerror = function () { fBusy = false; fFails++; if (fFails >= 5) framesStop(); };
+    im.src = u;
+  }
+  setInterval(framesTick, 1000);
   emi.addEventListener('error', function () { if (eOn) { emiStop(); eTimer = setTimeout(function () { eTimer = null; emiWant(); }, 5000); } });
   // Aviso al Centro de control de qué está mostrando esta pantalla (pedido de Cote, 25 nov: «que la página del deco avise
   // en el Centro de control qué está mostrando, para verlo desde la casa sin depender de nadie»). Cada 30 s.
@@ -1164,7 +1192,7 @@
     var x = new XMLHttpRequest();
     try {
       x.open('POST', '/api/deco', true); x.setRequestHeader('Content-Type', 'application/json'); x.timeout = 10000;
-      x.send(JSON.stringify({ p: P, vista: cur, emi: !!eOn, emiUrl: !!eUrl, intentando: !!(epc && !eOn), rtc: !!window.RTCPeerConnection, ver: myTag || '', ua: String(navigator.userAgent || '').slice(0, 160), w: window.innerWidth, h: window.innerHeight }));
+      x.send(JSON.stringify({ p: P, vista: cur, emi: !!eOn, cuadros: !!fOn, emiUrl: !!eUrl, intentando: !!(epc && !eOn), rtc: !!window.RTCPeerConnection, ver: myTag || '', ua: String(navigator.userAgent || '').slice(0, 160), w: window.innerWidth, h: window.innerHeight }));
     } catch (e) { /* nada */ }
   }
   function pubLoad() { get('/api/tema', function (r) { if (r && typeof r.pub === 'string') PUB = r.pub; }); }

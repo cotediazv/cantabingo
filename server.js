@@ -888,7 +888,16 @@ const cortinaJuego = () => { const s = Object.values(db.sessions)[0]; if (s) cap
 // Necesita en Render RENDER_API_KEY (clave de la API de Render; nunca en el repositorio) y EMISOR_CRON (el id del Cron
 // Job, crn-…). El emisor se apaga solo tras 10 minutos sin juego.
 const emisor = { latido: 0, pedido: 0, error: '' };
-app.post('/api/emisor/latido', (req, res) => { if (String((req.body || {}).pantalla || '') === 'kennedy') emisor.latido = Date.now(); res.json({ ok: true }); });
+app.post('/api/emisor/latido', (req, res) => {
+  if (String((req.body || {}).pantalla || '') !== 'kennedy') return res.json({ ok: true });
+  emisor.latido = Date.now();
+  // la marca para mandar las imágenes del plan B (si no hay EMISOR_CLAVE): una nueva cada vez que parte un turno del emisor,
+  // y se entrega una sola vez, en el primer aviso de ese turno
+  const run = String((req.body || {}).run || '').slice(0, 40);
+  let marca;
+  if (!process.env.EMISOR_CLAVE && run && run !== cuadroRun) { cuadroRun = run; cuadroMarca = crypto.randomBytes(16).toString('hex'); marca = cuadroMarca; }
+  res.json({ ok: true, marca });
+});
 // Panel del DJ de las luces de Kennedy dentro del karaoke de la sala light (pedido de Cote, 25 nov, por Claude 1 y Code 4:
 // «que se pueda cambiar la pestaña… y que se transforme en la página que ve el DJ para mover las luces… todo en un solo
 // lugar»). La sesión de las luces la saca este servidor con LUCES_URL y LUCES_CLAVE (solo en Render) y se guarda en los
@@ -925,10 +934,10 @@ const DECO_VISTAS = { video: 'el video de la cartelera', logo: 'el logo', sala: 
 app.post('/api/deco', (req, res) => {
   const b = req.body || {}; const p = String(b.p || '').toLowerCase().replace(/[^a-z-]/g, '').slice(0, 20);
   if (!p) return res.json({ ok: false });
-  decos[p] = { at: Date.now(), vista: String(b.vista || '').slice(0, 20), emi: !!b.emi, emiUrl: !!b.emiUrl, intentando: !!b.intentando, rtc: !!b.rtc, ver: String(b.ver || '').slice(0, 60), ua: String(b.ua || '').slice(0, 160), w: Number(b.w) || 0, h: Number(b.h) || 0 };
+  decos[p] = { at: Date.now(), vista: String(b.vista || '').slice(0, 20), emi: !!b.emi, cuadros: !!b.cuadros, emiUrl: !!b.emiUrl, intentando: !!b.intentando, rtc: !!b.rtc, ver: String(b.ver || '').slice(0, 60), ua: String(b.ua || '').slice(0, 160), w: Number(b.w) || 0, h: Number(b.h) || 0 };
   res.json({ ok: true });
 });
-app.get('/api/deco', requireAdmin, (_req, res) => res.json(Object.fromEntries(Object.entries(decos).map(([k, d]) => [k, { ...d, hace: Math.round((Date.now() - d.at) / 1000), que: d.emi ? 'la transmisión en vivo (emisión)' : (DECO_VISTAS[d.vista] || d.vista || '¿?') }]))));
+app.get('/api/deco', requireAdmin, (_req, res) => res.json(Object.fromEntries(Object.entries(decos).map(([k, d]) => [k, { ...d, hace: Math.round((Date.now() - d.at) / 1000), que: d.emi ? 'la transmisión en vivo (emisión)' : d.cuadros ? 'el plan B (imagen cuadro a cuadro)' : (DECO_VISTAS[d.vista] || d.vista || '¿?') }]))));
 // Quién lee cada pantalla en los últimos 10 minutos (página y navegador), y recargar a distancia una pantalla (las páginas de
 // las pantallas se recargan solas cuando cambia `recargar` en /api/vertical/<pantalla>)
 app.get('/api/deco/lectores', requireAdmin, (req, res) => {
@@ -952,11 +961,31 @@ app.get('/api/emisor/foto', requireAdmin, (_req, res) => {
   if (!emisorFoto) return fail(res, 404, 'Todavía no hay foto');
   res.set('Cache-Control', 'no-store').set('x-at', String(emisorFoto.at)).set('x-luz', String(emisorFoto.luz)).set('x-cap', encodeURIComponent(emisorFoto.cap)).type('jpeg').send(emisorFoto.img);
 });
+// PLAN B de la pantalla vertical (Cote, 26 nov, por el Registro: «tener preparado un plan B en el caso de no poder hacerlo
+// funcionar… otro tipo de transmisión, otro formato, algo más antiguo»): además de la transmisión en vivo (WebRTC), el
+// emisor manda una imagen por segundo de la misma página; la pantalla liviana (pv.html) la muestra cuando su navegador no
+// tiene WebRTC, cuando la transmisión no llega o cuando está puesto el plan B en /emisor. Solo en memoria, solo la última.
+// Las imágenes solo las acepta del emisor: con EMISOR_CLAVE en Render (las dos partes) o, si no está, con la marca que el
+// servidor le entrega al emisor en su primer aviso de vida (una vez por cada vez que parte el servidor)
+let emisorCuadro = null; let cuadroMarca = ''; let cuadroRun = '';
+const cuadroClave = () => process.env.EMISOR_CLAVE || cuadroMarca;
+app.post('/api/emisor/cuadro', express.raw({ type: 'image/jpeg', limit: '500kb' }), (req, res) => {
+  const k = String(req.get('x-emisor') || '');
+  if (!k || k !== cuadroClave()) return res.status(403).json({ error: 'No autorizado' });
+  if (!Buffer.isBuffer(req.body) || req.body.length < 100) return res.json({ ok: false });
+  emisorCuadro = { img: req.body, at: Date.now(), p: String(req.get('x-pantalla') || 'kennedy') };
+  res.json({ ok: true });
+});
+app.get('/api/emisor/cuadro.jpg', (_req, res) => {
+  if (!emisorCuadro || Date.now() - emisorCuadro.at > 15000) return res.status(404).end();
+  res.set('Cache-Control', 'no-store').type('jpeg').send(emisorCuadro.img);
+});
+app.post('/api/emisor/planb', requireAdmin, (req, res) => { db.emisorPlanB = !!(req.body || {}).on; save(); aviso(); res.json({ planB: db.emisorPlanB }); });
 app.get('/api/emisor/foto/info', requireAdmin, (_req, res) => res.json(emisorFoto ? { at: emisorFoto.at, hace: Math.round((Date.now() - emisorFoto.at) / 1000), luz: emisorFoto.luz, cap: emisorFoto.cap } : null));
 // Para la página de la emisión (/emision): solo si el emisor está encendido, sin nada secreto
 app.get('/api/emisor/estado', (_req, res) => res.json({ corriendo: Date.now() - emisor.latido < 90000, prueba: !!db.emisorPrueba }));
 app.post('/api/emisor/prueba', requireAdmin, (req, res) => { db.emisorPrueba = !!(req.body || {}).on; save(); setTimeout(() => emisorCheck(), 0); res.json({ prueba: db.emisorPrueba }); });
-app.get('/api/emisor', requireAdmin, (_req, res) => res.json({ corriendo: Date.now() - emisor.latido < 90000, prueba: !!db.emisorPrueba, latido: emisor.latido, pedido: emisor.pedido, error: emisor.error, configurado: !!(process.env.RENDER_API_KEY && process.env.EMISOR_CRON) }));
+app.get('/api/emisor', requireAdmin, (_req, res) => res.json({ planB: !!db.emisorPlanB, cuadro: emisorCuadro ? Math.round((Date.now() - emisorCuadro.at) / 1000) : null, corriendo: Date.now() - emisor.latido < 90000, prueba: !!db.emisorPrueba, latido: emisor.latido, pedido: emisor.pedido, error: emisor.error, configurado: !!(process.env.RENDER_API_KEY && process.env.EMISOR_CRON) }));
 // Hay un juego de verdad en pantalla (no solo la sala abierta con el QR): lo mismo que hace pasar la pantalla vertical a la sala
 const juegoEnPantalla = (s) => {
   const st = db.stage;
@@ -1045,7 +1074,7 @@ app.get('/api/vertical/:local', (req, _res, next) => {
   for (const k of Object.keys(L)) if (Date.now() - L[k].at > 10 * 60000) delete L[k];
   next();
 });
-require('./vertical.js')({ app, db, save, requireAdmin, fail, karaoke, perOf, dir: path.dirname(DATA_FILE) }); // pantalla vertical: video del mes y actividades
+require('./vertical.js')({ cuadroOf: (v) => (emisorCuadro && emisorCuadro.p === v && Date.now() - emisorCuadro.at < 8000 ? emisorCuadro.at : 0), planB: () => !!db.emisorPlanB, app, db, save, requireAdmin, fail, karaoke, perOf, dir: path.dirname(DATA_FILE) }); // pantalla vertical: video del mes y actividades
 // Conectados (pedido de Cote, 22 nov): números en vivo por local, gráfico de las últimas 3 horas y registro por jornada
 require('./conectados.js')({ app, db, save, requireAdmin, port: process.env.PORT || 3000,
   // personas de la sala de juegos de ese local: conectadas ahora (con la sala abierta en el celular) e inscritas en total
