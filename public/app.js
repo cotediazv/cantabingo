@@ -6,6 +6,10 @@ const app = $('#app');
 // Pedido de Cote (21 nov): al dar a conocer un ganador, un premio o una información, el animador también lo ve en su
 // panel, grande, para leerlo en voz alta (lo mismo que está en la pantalla del local)
 // El ranking de la Trivia del Rosko desplegado en pantalla, también grande en el panel (pedido de Cote, 21 nov)
+// «y» o «e» entre nombres (Cote, 25 nov: «cuando hay empate entre una persona y otra que empieza con I no se puede usar
+// la Y sino la E: Camilo e Isidora»): «e» antes de una palabra que suena /i/ (i-, hi-), salvo si forma diptongo (hie-, hia-)
+window.eY = (w) => { const s = String(w || '').replace(/^[^A-Za-z\u00C0-\u00FF]+/, '').toLowerCase(); return /^h?[iíï]/.test(s) && !/^h?[ií][aeiouáéóú]/.test(s) ? 'e' : 'y'; };
+window.yJoin = (a) => { a = a || []; return a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} ${window.eY(a[a.length - 1])} ${a[a.length - 1]}`; };
 window.rankAnnHtml = (rank, players, final, title = 'la Trivia del Rosko') => `<div class="panel ann rank-ann"><small>📣 En pantalla ahora</small><span class="ann-t">🏅 Ranking de ${esc(title)} · ${final ? 'resultados finales' : 'resultados parciales'}</span>
   ${rank.length ? `<ol class="rank-ann-list">${rank.map((t, i) => `<li class="${i < 3 ? 'top' : ''}"><em>${i + 1}.º</em><b>${esc(t.name)}</b><i>${t.score} pts</i></li>`).join('')}</ol>` : '<span class="ann-l">Todavía nadie suma puntos</span>'}
   <span class="ann-l">${players} ${players === 1 ? 'persona jugando' : 'personas jugando'}</span></div>`;
@@ -1006,7 +1010,7 @@ views.jugar = async (sid) => {
     const crowdWin = cwRollLeft > 200 ? '<div class="prosco-win">🥁 Trivia del Rosko<small>¡Ya viene el ganador! Mira la pantalla</small></div>' : cw ? (cw.none ? '<div class="prosco-win">🏅 Trivia del Rosko<small>Esta vez nadie sumó puntos</small></div>'
       : `<div class="prosco-win">🏅 ${esc(cw.name)}<small>${String(cw.name).toLowerCase() === String(me.name || '').toLowerCase() ? '¡Ganaste la Trivia del Rosko!' : '¡Ganó la Trivia del Rosko!'} ${cw.score} puntos</small></div>`) : '';
     const body = crowdWin + (rosco.winner ? `<div class="prosco-win">🏆 ${esc(rosco.winner.name)}<small>${rosco.winner.full ? '¡Completó el rosko!' : '¡Ganó El Rosko!'}</small></div>`
-      : rosco.tie ? `<div class="prosco-wait">Empate entre ${rosco.tie.names.map(esc).join(' y ')}. Se define por sorteo.</div>`
+      : rosco.tie ? `<div class="prosco-wait">Empate entre ${window.yJoin(rosco.tie.names.map(esc))}. Se define por sorteo.</div>`
       : rosco.finished ? '<div class="prosco-wait">Juego terminado</div>'
       : `<div class="prosco-q"><span class="prosco-letter">${esc(rosco.letters[c.current])}</span>
           <p>${rosco.question ? esc(rosco.question) : '<span class="muted">Esperando la siguiente pregunta…</span>'}</p></div>`);

@@ -144,6 +144,9 @@ var token = '';
 try { token = window.localStorage.getItem('adminToken') || ''; } catch (e) { token = ''; }
 var offset = 0;
 var V = { frida: 'Frida', tobalaba: 'Tobalaba', kennedy: 'Mercado Kennedy' }; // el local se llama Mercado Kennedy (pedido de Cote, 21 nov)
+// «y» o «e» entre nombres (Cote, 25 nov: «Camilo e Isidora»)
+function eY(w) { var s = String(w || '').replace(/^[^A-Za-z\u00C0-\u00FF]+/, '').toLowerCase(); return /^h?[i\u00ed\u00ef]/.test(s) && !/^h?[i\u00ed][aeiou\u00e1\u00e9\u00f3\u00fa]/.test(s) ? 'e' : 'y'; }
+function yJoin(a) { a = a || []; return a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' ' + eY(a[a.length - 1]) + ' ' + a[a.length - 1]; }
 var BINGO_HOWTO = ['Todos juegan desde las mesas, con su cartón en el celular.', 'Gana quien complete primero la <em>figura</em>.', 'Empate: sorteo.'];
 var ROSCO_HOWTO = ['3 participantes.', 'Todos juegan desde las mesas.', '<em>Premio mayor</em> para el que gana El Rosko.', '<em>Premio especial</em> para el ganador del público que juega la Trivia del Rosko.'];
 var LINES = [['linea', 'Línea (cualquiera)'], ['horizontal', 'Línea horizontal'], ['vertical', 'Línea vertical'], ['diagonal', 'Diagonal'], ['dos-lineas', 'Dos líneas']];
@@ -268,7 +271,7 @@ function gvHtml() {
   }
   if (g.phase === 'voting') return '<p class="gvnow">🗳️ ' + (g.round === 2 ? 'Segunda vuelta' : 'Votación abierta') + ' · quedan ' + clock(g.until - (new Date().getTime() + offset)) + ' · ' + votos(g.total) + '</p>' + rows + btn('🗳️ Votando…', 'none', '', 'big primary paso', true) + cancel;
   if (g.phase === 'result' && g.empty) return '<p class="gvnow">Nadie votó.</p>' + btn('🗳️ Repetir votación (30 s)', 'gvStart', '', 'big primary paso') + cancel;
-  if (g.phase === 'result' && g.runoff) return '<p class="gvnow">Nadie superó el 50%. Segunda vuelta: ' + gameIcon(g.runoff[0]) + ' ' + h(gameName(g.runoff[0])) + ' y ' + gameIcon(g.runoff[1]) + ' ' + h(gameName(g.runoff[1])) + (g.tie2 ? ' (empate en el 2.º lugar: se sorteó)' : '') + '.</p>' + rows + btn('🗳️ Iniciar segunda vuelta (30 s)', 'gvStart', '', 'big primary paso') + cancel;
+  if (g.phase === 'result' && g.runoff) return '<p class="gvnow">Nadie superó el 50%. Segunda vuelta: ' + gameIcon(g.runoff[0]) + ' ' + h(gameName(g.runoff[0])) + ' ' + eY(gameName(g.runoff[1])) + ' ' + gameIcon(g.runoff[1]) + ' ' + h(gameName(g.runoff[1])) + (g.tie2 ? ' (empate en el 2.º lugar: se sorteó)' : '') + '.</p>' + rows + btn('🗳️ Iniciar segunda vuelta (30 s)', 'gvStart', '', 'big primary paso') + cancel;
   if (g.phase === 'done' && g.winner) return '<p class="gvwin">🏆 Ganó ' + gameIcon(g.winner) + ' ' + h(gameName(g.winner)) + (g.tie ? ' (empate: se decidió por sorteo)' : '') + '</p>' + rows + btn('▶ Ir a ' + gameIcon(g.winner) + ' ' + h(gameName(g.winner)), 'gvGo', d('g', g.winner), 'big primary paso') + introBtn + '<div class="center">' + btn('🗳️ Nueva votación (30 s)', 'gvStart', '', '') + '</div>';
   return '<p class="gvhelp">El público elige el próximo juego desde su celular, en 30 segundos. Gana el juego con más de la mitad de los votos; si ninguno lo logra, hay segunda vuelta entre los 2 primeros. Primero, las instrucciones de cada juego en pantalla, paso a paso.</p>' + btn('📢 Iniciar instrucciones', 'gvIntro', '', 'big primary paso') + '<div class="center">' + btn('🗳️ Iniciar votación sin instrucciones (30 s)', 'gvStart', '', '') + '</div>';
 }
@@ -527,7 +530,7 @@ function renderRosco(w) {
     if (w.rank) o += rankAnn(w.rank, w.rankPlayers || 0, !!(w.crowdWinner || w.winner)); // el ranking que está en pantalla, grande
     o += '<div class="now"><small>Letra · reloj</small><b style="font-size:30px">' + h(c.active ? w.letters[c.current] : '—') + '</b> · <b id="rclock">' + clock(roscoLeft(w)) + '</b> <span class="muted">' + c.hits + ' ✔ · ' + c.misses + ' ✘</span></div>';
     var q = ((w.questions || [])[w.turn] || [])[c.current] || {};
-    o += '<div class="q' + (w.runningSince && c.active ? ' live' : '') + '">' + (!c.active ? (w.tie ? (w.tie.rolling ? '<b>Sorteando el desempate…</b> Mira la pantalla.' : '<b>Hay un empate</b> entre ' + h(w.tie.names.join(' y ')) + '. Primero desempata por sorteo.') : 'Juego terminado.') :
+    o += '<div class="q' + (w.runningSince && c.active ? ' live' : '') + '">' + (!c.active ? (w.tie ? (w.tie.rolling ? '<b>Sorteando el desempate…</b> Mira la pantalla.' : '<b>Hay un empate</b> entre ' + h(yJoin(w.tie.names)) + '. Primero desempata por sorteo.') : 'Juego terminado.') :
       !w.runningSince ? '<span class="muted">Pulsa «Iniciar pregunta» para ver la pregunta de esta letra.</span>' : '<div class="qt">' + h(q.q || '') + '</div>' + (q.a ? '<div class="a"><small>Respuesta</small>' + h(q.a) + '</div>' : '')) + '</div>';
     if (w.tie && !w.tie.rolling) o += btn('🎲 Desempatar por sorteo', 'tieRosco', '', 'big warn');
     if (w.winner && !w.winAccepted) o += btn('✔ Aceptar ganador', 'wheel', d('x', 'acceptwin'), 'big ok');

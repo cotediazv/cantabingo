@@ -32,7 +32,7 @@
     if (g.phase === 'result' && g.empty) return { top: '🗳️ Votación', big: 'Nadie votó', line: '' };
     if (g.phase === 'result' && g.runoff) {
       return { top: '🗳️ Resultado de la votación', big: 'Nadie superó el 50%',
-        line: `Segunda vuelta: ${nameOf(info, g.runoff[0])} y ${nameOf(info, g.runoff[1])}${g.tie2 ? ' · empate en el 2.º lugar: se sorteó' : ''}` };
+        line: `Segunda vuelta: ${window.yJoin([nameOf(info, g.runoff[0]), nameOf(info, g.runoff[1])])}${g.tie2 ? ' · empate en el 2.º lugar: se sorteó' : ''}` };
     }
     if (g.phase === 'done' && g.winner) {
       return { top: g.round === 2 ? '🗳️ Resultado de la segunda vuelta' : '🗳️ Resultado de la votación', big: `🏆 ¡Ganó ${nameOf(info, g.winner)}!`,
@@ -214,7 +214,7 @@
     } else if (g.phase === 'result' && g.empty) {
       html = `<p class="gvp-now">Nadie votó.</p><button type="button" class="primary big g-draw paso" data-paso="9" data-gv-start>🗳️ Repetir votación (30 s)</button>${cancel}`;
     } else if (g.phase === 'result' && g.runoff) {
-      html = `<p class="gvp-now">Nadie superó el 50%. Segunda vuelta: ${nameOf(info, g.runoff[0])} y ${nameOf(info, g.runoff[1])}${g.tie2 ? ' (empate en el 2.º lugar: se sorteó)' : ''}.</p>${rows}
+      html = `<p class="gvp-now">Nadie superó el 50%. Segunda vuelta: ${window.yJoin([nameOf(info, g.runoff[0]), nameOf(info, g.runoff[1])])}${g.tie2 ? ' (empate en el 2.º lugar: se sorteó)' : ''}.</p>${rows}
         <button type="button" class="primary big g-draw paso" data-paso="9" data-gv-start>🗳️ Iniciar segunda vuelta (30 s)</button>${cancel}`;
     } else if (g.phase === 'done' && g.winner) {
       html = `<p class="gvp-win">🏆 Ganó ${nameOf(info, g.winner)}${g.tie ? ' (empate: se decidió por sorteo)' : ''}</p>${rows}

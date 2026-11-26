@@ -114,7 +114,7 @@
         box.innerHTML = `${rankBox}${head}${read}${options(true)}
           <button class="primary big" data-lock ${chosen == null ? 'disabled' : ''}>🔒 Respuesta definitiva${chosen != null ? `: ${L[chosen]}` : ''}</button>
           ${extras()}<h2 style="margin:18px 0 6px">Comodines</h2>${lifelines()}
-          <button class="big dc-retire" data-do="retire">🏳 Se retira con ${esc((st.prizeWinners || []).filter((x) => x.by === st.player).map((x) => x.prize).join(' y ') || 'nada')}</button>${rankBtn}`;
+          <button class="big dc-retire" data-do="retire">🏳 Se retira con ${esc(window.yJoin((st.prizeWinners || []).filter((x) => x.by === st.player).map((x) => x.prize)) || 'nada')}</button>${rankBtn}`;
       } else if (st.phase === 'locked') {
         box.innerHTML = `${rankBox}${head}${read}${options(false)}<p class="dc-note">Respuesta definitiva: <b>${L[st.pick]}</b>. En pantalla queda marcada, en suspenso.</p>
           ${extras()}<button class="primary big" data-do="reveal">✨ Revelar</button>

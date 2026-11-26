@@ -79,7 +79,9 @@ module.exports = function desafio({ app, db, save, requireAdmin, fail, setStage,
   // premios de las etapas que pasó él; y la lista completa de premios ganados, con el nombre de cada uno
   const prizeWinners = () => { const s = g(); return (s.stageBy || []).map((by, i) => (by ? { prize: s.prizes[i], by, stage: i + 1 } : null)).filter(Boolean); };
   const wonList = () => (g().phase === 'end' ? prizeWinners().filter((x) => x.by === g().player).map((x) => x.prize) : []);
-  const andJoin = (a) => (a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} y ${a[a.length - 1]}`);
+  // «e» en vez de «y» antes de una palabra que suena /i/ (Cote, 25 nov: «Camilo e Isidora»)
+  const eY = (w) => { const t = String(w || '').replace(/^[^A-Za-z\u00C0-\u00FF]+/, '').toLowerCase(); return /^h?[iíï]/.test(t) && !/^h?[ií][aeiouáéóú]/.test(t) ? 'e' : 'y'; };
+  const andJoin = (a) => (a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} ${eY(a[a.length - 1])} ${a[a.length - 1]}`);
   const wonPrize = () => andJoin(wonList());
 
   // Respuestas del público a la pregunta en juego: el comodín «Pregunta al público» muestra su porcentaje

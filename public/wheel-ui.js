@@ -195,7 +195,7 @@
     const render = () => {
       const c = st.players[st.turn];
       $('#w-name').textContent = st.name;
-      $('#w-turn').textContent = st.winner ? (st.winner.full ? `🏆 ${st.winner.name} completó el rosko` : `🏆 Gana ${st.winner.name} (${st.winner.hits} ✔ · ${st.winner.misses} ✘)${st.winner.byDraw ? ', por sorteo' : ''}`) : st.tie ? `Empate: ${st.tie.names.join(' y ')}` : st.finished ? 'Juego terminado' : '';
+      $('#w-turn').textContent = st.winner ? (st.winner.full ? `🏆 ${st.winner.name} completó el rosko` : `🏆 Gana ${st.winner.name} (${st.winner.hits} ✔ · ${st.winner.misses} ✘)${st.winner.byDraw ? ', por sorteo' : ''}`) : st.tie ? `Empate: ${window.yJoin(st.tie.names)}` : st.finished ? 'Juego terminado' : '';
       // Pedido de Cote (21 nov): arriba a la derecha, «Es el turno de» chico y el nombre grande y en color; al cambiar el
       // turno (Pasa, Incorrecta o se acabó el tiempo) se destaca unos segundos, como guía para el animador
       const who = $('#w-who');
@@ -209,7 +209,7 @@
       $('#w-letter').textContent = c.active ? st.letters[c.current] : '—';
       const q = (questions[st.turn] || [])[c.current] || {};
       // La pregunta y su respuesta se muestran al moderador solo con el reloj en marcha
-      $('#w-question').innerHTML = !c.active ? (st.tie ? (st.tie.rolling ? '<b>Sorteando el desempate…</b> Mira la pantalla.' : `<b>Hay un empate</b> entre ${st.tie.names.map(esc).join(' y ')}: mismos aciertos y fallos. Primero desempata por sorteo.`) : st.winner ? (st.winAccepted ? `<b>${st.winner.full ? '¡Rosko completo!' : '¡Tenemos ganador!'}</b> El nombre del ganador queda abajo al centro de la pantalla.` : `<b>${st.winner.full ? '¡Rosko completo!' : `¡Gana ${esc(st.winner.name)}!`}</b> ${st.winner.byDraw ? 'Salió elegido en el desempate.' : 'La partida se detuvo y en pantalla se muestra la felicitación.'} Pulsa «Aceptar ganador», o Deshacer si fue un error.`) : '<span class="muted">Este concursante ya terminó su rosco.</span>')
+      $('#w-question').innerHTML = !c.active ? (st.tie ? (st.tie.rolling ? '<b>Sorteando el desempate…</b> Mira la pantalla.' : `<b>Hay un empate</b> entre ${window.yJoin(st.tie.names.map(esc))}: mismos aciertos y fallos. Primero desempata por sorteo.`) : st.winner ? (st.winAccepted ? `<b>${st.winner.full ? '¡Rosko completo!' : '¡Tenemos ganador!'}</b> El nombre del ganador queda abajo al centro de la pantalla.` : `<b>${st.winner.full ? '¡Rosko completo!' : `¡Gana ${esc(st.winner.name)}!`}</b> ${st.winner.byDraw ? 'Salió elegido en el desempate.' : 'La partida se detuvo y en pantalla se muestra la felicitación.'} Pulsa «Aceptar ganador», o Deshacer si fue un error.`) : '<span class="muted">Este concursante ya terminó su rosco.</span>')
         : !st.runningSince ? '<span class="muted">Pulsa «Iniciar pregunta» para ver la pregunta de esta letra.</span>'
         : q.q ? `${q.cat ? `<div class="small muted" style="margin-bottom:6px">${TAGS[q.cat]} · ${q.level === 'f' ? 'Fácil' : 'Medio'}</div>` : ''}<div class="w-qtext">${esc(q.q)}</div>${q.a ? `<div class="w-answer"><small>Respuesta</small><b>${esc(q.a)}</b></div>` : ''}` : '<span class="muted">Sin pregunta cargada para esta letra: léela de tu guion.</span>';
       $('#w-accept').hidden = !st.winner || st.winAccepted;

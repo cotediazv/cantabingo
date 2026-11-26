@@ -581,6 +581,9 @@
   function reloadMark() { try { window.localStorage.setItem('pvReloadAt', String(new Date().getTime())); } catch (e) { /* nada */ } }
 
   // ---------- Vistas ----------
+  // «y» o «e» entre nombres (Cote, 25 nov: «Camilo e Isidora»)
+  function eY(w) { var s = String(w || '').replace(/^[^A-Za-z\u00C0-\u00FF]+/, '').toLowerCase(); return /^h?[i\u00ed\u00ef]/.test(s) && !/^h?[i\u00ed][aeiou\u00e1\u00e9\u00f3\u00fa]/.test(s) ? 'e' : 'y'; }
+  function yJoin(a) { a = a || []; return a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' ' + eY(a[a.length - 1]) + ' ' + a[a.length - 1]; }
   var cur = ''; var viewSeq = 0;
   function go(want) {
     cur = want; viewSeq++;
@@ -1031,7 +1034,7 @@
       var opts = g.options && g.options.length ? g.options : ['bingo', 'rosco', 'festival', 'objeto'];
       var top = se(g.phase === 'voting' ? (g.round === 2 ? '🗳️ Segunda vuelta' : '🗳️ Votación') : '🗳️ Resultado de la votación');
       var big = g.phase === 'done' && g.winner ? tv('🏆 ', '') + '¡Ganó ' + gname(g.winner) + '!' : g.phase === 'result' && g.empty ? 'Nadie votó' : g.phase === 'result' && g.runoff ? 'Nadie superó el 50%' : '¿Qué juego quieren jugar?';
-      var line = g.phase === 'voting' ? 'Quedan <b class="gold">' + clock(g.until - now()) + '</b>' : g.phase === 'result' && g.runoff ? 'Segunda vuelta: ' + gname(g.runoff[0]) + ' y ' + gname(g.runoff[1]) : g.tie ? 'Empate en la segunda vuelta: se decidió por sorteo' : '';
+      var line = g.phase === 'voting' ? 'Quedan <b class="gold">' + clock(g.until - now()) + '</b>' : g.phase === 'result' && g.runoff ? 'Segunda vuelta: ' + gname(g.runoff[0]) + ' ' + eY(gname(g.runoff[1])) + ' ' + gname(g.runoff[1]) : g.tie ? 'Empate en la segunda vuelta: se decidió por sorteo' : '';
       var o = '<div class="abs gv-head" style="top:4rem"><div class="g-sub" style="color:#ffc400;text-transform:uppercase">' + top + '</div><b class="big fit" style="display:block;font-size:' + tv('5.4', '6.6') + 'rem">' + big + '</b>' + (line ? '<div class="mid fit">' + line + '</div>' : '') + '</div><div class="abs gv-bars" style="top:24rem"><ol class="rows">';
       for (var i = 0; i < opts.length; i++) {
         var k = opts[i]; var n = (g.counts || {})[k] || 0; var p = pct(n, g.total);
