@@ -76,3 +76,9 @@ html.t2 #carton .ct-small, html.t2 #carton .ct-lines p { font-family: var(--t-tx
 html.t2 #carton .ct-big { font-family: var(--t-disp); font-weight: 800; letter-spacing: .01em; }
 /* La cortina, en negro (pedido de Cote, 25 nov) */
 html.t2 #capa .cp-cur i, html.t2 #capa .cp-cur i:nth-child(n) { background: #000; }
+/* Sin la trama de líneas en diagonal en el fondo de las pantallas del local (Cote, 25 nov, por el Registro: «el fondo…
+   ahora tiene líneas… Yo no he pedido eso. Quiero que se vea bonito»): quedan solo la noche y los focos de color */
+html.t2 body.full::before {
+  background: radial-gradient(circle at 26% 22%, color-mix(in srgb, var(--t-c) 46%, transparent) 0, transparent 40%), radial-gradient(circle at 78% 82%, rgba(244, 191, 90, .22) 0, transparent 38%),
+    linear-gradient(160deg, #15131e, #0c0b12 55%, #07060c);
+}

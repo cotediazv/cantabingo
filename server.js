@@ -308,7 +308,7 @@ app.use(express.static(path.join(__dirname, 'public'), { setHeaders: (res) => re
 // solo esta, los demás enlaces siguen como están porque los OBS ya están configurados). Lo que vaya después de «?»
 // (por ejemplo ?diag=1) se mantiene.
 // /cc: Centro de control liviano para el iPad viejo (pedido de Cote, 21 nov; public/cc.html)
-const SHORT_LINKS = { vk: '#/vertical/kennedy', cc: '/cc.html' };
+const SHORT_LINKS = { vk: '#/vertical/kennedy', cc: '/cc.html', emision: '/emision.html?p=kennedy' }; // /emision: ver la emisión de la vertical de Kennedy (26 nov)
 app.get('/:short', (req, res, next) => {
   const to = SHORT_LINKS[String(req.params.short).toLowerCase()];
   if (!to) return next();
@@ -550,7 +550,11 @@ function startSession(p, b) {
   };
   resetEvent(); // una sala nueva parte limpia: sin participantes ni roscos de jornadas anteriores
   db.sessions[s.id] = s;
-  setStage('bingo'); // al activar un bingo, la pantalla de OBS pasa sola a su gráfica
+  // Al crear la sala, las pantallas muestran la portada «KRB Stage · Sala de juegos» con el QR grande para que la gente
+  // entre (Cote, 25 nov, por el Registro: «en el GC, en los fondos y en todo le muestra el bingo de Mercado Kennedy…
+  // en ese momento tiene que aparecer en la pantalla grande el QR para que la gente participe»). El bingo pasa a su GC
+  // cuando se elige (cualquier acción del bingo retira el QR).
+  setStage('qr');
   p.sessionId = s.id;
   evaluate(s);
   save();
@@ -850,7 +854,10 @@ const cortinaJuego = () => { const s = Object.values(db.sessions)[0]; if (s) cap
 // Job, crn-…). El emisor se apaga solo tras 10 minutos sin juego.
 const emisor = { latido: 0, pedido: 0, error: '' };
 app.post('/api/emisor/latido', (req, res) => { if (String((req.body || {}).pantalla || '') === 'kennedy') emisor.latido = Date.now(); res.json({ ok: true }); });
-app.get('/api/emisor', requireAdmin, (_req, res) => res.json({ corriendo: Date.now() - emisor.latido < 90000, latido: emisor.latido, pedido: emisor.pedido, error: emisor.error, configurado: !!(process.env.RENDER_API_KEY && process.env.EMISOR_CRON) }));
+// Para la página de la emisión (/emision): solo si el emisor está encendido, sin nada secreto
+app.get('/api/emisor/estado', (_req, res) => res.json({ corriendo: Date.now() - emisor.latido < 90000, prueba: !!db.emisorPrueba }));
+app.post('/api/emisor/prueba', requireAdmin, (req, res) => { db.emisorPrueba = !!(req.body || {}).on; save(); setTimeout(() => emisorCheck(), 0); res.json({ prueba: db.emisorPrueba }); });
+app.get('/api/emisor', requireAdmin, (_req, res) => res.json({ corriendo: Date.now() - emisor.latido < 90000, prueba: !!db.emisorPrueba, latido: emisor.latido, pedido: emisor.pedido, error: emisor.error, configurado: !!(process.env.RENDER_API_KEY && process.env.EMISOR_CRON) }));
 // Hay un juego de verdad en pantalla (no solo la sala abierta con el QR): lo mismo que hace pasar la pantalla vertical a la sala
 const juegoEnPantalla = (s) => {
   const st = db.stage;
@@ -862,9 +869,14 @@ const juegoEnPantalla = (s) => {
 const emisorCheck = () => {
   const key = process.env.RENDER_API_KEY; const cron = process.env.EMISOR_CRON;
   const s = Object.values(db.sessions)[0];
-  if (!key || !cron || !s || (s.theme || 'frida') !== 'kennedy' || !juegoEnPantalla(s)) return;
-  if (((db.vertical || {}).kennedy || {}).mode === 'video') return; // la pantalla está en «Siempre el video»: no se vería
-  if (Date.now() - emisor.latido < 90000 || Date.now() - emisor.pedido < 5 * 60000) return; // ya corre, o se pidió hace poco (tarda 1 o 2 min en partir)
+  if (!key || !cron) return;
+  // Modo prueba (Cote, 25 nov: «hoy necesita que se quede en prueba y prendido todo el tiempo»): el emisor corre y transmite
+  // siempre, haya o no juego (se enciende y apaga en el Centro de control)
+  if (!db.emisorPrueba) {
+    if (!s || (s.theme || 'frida') !== 'kennedy' || !juegoEnPantalla(s)) return;
+    if (((db.vertical || {}).kennedy || {}).mode === 'video') return; // la pantalla está en «Siempre el video»: no se vería
+  }
+  if (Date.now() - emisor.latido < 90000 || Date.now() - emisor.pedido < 10 * 60000) return; // ya corre, o se pidió hace poco (puede tardar minutos en partir; pedirlo de nuevo cancela el turno en curso)
   emisor.pedido = Date.now();
   fetch(`${process.env.RENDER_API_URL || 'https://api.render.com'}/v1/cron-jobs/${encodeURIComponent(cron)}/runs`, { method: 'POST', headers: { Authorization: `Bearer ${key}`, Accept: 'application/json' }, signal: AbortSignal.timeout(10000) })
     .then(async (r) => { emisor.error = r.ok ? '' : `Render respondió ${r.status}: ${(await r.text()).slice(0, 160)}`; if (!r.ok) console.log('Emisor:', emisor.error); })

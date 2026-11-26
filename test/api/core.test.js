@@ -36,7 +36,7 @@ test('bingo completo: sala, unirse, sacar, ganar línea, confirmar y nueva ronda
 
   const cur = await srv.ok('GET', '/api/current');
   assert.equal(cur.sessions[0].id, sid);
-  assert.equal((await srv.ok('GET', '/api/stage')).show, 'bingo');
+  assert.equal((await srv.ok('GET', '/api/stage')).show, 'qr'); // al crear la sala: portada con el QR grande (Cote, 25 nov)
 
   // Nombre y apellido son obligatorios; se guardan en mayúsculas
   assert.equal((await srv.call('POST', `/api/sessions/${sid}/join`, { name: 'ana', surname: '' })).status, 400);

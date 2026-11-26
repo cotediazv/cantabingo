@@ -18,10 +18,11 @@ test('la sala parte sin bingo: se elige la figura y recién ahí el bingo empez�
   assert.ok('voteGen' in st && 'gameVoteRev' in st && 'roscoId' in st);
   assert.equal(st.current, undefined); // el juego en curso solo va al moderador
   const consola = await srv.admin.get('/api/consola');
-  assert.equal(consola.locales.find((l) => l.venue === 'frida').main.stageName, 'Sala abierta (QR para entrar)');
+  assert.equal(consola.locales.find((l) => l.venue === 'frida').main.stageName, 'QR grande'); // al crear la sala: portada «KRB Stage · Sala de juegos» con el QR (Cote, 25 nov)
   await srv.admin.post(`/api/sessions/${sid}/host/patterns`, { patterns: ['carton'] });
   st = await srv.admin.get(`/api/sessions/${sid}/host/state`);
   assert.equal(st.started, true);
+  assert.equal((await srv.ok('GET', '/api/stage')).show, 'bingo'); // al elegir la figura, el QR grande da paso al bingo
   assert.deepEqual(st.current, { game: 'bingo' });
   const host = await srv.admin.get(`/api/sessions/${sid}/host`);
   assert.equal(host.started, true);

@@ -30,3 +30,23 @@ test('emisor: arranca solo con un juego en Kennedy, una vez, y no si ya está co
   const st = await srv.admin.get('/api/emisor');
   assert.equal(st.corriendo, true); assert.equal(st.configurado, true);
 });
+
+// Modo prueba (Cote, 25 nov: «hoy necesita que se quede en prueba y prendido todo el tiempo»): el emisor arranca aunque no
+// haya sala ni juego, y la página de la emisión lo sabe
+test('emisor: el modo prueba lo arranca sin juego', async () => {
+  const runs2 = [];
+  const mock2 = http.createServer((q, s) => { runs2.push(q.url); s.writeHead(202); s.end('{}'); });
+  await new Promise((r) => mock2.listen(0, r));
+  const srv2 = await startServer({ env: { RENDER_API_URL: `http://localhost:${mock2.address().port}`, RENDER_API_KEY: 'k', EMISOR_CRON: 'crn-2' } });
+  try {
+    assert.equal((await srv2.ok('GET', '/api/emisor/estado')).prueba, false);
+    const r = await srv2.call('POST', '/api/emisor/prueba', { on: true });
+    assert.equal(r.status, 401); // solo el moderador
+    await srv2.admin.post('/api/emisor/prueba', { on: true });
+    await sleep(400);
+    assert.equal(runs2.length, 1);
+    assert.equal((await srv2.ok('GET', '/api/emisor/estado')).prueba, true);
+    const page = await fetch(`${srv2.url}/emision`, { redirect: 'manual' });
+    assert.equal(page.headers.get('location'), '/emision.html?p=kennedy');
+  } finally { await srv2.stop(); mock2.close(); }
+});

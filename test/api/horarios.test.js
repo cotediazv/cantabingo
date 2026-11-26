@@ -11,7 +11,7 @@ test('jueves en Kennedy: la sala se crea sola a las 18:30 y a las 21:45 pasa sol
     const cur = await until(async () => (await srv.ok('GET', '/api/current')).sessions[0], 8000);
     assert.equal(cur.name, 'Los Juegos de Mercado Kennedy');
     assert.equal(cur.theme, 'kennedy');
-    assert.equal((await srv.ok('GET', '/api/stage')).show, 'bingo');
+    assert.equal((await srv.ok('GET', '/api/stage')).show, 'qr');
     const show = await until(async () => ((await srv.ok('GET', '/api/stage')).show === 'karaoke' ? 'karaoke' : ''), 25000);
     assert.equal(show, 'karaoke');
   } finally { await srv.stop(); }

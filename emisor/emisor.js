@@ -11,6 +11,8 @@
 //              juego en el local (pedido de Cote, 25 nov: «que parta solo cuando empieza un juego, sin Trigger Run ni horario»);
 //              como máximo corre 6 horas seguidas
 const { chromium } = require('playwright');
+const { spawn } = require('child_process');
+const fs = require('fs');
 
 const SITIO = (process.env.SITIO || 'https://cantabingo.onrender.com').replace(/\/$/, '');
 const PANTALLA = process.env.PANTALLA || 'kennedy';
@@ -31,6 +33,9 @@ const latido = () => fetch(`${SITIO}/api/emisor/latido`, { method: 'POST', heade
 // sala no está el karaoke ni el show (no son juegos: esos los sigue mostrando el decodificador)
 const pedir = async (ruta) => { try { const r = await fetch(`${SITIO}${ruta}`, { cache: 'no-store' }); return r.ok ? await r.json() : null; } catch { return null; } };
 const estado = async () => {
+  // modo prueba (se enciende en el Centro de control de la Sala): transmite siempre, haya o no juego
+  const e = await pedir('/api/emisor/estado');
+  if (e && e.prueba) return { juego: true, que: 'modo prueba' };
   const v = await pedir(`/api/vertical/${PANTALLA}`);
   if (!v || v.show !== 'sala' || !v.activity) return { juego: false };
   const st = await pedir('/api/stage');
@@ -68,9 +73,28 @@ const cortar = (page) => page.evaluate(async () => {
   window.__pc = null;
 }).catch(() => {});
 
+// Pantalla virtual propia (26 nov): «xvfb-run» se queda pegado cuando es el primer proceso del contenedor, que es como
+// lo corre Render (en los registros solo salía «Cron job run started»). Por eso el emisor abre Xvfb él mismo.
+let xvfb = null;
+const pantallaVirtual = async () => {
+  if (process.env.DISPLAY) return;
+  const n = 99;
+  xvfb = spawn('Xvfb', [`:${n}`, '-screen', '0', '1200x2200x24', '-nolisten', 'tcp'], { stdio: 'ignore' });
+  xvfb.on('error', (e) => log('No se pudo abrir la pantalla virtual:', e.message));
+  for (let i = 0; i < 100 && !fs.existsSync(`/tmp/.X11-unix/X${n}`); i++) await sleep(100);
+  process.env.DISPLAY = `:${n}`;
+};
+// Render detiene un turno con SIGTERM: se corta la emisión y se termina ordenado (siendo el primer proceso, sin esto no
+// se detendría)
+let parar = false;
+for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { log('Detenido:', sig); parar = true; setTimeout(() => process.exit(0), 8000).unref(); });
+
 (async () => {
+  latido(); // de inmediato: así la Sala sabe que ya partió y no pide otro turno (pedirlo de nuevo cancela este)
   if (!WHIP_URL) { log('Falta WHIP_URL (la dirección de publicación del canal de Cloudflare).'); process.exit(1); }
   log(`Emisor de la pantalla ${PANTALLA}: ${W}x${H} a 30 cuadros; termina tras ${IDLE_MS / 60000} min sin juego`);
+  await pantallaVirtual();
+  log('Pantalla virtual lista:', process.env.DISPLAY);
   const browser = await chromium.launch({
     ignoreDefaultArgs: ['--enable-automation'], // sin el aviso «controlado por software», que le quita alto a la página
     headless: false, // la captura de la pestaña necesita un navegador con ventana: en Render corre dentro de una pantalla virtual (xvfb-run)
@@ -101,7 +125,7 @@ const cortar = (page) => page.evaluate(async () => {
   };
   try {
     let tLat = 0;
-    while (Date.now() - inicio < MAX_MS && Date.now() - ultimoJuego < IDLE_MS) {
+    while (!parar && Date.now() - inicio < MAX_MS && Date.now() - ultimoJuego < IDLE_MS) {
       if (Date.now() - tLat > 30000) { tLat = Date.now(); latido(); }
       const st = await estado();
       const juego = st.juego;
@@ -124,6 +148,8 @@ const cortar = (page) => page.evaluate(async () => {
   } finally {
     if (enviando && page) await cortar(page);
     await browser.close().catch(() => {});
+    if (xvfb) xvfb.kill();
     log('Fin del turno del emisor');
+    process.exit(0);
   }
 })().catch((e) => { log(e); process.exit(1); });

@@ -3833,3 +3833,7 @@ body.anim #app details.howto { display: none !important; }
 #an-opts .an-opts-list > button, #an-opts .an-opts-list summary { width: 100%; text-align: left; padding: 12px 14px; font-size: 1.05rem; }
 #an-opts .an-opts-list details { margin: 0; padding: 0; border: 0; background: none; }
 body.anim #app > p.back { padding-right: 130px; }
+/* modo animador: «Crear sala simulada» sí se ve (Cote, 25 nov: «en el panel nuevo del animador también tiene que poder
+   jugar en modo prueba»); y en El Rosko «Poner rosko en pantalla» es el paso siguiente: verde (lo opcional va en azul) */
+body.anim #app .home-control.home-sim { display: inline-flex !important; }
+body.anim #rosco-ctl .w-flow .w-show { background: var(--an-go); }

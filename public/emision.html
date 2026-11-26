@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emisión de la pantalla vertical</title>
+<!-- Ver la emisión de la pantalla vertical (pedido de Cote, 25 nov, por el Registro: «un link donde pueda ver la transmisión
+     de esa pantalla… que muestre solo la transmisión y diga claro si está llegando»). Se abre con cantabingo.onrender.com/emision
+     (Mercado Kennedy) o /emision.html?p=<pantalla>. Recibe la misma señal que el decodificador (WHEP de Cloudflare). -->
+<style>
+  html, body { margin: 0; height: 100%; background: #0c0b12; color: #f3eee6; font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; }
+  body { display: flex; flex-direction: column; }
+  #st { padding: 14px 16px; font-size: 1.35rem; font-weight: 800; text-align: center; background: #4a4752; }
+  #st.ok { background: #22b35e; color: #fff; }
+  #st.no { background: #e0413a; color: #fff; }
+  #st small { display: block; font-size: .95rem; font-weight: 500; margin-top: 4px; opacity: .95; }
+  #box { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; padding: 10px; }
+  video { max-width: 100%; max-height: 100%; background: #000; aspect-ratio: 9 / 16; height: 100%; }
+  #info { text-align: center; font-size: .85rem; color: #a59fb0; padding: 6px 10px 12px; }
+</style>
+</head>
+<body>
+<div id="st">Buscando la emisión…</div>
+<div id="box"><video id="v" muted autoplay playsinline></video></div>
+<div id="info"></div>
+<script>
+(function () {
+  var P = (/[?&]p=([\w-]+)/.exec(location.search) || [])[1] || 'kennedy';
+  var NAMES = { kennedy: 'Mercado Kennedy', frida: 'Frida Kahlo', 'tobalaba-v': 'Tobalaba' };
+  var st = document.getElementById('st'); var v = document.getElementById('v'); var info = document.getElementById('info');
+  var url = ''; var pc = null; var lastT = -1; var stuck = 0; var corriendo = null;
+  document.title = 'Emisión · ' + (NAMES[P] || P);
+  function show(cls, title, sub) { st.className = cls; st.innerHTML = title + (sub ? '<small>' + sub + '</small>' : ''); }
+  function stop() { if (pc) { try { pc.close(); } catch (e) { /* nada */ } pc = null; } v.srcObject = null; lastT = -1; }
+  function why() {
+    if (!url) return 'Falta la dirección de la emisión en Render (EMISION_KENNEDY).';
+    if (corriendo === false) return 'El emisor está apagado. Parte solo cuando hay un juego en pantalla en ' + (NAMES[P] || P) + '.';
+    if (corriendo === true) return 'El emisor está encendido, pero todavía no transmite (transmite solo con un juego en la pantalla vertical).';
+    return 'Se vuelve a intentar sola cada 10 segundos.';
+  }
+  function fail() { stop(); show('no', '✘ La emisión NO está llegando', why()); setTimeout(start, 10000); }
+  function start() {
+    if (pc) return;
+    if (!url) { show('no', '✘ La emisión NO está llegando', why()); setTimeout(load, 10000); return; }
+    var me = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.cloudflare.com:3478' }], bundlePolicy: 'max-bundle' }); pc = me;
+    me.addTransceiver('video', { direction: 'recvonly' });
+    me.ontrack = function (e) { v.srcObject = e.streams && e.streams[0] ? e.streams[0] : new MediaStream([e.track]); v.play().catch(function () {}); };
+    me.oniceconnectionstatechange = function () { var c = me.iceConnectionState; if (pc === me && (c === 'failed' || c === 'disconnected' || c === 'closed')) fail(); };
+    me.createOffer().then(function (o) { return me.setLocalDescription(o); }).then(function () {
+      return new Promise(function (r) { if (me.iceGatheringState === 'complete') return r(); var t = setTimeout(r, 1500); me.onicegatheringstatechange = function () { if (me.iceGatheringState === 'complete') { clearTimeout(t); r(); } }; });
+    }).then(function () { return fetch(url, { method: 'POST', headers: { 'content-type': 'application/sdp' }, body: me.localDescription.sdp }); })
+      .then(function (r) { if (!r.ok) throw new Error('WHEP ' + r.status); return r.text(); })
+      .then(function (sdp) { return me.setRemoteDescription({ type: 'answer', sdp: sdp }); })
+      .catch(function () { if (pc === me) fail(); });
+    setTimeout(function () { if (pc === me && !(v.currentTime > 0)) fail(); }, 12000);
+  }
+  // Cada segundo: si el video avanza, está llegando; si se congela 5 s, no
+  setInterval(function () {
+    if (!pc || !v.srcObject) return;
+    if (v.currentTime > 0 && v.currentTime !== lastT) {
+      stuck = 0; lastT = v.currentTime;
+      var w = v.videoWidth, h = v.videoHeight;
+      show('ok', '✔ EN VIVO · la emisión está llegando', (NAMES[P] || P) + ' · ' + w + '×' + h);
+    } else if (lastT >= 0 && ++stuck >= 5) fail();
+  }, 1000);
+  function load() {
+    Promise.all([
+      fetch('/api/vertical/' + P, { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; }),
+      fetch('/api/emisor/estado', { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : {}; }).catch(function () { return {}; }),
+    ]).then(function (a) {
+      var was = url; url = a[0].emision || ''; corriendo = typeof a[1].corriendo === 'boolean' ? a[1].corriendo : null;
+      info.textContent = 'Pantalla vertical de ' + (NAMES[P] || P) + ' · emisor ' + (corriendo === null ? '¿?' : corriendo ? 'encendido' : 'apagado') + ' · se revisa sola';
+      if (url !== was) { stop(); start(); } else if (!pc) start();
+    });
+  }
+  load(); setInterval(load, 15000);
+})();
+</script>
+</body>
+</html>
