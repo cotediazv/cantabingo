@@ -81,13 +81,18 @@ const luzCaptura = (page) => page.evaluate(async () => {
   } catch (e) { return -2; }
 }).catch(() => -3);
 // Foto de la página para el Centro de control de la Sala (cada minuto mientras transmite)
+let ultimaLuz = -1; let ultimoError = ''; let blancas = 0; let modoNav = 'normal';
 const mandarFoto = async (page) => {
   try {
     const img = await page.screenshot({ type: 'jpeg', quality: 35, scale: 'css' });
     const luz = await luzCaptura(page);
     const cap = await page.evaluate(() => { const t = window.__pc && window.__pc.getSenders()[0].track.getSettings(); return t ? `${t.width}x${t.height} (página ${innerWidth}x${innerHeight})` : ''; }).catch(() => '');
-    await fetch(`${SITIO}/api/emisor/foto`, { method: 'POST', headers: { 'content-type': 'image/jpeg', 'x-luz': String(luz), 'x-cap': cap }, body: img });
-    log('Foto enviada · luz de la captura:', luz, '·', cap);
+    // Qué ve el navegador del emisor (26 nov: en Render la captura y la foto salían blancas, aquí no): la vista, el fondo,
+    // cuánto texto tiene y el último error de la página
+    const diag = await page.evaluate(() => { const b = document.body; return `${location.hash || location.pathname} · ${b ? (b.className || 'sin clase') : 'sin body'} · fondo ${b ? getComputedStyle(b).backgroundColor : '-'} · ${b ? b.innerText.replace(/\s+/g, ' ').trim().slice(0, 60) : ''}`; }).catch((e) => `sin respuesta de la página: ${e.message}`);
+    ultimaLuz = luz;
+    await fetch(`${SITIO}/api/emisor/foto`, { method: 'POST', headers: { 'content-type': 'image/jpeg', 'x-luz': String(luz), 'x-cap': encodeURIComponent(`${cap} · navegador ${modoNav} · ${diag}${ultimoError ? ` · error: ${ultimoError}` : ''}`.slice(0, 300)) }, body: img });
+    log('Foto enviada · luz de la captura:', luz, '·', cap, '·', diag);
   } catch (e) { log('No se pudo mandar la foto:', e.message); }
 };
 const vivo = (page) => page.evaluate(() => !!(window.__pc && ['connected', 'connecting'].includes(window.__pc.connectionState))).catch(() => false);
@@ -118,18 +123,26 @@ for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { log('Detenido:'
   log(`Emisor de la pantalla ${PANTALLA}: ${W}x${H} a 30 cuadros; termina tras ${IDLE_MS / 60000} min sin juego`);
   await pantallaVirtual();
   log('Pantalla virtual lista:', process.env.DISPLAY);
-  const browser = await chromium.launch({
+  // sinGpu: si la página sale blanca aun después de volver a abrirla, el navegador se reinicia dibujando sin tarjeta
+  // gráfica (26 nov: en Render la captura salía blanca; aquí con y sin tarjeta gráfica sale bien)
+  const lanzar = (sinGpu) => chromium.launch({
     ignoreDefaultArgs: ['--enable-automation'], // sin el aviso «controlado por software», que le quita alto a la página
     headless: false, // la captura de la pestaña necesita un navegador con ventana: en Render corre dentro de una pantalla virtual (xvfb-run)
     executablePath: process.env.CHROMIUM || undefined,
-    args: ['--auto-accept-this-tab-capture', `--window-size=${W},${H + 100}`, '--window-position=0,0', '--autoplay-policy=no-user-gesture-required', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows', '--force-color-profile=srgb', '--hide-scrollbars'],
+    args: ['--auto-accept-this-tab-capture', `--window-size=${W},${H + 100}`, '--window-position=0,0', '--autoplay-policy=no-user-gesture-required', '--disable-background-timer-throttling', '--disable-renderer-backgrounding', '--disable-backgrounding-occluded-windows', '--force-color-profile=srgb', '--hide-scrollbars',
+      ...(sinGpu || process.env.SIN_GPU ? ['--disable-gpu', '--use-angle=swiftshader'] : [])],
   });
+  let browser = await lanzar(false);
+  let reaperturas = 0;
   let ctx = null, page = null, enviando = false;
   const abrir = async () => {
     if (ctx) await ctx.close().catch(() => {});
     ctx = await browser.newContext({ viewport: null }); // la página mide lo que mide la ventana (la captura toma lo que se ve)
     page = await ctx.newPage();
-    page.on('pageerror', (e) => log('error en la página:', e.message));
+    page.on('pageerror', (e) => { ultimoError = String(e.message).slice(0, 80); log('error en la página:', e.message); });
+    page.on('crash', () => { ultimoError = 'la página se cayó'; log('La página se cayó'); });
+    page.on('console', (m) => { if (m.type() === 'error') log('consola:', m.text().slice(0, 160)); });
+    page.on('requestfailed', (r) => log('no cargó:', r.url().slice(0, 100), r.failure() ? r.failure().errorText : ''));
     // La pantalla vertical tal cual (sin girar), en silencio: es lo que muestra la vista previa del GC Master
     await page.goto(`${SITIO}/?mudo=1&emisor=1#/vertical-in/${PANTALLA}`, { waitUntil: 'domcontentloaded' });
   };
@@ -150,7 +163,20 @@ for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { log('Detenido:'
     let tLat = 0; let tFoto = 0;
     while (!parar && Date.now() - inicio < MAX_MS && Date.now() - ultimoJuego < IDLE_MS) {
       if (Date.now() - tLat > 30000) { tLat = Date.now(); latido(); }
-      if (enviando && page && Date.now() - tFoto > 60000) { tFoto = Date.now(); await mandarFoto(page); }
+      if (enviando && page && Date.now() - tFoto > 60000) {
+        tFoto = Date.now(); await mandarFoto(page);
+        // Captura toda blanca dos veces seguidas: la página no se está dibujando; se vuelve a abrir (26 nov)
+        blancas = ultimaLuz >= 250 ? blancas + 1 : 0;
+        if (blancas >= 2) {
+          blancas = 0; reaperturas++; await cortar(page); enviando = false; tFoto = Date.now() - 45000;
+          if (reaperturas === 1) log('La captura sale blanca: se vuelve a abrir la página');
+          else {
+            log('Sigue blanca: se reinicia el navegador sin tarjeta gráfica');
+            if (ctx) await ctx.close().catch(() => {}); ctx = null; page = null;
+            await browser.close().catch(() => {}); browser = await lanzar(true); modoNav = 'sin tarjeta gráfica';
+          }
+        }
+      }
       const st = await estado();
       const juego = st.juego;
       if (juego) ultimoJuego = Date.now();

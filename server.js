@@ -945,12 +945,12 @@ app.post('/api/deco/recargar', requireAdmin, (req, res) => {
 let emisorFoto = null;
 app.post('/api/emisor/foto', express.raw({ type: 'image/jpeg', limit: '700kb' }), (req, res) => {
   if (!Buffer.isBuffer(req.body) || req.body.length < 100) return res.json({ ok: false });
-  emisorFoto = { img: req.body, at: Date.now(), luz: Number(req.get('x-luz')), cap: String(req.get('x-cap') || '').slice(0, 80) };
+  emisorFoto = { img: req.body, at: Date.now(), luz: Number(req.get('x-luz')), cap: (() => { const c = String(req.get('x-cap') || ''); try { return decodeURIComponent(c).slice(0, 300); } catch (e) { return c.slice(0, 300); } })() }; // con lo que ve el navegador del emisor (26 nov)
   res.json({ ok: true });
 });
 app.get('/api/emisor/foto', requireAdmin, (_req, res) => {
   if (!emisorFoto) return fail(res, 404, 'Todavía no hay foto');
-  res.set('Cache-Control', 'no-store').set('x-at', String(emisorFoto.at)).set('x-luz', String(emisorFoto.luz)).set('x-cap', emisorFoto.cap).type('jpeg').send(emisorFoto.img);
+  res.set('Cache-Control', 'no-store').set('x-at', String(emisorFoto.at)).set('x-luz', String(emisorFoto.luz)).set('x-cap', encodeURIComponent(emisorFoto.cap)).type('jpeg').send(emisorFoto.img);
 });
 app.get('/api/emisor/foto/info', requireAdmin, (_req, res) => res.json(emisorFoto ? { at: emisorFoto.at, hace: Math.round((Date.now() - emisorFoto.at) / 1000), luz: emisorFoto.luz, cap: emisorFoto.cap } : null));
 // Para la página de la emisión (/emision): solo si el emisor está encendido, sin nada secreto
