@@ -31,7 +31,7 @@ const points = (ms) => Math.max(40, Math.round(100 - (ms / 1000) * 6)); // 100 a
 // Dificultad según el escalón: 1 a 4 fácil, 5 a 8 medio, 9 a 12 difícil (los mismos 3 niveles de las luces de Code 4)
 const levelOf = (step) => (step <= 4 ? 'f' : step <= 8 ? 'm' : 'd');
 
-module.exports = function desafio({ app, db, save, requireAdmin, fail, setStage, findPlayer, venue, notify, festejo = () => {} }) {
+module.exports = function desafio({ placeOf = () => '', app, db, save, requireAdmin, fail, setStage, findPlayer, venue, notify, festejo = () => {} }) {
   const blank = () => ({
     rev: ((db.desafio || {}).rev || 0) + 1, phase: 'setup', player: '', team: [], lostAt: 0, out: '', stageBy: [null, null, null], prizes: [...(db.desafioPrizes || DEFAULT_PRIZES)],
     step: 0, q: null, chosen: null, hidden: [], outcome: null, used: { fifty: false, audience: false, phone: false, swap: false },
@@ -123,7 +123,7 @@ module.exports = function desafio({ app, db, save, requireAdmin, fail, setStage,
     const shown = s.phase === 'reveal' || s.phase === 'end';
     const t = tally();
     return {
-      rev: s.rev, now: Date.now(), venue: venue(), title: TITLE, phase: s.phase, player: s.player,
+      rev: s.rev, now: Date.now(), venue: venue(), title: TITLE, phase: s.phase, player: s.player, place: placeOf(s.player),
       team: s.team, turn: s.team.length, maxTeam: MAX_TEAM, out: s.out || '', lostAt: s.lostAt || 0,
       prizes: s.prizes, stage: STAGE, step: s.step, steps: STEPS, stageOf: s.step ? Math.ceil(s.step / STAGE) : 0,
       q: s.q ? { text: s.q.text, options: s.q.options, level: s.q.level } : null,

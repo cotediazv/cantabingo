@@ -10,6 +10,9 @@ const app = $('#app');
 // la Y sino la E: Camilo e Isidora»): «e» antes de una palabra que suena /i/ (i-, hi-), salvo si forma diptongo (hie-, hia-)
 window.eY = (w) => { const s = String(w || '').replace(/^[^A-Za-z\u00C0-\u00FF]+/, '').toLowerCase(); return /^h?[iíï]/.test(s) && !/^h?[ií][aeiouáéóú]/.test(s) ? 'e' : 'y'; };
 window.yJoin = (a) => { a = a || []; return a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} ${window.eY(a[a.length - 1])} ${a[a.length - 1]}`; };
+// Lugar donde está el concursante, bajo su nombre (pedido de Cote, 26 nov: «mostrar bajo el nombre del concursante en
+// Kennedy en qué lugar está»); en el diseño nuevo, sin el emoji
+window.placeTag = (p, cls) => { if (!p) return ''; const ic = window.sinEmoji ? window.sinEmoji('📍') : '📍'; return `<span class="c-place${cls ? ` ${cls}` : ''}">${ic ? `${ic} ` : ''}${esc(p)}</span>`; };
 window.rankAnnHtml = (rank, players, final, title = 'la Trivia del Rosko') => `<div class="panel ann rank-ann"><small>📣 En pantalla ahora</small><span class="ann-t">🏅 Ranking de ${esc(title)} · ${final ? 'resultados finales' : 'resultados parciales'}</span>
   ${rank.length ? `<ol class="rank-ann-list">${rank.map((t, i) => `<li class="${i < 3 ? 'top' : ''}"><em>${i + 1}.º</em><b>${esc(t.name)}</b><i>${t.score} pts</i></li>`).join('')}</ol>` : '<span class="ann-l">Todavía nadie suma puntos</span>'}
   <span class="ann-l">${players} ${players === 1 ? 'persona jugando' : 'personas jugando'}</span></div>`;

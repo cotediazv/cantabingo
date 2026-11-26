@@ -600,7 +600,7 @@ views.sorteoctl = function () {
           '<div class="panel">' +
           btn(full ? (allOk ? '✔ Cargar El Rosko con los 3' : '⏳ Esperando que confirmen en su celular') : '🎲 Sortear concursante (' + (picked.length + 1) + '.º de 3)', full ? 'loadRosco' : 'raffleDraw', '', 'big primary paso', full ? !allOk : !free) +
           '<h2>Concursantes elegidos</h2>';
-        for (var k = 0; k < picked.length; k++) o += '<div class="item"><b>' + (k + 1) + '. ' + h(picked[k]) + '</b> <span class="muted">' + (cf[picked[k]] === 'ok' ? '✅ Confirmó' : '⏳ Esperando que confirme en su celular') + '</span><span class="r">' + (cf[picked[k]] === 'ok' ? '' : btn('✔ Confirmar a mano', 'confirmPick', d('n', picked[k]))) + btn('✏️ Editar', 'rename', d('n', picked[k])) + btn('Quitar', 'unpick', d('n', picked[k])) + '</span></div>';
+        for (var k = 0; k < picked.length; k++) o += '<div class="item"><b>' + (k + 1) + '. ' + h(picked[k]) + '</b>' + ((r.places || {})[picked[k]] ? ' <span class="muted">📍 ' + h(r.places[picked[k]]) + '</span>' : '') + ' <span class="muted">' + (cf[picked[k]] === 'ok' ? '✅ Confirmó' : '⏳ Esperando que confirme en su celular') + '</span><span class="r">' + (cf[picked[k]] === 'ok' ? '' : btn('✔ Confirmar a mano', 'confirmPick', d('n', picked[k]))) + btn('✏️ Editar', 'rename', d('n', picked[k])) + btn('Quitar', 'unpick', d('n', picked[k])) + '</span></div>';
         if (!picked.length) o += '<p class="muted">Todavía no has sorteado a nadie.</p>';
         if (picked.length && !full) o += btn('✔ Cargar El Rosko con ' + picked.length, 'loadRosco', '', '', !allOk);
         o += btn('Empezar de nuevo', 'raffleReset', '') + '</div>';
@@ -630,7 +630,7 @@ function renderRosco(w) {
     // turno (Pasa, Incorrecta o se acabó el tiempo) se destaca unos segundos, como guía para el animador
     var turnFlash = S.lastTurn !== undefined && S.lastTurn !== w.turn;
     S.lastTurn = w.turn;
-    if (c.active && !w.winner && !w.tie) o += '<div class="who' + (turnFlash ? ' flash' : '') + '"><small>Es el turno de</small><b>' + h(c.name) + '</b></div>';
+    if (c.active && !w.winner && !w.tie) o += '<div class="who' + (turnFlash ? ' flash' : '') + '"><small>Es el turno de</small><b>' + h(c.name) + '</b>' + (c.place ? '<small>📍 ' + h(c.place) + '</small>' : '') + '</div>';
     o += '<h1>' + h(w.name) + '</h1><div class="muted">' + (w.winner ? '🏆 Gana ' + h(w.winner.name) + ' (' + w.winner.hits + ' ✔ · ' + w.winner.misses + ' ✘)' : w.tie ? 'Empate' : '') + '</div><div style="clear:both"></div>';
     if (w.rank) o += rankAnn(w.rank, w.rankPlayers || 0, !!(w.crowdWinner || w.winner)); // el ranking que está en pantalla, grande
     o += '<div class="now"><small>Letra · reloj</small><b style="font-size:30px">' + h(c.active ? w.letters[c.current] : '—') + '</b> · <b id="rclock">' + clock(roscoLeft(w)) + '</b> <span class="muted">' + c.hits + ' ✔ · ' + c.misses + ' ✘</span></div>';

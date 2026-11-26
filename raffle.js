@@ -10,7 +10,7 @@ const MAX_PICKS = 4; // un rosko admite hasta 4 concursantes
 const GAMES = { rosco: { max: MAX_PICKS }, desafio: { max: 4 } };
 const gameOf = (r) => (GAMES[r.game] ? r.game : 'rosco');
 
-module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, refreshAll, connectedNames, festejo = () => {} }) {
+module.exports = function raffle({ placeOf = () => '', app, db, save, requireAdmin, fail, setStage, refreshAll, connectedNames, festejo = () => {} }) {
   const key = (name) => String(name).trim().toLowerCase().replace(/\s+/g, ' ');
   db.people ||= {}; // clave normalizada -> { name, at }
   db.raffle ||= { picked: [], roll: null };
@@ -32,7 +32,8 @@ module.exports = function raffle({ app, db, save, requireAdmin, fail, setStage, 
     // Desempate del bingo: la misma tómbola, pero solo entre los ganadores empatados
     if (r.mode === 'tie' && r.tie) return res.json({ mode: 'tie', picked: [], roll: r.tie, rollMs: ROLL_MS, now: Date.now(), pool: r.tie.tied });
     const on = connectedNames(); const no = new Set(declined()); // una sola vez por consulta (la leen todos los celulares)
-    return res.json({ mode: 'rosco', game: gameOf(r), picked: r.picked, confirm: conf(), declined: declined(), roll: r.roll, rollMs: ROLL_MS, now: Date.now(), pool: names().filter((n) => on.has(n) && !no.has(n)).length });
+    const places = {}; for (const n of r.picked.concat(r.roll && r.roll.winner ? [r.roll.winner] : [])) { const p = placeOf(n); if (p) places[n] = p; } // dónde está cada sorteado
+    return res.json({ mode: 'rosco', game: gameOf(r), picked: r.picked, places, confirm: conf(), declined: declined(), roll: r.roll, rollMs: ROLL_MS, now: Date.now(), pool: names().filter((n) => on.has(n) && !no.has(n)).length });
   });
 
   app.get('/api/people', requireAdmin, (_req, res) => { const on = connectedNames(); res.json({ names: names(), connected: names().filter((n) => on.has(n)) }); });

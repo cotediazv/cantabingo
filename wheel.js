@@ -8,7 +8,7 @@ const LETTERS = 'ABCDEFGHIJLMNÑOPQRSTUVXYZ';
 const OPEN = (st) => st === 'pending' || st === 'pass';
 const REVEAL_MS = 4000; // tiempo que la respuesta acertada queda en pantalla
 
-module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStage, findPlayer, festejo = () => {} }) {
+module.exports = function wheelGame({ placeOf = () => '', app, db, save, requireAdmin, fail, setStage, findPlayer, festejo = () => {} }) {
   const api = { refresh: () => {} };
   db.wheels ||= {};
   db.bankUsed ||= {}; // cuántas veces se ha usado cada pregunta del banco
@@ -286,7 +286,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     id: w.id, name: w.name, letters: w.letters, seconds: w.seconds, turn: w.turn, runningSince: w.runningSince, now: Date.now(),
     onScreen: !!(w.onScreen || w.runningSince), // el rosko se ve en el GC (con el tiempo corriendo o con el botón «Rosko en pantalla»)
     finished: !w.players.some(active), canUndo: w.history.length > 0,
-    winner: winnerOf(w) >= 0 ? { name: w.players[winnerOf(w)].name, full: w.players[winnerOf(w)].status.every((x) => x === 'hit'),
+    winner: winnerOf(w) >= 0 ? { name: w.players[winnerOf(w)].name, place: placeOf(w.players[winnerOf(w)].name), full: w.players[winnerOf(w)].status.every((x) => x === 'hit'),
       hits: count(w.players[winnerOf(w)], 'hit'), misses: count(w.players[winnerOf(w)], 'miss'), byDraw: leaders(w).length > 1 } : null,
     // Empate pendiente: nombres de los igualados (mientras no se haya sorteado) y si la tómbola está girando
     tie: winnerOf(w) < 0 && leaders(w).length > 1 ? { names: leaders(w).map((i) => w.players[i].name), rolling: tieRolling(w) } : null,
@@ -307,7 +307,7 @@ module.exports = function wheelGame({ app, db, save, requireAdmin, fail, setStag
     // Ranking obligatorio cada 2 rondas (pedido de Cote): hay que desplegarlo antes de la próxima pregunta
     rankDue: rankDue(w), rankEvery: RANK_EVERY, rankLate: late(w),
     players: w.players.map((c) => ({
-      name: c.name, status: c.status, current: c.current, remainingMs: c.remainingMs, active: active(c),
+      name: c.name, place: placeOf(c.name), status: c.status, current: c.current, remainingMs: c.remainingMs, active: active(c),
       hits: c.status.filter((x) => x === 'hit').length, misses: c.status.filter((x) => x === 'miss').length,
     })),
   });

@@ -937,7 +937,14 @@ const emisorCheck = () => {
 };
 setInterval(emisorCheck, 30000);
 require('./momentos.js').init({ app, db, aviso }); // momentos de los juegos para las luces (lista acordada con Code 4)
-const wheel = require('./wheel.js')({ app, db, save, requireAdmin, fail, setStage, festejo, findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null });
+// Lugar donde está cada concursante (pedido de Cote, 26 nov: «mostrar bajo el nombre del concursante en Kennedy en qué
+// lugar está»): el que eligió al entrar a la sala (en Kennedy, el local del mercado); vacío si el local no pide lugar
+const placeOf = (name) => {
+  const n = String(name || '').trim(); if (!n) return '';
+  for (const s of Object.values(db.sessions)) for (const pl of Object.values(s.players || {})) if (pl.name === n && pl.place) return pl.place;
+  return '';
+};
+const wheel = require('./wheel.js')({ placeOf, app, db, save, requireAdmin, fail, setStage, festejo, findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null });
 roscoRef = wheel;
 // Tras corregir un nombre, se vuelve a enviar el estado a todas las pantallas abiertas
 const refreshAll = () => { Object.values(db.sessions).forEach((s) => broadcast(s)); wheel.refresh(); };
@@ -952,7 +959,7 @@ const connectedNames = () => {
   }
   return out;
 };
-require('./raffle.js')({ app, db, save, requireAdmin, fail, setStage, refreshAll, connectedNames, festejo });
+require('./raffle.js')({ placeOf, app, db, save, requireAdmin, fail, setStage, refreshAll, connectedNames, festejo });
 
 let lightApi = null; // sala light (light.js): se conecta más abajo
 const karaoke = require('./karaoke.js')({ app, db, save, requireAdmin, requireLocal, fail, salaVenue: () => (Object.values(db.sessions)[0] || {}).theme || '',
@@ -964,7 +971,7 @@ const vote = require('./vote.js')({ app, db, save, requireAdmin, fail, setStage,
   venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
   notify: () => Object.values(db.sessions).forEach((s) => broadcast(s)) });
 // «¿Quién quiere ser ganador?» (antes «billonario»): trivia de 12 escalones con un concursante en el escenario
-const desafio = require('./desafio.js')({ app, db, save, requireAdmin, fail, setStage, festejo,
+const desafio = require('./desafio.js')({ placeOf, app, db, save, requireAdmin, fail, setStage, festejo,
   findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null,
   venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
   notify: () => Object.values(db.sessions).forEach((s) => broadcast(s)) });
