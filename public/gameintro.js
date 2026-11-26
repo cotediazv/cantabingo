@@ -8,7 +8,7 @@
   var C = { bingo: '#ff2e93', rosco: '#9b6bff', festival: '#ffc400', objeto: '#19d6b0' };
   function slides(venueShort) {
     return [
-      { key: 'reglas', icon: '🗳️', title: '¡Tú eliges el próximo juego!', lines: ['Entra a la sala escaneando el código QR', 'Cuando parta la votación, toca en tu celular el juego que quieres', 'Tienes 30 segundos y puedes cambiar tu voto', 'Gana el que tenga más de la mitad de los votos; si ninguno, segunda vuelta entre los 2 más votados'] },
+      { key: 'reglas', icon: '🗳️', title: '¡Tú eliges el próximo juego!', lines: ['Entra a la sala escaneando el código QR', 'Cuando parta la votación, toca en tu celular el juego que quieres', 'Tienes 30 segundos y puedes cambiar tu voto', 'Gana el que tenga más de la mitad de los votos. Si ninguno completa el quórum, habrá segunda vuelta entre los dos más votados.'] },
       { key: 'bingo', icon: '🎱', title: 'Bingo', lines: ['Cada uno tiene su cartón en el celular', 'Marca los números que van saliendo', 'Gana quien completa primero la figura: línea, cruz, corazón…'] },
       { key: 'rosco', icon: '🎡', title: 'El Rosko', lines: ['Sorteamos 3 concursantes entre los conectados', 'Una pregunta por cada letra, contra el reloj: 2 minutos cada uno', 'Gana quien acierta más letras. Tú juegas la Trivia del Rosko desde el celular'] },
       { key: 'festival', icon: '🎤', title: 'El Festival de ' + (venueShort || 'Frida'), lines: ['Concurso de karaoke: te inscribes desde el celular con tu canción', 'Cantas una canción corta y el público pone nota del 1 al 10', 'Gana el mejor promedio'] },

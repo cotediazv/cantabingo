@@ -3837,3 +3837,27 @@ body.anim #app > p.back { padding-right: 130px; }
    jugar en modo prueba»); y en El Rosko «Poner rosko en pantalla» es el paso siguiente: verde (lo opcional va en azul) */
 body.anim #app .home-control.home-sim { display: inline-flex !important; }
 body.anim #rosco-ctl .w-flow .w-show { background: var(--an-go); }
+/* La cortina sin la línea y semitransparente (Cote, 25 nov, por el Registro, con foto: «el fondo de la cortina se ve
+   cortado… Tiene que ser 100 % negro, pero más transparente: como un 30 %»). Las franjas se montan un poco unas sobre
+   otras (la 1.ª y la 2.ª quedaban justo tocándose y se veía la línea) y la transparencia va en el grupo entero, así donde se
+   montan no se ve más oscuro. Negro al 70 % (30 % de transparencia); el logo va entero. */
+#capa .cp-cur .cp-strips { position: absolute; top: 0; right: 0; bottom: 0; left: 0; opacity: .7; }
+#capa .cp-cur .cp-strips i { height: 23%; }
+#capa .cp-cur .cp-strips i:nth-child(1) { top: -2%; }
+/* Centro de control: «En pantalla» como pestaña cerrada (Cote, 25 nov, por el Registro: «le gustaría que fuera una pestaña
+   que esté cerrada también, porque no tiene sentido tenerlo tan grande») */
+details.ctl-fold > summary { cursor: pointer; list-style: none; display: flex; align-items: baseline; gap: 12px; }
+details.ctl-fold > summary::-webkit-details-marker { display: none; }
+details.ctl-fold > summary h2 { margin: 0; }
+details.ctl-fold > summary h2::before { content: '▸ '; }
+details.ctl-fold[open] > summary h2::before { content: '▾ '; }
+details.ctl-fold[open] > summary span { display: none; }
+details.ctl-fold[open] > summary { margin-bottom: 10px; }
+/* modo animador, bingo: sin espacio de sobra bajo las bolitas (Cote, 25 nov, probando en el iPhone: «hay innecesariamente
+   mucho espacio debajo de las bolitas. El orden de salida podría estar mucho más arriba»). Las filas que en el modo
+   animador quedan vacías (el QR grande, el botón verde que va fijo abajo, el modo automático, la selección manual que
+   pasó a «Opciones») no ocupan lugar. */
+body.anim .row:has(> #bigqr), body.anim .row:not(:has(> :not([hidden]))) { display: none; }
+body.anim .row:has(> .paso-fijo) { display: contents; }
+body.anim #host-bingo .cols > .panel:first-child { padding-bottom: 12px; }
+body.anim #host-bingo .cols { gap: 10px; }

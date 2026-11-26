@@ -854,6 +854,17 @@ const cortinaJuego = () => { const s = Object.values(db.sessions)[0]; if (s) cap
 // Job, crn-…). El emisor se apaga solo tras 10 minutos sin juego.
 const emisor = { latido: 0, pedido: 0, error: '' };
 app.post('/api/emisor/latido', (req, res) => { if (String((req.body || {}).pantalla || '') === 'kennedy') emisor.latido = Date.now(); res.json({ ok: true }); });
+// Qué está mostrando cada pantalla liviana (pv.html, el deco): avisa cada 30 s (pedido de Cote, 25 nov: verlo desde la
+// casa en el Centro de control). Solo en memoria.
+const decos = {};
+const DECO_VISTAS = { video: 'el video de la cartelera', logo: 'el logo', sala: 'los juegos de la sala', info: 'la información del local', 'info-qr': 'el QR grande y la lista', 'info-show': 'el show', 'info-kar': 'la información del karaoke', karaoke: 'el karaoke' };
+app.post('/api/deco', (req, res) => {
+  const b = req.body || {}; const p = String(b.p || '').toLowerCase().replace(/[^a-z-]/g, '').slice(0, 20);
+  if (!p) return res.json({ ok: false });
+  decos[p] = { at: Date.now(), vista: String(b.vista || '').slice(0, 20), emi: !!b.emi, emiUrl: !!b.emiUrl, intentando: !!b.intentando, rtc: !!b.rtc, ver: String(b.ver || '').slice(0, 60), ua: String(b.ua || '').slice(0, 160), w: Number(b.w) || 0, h: Number(b.h) || 0 };
+  res.json({ ok: true });
+});
+app.get('/api/deco', requireAdmin, (_req, res) => res.json(Object.fromEntries(Object.entries(decos).map(([k, d]) => [k, { ...d, hace: Math.round((Date.now() - d.at) / 1000), que: d.emi ? 'la transmisión en vivo (emisión)' : (DECO_VISTAS[d.vista] || d.vista || '¿?') }]))));
 // Para la página de la emisión (/emision): solo si el emisor está encendido, sin nada secreto
 app.get('/api/emisor/estado', (_req, res) => res.json({ corriendo: Date.now() - emisor.latido < 90000, prueba: !!db.emisorPrueba }));
 app.post('/api/emisor/prueba', requireAdmin, (req, res) => { db.emisorPrueba = !!(req.body || {}).on; save(); setTimeout(() => emisorCheck(), 0); res.json({ prueba: db.emisorPrueba }); });

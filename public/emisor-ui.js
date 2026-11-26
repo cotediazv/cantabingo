@@ -9,10 +9,20 @@
   const paint = async (box) => {
     const r = await api('GET', '/api/emisor').catch(() => null);
     if (!r || !document.body.contains(box)) return;
+    // Qué está mostrando el deco de la pantalla vertical (pv.html avisa cada 30 s)
+    const d = ((await api('GET', '/api/deco').catch(() => ({}))) || {}).kennedy;
+    let tag = ''; try { tag = (await fetch('/pv.html', { method: 'HEAD', cache: 'no-store' })).headers.get('etag') || ''; } catch (e) { tag = ''; }
+    const viejo = d && tag && d.ver && d.ver !== tag;
+    const deco = !d ? '⚪ El deco no ha avisado todavía (si está encendido, puede tener una versión antigua de la página: se pone al día sola cuando pasa a la cartelera, o al recargarla)'
+      : d.hace > 90 ? `⚪ El deco no avisa hace ${Math.round(d.hace / 60)} min (¿apagado o sin internet?). Lo último: mostraba ${esc(d.que)}`
+        : d.emi ? '🟢 El deco está mostrando <b>la transmisión en vivo</b>'
+          : `🟡 El deco está mostrando <b>${esc(d.que)}</b>, no la transmisión${d.vista === 'sala' ? (!d.rtc ? ' · su navegador no tiene WebRTC: no puede recibir la emisión' : !d.emiUrl ? ' · no tiene la dirección de la emisión' : d.intentando ? ' · está intentando conectarse a la emisión' : ' · reintenta cada 15 s') : ' · la transmisión se pone encima solo cuando la pantalla muestra los juegos de la sala'}`;
+    const decoTxt = `<p>${deco}${d && d.hace <= 90 ? ` <span class="muted small">· aviso hace ${d.hace} s${viejo ? ' · tiene una versión antigua de la página' : ''}</span>` : ''}</p>`;
     const estado = r.corriendo ? '🟢 Encendido' : '⚪ Apagado';
     box.innerHTML = `<h2>📡 Emisión de la pantalla vertical · Mercado Kennedy</h2>
       <p class="muted small">${r.configurado ? '' : 'Falta poner RENDER_API_KEY y EMISOR_CRON en Render. '}El emisor parte solo cuando hay un juego en pantalla en Mercado Kennedy y se apaga a los 10 minutos sin juego. Con el <b>modo prueba</b> queda encendido y transmitiendo todo el tiempo (cada minuto encendido se cobra).</p>
       <p><b>${estado}</b>${r.prueba ? ' · <b>modo prueba puesto</b>' : ''}${r.error ? ` · <span class="muted small">Último error: ${esc(r.error)}</span>` : ''}</p>
+      ${decoTxt}
       <div class="row"><button type="button" class="${r.prueba ? 'primary' : ''}" data-emi="1">🧪 Modo prueba: encendido siempre${r.prueba ? ' · puesto' : ''}</button><button type="button" class="${r.prueba ? '' : 'primary'}" data-emi="0">Solo con juegos${r.prueba ? '' : ' · puesto'}</button><a class="btn" href="/emision" target="_blank" rel="noopener">👁 Ver la emisión</a></div>`;
   };
   const mount = () => {

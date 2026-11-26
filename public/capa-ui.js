@@ -39,7 +39,7 @@
   // Cada pieza se quita sola al terminar; si llega otra antes, se corta
   const timed = (el, ms, extra) => { const t = setTimeout(() => { if (stopNow === end) stopNow = null; end(); }, ms); const end = () => { clearTimeout(t); if (extra) extra(); el.remove(); }; stopNow = end; };
 
-  const cortina = () => timed(layer('cp-cur', '<i></i><i></i><i></i><i></i><i></i><img src="krb-stage.svg" alt="">'), DUR.cortina);
+  const cortina = () => timed(layer('cp-cur', '<div class="cp-strips"><i></i><i></i><i></i><i></i><i></i></div><img src="krb-stage.svg" alt="">'), DUR.cortina);
 
   const celebracion = () => {
     const el = layer('cp-vid', '<video muted playsinline autoplay preload="auto" src="capa/celebracion.webm"></video>');

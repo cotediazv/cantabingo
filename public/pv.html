@@ -1097,6 +1097,7 @@
       if (want !== cur) go(want);
       eUrl = eTest || st.emision || '';
       emiWant();
+      report();
     });
   }
   // ---------- Emisión en vivo (WHEP de Cloudflare) ----------
@@ -1148,6 +1149,17 @@
   }
   emi.addEventListener('playing', function () { if (epc && !eOn) { eOn = true; cv.className += ' emi-on'; } });
   emi.addEventListener('error', function () { if (eOn) { emiStop(); eTimer = setTimeout(function () { eTimer = null; emiWant(); }, 5000); } });
+  // Aviso al Centro de control de qué está mostrando esta pantalla (pedido de Cote, 25 nov: «que la página del deco avise
+  // en el Centro de control qué está mostrando, para verlo desde la casa sin depender de nadie»). Cada 30 s.
+  var repAt = 0;
+  function report() {
+    var t = new Date().getTime(); if (t - repAt < 30000) return; repAt = t;
+    var x = new XMLHttpRequest();
+    try {
+      x.open('POST', '/api/deco', true); x.setRequestHeader('Content-Type', 'application/json'); x.timeout = 10000;
+      x.send(JSON.stringify({ p: P, vista: cur, emi: !!eOn, emiUrl: !!eUrl, intentando: !!(epc && !eOn), rtc: !!window.RTCPeerConnection, ver: myTag || '', ua: String(navigator.userAgent || '').slice(0, 160), w: window.innerWidth, h: window.innerHeight }));
+    } catch (e) { /* nada */ }
+  }
   function pubLoad() { get('/api/tema', function (r) { if (r && typeof r.pub === 'string') PUB = r.pub; }); }
   pubLoad(); setInterval(pubLoad, 300000);
   tick();
