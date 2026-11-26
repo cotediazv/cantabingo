@@ -376,7 +376,15 @@
   const REVELA = 'audio/desafio-revela.mp3';
   const CORRECTA = 'audio/desafio-correcta.mp3';
   let revKey = '';
+  // Comodín de la llamada (pedido de Cote, 26 nov: «este audio es para el comodín telefónico, son 30 segundos»): suena
+  // mientras corre el reloj de la llamada (en lugar del tic-tac); al terminar vuelve la cortina sin el golpe del comienzo
+  const LLAMADA = 'audio/desafio-llamada.mp3';
   const cortina = (st) => {
+    if (st && st.phase === 'question' && left('phone') > 0) {
+      if (sfx.playing() === CORTINA) qFrom = 8;
+      sfx.music(LLAMADA, { vol: 0.9 });
+      return;
+    }
     if (st && st.phase === 'locked') {
       if (sfx.playing() === CORTINA) qFrom = 8; // si se arrepiente, la cortina vuelve sin el golpe del comienzo
       sfx.music(REVELA, { loop: 0, vol: 0.85 });
@@ -406,7 +414,7 @@
     let flip = false;
     let was = false;
     tickTimer = setInterval(() => {
-      const on = left('aud') > 0 || left('phone') > 0;
+      const on = left('aud') > 0; // la llamada tiene su propia música (sin tic-tac)
       if (on) { sfx.play(flip ? 'softTock' : 'softTick'); flip = !flip; } else if (was) sfx.play('chime');
       was = on;
       cortina(lastSt); // si el sonido se activó tarde o el audio terminó de bajar, parte aquí
