@@ -647,11 +647,12 @@ namespace KRB {
         StreamReader r = new StreamReader(s, Encoding.ASCII);
         string linea = r.ReadLine();
         if (linea == null) return;
-        string h, cookies = null, autorizacion = null; int largo = 0; bool porTunel = false;
+        string h, cookies = null, autorizacion = null, sesionCab = null; int largo = 0; bool porTunel = false;
         while (!string.IsNullOrEmpty(h = r.ReadLine())) {
           int i = h.IndexOf(':'); if (i < 0) continue;
           string k = h.Substring(0, i).Trim().ToLower(), v = h.Substring(i + 1).Trim();
           if (k == "cookie") cookies = v;
+          if (k == "x-krb") sesionCab = v;                                  // sesion sin cookie: el panel del DJ dentro de otra pagina (GC Light del karaoke)
           if (k == "authorization") autorizacion = v;                      // Authorization: Bearer <clave> (la Sala de juegos en Render)
           if (k == "cf-connecting-ip") porTunel = true;                    // viene de internet por el tunel de Cloudflare
           if (k == "content-length") int.TryParse(v, out largo);
@@ -679,9 +680,11 @@ namespace KRB {
         bool libre = Clave == "" || (!PedirEnWifiLocal && !porTunel && EsRedLocal(ip));
         if (!libre) {
           string tk = Cookie(cookies, "krb");
-          bool ok; lock (SL) { ok = tk != null && sesiones.Contains(tk); }
+          bool ok; lock (SL) { ok = tk != null && sesiones.Contains(tk); if (!ok && sesionCab != null && sesiones.Contains(sesionCab)) { ok = true; tk = null; } }
+          // los archivos del panel que ya son publicos (estan en el repositorio) se entregan sin clave: dentro de otra pagina no viaja la cookie
+          if (ruta == "/vista3d.js" || ruta == "/lib/three.module.min.js") ok = true;
           // Sesion de por vida (Cote, 25 nov: la estacion de ritmo queda fija): cada vez que se abre la pagina se renueva
-          if (ok && (ruta == "/" || ruta == "/index.html" || ruta == "/dj")) renovar = CookieSesion(tk);
+          if (ok && tk != null && (ruta == "/" || ruta == "/index.html" || ruta == "/dj")) renovar = CookieSesion(tk);
           if (!ok && autorizacion != null && autorizacion.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
             ok = IgualSeguro(autorizacion.Substring(7).Trim(), Clave);
           if (!ok && ruta != "/" && ruta != "/index.html" && ruta != "/dj") {
@@ -998,7 +1001,8 @@ namespace KRB {
         lock (SL) { sesiones.Add(tk); GuardarSesiones(); }
         fallosLogin = 0;
         if (ir != null) { Redirigir(s, ir, CookieSesion(tk)); return; }
-        Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":true}"),
+        // tk tambien en la respuesta: el panel dentro de otra pagina lo guarda y lo manda en X-KRB (ahi no hay cookie)
+        Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":true,\"tk\":\"" + tk + "\"}"),
                CookieSesion(tk));
       } else {
         fallosLogin++;

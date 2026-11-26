@@ -568,11 +568,22 @@ let conf = null, datos = {calibracion:{}}, master = 100, fade = 1, zonas = {}, e
 let canales = new Array(512).fill(0), efectosActivos = [], efectoPared = null, velEf = 1;
 
 /* ---------- Comunicacion con el Dell ---------- */
+// Dentro de otra pagina (GC Light del karaoke) el navegador no manda la cookie: la sesion va en X-KRB.
+// Llega en la direccion (#tk=..., la pone la Sala de juegos) o al escribir la clave; queda guardada en este aparato.
+let SESION = '';
+try { const m = location.hash.match(/(?:^#|&)tk=([0-9a-f]+)/i);
+  if (m){ localStorage.setItem('krbtk', m[1]); history.replaceState(null, '', location.pathname + location.search); }
+  SESION = localStorage.getItem('krbtk') || ''; } catch(e){}
+{ const f0 = window.fetch.bind(window);
+  window.fetch = (u, o = {}) => {
+    if (SESION && typeof u === 'string' && u.startsWith('/')){ o = {...o, headers: {...(o.headers || {}), 'X-KRB': SESION}}; }
+    return f0(u, o);
+  }; }
 async function api(path){
   if (CONTROL) return canalApi(path);
   if (DEMO) return simApi(path);
   const r = await fetch(path, {cache:'no-store', credentials:'same-origin'});
-  if (r.status === 401){ pedirClave(); throw new Error('clave'); }
+  if (r.status === 401){ if (SESION){ SESION = ''; try { localStorage.removeItem('krbtk'); } catch(e){} } pedirClave(); throw new Error('clave'); }
   if (!r.ok) throw new Error(r.status);
   return r.json();
 }
@@ -586,7 +597,7 @@ $('loginForm').onsubmit = async ev => {
   $('loginErr').textContent = 'Comprobando…';
   try {
     const r = await fetch('/api/login', {method:'POST', body:$('clave').value, credentials:'same-origin', cache:'no-store'});
-    if (r.ok){ location.reload(); return; }
+    if (r.ok){ try { const j = await r.json(); if (j.tk) localStorage.setItem('krbtk', j.tk); } catch(e){} location.reload(); return; }
     $('loginErr').textContent = 'Clave incorrecta'; $('clave').select();
   } catch(e){ $('loginErr').textContent = 'Sin conexión con el Dell'; }
 };
