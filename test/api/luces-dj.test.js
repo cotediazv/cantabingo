@@ -5,11 +5,13 @@ const assert = require('node:assert/strict');
 const http = require('http');
 const { startServer } = require('../helpers');
 
-let srv; let mock; const logins = [];
+let srv; let mock; const logins = []; let modo = 'bien'; // cómo responde el computador de las luces
 before(async () => {
   mock = http.createServer((q, s) => {
     let body = ''; q.on('data', (c) => { body += c; });
     q.on('end', () => {
+      if (q.url === '/api/login' && q.method === 'POST' && modo === 'antigua') { s.writeHead(200, { 'content-type': 'application/json' }); s.end('{"ok":true}'); return; } // versión sin sesión
+      if (q.url === '/api/login' && q.method === 'POST' && modo === 'cloudflare') { s.writeHead(403, { 'content-type': 'text/html' }); s.end('<html>Just a moment... cloudflare challenge</html>'); return; }
       if (q.url === '/api/login' && q.method === 'POST') { logins.push(body); s.writeHead(body === 'clave-luces' ? 200 : 401, { 'content-type': 'application/json' }); s.end(JSON.stringify(body === 'clave-luces' ? { ok: true, tk: `tk${logins.length}` } : { ok: false })); return; }
       s.writeHead(404); s.end();
     });
@@ -27,4 +29,18 @@ test('luces: el panel del DJ con la sesión, solo para el moderador', async () =
   assert.match(b.url, /tk1$/); assert.equal(logins.length, 1);
   const c = await srv.admin.get('/api/luces/dj?nuevo=1');
   assert.match(c.url, /tk2$/); assert.equal(logins[0], 'clave-luces');
+});
+
+// Cote, 26 nov: «desde el panel del DJ en GC Kennedy Light las luces no funcionan»: sin sesión, el panel se abre igual
+// (pide la clave adentro) y dice el motivo
+test('luces: si no llega la sesión, el panel del DJ se abre igual con el motivo', async () => {
+  modo = 'antigua';
+  let r = await srv.admin.get('/api/luces/dj?nuevo=1');
+  assert.match(r.url, /\/dj$/); assert.match(r.aviso, /versión anterior/);
+  modo = 'cloudflare';
+  r = await srv.admin.get('/api/luces/dj?nuevo=1');
+  assert.match(r.aviso, /Cloudflare/);
+  modo = 'bien';
+  r = await srv.admin.get('/api/luces/dj?nuevo=1');
+  assert.match(r.url, /#tk=tk\d+$/); assert.equal(r.aviso, undefined);
 });

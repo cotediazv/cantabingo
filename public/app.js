@@ -1768,7 +1768,9 @@ function lucesTab() {
       const r = await api('GET', `/api/luces/dj${nuevo ? '?nuevo=1' : ''}`);
       const old = box.querySelector('iframe'); if (old) old.remove();
       const f = document.createElement('iframe'); f.src = r.url; f.allow = 'fullscreen'; f.title = 'Panel del DJ · luces';
-      box.querySelector('.lz-frame').appendChild(f); if (msg) msg.hidden = true;
+      box.querySelector('.lz-frame').appendChild(f);
+      // Sin sesión: el panel de las luces pide la clave adentro; arriba, el motivo (para arreglarlo con Code 4 o en Render)
+      if (msg) { msg.hidden = !r.aviso; msg.textContent = r.aviso || ''; msg.classList.toggle('lz-aviso', !!r.aviso); }
     } catch (err) { if (msg) { msg.hidden = false; msg.textContent = err.message; } }
   };
   const show = (luces) => {

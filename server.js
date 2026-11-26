@@ -897,13 +897,24 @@ app.get('/api/luces/dj', async (req, res) => {
   if (!validToken(req.get('x-admin')) && staffVenue(req.get('x-staff')) !== 'kennedy') return fail(res, 401, 'Entra con la clave del equipo de Mercado Kennedy');
   const base = String(process.env.LUCES_URL || '').replace(/\/$/, ''); const key = process.env.LUCES_CLAVE;
   if (!base || !key) return fail(res, 503, 'Faltan LUCES_URL y LUCES_CLAVE en Render');
+  // Si la sesión no llega, el panel del DJ se abre igual y pide la clave dentro del recuadro (Code 4: «si no la trae, pide la
+  // clave dentro del mismo recuadro y también la recuerda»); el aviso dice el motivo exacto (Cote, 26 nov: «desde el panel
+  // del DJ en GC Kennedy Light las luces no funcionan… en luces.krbstage.cl sí funcionan perfecto»)
   if (!db.lucesTk || req.query.nuevo) {
+    let why = '';
     try {
       const r = await fetch(`${base}/api/login`, { method: 'POST', headers: { 'content-type': 'text/plain' }, body: key, signal: AbortSignal.timeout(8000) });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok || !j.tk) return fail(res, 502, 'Las luces no entregaron la sesión (¿el computador de las luces está apagado?)');
-      db.lucesTk = String(j.tk); save();
-    } catch (e) { return fail(res, 502, 'No se pudo hablar con las luces (¿el computador de las luces está apagado?)'); }
+      const txt = await r.text().catch(() => '');
+      let j = {}; try { j = JSON.parse(txt); } catch (e) { j = {}; }
+      const cf = /cloudflare|cf-ray|challenge/i.test(txt) || !!r.headers.get('cf-mitigated');
+      if (r.ok && j.tk) { db.lucesTk = String(j.tk); save(); }
+      else if (cf && !r.ok) why = `Cloudflare no deja pasar al servidor de la Sala hasta las luces (respuesta ${r.status}): revisar en Cloudflare la protección de bots de luces.krbstage.cl`;
+      else if (r.status === 401 || r.status === 403) why = `la clave LUCES_CLAVE de Render no es la clave de las luces (respuesta ${r.status})`;
+      else if (r.ok || r.status === 404) why = `el computador de las luces tiene una versión anterior que no entrega la sesión (respuesta ${r.status}): actualizarlo con el ZIP nuevo de Code 4 (INSTALAR.bat)`;
+      else why = `las luces respondieron con un error (${r.status})`;
+      if (why) console.log('Luces DJ:', why, txt.slice(0, 120).replace(/\s+/g, ' '));
+    } catch (e) { why = 'el servidor de la Sala no pudo hablar con las luces (¿el computador de las luces o su túnel están apagados?)'; }
+    if (why) return res.json({ url: `${base}/dj`, aviso: `Pon la clave de las luces aquí abajo, una vez. No entró solo porque ${why}.` });
   }
   res.json({ url: `${base}/dj#tk=${encodeURIComponent(db.lucesTk)}` });
 });

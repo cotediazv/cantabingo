@@ -3919,3 +3919,7 @@ body.anim #rosco-ctl .w-rankbtn.due { position: fixed; left: 50%; transform: tra
 a.btn.paso, a.btn.primary.paso { background: #16a34a; border-color: #16a34a; color: #fff; font-weight: 800; }
 a.btn.paso:hover, a.btn.primary.paso:hover { background: #15803d; border-color: #15803d; }
 .pgvote .pgv-opts > :nth-child(5):last-child { grid-column: 1 / -1; }
+/* Luces de Kennedy (26 nov): si la sesión no llega, el panel del DJ se abre igual (pide la clave adentro) y arriba va el motivo */
+.lz-frame { flex-direction: column; }
+.lz-frame iframe { flex: 1; min-height: 0; }
+#lz-msg.lz-aviso { margin: 0; padding: 8px 12px; width: 100%; box-sizing: border-box; background: #3a2f08; color: #ffd76a; font-size: .9rem; line-height: 1.3; text-align: left; }
