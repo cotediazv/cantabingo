@@ -776,6 +776,7 @@ function desExtras(st) {
   } else if (st.crowd && (st.phase === 'question' || st.phase === 'locked')) {
     o += '<p class="muted">📱 La Trivia del Ganador: <b>' + many(st.crowd.answered, 'respuesta', 'respuestas') + '</b> ' + (st.crowd.open ? '· abierta hasta la respuesta definitiva' : '· cerrada') + '</p>';
   }
+  if (st.phoneWait) o += '<div class="now"><small>📞 Llamada · el concursante está llamando</small><p>Cuando la persona esté conectada al teléfono, parte el tiempo (30 s).</p>' + btn('⏱️ Iniciar el tiempo de la llamada (30 s)', 'des', d('x', 'phonestart'), 'big primary paso') + btn('Cancelar la llamada', 'des', d('x', 'stopphone')) + '</div>';
   var left = st.phoneUntil - (new Date().getTime() + offset);
   if (left > 0) o += '<div class="now"><small>📞 Llamada</small><b id="desphone">quedan ' + Math.ceil(left / 1000) + ' s</b> ' + btn('Terminar llamada', 'des', d('x', 'stopphone')) + '</div>';
   return o;
@@ -804,7 +805,8 @@ function desRender(st) {
       ann('📣 Premios de hoy', [], ['1) ' + st.prizes[0], '2) ' + st.prizes[1], '3) ' + st.prizes[2], 'Quien gana el juego se lleva los 3.']) + btn('▶ Primera pregunta', 'des', d('x', 'next'), 'big primary paso');
   } else if (st.phase === 'question') {
     var chosen = desPick != null && st.hidden.indexOf(desPick) < 0 ? desPick : null;
-    o += rankBox + head + read + desOpts(st, true) + btn('🔒 Respuesta definitiva' + (chosen != null ? ': ' + DL[chosen] : ''), 'des', d('x', 'lock'), 'big primary paso', chosen == null) + desExtras(st) + '<h2>Comodines</h2><div class="row">';
+    // con la llamada esperando, el botón verde es «Iniciar el tiempo» (va antes de la respuesta definitiva)
+    o += rankBox + head + read + desOpts(st, true) + (st.phoneWait ? desExtras(st) : '') + btn('🔒 Respuesta definitiva' + (chosen != null ? ': ' + DL[chosen] : ''), 'des', d('x', 'lock'), 'big primary' + (st.phoneWait ? '' : ' paso'), chosen == null) + (st.phoneWait ? '' : desExtras(st)) + '<h2>Comodines</h2><div class="row">';
     for (var l = 0; l < DES_LIFE.length; l++) o += btn(DES_LIFE[l][2] + ' ' + DES_LIFE[l][1] + (st.used[DES_LIFE[l][0]] ? '<br><small>Ya usado</small>' : ''), 'desLife', d('x', DES_LIFE[l][0]) + d('n', DES_LIFE[l][1]), 'half', st.used[DES_LIFE[l][0]]);
     var mine = []; for (var w = 0; w < (st.prizeWinners || []).length; w++) if (st.prizeWinners[w].by === st.player) mine.push(st.prizeWinners[w].prize);
     o += '</div>' + btn('🏳 Se retira con ' + h(yJoin(mine) || 'nada'), 'des', d('x', 'retire'), 'big') + rankBtn;

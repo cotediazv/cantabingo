@@ -961,6 +961,7 @@
         o += '</ol>';
         if (aud) o += '<div class="mid gold" style="margin-top:2rem">Pregunta al público · quedan ' + aud + ' s</div>';
         else if (call) o += '<div class="mid gold" style="margin-top:2rem">Llamada · quedan ' + call + ' s</div>';
+        else if (s.phoneWait) o += '<div class="mid gold" style="margin-top:2rem">Llamada · llamando…</div>';
         else if (s.crowd && s.crowd.open) o += '<div class="mid gold" style="margin-top:2rem">Responde en tu celular · ' + s.crowd.answered + (s.crowd.answered === 1 ? ' respuesta' : ' respuestas') + '</div>';
       }
       o += '</div>' + qrFoot();

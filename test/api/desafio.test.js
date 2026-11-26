@@ -64,7 +64,11 @@ test('partida con comodines: la respuesta nunca se filtra antes de revelar', asy
   st = await h('next');
   assert.equal(st.step, 2);
   assert.equal(st.audience, null);
+  // la llamada en dos pasos (Cote, 26 nov): primero se llama (sin reloj) y el animador parte el tiempo con la persona conectada
   st = await h('phone');
+  assert.equal(st.phoneWait, true); assert.equal(st.phoneUntil, 0);
+  st = await h('phonestart');
+  assert.equal(st.phoneWait, false);
   assert.ok(st.phoneUntil > Date.now());
   const before = st.q.text;
   st = await h('swap');

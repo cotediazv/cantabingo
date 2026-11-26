@@ -35,7 +35,7 @@ module.exports = function desafio({ placeOf = () => '', roscoBusy = () => false,
   const blank = () => ({
     rev: ((db.desafio || {}).rev || 0) + 1, phase: 'setup', player: '', team: [], lostAt: 0, out: '', stageBy: [null, null, null], prizes: [...(db.desafioPrizes || DEFAULT_PRIZES)],
     step: 0, q: null, chosen: null, hidden: [], outcome: null, used: { fifty: false, audience: false, phone: false, swap: false },
-    audience: null, phoneUntil: 0, seen: [],
+    audience: null, phoneUntil: 0, phoneWait: false, seen: [],
     // Trivia del público: pregunta en juego (qid), desde cuándo se ve, si se puede responder, respuestas por pregunta,
     // preguntas ya resueltas (qid → correcta), ranking en pantalla y ganador
     qid: 0, shownAt: 0, open: false, crowd: { ans: {}, solved: {}, winner: null }, rankShow: false, gen: 0,
@@ -71,7 +71,7 @@ module.exports = function desafio({ placeOf = () => '', roscoBusy = () => false,
     s.chosen = null;
     s.hidden = [];
     s.audience = null;
-    s.phoneUntil = 0;
+    s.phoneUntil = 0; s.phoneWait = false;
   }
 
   // Cada premio es para quien pasó esa etapa (Cote, 25 nov, respuesta 25.2: «cada premio para la persona que pasó esa
@@ -132,7 +132,7 @@ module.exports = function desafio({ placeOf = () => '', roscoBusy = () => false,
       right: shown && s.q && s.chosen != null ? s.chosen === s.q.correct : null,
       outcome: s.outcome, won: wonPrize(), wonList: wonList(), prizeWinners: prizeWinners(), used: s.used,
       audience: s.audience ? { open: !!s.audience.open, until: s.audience.until, ms: AUDIENCE_MS, total: t.total, pct: s.audience.open ? null : t.pct } : null,
-      phoneUntil: s.phoneUntil, phoneMs: PHONE_MS,
+      phoneUntil: s.phoneUntil, phoneWait: !!s.phoneWait, phoneMs: PHONE_MS,
       // La Trivia del Billonario
       crowd: { qid: s.qid, open: !!s.open && s.phase === 'question', answered: t.total, players: standings().table.length },
       rank: s.rankShow ? topOf(10) : null, rankPlayers: s.rankShow ? standings().table.length : 0,
@@ -244,7 +244,7 @@ module.exports = function desafio({ placeOf = () => '', roscoBusy = () => false,
       if (s.audience && s.audience.open) closeAudience();
       s.open = false; // con la respuesta definitiva a la vista, el público ya no responde
       s.chosen = i;
-      s.phoneUntil = 0;
+      s.phoneUntil = 0; s.phoneWait = false;
       s.phase = 'locked';
     },
     // Se arrepiente antes de revelar
@@ -264,7 +264,7 @@ module.exports = function desafio({ placeOf = () => '', roscoBusy = () => false,
       if (s.audience && s.audience.open) closeAudience();
       solve(s); // en pantalla se muestra igual cuál era la correcta
       s.outcome = 'retired';
-      s.phoneUntil = 0;
+      s.phoneUntil = 0; s.phoneWait = false;
       s.phase = 'end';
     },
     fifty(s) {
@@ -285,12 +285,22 @@ module.exports = function desafio({ placeOf = () => '', roscoBusy = () => false,
       s.open = false;
     },
     closeaudience() { closeAudience(); },
+    // La llamada en dos pasos (pedido de Cote, 26 nov: «debería ser ir a la llamada y luego iniciar el tiempo… la persona
+    // tiene que llamar por teléfono a quien quiera y una vez que ya tenga la persona conectada, empieza a correr el tiempo. Y
+    // ahí el animador tiene que marcarlo con el botón verde»): «Llamada» deja el comodín en espera (sin reloj) y
+    // «Iniciar el tiempo» parte los 30 s (y su música)
     phone(s) {
       if (s.phase !== 'question' || s.used.phone) throw new Error('La llamada no está disponible');
-      s.phoneUntil = Date.now() + PHONE_MS;
+      s.phoneWait = true;
+      s.phoneUntil = 0;
       s.used.phone = true;
     },
-    stopphone(s) { s.phoneUntil = 0; },
+    phonestart(s) {
+      if (s.phase !== 'question' || !s.phoneWait) throw new Error('No hay una llamada esperando');
+      s.phoneWait = false;
+      s.phoneUntil = Date.now() + PHONE_MS;
+    },
+    stopphone(s) { s.phoneUntil = 0; s.phoneWait = false; },
     // Cambia la pregunta por otra del mismo escalón (se pierden el 50:50 y la votación aplicados a la anterior)
     swap(s) {
       if (s.phase !== 'question' || s.used.swap) throw new Error('El cambio de pregunta no está disponible');

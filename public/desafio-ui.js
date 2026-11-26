@@ -88,6 +88,8 @@
       } else if (st.crowd && (st.phase === 'question' || st.phase === 'locked')) {
         out += `<p class="dc-crowd">📱 ${TRIVIA}: <b>${many(st.crowd.answered, 'respuesta', 'respuestas')}</b> ${st.crowd.open ? '· abierta hasta la respuesta definitiva' : '· cerrada'}</p>`;
       }
+      // La llamada en dos pasos (Cote, 26 nov): primero se llama y, con la persona conectada, el animador parte el tiempo
+      if (st.phoneWait) out += `<div class="dc-aud"><b>📞 Llamada · el concursante está llamando</b><span class="muted">Cuando la persona esté conectada al teléfono, parte el tiempo (30 s).</span><button type="button" class="primary big paso" data-paso="0" data-do="phonestart">⏱️ Iniciar el tiempo de la llamada (30 s)</button><button type="button" data-do="stopphone">Cancelar la llamada</button></div>`;
       if (left('phone') > 0) out += `<div class="dc-aud"><b>📞 Llamada · quedan <span data-clock="phone">${secs('phone')}</span> s</b><button type="button" data-do="stopphone">Terminar llamada</button></div>`;
       return out;
     };
@@ -95,7 +97,7 @@
       const box = $('#dc-body');
       if (!box || !st) return;
       syncClocks(st);
-      const s = JSON.stringify([st.phase, st.step, st.q && st.q.text, st.hidden, st.pick, st.used, st.audience, st.live, st.phoneUntil > st.now, pick, st.crowd, st.rank, st.rankPlayers, st.crowdWinner, rollLeft(st) > 200]);
+      const s = JSON.stringify([st.phase, st.step, st.q && st.q.text, st.hidden, st.pick, st.used, st.audience, st.live, st.phoneUntil > st.now, st.phoneWait, pick, st.crowd, st.rank, st.rankPlayers, st.crowdWinner, rollLeft(st) > 200]);
       if (s === sig) return;
       if (st.phase === 'setup' && sig && JSON.parse(sig)[0] === 'setup') return; // no se borra lo que se está escribiendo
       sig = s;
@@ -113,7 +115,7 @@
       } else if (st.phase === 'question') {
         const chosen = pick != null && !st.hidden.includes(pick) ? pick : null;
         box.innerHTML = `${rankBox}${head}${read}${options(true)}
-          <button class="primary big paso" data-paso="1" data-lock ${chosen == null ? 'disabled' : ''}>🔒 Respuesta definitiva${chosen != null ? `: ${L[chosen]}` : ''}</button>
+          <button class="primary big ${st.phoneWait ? '' : 'paso'}" data-paso="1" data-lock ${chosen == null ? 'disabled' : ''}>🔒 Respuesta definitiva${chosen != null ? `: ${L[chosen]}` : ''}</button>
           ${extras()}<h2 style="margin:18px 0 6px">Comodines</h2>${lifelines()}
           <button class="big dc-retire" data-do="retire">🏳 Se retira con ${esc(window.yJoin((st.prizeWinners || []).filter((x) => x.by === st.player).map((x) => x.prize)) || 'nada')}</button>${rankBtn}`;
       } else if (st.phase === 'locked') {
@@ -345,7 +347,8 @@
   };
   // QR para entrar a la sala y jugar la Trivia (la frase de siempre)
   const joinHTML = () => `<div class="d-join">${qr(joinUrl())}<p><b>Escanea el código QR con tu celular</b><span>y juega ${TRIVIA_L}</span></p></div>`;
-  const phoneHTML = () => (left('phone') > 0 ? `<div class="d-aud open"><b>${se('📞 Llamada')}</b><span>Quedan <i data-clock="phone">${secs('phone')}</i> s</span></div>` : '');
+  const phoneHTML = (st) => (left('phone') > 0 ? `<div class="d-aud open"><b>${se('📞 Llamada')}</b><span>Quedan <i data-clock="phone">${secs('phone')}</i> s</span></div>`
+    : st && st.phoneWait ? `<div class="d-aud open"><b>${se('📞 Llamada')}</b><span>Llamando…</span></div>` : '');
   const endHTML = (st) => {
     const won = st.outcome === 'won';
     const head = { won: '¡Ganó el juego!', retired: 'Se retira', lost: 'Fin del juego' }[st.outcome];
@@ -444,7 +447,7 @@
         main = `<section class="d-play">
           <div class="d-q"><small>Pregunta ${st.step} · ${esc(stageTxt(st, st.step))}</small><b ${n(st.q.text)}>${esc(st.q.text)}</b></div>
           ${optionsHTML(st)}
-          <div class="d-foot">${audienceHTML(st)}${phoneHTML()}${crowdChip(st)}</div></section>`;
+          <div class="d-foot">${audienceHTML(st)}${phoneHTML(st)}${crowdChip(st)}</div></section>`;
       }
       const who = st.phase === 'swap' ? '' : st.player; // mientras se sortea el reemplazo, arriba no va nadie
       box.innerHTML = `<header class="d-top"><b><i class="d-ico">🏆</i> ${esc(st.title)}</b>${who ? `<span>${esc(who)}${window.placeTag(st.place, 'd-place')}</span>` : ''}</header>
@@ -470,7 +473,7 @@
         : st.phase === 'end' ? `<div class="dg-bar dg-intro"><small>${esc(st.player)} · ${{ won: '¡Ganó el juego!', retired: 'Se retira', lost: 'Fin del juego' }[st.outcome]}</small><b>${esc(prizesTxt(st))}</b></div>`
           : `<div class="dg-bar"><div class="d-q"><small>Pregunta ${st.step} · ${esc(stageTxt(st, st.step))}</small><b ${n(st.q.text)}>${esc(st.q.text)}</b></div>${optionsHTML(st)}</div>`;
       box.innerHTML = `<aside class="dg-side">${lifeIcons(st)}${ladder(st)}</aside>
-        ${st.rank ? `<div class="dg-extra dg-rank">${rankList(st)}</div>` : st.phase === 'question' || st.phase === 'locked' ? `<div class="dg-extra">${audienceHTML(st)}${phoneHTML()}${crowdChip(st)}</div>` : ''}
+        ${st.rank ? `<div class="dg-extra dg-rank">${rankList(st)}</div>` : st.phase === 'question' || st.phase === 'locked' ? `<div class="dg-extra">${audienceHTML(st)}${phoneHTML(st)}${crowdChip(st)}</div>` : ''}
         ${st.phase === 'end' && st.outcome === 'won' ? `<div class="confetti">${confetti()}</div>` : ''}
         ${bottom}`;
     });
