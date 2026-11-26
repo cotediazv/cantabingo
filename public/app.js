@@ -1710,6 +1710,39 @@ function wireSongSearch(form) {
   });
 }
 
+// ---------- Karaoke de Kennedy: pestaña «Luces» (pedido de Cote, 25 nov, por Claude 1 y Code 4) ----------
+// «Que se pueda cambiar la pestaña… y que se transforme en la página que ve el DJ para mover las luces… Todo en un solo
+// lugar». Arriba del panel, dos pestañas: «🎤 Karaoke» y «💡 Luces». Luces muestra a pantalla completa el panel del DJ de
+// Code 4 (luces.krbstage.cl/dj, con la sesión que entrega el servidor); el karaoke no se pierde: el recuadro de las luces
+// queda cargado y solo se oculta al volver.
+function lucesTab() {
+  const bar = document.createElement('div'); bar.className = 'lz-tabs';
+  bar.innerHTML = '<button type="button" class="on" data-lz="kar">🎤 Karaoke</button><button type="button" data-lz="luces">💡 Luces</button>';
+  app.prepend(bar);
+  const box = document.createElement('div'); box.className = 'lz-box'; box.hidden = true;
+  box.innerHTML = '<div class="lz-top"><button type="button" data-lz="kar">🎤 Volver al karaoke</button><b>💡 Luces · Mercado Kennedy</b><button type="button" data-lz="nuevo" title="Si el panel pide la clave">↻ Sesión nueva</button></div><div class="lz-frame"><p class="muted" id="lz-msg">Cargando el panel de las luces…</p></div>';
+  app.appendChild(box);
+  const load = async (nuevo) => {
+    const msg = box.querySelector('#lz-msg');
+    try {
+      const r = await api('GET', `/api/luces/dj${nuevo ? '?nuevo=1' : ''}`);
+      const old = box.querySelector('iframe'); if (old) old.remove();
+      const f = document.createElement('iframe'); f.src = r.url; f.allow = 'fullscreen'; f.title = 'Panel del DJ · luces';
+      box.querySelector('.lz-frame').appendChild(f); if (msg) msg.hidden = true;
+    } catch (err) { if (msg) { msg.hidden = false; msg.textContent = err.message; } }
+  };
+  const show = (luces) => {
+    box.hidden = !luces; document.body.classList.toggle('lz-on', luces);
+    bar.querySelectorAll('button').forEach((b) => b.classList.toggle('on', (b.dataset.lz === 'luces') === luces));
+    if (luces && !box.querySelector('iframe')) load(false);
+  };
+  const onClick = (e) => {
+    const b = e.target.closest('[data-lz]'); if (!b) return;
+    if (b.dataset.lz === 'nuevo') load(true); else show(b.dataset.lz === 'luces');
+  };
+  bar.onclick = onClick; box.onclick = onClick;
+}
+
 // ---------- Karaoke: panel del animador ----------
 // Pone el karaoke en pantalla y muestra la cola. El local es el de la sala abierta.
 // «Ya cantó», Subir y Bajar: cuando el local ya tiene instalado Sala.gs, se pueden usar aquí o en la app del equipo.
@@ -1731,6 +1764,7 @@ views.karaokectl = async (local) => {
     ${light ? `<div class="panel" id="kc-lb"></div>${staff ? '' : '<p class="back"><a href="#/light">← Salas light</a></p>'}` : activitiesNav('karaoke')}`;
   if (staff) $('#kc-phone').closest('label').hidden = true; // permitir pedidos desde el celular: solo el moderador
   const stopBar = light && views.lightBar ? views.lightBar($('#kc-lt'), $('#kc-lb'), light, staff) : null;
+  if (light === 'kennedy') lucesTab(); // pestaña «Luces»: el panel del DJ de las luces, en el mismo lugar
   if (!light) await api('POST', '/api/stage', { show: 'karaoke' }).catch(fail); // al entrar, el karaoke pasa a la pantalla
   let last = '';
   let k = null; // lo último que se mostró (la lista del servidor, o con los cambios recién tocados)

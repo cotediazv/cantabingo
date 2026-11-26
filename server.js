@@ -854,6 +854,24 @@ const cortinaJuego = () => { const s = Object.values(db.sessions)[0]; if (s) cap
 // Job, crn-…). El emisor se apaga solo tras 10 minutos sin juego.
 const emisor = { latido: 0, pedido: 0, error: '' };
 app.post('/api/emisor/latido', (req, res) => { if (String((req.body || {}).pantalla || '') === 'kennedy') emisor.latido = Date.now(); res.json({ ok: true }); });
+// Panel del DJ de las luces de Kennedy dentro del karaoke de la sala light (pedido de Cote, 25 nov, por Claude 1 y Code 4:
+// «que se pueda cambiar la pestaña… y que se transforme en la página que ve el DJ para mover las luces… todo en un solo
+// lugar»). La sesión de las luces la saca este servidor con LUCES_URL y LUCES_CLAVE (solo en Render) y se guarda en los
+// datos (nunca en el repositorio); se entrega solo al moderador y al equipo de Kennedy. ?nuevo=1 pide una sesión nueva.
+app.get('/api/luces/dj', async (req, res) => {
+  if (!validToken(req.get('x-admin')) && staffVenue(req.get('x-staff')) !== 'kennedy') return fail(res, 401, 'Entra con la clave del equipo de Mercado Kennedy');
+  const base = String(process.env.LUCES_URL || '').replace(/\/$/, ''); const key = process.env.LUCES_CLAVE;
+  if (!base || !key) return fail(res, 503, 'Faltan LUCES_URL y LUCES_CLAVE en Render');
+  if (!db.lucesTk || req.query.nuevo) {
+    try {
+      const r = await fetch(`${base}/api/login`, { method: 'POST', headers: { 'content-type': 'text/plain' }, body: key, signal: AbortSignal.timeout(8000) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok || !j.tk) return fail(res, 502, 'Las luces no entregaron la sesión (¿el computador de las luces está apagado?)');
+      db.lucesTk = String(j.tk); save();
+    } catch (e) { return fail(res, 502, 'No se pudo hablar con las luces (¿el computador de las luces está apagado?)'); }
+  }
+  res.json({ url: `${base}/dj#tk=${encodeURIComponent(db.lucesTk)}` });
+});
 // Qué está mostrando cada pantalla liviana (pv.html, el deco): avisa cada 30 s (pedido de Cote, 25 nov: verlo desde la
 // casa en el Centro de control). Solo en memoria.
 const decos = {};
