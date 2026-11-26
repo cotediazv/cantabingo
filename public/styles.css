@@ -3879,3 +3879,14 @@ body.lz-on { overflow: hidden; }
 .emi-lec { margin-top: 8px; }
 .emi-lec ul { margin: 6px 0 0; padding-left: 1.2em; }
 .emi-lec li { margin: 4px 0; word-break: break-all; }
+/* modo animador, El Rosko: los 5 primeros del ranking de la Trivia como aviso que se cierra tocando (Cote, 25 nov) */
+#an-rank { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 210; background: rgba(6, 5, 10, .88); display: flex; align-items: center; justify-content: center; padding: 16px 12px; cursor: pointer; }
+#an-rank .an-card { width: 100%; max-width: 640px; background: #15131e; color: #f3eee6; border-top: 4px solid #f4bf5a; border-radius: 18px; padding: 22px 20px 18px; box-sizing: border-box; }
+#an-rank .an-card > b { display: block; color: #f4bf5a; font-family: 'Big Shoulders Display', 'Manrope', sans-serif; font-weight: 800; text-transform: uppercase; font-size: 1.8rem; line-height: 1.05; margin-bottom: 12px; }
+#an-rank ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+#an-rank li { display: grid; grid-template-columns: 3em 1fr auto; align-items: baseline; gap: 10px; padding: 10px 12px; background: #1c1828; border-radius: 10px; font-size: 1.25rem; }
+#an-rank li.top { background: #2a2416; }
+#an-rank li em { font-style: normal; font-weight: 800; color: #f4bf5a; }
+#an-rank li b { font-weight: 800; overflow-wrap: anywhere; }
+#an-rank li i { font-style: normal; color: #a59fb0; white-space: nowrap; }
+#an-rank small { display: block; text-align: center; margin-top: 16px; color: #a59fb0; font-size: 1rem; }
