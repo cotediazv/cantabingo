@@ -181,6 +181,7 @@
 var token = '';
 try { token = window.localStorage.getItem('adminToken') || ''; } catch (e) { token = ''; }
 var offset = 0;
+var PANEL_ID = 'cc' + Math.random().toString(36).slice(2, 10);
 var V = { frida: 'Frida', tobalaba: 'Tobalaba', kennedy: 'Mercado Kennedy' }; // el local se llama Mercado Kennedy (pedido de Cote, 21 nov)
 // «y» o «e» entre nombres (Cote, 25 nov: «Camilo e Isidora»)
 function eY(w) { var s = String(w || '').replace(/^[^A-Za-z\u00C0-\u00FF]+/, '').toLowerCase(); return /^h?[i\u00ed\u00ef]/.test(s) && !/^h?[i\u00ed][aeiou\u00e1\u00e9\u00f3\u00fa]/.test(s) ? 'e' : 'y'; }
@@ -202,6 +203,7 @@ function api(metodo, ruta, datos, listo) {
   x.open(metodo, ruta, true);
   x.setRequestHeader('Content-Type', 'application/json');
   if (token) x.setRequestHeader('x-admin', token);
+  x.setRequestHeader('x-panel', PANEL_ID); // el servidor no hace dos veces el mismo paso si lo mandan dos paneles a la vez
   x.timeout = 30000;
   x.onreadystatechange = function () {
     if (x.readyState !== 4) return;
@@ -983,7 +985,38 @@ function route() {
   window.scrollTo(0, 0);
   v(parts[1]);
 }
-window.onhashchange = route;
+window.onhashchange = function () { route(); setTimeout(panelSend, 60); };
+// ---------- Paneles sincronizados (pedido de Cote, 26 nov) ----------
+// Igual que en la plataforma: cuando otro panel (el celular del animador, la plataforma, el GC Master u otro iPad) pasa
+// a otra vista de juego, este iPad pasa solo a la misma, y al revés. Rutas de la plataforma ↔ rutas de este panel.
+var PFOLLOW = /^#\/(juegos|figura|bingo|ronda|festival|objeto|desafio|rosco|sorteoctl)/;
+var panelSeq = -1; var panelQuiet = new Date().getTime() + 3000;
+function ccRuta(hh) {
+  var m = [[/^#\/juegos/, '#/juegos'], [/^#\/figura\//, '#/figura'], [/^#\/anfitrion\//, '#/bingo'], [/^#\/ronda\//, '#/ronda'], [/^#\/votoctl\/festival/, '#/festival'],
+    [/^#\/votoctl\/objeto/, '#/objeto'], [/^#\/desafioctl/, '#/desafio'], [/^#\/ruedactl\//, '#/rosco'], [/^#\/sorteoctl\/desafio/, '#/sorteoctl/desafio'], [/^#\/sorteoctl/, '#/sorteoctl']];
+  for (var i = 0; i < m.length; i++) if (m[i][0].test(hh)) return m[i][1];
+  return '';
+}
+function panelSend() {
+  var hh = location.hash || '';
+  if (!token || new Date().getTime() < panelQuiet || !PFOLLOW.test(hh)) return;
+  api('POST', '/api/panel/ruta', { hash: hh }, function (err, r) { if (!err && r) panelSeq = r.seq; });
+}
+function panelCheck() {
+  if (!token || document.hidden) return;
+  api('GET', '/api/panel/ruta', null, function (err, r) {
+    if (err || !r) return;
+    var fresh = panelSeq >= 0 && r.seq !== panelSeq;
+    panelSeq = r.seq;
+    if (!fresh || r.from === PANEL_ID || !r.hash || !PFOLLOW.test(location.hash || '')) return;
+    var to = ccRuta(r.hash);
+    if (!to || to === location.hash) return;
+    panelQuiet = new Date().getTime() + 2500;
+    go(to);
+  });
+}
+setTimeout(panelCheck, 1200);
+setInterval(panelCheck, 1500);
 if (/[?&]animador/.test(location.search) && !ANIM) token = ''; // /ca: entrar como animador (pide su clave)
 if (token) api('GET', '/api/me', null, function (err, r) { if (!err && r && r.admin) { if (/^#\/login/.test(location.hash)) go(ANIM ? '#/juegos' : '#/'); else route(); } else { token = ''; go('#/login'); } });
 else go('#/login');

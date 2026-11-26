@@ -300,6 +300,21 @@ setInterval(() => {
 const app = express();
 app.set('trust proxy', 1); // detrás del proxy del hosting, para ver la IP real
 app.use(express.json({ limit: '1mb' }));
+// Paneles sincronizados (pedido de Cote, 26 nov: «en el caso de tener dos paneles de control de animador abiertos, uno
+// para ir supervisando y otro para ir operando… que la otra sesión también vaya avanzando… porque ahí se producen de
+// repente conflictos»): si dos paneles distintos (cabecera x-panel, una marca por página abierta) mandan el mismo paso
+// de un juego con 3 s o menos de diferencia, el segundo no se hace (el otro panel todavía no veía el paso nuevo)
+const STEP_RE = /^\/api\/(sessions\/[^/]+\/host\/[a-z]+|wheels\/[^/]+\/act|desafio\/host|enpie\/host|vote\/host|raffle\/(draw|open|confirm|tiebreak)|gamedraw(\/(ready|pick|free))?|gamevote\/(intro|next|start))$/;
+let lastStep = null;
+app.use((req, res, next) => {
+  const panel = String(req.get('x-panel') || '');
+  if (req.method !== 'POST' || !panel || !STEP_RE.test(req.path)) return next();
+  const sig = req.path + JSON.stringify(req.body || {});
+  const now = Date.now();
+  if (lastStep && lastStep.sig === sig && lastStep.panel !== panel && now - lastStep.at < 3000) return res.status(409).json({ error: 'Ese paso ya se hizo desde el otro panel' });
+  lastStep = { sig, panel, at: now };
+  return next();
+});
 // Programación KRB (Code 3): plataforma aparte para la cartelera y los turnos (va antes de las páginas de la sala)
 require('./programacion.js')({ app, dir: path.dirname(DATA_FILE) });
 // Sin caché: así cada celular recibe siempre la última versión publicada
@@ -477,6 +492,23 @@ app.post('/api/animador/login', (req, res) => {
   res.json({ token: `${exp}.${sign(exp)}` });
 });
 app.get('/api/me', (req, res) => res.json({ admin: validToken(req.get('x-admin')) }));
+// Paneles sincronizados (Cote, 26 nov): el panel que pasa a otra vista de juego la anuncia y los demás la siguen
+// (public/app.js y cc.html). El iPad viejo usa sus propias rutas: aquí se pasan a las de la plataforma.
+const panelRuta = { seq: 0, hash: '', from: '' };
+const normRuta = (h) => {
+  const s = Object.values(db.sessions)[0]; const pid = s ? s.projectId : '';
+  const w = Object.values(db.wheels || {}).sort((x, y) => y.created - x.created)[0];
+  const m = { '#/bingo': `#/anfitrion/${pid}`, '#/figura': `#/figura/${pid}`, '#/ronda': `#/ronda/${pid}`, '#/rosco': w ? `#/ruedactl/${w.id}` : '#/sorteoctl',
+    '#/festival': '#/votoctl/festival', '#/objeto': '#/votoctl/objeto', '#/desafio': '#/desafioctl' };
+  return m[h] || h;
+};
+app.get('/api/panel/ruta', requireAdmin, (_req, res) => res.json(panelRuta));
+app.post('/api/panel/ruta', requireAdmin, (req, res) => {
+  const h = normRuta(String((req.body || {}).hash || '').slice(0, 80));
+  if (!/^#\/[a-z0-9/_-]*$/i.test(h)) return fail(res, 400, 'Vista no válida');
+  if (h !== panelRuta.hash) Object.assign(panelRuta, { seq: panelRuta.seq + 1, hash: h, from: String(req.get('x-panel') || '') });
+  res.json(panelRuta);
+});
 app.use('/api/projects', requireAdmin);
 app.use('/api/sessions/:sid/host', requireAdmin);
 

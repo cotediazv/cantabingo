@@ -32,9 +32,11 @@ const store = COMO ? {
 };
 const rnd = (n) => Array.from(crypto.getRandomValues(new Uint8Array(n)), (b) => b.toString(16).padStart(2, '0')).join('');
 
+// Marca de esta página abierta: el servidor no hace dos veces el mismo paso si lo mandan dos paneles a la vez (26 nov)
+const PANEL_ID = rnd(6);
 async function api(method, url, body) {
   const res = await fetch(url, {
-    method, headers: { 'Content-Type': 'application/json', 'x-admin': store.get('adminToken') || '', 'x-staff': store.get('staffToken') || '' },
+    method, headers: { 'Content-Type': 'application/json', 'x-admin': store.get('adminToken') || '', 'x-staff': store.get('staffToken') || '', 'x-panel': PANEL_ID },
     body: body ? JSON.stringify(body) : undefined,
   });
   const data = await res.json().catch(() => ({}));
@@ -2669,4 +2671,35 @@ if (new URLSearchParams(location.search).has('diag')) {
   // al redibujarse un panel el botón nuevo queda fijo antes de que se pinte la pantalla (sin saltos)
   new MutationObserver(() => { if (!queued) pick(); }).observe(app, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'disabled', 'class', 'open'] });
   window.addEventListener('resize', later);
+})();
+
+// ---------- Paneles sincronizados ----------
+// Pedido de Cote (26 nov): «en el caso de tener dos paneles de control de animador abiertos, uno como para ir
+// supervisando y otro como para ir operando… si el animador va apretando avanzar, la otra sesión que está abierta también
+// vaya avanzando y no haya que estar actualizando». Lo de dentro de cada juego ya se pone al día solo; lo que faltaba era
+// la vista: cuando un panel pasa a otra vista de juego (Juegos, la figura, el panel de un juego, la ronda, el sorteo),
+// la anuncia al servidor y los demás paneles que estén en una vista de juego pasan solos a la misma (también el iPad viejo
+// y el panel dentro del GC Master). Al abrir un panel no se mueve a los demás: solo cuentan los cambios posteriores.
+(() => {
+  const FOLLOW = /^#\/(juegos|figura\/|anfitrion\/|ronda\/|votoctl\/|enpiectl|desafioctl|ruedactl\/|sorteoctl)/;
+  let seq = -1; let quiet = Date.now() + 3000; // los primeros segundos son el ingreso y las redirecciones de la página
+  const isPanel = () => !!store.get('adminToken') && !window.__mon && !document.body.classList.contains('full') && !document.body.classList.contains('obs');
+  const send = () => {
+    const h = location.hash || '';
+    if (Date.now() < quiet || !isPanel() || !FOLLOW.test(h)) return;
+    api('POST', '/api/panel/ruta', { hash: h }).then((r) => { seq = r.seq; }).catch(() => {});
+  };
+  const check = async () => {
+    if (!isPanel() || document.hidden) return;
+    const r = await api('GET', '/api/panel/ruta').catch(() => null);
+    if (!r) return;
+    const fresh = seq >= 0 && r.seq !== seq;
+    seq = r.seq;
+    if (!fresh || r.from === PANEL_ID || !r.hash || r.hash === location.hash || !FOLLOW.test(location.hash || '')) return;
+    quiet = Date.now() + 2500; // la vista a la que se llega puede redirigir: eso no se vuelve a anunciar
+    location.hash = r.hash;
+  };
+  window.addEventListener('hashchange', () => setTimeout(send, 60));
+  setTimeout(check, 1200);
+  setInterval(check, 1500);
 })();
