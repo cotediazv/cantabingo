@@ -1180,6 +1180,11 @@
   }
   function emiOnNow() { if (epc && !eOn) { eOn = true; eFails = 0; eErr = ''; emiShow(); framesStop(); } }
   emi.addEventListener('playing', emiOnNow);
+  // Si la transmisión cambia de tamaño, se obliga al navegador a volver a acomodar el video a toda la pantalla (26 nov: el
+  // deco de Kennedy dejaba por un momento una copia chica arriba a la izquierda)
+  emi.addEventListener('resize', function () {
+    try { var w = emi.style.width; emi.style.width = (parseInt(w, 10) - 1) + 'px'; setTimeout(function () { emi.style.width = w; }, 50); } catch (e) { /* nada */ }
+  });
   // Navegadores antiguos que no avisan «playing» con la transmisión: si el video ya tiene imagen y avanza, se pone igual;
   // si llegó la imagen pero está detenido, se le vuelve a pedir que parta
   var eLastT = -1;

@@ -72,6 +72,14 @@ const publicar = async (page) => page.evaluate(async ({ whip, w, h, codec }) => 
   if (!res.ok) throw new Error(`WHIP ${res.status}`);
   window.__whipDel = res.headers.get('location'); window.__whipUrl = whip;
   await pc.setRemoteDescription({ type: 'answer', sdp: await res.text() });
+  // Siempre la misma resolución (26 nov: en el deco de Kennedy, cuando el video bajaba por un momento a 720, se veía una
+  // copia chica arriba a la izquierda): si falta máquina o conexión, baja los cuadros por segundo, no el tamaño
+  try {
+    const sp = tx.sender.getParameters();
+    sp.degradationPreference = 'maintain-resolution';
+    (sp.encodings || []).forEach((e) => { e.scaleResolutionDownBy = 1; });
+    await tx.sender.setParameters(sp);
+  } catch (e) { /* el navegador no lo permite: sigue igual */ }
   window.__pc = pc;
   const st = track.getSettings(); window.__cap = `${st.width}x${st.height} (página ${innerWidth}x${innerHeight})`;
   await new Promise((ok, bad) => { const t = setTimeout(() => bad(new Error('sin conexión')), 15000); pc.addEventListener('connectionstatechange', () => { if (pc.connectionState === 'connected') { clearTimeout(t); ok(); } if (pc.connectionState === 'failed') { clearTimeout(t); bad(new Error('falló')); } }); });
