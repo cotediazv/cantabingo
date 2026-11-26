@@ -18,4 +18,8 @@ test('lugar del concursante en El Rosko, el sorteo y ¿Quién quiere ser ganador
   await srv.admin.post('/api/desafio/host', { action: 'new', player: 'Isidora Rojas', prizes: ['a', 'b', 'c'] });
   assert.equal((await srv.ok('GET', '/api/desafio')).place, 'Sushi Mercado');
   assert.deepEqual((await srv.ok('GET', '/api/raffle')).places, {});
+  // El objeto más extraño / El Festival: el que se anota a mano con el nombre de una persona de la sala
+  await srv.admin.post('/api/vote/host', { action: 'add', name: 'Isidora Rojas', thing: 'Un reloj de arena' });
+  const vt = await srv.ok('GET', '/api/vote');
+  assert.equal(vt.players.find((p) => p.name === 'ISIDORA ROJAS').place, 'Sushi Mercado');
 });

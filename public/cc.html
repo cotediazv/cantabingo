@@ -683,7 +683,7 @@ function votoView(want) {
       var isK = mode === 'karaoke'; var name = isK ? festName() : 'El objeto más extraño';
       var o = topBar(['#/', 'Inicio'], 1);
       if (st.phase === 'winner' && st.mode === mode) { // con ganador: el ganador para anunciarlo y lo que viene
-        o += ann('🏆 Ganó ' + name, [st.winner ? st.winner.name : ''], [st.winner && st.winner.thing ? st.winner.thing : '', st.tie ? st.tie.title + '. ' + st.tie.why : '', isK && st.winner && st.winner.score != null ? 'Nota ' + noteOf(st.winner.score, st.winner.dec) : '', st.second ? '2.º lugar: ' + st.second.name + ' · nota ' + noteOf(st.second.score, st.second.dec) : '']);
+        o += ann('🏆 Ganó ' + name, [st.winner ? st.winner.name : ''], [st.winner && st.winner.thing ? st.winner.thing : '', st.winner && st.winner.place ? '📍 ' + st.winner.place : '', st.tie ? st.tie.title + '. ' + st.tie.why : '', isK && st.winner && st.winner.score != null ? 'Nota ' + noteOf(st.winner.score, st.winner.dec) : '', st.second ? '2.º lugar: ' + st.second.name + ' · nota ' + noteOf(st.second.score, st.second.dec) : '']);
         o += nav(want, false) + foot(); render(o); return;
       }
       var startedV = st.signup || st.players.length > 0;
@@ -701,8 +701,8 @@ function votoView(want) {
         else if (st.signup) o += '<div class="now"><small>📲 Inscripciones abiertas</small>' + st.players.length + ' inscritos</div>' + btn('Cerrar', 'vote', d('x', 'signup'), 'big');
         else if (!st.players.length) o += btn('📲 Abrir inscripciones', 'vote', d('x', 'signup') + d('on', '1'), 'big primary paso');
         else if (st.overflow) o += btn('🎲 Sortear los ' + st.max + ' que ' + (isK ? 'cantan' : 'participan') + ' (se inscribieron ' + st.players.length + ')', 'vote', d('x', 'draw'), 'big warn');
-        else if (next && isK) o += (st.onstage && st.onstage.id === next.id ? '<div class="now"><small>🎤 En el escenario</small><b>' + h(next.name) + '</b><br><span class="muted">' + h(next.thing) + '</span></div>' : soonV(voted)) + btn('🎤 Iniciar participante', 'vote', d('x', 'open') + d('id', next.id), 'big primary paso');
-        else if (next && st.onstage && st.onstage.id === next.id) o += '<div class="now"><small>' + (isK ? '🎤 En el escenario' : '🗳️ Presentando su objeto') + '</small><b>' + h(next.name) + '</b><br><span class="muted">' + h(next.thing) + '</span></div>' + btn('🗳️ Iniciar votación', 'vote', d('x', 'open') + d('id', next.id), 'big primary paso');
+        else if (next && isK) o += (st.onstage && st.onstage.id === next.id ? '<div class="now"><small>🎤 En el escenario</small><b>' + h(next.name) + '</b><br><span class="muted">' + h(next.thing) + (next.place ? ' · 📍 ' + h(next.place) : '') + '</span></div>' : soonV(voted)) + btn('🎤 Iniciar participante', 'vote', d('x', 'open') + d('id', next.id), 'big primary paso');
+        else if (next && st.onstage && st.onstage.id === next.id) o += '<div class="now"><small>' + (isK ? '🎤 En el escenario' : '🗳️ Presentando su objeto') + '</small><b>' + h(next.name) + '</b><br><span class="muted">' + h(next.thing) + (next.place ? ' · 📍 ' + h(next.place) : '') + '</span></div>' + btn('🗳️ Iniciar votación', 'vote', d('x', 'open') + d('id', next.id), 'big primary paso');
         else if (next) o += soonV(voted) + btn('🎤 Iniciar participante', 'vote', d('x', 'present') + d('id', next.id), 'big primary paso');
         else if (st.players.length >= 2) o += btn('🏁 Pasar a los resultados', 'vote', d('x', 'results'), 'big primary paso');
         else o += '<p class="muted">Se necesitan al menos 2 participantes.</p>' + btn('📲 Abrir inscripciones otra vez', 'vote', d('x', 'signup') + d('on', '1'), 'big');

@@ -85,7 +85,7 @@
             $('#gc').className = `th-${st.theme}`;
             $('#gc').innerHTML = `<div class="gc-winlow ${w.length > 1 ? 'many' : ''} ${st.winConfirmed ? '' : 'hold'}"><span class="gc-winlow-tag">¡Bingo! · ${w.length > 1 ? 'Ganadores' : 'Ganador'}</span>
               <b style="--n:${w.slice(0, 4).map((r) => r.name || 'Participante').join(' · ').length}">${w.slice(0, 4).map((r) => esc(r.name || 'Participante')).join(' · ')}</b>
-              <small>${w.length > 1 ? esc(bingoName(st.name)) : `Cartón #${st.startNumber + w[0].cardNo - 1} · ${esc(PATTERNS.byId[id].name)}`}</small></div>`;
+              <small>${w.length > 1 ? esc(bingoName(st.name)) : `Cartón #${st.startNumber + w[0].cardNo - 1}${w[0].place ? ` · ${esc(w[0].place)}` : ''} · ${esc(PATTERNS.byId[id].name)}`}</small></div>`;
           } else $('#gc').innerHTML = winScreenHTML(st);
         }
         return;

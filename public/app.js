@@ -1648,7 +1648,7 @@ function winScreenHTML(st) {
   return `<div class="bwin th-${st.theme} ${winners.length > 3 ? 'many' : ''}"><div class="confetti">${confetti}</div>
     <div class="bwin-card"><span class="bwin-title">¡BINGO!</span>
       ${winners.length > 1 ? '<span class="bwin-sub">Completaron la figura</span>' : ''}
-      <div class="bwin-names">${shown.map((r) => `<span><b style="--n:${(r.name || 'Participante').length}">${esc(r.name || 'Participante')}</b><small>Cartón #${st.startNumber + r.cardNo - 1}</small></span>`).join('')}</div>
+      <div class="bwin-names">${shown.map((r) => `<span><b style="--n:${(r.name || 'Participante').length}">${esc(r.name || 'Participante')}</b><small>Cartón #${st.startNumber + r.cardNo - 1}${r.place ? ` · ${esc(r.place)}` : ''}</small></span>`).join('')}</div>
       ${winners.length > shown.length ? `<span class="bwin-more">y ${winners.length - shown.length} más</span>` : ''}
       ${winners.length > 1 ? '' : '<span class="bwin-sub">¡Felicitaciones!</span>'}</div></div>`;
 }

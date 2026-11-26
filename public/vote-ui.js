@@ -19,6 +19,8 @@
   const clockText = () => { const s = Math.ceil(clockLeft() / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
   setInterval(() => { if (clockKey) { const t = clockText(); for (const el of document.querySelectorAll('.v-clock')) if (el.textContent !== t) el.textContent = t; } }, 200);
   const thing = (p) => (p.thing ? `<i class="v-thing">${esc(p.thing)}</i>` : '');
+  // El lugar donde está (Cote, 26 nov): junto a la canción u objeto, bajo el nombre
+  const withPlace = (p, txt) => [txt, p && p.place ? p.place : ''].filter(Boolean).join(' · ');
   const withThing = (p) => (p.thing ? `${p.name} · ${p.thing}` : p.name);
   const isK = (st) => st.mode === 'karaoke';
   const fest = (st) => `El Festival de ${{ frida: 'Frida', kennedy: 'Mercado Kennedy', tobalaba: 'Tobalaba' }[st.venue] || 'Frida'}`;
@@ -86,7 +88,7 @@
         const rollLeft = dr ? window.__vrEnd - Date.now() : 0;
         const rolling = rollLeft > 300;
         if (rolling) { clearTimeout(window.__vrT); window.__vrT = setTimeout(() => { last = ''; paint(); }, rollLeft + 200); }
-        const who = (p, label) => `<div class="vc-now"><small>${label}</small><b>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}</div>`;
+        const who = (p, label) => `<div class="vc-now"><small>${label}</small><b>${nm(p)}</b>${p.thing ? `<span>${esc(p.thing)}</span>` : ''}${p.place ? `<span>📍 ${esc(p.place)}</span>` : ''}</div>`;
         // Pedido de Cote (24 nov): el animador ve lo mismo que está en pantalla; el siguiente participante aparece en el
         // panel recién cuando sube (así no lee el nombre del que viene en lugar del que está en el escenario)
         const soon = (label) => `<div class="vc-now"><small>${label}</small><span>Su nombre sale en pantalla y aquí al tocar «Iniciar participante»</span></div>`;
@@ -305,7 +307,7 @@
   };
   const winHTML = (st) => `<div class="bwin th-${st.venue}"><div class="confetti">${confetti()}</div>
     <div class="bwin-card"><span class="bwin-sub">${esc(title(st))}</span><span class="vwin-cup">🏆</span>
-      <div class="bwin-names"><span><b ${n(`${st.winner.name}...`)}>${badge('1.º')}${esc(st.winner.name)}</b>${st.winner.thing ? `<small>${esc(st.winner.thing)}</small>` : ''}</span></div>
+      <div class="bwin-names"><span><b ${n(`${st.winner.name}...`)}>${badge('1.º')}${esc(st.winner.name)}</b>${st.winner.thing || st.winner.place ? `<small>${esc(withPlace(st.winner, st.winner.thing || ''))}</small>` : ''}</span></div>
       ${isK(st) && st.winner.score != null ? `<span class="vk-score">Puntaje <b>${note(st.winner.score, st.winner.dec)}</b></span>` : ''}
       ${st.tie ? `<span class="vwin-tie"><b>${esc(st.tie.title)}</b>${esc(st.tie.why)}</span>` : ''}
       <span class="bwin-sub">¡Felicitaciones!</span></div></div>`;
@@ -326,9 +328,9 @@
       return lastPlace ? { tag: 'Resultados', no: `${lastPlace.place}.º`, main: lastPlace.name, sub: lastPlace.thing || '', score: lastPlace.score, dec: lastPlace.dec }
         : { tag: 'Resultados', main: 'Vamos desde el último lugar', sub: 'hasta la gran final', side: ['🏁', `${st.players.length} participantes`] };
     }
-    if (st.onstage) return { tag: isK(st) ? 'En el escenario' : 'Presenta su objeto', no: st.onstage.no, main: st.onstage.name, featured: !!st.onstage.thing, sub: st.onstage.thing || '', side: isK(st) ? ['🎤', '¡Aplausos!'] : ['🗳️', 'Atentos'] };
-    if (st.open && !st.clockUntil) return { tag: 'Votación abierta', no: st.open.no, main: st.open.name, featured: !!st.open.thing, sub: st.open.thing || 'Pon tu nota del 1 al 10 desde tu celular', side: ['🗳️', 'Vota del 1 al 10'], qr: true }; // El Festival: se vota durante la canción, sin reloj
-    if (st.open) return { tag: 'Votación abierta', no: st.open.no, main: st.open.name, featured: !!st.open.thing, sub: st.open.thing || 'Pon tu nota del 1 al 10 desde tu celular', clock: 'Vota del 1 al 10', qr: true };
+    if (st.onstage) return { tag: isK(st) ? 'En el escenario' : 'Presenta su objeto', no: st.onstage.no, main: st.onstage.name, featured: !!st.onstage.thing, sub: withPlace(st.onstage, st.onstage.thing || ''), side: isK(st) ? ['🎤', '¡Aplausos!'] : ['🗳️', 'Atentos'] };
+    if (st.open && !st.clockUntil) return { tag: 'Votación abierta', no: st.open.no, main: st.open.name, featured: !!st.open.thing, sub: withPlace(st.open, st.open.thing || 'Pon tu nota del 1 al 10 desde tu celular'), side: ['🗳️', 'Vota del 1 al 10'], qr: true }; // El Festival: se vota durante la canción, sin reloj
+    if (st.open) return { tag: 'Votación abierta', no: st.open.no, main: st.open.name, featured: !!st.open.thing, sub: withPlace(st.open, st.open.thing || 'Pon tu nota del 1 al 10 desde tu celular'), clock: 'Vota del 1 al 10', qr: true };
     if (st.drawn) return { tag: 'Sorteo de participantes', main: window.sinEmoji(isK(st) ? '🎲 ¡Ellos cantan!' : '🎲 ¡Ellos participan!'), sub: isK(st) ? 'Prepárense para subir al escenario' : 'Prepárense para mostrar su objeto', list: st.drawn, side: [isK(st) ? '🎤' : '🎁', `${st.drawn.length} ${isK(st) ? 'cantan' : 'participan'}`] };
     if (st.last && st.sample && st.sample.length) return { tag: 'Notas del público', no: st.last.no, main: st.last.name, sub: st.last.thing || '', notes: true };
     if (st.last) {
