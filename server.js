@@ -890,9 +890,14 @@ const cortinaJuego = () => { const s = Object.values(db.sessions)[0]; if (s) cap
 // Necesita en Render RENDER_API_KEY (clave de la API de Render; nunca en el repositorio) y EMISOR_CRON (el id del Cron
 // Job, crn-…). El emisor se apaga solo tras 10 minutos sin juego.
 const emisor = { latido: 0, pedido: 0, error: '' };
+const BOOT_AT = Date.now(); let emisorBootDone = false;
 app.post('/api/emisor/latido', (req, res) => {
   if (String((req.body || {}).pantalla || '') !== 'kennedy') return res.json({ ok: true });
   emisor.latido = Date.now();
+  // Tras cada publicación (la Sala recién arrancada), el emisor que ya venía corriendo se reinicia una vez: su página pudo
+  // recargarse mientras la Sala no respondía y quedar en algo que no es la pantalla vertical (26 nov: transmitió el ingreso
+  // del moderador). Solo en los primeros 3 minutos tras arrancar y una sola vez (el turno nuevo ya no se reinicia)
+  if (!emisorBootDone && Date.now() - BOOT_AT < 180000 && process.env.RENDER_API_KEY && process.env.EMISOR_CRON) { emisorBootDone = true; setTimeout(() => { emisor.latido = 0; emisorCheck(true); }, 1000); }
   // la marca para mandar las imágenes del plan B (si no hay EMISOR_CLAVE): una nueva cada vez que parte un turno del emisor,
   // y se entrega una sola vez, en el primer aviso de ese turno
   const run = String((req.body || {}).run || '').slice(0, 40);
