@@ -156,7 +156,7 @@
   #an-opts .an-list { display: none; margin-top: 8px; padding: 10px; background: #15131e; border: 1px solid #3a3548; border-radius: 14px; text-align: left; min-width: 230px; }
   #an-opts.open .an-list { display: block; }
   #an-opts .an-list button { display: block; width: 100%; margin: 0 0 8px; text-align: left; float: none; }
-  .an-pop { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 200; background: rgba(6, 5, 10, .88); padding: 16px; overflow: auto; }
+  .an-pop { cursor: pointer; -webkit-tap-highlight-color: rgba(0,0,0,0); position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 200; background: rgba(6, 5, 10, .88); padding: 16px; overflow: auto; }
   .an-card { max-width: 640px; margin: 12% auto 0; background: #15131e; border-top: 4px solid #f4bf5a; border-radius: 18px; padding: 22px 20px 18px; font-size: 22px; line-height: 1.35; }
   .an-card b.t, .an-card .an-title { display: block; color: #f4bf5a; font-size: 28px; font-weight: bold; text-transform: uppercase; margin-bottom: 10px; }
   .an-card li { margin: 8px 0; }
@@ -978,7 +978,7 @@ function route() {
 }
 window.onhashchange = route;
 if (/[?&]animador/.test(location.search) && !ANIM) token = ''; // /ca: entrar como animador (pide su clave)
-if (token) api('GET', '/api/me', null, function (err, r) { if (!err && r && r.admin) route(); else { token = ''; go('#/login'); } });
+if (token) api('GET', '/api/me', null, function (err, r) { if (!err && r && r.admin) { if (/^#\/login/.test(location.hash)) go(ANIM ? '#/juegos' : '#/'); else route(); } else { token = ''; go('#/login'); } });
 else go('#/login');
 </script>
 </body>
