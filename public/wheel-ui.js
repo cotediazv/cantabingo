@@ -40,7 +40,8 @@
     const center = bare ? '' : `
       <text x="50" y="44" font-size="17" text-anchor="middle" dominant-baseline="central" fill="currentColor" font-weight="700" data-timer="${pi}">${clock(c.remainingMs)}</text>
       <text x="50" y="58" font-size="${Math.min(5, 62 / (Math.max(1, c.name.length) * 0.62)).toFixed(2)}" text-anchor="middle" fill="currentColor" font-weight="600">${esc(c.name)}</text>
-      <text x="50" y="66" font-size="4.6" text-anchor="middle" fill="currentColor"><tspan fill="#35c97a">✔ ${c.hits}</tspan>  <tspan fill="#f07a7a">✘ ${c.misses}</tspan></text>`;
+      <text x="50" y="66" font-size="4.6" text-anchor="middle" fill="currentColor"><tspan fill="#35c97a">✔ ${c.hits}</tspan>  <tspan fill="#f07a7a">✘ ${c.misses}</tspan></text>${c.place ? `
+      <text x="50" y="72.5" font-size="${Math.min(3.8, 56 / (Math.max(1, c.place.length) * 0.6)).toFixed(2)}" text-anchor="middle" fill="currentColor" opacity=".75">${esc(c.place)}</text>` : ''}`;
     return `<svg viewBox="0 0 100 100" class="wheel ${mine ? 'turn' : ''}" role="img" aria-label="Rosko de ${esc(c.name)}">${DEFS}
       <circle cx="50" cy="50" r="${R}" fill="none" stroke="url(#wg-ring)" stroke-width="${(r * 1.5).toFixed(2)}" opacity=".9"/>
       <circle cx="50" cy="50" r="${(R + r * 0.75).toFixed(2)}" fill="none" stroke="#fff" stroke-width=".35" opacity=".8"/>
@@ -158,7 +159,7 @@
     const HOWTO = window.ROSCO_HOWTO; // en app.js: lo usan también los celulares
     app.innerHTML = `<div id="rosco-ctl">${window.readAloud ? window.readAloud('El Rosko', HOWTO) : ''}<div class="cols">
         <div class="panel">
-          <div class="row between"><div><h1 id="w-name" style="margin:0"></h1><span class="muted" id="w-turn"></span></div><div class="w-topright"><div class="w-who" id="w-who" hidden><small>Es el turno de</small><b></b></div><div class="w-letter" id="w-letter"></div></div></div>
+          <div class="row between"><div><h1 id="w-name" style="margin:0"></h1><span class="muted" id="w-turn"></span></div><div class="w-topright"><div class="w-who" id="w-who" hidden><small>Es el turno de</small><b></b><i class="w-who-pl"></i></div><div class="w-letter" id="w-letter"></div></div></div>
           <div id="w-rankann"></div>
           <div class="w-question" id="w-question"></div>
           <button class="primary big w-accept" id="w-tie" hidden>🎲 Desempatar por sorteo</button>
@@ -195,7 +196,7 @@
     const render = () => {
       const c = st.players[st.turn];
       $('#w-name').textContent = st.name;
-      $('#w-turn').textContent = st.winner ? (st.winner.full ? `🏆 ${st.winner.name} completó el rosko` : `🏆 Gana ${st.winner.name} (${st.winner.hits} ✔ · ${st.winner.misses} ✘)${st.winner.byDraw ? ', por sorteo' : ''}`) : st.tie ? `Empate: ${st.tie.names.join(' y ')}` : st.finished ? 'Juego terminado' : '';
+      $('#w-turn').textContent = st.winner ? (st.winner.full ? `🏆 ${st.winner.name} completó el rosko` : `🏆 Gana ${st.winner.name} (${st.winner.hits} ✔ · ${st.winner.misses} ✘)${st.winner.byDraw ? ', por sorteo' : ''}`) : st.tie ? `Empate: ${window.yJoin(st.tie.names)}` : st.finished ? 'Juego terminado' : '';
       // Pedido de Cote (21 nov): arriba a la derecha, «Es el turno de» chico y el nombre grande y en color; al cambiar el
       // turno (Pasa, Incorrecta o se acabó el tiempo) se destaca unos segundos, como guía para el animador
       const who = $('#w-who');
@@ -203,13 +204,14 @@
       who.hidden = !showWho;
       if (showWho) {
         who.querySelector('b').textContent = c.name;
+        who.querySelector('.w-who-pl').textContent = c.place ? `📍 ${c.place}` : '';
         if (lastTurn !== null && lastTurn !== st.turn) { who.classList.remove('flash'); void who.offsetWidth; who.classList.add('flash'); }
       }
       lastTurn = st.turn;
       $('#w-letter').textContent = c.active ? st.letters[c.current] : '—';
       const q = (questions[st.turn] || [])[c.current] || {};
       // La pregunta y su respuesta se muestran al moderador solo con el reloj en marcha
-      $('#w-question').innerHTML = !c.active ? (st.tie ? (st.tie.rolling ? '<b>Sorteando el desempate…</b> Mira la pantalla.' : `<b>Hay un empate</b> entre ${st.tie.names.map(esc).join(' y ')}: mismos aciertos y fallos. Primero desempata por sorteo.`) : st.winner ? (st.winAccepted ? `<b>${st.winner.full ? '¡Rosko completo!' : '¡Tenemos ganador!'}</b> El nombre del ganador queda abajo al centro de la pantalla.` : `<b>${st.winner.full ? '¡Rosko completo!' : `¡Gana ${esc(st.winner.name)}!`}</b> ${st.winner.byDraw ? 'Salió elegido en el desempate.' : 'La partida se detuvo y en pantalla se muestra la felicitación.'} Pulsa «Aceptar ganador», o Deshacer si fue un error.`) : '<span class="muted">Este concursante ya terminó su rosco.</span>')
+      $('#w-question').innerHTML = !c.active ? (st.tie ? (st.tie.rolling ? '<b>Sorteando el desempate…</b> Mira la pantalla.' : `<b>Hay un empate</b> entre ${window.yJoin(st.tie.names.map(esc))}: mismos aciertos y fallos. Primero desempata por sorteo.`) : st.winner ? (st.winAccepted ? `<b>${st.winner.full ? '¡Rosko completo!' : '¡Tenemos ganador!'}</b> El nombre del ganador queda abajo al centro de la pantalla.` : `<b>${st.winner.full ? '¡Rosko completo!' : `¡Gana ${esc(st.winner.name)}!`}</b> ${st.winner.byDraw ? 'Salió elegido en el desempate.' : 'La partida se detuvo y en pantalla se muestra la felicitación.'} Pulsa «Aceptar ganador», o Deshacer si fue un error.`) : '<span class="muted">Este concursante ya terminó su rosco.</span>')
         : !st.runningSince ? '<span class="muted">Pulsa «Iniciar pregunta» para ver la pregunta de esta letra.</span>'
         : q.q ? `${q.cat ? `<div class="small muted" style="margin-bottom:6px">${TAGS[q.cat]} · ${q.level === 'f' ? 'Fácil' : 'Medio'}</div>` : ''}<div class="w-qtext">${esc(q.q)}</div>${q.a ? `<div class="w-answer"><small>Respuesta</small><b>${esc(q.a)}</b></div>` : ''}` : '<span class="muted">Sin pregunta cargada para esta letra: léela de tu guion.</span>';
       $('#w-accept').hidden = !st.winner || st.winAccepted;
@@ -593,13 +595,13 @@
         const key = st.winner.name + (low ? (st.winAccepted ? '|ok' : '|low') : '');
         if (low && wonBy !== key) {
           wonBy = key;
-          $('#pw').innerHTML = `<div class="rosco-winlow ${st.winAccepted ? '' : 'hold'}"><span class="rosco-winlow-tag">${window.sinEmoji(`🏆 ${st.winner.full ? 'Completó el rosko' : 'Ganó El Rosko'}`)}</span><b style="--n:${st.winner.name.length}">${esc(st.winner.name)}</b><small>¡Felicitaciones!</small></div>`;
+          $('#pw').innerHTML = `<div class="rosco-winlow ${st.winAccepted ? '' : 'hold'}"><span class="rosco-winlow-tag">${window.sinEmoji(`🏆 ${st.winner.full ? 'Completó el rosko' : 'Ganó El Rosko'}`)}</span><b style="--n:${st.winner.name.length}">${esc(st.winner.name)}</b>${window.placeTag(st.winner.place, 'pw-place')}<small>¡Felicitaciones!</small></div>`;
         } else if (wonBy !== key) {
           wonBy = key;
           const colors = ['#ff4fa3', '#ff9a3d', '#ffe14d', '#3fe08f', '#35c6ff', '#9b5cff'];
           const confetti = Array.from({ length: 60 }, (_, i) => `<i style="left:${(Math.random() * 100).toFixed(1)}%;background:${colors[i % colors.length]};animation-delay:${(Math.random() * 3).toFixed(2)}s;animation-duration:${(3 + Math.random() * 3).toFixed(2)}s"></i>`).join('');
           $('#pw').innerHTML = `<div class="win-screen"><div class="confetti">${confetti}</div>
-            <div class="win-card"><span class="win-trophy">🏆</span><span class="win-name" style="--n:${st.winner.name.length}">${esc(st.winner.name)}</span>
+            <div class="win-card"><span class="win-trophy">🏆</span><span class="win-name" style="--n:${st.winner.name.length}">${esc(st.winner.name)}</span>${window.placeTag(st.winner.place, 'win-place')}
               <span class="win-text">${st.winner.full ? '¡Completaste el rosko!' : `¡Ganaste El Rosko! ${st.winner.hits} aciertos`}</span><span class="win-sub">¡Felicitaciones!</span></div></div>`;
         }
         return;
@@ -611,7 +613,7 @@
         // (o con el botón «Rosko en pantalla»); con un fallo o un paso salen al instante y queda solo el marcador.
         $('#pw').innerHTML = `<div class="obs-corner">${st.players.map((c, i) => `<div class="obs-player ${i === st.turn && !st.finished ? 'on' : ''}">
             <span class="obs-clock" data-timer="${i}">${clock(c.remainingMs)}</span>
-            <span class="obs-name">${esc(c.name)}</span>
+            <span class="obs-name">${esc(c.name)}</span>${c.place ? `<span class="obs-place">${esc(c.place)}</span>` : ''}
             <span class="obs-score"><b class="ok">✔ ${c.hits}</b> <b class="ko">✘ ${c.misses}</b></span></div>`).join('')}</div>
           ${st.onScreen ? `<div class="obs-wheel">${wheelSVG(st, st.turn, false, true)}</div>` : ''}
           ${st.rank ? `<div class="obs-side obs-rankside ${st.onScreen ? '' : 'wide'}">${rankHTML(st, 'obs-rank')}</div>` : st.onScreen ? `<div class="obs-side">${questionCard(st)}${revealCard(st, 'obs-reveal')}</div>` : ''}

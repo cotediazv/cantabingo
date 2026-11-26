@@ -6,6 +6,13 @@ const app = $('#app');
 // Pedido de Cote (21 nov): al dar a conocer un ganador, un premio o una información, el animador también lo ve en su
 // panel, grande, para leerlo en voz alta (lo mismo que está en la pantalla del local)
 // El ranking de la Trivia del Rosko desplegado en pantalla, también grande en el panel (pedido de Cote, 21 nov)
+// «y» o «e» entre nombres (Cote, 25 nov: «cuando hay empate entre una persona y otra que empieza con I no se puede usar
+// la Y sino la E: Camilo e Isidora»): «e» antes de una palabra que suena /i/ (i-, hi-), salvo si forma diptongo (hie-, hia-)
+window.eY = (w) => { const s = String(w || '').replace(/^[^A-Za-z\u00C0-\u00FF]+/, '').toLowerCase(); return /^h?[iíï]/.test(s) && !/^h?[ií][aeiouáéóú]/.test(s) ? 'e' : 'y'; };
+window.yJoin = (a) => { a = a || []; return a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} ${window.eY(a[a.length - 1])} ${a[a.length - 1]}`; };
+// Lugar donde está el concursante, bajo su nombre (pedido de Cote, 26 nov: «mostrar bajo el nombre del concursante en
+// Kennedy en qué lugar está»); en el diseño nuevo, sin el emoji
+window.placeTag = (p, cls) => { if (!p) return ''; const ic = window.sinEmoji ? window.sinEmoji('📍') : '📍'; return `<span class="c-place${cls ? ` ${cls}` : ''}">${ic ? `${ic} ` : ''}${esc(p)}</span>`; };
 window.rankAnnHtml = (rank, players, final, title = 'la Trivia del Rosko') => `<div class="panel ann rank-ann"><small>📣 En pantalla ahora</small><span class="ann-t">🏅 Ranking de ${esc(title)} · ${final ? 'resultados finales' : 'resultados parciales'}</span>
   ${rank.length ? `<ol class="rank-ann-list">${rank.map((t, i) => `<li class="${i < 3 ? 'top' : ''}"><em>${i + 1}.º</em><b>${esc(t.name)}</b><i>${t.score} pts</i></li>`).join('')}</ol>` : '<span class="ann-l">Todavía nadie suma puntos</span>'}
   <span class="ann-l">${players} ${players === 1 ? 'persona jugando' : 'personas jugando'}</span></div>`;
@@ -1006,7 +1013,7 @@ views.jugar = async (sid) => {
     const crowdWin = cwRollLeft > 200 ? '<div class="prosco-win">🥁 Trivia del Rosko<small>¡Ya viene el ganador! Mira la pantalla</small></div>' : cw ? (cw.none ? '<div class="prosco-win">🏅 Trivia del Rosko<small>Esta vez nadie sumó puntos</small></div>'
       : `<div class="prosco-win">🏅 ${esc(cw.name)}<small>${String(cw.name).toLowerCase() === String(me.name || '').toLowerCase() ? '¡Ganaste la Trivia del Rosko!' : '¡Ganó la Trivia del Rosko!'} ${cw.score} puntos</small></div>`) : '';
     const body = crowdWin + (rosco.winner ? `<div class="prosco-win">🏆 ${esc(rosco.winner.name)}<small>${rosco.winner.full ? '¡Completó el rosko!' : '¡Ganó El Rosko!'}</small></div>`
-      : rosco.tie ? `<div class="prosco-wait">Empate entre ${rosco.tie.names.map(esc).join(' y ')}. Se define por sorteo.</div>`
+      : rosco.tie ? `<div class="prosco-wait">Empate entre ${window.yJoin(rosco.tie.names.map(esc))}. Se define por sorteo.</div>`
       : rosco.finished ? '<div class="prosco-wait">Juego terminado</div>'
       : `<div class="prosco-q"><span class="prosco-letter">${esc(rosco.letters[c.current])}</span>
           <p>${rosco.question ? esc(rosco.question) : '<span class="muted">Esperando la siguiente pregunta…</span>'}</p></div>`);
@@ -1559,7 +1566,32 @@ const sfx = (() => {
     };
     sched(); rollTimer = setInterval(sched, 250);
   };
-  return { unlock, ready, play, roll, rolling: () => !!rollTimer, played: [], ticks: 0 };
+  // Música de un archivo (pedido de Cote, 26 nov: la cortina de la pregunta en ¿Quién quiere ser ganador?): se baja una
+  // vez, suena con el mismo permiso de «Activar sonido», se repite desde `loop` segundos (sin volver a dar el golpe del
+  // comienzo) y al parar se apaga de a poco. music(url, {from, loop, vol}) / music(null) la detiene.
+  const bufs = {}; let cur = null;
+  const music = (url, o = {}) => {
+    if (cur && (!url || cur.url !== url)) {
+      const c = cur; cur = null;
+      try { const t = ctx.currentTime; c.g.gain.cancelScheduledValues(t); c.g.gain.setValueAtTime(c.g.gain.value, t); c.g.gain.linearRampToValueAtTime(0.0001, t + 1.2); c.src.stop(t + 1.3); } catch { /* sin audio */ }
+    }
+    if (!url || (cur && cur.url === url) || !ready()) return;
+    const go = (buf) => {
+      if (!ready() || (cur && cur.url === url)) return;
+      try {
+        const src = ctx.createBufferSource(); src.buffer = buf;
+        if (o.loop != null && o.loop < buf.duration - 1) { src.loop = true; src.loopStart = o.loop; src.loopEnd = buf.duration; }
+        const g = ctx.createGain(); g.gain.value = o.vol || 0.7;
+        src.connect(g).connect(ctx.destination); src.start(0, Math.min(o.from || 0, buf.duration - 1));
+        cur = { url, src, g };
+      } catch { /* sin audio */ }
+    };
+    if (bufs[url] && bufs[url].duration) { go(bufs[url]); return; }
+    if (bufs[url]) return; // bajando
+    bufs[url] = fetch(url).then((r) => r.arrayBuffer()).then((a) => new Promise((ok, ko) => ctx.decodeAudioData(a, ok, ko)))
+      .then((buf) => { bufs[url] = buf; }).catch(() => { delete bufs[url]; });
+  };
+  return { unlock, ready, play, roll, music, playing: () => (cur ? cur.url : ''), rolling: () => !!rollTimer, played: [], ticks: 0 };
 })();
 
 // Tablero del DJ: pantalla completa (no transparente) que sigue sola lo que está pasando,
@@ -1641,7 +1673,7 @@ function winScreenHTML(st) {
   return `<div class="bwin th-${st.theme} ${winners.length > 3 ? 'many' : ''}"><div class="confetti">${confetti}</div>
     <div class="bwin-card"><span class="bwin-title">¡BINGO!</span>
       ${winners.length > 1 ? '<span class="bwin-sub">Completaron la figura</span>' : ''}
-      <div class="bwin-names">${shown.map((r) => `<span><b style="--n:${(r.name || 'Participante').length}">${esc(r.name || 'Participante')}</b><small>Cartón #${st.startNumber + r.cardNo - 1}</small></span>`).join('')}</div>
+      <div class="bwin-names">${shown.map((r) => `<span><b style="--n:${(r.name || 'Participante').length}">${esc(r.name || 'Participante')}</b><small>Cartón #${st.startNumber + r.cardNo - 1}${r.place ? ` · ${esc(r.place)}` : ''}</small></span>`).join('')}</div>
       ${winners.length > shown.length ? `<span class="bwin-more">y ${winners.length - shown.length} más</span>` : ''}
       ${winners.length > 1 ? '' : '<span class="bwin-sub">¡Felicitaciones!</span>'}</div></div>`;
 }

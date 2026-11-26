@@ -24,7 +24,7 @@ const FINAL_MS = Number(process.env.VOTE_OPEN_MS) || 8000; // la gran final tamb
 const GRACE_MS = 1000; // margen para los votos que venían en camino al llegar a cero
 const SIGNUP_MS = 90000; // El objeto más extraño: la inscripción dura 90 segundos (pedido de Cote, 20 nov)
 
-module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, findPlayer, venue, notify, festejo = () => {} }) {
+module.exports = function vote({ placeOf = () => '', app, db, save, requireAdmin, fail, setStage, findPlayer, venue, notify, festejo = () => {} }) {
   const DRAW_STEP_MS = 1300; // la tómbola del sorteo de participantes: uno cada 1,3 s
   const blank = (mode = 'objeto') => ({ mode, title: mode === 'karaoke' ? '' : TITLES[mode] || TITLE, max: mode === 'karaoke' ? K_MAX : O_MAX, players: [], open: null, last: null, sample: null, phase: 'voting', rank: [], revealed: 0, final: null, winner: null, winAt: 0, rev: ((db.vote || {}).rev || 0) + 1, gen: ((db.vote || {}).gen || 0) + 1 });
   db.vote ||= blank();
@@ -56,7 +56,7 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
     const n = s.rank.length;
     return Array.from({ length: s.revealed }, (_, i) => { const p = by(s.rank[n - 1 - i]); return { place: n - i, no: no(p), name: p.name, thing: p.thing || '', ...scoreOf(p) }; });
   };
-  const finalists = () => (v().final ? v().players.filter((p) => v().final.ids.includes(p.id)).map((p) => ({ id: p.id, no: no(p), name: p.name, thing: p.thing || '' })) : []);
+  const finalists = () => (v().final ? v().players.filter((p) => v().final.ids.includes(p.id)).map((p) => ({ id: p.id, no: no(p), name: p.name, place: placeOf(p.name), thing: p.thing || '' })) : []);
 
   const pub = () => {
     const s = v();
@@ -71,17 +71,17 @@ module.exports = function vote({ app, db, save, requireAdmin, fail, setStage, fi
       overflow: s.phase === 'voting' && s.players.length > cap(), // también en El objeto más extraño (pedido de Cote, 23 nov: «si llegan más inscripciones, hacemos un sorteo rápido y se muestran en pantalla las 5 personas sorteadas»)
       drawn: s.drawnAt && !s.players.some((p) => p.done) && !s.open ? s.players.map((p) => p.name) : null,
       drawRoll: s.drawRoll && Date.now() - s.drawRoll.at < s.drawRoll.ms + 3000 ? s.drawRoll : null, // la tómbola del sorteo de participantes
-      players: s.players.map((p) => ({ id: p.id, no: no(p), name: p.name, thing: p.thing || '', done: !!p.done })),
-      open: open ? { id: open.id, no: no(open), name: open.name, thing: open.thing || '' } : null,
+      players: s.players.map((p) => ({ id: p.id, no: no(p), name: p.name, place: placeOf(p.name), thing: p.thing || '', done: !!p.done })),
+      open: open ? { id: open.id, no: no(open), name: open.name, place: placeOf(open.name), thing: open.thing || '' } : null,
       // «Iniciar participante» (pedido de Cote): quien está en el escenario antes de abrir su votación
-      onstage: s.phase === 'voting' && !s.open && by(s.onstage) ? { id: s.onstage, no: no(by(s.onstage)), name: by(s.onstage).name, thing: by(s.onstage).thing || '' } : null,
-      last: last ? { id: last.id, no: no(last), name: last.name, thing: last.thing || '' } : null,
+      onstage: s.phase === 'voting' && !s.open && by(s.onstage) ? { id: s.onstage, no: no(by(s.onstage)), name: by(s.onstage).name, place: placeOf(by(s.onstage).name), thing: by(s.onstage).thing || '' } : null,
+      last: last ? { id: last.id, no: no(last), name: last.name, place: placeOf(last.name), thing: last.thing || '' } : null,
       places: s.phase === 'voting' ? [] : places(),
       toReveal: s.phase === 'results' ? Math.max(0, s.rank.length - 2 - s.revealed) : 0,
       final: s.final ? { players: finalists(), open: !!s.final.open, closed: !!s.final.closed, drum: !!s.final.drum } : null,
       tie: s.phase === 'winner' && s.tie ? s.tie : null, // empate en la gran final: por qué ganó
-      winner: s.phase === 'winner' && s.winner ? { no: no(by(s.winner)), name: by(s.winner).name, thing: by(s.winner).thing || '', ...(karaoke() ? scoreOf(by(s.winner)) : { score: null }) } : null, winAt: s.winAt || 0,
-      second: s.phase === 'winner' && karaoke() && s.rank[1] && by(s.rank[1]) ? { no: no(by(s.rank[1])), name: by(s.rank[1]).name, thing: by(s.rank[1]).thing || '', ...scoreOf(by(s.rank[1])) } : null,
+      winner: s.phase === 'winner' && s.winner ? { no: no(by(s.winner)), name: by(s.winner).name, place: placeOf(by(s.winner).name), thing: by(s.winner).thing || '', ...(karaoke() ? scoreOf(by(s.winner)) : { score: null }) } : null, winAt: s.winAt || 0,
+      second: s.phase === 'winner' && karaoke() && s.rank[1] && by(s.rank[1]) ? { no: no(by(s.rank[1])), name: by(s.rank[1]).name, place: placeOf(by(s.rank[1]).name), thing: by(s.rank[1]).thing || '', ...scoreOf(by(s.rank[1])) } : null,
     };
   };
 

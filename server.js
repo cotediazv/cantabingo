@@ -308,7 +308,7 @@ app.use(express.static(path.join(__dirname, 'public'), { setHeaders: (res) => re
 // solo esta, los demás enlaces siguen como están porque los OBS ya están configurados). Lo que vaya después de «?»
 // (por ejemplo ?diag=1) se mantiene.
 // /cc: Centro de control liviano para el iPad viejo (pedido de Cote, 21 nov; public/cc.html)
-const SHORT_LINKS = { vk: '#/vertical/kennedy', cc: '/cc.html', emision: '/emision.html?p=kennedy', emisor: '#/emisor' }; // /emision: ver la emisión de la vertical de Kennedy (26 nov)
+const SHORT_LINKS = { vk: '#/vertical/kennedy', cc: '/cc.html', emision: '/emision.html?p=kennedy', emisor: '#/emisor', ca: '/cc.html?animador=1#/login' }; // /ca: el animador en el iPad viejo (25 nov) // /emision: ver la emisión de la vertical de Kennedy (26 nov)
 app.get('/:short', (req, res, next) => {
   const to = SHORT_LINKS[String(req.params.short).toLowerCase()];
   if (!to) return next();
@@ -937,7 +937,14 @@ const emisorCheck = () => {
 };
 setInterval(emisorCheck, 30000);
 require('./momentos.js').init({ app, db, aviso }); // momentos de los juegos para las luces (lista acordada con Code 4)
-const wheel = require('./wheel.js')({ app, db, save, requireAdmin, fail, setStage, festejo, findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null });
+// Lugar donde está cada concursante (pedido de Cote, 26 nov: «mostrar bajo el nombre del concursante en Kennedy en qué
+// lugar está»): el que eligió al entrar a la sala (en Kennedy, el local del mercado); vacío si el local no pide lugar
+const placeOf = (name) => {
+  const n = String(name || '').trim(); if (!n) return '';
+  for (const s of Object.values(db.sessions)) for (const pl of Object.values(s.players || {})) if (pl.name === n && pl.place) return pl.place;
+  return '';
+};
+const wheel = require('./wheel.js')({ placeOf, app, db, save, requireAdmin, fail, setStage, festejo, findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null });
 roscoRef = wheel;
 // Tras corregir un nombre, se vuelve a enviar el estado a todas las pantallas abiertas
 const refreshAll = () => { Object.values(db.sessions).forEach((s) => broadcast(s)); wheel.refresh(); };
@@ -952,19 +959,19 @@ const connectedNames = () => {
   }
   return out;
 };
-require('./raffle.js')({ app, db, save, requireAdmin, fail, setStage, refreshAll, connectedNames, festejo });
+require('./raffle.js')({ placeOf, app, db, save, requireAdmin, fail, setStage, refreshAll, connectedNames, festejo });
 
 let lightApi = null; // sala light (light.js): se conecta más abajo
 const karaoke = require('./karaoke.js')({ app, db, save, requireAdmin, requireLocal, fail, salaVenue: () => (Object.values(db.sessions)[0] || {}).theme || '',
   findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || (lightApi ? lightApi.findPlayer(sid, token) : null),
   lightVenue: (sid) => (lightApi ? lightApi.venueOf(sid) : ''), extraVenues: () => (lightApi ? lightApi.pollVenues() : []) });
 // Votación del público (nota del 1 al 10 desde el celular)
-const vote = require('./vote.js')({ app, db, save, requireAdmin, fail, setStage, festejo,
+const vote = require('./vote.js')({ placeOf, app, db, save, requireAdmin, fail, setStage, festejo,
   findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null,
   venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
   notify: () => Object.values(db.sessions).forEach((s) => broadcast(s)) });
 // «¿Quién quiere ser ganador?» (antes «billonario»): trivia de 12 escalones con un concursante en el escenario
-const desafio = require('./desafio.js')({ app, db, save, requireAdmin, fail, setStage, festejo,
+const desafio = require('./desafio.js')({ placeOf, app, db, save, requireAdmin, fail, setStage, festejo,
   findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null,
   venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
   notify: () => Object.values(db.sessions).forEach((s) => broadcast(s)) });
@@ -973,7 +980,7 @@ const insta = require('./insta.js')({ app, db, save, requireAdmin, fail, venue: 
 // Sala light: karaoke, show y cartelera en otro local, al mismo tiempo que la sala principal
 lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta, aviso });
 // «El último en pie», versión de prueba (pedido de Cote, 23 nov)
-require('./enpie.js')({ app, db, save, requireAdmin, fail, setStage, festejo,
+require('./enpie.js')({ placeOf, app, db, save, requireAdmin, fail, setStage, festejo,
   findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null,
   venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
   notify: () => { Object.values(db.sessions).forEach((s) => broadcast(s)); aviso(); } });

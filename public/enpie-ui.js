@@ -148,7 +148,7 @@
   };
   const crowdHTML = (st, pit) => `<div class="ep-crowd ${pit ? 'pit' : ''}"><p class="ep-crowd-n"><b data-k="up"></b><span>personas de pie</span></p><canvas></canvas>${pit ? '' : '<p class="ep-crowd-b"><b data-k="bench"></b><span>en la banca</span></p>'}<i class="ep-crowd-s" data-k="sum"></i></div>`;
   const cutHTML = (st) => { const c = st.cut; return `<div class="ep-cut crowded"><small>Fin de la ronda ${c.round}${c.last ? ' · se cierra la puerta: recta final con una sola vida' : ''}</small>${crowdHTML(st, false)}</div>`; };
-  const finHTML = (st) => `<div class="ep-fin"><small>La final · en el escenario</small><div class="ep-fs">${st.fin.players.map((p, i) => `<div class="ep-f ${p.out ? 'out' : ''} ${!p.out && st.phase === 'final' && st.fin.turn === i ? 'turn' : ''}"><b>${esc(p.name)}</b><span>${p.out ? 'Eliminado' : st.phase === 'final' && st.fin.turn === i ? 'Su turno' : 'En pie'}</span></div>`).join('')}</div></div>`;
+  const finHTML = (st) => `<div class="ep-fin"><small>La final · en el escenario</small><div class="ep-fs">${st.fin.players.map((p, i) => `<div class="ep-f ${p.out ? 'out' : ''} ${!p.out && st.phase === 'final' && st.fin.turn === i ? 'turn' : ''}"><b>${esc(p.name)}</b>${window.placeTag(p.place, 'ep-place')}<span>${p.out ? 'Eliminado' : st.phase === 'final' && st.fin.turn === i ? 'Su turno' : 'En pie'}</span></div>`).join('')}</div></div>`;
   const follow = (paint, url = '/api/enpie') => {
     let last = ''; let alive = true;
     const tick = async () => { const st = await api('GET', url).catch(() => null); if (!alive || !st) return; setClock(st); const k = `${st.rev}:${st.phase}:${url.endsWith('/host') ? st.answered : ''}`; if (k === last) return; last = k; paint(st); };
@@ -165,11 +165,11 @@
     const paint = (st) => {
       let step = ''; let body = '';
       if (st.phase === 'done') {
-        body = window.annHtml('El último en pie', st.winner ? [st.winner.name] : ['Nadie quedó en pie'], st.winner ? ['Premio mayor'] : []);
+        body = window.annHtml('El último en pie', st.winner ? [st.winner.name] : ['Nadie quedó en pie'], st.winner ? [st.winner.place ? `📍 ${st.winner.place}` : '', 'Premio mayor'] : []);
       } else if (st.phase === 'final') {
         // La final: como en El Rosko, aquí son dos botones (no hay un solo paso): el animador hace la pregunta en voz alta
         const p = st.fin.players[st.fin.turn];
-        body = `<div class="ep-turn"><small>La final · es el turno de</small><b>${esc(p.name)}</b></div>
+        body = `<div class="ep-turn"><small>La final · es el turno de</small><b>${esc(p.name)}</b>${p.place ? `<small>📍 ${esc(p.place)}</small>` : ''}</div>
           <div class="ep-now"><small>Pregunta ${st.fin.asked} · léela en voz alta</small><b>${esc(st.fin.q.text)}</b><p class="ep-ans">Respuesta: <b>${esc(st.fin.q.answer)}</b></p></div>
           <div class="ep-yn"><button type="button" class="ep-yes" data-ep="right">✔ Correcta</button><button type="button" class="ep-no" data-ep="wrong">✘ Incorrecta · queda eliminado</button></div>
           <div class="ep-flist">${st.fin.players.map((x, i) => `<p class="${x.out ? 'out' : ''}"><b>${esc(x.name)}</b><span>${x.out ? 'Eliminado' : i === st.fin.turn ? 'Su turno' : 'En pie'}</span></p>`).join('')}</div>`;
@@ -210,7 +210,7 @@
 
   // ---------- Tablero del local y pantalla de pie ----------
   const scene = (st) => {
-    if (st.phase === 'done') return `<div class="ep-win"><small>${st.winner ? 'El último en pie' : 'Fin del juego'}</small><b>${esc(st.winner ? st.winner.name : 'Nadie quedó en pie')}</b>${st.winner ? '<span>¡Felicitaciones!</span>' : ''}</div>`;
+    if (st.phase === 'done') return `<div class="ep-win"><small>${st.winner ? 'El último en pie' : 'Fin del juego'}</small><b>${esc(st.winner ? st.winner.name : 'Nadie quedó en pie')}</b>${st.winner ? window.placeTag(st.winner.place, 'ep-place') : ''}${st.winner ? '<span>¡Felicitaciones!</span>' : ''}</div>`;
     if (st.phase === 'final') return finHTML(st);
     if (st.phase === 'cut') return cutHTML(st);
     if (st.phase === 'lobby') return '<div class="ep-intro"><small>Todos juegan desde su celular</small><b>Tienes 3 vidas</b><ul><li>Si fallas, pierdes una vida</li><li>Sin vidas vas a la banca, pero sigues jugando</li><li>Con 3 buenas de 4 vuelves al juego</li><li>Los 3 últimos van a la final en el escenario</li></ul></div>';
@@ -239,7 +239,7 @@
     const stop = follow((st) => {
       const box = $('#epg'); if (!box) return;
       let main; let side; let tag;
-      if (st.phase === 'done') { tag = 'Ganó'; main = `<b>${esc(st.winner ? st.winner.name : 'Nadie quedó en pie')}</b><span>¡El último en pie!</span>`; side = ''; } else if (st.phase === 'final') {
+      if (st.phase === 'done') { tag = 'Ganó'; main = `<b>${esc(st.winner ? st.winner.name : 'Nadie quedó en pie')}</b><span>¡El último en pie!${st.winner && st.winner.place ? ` · ${esc(st.winner.place)}` : ''}</span>`; side = ''; } else if (st.phase === 'final') {
         tag = 'La final'; main = `<span class="epg-opts">${st.fin.players.map((p, i) => `<i class="${p.out ? 'no' : i === st.fin.turn ? 'ok' : ''}">${esc(p.name)}</i>`).join('')}</span><span>El que se equivoca queda eliminado</span>`; side = `<small>En pie</small><b>${st.fin.players.filter((p) => !p.out).length}</b>`;
       } else if (st.phase === 'cut') {
         const c = st.cut; tag = `Fin de la ronda ${c.round}`; main = `<b>${c.standing} en pie · ${c.bench} en la banca</b>${c.round > 1 ? `<span>${c.fell} pasaron a la banca · ${c.back} salieron de la banca</span>` : ''}`; side = `<small>En pie</small><b>${c.standing}</b>`;

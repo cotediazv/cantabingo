@@ -92,6 +92,25 @@
   };
   setInterval(howto, 500);
 
+  // ---------- El Rosko: al desplegar el ranking de la Trivia, los 5 primeros como aviso (pedido de Cote, 25 nov) ----------
+  // «En el rosco en el control del animador al desplegar los resultados del ranking de la trivia mostrarle los 5 primeros
+  // como un pop up». Se cierra tocando cualquier parte; sale de nuevo la próxima vez que se despliegue el ranking.
+  let rankSeen = '';
+  const rankPop = () => {
+    const box = app.querySelector('#rosco-ctl #w-rankann .rank-ann');
+    if (!box) { rankSeen = ''; return; }
+    const items = [...box.querySelectorAll('.rank-ann-list li')].slice(0, 5);
+    const key = items.map((li) => li.textContent).join('|') || 'vacio';
+    if (key === rankSeen) return;
+    rankSeen = key;
+    const old = document.getElementById('an-rank'); if (old) old.remove();
+    const el = document.createElement('div'); el.id = 'an-rank';
+    el.innerHTML = `<div class="an-card"><b>🏅 Ranking de la Trivia · los 5 primeros</b>${items.length ? `<ol>${items.map((li) => li.outerHTML).join('')}</ol>` : '<p>Todavía nadie suma puntos</p>'}<small>Toca para seguir</small></div>`;
+    el.onclick = () => el.remove();
+    document.body.appendChild(el);
+  };
+  setInterval(rankPop, 500);
+
   // ---------- Opciones adicionales, arriba y lejos de los botones del juego (pedido de Cote, 25 nov) ----------
   // «un paso atrás, cambio de turno, reiniciar, preguntas nuevas… como en opciones adicionales, como en una pestañita,
   // cosa de que no moleste el juego». Se llevan a una pestaña arriba a la derecha (dentro de #app, para que sigan

@@ -38,7 +38,7 @@ const BACK_OF = 4; const BACK_NEED = 3;
 const Q_MS = 10000; // solo para el desempate por rapidez: lo que se le cuenta a quien entra tarde
 const JOIN_UNTIL = 2; // quien contesta por primera vez en las 2 primeras preguntas entra con sus 3 vidas; después, a la banca
 
-module.exports = function enpie({ app, db, save, requireAdmin, fail, setStage, findPlayer, notify = () => {}, festejo = () => {}, venue = () => 'frida' }) {
+module.exports = function enpie({ placeOf = () => '', app, db, save, requireAdmin, fail, setStage, findPlayer, notify = () => {}, festejo = () => {}, venue = () => 'frida' }) {
   const POOL = BANK.filter((q) => (ALTS[q.a] || []).length >= 2);
   const blank = () => ({ rev: 1, gen: Date.now(), phase: 'lobby', n: 0, q: null, until: 0, used: [], players: {}, ans: {}, last: null, winner: null, cut: null, stat: { fell: 0, back: 0 }, fin: null });
   if (db.enpie && !db.enpie.stat) db.enpie = blank(); // un juego guardado con las reglas anteriores
@@ -77,8 +77,8 @@ module.exports = function enpie({ app, db, save, requireAdmin, fail, setStage, f
       last: s.last, answered: Object.keys(s.ans).length,
       top: list.slice(0, 10).map((p) => ({ name: p.name, lives: p.lives, hits: p.hits, up: p.up })),
       // Final en el escenario: los finalistas, de quién es el turno y, solo para el animador, la pregunta y su respuesta
-      fin: f ? { players: f.players.map((p) => ({ name: p.name, out: !!p.out })), turn: f.turn, asked: f.asked, q: host && f.q ? { text: f.q.text, answer: f.q.answer } : null } : null,
-      winner: s.winner,
+      fin: f ? { players: f.players.map((p) => ({ name: p.name, place: placeOf(p.name), out: !!p.out })), turn: f.turn, asked: f.asked, q: host && f.q ? { text: f.q.text, answer: f.q.answer } : null } : null,
+      winner: s.winner ? { ...s.winner, place: placeOf(s.winner.name) } : null,
       me: me ? { name: me.name, lives: me.lives, up: me.up, hits: me.hits, pos: list.findIndex((p) => p.token === token) + 1, of: list.length, pick: (s.ans[token] || {}).pick ?? null, lastOk: me.lastOk ?? null, w: me.w || 0, h: me.h || 0, back: me.backAt === s.n && s.phase !== 'question', fell: me.fellAt === s.n && s.phase !== 'question', finalist: !!(f && f.players.some((p) => p.token === token)) } : null,
     };
   };

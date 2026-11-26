@@ -119,6 +119,7 @@
   .rows { margin: 0; padding: 0; list-style: none; text-align: left; }
   .rows li { margin: 0 0 1.2rem; padding: 1.2rem 2rem; border-radius: 1.6rem; background: rgba(8, 6, 26, .72); font-size: 3.2rem; line-height: 1.15; white-space: nowrap; overflow: hidden; }
   .rows li em { display: inline-block; width: 4.6rem; font-style: normal; color: #ffc400; font-weight: 700; }
+  .cplace { display: block; font-size: .6em; font-weight: 600; opacity: .8; margin-top: .2em; } /* lugar del concursante (Cote, 26 nov) */
   .rows li i { float: right; font-style: normal; color: #ffc400; font-weight: 700; margin-left: 1.4rem; }
   .rows li.top { font-size: 3.8rem; }
   .bar { position: relative; overflow: hidden; }
@@ -581,6 +582,9 @@
   function reloadMark() { try { window.localStorage.setItem('pvReloadAt', String(new Date().getTime())); } catch (e) { /* nada */ } }
 
   // ---------- Vistas ----------
+  // «y» o «e» entre nombres (Cote, 25 nov: «Camilo e Isidora»)
+  function eY(w) { var s = String(w || '').replace(/^[^A-Za-z\u00C0-\u00FF]+/, '').toLowerCase(); return /^h?[i\u00ed\u00ef]/.test(s) && !/^h?[i\u00ed][aeiou\u00e1\u00e9\u00f3\u00fa]/.test(s) ? 'e' : 'y'; }
+  function yJoin(a) { a = a || []; return a.length < 2 ? a.join('') : a.slice(0, -1).join(', ') + ' ' + eY(a[a.length - 1]) + ' ' + a[a.length - 1]; }
   var cur = ''; var viewSeq = 0;
   function go(want) {
     cur = want; viewSeq++;
@@ -848,7 +852,7 @@
     var last = '';
     function paint(r) {
       var rolling = r.roll && now() < r.roll.at + (r.rollMs || 6000);
-      var sig = JSON.stringify([r.picked, rolling, r.mode, r.roll && r.roll.winner]);
+      var sig = JSON.stringify([r.picked, rolling, r.mode, r.roll && r.roll.winner, r.places]);
       if (sig === last) return;
       last = sig;
       var isRosco = r.mode === 'tie' && r.roll && r.roll.game === 'rosco'; // El Rosko usa el mismo sorteo para su desempate
@@ -858,7 +862,7 @@
       else if (r.mode === 'tie' && r.roll && r.roll.winner) o += '<div class="abs r-win" style="top:28rem"><div class="g-sub">Ganó</div><b class="big fit" style="display:block">' + h(r.roll.winner) + '</b></div>';
       var picked = [];
       for (var k = 0; k < (r.picked || []).length; k++) if (!(rolling && r.roll && r.picked[k] === r.roll.winner)) picked.push(r.picked[k]); // mientras gira, sin adelantar el nombre
-      if (picked.length) { o += '<div class="abs r-list' + (rolling ? ' r-low' : '') + '" style="top:' + (rolling ? 44 : 22) + 'rem"><ol class="rows rk">'; for (var i = 0; i < picked.length; i++) o += '<li class="top"><em>' + (i + 1) + '.º</em>' + h(picked[i]) + '</li>'; o += '</ol></div>'; }
+      if (picked.length) { o += '<div class="abs r-list' + (rolling ? ' r-low' : '') + '" style="top:' + (rolling ? 44 : 22) + 'rem"><ol class="rows rk">'; var PLc = r.places || {}; for (var i = 0; i < picked.length; i++) o += '<li class="top"><em>' + (i + 1) + '.º</em>' + h(picked[i]) + (PLc[picked[i]] ? '<small class="cplace">' + h(PLc[picked[i]]) + '</small>' : '') + '</li>'; o += '</ol></div>'; }
       o += qrFoot();
       view.innerHTML = o;
       if (T2) fitAll(); // diseño nuevo: el título y el nombre se achican si no caben
@@ -911,7 +915,7 @@
       if (sig === last) return;
       last = sig;
       var o = '<div class="abs g-title fit">¿Quién quiere ser ganador?</div><div class="abs v-body" style="top:16rem">';
-      if (s.player && s.phase !== 'setup' && s.phase !== 'swap') o += '<div class="mid gold">' + h(s.player) + '</div>';
+      if (s.player && s.phase !== 'setup' && s.phase !== 'swap') o += '<div class="mid gold">' + h(s.player) + (s.place ? '<small class="cplace">' + h(s.place) + '</small>' : '') + '</div>';
       if (s.phase === 'setup') o += '<b class="big fit" style="display:block;margin-top:3rem">¡Muy pronto!</b><div class="mid" style="margin-top:2rem">Juega desde tu celular</div><div class="mid">Más rápido, más puntos</div>';
       else if (s.rank) {
         o += '<div class="mid" style="margin-top:2rem">La Trivia del Ganador</div><div class="mid gold">' + (s.phase === 'end' ? 'Resultados finales' : 'Resultados parciales') + '</div><ol class="rows rk sc" style="margin-top:2rem">';
@@ -965,12 +969,12 @@
       var o = '<div class="abs g-title fit">' + h(s.title) + '</div><div class="abs v-body' + tv('', ' fitbox') + '" style="top:16rem">';
       var thing = function (p) { return p && p.thing ? '<div class="mid fit v-thing" style="color:#ffd76a">' + h(p.thing) + '</div>' : ''; };
       var row = function (p) { return h(p.name) + (p.thing ? tv(' · ' + h(p.thing), '<span class="v-th">' + h(p.thing) + '</span>') : ''); }; // nombre · canción u objeto (en el diseño nuevo, en una línea aparte)
-      if (s.phase === 'winner' && s.winner) o += '<div class="big gold' + tv('', ' fit') + '">' + se('🏆 ¡Ganó!') + '</div><b class="big fit" style="display:block">' + h(s.winner.name) + '</b>' + thing(s.winner) + (s.winner.score != null ? '<div class="mid v-note">Nota ' + dec(s.winner.score) + '</div>' : '') + (s.tie ? '<div class="mid">' + h(s.tie.title + '. ' + s.tie.why) + '</div>' : '');
+      if (s.phase === 'winner' && s.winner) o += '<div class="big gold' + tv('', ' fit') + '">' + se('🏆 ¡Ganó!') + '</div><b class="big fit" style="display:block">' + h(s.winner.name) + '</b>' + thing(s.winner) + (s.winner.place ? '<div class="mid"><small class="cplace">' + h(s.winner.place) + '</small></div>' : '') + (s.winner.score != null ? '<div class="mid v-note">Nota ' + dec(s.winner.score) + '</div>' : '') + (s.tie ? '<div class="mid">' + h(s.tie.title + '. ' + s.tie.why) + '</div>' : '');
       else if (s.phase === 'final' && s.final && s.final.drum) o += '<div class="big gold">' + se('🥁') + '</div><div class="mid v-msg v-drum">¡Redoble de tambores!</div>';
       else if (s.phase === 'final' && s.final) { o += '<div class="mid gold">Gran final</div>'; for (var f = 0; f < (s.final.players || []).length; f++) o += '<b class="big fit" style="display:block;font-size:' + tv('5.4rem', '5.8em') + '">' + h(s.final.players[f].name) + '</b>'; if (left && s.final.open) o += '<div class="clock">' + left + '</div>'; }
       else if (s.phase === 'results') { o += '<div class="mid gold">' + se('🏆 Resultados') + '</div><ol class="rows rk sc" style="margin-top:2rem">'; var pl = s.places || []; for (var i = pl.length - 1; i >= 0; i--) o += '<li><em>' + pl[i].place + '.º</em>' + h(pl[i].name) + (pl[i].score != null ? '<i>' + dec(pl[i].score) + '</i>' : '') + '</li>'; o += '</ol>'; }
       else if (s.open) o += '<div class="mid gold">' + se('🗳️ Vota desde tu celular') + '</div><b class="big fit" style="display:block">' + h(s.open.name) + '</b>' + thing(s.open) + (left ? '<div class="clock">' + left + '</div>' : '');
-      else if (s.onstage) o += '<div class="mid gold">' + se('🎤 En el escenario') + '</div><b class="big fit" style="display:block">' + h(s.onstage.name) + '</b>' + thing(s.onstage);
+      else if (s.onstage) o += '<div class="mid gold">' + se('🎤 En el escenario') + '</div><b class="big fit" style="display:block">' + h(s.onstage.name) + '</b>' + thing(s.onstage) + (s.onstage.place ? '<div class="mid"><small class="cplace">' + h(s.onstage.place) + '</small></div>' : '');
       else if (s.signup) { o += '<div class="mid gold">' + se('📝 Inscripciones abiertas') + '</div>' + (left ? '<div class="clock">' + left + '</div>' : '') + '<ol class="rows" style="margin-top:2rem">'; var ps = s.players || []; for (var k = 0; k < ps.length && k < 8; k++) o += '<li>' + row(ps[k]) + '</li>'; o += '</ol>'; }
       else if (s.last) o += '<div class="mid v-msg">Ya viene el siguiente participante</div>';
       else { o += '<div class="mid gold">Participantes</div><ol class="rows" style="margin-top:2rem">'; var pp = s.players || []; for (var m = 0; m < pp.length && m < 8; m++) o += '<li>' + row(pp[m]) + '</li>'; o += '</ol>'; }
@@ -1031,7 +1035,7 @@
       var opts = g.options && g.options.length ? g.options : ['bingo', 'rosco', 'festival', 'objeto'];
       var top = se(g.phase === 'voting' ? (g.round === 2 ? '🗳️ Segunda vuelta' : '🗳️ Votación') : '🗳️ Resultado de la votación');
       var big = g.phase === 'done' && g.winner ? tv('🏆 ', '') + '¡Ganó ' + gname(g.winner) + '!' : g.phase === 'result' && g.empty ? 'Nadie votó' : g.phase === 'result' && g.runoff ? 'Nadie superó el 50%' : '¿Qué juego quieren jugar?';
-      var line = g.phase === 'voting' ? 'Quedan <b class="gold">' + clock(g.until - now()) + '</b>' : g.phase === 'result' && g.runoff ? 'Segunda vuelta: ' + gname(g.runoff[0]) + ' y ' + gname(g.runoff[1]) : g.tie ? 'Empate en la segunda vuelta: se decidió por sorteo' : '';
+      var line = g.phase === 'voting' ? 'Quedan <b class="gold">' + clock(g.until - now()) + '</b>' : g.phase === 'result' && g.runoff ? 'Segunda vuelta: ' + gname(g.runoff[0]) + ' ' + eY(gname(g.runoff[1])) + ' ' + gname(g.runoff[1]) : g.tie ? 'Empate en la segunda vuelta: se decidió por sorteo' : '';
       var o = '<div class="abs gv-head" style="top:4rem"><div class="g-sub" style="color:#ffc400;text-transform:uppercase">' + top + '</div><b class="big fit" style="display:block;font-size:' + tv('5.4', '6.6') + 'rem">' + big + '</b>' + (line ? '<div class="mid fit">' + line + '</div>' : '') + '</div><div class="abs gv-bars" style="top:24rem"><ol class="rows">';
       for (var i = 0; i < opts.length; i++) {
         var k = opts[i]; var n = (g.counts || {})[k] || 0; var p = pct(n, g.total);
