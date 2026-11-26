@@ -1640,7 +1640,7 @@ views.tablero = async () => {
       if (sr && sr.desIntro && sr.desIntro !== desIntroSeen) {
         const fresh = desIntroSeen !== null && sr.desIntroHace != null && sr.desIntroHace < 20000;
         desIntroSeen = sr.desIntro;
-        if (fresh && !mute) { sfx.music('audio/desafio-intro.mp3', { vol: 0.8 }); setTimeout(() => { if (sfx.playing() !== 'audio/desafio-intro.mp3') sfx.music('audio/desafio-intro.mp3', { vol: 0.8 }); }, 1500); }
+        if (fresh && !mute) { sfx.music('audio/desafio-intro.mp3', { vol: 1 }); setTimeout(() => { if (sfx.playing() !== 'audio/desafio-intro.mp3') sfx.music('audio/desafio-intro.mp3', { vol: 1 }); }, 1500); }
       } else if (sr && desIntroSeen === null) desIntroSeen = sr.desIntro || 0;
       if (show !== current) {
         current = show;

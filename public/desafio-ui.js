@@ -381,18 +381,18 @@
   const cortina = (st) => {
     if (st && st.phase === 'question' && left('phone') > 0) {
       if (sfx.playing() === CORTINA) qFrom = 8;
-      sfx.music(LLAMADA, { vol: 0.9 });
+      sfx.music(LLAMADA, { vol: 1 });
       return;
     }
     if (st && st.phase === 'locked') {
       if (sfx.playing() === CORTINA) qFrom = 8; // si se arrepiente, la cortina vuelve sin el golpe del comienzo
-      sfx.music(REVELA, { loop: 0, vol: 0.85 });
+      sfx.music(REVELA, { loop: 0, vol: 1 });
       return;
     }
     if (st && st.phase === 'reveal') {
       const k = `${(st.crowd && st.crowd.qid) || 0}|${st.step}|${st.q && st.q.text}`;
       if (!st.right) { sfx.music(null); return; }
-      if (revKey !== k && sfx.playing() !== CORRECTA) sfx.music(CORRECTA, { vol: 0.9 }); // si aún no estaba bajado, parte en el próximo segundo
+      if (revKey !== k && sfx.playing() !== CORRECTA) sfx.music(CORRECTA, { vol: 1 }); // si aún no estaba bajado, parte en el próximo segundo
       if (sfx.playing() === CORRECTA) revKey = k;
       return;
     }
@@ -402,7 +402,7 @@
     const key = st && st.phase === 'question' ? `${(st.crowd && st.crowd.qid) || 0}|${st.step}|${st.q && st.q.text}` : '';
     if (key && key !== qKey) { qKey = key; qFrom = 0; sfx.music(null); } // pregunta nueva: desde el comienzo
     if (!key) { if (sfx.playing() === CORTINA) qFrom = 8; sfx.music(null); return; }
-    sfx.music(CORTINA, { from: qFrom, loop: 8, vol: 0.7 });
+    sfx.music(CORTINA, { from: qFrom, loop: 8, vol: 1 });
   };
   let lastSt = null;
   let tickTimer = null;
