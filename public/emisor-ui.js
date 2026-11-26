@@ -20,7 +20,7 @@
           : `🟡 El deco está mostrando <b>${esc(d.que)}</b>, no la transmisión${d.vista === 'sala' ? (!d.rtc ? ' · su navegador no tiene WebRTC: no puede recibir la emisión' : !d.emiUrl ? ' · no tiene la dirección de la emisión' : d.intentando ? ' · está intentando conectarse a la emisión' : ' · reintenta cada 15 s') : ' · la transmisión se pone encima solo cuando la pantalla muestra los juegos de la sala'}`;
     // Por qué el deco no toma el plan A (la transmisión en vivo): lo que el deco cuenta de sus intentos (26 nov)
     const porQue = !d || d.hace > 90 || d.emi ? '' : `<p class="small"><b>Plan A (transmisión en vivo) en el deco:</b> ${!d.rtc ? '❌ su navegador <b>no tiene WebRTC</b>: no puede recibir la transmisión en vivo; ahí solo sirve el plan B'
-      : `${d.fallos ? `${d.fallos} intento${d.fallos === 1 ? '' : 's'} sin imagen` : 'sin intentos fallidos'}${d.err ? ` · último motivo: <b>${esc(d.err)}</b>` : ''}${d.ice ? ` · conexión: ${esc(d.ice)}` : ''}${d.vw ? ` · le llega video de ${d.vw}x${d.vh}` : ''}`}${d.soloA ? ' · está en «Solo plan A»' : ''}</p>`;
+      : `${d.fallos ? `${d.fallos} intento${d.fallos === 1 ? '' : 's'} sin imagen` : 'sin intentos fallidos'}${d.err ? ` · último motivo: <b>${esc(d.err)}</b>` : ''}${d.ice ? ` · conexión: ${esc(d.ice)}` : ''}${d.vw ? ` · le llega video de ${d.vw}x${d.vh}` : ''}${d.codecs ? ` · formatos que recibe: ${esc(d.codecs)}` : ''}`}${d.soloA ? ' · está en «Solo plan A»' : ''}</p>`;
     // Quién lee la pantalla vertical de Kennedy (aunque la página sea antigua y no avise) y la foto del emisor
     const lec = (await api('GET', '/api/deco/lectores?p=kennedy').catch(() => [])) || [];
     const quien = (r) => { const pag = /pv\.html/.test(r.ref) ? 'pantalla liviana (pv.html)' : r.ref === '' ? 'sin página (¿app o emisor?)' : /emisor=1/.test(r.ref) ? 'el emisor' : 'pantalla completa'; const nav = (/(Chrome|Firefox|Safari|Edg|OPR|SamsungBrowser|CrKey|Android)[\/ ][\d.]+/.exec(r.ua) || [r.ua.slice(0, 40)])[0]; return `${pag} · ${esc(nav)}${/Android/.test(r.ua) ? ' · Android' : ''} · hace ${r.hace} s`; };
@@ -39,6 +39,8 @@
       ${lecTxt}${fotoTxt}
       <div class="emi-planb"><b>Qué muestra el deco con un juego</b> <span class="muted small">Plan A = la transmisión en vivo (se ve igual que la pantalla completa). Plan B = una imagen por segundo de la misma pantalla (sirve en cualquier aparato). En «Automático» el plan B entra solo si el deco no tiene WebRTC o la transmisión no le llega en dos intentos.${r.cuadro != null ? ` · última imagen del plan B hace ${r.cuadro} s` : ' · todavía no llegan imágenes del plan B'}</span>
         <div class="row">${[['a', '📡 Solo plan A'], ['auto', 'Automático'], ['b', '🖼️ Plan B siempre']].map(([m, t]) => `<button type="button" class="${r.modo === m ? 'primary' : ''}" data-modo="${m}">${t}${r.modo === m ? ' · puesto' : ''}</button>`).join('')}</div></div>
+      <div class="emi-planb"><b>Formato del video de la transmisión</b> <span class="muted small">VP8 lo recibe cualquier navegador con WebRTC; H.264 es más liviano para el deco, pero no todos lo reciben (Cloudflare responde 406). Al cambiarlo, la emisión se vuelve a partir sola.</span>
+        <div class="row">${[['vp8', 'VP8 (recomendado)'], ['h264', 'H.264']].map(([c, t]) => `<button type="button" class="${r.codec === c ? 'primary' : ''}" data-codec="${c}">${t}${r.codec === c ? ' · puesto' : ''}</button>`).join('')}</div></div>
       <div class="row"><button type="button" class="${r.prueba ? 'primary' : ''}" data-emi="1">🧪 Modo prueba: encendido siempre${r.prueba ? ' · puesto' : ''}</button><button type="button" class="${r.prueba ? '' : 'primary'}" data-emi="0">Solo con juegos${r.prueba ? '' : ' · puesto'}</button><a class="btn" href="/emision" target="_blank" rel="noopener">👁 Ver la emisión</a></div>`;
     if (wasOpen) box.querySelector('.emi-lec').open = true;
     const img = box.querySelector('img[data-foto]');
@@ -69,6 +71,12 @@
         if (!confirm('¿Reiniciar el emisor? La emisión se corta 1 o 2 minutos y vuelve sola.')) return;
         try { await api('POST', '/api/emisor/reiniciar'); toast('Listo: el emisor parte de nuevo en 1 o 2 minutos'); } catch (err) { toast(err.message); }
         return;
+      }
+      const cb = e.target.closest('button[data-codec]');
+      if (cb) {
+        busy = true;
+        try { const r = await api('POST', '/api/emisor/codec', { codec: cb.dataset.codec }); toast(`Formato ${r.codec === 'vp8' ? 'VP8' : 'H.264'}: la emisión se vuelve a partir en unos segundos`); } catch (err) { toast(err.message); }
+        busy = false; paint(box); return;
       }
       const pb = e.target.closest('button[data-modo]');
       if (pb) {

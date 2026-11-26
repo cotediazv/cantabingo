@@ -936,7 +936,7 @@ const DECO_VISTAS = { video: 'el video de la cartelera', logo: 'el logo', sala: 
 app.post('/api/deco', (req, res) => {
   const b = req.body || {}; const p = String(b.p || '').toLowerCase().replace(/[^a-z-]/g, '').slice(0, 20);
   if (!p) return res.json({ ok: false });
-  decos[p] = { at: Date.now(), vista: String(b.vista || '').slice(0, 20), emi: !!b.emi, cuadros: !!b.cuadros, emiUrl: !!b.emiUrl, intentando: !!b.intentando, rtc: !!b.rtc, fallos: Number(b.fallos) || 0, err: String(b.err || '').slice(0, 120), ice: String(b.ice || '').slice(0, 20), vw: Number(b.vw) || 0, vh: Number(b.vh) || 0, soloA: !!b.soloA, ver: String(b.ver || '').slice(0, 60), ua: String(b.ua || '').slice(0, 160), w: Number(b.w) || 0, h: Number(b.h) || 0 };
+  decos[p] = { at: Date.now(), vista: String(b.vista || '').slice(0, 20), emi: !!b.emi, cuadros: !!b.cuadros, emiUrl: !!b.emiUrl, intentando: !!b.intentando, rtc: !!b.rtc, fallos: Number(b.fallos) || 0, err: String(b.err || '').slice(0, 120), ice: String(b.ice || '').slice(0, 20), codecs: String(b.codecs || '').slice(0, 80), vw: Number(b.vw) || 0, vh: Number(b.vh) || 0, soloA: !!b.soloA, ver: String(b.ver || '').slice(0, 60), ua: String(b.ua || '').slice(0, 160), w: Number(b.w) || 0, h: Number(b.h) || 0 };
   res.json({ ok: true });
 });
 app.get('/api/deco', requireAdmin, (_req, res) => res.json(Object.fromEntries(Object.entries(decos).map(([k, d]) => [k, { ...d, hace: Math.round((Date.now() - d.at) / 1000), que: d.emi ? 'la transmisión en vivo (emisión)' : d.cuadros ? 'el plan B (imagen cuadro a cuadro)' : (DECO_VISTAS[d.vista] || d.vista || '¿?') }]))));
@@ -992,9 +992,15 @@ app.post('/api/emisor/modo', requireAdmin, (req, res) => {
 app.post('/api/emisor/planb', requireAdmin, (req, res) => { db.emisorModo = (req.body || {}).on ? 'b' : 'auto'; db.emisorPlanB = db.emisorModo === 'b'; save(); aviso(); res.json({ planB: db.emisorPlanB, modo: db.emisorModo }); });
 app.get('/api/emisor/foto/info', requireAdmin, (_req, res) => res.json(emisorFoto ? { at: emisorFoto.at, hace: Math.round((Date.now() - emisorFoto.at) / 1000), luz: emisorFoto.luz, cap: emisorFoto.cap } : null));
 // Para la página de la emisión (/emision): solo si el emisor está encendido, sin nada secreto
-app.get('/api/emisor/estado', (_req, res) => res.json({ corriendo: Date.now() - emisor.latido < 90000, prueba: !!db.emisorPrueba }));
+app.get('/api/emisor/estado', (_req, res) => res.json({ corriendo: Date.now() - emisor.latido < 90000, prueba: !!db.emisorPrueba, codec: db.emisorCodec || 'vp8' }));
+// Formato del video de la emisión (26 nov: el deco recibía «406» de Cloudflare con H.264): VP8 (por defecto, lo recibe
+// cualquier navegador con WebRTC) o H.264. El emisor lo lee cada 3 s y, si cambia, vuelve a partir la emisión
+app.post('/api/emisor/codec', requireAdmin, (req, res) => {
+  const c = String((req.body || {}).codec || ''); if (!['vp8', 'h264'].includes(c)) return fail(res, 400, 'Formato desconocido');
+  db.emisorCodec = c; save(); res.json({ codec: c });
+});
 app.post('/api/emisor/prueba', requireAdmin, (req, res) => { db.emisorPrueba = !!(req.body || {}).on; save(); setTimeout(() => emisorCheck(), 0); res.json({ prueba: db.emisorPrueba }); });
-app.get('/api/emisor', requireAdmin, (_req, res) => res.json({ planB: emisorModo() === 'b', modo: emisorModo(), cuadro: emisorCuadro ? Math.round((Date.now() - emisorCuadro.at) / 1000) : null, corriendo: Date.now() - emisor.latido < 90000, prueba: !!db.emisorPrueba, latido: emisor.latido, pedido: emisor.pedido, error: emisor.error, configurado: !!(process.env.RENDER_API_KEY && process.env.EMISOR_CRON) }));
+app.get('/api/emisor', requireAdmin, (_req, res) => res.json({ planB: emisorModo() === 'b', modo: emisorModo(), codec: db.emisorCodec || 'vp8', cuadro: emisorCuadro ? Math.round((Date.now() - emisorCuadro.at) / 1000) : null, corriendo: Date.now() - emisor.latido < 90000, prueba: !!db.emisorPrueba, latido: emisor.latido, pedido: emisor.pedido, error: emisor.error, configurado: !!(process.env.RENDER_API_KEY && process.env.EMISOR_CRON) }));
 // Hay un juego de verdad en pantalla (no solo la sala abierta con el QR): lo mismo que hace pasar la pantalla vertical a la sala
 const juegoEnPantalla = (s) => {
   const st = db.stage;

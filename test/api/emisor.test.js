@@ -104,6 +104,10 @@ test('plan B: el emisor manda imágenes con su marca y la pantalla vertical lo s
     const d = (await s.admin.get('/api/deco')).kennedy;
     // «Reiniciar el emisor»: sin las variables de Render avisa qué falta
     assert.equal((await fetch(`${s.url}/api/emisor/reiniciar`, { method: 'POST' })).status, 401);
+    // formato del video (26 nov): VP8 por defecto; el emisor lo lee en /api/emisor/estado
+    assert.equal((await s.ok('GET', '/api/emisor/estado')).codec, 'vp8');
+    await s.admin.post('/api/emisor/codec', { codec: 'h264' });
+    assert.equal((await s.ok('GET', '/api/emisor/estado')).codec, 'h264');
     assert.equal(d.fallos, 2); assert.equal(d.err, 'en 25 s no llegó imagen'); assert.equal(d.ice, 'checking');
   } finally { await s.stop(); }
 });

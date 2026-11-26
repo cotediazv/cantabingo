@@ -37,9 +37,12 @@ const latido = () => fetch(`${SITIO}/api/emisor/latido`, { method: 'POST', heade
 // Hay juego cuando la pantalla vertical muestra la sala de juegos (no la cartelera ni la información del local) y en la
 // sala no está el karaoke ni el show (no son juegos: esos los sigue mostrando el decodificador)
 const pedir = async (ruta) => { try { const r = await fetch(`${SITIO}${ruta}`, { cache: 'no-store' }); return r.ok ? await r.json() : null; } catch { return null; } };
+// Formato del video (26 nov: el deco recibía «406» de Cloudflare: no podía recibir H.264): se elige en /emisor
+let codec = 'vp8';
 const estado = async () => {
   // modo prueba (se enciende en el Centro de control de la Sala): transmite siempre, haya o no juego
   const e = await pedir('/api/emisor/estado');
+  if (e && ['vp8', 'h264'].includes(e.codec)) codec = e.codec;
   if (e && e.prueba) return { juego: true, que: 'modo prueba' };
   const v = await pedir(`/api/vertical/${PANTALLA}`);
   if (!v || v.show !== 'sala' || !v.activity) return { juego: false };
@@ -48,17 +51,20 @@ const estado = async () => {
 };
 
 // Dentro de la página: captura la propia pestaña y la publica por WHIP. Devuelve cuando la conexión quedó arriba.
-const publicar = async (page) => page.evaluate(async ({ whip, w, h }) => {
+const publicar = async (page) => page.evaluate(async ({ whip, w, h, codec }) => {
   const s = await navigator.mediaDevices.getDisplayMedia({ video: { width: w, height: h, frameRate: 30 }, audio: false, preferCurrentTab: true });
   const track = s.getVideoTracks()[0];
   track.contentHint = 'detail'; // texto y números nítidos: antes baja cuadros que resolución
   const pc = new RTCPeerConnection({ bundlePolicy: 'max-bundle' });
   const tx = pc.addTransceiver(track, { direction: 'sendonly', sendEncodings: [{ maxBitrate: w >= 1080 ? 4500000 : 2500000, maxFramerate: 30 }] });
-  // H.264 primero: los decodificadores lo decodifican en el chip (Cloudflare acepta H.264, VP8 y VP9)
+  // VP8 (lo recibe cualquier navegador con WebRTC) o H.264 (se decodifica en el chip, pero no todos lo reciben: el deco
+  // de Kennedy respondía 406); Cloudflare acepta los dos. Solo se ofrece el elegido, para que no haya sorpresas
   try {
     const caps = RTCRtpSender.getCapabilities('video').codecs;
-    const h264 = caps.filter((c) => /h264/i.test(c.mimeType) && /packetization-mode=1/.test(c.sdpFmtpLine || '') && /42e01f|42001f/.test(c.sdpFmtpLine || ''));
-    if (h264.length) tx.setCodecPreferences([...h264, ...caps.filter((c) => !h264.includes(c))]);
+    const pick = codec === 'h264'
+      ? caps.filter((c) => /h264/i.test(c.mimeType) && /packetization-mode=1/.test(c.sdpFmtpLine || '') && /42e01f|42001f/.test(c.sdpFmtpLine || ''))
+      : caps.filter((c) => /vp8/i.test(c.mimeType));
+    if (pick.length) tx.setCodecPreferences([...pick, ...caps.filter((c) => /rtx|red|ulpfec/i.test(c.mimeType))]);
   } catch (e) { /* sin preferencia */ }
   await pc.setLocalDescription(await pc.createOffer());
   await new Promise((r) => { if (pc.iceGatheringState === 'complete') return r(); const t = setTimeout(r, 3000); pc.addEventListener('icegatheringstatechange', () => { if (pc.iceGatheringState === 'complete') { clearTimeout(t); r(); } }); });
@@ -70,7 +76,7 @@ const publicar = async (page) => page.evaluate(async ({ whip, w, h }) => {
   const st = track.getSettings(); window.__cap = `${st.width}x${st.height} (página ${innerWidth}x${innerHeight})`;
   await new Promise((ok, bad) => { const t = setTimeout(() => bad(new Error('sin conexión')), 15000); pc.addEventListener('connectionstatechange', () => { if (pc.connectionState === 'connected') { clearTimeout(t); ok(); } if (pc.connectionState === 'failed') { clearTimeout(t); bad(new Error('falló')); } }); });
   return window.__cap;
-}, { whip: WHIP_URL, w: W, h: H });
+}, { whip: WHIP_URL, w: W, h: H, codec });
 
 // Cuánta luz tiene lo que se está enviando (0 = negro, 255 = blanco): se mide un cuadro de la captura misma
 const luzCaptura = (page) => page.evaluate(async () => {
@@ -159,7 +165,7 @@ for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { log('Detenido:'
       await sleep(Math.max(200, 1000 - (Date.now() - t0)));
     }
   };
-  let ctx = null, page = null, enviando = false;
+  let ctx = null, page = null, enviando = false, codecEnUso = '';
   const abrir = async () => {
     if (ctx) await ctx.close().catch(() => {});
     ctx = await browser.newContext({ viewport: null }); // la página mide lo que mide la ventana (la captura toma lo que se ve)
@@ -215,13 +221,15 @@ for (const sig of ['SIGTERM', 'SIGINT']) process.on(sig, () => { log('Detenido:'
       if (juego && !enviando) {
         try {
           await abrir(); await sleep(4000); await ajustar(); // que cargue con el juego a la vista
-          await publicar(page); enviando = true;
+          await publicar(page); enviando = true; codecEnUso = codec; log('Formato del video:', codec);
           // al empezar la captura Chrome agrega la barra «Compartiendo esta pestaña»: se vuelve a ajustar la ventana
           await sleep(1000); await ajustar(); await sleep(1500);
           log('En vivo:', st.que, '· captura', await page.evaluate(() => { const t = window.__pc.getSenders()[0].track.getSettings(); return `${t.width}x${t.height} (página ${innerWidth}x${innerHeight})`; }));
         } catch (e) { log('No se pudo partir:', e.message); await sleep(10000); }
       } else if (!juego && enviando) {
         await cortar(page); enviando = false; log('Sin juego: se corta la emisión'); if (ctx) { await ctx.close().catch(() => {}); ctx = null; page = null; }
+      } else if (enviando && codecEnUso !== codec) {
+        log('Cambió el formato del video a', codec, ': se vuelve a partir'); await cortar(page); enviando = false;
       } else if (enviando && !(await vivo(page))) {
         log('Se cayó la conexión: se vuelve a partir'); await cortar(page); enviando = false;
       }
