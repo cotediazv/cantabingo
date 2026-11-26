@@ -12,8 +12,8 @@
 // premios se escriben al empezar (dependen de lo que den los restaurantes; quedan guardados para la próxima vez).
 // «La Trivia del Ganador» (antes «del Billonario»; pedido de Gabriel, 25 nov, como la Trivia del Rosko): el público responde cada pregunta
 // desde el celular hasta la respuesta definitiva del concursante; vale más responder rápido y los puntos se suman al
-// revelar. El comodín «Pregunta al público» muestra el porcentaje de esas mismas respuestas y cierra la pregunta a los
-// 20 s. Ranking con botón y, al final, el ganador del público con tómbola.
+// revelar. El comodín «Pregunta al público» descubre al tiro el porcentaje de esas mismas respuestas (Cote, 26 nov) y
+// cierra la pregunta para el público. Ranking con botón y, al final, el ganador del público con tómbola.
 const crypto = require('crypto');
 const { BANK } = require('./questions-desafio.js');
 
@@ -275,9 +275,12 @@ module.exports = function desafio({ app, db, save, requireAdmin, fail, setStage,
     audience(s) {
       if (s.phase !== 'question' || s.used.audience) throw new Error('La pregunta al público no está disponible');
       if (!s.open) throw new Error('La pregunta ya está cerrada para el público');
-      s.audience = { open: true, until: Date.now() + AUDIENCE_MS }; // cuenta las respuestas de la Trivia a esta pregunta
+      // Se descubre al tiro (Cote, 26 nov, por el Registro: «la gente ya va a haber marcado la opción que quiere, porque está
+      // jugando en paralelo; simplemente se descubre el resultado con el porcentaje de respuestas del público para cada
+      // opción»): el porcentaje de las respuestas de la Trivia a esta pregunta, y la pregunta se cierra para el público
+      s.audience = { open: false, until: Date.now() };
       s.used.audience = true;
-      armAudience();
+      s.open = false;
     },
     closeaudience() { closeAudience(); },
     phone(s) {

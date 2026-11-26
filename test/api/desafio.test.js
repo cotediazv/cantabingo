@@ -40,20 +40,18 @@ test('partida con comodines: la respuesta nunca se filtra antes de revelar', asy
   assert.ok(!st.hidden.includes(st.answer));
   assert.equal(await hErr('fifty'), 'El 50:50 no está disponible');
 
-  // Pregunta al público: votan los de la sala, no los extraños ni por opciones ocultas (son las respuestas de la Trivia)
-  st = await h('audience');
-  const vote = (tok, choice) => srv.call('POST', '/api/desafio/vote', { sid, token: tok, choice });
+  // Pregunta al público: el público ya respondió en paralelo (la Trivia); el comodín descubre al tiro el porcentaje
+  // (Cote, 26 nov). Solo cuentan los de la sala y las opciones a la vista
+  const vote = (tok, choice) => srv.call('POST', '/api/desafio/answer', { sid, token: tok, choice });
   for (const x of people) assert.equal((await vote(x.token, st.answer)).status, 200);
-  assert.equal((await vote(people[0].token, st.hidden[0])).status, 400);
   assert.equal((await vote('extraño', 0)).status, 403);
   assert.equal((await srv.ok('GET', `/api/desafio?sid=${sid}&token=${people[1].token}`)).mine, st.answer);
-  p = await pub();
-  assert.equal(p.audience.pct, null); // mientras está abierta no se muestran porcentajes
-  await sleep(1200 + 1000 + 500);
-  st = await srv.admin.get('/api/desafio/host');
+  st = await h('audience');
   assert.equal(st.audience.open, false);
   assert.equal(st.audience.pct[st.answer], 100);
-  assert.equal((await vote(people[0].token, st.answer)).status, 409); // ya cerró (con el comodín, la pregunta se cierra para el público)
+  assert.equal((await pub()).audience.pct[st.answer], 100);
+  assert.equal((await vote(people[0].token, st.answer)).status, 409); // con el comodín, la pregunta se cierra para el público
+  assert.equal(await hErr('audience'), 'La pregunta al público no está disponible');
 
   st = await h('lock', { choice: st.answer });
   assert.equal((await pub()).chosen, st.answer);
