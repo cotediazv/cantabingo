@@ -213,3 +213,17 @@ test('¿Quién quiere ser billonario?: al cerrar la sala la partida queda en bla
   assert.equal(st.player, '');
   assert.equal(st.crowdWinner, null);
 });
+
+// Luces (pedido de Cote por Code 4, 26 nov): al cargar el juego en pantalla, el momento desafio_inicio (15 s de fiesta
+// con la música del comienzo); solo cuando la pantalla pasa al juego, no al repetir el mismo escenario
+test('¿Quién quiere ser ganador?: al cargarlo en pantalla avisa desafio_inicio a las luces', async () => {
+  await srv.admin.post('/api/stage', { show: 'qr' });
+  const { seq } = await srv.ok('GET', '/api/momentos');
+  await srv.admin.post('/api/stage', { show: 'desafio' });
+  let m = (await srv.ok('GET', `/api/momentos?desde=${seq}`)).momentos.map((x) => x.nombre || x.name);
+  assert.ok(m.includes('desafio_inicio'), JSON.stringify(m));
+  const { seq: s2 } = await srv.ok('GET', '/api/momentos');
+  await srv.admin.post('/api/stage', { show: 'desafio' });
+  m = (await srv.ok('GET', `/api/momentos?desde=${s2}`)).momentos.map((x) => x.nombre || x.name);
+  assert.ok(!m.includes('desafio_inicio'));
+});

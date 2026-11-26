@@ -852,7 +852,7 @@ const setStage = (show) => {
   const changed = db.stage !== show;
   const famBefore = familyOf(db.stage);
   db.stage = show;
-  if (changed && familyOf(show) && familyOf(show) !== famBefore) { cortinaJuego(); setTimeout(() => emisorCheck(), 0); if (familyOf(show) === 'desafio') desafioIntroAt = Date.now(); } // se cargó otro juego: la cortina (y en Kennedy, el emisor de la pantalla vertical)
+  if (changed && familyOf(show) && familyOf(show) !== famBefore) { cortinaJuego(); setTimeout(() => emisorCheck(), 0); if (familyOf(show) === 'desafio') { desafioIntroAt = Date.now(); require('./momentos.js').emit('desafio_inicio'); } } // desafio_inicio: 15 s de fiesta de luces con la música del comienzo (pedido de Cote por Code 4, 26 nov) // se cargó otro juego: la cortina (y en Kennedy, el emisor de la pantalla vertical)
   if (changed) { perOff(); if (db.carton) db.carton.on = false; } // un juego tomó la pantalla: el GC PER y el cartón salen
   save();
   if (changed) for (const s of Object.values(db.sessions)) broadcast(s); // los celulares se enteran del cambio de juego
