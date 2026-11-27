@@ -4055,3 +4055,6 @@ body:has(.kc-lpanel) #ctl-reload-fixed { display: none; }
   .kc-row.kl .kl-name { font-size: .64rem; }
 }
 @media (max-width: 520px) { .kc-row.kl .kl-name { line-height: 1.3; } .kc-row.kl .kl-song { line-height: 1.2; } }
+/* sin «…»: la letra se achica para caber (app.js, ajustarKl); si no alcanza, pasa a otra linea */
+.kc-row.kl .kl-song, .kc-row.kl .kl-name { text-overflow: clip; max-width: none; }
+.kc-row.kl .kl-2l { white-space: normal; overflow-wrap: anywhere; }

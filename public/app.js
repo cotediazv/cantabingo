@@ -1830,6 +1830,17 @@ function lucesMini() {
   return () => { window.removeEventListener('message', onMsg); bar.remove(); document.body.classList.remove('lm-on'); };
 }
 
+// Lista del karaoke de la sala light (Cote, 27 nov: «las letras se ajustan al espacio que tienen, no se cortan»): la canción y
+// el nombre se achican hasta caber; si aun así no caben, pasan a otra línea (nunca «…»)
+function ajustarKl(caja) {
+  if (!caja) return;
+  caja.querySelectorAll('.kl-song, .kl-name').forEach((el) => {
+    el.style.fontSize = ''; el.classList.remove('kl-2l');
+    let f = parseFloat(getComputedStyle(el).fontSize);
+    while (el.scrollWidth > el.clientWidth - 2 && f > 9) { f -= 0.5; el.style.fontSize = `${f}px`; }
+    if (el.scrollWidth > el.clientWidth + 1) el.classList.add('kl-2l');
+  });
+}
 // ---------- Karaoke: panel del animador ----------
 // Pone el karaoke en pantalla y muestra la cola. El local es el de la sala abierta.
 // «Ya cantó», Subir y Bajar: cuando el local ya tiene instalado Sala.gs, se pueden usar aquí o en la app del equipo.
@@ -1875,10 +1886,7 @@ views.karaokectl = async (local) => {
         <button type="button" class="kc-up" data-kc="subir" data-id="${esc(p.id)}" ${i === 0 ? 'disabled' : ''} title="Subir" aria-label="Subir">▲</button><button type="button" class="kc-down" data-kc="bajar" data-id="${esc(p.id)}" ${i === n - 1 ? 'disabled' : ''} title="Bajar" aria-label="Bajar">▼</button><button type="button" class="kc-done" data-kc="cantado" data-id="${esc(p.id)}">Ya cantó</button></div>` : ''}</div>`).join('')
       : '<p class="muted">Cuando alguien pida una canción, aparecerá aquí.</p>';
     // Sala light: una línea por participante; el nombre va entero (regla de Cote): si no cabe, se achica la letra
-    if (light) $('#kc-list').querySelectorAll('.kc-row .kl-name').forEach((b) => {
-      b.style.fontSize = '';
-      for (let f = parseFloat(getComputedStyle(b).fontSize); b.scrollWidth > b.clientWidth + 1 && f > 10; f -= 0.5) b.style.fontSize = `${f}px`;
-    });
+    if (light) ajustarKl($('#kc-list'));
   };
   const paint = async () => {
     if (queue.length) return; // mientras se guarda, se deja lo que se tocó (la lista del servidor aún no lo trae)
@@ -1947,7 +1955,7 @@ views.karaokectl = async (local) => {
       const r = await api('GET', `/api/karaoke/cantados${lq}`);
       if (!sungOpen || !$('#kc-sung')) return;
       if (light) { $('#kc-sung').innerHTML = r.list.length ? r.list.map((x) => `<div class="kc-row kc-sung-row kl"><em>✓</em><span class="kl-song">${esc(x.text)}</span><b class="kl-name kl-hora">${esc(hhmm(x.at))}</b><div class="kc-act"><button type="button" class="kc-back" data-fila="${x.fila}" data-key="${esc(x.key)}" title="Volver a la lista" aria-label="Volver a la lista">↺</button></div></div>`).join('')
-        : '<p class="muted small">Esta noche todavía nadie aparece como «ya cantó».</p>'; return; }
+        : '<p class="muted small">Esta noche todavía nadie aparece como «ya cantó».</p>'; ajustarKl($('#kc-sung')); return; }
       $('#kc-sung').innerHTML = r.list.length ? r.list.map((x) => `<div class="kc-row kc-sung-row"><em>✓</em><p><small>${x.at ? `Marcado a las ${esc(hhmm(x.at))}` : ''}</small><b>${esc(x.text)}</b></p><div class="kc-act"><button type="button" class="kc-back" data-fila="${x.fila}" data-key="${esc(x.key)}">Volver a la lista</button></div></div>`).join('')
         : '<p class="muted small">Esta noche todavía nadie aparece como «ya cantó».</p>';
     } catch (err) { if ($('#kc-sung')) $('#kc-sung').innerHTML = `<p class="muted small">⚠️ ${esc(err.message)}</p>`; }
