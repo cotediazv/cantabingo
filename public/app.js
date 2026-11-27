@@ -1794,6 +1794,42 @@ function lucesTab() {
   bar.onclick = onClick; box.onclick = onClick;
 }
 
+// Mini panel de luces (pedido de Cote, 27 nov: «abajo, 4 botones fijos a la pantalla, con Stand By, Previa, Show y Fiesta,
+// todos automáticos… abajo el fader de intensidad y al lado derecho un botón pequeño apagar todo»). Manda las órdenes al
+// panel de las luces de Code 4, cargado oculto (?mini=1: sin la vista 3D), que es el que sabe armar las escenas.
+function lucesMini() {
+  const bar = document.createElement('div'); bar.className = 'lm-bar';
+  bar.innerHTML = `<div class="lm-g">${[['Standby', '🌙'], ['Previa', '🎹'], ['Show', '🎤'], ['Fiesta', '🎉']].map(([g, i]) => `<button type="button" data-g="${g}">${i} ${g === 'Standby' ? 'Stand By' : g}</button>`).join('')}</div>
+    <div class="lm-i"><span>💡</span><input type="range" min="0" max="100" value="100" aria-label="Intensidad de las luces"><b>100%</b><button type="button" class="lm-off" title="Apagar todas las luces">⏻ Apagar</button></div>
+    <p class="lm-msg" hidden></p>`;
+  document.body.appendChild(bar); document.body.classList.add('lm-on');
+  let frame = null; let origen = '';
+  const msg = (t) => { const m = bar.querySelector('.lm-msg'); m.hidden = !t; m.textContent = t || ''; };
+  const mandar = (o) => { if (!frame || !origen) { msg('Conectando con las luces…'); return; } frame.contentWindow.postMessage({ krbLuces: o }, origen); };
+  (async () => {
+    try {
+      const r = await api('GET', '/api/luces/dj');
+      const u = new URL(r.url); u.searchParams.set('mini', '1'); origen = u.origin;
+      frame = document.createElement('iframe'); frame.className = 'lm-frame'; frame.title = 'Luces (mini panel)'; frame.src = u.toString();
+      bar.appendChild(frame);
+      if (r.aviso) msg('Luces: abre la pestaña «💡 Luces» y pon la clave una vez; después recarga esta página.');
+    } catch (err) { msg(`Luces: ${err.message}`); }
+  })();
+  const onMsg = (e) => {
+    if (!frame || e.source !== frame.contentWindow || e.origin !== origen || !e.data || !e.data.krbLucesEstado) return;
+    const st = e.data.krbLucesEstado; msg('');
+    bar.querySelectorAll('[data-g]').forEach((b) => b.classList.toggle('on', b.dataset.g === st.grupo));
+    const rg = bar.querySelector('input');
+    if (document.activeElement !== rg && st.master != null) { rg.value = st.master; bar.querySelector('b').textContent = `${st.master}%`; }
+  };
+  window.addEventListener('message', onMsg);
+  bar.querySelectorAll('[data-g]').forEach((b) => { b.onclick = () => { bar.querySelectorAll('[data-g]').forEach((x) => x.classList.toggle('on', x === b)); mandar({ grupo: b.dataset.g }); }; });
+  let t = null;
+  bar.querySelector('input').oninput = (e) => { bar.querySelector('b').textContent = `${e.target.value}%`; clearTimeout(t); t = setTimeout(() => mandar({ int: +e.target.value }), 120); };
+  bar.querySelector('.lm-off').onclick = () => { bar.querySelectorAll('[data-g]').forEach((x) => x.classList.remove('on')); mandar({ apagar: 1 }); };
+  return () => { window.removeEventListener('message', onMsg); bar.remove(); document.body.classList.remove('lm-on'); };
+}
+
 // ---------- Karaoke: panel del animador ----------
 // Pone el karaoke en pantalla y muestra la cola. El local es el de la sala abierta.
 // «Ya cantó», Subir y Bajar: cuando el local ya tiene instalado Sala.gs, se pueden usar aquí o en la app del equipo.
@@ -1816,6 +1852,7 @@ views.karaokectl = async (local) => {
   if (staff) $('#kc-phone').closest('label').hidden = true; // permitir pedidos desde el celular: solo el moderador
   const stopBar = light && views.lightBar ? views.lightBar($('#kc-lt'), $('#kc-lb'), light, staff) : null;
   if (light === 'kennedy') lucesTab(); // pestaña «Luces»: el panel del DJ de las luces, en el mismo lugar
+  const stopMini = light === 'kennedy' ? lucesMini() : null; // mini panel de luces fijo abajo
   if (!light) await api('POST', '/api/stage', { show: 'karaoke' }).catch(fail); // al entrar, el karaoke pasa a la pantalla
   let last = '';
   let k = null; // lo último que se mostró (la lista del servidor, o con los cambios recién tocados)
@@ -1930,7 +1967,7 @@ views.karaokectl = async (local) => {
   await paint();
   if (k && k.edit) paintSung();
   const timer = setInterval(paint, 3000);
-  return () => { clearInterval(timer); if (stopBar) stopBar(); };
+  return () => { clearInterval(timer); if (stopBar) stopBar(); if (stopMini) stopMini(); };
 };
 
 // Menú de abajo en el panel de todos los juegos (pedido de Cote): «Sortear juego» y después los juegos con su ícono;

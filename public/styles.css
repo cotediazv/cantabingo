@@ -4032,3 +4032,17 @@ a.btn.paso:hover, a.btn.primary.paso:hover { background: #15803d; border-color: 
 }
 /* el logo fijo de la esquina tapaba la lista en el celular */
 @media (max-width: 520px) { body:has(.kc-lpanel) .krb-mark { display: none; } }
+/* Mini panel de luces fijo abajo en el karaoke de la sala light de Kennedy (pedido de Cote, 27 nov) */
+.lm-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: rgba(14, 13, 24, .97); border-top: 1px solid var(--line, #333);
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); display: grid; gap: 5px; max-width: 980px; margin: 0 auto; }
+.lm-g { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.lm-g button { padding: 9px 2px; border-radius: 10px; font-size: .85rem; font-weight: 800; min-height: 0; }
+.lm-g button.on { background: #ffc400; color: #1a1a1a; }
+.lm-i { display: flex; align-items: center; gap: 8px; }
+.lm-i input { flex: 1; min-width: 0; margin: 0; }
+.lm-i b { font-size: .8rem; min-width: 38px; text-align: right; }
+.lm-i .lm-off { padding: 5px 9px; font-size: .75rem; border-radius: 9px; min-height: 0; background: #5a1f24; color: #fff; }
+.lm-msg { margin: 0; font-size: .72rem; opacity: .8; }
+.lm-frame { position: absolute; width: 1px; height: 1px; left: -9999px; border: 0; opacity: 0; pointer-events: none; }
+body.lm-on #app { padding-bottom: 110px; }
+body.lz-on .lm-bar { display: none; }
