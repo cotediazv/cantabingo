@@ -4046,3 +4046,18 @@ a.btn.paso:hover, a.btn.primary.paso:hover { background: #15803d; border-color: 
 .lm-frame { position: absolute; width: 1px; height: 1px; left: -9999px; border: 0; opacity: 0; pointer-events: none; }
 body.lm-on #app { padding-bottom: 110px; }
 body.lz-on .lm-bar { display: none; }
+
+/* El Rosko: «⬅️ Un paso atrás» a la vista, a la izquierda de los botones del paso (pedido de Cote, 27 nov: «a veces se
+   marcan por error correcta o incorrecta… vuelve 1 paso atrás con el tiempo pausado»). El de la fila de abajo queda
+   solo con el ganador en pantalla (por si el ganador fue un error). */
+#rosco-ctl .w-flow { grid-template-columns: 96px 1fr; }
+#rosco-ctl .w-flow .w-back { grid-row: span 2; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 8px 4px; background: #2a2636; color: #fff; border: 2px solid #6b6580; }
+#rosco-ctl .w-flow .w-back b { font-size: 2rem; line-height: 1; }
+#rosco-ctl .w-flow .w-back small { font-size: .78rem; font-weight: 700; line-height: 1.1; }
+#rosco-ctl .w-flow .w-show, #rosco-ctl .w-flow .w-go { grid-column: 2; }
+#rosco-ctl:not(.rosco-done) #w-undo { display: none; }
+body.anim #rosco-ctl .w-flow { grid-template-columns: 76px 1fr 1fr; }
+body.anim #rosco-ctl .w-flow .w-back { grid-row: auto; min-height: 68px; background: #2a2636; color: #fff; }
+body.anim #rosco-ctl .w-flow .w-show { grid-column: 2; }
+body.anim #rosco-ctl .w-flow .w-go { grid-column: 3; }
+body.anim #rosco-ctl .w-flow .w-back small { font-size: .62rem; }
