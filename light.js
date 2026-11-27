@@ -17,7 +17,7 @@ const NIGHT_STARTS = 6; // la noche cambia a las 6 AM, igual que el karaoke
 const DAYS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 const GLOSA_MS = 10 * 60e3; // la GLOSA se relee cada 10 minutos
 
-module.exports = function light({ app, db, save, requireAdmin, requireLocal = requireAdmin, fail, karaoke, insta, aviso = () => {}, salaDe = () => false, fondoDe = () => '' }) {
+module.exports = function light({ app, db, save, requireAdmin, requireLocal = requireAdmin, fail, karaoke, insta, aviso = () => {}, salaDe = () => false, fondoDe = () => '', reloj = () => new Date() }) {
   // Una sala light por local (Kennedy, Frida y Tobalaba pueden estar abiertas a la vez)
   db.lights ||= {};
   if (db.light) { db.lights[db.light.venue] = db.light; db.light = null; } // salas guardadas antes de este cambio
@@ -48,11 +48,11 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
     return { y: +p.year, m: +p.month, d: +p.day, h: +p.hour, min: +p.minute };
   };
   const night = (offsetDays = 0) => {
-    const now = parts(new Date());
+    const now = parts(reloj());
     const base = new Date(Date.UTC(now.y, now.m - 1, now.d + offsetDays - (now.h < NIGHT_STARTS ? 1 : 0)));
     return { y: base.getUTCFullYear(), m: base.getUTCMonth() + 1, d: base.getUTCDate(), dow: base.getUTCDay() };
   };
-  const minutesNow = () => { const p = parts(new Date()); return (p.h < NIGHT_STARTS ? p.h + 24 : p.h) * 60 + p.min; };
+  const minutesNow = () => { const p = parts(reloj()); return (p.h < NIGHT_STARTS ? p.h + 24 : p.h) * 60 + p.min; };
   const toMin = (hora) => { const m = String(hora).match(/(\d{1,2})[:.](\d{2})/); if (!m) return null; const h = +m[1]; return (h < NIGHT_STARTS ? h + 24 : h) * 60 + +m[2]; };
 
   // ---------- GLOSA ----------
@@ -72,10 +72,16 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
     }
     return glosa[venue];
   }
+  // Pestañas de la GLOSA que llegan: la del mes (pestana + cartelera) y, si el GC Show las manda, las de `meses`
+  // ([{ pestana, cartelera }], la de este mes y la del siguiente). Sin `meses`, la cartelera de la semana no puede mostrar
+  // los shows de los primeros días del mes siguiente (pedido de Cote, 27 nov: «la cartelera de la semana de Kennedy no
+  // está cargando la información del jueves 3 de diciembre»)
+  const tabsOf = (data) => (data ? [{ pestana: data.pestana, cartelera: data.cartelera }, ...(Array.isArray(data.meses) ? data.meses : [])] : []);
+  const tabFor = (data, m) => tabsOf(data).find((t) => t && monthOf(t) === m) || null;
   // Show de una fecha: en la cartelera el día se escribe como «SABADO 7» (vale el número del final)
   const showOf = (data, n) => {
-    if (!data || n.m !== monthOf(data)) return '';
-    const row = (data.cartelera || []).find((x) => Number((String(x.dia).match(/(\d+)\s*$/) || [])[1]) === n.d);
+    const t = tabFor(data, n.m);
+    const row = t ? (t.cartelera || []).find((x) => Number((String(x.dia).match(/(\d+)\s*$/) || [])[1]) === n.d) : null;
     return row ? clean(row.show, 120) : '';
   };
   // Mes de la pestaña leída, ej. «NOVIEMBRE26 MASTER TOTAL» → 11
@@ -102,7 +108,8 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
       if (hours.length || show) week.push({ day: DAYS[n.dow], date: n.d, month: n.m, today: i === 0, show, hours });
     }
     // Cartelera del mes (lo que queda desde hoy), para la pantalla vertical de la sala light
-    const month = data && today.m === monthOf(data) ? (data.cartelera || []).map((r) => ({ day: clean(r.dia, 20), date: Number((String(r.dia).match(/(\d+)\s*$/) || [])[1]) || 0, show: clean(r.show, 120) }))
+    const tm = tabFor(data, today.m);
+    const month = tm ? (tm.cartelera || []).map((r) => ({ day: clean(r.dia, 20), date: Number((String(r.dia).match(/(\d+)\s*$/) || [])[1]) || 0, show: clean(r.show, 120) }))
       .filter((r) => r.date >= today.d && r.show).sort((a, b) => a.date - b.date) : [];
     return { venue, name: VENUES[venue], show: showOf(data, today), blocks, current, next, week, month, at: g.at, error: g.error };
   }
