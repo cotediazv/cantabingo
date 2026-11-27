@@ -109,7 +109,7 @@ test('GC PER: sale en las pantallas del local y se apaga al tocar un botón del 
 });
 
 test('diseño de las pantallas y dirección de los QR', async () => {
-  assert.deepEqual(await srv.ok('GET', '/api/tema'), { on: true, pub: '' });
+  assert.deepEqual(await srv.ok('GET', '/api/tema'), { on: true, pub: '', evento: false });
   await srv.admin.post('/api/tema', { on: false });
   assert.equal((await srv.ok('GET', '/api/tema')).on, false);
   await srv.admin.post('/api/tema', { on: true });

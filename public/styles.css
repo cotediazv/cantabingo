@@ -4080,3 +4080,9 @@ body.anim #rosco-ctl .w-flow .w-back small { font-size: .62rem; }
 video.lg-fondo { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; background: #000; z-index: 0; }
 /* Con el fondo Kennedy en el GC Light, sin los logos de arriba (pedido de Cote, 27 nov) */
 body.lg-fondo-on #venue-mark { display: none !important; }
+
+/* Copia de eventos (MODO_EVENTO, Cote 27 nov): solo «Manual» con Bingo y ¿Quién quiere ser ganador?; de las otras
+   actividades queda solo el QR */
+html.evento .games-nav [data-draw-mode="sorteo"], html.evento .games-nav [data-draw-mode="votacion"] { display: none !important; }
+html.evento .games-nav a[href="#/showctl"], html.evento .games-nav a[href="#/karaokectl"], html.evento .games-nav a[href="#/instactl"] { display: none !important; }
+html.evento .games-nav [data-game][hidden] { display: none !important; }

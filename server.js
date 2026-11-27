@@ -10,7 +10,12 @@ const PORT = process.env.PORT || 3000;
 const DISK_DIR = '/var/data';
 const hasDisk = (() => { try { fs.accessSync(DISK_DIR, fs.constants.W_OK); return true; } catch { return false; } })();
 const DATA_FILE = process.env.DATA_FILE || path.join(hasDisk ? DISK_DIR : __dirname, 'data.json');
-const SESSION_HOURS = 8; // cuánto dura una sesión de bingo desde que se activa
+// Modo evento (pedido de Cote, 27 nov, respuesta 37.1: «una sala aparte… que le sirva para eventos externos»): una segunda
+// copia de la Sala en Render, con MODO_EVENTO=1, para eventos fuera de los locales (la primera: «Colada Continua», domingo
+// 29 nov). Nombre libre al crear la sala, colores de la marca y sin logos de locales, solo Bingo y ¿Quién quiere ser
+// ganador?, y sin nada automático de los locales (salas, karaoke, luces).
+const EVENTO = process.env.MODO_EVENTO === '1';
+const SESSION_HOURS = EVENTO ? 14 : 8; // cuánto dura una sesión de bingo desde que se activa (un evento puede ir de 9:00 a 18:00)
 
 // ---------- Almacenamiento (JSON en disco) ----------
 let db = { projects: {}, sessions: {} };
@@ -532,7 +537,7 @@ app.post('/api/projects', (req, res) => {
   const p = {
     id: id(), created: Date.now(), format, values, items,
     name: str(b.name, 60, 'Proyecto de bingo'),
-    theme: ['frida', 'tobalaba', 'kennedy'].includes(b.theme) ? b.theme : 'frida', // colores en pantalla según el local
+    theme: EVENTO ? 'evento' : ['frida', 'tobalaba', 'kennedy'].includes(b.theme) ? b.theme : 'frida', // colores en pantalla según el local
     headers: headers.slice(0, 5).join(''), freeCenter: b.freeCenter !== false,
     startNumber: clamp(b.startNumber, 1, 999999, 1),
     sessionId: null,
@@ -577,7 +582,7 @@ function startSession(p, b) {
     cardsPerPlayer: clamp(b.cardsPerPlayer, 1, 4, 1),
     showName: b.showName !== false, isPublic: b.isPublic !== false, patterns: cleanPatterns(b.patterns),
     bigQr: false, // el bingo parte con su GC (corrección de Cote, 24 nov); el QR grande se pone con su botón
-    theme: ['frida', 'tobalaba', 'kennedy'].includes(b.theme) ? b.theme : 'frida', // colores de la gráfica según el local
+    theme: EVENTO ? 'evento' : ['frida', 'tobalaba', 'kennedy'].includes(b.theme) ? b.theme : 'frida', // colores de la gráfica según el local
     gc: { ...gcDefaults() }, // textos de la gráfica de OBS: se heredan de la última sesión
     round: 1, drawn: [], results: [], marks: {}, players: {}, finalists: null,
     auto: { on: false, interval: 10, stopOnWin: true },
@@ -1119,7 +1124,7 @@ const fondoAuto = () => {
     }
   }
 };
-lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta, aviso, salaDe, fondoDe });
+lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta, aviso, salaDe, fondoDe, reloj: () => ahora() });
 setTimeout(fondoAuto, 2000); setInterval(fondoAuto, 20e3);
 // «El último en pie», versión de prueba (pedido de Cote, 23 nov)
 require('./enpie.js')({ placeOf, roscoBusy: () => roscoLock('enpie'), app, db, save, requireAdmin, fail, setStage, festejo,
@@ -1195,10 +1200,10 @@ require('./agenda.js')({ app, db, save, requireAdmin, fail, currentVenue: () => 
 // El sorteo se ve en el tablero y en el GC (escenario «juego»).
 // ¿Quién quiere ser ganador? entra a los juegos disponibles (Manual, Por sorteo y Por votación): Cote, 26 nov, respuesta 34.1
 // («que lo deje dentro de los juegos ya disponibles, porque el juego ya está terminado»)
-const DRAW_GAMES = ['bingo', 'rosco', 'festival', 'objeto', 'desafio'];
+const DRAW_GAMES = EVENTO ? ['bingo', 'desafio'] : ['bingo', 'rosco', 'festival', 'objeto', 'desafio']; // en un evento, solo Bingo y ¿Quién quiere ser ganador?
 db.gameDraw ||= { played: [], last: null };
 if (!db.gameDraw.rule2) { db.gameDraw.played = db.gameDraw.last ? [db.gameDraw.last.game] : []; db.gameDraw.rule2 = true; }
-const drawPub = () => ({ ...db.gameDraw, total: Math.max(db.gameDraw.total || 3, (db.gameDraw.list || []).length + 1), how: howOf(), free: howOf() === 'manual', undo: undefined, undoable: !!(db.gameDraw.undo || []).length, games: DRAW_GAMES, venue: (Object.values(db.sessions)[0] || {}).theme || 'frida', now: Date.now() });
+const drawPub = () => ({ ...db.gameDraw, total: Math.max(db.gameDraw.total || 3, (db.gameDraw.list || []).length + 1), how: howOf(), free: howOf() === 'manual', undo: undefined, undoable: !!(db.gameDraw.undo || []).length, games: DRAW_GAMES, evento: EVENTO, venue: (Object.values(db.sessions)[0] || {}).theme || 'frida', now: Date.now() });
 app.get('/api/gamedraw', (_req, res) => res.json(drawPub()));
 // Cuántos juegos se sortean esa noche (pedido de Cote): 1.º, 2.º, 3.º… sorteados
 db.gameDraw.list ||= [];
@@ -1207,7 +1212,7 @@ db.gameDraw.total ||= 3;
 // toca el juego), «Por sorteo» (tómbola) y «Por votación» (el público vota desde el celular). La elección queda
 // guardada para las noches siguientes. Al cambiar de pestaña, un sorteo o una votación a medio hacer se cancela.
 const HOWS = ['manual', 'sorteo', 'votacion'];
-const howOf = () => (HOWS.includes(db.gameDraw.how) ? db.gameDraw.how : db.gameDraw.free ? 'manual' : 'sorteo');
+const howOf = () => EVENTO ? 'manual' : (HOWS.includes(db.gameDraw.how) ? db.gameDraw.how : db.gameDraw.free ? 'manual' : 'sorteo');
 app.post('/api/gamedraw/mode', requireAdmin, (req, res) => {
   const b = req.body || {};
   const how = HOWS.includes(b.how) ? b.how : b.free ? 'manual' : 'sorteo';
@@ -1473,7 +1478,7 @@ app.post('/api/gamevote/reset', requireAdmin, (_req, res) => {
 
 // Leer la pantalla actual es público, para que la fuente de OBS no necesite iniciar sesión; cambiarla es del moderador.
 // Diseño nuevo de las pantallas (pedido de Cote, 22 nov): encendido salvo que se apague en el Centro de control
-app.get('/api/tema', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json({ on: db.tema !== false, pub: db.pubUrl || '' }); });
+app.get('/api/tema', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json({ on: db.tema !== false, pub: db.pubUrl || '', evento: EVENTO }); });
 app.post('/api/tema', requireAdmin, (req, res) => { db.tema = (req.body || {}).on !== false; save(); res.json({ on: db.tema }); });
 // Dirección de los QR (pedido de Cote, 22 nov: llevar a la gente a krbstage.cl; eligió la opción A, juegos.krbstage.cl):
 // la sala es la misma y las direcciones de siempre siguen funcionando (OBS, pantallas y decodificadores no se tocan);
@@ -1589,7 +1594,7 @@ setInterval(() => {
     .formatToParts(ahora()).map((x) => [x.type, x.value]));
   const min = +p.hour * 60 + +p.minute;
   const day = `${p.year}-${p.month}-${p.day}`;
-  if (p.weekday !== AUTO_KARAOKE.dow || min < AUTO_KARAOKE.from || min >= AUTO_KARAOKE.until || db.autoKaraoke === day) return;
+  if (EVENTO || p.weekday !== AUTO_KARAOKE.dow || min < AUTO_KARAOKE.from || min >= AUTO_KARAOKE.until || db.autoKaraoke === day) return;
   const s = Object.values(db.sessions)[0];
   if (!s || s.theme !== AUTO_KARAOKE.venue) return;
   if (roscoLock('karaoke')) return; // con El Rosko en juego se espera a que termine (hasta las 22:00)
@@ -1613,6 +1618,7 @@ const AUTO_SALAS = [
 // cierra sola, aunque se haya creado a mano. Kennedy (21:30) no se cierra: los jueves a las 21:45 pasa sola a Karaoke
 // para que el público siga pidiendo canciones. Si a esa hora hay un rosko en juego, se espera a que termine.
 function autoSala() {
+  if (EVENTO) return; // la copia de eventos no abre ni cierra salas de los locales
   const p = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', weekday: 'short', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
     .formatToParts(ahora()).map((x) => [x.type, x.value]));
   const min = +p.hour * 60 + +p.minute;

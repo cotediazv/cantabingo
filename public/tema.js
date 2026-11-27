@@ -28,6 +28,8 @@
   const sync = async () => {
     try {
       const r = await (await fetch('/api/tema', { cache: 'no-store' })).json();
+      // Copia de eventos (MODO_EVENTO): solo Bingo y ¿Quién quiere ser ganador?, nombre libre (Cote, 27 nov)
+      window.EVENTO = !!r.evento; document.documentElement.classList.toggle('evento', !!r.evento);
       if (typeof r.pub === 'string' && r.pub !== pub) { pub = r.pub; setPub(r.pub); paintPub(); }
       if (typeof r.on === 'boolean' && r.on !== last) { last = r.on; set(r.on); paint(); }
     } catch (e) { /* sin conexión: queda como está */ }

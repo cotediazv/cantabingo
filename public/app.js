@@ -583,6 +583,16 @@ views.nuevo = async () => {
       <div class="wide"><button class="primary big">Crear los cartones</button></div>
     </form>`;
   const f = $('#f');
+  // Copia de eventos (Cote, 27 nov: «una sala aparte… para eventos externos»): en vez del local, el nombre del evento
+  const ev = !!(await fetch('/api/tema', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({}))).evento;
+  if (ev) {
+    f.querySelector('.wide').outerHTML = `<label class="f wide">Nombre del evento<input type="text" id="evname" maxlength="45" required placeholder="Ej.: Colada Continua"></label>
+      <p class="muted small wide" id="ev-note">La sala se llamará «Los Juegos de …» y el bingo «El Bingo de …». Juegos: Bingo y ¿Quién quiere ser ganador?</p>`;
+    $('#pname-wrap').remove(); $('#ptheme-wrap').remove();
+    f.insertAdjacentHTML('afterbegin', '<input type="hidden" name="theme" value="evento"><input type="hidden" name="name" value="">');
+    $('#evname').oninput = (e) => { const n = e.target.value.trim(); f.name.value = n ? `Los Juegos de ${n}` : ''; $('#ev-note').textContent = n ? `La sala se llamará «Los Juegos de ${n}» y el bingo «El Bingo de ${n}». Juegos: Bingo y ¿Quién quiere ser ganador?` : 'La sala se llamará «Los Juegos de …» y el bingo «El Bingo de …». Juegos: Bingo y ¿Quién quiere ser ganador?'; };
+    setTimeout(() => $('#evname').focus(), 50);
+  }
   // Pestañas de local: cada una fija el nombre y los colores de la pantalla; «Otro nombre» deja elegirlos
   const VENUES = { frida: ['Los Juegos de Frida', 'magenta'], tobalaba: ['Los Juegos de Tobalaba', 'rojo'], kennedy: ['Los Juegos de Mercado Kennedy', 'celeste azulado'] }; // el local se llama Mercado Kennedy (pedido de Cote, 21 nov)
   const pickVenue = (v) => {
@@ -593,9 +603,11 @@ views.nuevo = async () => {
     if (custom) { f.name.value = ''; f.theme.value = $('#ptheme').value; $('#venue-note').textContent = 'Escribe el nombre y elige los colores de la pantalla.'; f.name.focus(); }
     else { f.name.value = VENUES[v][0]; f.theme.value = v; $('#venue-note').textContent = `Se llamará «${VENUES[v][0]}» y la pantalla saldrá en ${VENUES[v][1]}.`; }
   };
-  $('#venues').onclick = (e) => { const v = e.target.dataset.venue; if (v) pickVenue(v); };
-  $('#ptheme').onchange = (e) => { f.theme.value = e.target.value; };
-  pickVenue('frida');
+  if (!ev) {
+    $('#venues').onclick = (e) => { const v = e.target.dataset.venue; if (v) pickVenue(v); };
+    $('#ptheme').onchange = (e) => { f.theme.value = e.target.value; };
+    pickVenue('frida');
+  }
   f.onsubmit = async (e) => {
     e.preventDefault();
     const d = Object.fromEntries(new FormData(f));
@@ -1155,7 +1167,7 @@ views.jugar = async (sid) => {
     if (s === 'bingo' && st.winConfirmed) return 'bingofin'; // bingo con ganador confirmado: el resultado y lo que viene
     return '';
   };
-  const venueShort = () => (({ frida: 'Frida', kennedy: 'Mercado Kennedy', tobalaba: 'Tobalaba' })[st.theme] || 'Frida');
+  const venueShort = () => (st.theme === 'evento' ? String(st.name || '').replace(/^Los Juegos de /, '') : ({ frida: 'Frida', kennedy: 'Mercado Kennedy', tobalaba: 'Tobalaba' })[st.theme] || 'Frida');
   const drawAct = async () => {
     const box = $('#pact');
     if (!box || box.hidden) return;
@@ -2071,6 +2083,11 @@ async function paintGameNav() {
   if (!g) return;
   const info = GAME_INFO(g.venue);
   const how = g.how || (g.free ? 'manual' : 'sorteo'); // pestaña elegida: «Manual», «Por sorteo» o «Por votación»
+  // Copia de eventos (Cote, 27 nov): solo los juegos del evento y la pestaña «Manual», abierta de una
+  if (g.evento) {
+    document.querySelectorAll('.games-nav [data-game]').forEach((el) => { el.hidden = !(g.games || []).includes(el.dataset.game); });
+    if (!navOpen) navOpen = 'manual';
+  }
   document.querySelectorAll('.g-fest').forEach((b) => { b.textContent = info.festival.name; });
   document.querySelectorAll('[data-game]').forEach((el) => { const done = how === 'sorteo' && g.played.includes(el.dataset.game); el.classList.toggle('g-played', done); el.title = done ? 'Salió en el último sorteo: queda fuera del próximo' : ''; });
   // Casilleros de la noche y botón: «Sortear el 2.º juego (de 3)»; al completar, se desactiva
@@ -2409,7 +2426,7 @@ const SCREEN_ROUTES = ['tablero', 'escena', 'gc', 'obs', 'light-gc', 'karaoke-v'
 let venueOfSala = '';
 let venueAt = 0;
 // Color de fondo de las pantallas según el local (también en navegadores antiguos, que no leen «:has»)
-const VENUE_BG = { tobalaba: '#2a0608', kennedy: '#06183a', frida: '#1b0f3a' };
+const VENUE_BG = { tobalaba: '#2a0608', kennedy: '#06183a', frida: '#1b0f3a', evento: '#16110a' };
 function paintVenueBg() {
   const full = document.body.classList.contains('full');
   const bg = full ? VENUE_BG[document.body.dataset.venue] || VENUE_BG.frida : '';
