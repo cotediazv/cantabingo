@@ -1829,11 +1829,16 @@ views.karaokectl = async (local) => {
     $('#kc-sung-box').hidden = !k.edit;
     $('#kc-note').textContent = k.edit ? '«Ya cantó», Subir y Bajar también se pueden usar en la app del equipo.' : 'El orden y «Ya cantó» se manejan en la app del equipo. Esta pantalla solo muestra la lista.';
     const n = k.list.length;
-    $('#kc-list').innerHTML = n ? k.list.map((p, i) => `<div class="kc-row ${i === 0 ? 'now' : ''}"><em>${i === 0 ? '🎤' : i + 1}</em><p><small>${i === 0 ? 'Ahora canta' : i === 1 ? 'Sigue' : ''}</small><b>${esc(p.name)}</b><span>${esc(p.song)}${p.artist ? ` · ${esc(p.artist)}` : ''}</span></p>${k.edit && p.id ? `<div class="kc-act">
+    // Sala light (Cote, 27 nov, con una foto de la app del equipo: «algo así, incluso más apretado»): una línea por persona,
+    // canción – artista a la izquierda, el NOMBRE a la derecha y botones redondos chicos solo con su ícono
+    const fila = (p, i) => `<div class="kc-row kl ${i === 0 ? 'now' : ''}"><em>${i === 0 ? '🎤' : i + 1}</em><span class="kl-song">${esc(p.song)}${p.artist ? ` – ${esc(p.artist)}` : ''}</span><b class="kl-name">${esc(p.name)}</b>${k.edit && p.id ? `<div class="kc-act">
+        <button type="button" class="kc-up" data-kc="subir" data-id="${esc(p.id)}" ${i === 0 ? 'disabled' : ''} title="Subir" aria-label="Subir">▲</button><button type="button" class="kc-down" data-kc="bajar" data-id="${esc(p.id)}" ${i === n - 1 ? 'disabled' : ''} title="Bajar" aria-label="Bajar">▼</button><button type="button" class="kc-done" data-kc="cantado" data-id="${esc(p.id)}" title="Ya cantó" aria-label="Ya cantó">✓</button></div>` : ''}</div>`;
+    if (light) $('#kc-list').innerHTML = n ? k.list.map(fila).join('') : '<p class="muted">Cuando alguien pida una canción, aparecerá aquí.</p>';
+    else $('#kc-list').innerHTML = n ? k.list.map((p, i) => `<div class="kc-row ${i === 0 ? 'now' : ''}"><em>${i === 0 ? '🎤' : i + 1}</em><p><small>${i === 0 ? 'Ahora canta' : i === 1 ? 'Sigue' : ''}</small><b>${esc(p.name)}</b><span>${esc(p.song)}${p.artist ? ` · ${esc(p.artist)}` : ''}</span></p>${k.edit && p.id ? `<div class="kc-act">
         <button type="button" class="kc-up" data-kc="subir" data-id="${esc(p.id)}" ${i === 0 ? 'disabled' : ''} title="Subir" aria-label="Subir">▲</button><button type="button" class="kc-down" data-kc="bajar" data-id="${esc(p.id)}" ${i === n - 1 ? 'disabled' : ''} title="Bajar" aria-label="Bajar">▼</button><button type="button" class="kc-done" data-kc="cantado" data-id="${esc(p.id)}">Ya cantó</button></div>` : ''}</div>`).join('')
       : '<p class="muted">Cuando alguien pida una canción, aparecerá aquí.</p>';
     // Sala light: una línea por participante; el nombre va entero (regla de Cote): si no cabe, se achica la letra
-    if (light) $('#kc-list').querySelectorAll('.kc-row b').forEach((b) => {
+    if (light) $('#kc-list').querySelectorAll('.kc-row .kl-name').forEach((b) => {
       b.style.fontSize = '';
       for (let f = parseFloat(getComputedStyle(b).fontSize); b.scrollWidth > b.clientWidth + 1 && f > 10; f -= 0.5) b.style.fontSize = `${f}px`;
     });
@@ -1904,6 +1909,8 @@ views.karaokectl = async (local) => {
     try {
       const r = await api('GET', `/api/karaoke/cantados${lq}`);
       if (!sungOpen || !$('#kc-sung')) return;
+      if (light) { $('#kc-sung').innerHTML = r.list.length ? r.list.map((x) => `<div class="kc-row kc-sung-row kl"><em>✓</em><span class="kl-song">${esc(x.text)}</span><b class="kl-name kl-hora">${esc(hhmm(x.at))}</b><div class="kc-act"><button type="button" class="kc-back" data-fila="${x.fila}" data-key="${esc(x.key)}" title="Volver a la lista" aria-label="Volver a la lista">↺</button></div></div>`).join('')
+        : '<p class="muted small">Esta noche todavía nadie aparece como «ya cantó».</p>'; return; }
       $('#kc-sung').innerHTML = r.list.length ? r.list.map((x) => `<div class="kc-row kc-sung-row"><em>✓</em><p><small>${x.at ? `Marcado a las ${esc(hhmm(x.at))}` : ''}</small><b>${esc(x.text)}</b></p><div class="kc-act"><button type="button" class="kc-back" data-fila="${x.fila}" data-key="${esc(x.key)}">Volver a la lista</button></div></div>`).join('')
         : '<p class="muted small">Esta noche todavía nadie aparece como «ya cantó».</p>';
     } catch (err) { if ($('#kc-sung')) $('#kc-sung').innerHTML = `<p class="muted small">⚠️ ${esc(err.message)}</p>`; }
