@@ -40,11 +40,12 @@ test('nombre del show: sin lo de los paréntesis y con el artista de las comilla
     { dia: 'VIERNES 27', show: 'PIANO MAN (X PROJECTS)' },
     { dia: 'SABADO 28', show: 'GEORGE MICHAEL "RAFA DAMIÁN" (RAFAEL PÉREZ)' },
     { dia: 'DOMINGO 29', show: 'ESPECIAL MÉXICO “LOS CHARROS”' },
+    { dia: 'LUNES 30', show: 'ESPECIAL BALADA ITALIANA MATIAS FAJARDO "MATIAS FAJARDO"' },
   ] };
   const srv = await startServer({ env: { GLOSA_TEST_URL: `http://localhost:${mock.address().port}/glosa`, KRB_FECHA: '2026-11-27T15:00:00-03:00' } });
   srvs.push(srv);
   const c = await srv.ok('GET', '/api/light/cartelera?local=kennedy');
   assert.equal(c.show, 'PIANO MAN');
-  assert.deepEqual(c.month.map((m) => m.show), ['PIANO MAN', 'GEORGE MICHAEL (RAFA DAMIÁN)', 'ESPECIAL MÉXICO (LOS CHARROS)']);
+  assert.deepEqual(c.month.map((m) => m.show), ['PIANO MAN', 'GEORGE MICHAEL (RAFA DAMIÁN)', 'ESPECIAL MÉXICO (LOS CHARROS)', 'ESPECIAL BALADA ITALIANA (MATIAS FAJARDO)']);
   assert.equal(c.week[1].show, 'GEORGE MICHAEL (RAFA DAMIÁN)');
 });

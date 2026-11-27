@@ -86,7 +86,10 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
     const raw = clean(t, 160).replace(/\([^()]*\)/g, ' ');
     const q = raw.match(/["“”«»]\s*([^"“”«»]+?)\s*["“”«»]/);
     const by = q ? clean(q[1], 60) : '';
-    const title = clean((q ? raw.replace(q[0], ' ') : raw).replace(/["“”«»]/g, ' ').replace(/^[\s\-–—,:·]+|[\s\-–—,:·]+$/g, ''), 100);
+    let title = clean((q ? raw.replace(q[0], ' ') : raw).replace(/["“”«»]/g, ' ').replace(/^[\s\-–—,:·]+|[\s\-–—,:·]+$/g, ''), 100);
+    // si el artista ya va escrito al final del título, no se repite (ej. «ESPECIAL BALADA ITALIANA MATIAS FAJARDO "MATIAS FAJARDO"»)
+    const up = (x) => clean(x, 160).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+    if (by && up(title).endsWith(` ${up(by)}`)) title = clean(title.slice(0, title.length - by.length).replace(/[\s\-–—,:·]+$/, ''), 100);
     return clean(title && by ? `${title} (${by})` : title || by, 120);
   };
   // Show de una fecha: en la cartelera el día se escribe como «SABADO 7» (vale el número del final)
