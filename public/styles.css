@@ -3940,3 +3940,6 @@ a.btn.paso:hover, a.btn.primary.paso:hover { background: #15803d; border-color: 
   .lp-stages button { padding: 8px 4px; font-size: .8rem; }
   .lp-stages button span { font-size: 1.2rem; }
 }
+/* Titulo de la sala light en el panel del karaoke: chico y en una sola linea (pedido de Cote, 27 nov) */
+.lp-title { margin: 0; font-size: 1.05rem; white-space: nowrap; }
+@media (max-width: 380px) { .lp-title { font-size: .92rem; } }
