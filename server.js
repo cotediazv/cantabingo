@@ -1095,7 +1095,7 @@ const insta = require('./insta.js')({ app, db, save, requireAdmin, fail, venue: 
 // completa y sin logos. Se aprieta solo a las 01:00 y a las 19:00 (hora de Chile, una vez cada una por día) y queda hasta
 // que alguien toque otro botón del GC. Si esa tarde hay sala de juegos de Kennedy abierta, entre las 12:00 y la 01:00
 // manda la sala (como antes).
-const FONDO_GC = { kennedy: 'kennedy-h' };
+const FONDO_GC = { kennedy: 'kennedy-h', frida: 'frida-h', tobalaba: 'tobalaba' }; // Frida y Tobalaba, igual (pedido de Cote, 27 nov)
 const salaDe = (v) => { const m = Object.values(db.sessions)[0]; return !!(m && !m.sim && (m.theme || 'frida') === v); };
 const horaChile = () => Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
   .formatToParts(ahora()).map((x) => [x.type, x.value]));
