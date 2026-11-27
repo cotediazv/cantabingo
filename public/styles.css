@@ -4078,3 +4078,5 @@ body.anim #rosco-ctl .w-flow .w-go { grid-column: 3; }
 body.anim #rosco-ctl .w-flow .w-back small { font-size: .62rem; }
 /* GC Light de Kennedy fuera del horario del show: el video horizontal del local a pantalla completa (Cote, 27 nov) */
 video.lg-fondo { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; object-fit: cover; background: #000; z-index: 0; }
+/* Con el fondo Kennedy en el GC Light, sin los logos de arriba (pedido de Cote, 27 nov) */
+body.lg-fondo-on #venue-mark { display: none !important; }

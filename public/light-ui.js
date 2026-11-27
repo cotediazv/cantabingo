@@ -10,6 +10,8 @@
   const staffVenue = async () => (store.get('staffToken') ? (await api('GET', '/api/staff/me').catch(() => ({}))).venue || '' : '');
   // Orden y nombres que pidió Cote (27 nov): 1 GC KARAOKE, 2 QR GRANDE, 3 GC SHOW, 4 GC CARTELERA, 5 INFO GRAL, 6 NADA
   const STAGES = [['karaoke', '🎤', 'GC KARAOKE'], ['qr', '📱', 'QR GRANDE'], ['show', '⭐', 'GC SHOW'], ['cartelera', '📅', 'GC CARTELERA'], ['info', '🔄', 'INFO GRAL'], ['none', '⛔', 'NADA']];
+  // En Kennedy, «NADA» pasa a ser «FONDO KENNEDY» (pedido de Cote, 27 nov): el video horizontal del local en el GC de OBS
+  const STAGES_K = STAGES.map((x) => (x[0] === 'none' ? ['fondo', '🎬', 'FONDO KENNEDY'] : x));
   const dayName = (d) => ({ MIERCOLES: 'Miércoles', SABADO: 'Sábado' }[d] || d.charAt(0) + d.slice(1).toLowerCase());
   // Diseño nuevo (tema.js): las etiquetas de las pantallas van sin emojis; con el diseño anterior quedan como siempre
   const se = (s) => (window.sinEmoji ? window.sinEmoji(s) : s);
@@ -79,9 +81,9 @@
       // Titulo chico y en una linea, sin el numero de personas (pedido de Cote, 27 nov: «no es relevante»)
       // Los botones del GC lo mas arriba posible (Cote, 27 nov): sin el subtitulo «En pantalla (GC)» (los botones ya dicen GC)
       top.innerHTML = `<h1 class="lp-title">${esc(st.title)}</h1>
-        ${st.fondo ? '<p class="lp-sala">🎬 <b>Fuera del horario del show:</b> el GC Light de OBS muestra el fondo horizontal de Mercado Kennedy. A las 19:00 vuelve solo al GC, hasta la 01:00.</p>' : ''}
+        ${st.stage === 'fondo' ? '<p class="lp-sala">🎬 <b>Fondo Kennedy en el GC de OBS.</b> Se pone solo a las 19:00 y a la 01:00. Para pasar al GC, toca otro botón.</p>' : ''}
         ${st.sala ? '<p class="lp-sala">🎮 <b>Hoy hay sala de juegos en este local:</b> el GC Light de OBS muestra el GC de la sala de juegos (sus juegos, su karaoke y su QR) toda la noche. Estos botones vuelven a mandar en el GC cuando se cierre la sala de juegos.</p>' : ''}
-        <div class="lp-stages">${STAGES.map(([k, i, t]) => `<button type="button" data-st="${k}" class="${st.stage === k ? 'on' : ''}"><span>${i}</span>${t}</button>`).join('')}</div>
+        <div class="lp-stages">${(v === 'kennedy' ? STAGES_K : STAGES).map(([k, i, t]) => `<button type="button" data-st="${k}" class="${st.stage === k ? 'on' : ''}"><span>${i}</span>${t}</button>`).join('')}</div>
 `;
       // Orden de Cote (27 nov): arriba los botones del GC, luego la lista del karaoke y despues el GC personalizable.
       // El switch «Video cartelera» ya no va (Cote: «esta demas, eso funciona automatico»).
@@ -166,10 +168,10 @@
       // el video de la pantalla horizontal del local; a las 19:00 vuelve solo al GC (el servidor decide la hora)
       if (st.fondo) {
         const k = `fondo:${st.fondo}`;
-        if (shown !== k) { shown = k; stopSub(); document.body.classList.remove('gc-screen'); app.innerHTML = `<video class="lg-fondo" src="${esc(st.fondo)}" autoplay muted loop playsinline></video>`; }
+        if (shown !== k) { shown = k; stopSub(); document.body.classList.remove('gc-screen'); document.body.classList.add('lg-fondo-on'); app.innerHTML = `<video class="lg-fondo" src="${esc(st.fondo)}" autoplay muted loop playsinline></video>`; }
         return;
       }
-      if (shown.startsWith('fondo:')) { shown = ''; app.innerHTML = '<div id="lg"></div>'; }
+      if (shown.startsWith('fondo:')) { shown = ''; document.body.classList.remove('lg-fondo-on'); app.innerHTML = '<div id="lg"></div>'; }
       if (st.sala) {
         if (shown !== 'sala') { shown = 'sala'; stopSub(); document.body.classList.remove('gc-screen'); app.innerHTML = ''; sub = await views.escena(); if (!alive) stopSub(); }
         return;
@@ -232,7 +234,7 @@
     await tick();
     const timer = setInterval(tick, 2500);
     const offAviso = window.onAviso(tick); // el cambio de GC llega al instante
-    return () => { alive = false; clearInterval(timer); offAviso(); stopSub(); document.body.classList.remove('obs', 'gc-screen'); };
+    return () => { alive = false; clearInterval(timer); offAviso(); stopSub(); document.body.classList.remove('obs', 'gc-screen', 'lg-fondo-on'); };
   };
 
   // ---------- Celular del público ----------

@@ -1,25 +1,43 @@
-// GC Light de Mercado Kennedy fuera del horario del show (pedido de Cote, 27 nov): de 01:00 a 19:00 (hora de Chile)
-// muestra el video horizontal del local; de 19:00 a 01:00, el GC. Una tarde con sala de juegos de Kennedy, manda la sala.
+// GC Light de Mercado Kennedy: botón «FONDO KENNEDY» (pedidos de Cote, 27 nov). Muestra el video horizontal del local;
+// se aprieta solo una vez al publicar, a la 01:00 y a las 19:00, y queda hasta que se toque otro botón del GC.
+// Con la sala de juegos de Kennedy abierta (de 12:00 a 01:00), manda la sala.
 const { test, after } = require('node:test');
 const assert = require('node:assert/strict');
-const { startServer } = require('../helpers');
+const { startServer, sleep } = require('../helpers');
 
-const data = { projects: {}, sessions: {}, vertical: { 'kennedy-h': { video: 123, size: 10, mode: 'video' } } };
+const base = () => ({ projects: {}, sessions: {}, vertical: { 'kennedy-h': { video: 123, size: 10, mode: 'video' } } });
 const srvs = [];
 after(async () => { for (const s of srvs) await s.stop(); });
-const at = async (iso) => { const s = await startServer({ data, env: { KRB_FECHA: iso } }); srvs.push(s); return s; };
+const at = async (iso, data = base()) => { const s = await startServer({ data, env: { KRB_FECHA: iso } }); srvs.push(s); await sleep(2600); return s; };
+const SRC = '/vertical/kennedy-h.mp4?v=123';
 
-test('fondo del GC Light de Kennedy: de día el video horizontal, en la noche el GC', async () => {
-  let s = await at('2026-11-25T18:00:00Z'); // miércoles 15:00 en Chile
-  assert.equal((await s.ok('GET', '/api/light?local=kennedy')).fondo, '/vertical/kennedy-h.mp4?v=123');
+test('fondo Kennedy: queda puesto al publicar y se quita con otro botón del GC', async () => {
+  const s = await at('2026-11-25T18:00:00Z'); // miércoles 15:00 en Chile
+  let st = await s.ok('GET', '/api/light?local=kennedy');
+  assert.equal(st.stage, 'fondo'); assert.equal(st.fondo, SRC);
   assert.equal((await s.ok('GET', '/api/light?local=frida')).fondo, ''); // solo Kennedy
+  st = await s.admin.post('/api/light/stage', { local: 'kennedy', show: 'cartelera' });
+  assert.equal(st.fondo, '');
+  st = await s.admin.post('/api/light/stage', { local: 'kennedy', show: 'fondo' });
+  assert.equal(st.fondo, SRC);
   // con la sala de juegos de Kennedy abierta en la tarde, manda la sala
   const { sid } = await s.openRoom({ theme: 'kennedy' });
-  const st = await s.ok('GET', '/api/light?local=kennedy');
+  st = await s.ok('GET', '/api/light?local=kennedy');
   assert.equal(st.fondo, ''); assert.equal(st.sala, true);
   await s.admin.post(`/api/sessions/${sid}/host/close`);
-  s = await at('2026-11-25T23:30:00Z'); // miércoles 20:30: horario del show
+});
+
+test('fondo Kennedy: a las 19:00 se aprieta solo', async () => {
+  const data = base(); data.fondoAuto = { 'kennedy:ini': '2026-11-20' };
+  data.lights = { kennedy: { id: 'Lk', venue: 'kennedy', stage: 'cartelera', players: {}, created: 1 } };
+  const s = await at('2026-11-25T22:05:00Z', data); // miércoles 19:05
+  const st = await s.ok('GET', '/api/light?local=kennedy');
+  assert.equal(st.stage, 'fondo'); assert.equal(st.fondo, SRC);
+});
+
+test('fondo Kennedy: fuera de las 01:00 y 19:00 no se mete', async () => {
+  const data = base(); data.fondoAuto = { 'kennedy:ini': '2026-11-20' };
+  data.lights = { kennedy: { id: 'Lk', venue: 'kennedy', stage: 'karaoke', players: {}, created: 1 } };
+  const s = await at('2026-11-26T00:30:00Z', data); // miércoles 21:30
   assert.equal((await s.ok('GET', '/api/light?local=kennedy')).fondo, '');
-  s = await at('2026-11-26T04:30:00Z'); // jueves 01:30: vuelve el fondo
-  assert.equal((await s.ok('GET', '/api/light?local=kennedy')).fondo, '/vertical/kennedy-h.mp4?v=123');
 });

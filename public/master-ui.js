@@ -761,7 +761,7 @@
       const l = s.light;
       box.classList.toggle('gm-dos', !!(s.main && l)); // con la sala de juegos de este local, los dos grupos en 3 columnas para que quepan
       box.innerHTML = `${s.main ? `<div class="gm-row"><small>GC de la sala de juegos</small><div class="gm-keyrow">${MAIN.map(([k, i, t]) => key('data-main', k, i, t, s.main.stage === k)).join('')}</div></div>` : ''}
-        ${l ? `<form class="gm-row gm-custom" id="gmf-${v}"><small>GC de la sala light</small><div class="gm-keyrow">${LIGHT.map(([k, i, t]) => key('data-light', k, i, t, l.stage === k)).join('')}
+        ${l ? `<form class="gm-row gm-custom" id="gmf-${v}"><small>GC de la sala light</small><div class="gm-keyrow">${(v === 'kennedy' ? LIGHT.map((x) => (x[0] === 'none' ? ['fondo', '🎬', 'Fondo Kennedy'] : x)) : LIGHT).map(([k, i, t]) => key('data-light', k, i, t, l.stage === k)).join('')}
             ${key('data-video', l.video ? '0' : '1', '🎬', 'Video cartelera', !!l.video)}
             <button class="gm-key ${l.stage === 'custom' ? 'on' : ''}"><i></i><span>✏️</span><b>GC PER</b></button>
             ${key('data-p1', 'vivo', '🔴', 'Pantalla 1: vivo', s.p1 === 'vivo')}${key('data-p1', 'gc', '🖼️', 'Pantalla 1: GC', s.p1 === 'gc')}</div></form>` : ''}`;

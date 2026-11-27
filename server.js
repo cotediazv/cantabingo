@@ -1088,22 +1088,39 @@ const desafio = require('./desafio.js')({ placeOf, roscoBusy: () => roscoLock('d
 // «Síguenos en Instagram»: la cuenta del local de la sala abierta
 const insta = require('./insta.js')({ app, db, save, requireAdmin, fail, venue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
 // Sala light: karaoke, show y cartelera en otro local, al mismo tiempo que la sala principal
-// GC Light de Mercado Kennedy fuera del horario del show (pedido de Cote, 27 nov: «que toda la semana esté puesto el fondo
-// horizontal de Mercado Kennedy. Y se quite y le dé paso al GC en los horarios de show, desde las 7 de la tarde hasta la
-// 1 de la mañana… que cambie sola»): todos los días, de 01:00 a 19:00 (hora de Chile), el GC Light muestra el video de la
-// pantalla horizontal del local (kennedy-h); de 19:00 a 01:00, el GC de siempre. Si esa tarde hay sala de juegos de
-// Kennedy abierta, manda la sala (los juegos pueden partir antes de las 19:00); después de la 01:00 vuelve el fondo.
+// GC Light de Mercado Kennedy: botón «FONDO KENNEDY» (pedidos de Cote, 27 nov: «que toda la semana esté puesto el fondo
+// horizontal de Mercado Kennedy… y le dé paso al GC en los horarios de show»; después: «a las 7 de la tarde el botón
+// fondo Kennedy queda presionado hasta que el DJ ponga el GC… así puede ajustar la cámara»). Es un GC más de la sala
+// light (stage `fondo`, en lugar de «NADA»): muestra el video de la pantalla horizontal del local (kennedy-h) a pantalla
+// completa y sin logos. Se aprieta solo a las 01:00 y a las 19:00 (hora de Chile, una vez cada una por día) y queda hasta
+// que alguien toque otro botón del GC. Si esa tarde hay sala de juegos de Kennedy abierta, entre las 12:00 y la 01:00
+// manda la sala (como antes).
 const FONDO_GC = { kennedy: 'kennedy-h' };
 const salaDe = (v) => { const m = Object.values(db.sessions)[0]; return !!(m && !m.sim && (m.theme || 'frida') === v); };
+const horaChile = () => Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+  .formatToParts(ahora()).map((x) => [x.type, x.value]));
 const fondoDe = (v) => {
   const scr = FONDO_GC[v]; const c = scr && (db.vertical || {})[scr];
-  if (!c || !c.video) return '';
-  const h = +new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', hour: '2-digit', hourCycle: 'h23' }).format(ahora());
-  if (h >= 19 || h < 1) return ''; // horario del show: el GC
-  if (h >= 12 && salaDe(v)) return ''; // tarde con sala de juegos abierta: la sala
+  if (!c || !c.video || ((db.lights || {})[v] || {}).stage !== 'fondo') return '';
+  const h = +horaChile().hour;
+  if ((h >= 12 || h < 1) && salaDe(v)) return ''; // con la sala de juegos de este local abierta, manda la sala
   return `/vertical/${scr}.mp4?v=${c.video}`;
 };
+const fondoAuto = () => {
+  const p = horaChile(); const min = +p.hour * 60 + +p.minute; const day = `${p.year}-${p.month}-${p.day}`;
+  db.fondoAuto ||= {};
+  for (const v of Object.keys(FONDO_GC)) {
+    const l = (db.lights || {})[v]; if (!l) continue;
+    // Una sola vez al publicar este cambio: el GC Light de Kennedy queda en el fondo
+    if (!db.fondoAuto[`${v}:ini`]) { db.fondoAuto[`${v}:ini`] = day; l.stage = 'fondo'; l.video = false; save(); aviso(); }
+    for (const at of [60, 19 * 60]) { // 01:00 y 19:00 (si el servicio se estaba reiniciando justo ahí, hasta 15 minutos después)
+      const k = `${v}:${at}`;
+      if (min >= at && min < at + 15 && db.fondoAuto[k] !== day) { db.fondoAuto[k] = day; l.stage = 'fondo'; l.video = false; save(); aviso(); }
+    }
+  }
+};
 lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta, aviso, salaDe, fondoDe });
+setTimeout(fondoAuto, 2000); setInterval(fondoAuto, 20e3);
 // «El último en pie», versión de prueba (pedido de Cote, 23 nov)
 require('./enpie.js')({ placeOf, roscoBusy: () => roscoLock('enpie'), app, db, save, requireAdmin, fail, setStage, festejo,
   findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null,

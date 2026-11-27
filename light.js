@@ -11,7 +11,7 @@ const GLOSA = {
   frida: 'https://script.google.com/macros/s/AKfycby3oCPs4gFVUd3P7csLrQV3XEsefGMpLStZphoa76AnTRVlyExxbEpp2HAEnTbH5zwA/exec',
   tobalaba: 'https://script.google.com/macros/s/AKfycbz1zFsj6YR2i03dlYuLTD0Hj3HRjZ8VlyQU0S9uCp_B6qurdegC0lRlDyfM9AUk7rZ7pQ/exec',
 };
-const STAGES = ['info', 'karaoke', 'show', 'cartelera', 'qr', 'custom', 'none']; // custom: GC personalizable, con el texto que escribe el equipo (pedido de Cote, 21 nov) // info: la información que va cambiando (por defecto, pedido de Cote)
+const STAGES = ['info', 'karaoke', 'show', 'cartelera', 'qr', 'custom', 'none', 'fondo']; // fondo: el video horizontal del local en el GC (Kennedy, 27 nov) // custom: GC personalizable, con el texto que escribe el equipo (pedido de Cote, 21 nov) // info: la información que va cambiando (por defecto, pedido de Cote)
 const TZ = 'America/Santiago';
 const NIGHT_STARTS = 6; // la noche cambia a las 6 AM, igual que el karaoke
 const DAYS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
@@ -110,7 +110,7 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
   // ---------- Estado ----------
   const pub = (v) => {
     const l = db.lights[v];
-    // fondo: fuera del horario del show, el video horizontal del local en lugar del GC (Kennedy, pedido de Cote, 27 nov)
+    // fondo: con el botón «FONDO KENNEDY», el video horizontal del local en lugar del GC (pedido de Cote, 27 nov)
     // sala: hoy hay sala de juegos (no simulada) de este local; el GC Light muestra el GC de la sala de juegos toda la
     // noche, enganchado a su QR (pedido de Cote, 27 nov: «tener que cambiarlo en OBS es una lata»)
     return l ? { open: true, id: l.id, venue: v, name: VENUES[v], title: `Sala light · ${VENUES[v]}`, stage: l.stage, text: l.text || '', video: !!l.video, players: Object.keys(l.players).length, sala: !!salaDe(v), fondo: fondoDe(v) } : { open: false, venue: v, name: VENUES[v], sala: !!salaDe(v), fondo: fondoDe(v) };
