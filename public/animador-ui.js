@@ -117,7 +117,7 @@
   // «un paso atrás, cambio de turno, reiniciar, preguntas nuevas… como en opciones adicionales, como en una pestañita,
   // cosa de que no moleste el juego». Se llevan a una pestaña arriba a la derecha (dentro de #app, para que sigan
   // funcionando los botones de cada panel).
-  const OPTS = '#w-undo, #w-swap, #w-reset, #w-newq, #manual, #dc-reset, #vc-more, details.more';
+  const OPTS = '#w-swap, #w-reset, #w-newq, #manual, #dc-reset, #vc-more, details.more';
   const opts = () => {
     const found = [...app.querySelectorAll(OPTS)].filter((b) => !b.closest('#an-opts'));
     let box = document.getElementById('an-opts');

@@ -95,6 +95,15 @@ test('rosco: fallo pasa el turno, deshacer, empate y desempate por sorteo', asyn
   w = await srv.admin.get(`/api/wheels/${id}`);
   assert.equal(w.turn, 0);
   assert.equal(w.players[0].status[0], 'pending');
+  // «Un paso atrás» tras una Correcta por error (Cote, 27 nov): vuelve a la letra con el tiempo pausado
+  await act(id, 'start');
+  await act(id, 'hit');
+  assert.ok((await srv.admin.get(`/api/wheels/${id}`)).runningSince); // con Correcta el reloj sigue
+  await act(id, 'undo');
+  w = await srv.admin.get(`/api/wheels/${id}`);
+  assert.equal(w.runningSince, null);
+  assert.equal(w.players[0].status[0], 'pending');
+  assert.equal(w.players[0].current, 0);
   // Los dos fallan todo → empate. Cada 2 rondas hay que desplegar el ranking de la Trivia antes de seguir
   let rankings = 0;
   for (let i = 0; i < 10; i++) {

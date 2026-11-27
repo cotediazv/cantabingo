@@ -167,6 +167,7 @@
             <button class="primary big w-accept paso" data-paso="2" id="w-crowd">🏅 Resultados del público: ranking y ganador</button>
             <div class="w-ann" id="w-crowd-res" hidden></div><div id="w-after" hidden>${BACK_BINGO}</div></div>
           <div class="w-flow">
+            <button class="w-back" id="w-back" data-do="undo" title="Un paso atrás"><b>⬅️</b><small>Un paso atrás</small></button>
             <button class="w-show" id="w-show"></button>
             <button class="w-go" id="w-clock"></button>
           </div>
@@ -251,6 +252,7 @@
       if (rk.dataset.k !== rkKey) { rk.dataset.k = rkKey; rk.innerHTML = st.rank ? window.rankAnnHtml(st.rank, st.rankPlayers, !!(st.crowdWinner || st.winner)) : ''; }
       $('#w-clock').disabled = step !== 2 || !!st.rankDue;
       $('#w-undo').disabled = !st.canUndo;
+      $('#w-back').disabled = !st.canUndo; // a la vista junto a los botones del paso (pedido de Cote, 27 nov): vuelve 1 paso con el tiempo pausado
       $('#w-undo').hidden = !!st.crowdWinner; // con el ganador (ya sin «Aceptar»), «Un paso atrás» sigue a mano por si fue un error
       $('#w-swap').hidden = st.players.length < 2;
       $('#w-wheels').innerHTML = st.players.map((_, i) => `<div class="wheel-box ${i === st.turn ? 'on' : 'off'}">${wheelSVG(st, i, true)}</div>`).join('');
