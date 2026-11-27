@@ -671,7 +671,7 @@
       }
       if (week.length) {
         var ws = '<h2>📅 Esta semana</h2><ul class="lv-week">';
-        for (i = 0; i < week.length && i < 5; i++) ws += '<li class="' + (week[i].today ? 'on' : '') + '"><em>' + h(day(week[i].day)) + ' ' + h(week[i].date) + '</em><b>' + (week[i].show ? showHtml(week[i].show) : h(cap(((week[i].hours || [])[0] || {}).label || ''))) + '</b></li>';
+        for (i = 0; i < week.length && i < 7; i++) ws += '<li class="' + (week[i].today ? 'on' : '') + '"><em>' + h(day(week[i].day)) + ' ' + h(week[i].date) + '</em><b>' + (week[i].show ? showHtml(week[i].show) : h(cap(((week[i].hours || [])[0] || {}).label || ''))) + '</b></li>';
         out.push(ws + '</ul>');
       }
       if (month.length) {
