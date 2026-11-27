@@ -246,6 +246,37 @@
   .djent select{flex:1;min-width:0;background:#121419;color:var(--txt);border:1px solid var(--line);border-radius:10px;padding:8px;font-size:14px}
   .djnivel{width:70px;height:10px;border-radius:5px;background:#222;overflow:hidden}
   .djnivel i{display:block;height:100%;width:0;background:var(--ok);transition:width .08s}
+  /* Colores base en el panel del DJ (Cote, 27 nov: «extrañe los colores base»): columna al costado de la vista previa */
+  .djbase{position:absolute;right:6px;top:6px;bottom:40px;z-index:3;display:flex;flex-direction:column;justify-content:center;gap:6px}
+  .djbase button{width:34px;height:34px;border-radius:50%;border:2px solid #000a;box-shadow:0 0 0 1px #fff4;cursor:pointer;padding:0}
+  .djbase button.act{box-shadow:0 0 0 3px #fff}
+  body.dj-cabezas .djbase{display:none}
+  /* Grupos como pestanas (solo en el celular) */
+  .djgrupos{display:none}
+  #djGira{display:none}
+  /* Version para el celular (Cote, 27 nov: «los botones se veian fatal… facil de usar, botones bonitos y simples»):
+     pestanas con los grupos y 4 botones grandes del grupo elegido; sin la entrada de audio (la escucha la estacion) */
+  @media (max-width:699px){
+    body.dj .djvista{flex:0 0 30%}
+    .djgrupos{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+    .djgrupos button{border:0;border-radius:10px;padding:8px 0;font-size:12px;font-weight:800;color:#fff;background:#1a1d24;cursor:pointer;position:relative}
+    .djgrupos button.act{background:var(--acc);color:#fff}
+    .djgrupos button.on::after{content:"";position:absolute;top:4px;right:5px;width:7px;height:7px;border-radius:50%;background:#7CFFB2}
+    body.dj .djesc{grid-template-columns:1fr 1fr;grid-template-rows:none;grid-auto-rows:1fr;gap:8px;min-height:0}
+    body.dj .djesc .djgr, body.dj .djesc .fuera{display:none}
+    body.dj .djesc .djb{border-radius:18px;font-size:17px;gap:6px}
+    body.dj .djesc .djb i{font-size:34px}
+    body.dj .djesc .djb::before{opacity:.5}
+    body.dj .djesc .djb.act::before{opacity:.9}
+    body.dj #djMic, body.dj .djent{display:none !important}
+    body.dj .djctl{grid-template-columns:repeat(3,1fr)}
+    body.dj .djc{padding:12px 4px;font-size:15px;border-radius:14px}
+  }
+  /* telefono acostado: se pide ponerlo vertical (Cote: «que ojala no gire la pantalla») */
+  @media (orientation:landscape) and (max-height:500px) and (pointer:coarse){
+    body.dj #djGira{display:flex;position:fixed;inset:0;z-index:50;background:#0b0c10;color:#fff;flex-direction:column;align-items:center;justify-content:center;gap:10px;font-size:46px}
+    body.dj #djGira b{font-size:18px}
+  }
   .djb{position:relative;border:0;border-radius:16px;color:#fff;font-weight:800;font-size:16px;cursor:pointer;overflow:hidden;
        background:var(--card);box-shadow:inset 0 0 0 1px var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px;min-height:70px;text-align:center}
   .djb i{font-style:normal;font-size:28px;line-height:1;position:relative}
@@ -285,7 +316,9 @@
 <div id="dj">
   <div class="djtop"><button class="ayudaBtn" id="djAyudaBtn" title="Ayuda e instrucciones">?</button><b>KRB · DJ</b><div class="djpag"><button id="djPagEsc" class="act">Escenas</button><button id="djPagCab">Cabezas</button></div><span id="djLatido" title="Ritmo"></span><span id="djBpm" style="font-size:13px;color:var(--mut);min-width:64px">—</span>
     <div class="pill" id="djPill"><span class="dot" id="djDot"></span><span id="djPillTxt">…</span></div></div>
-  <div class="djvista" id="djVista"><div id="djToque"><div id="djPunto"></div><span id="djToqueAyuda">Pasa el dedo por el salón</span></div><button id="djFrente">⟲ De frente</button></div>
+  <div class="djvista" id="djVista"><div id="djToque"><div id="djPunto"></div><span id="djToqueAyuda">Pasa el dedo por el salón</span></div><button id="djFrente">⟲ De frente</button>
+    <div class="djbase" id="djBase" title="Colores base: pared de ese color, blanco de frente"></div></div>
+  <div class="djgrupos" id="djGrupos"></div>
   <div class="djesc" id="djEsc"></div>
   <div id="djCab">
     <div class="djsel" id="djSel"><button data-c="0">Cabeza 1</button><button data-c="1">Cabeza 2</button><button data-c="2">Cabeza 3</button><button data-c="todas" class="act">Las 3</button></div>
@@ -301,6 +334,7 @@
   <div class="djint">Intensidad <input type="range" id="djInt" min="10" max="100" value="100"><span id="djIntTxt">100%</span></div>
   <div class="djent">Entrada <select id="djEntrada"><option value="">Micrófono (predeterminado)</option></select><span class="djnivel"><i id="djNivel"></i></span></div>
   <div id="djAviso"></div>
+  <div id="djGira">📱<b>Pon el teléfono vertical</b></div>
 </div>
 <header>
   <h1>Luces KRB</h1>
@@ -2858,8 +2892,28 @@ async function djAplicar(i, auto){
   enviar(base, 0);
   capas.forEach(c => efecto(c.id, {tipo: 'sec', pasos: pasosTxt(c.pasos), t: (c.seg != null ? c.seg : c.ritmo * seg).toFixed(3), fx: c.fx, ritmo: c.ritmo}));
 }
+let djGrupoVisto = '';
+function djVerGrupo(g){
+  djGrupoVisto = g;
+  document.querySelectorAll('#djEsc [data-grupo]').forEach(x => x.classList.toggle('fuera', x.dataset.grupo !== g));
+  document.querySelectorAll('#djGrupos button').forEach(x => x.classList.toggle('act', x.dataset.g === g));
+}
+// Color base (Cote, 27 nov): la pared del color elegido, blanco de frente (cabezas 1 y 2 al escenario y frontales) y las mini
+// del mismo color moviendose. Deja la escena del DJ y su Automatico. Es el mismo armado que los momentos de los juegos.
+let djBaseColor = '';
+async function djBase(c){
+  djEstado.auto = false; djEstado.escena = -1; djBaseColor = c; djPintar();
+  djServidor({ auto: '0', escena: '-1', nombre: 'Base · ' + c });
+  const L = compilarMomento({ g: () => ({ ...BASE(), ...pared(c, 100), mini: { color: c, intensidad: 90, posicion: 'escenario', mover: true } }) });
+  for (const l of L) if (l.startsWith('/api/')) { try { const e = await api(l); if (l.startsWith('/api/set')) pintarEstado(e); } catch(e){ sinConexion(); return; } }
+  toast('Base ' + c);
+}
 function djPintar(){
   document.querySelectorAll('#djEsc .djb').forEach((b, i) => b.classList.toggle('act', i === djEstado.escena));
+  if (djEstado.escena >= 0) djBaseColor = '';
+  document.querySelectorAll('#djBase button').forEach(b => b.classList.toggle('act', b.dataset.c === djBaseColor));
+  const ge = (DJ_ESCENAS[djEstado.escena] || {}).grupo;
+  document.querySelectorAll('#djGrupos button').forEach(b => b.classList.toggle('on', b.dataset.g === ge));
   document.querySelectorAll('#ipadDJ .djb').forEach((b, i) => b.classList.toggle('act', i === djEstado.escena));
   $('djAuto').classList.toggle('act', djEstado.auto); $('ipadDJAuto').classList.toggle('act', djEstado.auto);
 }
@@ -3109,19 +3163,21 @@ function djToma(){ if (djEstado.tomaTecho) plano([0, 1.4, 11], [0, 4.2, -1]); el
 // Salon completo visto desde arriba, EN HORIZONTAL con el escenario a la izquierda, llenando todo el recuadro
 // (Cote, 26 nov: «que el salon ocupe el rectangulo completo, para poder seguir como corresponde»): la imagen se estira
 // al tamano del recuadro (V.aspecto) y el dedo usa la misma cuenta, asi el punto calza donde se toca.
-const SALON_V0 = -6;                                                 // desde detras del escenario hasta el fondo del salon
+// Rango del mapa de Cabezas (Cote, 27 nov): hasta la penultima columna del salon (lo que hay despues no se usa) y, detras
+// del escenario, una columna mas hacia atras (alla tambien hay actividades)
+const CAB_V0 = () => -(colsSalon()[1][1] - colsSalon()[0][1]) * 0.8, CAB_V1 = () => colsSalon()[colsSalon().length - 2][1];
 function vistaSalonArriba(){
   // celular de pie (GC Light del DJ): el salon en VERTICAL, con el escenario abajo (Cote, 26 nov)
   const r = $('djVista').getBoundingClientRect();
   if (r.height > r.width){
     V.aspecto = null; V.fov = 52 * Math.PI / 180;
-    V.objetivo = deSalon(-0.5, 13); V.dist = 46; V.pitch = 1.45;
+    V.objetivo = deSalon(-0.5, (CAB_V0() + CAB_V1()) / 2 - 2); V.dist = (CAB_V1() - CAB_V0()) * 0.95; V.pitch = 1.45;
     // escenario ABAJO y el salon hacia arriba (Cote, 26 nov)
     const a = deSalon(0, 0), b = deSalon(0, 10); V.yaw = Math.atan2(b[0] - a[0], b[2] - a[2]) + Math.PI; V.sucio = true; return;
   }
   // computador (o celular acostado): en horizontal
-  const ancho = SALON.cocinas - SALON.pasillo, largo = SALON.largo - SALON_V0;
-  V.objetivo = deSalon((SALON.cocinas + SALON.pasillo) / 2, (SALON.largo + SALON_V0) / 2); V.objetivo[1] = 0;
+  const ancho = SALON.cocinas - SALON.pasillo, largo = CAB_V1() - CAB_V0();
+  V.objetivo = deSalon((SALON.cocinas + SALON.pasillo) / 2, (CAB_V1() + CAB_V0()) / 2); V.objetivo[1] = 0;
   V.pitch = Math.PI / 2 - 0.004; V.aspecto = largo / (ancho * 1.12);
   V.fov = 16 * Math.PI / 180;                                          // de muy arriba y con lente angosto: casi un plano, sin deformar lo alto
   V.dist = (ancho * 1.12 / 2) / Math.tan(V.fov / 2);                  // con un margen: lo alto (columnas, escenario) se ve mas grande
@@ -3167,7 +3223,7 @@ function djApuntar(u, v){
   const mover = e => {
     const p = pisoBajo(e.clientX, e.clientY); if (!p) return;
     let [u, v] = aSalon(p);
-    u = Math.max(SALON.pasillo, Math.min(SALON.cocinas, u)); v = Math.max(-4, Math.min(SALON.largo, v));   // dentro del salon
+    u = Math.max(SALON.pasillo, Math.min(SALON.cocinas, u)); v = Math.max(CAB_V0(), Math.min(CAB_V1(), v));   // dentro del rango del mapa
     const r = capa.getBoundingClientRect(), pt = $('djPunto');
     pt.style.display = 'block'; pt.style.left = (e.clientX - r.left) + 'px'; pt.style.top = (e.clientY - r.top) + 'px';
     djApuntar(u, v);
@@ -3222,9 +3278,18 @@ function iniciarDJ(){
   $('djFrente').onclick = () => { document.body.classList.contains('dj-cabezas') ? vistaSalonArriba() : djToma(); V.sucio = true; };
   const cont = $('djEsc'); cont.innerHTML = '';
   DJ_ESCENAS.forEach((e, i) => {
-    if (!i || DJ_ESCENAS[i - 1].grupo !== e.grupo){ const t = document.createElement('div'); t.className = 'djgr'; t.textContent = e.grupo; cont.appendChild(t); }
-    const b = document.createElement('button'); b.className = 'djb'; b.style.setProperty('--g', e.g);
+    if (!i || DJ_ESCENAS[i - 1].grupo !== e.grupo){ const t = document.createElement('div'); t.className = 'djgr'; t.textContent = e.grupo; t.dataset.grupo = e.grupo; cont.appendChild(t); }
+    const b = document.createElement('button'); b.className = 'djb'; b.style.setProperty('--g', e.g); b.dataset.grupo = e.grupo;
     b.innerHTML = `<i>${e.i}</i><span>${e.n}</span>`; b.onclick = () => djAplicar(i); cont.appendChild(b); });
+  // celular: un grupo a la vez, con pestanas
+  const gs = [...new Set(DJ_ESCENAS.map(e => e.grupo))];
+  $('djGrupos').innerHTML = gs.map(g => `<button data-g="${g}">${g}</button>`).join('');
+  $('djGrupos').querySelectorAll('button').forEach(b => b.onclick = () => djVerGrupo(b.dataset.g));
+  djVerGrupo(gs[0]);
+  // colores base al costado de la vista previa
+  const bases = ['azul', 'rojo', 'verde', 'amarillo', 'morado', 'cian'].filter(c => conf.colores[c]);
+  $('djBase').innerHTML = bases.map(c => `<button data-c="${c}" style="background:${COLOR_CSS[c]}" title="Base ${c}"></button>`).join('');
+  $('djBase').querySelectorAll('button').forEach(b => b.onclick = () => djBase(b.dataset.c));
   // el estado de conexion del panel normal se copia al del DJ
   new MutationObserver(() => { $('djDot').className = $('dot').className; $('djPillTxt').textContent = $('pillTxt').textContent; })
     .observe($('pill'), { subtree: true, childList: true, attributes: true, characterData: true });
