@@ -3952,3 +3952,30 @@ a.btn.paso:hover, a.btn.primary.paso:hover { background: #15803d; border-color: 
   .lp-stages button span { font-size: 1.05rem; }
 }
 #kc-lt { padding-top: 12px; }
+/* Lista del karaoke de la sala light: una linea por participante, con sus botones (pedido de Cote, 27 nov).
+   El nombre va entero; si no cabe, la cancion se acorta (no el nombre). */
+.kc-1l .kc-row { flex-wrap: nowrap; gap: 8px; padding: 6px 0; }
+.kc-1l .kc-row em { width: 30px; height: 30px; font-size: .85rem; }
+.kc-1l .kc-row p { display: flex; align-items: baseline; gap: 8px; flex: 1 1 auto; min-width: 0; }
+.kc-1l .kc-row small { display: none; }
+.kc-1l .kc-row b { font-size: 1rem; white-space: nowrap; overflow-wrap: normal; flex: 0 0 auto; }
+.kc-1l .kc-row span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; min-width: 0; font-size: .9rem; }
+.kc-1l .kc-row.now { padding: 6px 8px; }
+.kc-1l .kc-act { width: auto; padding-left: 0; gap: 4px; }
+.kc-1l .kc-act button { min-width: 36px; height: 36px; padding: 0 8px; font-size: .9rem; }
+.kc-1l .kc-act .kc-done { padding: 0 10px; }
+@media (max-width: 520px) {
+  .kc-1l .kc-row b { font-size: .88rem; }
+  .kc-1l .kc-row span { font-size: .78rem; }
+  .kc-1l .kc-act button { min-width: 32px; height: 34px; padding: 0 6px; font-size: .8rem; }
+  .kc-1l .kc-act .kc-done { padding: 0 7px; }
+}
+/* el nombre se achica si no cabe (lo hace app.js); la cancion usa solo el espacio que sobra */
+.kc-1l .kc-row b { flex: 0 1 auto; min-width: 0; overflow: hidden; }
+.kc-1l .kc-row span { flex: 1 1 0; }
+@media (max-width: 520px) {
+  .kc-1l .kc-act { gap: 3px; }
+  .kc-1l .kc-act button { min-width: 28px; height: 32px; padding: 0 4px; font-size: .75rem; }
+  .kc-1l .kc-act .kc-done { padding: 0 6px; }
+  .kc-1l .kc-row em { width: 26px; height: 26px; font-size: .75rem; }
+}

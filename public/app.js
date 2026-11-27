@@ -1806,7 +1806,7 @@ views.karaokectl = async (local) => {
   if (!admin && !staff) { if (light) { location.hash = `#/equipo/${light}`; return undefined; } return viewLogin(); }
   const lq = light ? `?local=${light}` : '';
   app.innerHTML = `${light ? '<div class="panel" id="kc-lt"></div>' : ''}<div class="panel"><div class="row between"><div><h1 id="kc-title" style="margin:0">Karaoke</h1><span class="muted" id="kc-sub"></span></div></div>
-      <div id="kc-list" style="margin-top:14px"></div>
+      <div id="kc-list" ${light ? 'class="kc-1l" ' : ''}style="margin-top:14px"></div>
       <div id="kc-sung-box" hidden><button type="button" id="kc-sung-btn" class="kc-sung-btn">✓ Ya cantaron</button><div id="kc-sung"></div></div>
       <label class="check" style="margin-top:14px"><input type="checkbox" id="kc-phone"> Permitir pedir canciones desde el celular</label>
       <p class="muted small" style="margin:4px 0 0">Se abre y se cierra solo según el horario del local (Mercado Kennedy: jue a sáb 21:45–00:30 · Frida: vie y sáb 18:30–00:00 · Tobalaba: vie 21:00–22:10). Si lo cambias a mano, vale hasta que pasan 30 minutos sin pedidos.</p>
@@ -1832,6 +1832,11 @@ views.karaokectl = async (local) => {
     $('#kc-list').innerHTML = n ? k.list.map((p, i) => `<div class="kc-row ${i === 0 ? 'now' : ''}"><em>${i === 0 ? '🎤' : i + 1}</em><p><small>${i === 0 ? 'Ahora canta' : i === 1 ? 'Sigue' : ''}</small><b>${esc(p.name)}</b><span>${esc(p.song)}${p.artist ? ` · ${esc(p.artist)}` : ''}</span></p>${k.edit && p.id ? `<div class="kc-act">
         <button type="button" class="kc-up" data-kc="subir" data-id="${esc(p.id)}" ${i === 0 ? 'disabled' : ''} title="Subir" aria-label="Subir">▲</button><button type="button" class="kc-down" data-kc="bajar" data-id="${esc(p.id)}" ${i === n - 1 ? 'disabled' : ''} title="Bajar" aria-label="Bajar">▼</button><button type="button" class="kc-done" data-kc="cantado" data-id="${esc(p.id)}">Ya cantó</button></div>` : ''}</div>`).join('')
       : '<p class="muted">Cuando alguien pida una canción, aparecerá aquí.</p>';
+    // Sala light: una línea por participante; el nombre va entero (regla de Cote): si no cabe, se achica la letra
+    if (light) $('#kc-list').querySelectorAll('.kc-row b').forEach((b) => {
+      b.style.fontSize = '';
+      for (let f = parseFloat(getComputedStyle(b).fontSize); b.scrollWidth > b.clientWidth + 1 && f > 10; f -= 0.5) b.style.fontSize = `${f}px`;
+    });
   };
   const paint = async () => {
     if (queue.length) return; // mientras se guarda, se deja lo que se tocó (la lista del servidor aún no lo trae)
