@@ -78,11 +78,22 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
   // está cargando la información del jueves 3 de diciembre»)
   const tabsOf = (data) => (data ? [{ pestana: data.pestana, cartelera: data.cartelera }, ...(Array.isArray(data.meses) ? data.meses : [])] : []);
   const tabFor = (data, m) => tabsOf(data).find((t) => t && monthOf(t) === m) || null;
+  // Nombre del show como se escribe ahora en la GLOSA (pedido de Cote, 27 nov): entre paréntesis va a quién se le transfiere
+  // (no se muestra) y entre comillas, la persona o el grupo que hace el tributo. Ej.: «GEORGE MICHAEL "RAFA DAMIÁN" (X)»
+  // → «GEORGE MICHAEL (RAFA DAMIÁN)»; «PIANO MAN (X PROJECTS)» → «PIANO MAN». Se entrega con el artista entre paréntesis
+  // porque así lo leen todas las pantallas y la página krbstage.cl (título arriba y «por <artista>»).
+  const showName = (t) => {
+    const raw = clean(t, 160).replace(/\([^()]*\)/g, ' ');
+    const q = raw.match(/["“”«»]\s*([^"“”«»]+?)\s*["“”«»]/);
+    const by = q ? clean(q[1], 60) : '';
+    const title = clean((q ? raw.replace(q[0], ' ') : raw).replace(/["“”«»]/g, ' ').replace(/^[\s\-–—,:·]+|[\s\-–—,:·]+$/g, ''), 100);
+    return clean(title && by ? `${title} (${by})` : title || by, 120);
+  };
   // Show de una fecha: en la cartelera el día se escribe como «SABADO 7» (vale el número del final)
   const showOf = (data, n) => {
     const t = tabFor(data, n.m);
     const row = t ? (t.cartelera || []).find((x) => Number((String(x.dia).match(/(\d+)\s*$/) || [])[1]) === n.d) : null;
-    return row ? clean(row.show, 120) : '';
+    return row ? showName(row.show) : '';
   };
   // Mes de la pestaña leída, ej. «NOVIEMBRE26 MASTER TOTAL» → 11
   const MONTHS = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
@@ -109,7 +120,7 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
     }
     // Cartelera del mes (lo que queda desde hoy), para la pantalla vertical de la sala light
     const tm = tabFor(data, today.m);
-    const month = tm ? (tm.cartelera || []).map((r) => ({ day: clean(r.dia, 20), date: Number((String(r.dia).match(/(\d+)\s*$/) || [])[1]) || 0, show: clean(r.show, 120) }))
+    const month = tm ? (tm.cartelera || []).map((r) => ({ day: clean(r.dia, 20), date: Number((String(r.dia).match(/(\d+)\s*$/) || [])[1]) || 0, show: showName(r.show) }))
       .filter((r) => r.date >= today.d && r.show).sort((a, b) => a.date - b.date) : [];
     return { venue, name: VENUES[venue], show: showOf(data, today), blocks, current, next, week, month, at: g.at, error: g.error };
   }
