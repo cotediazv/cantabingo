@@ -82,3 +82,7 @@ html.t2 body.full::before {
   background: radial-gradient(circle at 26% 22%, color-mix(in srgb, var(--t-c) 46%, transparent) 0, transparent 40%), radial-gradient(circle at 78% 82%, rgba(244, 191, 90, .22) 0, transparent 38%),
     linear-gradient(160deg, #15131e, #0c0b12 55%, #07060c);
 }
+
+/* Copia de eventos: el color de la marca (dorado) en lugar del de un local (Cote, 27 nov) */
+html.t2 body[data-venue="evento"], html.t2 .th-evento { --t-c: #f4bf5a; --t-onc: #1a1407; }
+html.t2.evento { --t-c: #f4bf5a; --t-onc: #1a1407; }
