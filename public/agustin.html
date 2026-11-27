@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#120d1d">
-<title>Agustín, el pirata</title>
+<title>Tomás, el pirata</title>
 <style>
   html, body { margin: 0; height: 100%; background: #120d1d; overflow: hidden; }
   body { position: fixed; top: 0; left: 0; right: 0; bottom: 0; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; font-family: 'Trebuchet MS', Verdana, Arial, sans-serif; }
@@ -42,7 +42,7 @@
   <div class="zone" id="rz"><div class="b" id="jmp">▲<small>SALTA</small></div><div class="b" id="atk">⚔<small>ESPADA</small></div></div>
 </div>
 <script>
-// «Agustín, el pirata»: Agustín, un pirata con tatuajes, va a buscar a su amada al castillo.
+// «Tomás, el pirata»: Tomás, un pirata con tatuajes, va a buscar a su amada al castillo.
 // En cada etapa pelea con sus compañeros de curso que no quieren hacer nada en el colegio.
 // Todo se dibuja con canvas (sin imágenes ni sonido). Teclado o botones en pantalla.
 (() => {
@@ -178,7 +178,7 @@
   const desk = (x) => ({ x, y: G - 62, w: 104, k: 'desk' });
   const STAGES = [
     {
-      name: 'La sala de clases', th: 'sala', w: 3000, exit: 2900, say: '¡Voy a buscar a Anto al castillo!',
+      name: 'La sala de clases', th: 'sala', w: 3000, exit: 2900, say: '¡Voy a buscar a Sofi al castillo!',
       plats: [260, 560, 900, 1180, 1500, 1760, 2080, 2380, 2640].map(desk),
       floorCoins: [700, 1640, 2480],
       waves: [
@@ -216,7 +216,7 @@
       ],
     },
     {
-      name: 'El castillo', th: 'castillo', w: 2700, exit: 0, say: '¡Llegué al castillo! ¡Ya voy, Anto!',
+      name: 'El castillo', th: 'castillo', w: 2700, exit: 0, say: '¡Llegué al castillo! ¡Ya voy, Sofi!',
       plats: [
         { x: 300, y: G - 72, w: 140, k: 'ledge' }, { x: 860, y: G - 72, w: 140, k: 'ledge' }, { x: 1380, y: G - 72, w: 140, k: 'ledge' },
         { x: 1870, y: G - 100, w: 140, k: 'ledge' }, { x: 2180, y: G - 100, w: 140, k: 'ledge' },
@@ -241,15 +241,15 @@
   const ATK = 0.3;
   const P = { x: 120, y: G, vx: 0, vy: 0, face: 1, onG: true, coy: 0, hp: 5, maxHp: 5, inv: 0, hurt: 0, atk: 0, atkCd: 0, ph: 0, hitSet: new Set(), bub: null, landV: 0 };
 
-  const BOSS_LOOK = { name: 'Mono', skin: '#e8b987', hairC: '#2b1d14', hair: 'short', girl: false, tie: '#c0262d', bag: null, glasses: false, cap: '#d62828', s: 1.45 };
-  // Los compañeros de curso: siempre Felipe, Jorge o Matías, cada uno con su aspecto
+  const BOSS_LOOK = { name: 'Toño', skin: '#e8b987', hairC: '#2b1d14', hair: 'short', girl: false, tie: '#c0262d', bag: null, glasses: false, cap: '#d62828', s: 1.45 };
+  // Los compañeros de curso: siempre Nico, Lucas o Benja, cada uno con su aspecto
   const KIDS = [
-    { name: 'Felipe', skin: '#f1c9a0', hairC: '#5a3a1e', hair: 'short', girl: false, tie: '#c0262d', bag: '#e94b3c', glasses: false, s: 1 },
-    { name: 'Jorge', skin: '#c98e5d', hairC: '#151515', hair: 'spiky', girl: false, tie: '#1f6fbf', bag: null, glasses: true, s: 1 },
-    { name: 'Matías', skin: '#f6d2a8', hairC: '#d9a441', hair: 'curly', girl: false, tie: '#2e8b57', bag: '#2a9d8f', glasses: false, s: 1 },
+    { name: 'Nico', skin: '#f1c9a0', hairC: '#5a3a1e', hair: 'short', girl: false, tie: '#c0262d', bag: '#e94b3c', glasses: false, s: 1 },
+    { name: 'Lucas', skin: '#c98e5d', hairC: '#151515', hair: 'spiky', girl: false, tie: '#1f6fbf', bag: null, glasses: true, s: 1 },
+    { name: 'Benja', skin: '#f6d2a8', hairC: '#d9a441', hair: 'curly', girl: false, tie: '#2e8b57', bag: '#2a9d8f', glasses: false, s: 1 },
   ];
   let kidRot = 0;
-  // El compañero que no está ya en pie en la oleada ni cerca (nunca dos Felipe a la vez)
+  // El compañero que no está ya en pie en la oleada ni cerca (nunca dos Nico a la vez)
   function freeKid(wave, x) {
     const alive = enemies.filter((e) => !e.dead && e.state !== 'down');
     const inWave = new Set(alive.filter((e) => e.wave === wave).map((e) => e.look.name));
@@ -332,7 +332,7 @@
   function chargeBox(e) { const s = e.s; return { x1: e.x - 26 * s, x2: e.x + 26 * s, y1: e.y - 66 * s, y2: e.y }; }
   const arenaL = () => (lock ? lock.x : camX);
 
-  // ---------- Agustín ----------
+  // ---------- Tomás ----------
   function hurtP(fromX, power) {
     if (P.inv > 0 || state !== 'play' || GOD) return;
     P.hp--; P.inv = 1.4; P.hurt = 0.32; P.atk = 0;
@@ -455,7 +455,7 @@
       if (e.x > L + 70 && e.x < L + W - 70) { e.state = 'walk'; say(e, LAZY, 0.55); }
       return;
     }
-    if (e.state === 'yawn' && e.st > 50) return; // Agustín se cansó: los flojos vuelven a no hacer nada
+    if (e.state === 'yawn' && e.st > 50) return; // Tomás se cansó: los flojos vuelven a no hacer nada
     if (e.t === 'boss') aiBoss(e, dt, dx, adx);
     else if (e.t === 'tirador') aiThrow(e, dt, dx, adx);
     else aiMelee(e, dt, dx, adx);
@@ -512,7 +512,7 @@
       case 'walk':
         e.face = dx >= 0 ? 1 : -1; e.sp -= dt;
         if (e.sp <= 0) {
-          // ataque especial cada 2 a 3 segundos, aunque Agustín esté cerca
+          // ataque especial cada 2 a 3 segundos, aunque Tomás esté cerca
           e.sp = rand(2.4, 3.4);
           if (Math.random() < 0.55) { e.state = 'cwind'; e.st = 0.85; say(e, BOSS_CHARGE, 1, true); }
           else { e.state = 'vwind'; e.st = 0.7; say(e, BOSS_THROW, 1, true); }
@@ -634,11 +634,11 @@
       if (ni >= 0 && P.x - W * 0.42 >= S.waves[ni].x) startWave(ni);
       else if (ni < 0 && S.exit && P.x >= S.exit) clearStage();
     }
-    // la amada llama a Agustín desde el balcón
+    // la amada llama a Tomás desde el balcón
     if (S.th === 'castillo') {
       amT -= dt;
       if (amBub) { amBub.t -= dt; if (amBub.t <= 0) amBub = null; }
-      if (amT <= 0 && camX > BALCONY.amX - W + 40) { amBub = { txt: '¡Agustín!', t: 1.8 }; amT = rand(5, 8); }
+      if (amT <= 0 && camX > BALCONY.amX - W + 40) { amBub = { txt: '¡Tomás!', t: 1.8 }; amT = rand(5, 8); }
     }
   }
   function updCam(dt) {
@@ -646,7 +646,7 @@
     camX += (tx - camX) * Math.min(1, dt * 6);
   }
 
-  // ---------- Final: Agustín encuentra a su amada ----------
+  // ---------- Final: Tomás encuentra a su amada ----------
   function startRescue() {
     coinsTotal += coinsStage; coinsStage = 0; balls = [];
     setState('rescue');
@@ -670,13 +670,13 @@
       am.walk = true; am.face = ddx < 0 ? -1 : 1;
       if (d <= st) { am.x = tg[0]; am.y = tg[1]; r.path.shift(); if (!r.path.length) r.phase = 1; }
       else { am.x += ddx / d * st; am.y += ddy / d * st; }
-      if (!amBub && r.t > 1.6 && r.t < 2) amBub = { txt: '¡Agustín, viniste por mí!', t: 2.4 };
+      if (!amBub && r.t > 1.6 && r.t < 2) amBub = { txt: '¡Tomás, viniste por mí!', t: 2.4 };
     } else if (r.phase === 1) {
       const d = am.x - P.x;
       if (Math.abs(d) > 62) {
         am.walk = true; am.face = d > 0 ? -1 : 1; am.x -= Math.sign(d) * 150 * dt;
         mv = Math.sign(d);
-      } else { r.phase = 2; r.hug = 0; P.face = d > 0 ? 1 : -1; am.face = -P.face; P.bub = { txt: '¡Te encontré, Anto!', t: 3 }; }
+      } else { r.phase = 2; r.hug = 0; P.face = d > 0 ? 1 : -1; am.face = -P.face; P.bub = { txt: '¡Te encontré, Sofi!', t: 3 }; }
     } else if (r.phase === 2) {
       r.hug += dt;
       if (Math.random() < dt * 9) hearts((P.x + am.x) / 2, P.y - 120, 1);
@@ -778,7 +778,7 @@
   }
   function shadow(x, y, r) { ell(x, y + 2, r, r * 0.26, 'rgba(0,0,0,.22)'); }
 
-  // ---------- Agustín (dibujo) ----------
+  // ---------- Tomás (dibujo) ----------
   const SKIN_A = '#f0c08a';
   const INK = '#24479a';
   function legA(hx, a, col) {
@@ -1496,7 +1496,7 @@
       const a = e.state === 'down' && e.t !== 'boss' && e.st > 1.3 ? clamp(1 - (e.st - 1.3) / 0.5, 0, 1) : 1;
       nameTag(e.x - camX, e.y - (lying ? 52 : 128 * e.s), e.look.name, e.t === 'boss', a);
     }
-    if (S.th === 'castillo') { const ax = rescue ? rescue.am.x : BALCONY.amX, ay = rescue ? rescue.am.y : BALCONY.y; nameTag(ax - camX, ay - 126, 'Anto', false, 1); }
+    if (S.th === 'castillo') { const ax = rescue ? rescue.am.x : BALCONY.amX, ay = rescue ? rescue.am.y : BALCONY.y; nameTag(ax - camX, ay - 126, 'Sofi', false, 1); }
     for (const e of enemies) if (e.bub) bubble(e.x - camX, e.y - (e.state === 'sleep' || e.state === 'down' ? 74 : 150 * e.s), e.bub.txt);
     if (P.bub) bubble(P.x - camX, P.y - 136, P.bub.txt);
     if (amBub && S.th === 'castillo') { const ax = rescue ? rescue.am.x : BALCONY.amX, ay = rescue ? rescue.am.y : BALCONY.y; bubble(ax - camX, ay - 146, amBub.txt); }
@@ -1515,7 +1515,7 @@
     T(`${coinsTotal + coinsStage}`, W - 100, 31, 28, '#ffd34d', 'left', 5);
     if (bossE && lock && S.waves[lock.i].boss && bossE.state !== 'down' && bossE.state !== 'drop') {
       const bw = 340, bx = W / 2 - bw / 2;
-      T('MONO, EL MÁS FLOJO DEL CURSO', W / 2, 62, 18, '#ffd34d', 'center', 4);
+      T('TOÑO, EL MÁS FLOJO DEL CURSO', W / 2, 62, 18, '#ffd34d', 'center', 4);
       rr(bx, 76, bw, 16, 8); ctx.fillStyle = 'rgba(20,14,35,.8)'; ctx.fill();
       rr(bx + 3, 79, (bw - 6) * bossE.hp / bossE.maxHp, 10, 5); ctx.fillStyle = '#ff4d4d'; ctx.fill();
       rr(bx, 76, bw, 16, 8); ctx.strokeStyle = OUT; ctx.lineWidth = 2; ctx.stroke();
@@ -1545,9 +1545,9 @@
     ctx.fillStyle = '#e9c98b'; ctx.beginPath(); ctx.moveTo(0, 470); ctx.quadraticCurveTo(300, 440, 560, 480); ctx.lineTo(560, H); ctx.lineTo(0, H); ctx.closePath(); ctx.fill();
     shadow(200, 500, 44);
     drawAgustin(200, 500, 1, { s: 2.2, hero: true, atk: -1, ph: 0 });
-    T('AGUSTÍN', 640, 82, 92, '#ffd34d', 'center', 12);
+    T('TOMÁS', 640, 82, 92, '#ffd34d', 'center', 12);
     T('EL PIRATA', 640, 160, 50, '#fff', 'center', 9);
-    T('En busca de su amada, Anto', 640, 212, 26, '#fff3d6', 'center', 6);
+    T('En busca de su amada, Sofi', 640, 212, 26, '#fff3d6', 'center', 6);
     ctx.save(); ctx.globalAlpha = pulse(t);
     rr(640 - 130, 430, 260, 70, 35); fillStroke('#ffd34d', 4);
     T('▶  JUGAR', 640, 466, 34, OUT, 'center', 0);
@@ -1563,9 +1563,9 @@
     shadow(170, 370, 30);
     drawAgustin(170, 370, 1, { s: 1.5, atk: -1, ph: 0 });
     const paras = [
-      'Agustín es un pirata con tatuajes.',
-      'Tiene que ir a buscar a su amada, Anto, al castillo.',
-      'En cada etapa lo esperan sus compañeros de curso, Felipe, Jorge y Matías, que no quieren hacer nada en el colegio.',
+      'Tomás es un pirata con tatuajes.',
+      'Tiene que ir a buscar a su amada, Sofi, al castillo.',
+      'En cada etapa lo esperan sus compañeros de curso, Nico, Lucas y Benja, que no quieren hacer nada en el colegio.',
       '¡Pelea con ellos y llega al castillo!',
     ];
     let y = 142;
@@ -1604,7 +1604,7 @@
     } else if (state === 'end') {
       ctx.fillStyle = 'rgba(18,12,32,.45)'; ctx.fillRect(0, 0, W, H);
       band(60, 150, 0.85);
-      fitT('¡Agustín encontró a su amada, Anto!', W / 2, 110, 46, W - 60, '#ffd34d', 'center', 9);
+      fitT('¡Tomás encontró a su amada, Sofi!', W / 2, 110, 46, W - 60, '#ffd34d', 'center', 9);
       T('FIN', W / 2, 172, 48, '#fff', 'center', 8);
       T(`Monedas de oro: ${coinsTotal}`, W / 2, 236, 24, '#fff', 'center', 5);
       if (stT > 2) { ctx.save(); ctx.globalAlpha = pulse(t); T(`${TAP} para jugar otra vez`, W / 2, 268, 20, '#ffd34d', 'center', 5); ctx.restore(); }
