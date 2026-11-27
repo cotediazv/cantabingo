@@ -1878,12 +1878,10 @@ views.karaokectl = async (local) => {
   app.innerHTML = `${light ? '<div class="panel" id="kc-lt"></div>' : ''}<div class="panel${light ? ' kc-lpanel' : ''}"><div class="row between"><div><h1 id="kc-title" style="margin:0">Karaoke</h1><span class="muted" id="kc-sub"></span></div></div>
       <div id="kc-list" ${light ? 'class="kc-1l" ' : ''}style="margin-top:14px"></div>
       <div id="kc-sung-box" hidden><button type="button" id="kc-sung-btn" class="kc-sung-btn">✓ Ya cantaron</button><div id="kc-sung"></div></div>
-      <label class="check" style="margin-top:14px"><input type="checkbox" id="kc-phone"> Permitir pedir canciones desde el celular</label>
-      <p class="muted small kc-horario" style="margin:4px 0 0">Se abre y se cierra solo según el horario del local (Mercado Kennedy: jue a sáb 21:45–00:30 · Frida: vie y sáb 18:30–00:00 · Tobalaba: vie 21:00–22:10). Si lo cambias a mano, vale hasta que pasan 30 minutos sin pedidos.</p>
+      <p class="muted small kc-horario" style="margin:14px 0 0">Los pedidos desde el celular se abren y se cierran solos según el horario del local (Mercado Kennedy: jue a sáb 21:45–00:30 · Frida: vie y sáb 18:30–00:00 · Tobalaba: vie 21:00–22:10).</p>
       <p class="muted small" id="kc-note" style="margin-top:10px"></p>
     </div>
     ${light ? `<div class="panel" id="kc-lb"></div>${staff ? '' : '<p class="back"><a href="#/light">← Salas light</a></p>'}` : activitiesNav('karaoke')}`;
-  if (staff) $('#kc-phone').closest('label').hidden = true; // permitir pedidos desde el celular: solo el moderador
   const stopBar = light && views.lightBar ? views.lightBar($('#kc-lt'), $('#kc-lb'), light, staff) : null;
   if (light === 'kennedy') lucesTab(); // pestaña «Luces»: el panel del DJ de las luces, en el mismo lugar
   const stopMini = light === 'kennedy' ? lucesMini() : null; // mini panel de luces fijo abajo
@@ -1896,7 +1894,6 @@ views.karaokectl = async (local) => {
     if (!k || !$('#kc-list')) return;
     $('#kc-title').textContent = light ? '🎤 Lista del karaoke' : `Karaoke ${k.name}`;
     $('#kc-sub').textContent = queue.length ? 'Guardando en la planilla…' : k.stale ? 'No se pudo leer la lista; se muestra la última conocida' : k.total ? `${k.total} ${k.total === 1 ? 'pedido' : 'pedidos'} por cantar` : 'Todavía no hay pedidos';
-    $('#kc-phone').checked = !!k.phone;
     $('#kc-sung-box').hidden = !k.edit;
     $('#kc-note').textContent = k.edit ? '«Ya cantó», Subir y Bajar también se pueden usar en la app del equipo.' : 'El orden y «Ya cantó» se manejan en la app del equipo. Esta pantalla solo muestra la lista.';
     const n = k.list.length;
@@ -1994,7 +1991,7 @@ views.karaokectl = async (local) => {
     paint();
     paintSung();
   };
-  $('#kc-phone').onchange = async (e) => { try { await api('POST', '/api/karaoke/config', { phone: e.target.checked, local: light || undefined }); last = ''; paint(); } catch (err) { fail(err); } };
+  // «Permitir pedir canciones desde el celular» se quitó del panel del karaoke (pedido de Cote, 27 nov): va solo por horario
   await paint();
   if (k && k.edit) paintSung();
   const timer = setInterval(paint, 3000);
