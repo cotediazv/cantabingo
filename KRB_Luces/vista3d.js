@@ -419,7 +419,7 @@ function construir(){
 }
 
 /* ---------- cada cuadro: luces segun lo que sale por el cable ---------- */
-const BRILLO = { cabeza: 1400, frontales: 420, perimetrales: 110, fondo: 420 };
+const BRILLO = { cabeza: 1400, frontales: 420, perimetrales: 110, bateria: 110, fondo: 420 };
 function actualizarFocos(){
   focos.forEach(f => {
     const c = colorGrupo(f.g);
@@ -429,7 +429,7 @@ function actualizarFocos(){
     if (!on) return;
     const m = Math.max(c.r, c.g, c.b) || 1, col = new THREE.Color(c.r / m, c.g / m, c.b / m);
     let destino, ang, fuerzaHaz;
-    if (f.g.id === 'perimetrales'){ destino = [f.pos[0], 2.8, -3.95]; ang = 0.42; fuerzaHaz = 0.25; }
+    if (f.g.id === 'perimetrales' || f.g.id === 'bateria'){ destino = [f.pos[0], 2.8, -3.95]; ang = 0.42; fuerzaHaz = 0.25; }
     else if (f.g.id === 'fondo'){ destino = [Math.sign(f.pos[0]) * 2.4, 2.4, -3.97]; ang = 0.45; fuerzaHaz = 0.18; }
     // frontales: cruzados y a la cara de la persona en el escenario (color parejo), no a los pies (Cote, 24 nov)
     else if (f.g.id === 'frontales'){ destino = [-Math.sign(f.pos[0]) * 0.6, 2.0, -1.5]; ang = 0.22; fuerzaHaz = 0.14; }

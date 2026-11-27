@@ -50,7 +50,7 @@
 
   "fondo_enlazado": {
     "_ayuda": "Botones grandes que pintan la pared: cambian juntos los perimetrales y los focos de fondo. Tambien se usan en Parpadeo pared y Alternar colores.",
-    "grupos": ["perimetrales", "fondo"],
+    "grupos": ["perimetrales", "fondo", "bateria"],
     "colores": ["azul", "rojo", "verde", "amarillo"]
   },
 
@@ -104,8 +104,14 @@
       "fijos": { "11": 0, "13": 0, "14": 0 }
     },
     {
-      "id": "perimetrales", "nombre": "Perimetrales PAR (4)", "escaner": 6, "direccion": 81, "tipo": "par",
+      "id": "perimetrales", "nombre": "Perimetrales PAR (2) · los de los extremos (1 y 4)", "escaner": 6, "direccion": 81, "tipo": "par",
       "_direccion": "81 (Cote, 24 nov: asi esta configurado el sistema). Canales: 1 master, 2 rojo, 3 verde, 4 azul, 5 estroboscopica (sin blanco).",
+      "canales": { "dimmer": 1, "r": 2, "g": 3, "b": 4 },
+      "fijos": { "5": 0 }
+    },
+    {
+      "id": "bateria", "nombre": "Perimetrales PAR (2) · detras de la bateria (2 y 3)", "escaner": 6, "direccion": 113, "tipo": "par", "igual_que": "perimetrales",
+      "_ayuda": "Pedido de Cote (27 nov): los perimetrales 2 y 3 (detras de la bateria) van en la direccion 113, para poder realzar al baterista o hacer colores distintos. Si nada les dice otra cosa, hacen lo mismo que los perimetrales. Mismo modelo y canales que los perimetrales.",
       "canales": { "dimmer": 1, "r": 2, "g": 3, "b": 4 },
       "fijos": { "5": 0 }
     },

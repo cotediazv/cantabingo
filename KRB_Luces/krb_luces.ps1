@@ -265,6 +265,8 @@ namespace KRB {
       double m = (t - d).TotalMinutes;
       return Array.IndexOf(Dias, (int)d.DayOfWeek) >= 0 && m >= Desde && m < Hasta;
     }
+    // Horario de actividades con margen (media hora antes, una hora despues): ahi el Dell no busca actualizaciones ni se reinicia
+    public static bool EnActividad(DateTime t) { return EnHorario(t.AddMinutes(30)) || EnHorario(t.AddMinutes(-60)); }
     public static void Mandar(string texto, bool urgente) {
       if (Tema == "") return;
       string tema = Tema;
@@ -1206,14 +1208,45 @@ function Revisar-Actualizacion {
     if ($cambios -contains "krb_luces.ps1") { $script:reiniciar = $true }
   } catch { [KRB.Bitacora]::Anotar("No se pudo buscar actualizacion: " + $_.Exception.Message) }
 }
+# Consumo del Dell (Cote, 27 nov: OBS se cerro 3 veces; ver que esta consumiendo): cada 10 minutos queda en el registro de la
+# noche el uso del procesador y de la memoria, y los 5 programas que mas procesador usaron en esos 10 minutos.
+$script:cpuAntes = @{}; $script:cpuCuando = Get-Date
+function Anotar-Consumo {
+  try {
+    $ahora = Get-Date; $seg = ($ahora - $script:cpuCuando).TotalSeconds; $nucleos = [Environment]::ProcessorCount
+    $uso = @{}; $nuevo = @{}
+    foreach ($p in Get-Process -ErrorAction SilentlyContinue) {
+      try { $c = $p.TotalProcessorTime.TotalSeconds } catch { continue }
+      $nuevo[$p.Id] = $c
+      if ($script:cpuAntes.ContainsKey($p.Id)) { $d = $c - $script:cpuAntes[$p.Id]; if ($d -gt 0) { $uso[$p.ProcessName] = ($uso[$p.ProcessName] + $d) } }
+    }
+    $script:cpuAntes = $nuevo; $script:cpuCuando = $ahora
+    if ($seg -lt 60 -or $uso.Count -eq 0) { return }
+    $total = 0; foreach ($v in $uso.Values) { $total += $v }
+    $os = Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue
+    $ram = if ($os) { [Math]::Round(($os.TotalVisibleMemorySize - $os.FreePhysicalMemory) / $os.TotalVisibleMemorySize * 100) } else { "?" }
+    $top = $uso.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 5 |
+      ForEach-Object { $_.Key + " " + [Math]::Round($_.Value / $seg / $nucleos * 100) + "%" }
+    [KRB.Bitacora]::Anotar("Consumo del Dell: procesador " + [Math]::Round($total / $seg / $nucleos * 100) + "%, memoria " + $ram + "% en uso. Lo que mas usa: " + ($top -join ", "))
+  } catch {}
+}
+Anotar-Consumo
+$proximoConsumo = (Get-Date).AddMinutes(10)
 Mostrar-Version
 $proxima = (Get-Date).AddSeconds(60)
+$avisoPausa = $false
 while ($true) {
   Start-Sleep -Seconds 1
+  if ((Get-Date) -ge $proximoConsumo) { Anotar-Consumo; $proximoConsumo = (Get-Date).AddMinutes(10) }
   $forzar = [KRB.Web]::PedirActualizar
-  if ($forzar -or (Get-Date) -ge $proxima) { [KRB.Web]::PedirActualizar = $false; Revisar-Actualizacion; $proxima = (Get-Date).AddMinutes(5) }
+  # Nunca durante las actividades (Cote, 27 nov): en el horario del local (con margen) no se busca ni se reinicia; solo si se
+  # pide a mano con "Buscar actualizacion ahora"
+  $enActividad = [KRB.Aviso]::EnActividad((Get-Date))
+  if ($enActividad -and -not $avisoPausa) { [KRB.Bitacora]::Anotar("Actualizaciones en pausa: horario de actividades"); $avisoPausa = $true }
+  if (-not $enActividad) { $avisoPausa = $false }
+  if ($forzar -or ((Get-Date) -ge $proxima -and -not $enActividad)) { [KRB.Web]::PedirActualizar = $false; Revisar-Actualizacion; $proxima = (Get-Date).AddMinutes(5) }
   if ($script:reiniciar) {
-    $quieto = ([DateTime]::UtcNow - [KRB.Web]::UltimaActividad).TotalMinutes -ge 20
+    $quieto = ([DateTime]::UtcNow - [KRB.Web]::UltimaActividad).TotalMinutes -ge 20 -and -not $enActividad
     if ($quieto -or $forzar) {
       [KRB.Bitacora]::Anotar("Se reinicia para terminar la actualizacion (vuelve en unos segundos)")
       try { Stop-Transcript | Out-Null } catch {}

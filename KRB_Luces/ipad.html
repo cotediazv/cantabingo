@@ -511,7 +511,7 @@
       <li><b>Las luces no siguen la música</b>: revisar que arriba diga el BPM; si no, usar Tap.</li>
     </ul>
     <h3>Versión de las luces</h3>
-    <p>El Dell se actualiza solo (revisa cada 5 minutos si hay una versión nueva). Instalada: <b id="verDell">—</b></p>
+    <p>El Dell se actualiza solo: revisa cada 5 minutos si hay una versión nueva, pero nunca durante las actividades (jueves, viernes y sábado de 18:00 a 01:30); en ese horario solo con este botón. Instalada: <b id="verDell">—</b></p>
     <div class="fila"><button class="chip" id="buscarAct">Buscar actualización ahora</button></div>
     <h3>Aviso al celular si se corta el cable</h3>
     <p>Jueves, viernes y sábado de 18:30 a 00:30: si el cable de las luces se desconecta, llega un aviso a la app <b>ntfy</b> (y otro cuando vuelve).</p>
@@ -1533,7 +1533,8 @@ const POS3D = {
   frontales:    { pos:[[-4.7, 4.1, 0.6], [4.7, 4.1, 0.6]] },   // donde siempre (Cote, 25 nov: no se corren con las columnas)
   mini:         { pos:[[-1.15, 0.6, -3.0], [1.15, 0.6, -3.0]], piso:true },   // justo al costado de la bateria (Cote, 24 nov)
   mini_columnas:{ pos:[[-COL_X, 4.45, -0.3], [COL_X, 4.45, -0.3]], piso:true },   // arriba de las columnas azules (Cote, 24 nov)
-  perimetrales: { pos:[[-3.9, 0.45, -3.75], [-1.3, 0.45, -3.75], [1.3, 0.45, -3.75], [3.9, 0.45, -3.75]] },   // donde siempre (Cote, 25 nov)
+  perimetrales: { pos:[[-3.9, 0.45, -3.75], [3.9, 0.45, -3.75]] },   // donde siempre (Cote, 25 nov): los de los extremos (1 y 4)
+  bateria:      { pos:[[-1.3, 0.45, -3.75], [1.3, 0.45, -3.75]] },   // perimetrales 2 y 3, detras de la bateria (direccion propia, Cote 27 nov)
   fondo:        { pos:[[-COL_X, 4.35, 0.0], [COL_X, 4.35, 0.0]] }   // arriba de las columnas azules
 };
 const sub = (a, b) => [a[0]-b[0], a[1]-b[1], a[2]-b[2]], add = (a, b) => [a[0]+b[0], a[1]+b[1], a[2]+b[2]];
@@ -1887,7 +1888,7 @@ function dibujar3D(){
     if (!c) return;
     posiciones.forEach(pos => {
       marcas.push({pos, c});
-      if (g.id === 'perimetrales'){                                       // PAR en el suelo: pintan la pared hacia arriba
+      if (g.id === 'perimetrales' || g.id === 'bateria'){                 // PAR en el suelo: pintan la pared hacia arriba
         haz(pos, [pos[0], 2.6, -3.95], c, 0.35);
         brillo([pos[0], 1.9, -3.98], 1.9, c, 1);
       } else if (g.id === 'fondo'){                                      // focos arriba que pintan la pared
@@ -2091,12 +2092,10 @@ const JUEGOS = [
     // Cote (25 nov): el foco esta en el salon; el escenario queda como en Standby (fondo suave en fundido, mini al techo
     // en contraste, frontales suavecitos) y el DJ sigue al animador con las 3 cabezas (en blanco calido)
     { id:'bingo_al_publico', nombre:'Al público', detalle:'Fondo como Standby, 3 cabezas al público para seguir al animador (abre Seguir)',
-      g:() => ({...pared('azul', 45), frontales:{color:'azul', intensidad:30}, ...cab('publico', 40, segIds()), mini:{color:'ambar', intensidad:85, posicion:'escenario'}}), standby:true },
+      g:() => ({...pared('azul', 45), frontales:{color:'azul', intensidad:30}, ...cab('publico', 40, segIds()), mini:{color:'ambar', intensidad:85, posicion:'escenario'}}), standby:true, sinRegla:true },
     { id:'ganador_al_escenario', nombre:'Ganador al escenario', igual:'base_juegos' },
-    // Bingo (Cote, 26 nov): desde que el animador baja al publico (bolita 8) las cabezas son del DJ hasta la entrega del
-    // premio; el ganador y la celebracion cambian el resto de las luces pero NO mueven las cabezas
-    { id:'bingo_ganador_sala', nombre:'Ganador del bingo (las cabezas siguen con el DJ)', detalle:'Como Base juegos, sin tocar las cabezas', g:BASE, dejarCabezas:true },
-    { id:'bingo_celebracion', nombre:'Celebración del bingo (las cabezas siguen con el DJ)', detalle:'Pared cambiando de color a 148 BPM, sin tocar las cabezas', g:BASE, pared:{colores:CICLO, t:0.41}, dejarCabezas:true },
+    // Bingo (Cote, 27 nov): «inmediatamente despues de acabarse el bingo, las luces tienen que volver al programa automaticamente;
+    // no puede depender de que alguien apriete un boton»: al aparecer el ganador las cabezas vuelven solas al escenario
     { id:'celebracion_ganador', nombre:'Celebración', detalle:'Pared cambiando de color a 148 BPM', g:BASE, pared:{colores:CICLO, t:0.41} },
     { id:'entrega_premio', nombre:'Entrega del premio', detalle:'Pared roja, todo bien iluminado', g:() => ({...BASE(), ...pared('rojo', 100)}) } ]},
   { juego:'Tómbolas', momentos:[
@@ -2193,7 +2192,7 @@ const JUEGOS = [
 const ALIAS_SALA = {
   sala_abierta:'base_juegos', juego_siguiente:'base_juegos', bingo_numero:'nada',
   rosko_pantalla:'nada', rosko_pantalla_fin:'base_juegos',     // el rosco entra / sale de pantalla (la camara del demo cambia)
-  bingo_ganador_aparece:'bingo_ganador_sala', bingo_ganador_confirmado:'bingo_celebracion', bingo_vuelve_escenario:'base_juegos',
+  bingo_ganador_aparece:'ganador_al_escenario', bingo_ganador_confirmado:'celebracion_ganador', bingo_vuelve_escenario:'base_juegos',
   premio_entrega:'entrega_premio', rosko_ranking:'rosko_puntajes', rosko_ranking_fin:'base_juegos',
   objeto_votacion_fin:'base_juegos', objeto_final:'objeto_votacion', festival_despide:'base_juegos',
   festival_canta:'festival_cancion', festival_termina:'festival_tension',
@@ -2229,6 +2228,19 @@ function compilarMomento(m){
   const mGuard = master; master = 100;
   try {
     const zs = zonasDe(m), todo = {}, L = m.paso ? ['paso', '/api/efecto?todos=off'] : ['/api/efecto?todos=off'];   // paso: no cuenta como estable (vuelve con @previo)
+    // REGLA PRINCIPAL DE COTE (27 nov): «cada vez que hay actividad, el blanco tiene que estar encendido, tanto el de las cabezas
+    // moviles como el de los frontales (97). No pueden bajar». En todos los momentos de los juegos: frontales en blanco calido al 100 %
+    // y las cabezas 1 y 2 en blanco al 100 % (si el momento no las pone en blanco, van al escenario). Ningun efecto las toca.
+    // Unica excepcion: el animador en el publico (bingo_al_publico), con el escenario vacio y las cabezas siguiendolo.
+    const llave = m.sinRegla ? [] : ['frontales', ...(m.dejarCabezas ? [] : segIds().slice(0, 2))];
+    if (llave.length){
+      if (zs.frontales) Object.assign(zs.frontales, {color:'blanco_calido', intensidad:100, mover:false});
+      llave.slice(1).forEach(id => { const z = zs[id];
+        if (z && z.color && /blanco/.test(z.color) && z.intensidad > 0) { z.intensidad = 100; return; }
+        const nz = {color:'blanco_calido', intensidad:100, zoom:50}; fijarPosicion(nz, 'escenario', id); zs[id] = nz; });
+    }
+    const chLlave = new Set(); llave.forEach(id => { const g = grupo(id); if (g) Object.values(g.canales || {}).forEach(c => chLlave.add(g.direccion - 1 + c)); });
+    const sinLlave = paso => { const o = {}; Object.entries(paso).forEach(([c, v]) => { if (!chLlave.has(+c)) o[c] = v; }); return o; };
     const dejar = m.dejarCabezas ? segIds() : [];                              // las cabezas que esta siguiendo el DJ no se tocan
     conf.grupos.forEach(g => { if (!dejar.includes(g.id)) Object.assign(todo, valoresGrupo(g, zs[g.id])); });
     L.push('/api/set?d=' + serial(todo) + '&f=0');                           // cambios inmediatos, sin fundido (Cote, rev 185)
@@ -2246,12 +2258,13 @@ function compilarMomento(m){
     }
     if (m.rosco){                                                               // arriba (fondo) y abajo (perimetrales) distintos, fundido lento
       const pares = [['azul', 'morado'], ['morado', 'cian'], ['cian', 'azul'], ['rosa', 'azul'], ['azul', 'rosa']];
-      const pasos = pares.map(([arriba, abajo]) => ({...valoresGrupo(grupo('fondo'), {...zs.fondo, color:arriba}), ...valoresGrupo(grupo('perimetrales'), {...zs.perimetrales, color:abajo})}));
+      const pasos = pares.map(([arriba, abajo]) => ({...valoresGrupo(grupo('fondo'), {...zs.fondo, color:arriba}), ...valoresGrupo(grupo('perimetrales'), {...zs.perimetrales, color:abajo}),
+        ...(grupo('bateria') ? valoresGrupo(grupo('bateria'), {...zs.bateria, color:abajo}) : {})}));
       ef('alternar', {tipo:'sec', pasos:pasosTxt(pasos), t:6, fx:1});
     }
     if (m.estrobo){
       const on = {}, off = {};
-      conEspejos(m.estrobo).forEach(id => { const g = grupo(id); if (!g) return; Object.assign(on, valoresGrupo(g, zs[id])); Object.assign(off, valoresGrupo(g, {...zs[id], intensidad:0})); });
+      conEspejos(m.estrobo).filter(id => !llave.includes(id)).forEach(id => { const g = grupo(id); if (!g) return; Object.assign(on, valoresGrupo(g, zs[id])); Object.assign(off, valoresGrupo(g, {...zs[id], intensidad:0})); });
       ef('estrobo', {tipo:'sec', pasos:pasosTxt([on, off]), t:0.06, fx:0});
     }
     if (m.barrido){                                                             // las cabezas barren desde el publico hasta su destino
@@ -2268,7 +2281,7 @@ function compilarMomento(m){
     }
     if (m.fiesta){                                                              // una escena del DJ (Locura), por tiempo (Cote, 26 nov: inicio de ¿Quién quiere ser ganador?)
       const e = DJ_ESCENAS.find(x => x.n === m.fiesta);
-      if (e) e.capas().forEach(c => ef(c.id, {tipo:'sec', pasos:pasosTxt(c.pasos), t:(c.seg != null ? c.seg : c.ritmo * 60 / 128).toFixed(3), fx:c.fx}));
+      if (e) e.capas().forEach(c => ef(c.id, {tipo:'sec', pasos:pasosTxt(c.pasos.map(sinLlave)), t:(c.seg != null ? c.seg : c.ritmo * 60 / 128).toFixed(3), fx:c.fx}));
     }
     if (m.standby){                                                             // fondo como en Standby (sin tocar las cabezas)
       capasStandbyFondo(STANDBY_TONOS).forEach(c => ef(c.id, {tipo:'sec', pasos:pasosTxt(c.pasos), t:c.seg.toFixed(3), fx:c.fx}));
@@ -2627,7 +2640,8 @@ const djMini = () => conEspejos(['mini']);
 function pasoColor(colores, intens){
   const s = {};
   Object.entries(colores).forEach(([id, c]) => { const g = grupo(id); if (!g) return;
-    const v = valoresGrupo(g, {color: c || 'blanco', intensidad: c ? ((intens && intens[id]) || 100) : 0});
+    const ii = intens && (intens[id] != null ? intens[id] : g.igual_que != null ? intens[g.igual_que] : null);   // la bateria, como los perimetrales
+    const v = valoresGrupo(g, {color: c || 'blanco', intensidad: c ? (ii || 100) : 0});
     const ch = g.canales || {}, base = g.direccion - 1;
     if (ch.pan) delete v[base + ch.pan]; if (ch.tilt) delete v[base + ch.tilt];    // el color no toca la posicion
     Object.assign(s, v); });
@@ -3194,7 +3208,7 @@ function djMomento(nombre){
     segIds().forEach(id => { const z = zona(id); z.color = 'blanco_calido'; z.intensidad = 100; z.zoom = djSeg.ancho; });
     djSeg.activo = true; djSeg.porMomento = true; djEstado.escena = -1; djPintar(); djPagina(true);
     toast('El animador bajó al público: síguelo con el dedo');
-  } else if (djSeg.porMomento && !['bingo_ganador_aparece', 'bingo_ganador_confirmado', 'bingo_ganador_sala', 'bingo_celebracion'].includes(nombre)){   // sigue hasta la entrega del premio
+  } else if (djSeg.porMomento){                                         // termino el bingo (o cualquier otro momento): Cabezas se cierra sola
     djSeg.activo = false; djSeg.porMomento = false; V.marca = null; djPagina(false);
   }
 }
