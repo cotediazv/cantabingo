@@ -1805,11 +1805,11 @@ views.karaokectl = async (local) => {
   const staff = !admin && light && store.get('staffToken') && (await api('GET', '/api/staff/me').catch(() => ({}))).venue === light;
   if (!admin && !staff) { if (light) { location.hash = `#/equipo/${light}`; return undefined; } return viewLogin(); }
   const lq = light ? `?local=${light}` : '';
-  app.innerHTML = `${light ? '<div class="panel" id="kc-lt"></div>' : ''}<div class="panel"><div class="row between"><div><h1 id="kc-title" style="margin:0">Karaoke</h1><span class="muted" id="kc-sub"></span></div></div>
+  app.innerHTML = `${light ? '<div class="panel" id="kc-lt"></div>' : ''}<div class="panel${light ? ' kc-lpanel' : ''}"><div class="row between"><div><h1 id="kc-title" style="margin:0">Karaoke</h1><span class="muted" id="kc-sub"></span></div></div>
       <div id="kc-list" ${light ? 'class="kc-1l" ' : ''}style="margin-top:14px"></div>
       <div id="kc-sung-box" hidden><button type="button" id="kc-sung-btn" class="kc-sung-btn">✓ Ya cantaron</button><div id="kc-sung"></div></div>
       <label class="check" style="margin-top:14px"><input type="checkbox" id="kc-phone"> Permitir pedir canciones desde el celular</label>
-      <p class="muted small" style="margin:4px 0 0">Se abre y se cierra solo según el horario del local (Mercado Kennedy: jue a sáb 21:45–00:30 · Frida: vie y sáb 18:30–00:00 · Tobalaba: vie 21:00–22:10). Si lo cambias a mano, vale hasta que pasan 30 minutos sin pedidos.</p>
+      <p class="muted small kc-horario" style="margin:4px 0 0">Se abre y se cierra solo según el horario del local (Mercado Kennedy: jue a sáb 21:45–00:30 · Frida: vie y sáb 18:30–00:00 · Tobalaba: vie 21:00–22:10). Si lo cambias a mano, vale hasta que pasan 30 minutos sin pedidos.</p>
       <p class="muted small" id="kc-note" style="margin-top:10px"></p>
     </div>
     ${light ? `<div class="panel" id="kc-lb"></div>${staff ? '' : '<p class="back"><a href="#/light">← Salas light</a></p>'}` : activitiesNav('karaoke')}`;

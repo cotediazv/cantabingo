@@ -4007,3 +4007,28 @@ a.btn.paso:hover, a.btn.primary.paso:hover { background: #15803d; border-color: 
   .kc-row.kl .kc-act { grid-column: 3; grid-row: 1 / 3; }
 }
 .kc-row.kl.now { margin: 0 0 4px; }
+/* Panel del karaoke de la sala light en el celular (pedido de Cote, 27 nov): que quepa lo mas posible; sin los letreros de
+   abajo (no le sirven al animador); cancion – artista y nombre en 2 lineas bien juntas, el nombre en otro color; todas
+   las filas a la misma distancia */
+.kc-lpanel .kc-horario, .kc-lpanel #kc-note { display: none; }
+.kc-lpanel #kc-title { font-size: 1.15rem; display: inline; }
+.kc-lpanel #kc-sub { font-size: .8rem; margin-left: 8px; }
+.kc-lpanel #kc-list { margin-top: 6px !important; }
+.kc-lpanel .check { margin-top: 8px !important; font-size: .85rem; }
+.kc-row.kl, .kc-row.kl.now { padding: 4px 2px; margin: 0; border-radius: 0; background: none; box-shadow: none; border: 0; border-bottom: 1px solid rgba(255, 255, 255, .07); }
+.kc-row.kl.now .kl-song { color: #ffc400; }
+.kc-row.kl .kl-name { color: #7fd3ff; opacity: 1; }
+@media (max-width: 520px) {
+  .kc-lpanel, #kc-lt { padding: 10px 10px; margin-bottom: 10px; }
+  .lz-tabs { margin: 34px 0 8px; gap: 6px; }
+  .lz-tabs button { padding: 8px; font-size: .95rem; }
+  .lp-title { font-size: .85rem; margin-bottom: 6px; }
+  .lp-stages button { min-height: 44px; }
+  .kc-row.kl { padding: 3px 0; column-gap: 6px; }
+  .kc-row.kl .kl-song { font-size: .92rem; line-height: 1.15; font-weight: 600; }
+  .kc-row.kl .kl-name { font-size: .74rem; line-height: 1.1; letter-spacing: .03em; }
+  .kc-row.kl .kc-act { gap: 3px; }
+  .kc-row.kl .kc-act button { width: 30px; height: 30px; }
+}
+/* el logo fijo de la esquina tapaba la lista en el celular */
+@media (max-width: 520px) { body:has(.kc-lpanel) .krb-mark { display: none; } }
