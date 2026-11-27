@@ -614,6 +614,9 @@ if (TV) document.body.classList.add('tv');
 const DJ = location.pathname === '/dj' || PARAMS.has('dj');
 // Estacion de ritmo fija (Cote, 25 nov): el computador de la mezcla abre /dj?estacion=1 solo al prender y escucha siempre
 const ESTACION = DJ && PARAMS.get('estacion') === '1';
+// Mini panel (Cote, 27 nov): la pagina del karaoke de la sala light carga este panel oculto (?mini=1) y le manda ordenes
+// (Standby, Previa, Show, Fiesta con Automatico, intensidad, apagar). Sin vista 3D, para no gastar el celular.
+const MINI = DJ && PARAMS.get('mini') === '1';
 if (DJ) document.body.classList.add('dj');
 const COLOR_CSS = {blanco_calido:'#ffd9a0',blanco:'#ffffff',azul:'#2b55ff',rojo:'#ff2a2a',verde:'#22dd55',amarillo:'#ffbe00',ambar:'#ff8a00',morado:'#9b3cff',rosa:'#ff3fa0',cian:'#22e5ff'};
 // Las 4 marcas de calibracion: las que uso Cote en Kennedy (25 nov), con su lugar real en el salon (sal = [u, v] en metros:
@@ -1532,8 +1535,8 @@ function pintarTodo(){ pintarEscenas(); pintarFondo(); pintarZonas(); pintarSegu
 /* ---------- Estado de la conexion ---------- */
 function pintarEstado(e){
   // la intensidad general la guarda el Dell: todos los aparatos ven la misma (sin pisar al que la esta moviendo)
-  if (e && e.master != null && MASTER_DELL && !DJ && Date.now() - masterMovido > 2000 && +$('master').value !== e.master){
-    $('master').value = e.master; $('masterTxt').textContent = e.master + '%'; }
+  if (e && e.master != null && MASTER_DELL && (!DJ || MINI) && Date.now() - masterMovido > 2000 && +$('master').value !== e.master){
+    $('master').value = e.master; $('masterTxt').textContent = e.master + '%'; if (MINI) miniAvisar(); }
   if (e.canales) canales = e.canales;
   if (e.salida){ V.salida = e.salida; V.sucio = true; }
   if (e.efectos){ efectosActivos = e.efectos; pintarEfectos(); }
@@ -3081,6 +3084,25 @@ async function djAplicar(i, auto){
   enviar(base, 0);
   capas.forEach(c => efecto(c.id, {tipo: 'sec', pasos: pasosTxt(c.pasos), t: (c.seg != null ? c.seg : c.ritmo * seg).toFixed(3), fx: c.fx, ritmo: c.ritmo}));
 }
+/* Ordenes del mini panel (pagina del karaoke de la sala light de Kennedy) */
+const MINI_ORIGEN = o => /^https:\/\/([a-z0-9-]+\.)*(onrender\.com|krbstage\.cl)$/.test(o) || /^http:\/\/localhost(:\d+)?$/.test(o);
+function miniAvisar(){
+  if (!MINI || window.parent === window) return;
+  const e = DJ_ESCENAS[djEstado.escena];
+  try { window.parent.postMessage({ krbLucesEstado: { grupo: e ? e.grupo : '', escena: e ? e.n : '', auto: !!djEstado.auto,
+    master: +$('master').value } }, '*'); } catch(err){}
+}
+window.addEventListener('message', async ev => {
+  if (!MINI || ev.source !== window.parent || !MINI_ORIGEN(ev.origin)) return;
+  const d = ev.data && ev.data.krbLuces; if (!d || !conf) return;
+  if (d.grupo){                                                           // el grupo, con su Automatico
+    const i = DJ_ESCENAS.findIndex(e => e.grupo === d.grupo); if (i < 0) return;
+    djEstado.auto = true; djEstado.musica = false; await djAplicar(i); djServidor({ auto: '1' }); djPintar();
+  } else if (d.int != null){                                              // intensidad general (la aplica el Dell)
+    const v = Math.max(0, Math.min(100, Math.round(+d.int))); $('master').value = v; $('masterTxt').textContent = v + '%'; $('master').oninput();
+  } else if (d.apagar) $('djApagar').onclick();
+  setTimeout(miniAvisar, 300);
+});
 let djGrupoVisto = '';
 function djVerGrupo(g){
   djGrupoVisto = g;
@@ -3098,6 +3120,7 @@ async function djBase(c){
   toast('Base ' + c);
 }
 function djPintar(){
+  if (MINI) setTimeout(miniAvisar, 0);
   document.querySelectorAll('#djEsc .djb').forEach((b, i) => b.classList.toggle('act', i === djEstado.escena));
   if (djEstado.escena >= 0) djBaseColor = '';
   document.querySelectorAll('#djBase button').forEach(b => b.classList.toggle('act', b.dataset.c === djBaseColor));
@@ -3486,7 +3509,7 @@ function djMomento(nombre){
 function iniciarDJ(){
   // la vista 3D (lo que de verdad sale por el cable) arriba, con la toma fija del escenario de frente
   // (en la estacion de ritmo no: corre en el computador de OBS y no debe quitarle fuerza a la transmision)
-  if (ESTACION){ $('djVista').style.display = 'none'; $('vista').classList.add('oculta'); }
+  if (ESTACION || MINI){ $('djVista').style.display = 'none'; $('vista').classList.add('oculta'); }
   else { $('djVista').insertBefore($('vista'), $('djFrente'));
     $('vista').classList.remove('oculta'); $('vista').style.setProperty('--vh', '100%'); }
   tomaFija(); V.sucio = true;
