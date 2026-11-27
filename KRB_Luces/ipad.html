@@ -181,6 +181,19 @@
   #avisoVersion[hidden]{display:none}
   /* Ayuda para DJs y operadores (Cote, 25 nov) */
   .ayudaBtn{flex:0 0 auto;width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--txt);font-size:16px;font-weight:800;cursor:pointer;padding:0}
+  #editMom{display:none;position:fixed;inset:0;z-index:31;background:#000c;padding:calc(12px + env(safe-area-inset-top)) 12px 12px;overflow:auto}
+  #editMom.on{display:block}
+  #editMom .caja{max-width:760px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px}
+  #editMom h2{margin:0 0 4px;font-size:19px} #editMom .fila{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0 6px}
+  .emchk{display:flex;gap:8px;align-items:center;font-size:14px;margin:8px 0}
+  .emg{border-top:1px solid var(--line);padding:10px 0;display:grid;gap:6px}
+  .emg b{font-size:14px} .emg .emfila{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .emg .emc{width:30px;height:30px;border-radius:50%;border:2px solid #0008;cursor:pointer;padding:0}
+  .emg .emc.act{box-shadow:0 0 0 3px #fff} .emg .emc.off{background:#222;color:#aaa;font-size:11px;width:auto;border-radius:15px;padding:0 10px}
+  .emg input[type=range]{flex:1;min-width:120px} .emg select{background:#121419;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:6px}
+  .emg .bloq{font-size:12px;color:var(--warn)}
+  .paso-n{display:inline-block;min-width:22px;height:22px;line-height:22px;border-radius:11px;background:#2a3f6e;color:#fff;font-size:12px;text-align:center;margin-right:6px}
+  .editado{outline:2px dashed #ffbe00}
   #ayuda{display:none;position:fixed;inset:0;z-index:30;background:#000c;padding:calc(12px + env(safe-area-inset-top)) 12px 12px;overflow:auto}
   #ayuda.on{display:block}
   #ayuda .caja{max-width:640px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px}
@@ -407,6 +420,7 @@
     <p class="help"><b>Solo para la Sala de juegos de Mercado Kennedy.</b> Cada botón es un momento del juego. Más adelante el GC Master los dispara solo (Code 1); mientras tanto se pueden tocar aquí.
       <br>Momento actual: <b id="momActual">—</b></p>
     <div class="fxrow"><button class="big" id="detenerTodo" style="border-color:#ff5a5a">⏹ Detener todo<small>Para los efectos (mini cabezas, estrobos, colores) y apaga las luces</small></button></div>
+    <div class="fxrow"><button class="big" id="editarJuegos">✏️ Editar las escenas de los juegos<small>Paso a paso de cada juego: toca un paso y cambia foco por foco (color, intensidad, hacia dónde apunta). Se guarda en el Dell.</small></button></div>
     <div id="juegosLista"></div>
   </section>
 
@@ -505,6 +519,15 @@
 <div class="toast" id="toast"></div>
 <button id="avisoVersion" hidden onclick="location.reload()">Hay una versión nueva de las luces · Recargar</button>
 <!-- Ayuda e instrucciones cortas para los DJs y operadores (Cote, 25 nov) -->
+<div id="editMom" role="dialog" aria-label="Editar escena"><div class="caja">
+  <h2 id="emTitulo">—</h2><p class="help" id="emDetalle"></p>
+  <p class="help" id="emEfectos"></p>
+  <label class="emchk"><input type="checkbox" id="emEf" checked> Mantener lo que se mueve o cambia en este paso (colores que cambian, estrobo, movimientos)</label>
+  <div id="emGrupos"></div>
+  <div class="fila"><button class="chip" id="emProbar">▶ Probar ahora</button><button class="chip act" id="emGuardar">💾 Guardar</button>
+    <button class="chip" id="emOriginal">↺ Volver al original</button><button class="chip" id="emCerrar">Cerrar</button></div>
+  <p class="help">El blanco de frente (frontales y cabezas 1 y 2) siempre queda encendido en los juegos (regla de Cote); lo demás se puede cambiar.</p>
+</div></div>
 <div id="ayuda" role="dialog" aria-label="Ayuda">
   <div class="caja">
     <div id="ayudaDJ">
@@ -2260,8 +2283,23 @@ function zonasDe(m){
   });
   return out;
 }
+/* ---------- Editor de las escenas de los juegos (Cote, 27 nov: «el paso a paso de todas las escenas, una por una… ir foco
+   por foco y guardar la escena»). Lo editado queda en datos.json del Dell (datos.momentosEditados) y reemplaza a lo de
+   fabrica al compilar; «Volver al original» lo borra. */
+const POS_EDIT = { escenario: 'escenario', publico: 'publico', cara: () => CARA, animador: () => ANIMA, concursante: () => CONC, techo: () => [0, TECHO, -1.8] };
+const POS_NOMBRE = { escenario: 'Al escenario', publico: 'Al público', cara: 'Cara del animador', animador: 'Animador (sentado, juego del ganador)', concursante: 'Concursante (sentado)', techo: 'Techo del escenario' };
+function resolverMomento(m){ let x = m, k = 0; while (x && x.igual && k++ < 8) x = momentoPorId(x.igual); return x || m; }
+function conEdicion(m){
+  const ed = datos && datos.momentosEditados && datos.momentosEditados[m.id]; if (!ed) return m;
+  const base = resolverMomento(m), g0 = base.g || (() => ({}));
+  const gr = {}; Object.entries(ed.grupos || {}).forEach(([id, z]) => { const p = POS_EDIT[z.posicion];
+    gr[id] = { ...z, posicion: typeof p === 'function' ? p() : p || undefined }; });
+  const sinEf = ed.efectos === false ? { pared: null, estrobo: null, rosco: false, barrido: null, rasante: false, fiesta: null, standby: false } : {};
+  return { ...base, ...sinEf, id: m.id, igual: undefined, g: () => ({ ...g0(), ...gr }) };
+}
 function compilarMomento(m){
   if (m.nada) return [];
+  m = conEdicion(m);
   if (m.igual) return compilarMomento(momentoPorId(m.igual));
   const mGuard = master; master = 100;
   try {
@@ -2337,7 +2375,67 @@ async function dispararMomento(id){
   try { pintarEstado(await api('/api/momento?nombre=' + encodeURIComponent(id))); }
   catch(e){ toast('El Dell no conoce ese momento: reinicia INICIAR.bat'); }
 }
-let momentoVisto = null;
+let momentoVisto = null, editandoJuegos = false, emId = null, emEd = null;
+const esSegIni = id => segIds().includes(id);
+function abrirEditor(id){
+  const m = momentoPorId(id), base = resolverMomento(m), juego = JUEGOS.find(j => j.momentos.includes(m));
+  emId = id;
+  const prev = datos.momentosEditados && datos.momentosEditados[id];
+  // valores de partida: lo editado o, si no hay, lo de fabrica
+  const spec = base.g ? base.g() : {};
+  emEd = prev ? JSON.parse(JSON.stringify(prev)) : { efectos: true, grupos: {} };
+  $('emTitulo').textContent = (juego ? juego.juego + ' · paso ' + (juego.momentos.indexOf(m) + 1) + ': ' : '') + m.nombre;
+  $('emDetalle').textContent = (m.igual ? 'Hoy es igual que «' + base.nombre + '». ' : '') + (base.detalle || '');
+  const ef = [];
+  if (base.pared) ef.push('la pared cambia de color'); if (base.rosco) ef.push('la pared cambia lento arriba y abajo');
+  if (base.estrobo) ef.push('estrobo en ' + base.estrobo.join(', ')); if (base.barrido) ef.push('las cabezas barren desde el público');
+  if (base.rasante) ef.push('mini blancas rasantes'); if (base.fiesta) ef.push('fiesta (' + base.fiesta + ')'); if (base.standby) ef.push('fondo como Standby');
+  if (base.alRitmo) ef.push('al ritmo de la música');
+  if (base.luego) ef.push('a los ' + base.luego[0] + ' s pasa a «' + (base.luego[1] === 'previo' ? 'lo de antes' : (momentoPorId(base.luego[1]) || {}).nombre || base.luego[1]) + '»');
+  $('emEfectos').textContent = ef.length ? 'Lo que se mueve en este paso: ' + ef.join('; ') + '.' : 'En este paso no hay nada que se mueva solo.';
+  $('emEf').checked = emEd.efectos !== false;
+  const caja = $('emGrupos'); caja.innerHTML = '';
+  const colores = Object.keys(conf.colores);
+  conf.grupos.filter(g => g.id !== 'mini_columnas').forEach(g => {
+    const s0 = spec[g.id] || (g.igual_que && spec[g.igual_que]) || {};
+    const pos0 = typeof s0.posicion === 'string' ? s0.posicion : Array.isArray(s0.posicion) ? (s0.posicion === CARA ? 'cara' : s0.posicion === ANIMA ? 'animador' : s0.posicion === CONC ? 'concursante' : 'cara') : '';
+    const z = emEd.grupos[g.id] || { color: s0.color || null, intensidad: s0.intensidad != null ? s0.intensidad : 100, posicion: pos0 || undefined, zoom: s0.zoom, mover: !!s0.mover };
+    const llave = g.id === 'frontales' || segIds().slice(0, 2).includes(g.id);
+    if (llave && !emEd.grupos[g.id]){ z.color = 'blanco_calido'; z.intensidad = 100; if (esSegIni(g.id) && !z.posicion) z.posicion = 'escenario'; }
+    const d = document.createElement('div'); d.className = 'emg';
+    const esCab = !!(g.canales || {}).pan, esSeg = segIds().includes(g.id);
+    d.innerHTML = '<b>' + g.nombre + (g.igual_que ? ' <span class="help">(si no se cambia, igual que ' + g.igual_que + ')</span>' : '') + '</b>' +
+      (llave ? '<span class="bloq">Blanco de frente: en los juegos queda siempre en blanco cálido al 100 %' + (esSeg ? ' (sí se puede cambiar hacia dónde apunta)' : '') + '.</span>' : '') +
+      '<div class="emfila emcol"><button class="emc off" data-c="">Apagado</button>' + colores.map(c => '<button class="emc" data-c="' + c + '" title="' + c + '" style="background:' + COLOR_CSS[c] + '"></button>').join('') + '</div>' +
+      '<div class="emfila">Intensidad <input type="range" min="0" max="100" class="emint"><span class="emintv"></span></div>' +
+      (esSeg ? '<div class="emfila">Apunta <select class="empos">' + Object.keys(POS_EDIT).map(k => '<option value="' + k + '">' + POS_NOMBRE[k] + '</option>').join('') + '</select> Tamaño <input type="range" min="0" max="100" class="emzoom"></div>' : '') +
+      (esCab && !esSeg ? '<div class="emfila"><label><input type="checkbox" class="emmov"> En movimiento</label></div>' : '');
+    const pintar = () => { d.querySelectorAll('.emc').forEach(b => b.classList.toggle('act', (b.dataset.c || null) === (z.color || null)));
+      d.querySelector('.emint').value = z.intensidad; d.querySelector('.emintv').textContent = z.intensidad + '%';
+      if (esSeg){ d.querySelector('.empos').value = z.posicion || 'escenario'; d.querySelector('.emzoom').value = z.zoom != null ? z.zoom : 50; }
+      if (esCab && !esSeg) d.querySelector('.emmov').checked = !!z.mover; };
+    const cambiar = () => { emEd.grupos[g.id] = { ...z }; pintar(); };
+    d.querySelectorAll('.emc').forEach(b => b.onclick = () => { z.color = b.dataset.c || null; if (z.color && !(z.intensidad > 0)) z.intensidad = 100; cambiar(); });
+    d.querySelector('.emint').oninput = e => { z.intensidad = +e.target.value; cambiar(); };
+    if (esSeg){ d.querySelector('.empos').onchange = e => { z.posicion = e.target.value; cambiar(); }; d.querySelector('.emzoom').oninput = e => { z.zoom = +e.target.value; cambiar(); }; }
+    if (esCab && !esSeg) d.querySelector('.emmov').onchange = e => { z.mover = e.target.checked; cambiar(); };
+    pintar(); caja.appendChild(d);
+  });
+  $('editMom').classList.add('on');
+}
+async function probarEdicion(){
+  const antes = datos.momentosEditados; datos.momentosEditados = { ...(antes || {}), [emId]: emEd };
+  const L = compilarMomento(momentoPorId(emId)); datos.momentosEditados = antes;
+  for (const l of L) if (l.startsWith('/api/')) { try { const e = await api(l); if (l.startsWith('/api/set')) pintarEstado(e); } catch(e){ return toast('No se pudo probar'); } }
+  toast('Probando (no está guardado)');
+}
+async function guardarEdicion(borrar){
+  datos.momentosEditados = datos.momentosEditados || {};
+  if (borrar) delete datos.momentosEditados[emId]; else datos.momentosEditados[emId] = { ...emEd, efectos: $('emEf').checked };
+  try { await guardarDatos(); await publicarMomentos(); toast(borrar ? 'Volvió a lo original' : 'Guardado: los juegos ya usan esta escena'); }
+  catch(e){ return toast('No se pudo guardar en el Dell'); }
+  $('editMom').classList.remove('on'); pintarJuegos(momentoVisto);
+}
 function pintarJuegos(nombre){
   const cont = $('juegosLista'); if (!cont) return;
   if (!cont.childElementCount) JUEGOS.forEach(j => {
@@ -2346,13 +2444,14 @@ function pintarJuegos(nombre){
     j.momentos.forEach(m => {
       const b = document.createElement('button'); b.className = 'big'; b.dataset.mom = m.id;
       const det = m.igual ? 'Igual que «' + momentoPorId(m.igual).nombre + '»' : m.detalle;
-      b.innerHTML = m.nombre + '<small>' + det + '<br><code>' + m.id + '</code></small>';
-      b.onclick = () => dispararMomento(m.id);
+      b.innerHTML = '<span class="paso-n">' + (j.momentos.indexOf(m) + 1) + '</span>' + m.nombre + '<small>' + det + '<br><code>' + m.id + '</code></small>';
+      b.onclick = () => editandoJuegos ? abrirEditor(m.id) : dispararMomento(m.id);
       row.appendChild(b);
     });
     cont.appendChild(row);
   });
-  cont.querySelectorAll('[data-mom]').forEach(b => b.classList.toggle('act', b.dataset.mom === nombre));
+  cont.querySelectorAll('[data-mom]').forEach(b => { b.classList.toggle('act', b.dataset.mom === nombre);
+    b.classList.toggle('editado', !!(datos && datos.momentosEditados && datos.momentosEditados[b.dataset.mom])); });
   const m = momentoPorId(nombre); $('momActual').textContent = m ? m.nombre + ' (' + nombre + ')' : '—';
 }
 // Cuando llega un momento nuevo (del iPad o del GC Master), el iPad se acomoda solo
@@ -3475,6 +3574,13 @@ $('avisoProbar').onclick = async () => {
   try { const r = await api('/api/aviso-prueba'); toast(r.ok ? 'Aviso enviado: revisa la app ntfy' : 'El Dell todavía no tiene tema'); } catch(e){ toast('No se pudo pedir al Dell'); }
 };
 $('regNoche').onchange = () => verRegistro($('regNoche').value);
+$('editarJuegos').onclick = () => { editandoJuegos = !editandoJuegos; $('editarJuegos').classList.toggle('act', editandoJuegos);
+  $('editarJuegos').firstChild.textContent = editandoJuegos ? '✏️ Editando: toca un paso para cambiarlo (toca aquí para terminar)' : '✏️ Editar las escenas de los juegos'; };
+$('emEf').onchange = () => { emEd.efectos = $('emEf').checked; };
+$('emProbar').onclick = () => { emEd.efectos = $('emEf').checked; probarEdicion(); };
+$('emGuardar').onclick = () => guardarEdicion(false);
+$('emOriginal').onclick = () => guardarEdicion(true);
+$('emCerrar').onclick = () => $('editMom').classList.remove('on');
 
 /* ---------- Inicio ---------- */
 (async () => {

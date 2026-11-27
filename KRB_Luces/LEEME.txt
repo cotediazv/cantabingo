@@ -89,3 +89,13 @@ AVISO AL CELULAR SI SE CORTA EL CABLE (25 nov)
 INTENSIDAD GENERAL (26 nov)
 - La barra "Intensidad general" del panel la aplica el Dell a la salida: baja todo (escenas, momentos de los juegos,
   efectos y escenas del DJ). Queda guardada en intensidad.txt (sigue igual si el Dell se reinicia).
+
+CAMBIOS DEL 27 NOV (relato del jueves en Kennedy)
+- Regla de Cote: en los juegos el blanco de frente (frontales 97 y cabezas 1 y 2) queda siempre encendido.
+- Bingo: al aparecer el ganador las cabezas vuelven solas al escenario.
+- El Dell no busca actualizaciones ni se reinicia en el horario de actividades (jue, vie y sab 18:00 a 01:30).
+  Cada 10 minutos anota en el registro de la noche el consumo del procesador y la memoria.
+- Perimetrales 2 y 3 (detras de la bateria): grupo "bateria", direccion 113. Hacen lo mismo que los perimetrales
+  si nada les dice otra cosa.
+- Panel del DJ: colores base, version simple para el celular, grupo Animado, Creatividad y Auto musica.
+- Juegos > Editar las escenas de los juegos: paso a paso, foco por foco; queda en datos.json.
