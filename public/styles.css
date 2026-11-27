@@ -3929,3 +3929,14 @@ a.btn.paso:hover, a.btn.primary.paso:hover { background: #15803d; border-color: 
 #rosco-ctl.rosco-done .w-ctlrow > :not(#w-undo) { display: none; }
 /* GC Light enganchado a la sala de juegos los días de juego (Cote, 27 nov) */
 .lp-sala { margin: 0 0 10px; padding: 10px 12px; border-radius: 10px; background: rgba(71, 184, 230, .14); border: 1px solid rgba(71, 184, 230, .5); font-size: .95rem; line-height: 1.35; }
+
+/* Panel del karaoke de las salas light (pedido de Cote, 27 nov: «está muy desordenado… 2 corridas de 3 botones con lo
+   que hay»): los botones del GC en dos filas de tres, del mismo tamaño, rectangulares */
+.lp-stages { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.lp-stages button { border-radius: 14px; padding: 10px 6px; min-height: 0; font-size: .95rem; line-height: 1.2; align-content: center; }
+.lp-stages button span { font-size: 1.4rem; }
+@media (max-width: 600px) {
+  .lp-stages { gap: 6px; }
+  .lp-stages button { padding: 8px 4px; font-size: .8rem; }
+  .lp-stages button span { font-size: 1.2rem; }
+}
