@@ -30,6 +30,14 @@ test('cartelera de la semana: el jueves 3 de diciembre sale con su show si llega
   srvs.push(srv2);
   c = await srv2.ok('GET', '/api/light/cartelera?local=kennedy');
   assert.equal(jue(c).show, 'QUEEN TRIBUTO');
+  assert.deepEqual(jue(c).hours.map((h) => h.label), ['Karaoke']); // sin horarios propios de diciembre: los de noviembre
+  // Con los horarios de diciembre en su pestaña, el jueves 3 usa los suyos (hoy y los próximos 6 días, Cote 27 nov)
+  resp = { ...NOV, horarios, meses: [{ ...NOV, horarios }, { ...DIC, horarios: [{ dia: 'JUEVES', hora: '20:00', actividad: 'Show navideño' }] }] };
+  const srv3 = await startServer({ env: { GLOSA_TEST_URL: `http://localhost:${mock.address().port}/glosa`, KRB_FECHA: '2026-11-27T15:00:00-03:00' } });
+  srvs.push(srv3);
+  c = await srv3.ok('GET', '/api/light/cartelera?local=kennedy');
+  assert.deepEqual(jue(c).hours.map((h) => h.label), ['Show navideño']);
+  assert.deepEqual(c.week[0].hours.map((h) => h.label), ['Show']);
   assert.equal(c.week[0].show, 'PIANO MAN');
   assert.deepEqual(c.month.map((m) => m.show), ['PIANO MAN', 'BON JOVI']);
 });

@@ -76,7 +76,7 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
   // ([{ pestana, cartelera }], la de este mes y la del siguiente). Sin `meses`, la cartelera de la semana no puede mostrar
   // los shows de los primeros días del mes siguiente (pedido de Cote, 27 nov: «la cartelera de la semana de Kennedy no
   // está cargando la información del jueves 3 de diciembre»)
-  const tabsOf = (data) => (data ? [{ pestana: data.pestana, cartelera: data.cartelera }, ...(Array.isArray(data.meses) ? data.meses : [])] : []);
+  const tabsOf = (data) => (data ? [...(Array.isArray(data.meses) ? data.meses : []), { pestana: data.pestana, cartelera: data.cartelera }] : []);
   const tabFor = (data, m) => tabsOf(data).find((t) => t && monthOf(t) === m) || null;
   // Nombre del show como se escribe ahora en la GLOSA (pedido de Cote, 27 nov): entre paréntesis va a quién se le transfiere
   // (no se muestra) y entre comillas, la persona o el grupo que hace el tributo. Ej.: «GEORGE MICHAEL "RAFA DAMIÁN" (X)»
@@ -101,7 +101,9 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
   // Mes de la pestaña leída, ej. «NOVIEMBRE26 MASTER TOTAL» → 11
   const MONTHS = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
   const monthOf = (data) => { const t = plain(data.pestana || ''); const i = MONTHS.findIndex((m) => t.startsWith(m)); return i + 1; };
-  const hoursOf = (data, dow) => (data && Array.isArray(data.horarios) ? data.horarios : [])
+  // Horarios de un día de la semana; con `n` (la fecha), los de la pestaña de su mes si llegó con sus propios horarios
+  // (días del mes siguiente en la cartelera de la semana, pedido de Cote, 27 nov)
+  const hoursOf = (data, dow, n) => ((n && (tabFor(data, n.m) || {}).horarios) || (data && Array.isArray(data.horarios) ? data.horarios : []))
     .filter((x) => plain(x.dia).replace(/S$/, '') === DAYS[dow].replace(/S$/, ''))
     .map((x) => ({ time: clean(x.hora, 10), label: clean(x.actividad, 60) }))
     .filter((x) => x.time && x.label);
@@ -117,7 +119,7 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
     const week = [];
     for (let i = 0; i < 7; i++) {
       const n = night(i);
-      const hours = hoursOf(data, n.dow);
+      const hours = hoursOf(data, n.dow, n);
       const show = showOf(data, n);
       if (hours.length || show) week.push({ day: DAYS[n.dow], date: n.d, month: n.m, today: i === 0, show, hours });
     }

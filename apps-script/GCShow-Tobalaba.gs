@@ -97,23 +97,29 @@ function leerCartelera_(hoja) {
     .map(r => ({ dia: String(r[0]).trim(), show: String(r[1]).trim() }));
 }
 
-// Lo que lee la Sala (?modo=json): show de hoy, cartelera del mes, horarios y, en «meses», la pestaña de este mes y la del
-// mes siguiente (si ya existe), para que la cartelera de la semana muestre los días que cruzan de mes
+// Horarios de una pestaña: desde la fila siguiente a los títulos, hasta la primera fila vacía
+function leerHorarios_(hoja) {
+  const horarios = [];
+  const filas = hoja.getRange(HOR_FILA + 1, HOR_COL, 60, 3).getDisplayValues();
+  for (const [dia, hora, actividad] of filas) {
+    if (!String(dia).trim()) break;
+    horarios.push({ dia: String(dia).trim().toUpperCase(), hora: String(hora).trim(), actividad: String(actividad).trim() });
+  }
+  return horarios;
+}
+
+// Lo que lee la Sala (?modo=json): show de hoy, cartelera y horarios del mes y, en «meses», la pestaña de este mes y la del
+// mes siguiente (si ya existe), cada una con su cartelera y sus horarios. Así la Sala siempre puede leer las actividades de
+// hoy y de los próximos 6 días, haya o no cambio de mes (pedido de Cote, 27 nov)
 function getCartelera() {
   const d = diaShow();
   const actual = hojaDe_(d);
   if (!actual) throw new Error('No encontré la pestaña ' + pestanaDe_(d));
   const cartelera = leerCartelera_(actual.hoja);
-  // Horarios: desde la fila siguiente a los títulos, hasta la primera fila vacía
-  const horarios = [];
-  const filas = actual.hoja.getRange(HOR_FILA + 1, HOR_COL, 60, 3).getDisplayValues();
-  for (const [dia, hora, actividad] of filas) {
-    if (!String(dia).trim()) break;
-    horarios.push({ dia: String(dia).trim().toUpperCase(), hora: String(hora).trim(), actividad: String(actividad).trim() });
-  }
-  const meses = [{ pestana: actual.pestana, cartelera: cartelera }];
+  const horarios = leerHorarios_(actual.hoja);
+  const meses = [{ pestana: actual.pestana, cartelera: cartelera, horarios: horarios }];
   const siguiente = hojaDe_(new Date(d.getFullYear(), d.getMonth() + 1, 1, 12));
-  if (siguiente) meses.push({ pestana: siguiente.pestana, cartelera: leerCartelera_(siguiente.hoja) });
+  if (siguiente) meses.push({ pestana: siguiente.pestana, cartelera: leerCartelera_(siguiente.hoja), horarios: leerHorarios_(siguiente.hoja) });
   return { pestana: actual.pestana, hoy: getShow(), cartelera: cartelera, horarios: horarios, meses: meses };
 }
 
