@@ -2894,8 +2894,9 @@ const MINI_MOV = {
 function capasStandby(tema, estilo){
   const n = tema.length, cabs = djCabezas().filter(id => segIds().indexOf(id) < 2);   // solo dos cabezas
   // pared y frontales muy bajos (la intensidad de Standby ademas va a la mitad); mini al 100 %, son las protagonistas
-  const col = N(n * 2).map(k => { const o = { ...grupos(djAbajo(), tema[k % n]), ...grupos(djArriba(), tema[(k + 1) % n]), frontales: tema[(k + 2) % n],
-      ...grupos(djMini(), tema[(k + 1) % n]) }, int = { perimetrales: 22, fondo: 22, frontales: 12, mini: 100, mini_columnas: 100 };
+  // frontales (97) apagados en Standby (Cote, 27 nov)
+  const col = N(n * 2).map(k => { const o = { ...grupos(djAbajo(), tema[k % n]), ...grupos(djArriba(), tema[(k + 1) % n]), frontales: null,
+      ...grupos(djMini(), tema[(k + 1) % n]) }, int = { perimetrales: 22, fondo: 22, mini: 100, mini_columnas: 100 };
     cabs.forEach((id, j) => { o[id] = tema[(k + j + 2) % n]; int[id] = 55; });
     return pasoColor(o, int); });
   const mm = MINI_MOV[estilo] || MINI_MOV.ola;
