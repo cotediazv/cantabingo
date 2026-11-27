@@ -3943,3 +3943,12 @@ a.btn.paso:hover, a.btn.primary.paso:hover { background: #15803d; border-color: 
 /* Titulo de la sala light en el panel del karaoke: chico y en una sola linea (pedido de Cote, 27 nov) */
 .lp-title { margin: 0; font-size: 1.05rem; white-space: nowrap; }
 @media (max-width: 380px) { .lp-title { font-size: .92rem; } }
+/* Botones del GC de la sala light en el tercio de arriba (pedido de Cote, 27 nov): botones bajos, con el icono al lado */
+.lp-title { margin: 0 0 8px; }
+.lp-stages button { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px 6px; min-height: 46px; text-align: center; }
+.lp-stages button span { font-size: 1.15rem; }
+@media (max-width: 600px) {
+  .lp-stages button { flex-direction: column; gap: 2px; padding: 6px 2px; min-height: 52px; font-size: .78rem; }
+  .lp-stages button span { font-size: 1.05rem; }
+}
+#kc-lt { padding-top: 12px; }

@@ -8,7 +8,8 @@
   const teamUrl = (v) => `${location.origin}${location.pathname}#/equipo/${v}`;
   // ¿Quién maneja este panel? El moderador, o el equipo del local (clave del equipo)
   const staffVenue = async () => (store.get('staffToken') ? (await api('GET', '/api/staff/me').catch(() => ({}))).venue || '' : '');
-  const STAGES = [['info', '🔄', 'Información que va cambiando'], ['karaoke', '🎤', 'Karaoke'], ['show', '⭐', 'Show y lo que viene'], ['cartelera', '📅', 'Cartelera de la semana'], ['qr', '📱', 'QR grande y lista'], ['none', '⛔', 'Nada']];
+  // Orden y nombres que pidió Cote (27 nov): 1 GC KARAOKE, 2 QR GRANDE, 3 GC SHOW, 4 GC CARTELERA, 5 INFO GRAL, 6 NADA
+  const STAGES = [['karaoke', '🎤', 'GC KARAOKE'], ['qr', '📱', 'QR GRANDE'], ['show', '⭐', 'GC SHOW'], ['cartelera', '📅', 'GC CARTELERA'], ['info', '🔄', 'INFO GRAL'], ['none', '⛔', 'NADA']];
   const dayName = (d) => ({ MIERCOLES: 'Miércoles', SABADO: 'Sábado' }[d] || d.charAt(0) + d.slice(1).toLowerCase());
   // Diseño nuevo (tema.js): las etiquetas de las pantallas van sin emojis; con el diseño anterior quedan como siempre
   const se = (s) => (window.sinEmoji ? window.sinEmoji(s) : s);
@@ -76,8 +77,8 @@
       if (document.activeElement && document.activeElement.name === 'text' && top.contains(document.activeElement)) return;
       last = sig;
       // Titulo chico y en una linea, sin el numero de personas (pedido de Cote, 27 nov: «no es relevante»)
+      // Los botones del GC lo mas arriba posible (Cote, 27 nov): sin el subtitulo «En pantalla (GC)» (los botones ya dicen GC)
       top.innerHTML = `<h1 class="lp-title">${esc(st.title)}</h1>
-        <h2 style="margin:12px 0 10px">En pantalla (GC)</h2>
         ${st.sala ? '<p class="lp-sala">🎮 <b>Hoy hay sala de juegos en este local:</b> el GC Light de OBS muestra el GC de la sala de juegos (sus juegos, su karaoke y su QR) toda la noche. Estos botones vuelven a mandar en el GC cuando se cierre la sala de juegos.</p>' : ''}
         <div class="lp-stages">${STAGES.map(([k, i, t]) => `<button type="button" data-st="${k}" class="${st.stage === k ? 'on' : ''}"><span>${i}</span>${t}</button>`).join('')}</div>
         <form class="lp-custom${st.stage === 'custom' ? ' on' : ''}"><input type="text" name="text" maxlength="120" autocomplete="off" placeholder="Escribe aquí el texto del GC" value="${esc(st.text || '')}"><button class="${st.stage === 'custom' ? 'on' : ''}">✏️ GC personalizable</button></form>
