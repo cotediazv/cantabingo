@@ -3923,3 +3923,9 @@ a.btn.paso:hover, a.btn.primary.paso:hover { background: #15803d; border-color: 
 .lz-frame { flex-direction: column; }
 .lz-frame iframe { flex: 1; min-height: 0; }
 #lz-msg.lz-aviso { margin: 0; padding: 8px 12px; width: 100%; box-sizing: border-box; background: #3a2f08; color: #ffd76a; font-size: .9rem; line-height: 1.3; text-align: left; }
+
+/* El Rosko sin «Aceptar ganador» (Cote, 27 nov): con el ganador, «Un paso atrás» sigue a la vista por si fue un error */
+#rosco-ctl.rosco-done .cols > .panel:first-child > .row.w-ctlrow { display: flex !important; }
+#rosco-ctl.rosco-done .w-ctlrow > :not(#w-undo) { display: none; }
+/* GC Light enganchado a la sala de juegos los días de juego (Cote, 27 nov) */
+.lp-sala { margin: 0 0 10px; padding: 10px 12px; border-radius: 10px; background: rgba(71, 184, 230, .14); border: 1px solid rgba(71, 184, 230, .5); font-size: .95rem; line-height: 1.35; }

@@ -63,7 +63,7 @@
   setInterval(sign, 400);
 
   // ---------- «¿Seguro?» solo en lo que no se puede deshacer (30.1) ----------
-  const SURE = [[/Confirmar ganador/i, '¿Seguro que confirmas a este ganador?'], [/Aceptar ganador/i, '¿Seguro que aceptas al ganador?']];
+  const SURE = [[/Confirmar ganador/i, '¿Seguro que confirmas a este ganador?']];
   document.addEventListener('click', (e) => {
     const b = e.target.closest && e.target.closest('button'); if (!b || b.disabled || b.dataset.sure === 'ok') return;
     const hit = SURE.find(([re]) => re.test(b.textContent));

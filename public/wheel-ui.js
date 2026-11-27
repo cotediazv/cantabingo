@@ -163,7 +163,6 @@
           <div id="w-rankann"></div>
           <div class="w-question" id="w-question"></div>
           <button class="primary big w-accept" id="w-tie" hidden>🎲 Desempatar por sorteo</button>
-          <button class="primary big w-accept" id="w-accept" data-do="acceptwin" hidden>✔ Aceptar ganador</button>
           <div id="w-accepted" hidden><div class="w-accepted">✔ Ganador aceptado</div>
             <button class="primary big w-accept paso" data-paso="2" id="w-crowd">🏅 Resultados del público: ranking y ganador</button>
             <div class="w-ann" id="w-crowd-res" hidden></div><div id="w-after" hidden>${BACK_BINGO}</div></div>
@@ -176,7 +175,7 @@
             <button class="w-miss" data-do="miss">✘ Incorrecta <kbd>F</kbd></button>
             <button class="w-pass" data-do="pass">↷ Pasa <kbd>P</kbd></button>
           </div>
-          <div class="row" style="margin-top:14px">
+          <div class="row w-ctlrow" style="margin-top:14px">
             <button data-do="undo" id="w-undo">⬅️ Un paso atrás</button>
             <button data-do="turn" id="w-swap">Cambiar turno</button>
             <button class="danger" id="w-reset">Reiniciar</button>
@@ -212,10 +211,9 @@
       $('#w-letter').textContent = c.active ? st.letters[c.current] : '—';
       const q = (questions[st.turn] || [])[c.current] || {};
       // La pregunta y su respuesta se muestran al moderador solo con el reloj en marcha
-      $('#w-question').innerHTML = !c.active ? (st.tie ? (st.tie.rolling ? '<b>Sorteando el desempate…</b> Mira la pantalla.' : `<b>Hay un empate</b> entre ${window.yJoin(st.tie.names.map(esc))}: mismos aciertos y fallos. Primero desempata por sorteo.`) : st.winner ? (st.winAccepted ? `<b>${st.winner.full ? '¡Rosko completo!' : '¡Tenemos ganador!'}</b> El nombre del ganador queda abajo al centro de la pantalla.` : `<b>${st.winner.full ? '¡Rosko completo!' : `¡Gana ${esc(st.winner.name)}!`}</b> ${st.winner.byDraw ? 'Salió elegido en el desempate.' : 'La partida se detuvo y en pantalla se muestra la felicitación.'} Pulsa «Aceptar ganador», o Deshacer si fue un error.`) : '<span class="muted">Este concursante ya terminó su rosco.</span>')
+      $('#w-question').innerHTML = !c.active ? (st.tie ? (st.tie.rolling ? '<b>Sorteando el desempate…</b> Mira la pantalla.' : `<b>Hay un empate</b> entre ${window.yJoin(st.tie.names.map(esc))}: mismos aciertos y fallos. Primero desempata por sorteo.`) : st.winner ? `<b>${st.winner.full ? '¡Rosko completo!' : '¡Tenemos ganador!'}</b> ${st.winner.byDraw ? 'Salió elegido en el desempate. ' : ''}La celebración parte sola: en pantalla, la felicitación (después queda abajo al centro). Si fue un error, «Un paso atrás».` : '<span class="muted">Este concursante ya terminó su rosco.</span>')
         : !st.runningSince ? '<span class="muted">Pulsa «Iniciar pregunta» para ver la pregunta de esta letra.</span>'
         : q.q ? `${q.cat ? `<div class="small muted" style="margin-bottom:6px">${TAGS[q.cat]} · ${q.level === 'f' ? 'Fácil' : 'Medio'}</div>` : ''}<div class="w-qtext">${esc(q.q)}</div>${q.a ? `<div class="w-answer"><small>Respuesta</small><b>${esc(q.a)}</b></div>` : ''}` : '<span class="muted">Sin pregunta cargada para esta letra: léela de tu guion.</span>';
-      $('#w-accept').hidden = !st.winner || st.winAccepted;
       $('#w-tie').hidden = !st.tie || st.tie.rolling;
       $('#w-accepted').hidden = !st.winAccepted;
       $('#w-crowd').hidden = !!st.crowdWinner;
@@ -253,6 +251,7 @@
       if (rk.dataset.k !== rkKey) { rk.dataset.k = rkKey; rk.innerHTML = st.rank ? window.rankAnnHtml(st.rank, st.rankPlayers, !!(st.crowdWinner || st.winner)) : ''; }
       $('#w-clock').disabled = step !== 2 || !!st.rankDue;
       $('#w-undo').disabled = !st.canUndo;
+      $('#w-undo').hidden = !!st.crowdWinner; // con el ganador (ya sin «Aceptar»), «Un paso atrás» sigue a mano por si fue un error
       $('#w-swap').hidden = st.players.length < 2;
       $('#w-wheels').innerHTML = st.players.map((_, i) => `<div class="wheel-box ${i === st.turn ? 'on' : 'off'}">${wheelSVG(st, i, true)}</div>`).join('');
       // Pedido de Cote (20 nov): las instrucciones desaparecen al empezar; con el ganador aceptado desaparece el juego y
@@ -535,7 +534,8 @@
         const full = document.body.classList.contains('full');
         const cw = st.crowdWinner;
         const key = `crowd|${cw.at}`;
-        const left = WIN_HOLD_MS - (st.now - cw.at);
+        // Pedido de Cote (27 nov): cuando la tómbola se detiene, el ganador queda 6 s en pantalla y sale solo
+        const left = (cw.holdMs ? (cw.rollMs || 0) + cw.holdMs : WIN_HOLD_MS) - (st.now - cw.at);
         clearTimeout(winTimer); clearTimeout(shrinkTimer);
         const gone = () => {
           wonBy = `${key}|gone`;
@@ -580,7 +580,7 @@
         const full = document.body.classList.contains('full');
         // En OBS la pantalla completa dura 6 s; después baja sola al cartel, aunque el animador no haya aceptado aún
         const sinceWin = st.now - (st.wonAt || st.now);
-        const low = kind === 'obs' && !full && (st.winAccepted || sinceWin >= 6000);
+        const low = kind === 'obs' && !full && sinceWin >= 6000; // el ganador ya no se acepta (Cote, 27 nov): siempre 6 s en grande
         clearTimeout(shrinkTimer);
         if (kind === 'obs' && !full && !low) shrinkTimer = setTimeout(() => onWheel({ ...st, now: st.now + (6000 - sinceWin) + 50 }), 6000 - sinceWin + 50);
         // A los 15 s de aceptar al ganador se retira todo: OBS queda limpio y el tablero del DJ pasa al QR
@@ -642,7 +642,7 @@
       window.fitOneLine($('#pw .pw-howto')); // las instrucciones en una línea (pedido de Cote)
       scheduleRevealEnd(st);
     };
-    const off = watch(id, onWheel, () => { leave(); if (['#/escena', '#/gc', '#/obs', '#/tablero', `#/${kind}`].includes(location.hash)) route(); else location.hash = `#/${kind}`; });
+    const off = watch(id, onWheel, () => { leave(); if (['#/escena', '#/gc', '#/obs', '#/tablero', `#/${kind}`].includes(location.hash) || /^#\/light-gc/.test(location.hash)) route(); else location.hash = `#/${kind}`; });
     return () => { off(); stopClocks(); leave(); };
   }
   views.rueda = (id) => publicView('rueda', id);

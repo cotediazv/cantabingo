@@ -47,11 +47,16 @@ test('rosco: preguntas del banco, la respuesta no sale al público, prioridad en
   assert.equal((await srv.admin.call('POST', '/api/stage', { show: 'bingo' })).status, 409);
   assert.equal((await srv.ok('GET', '/api/stage')).show, 'rueda');
 
-  // ANA acierta las 5 letras → gana con rosco completo
+  // ANA acierta las 5 letras → gana con rosco completo. Ya no hay «Aceptar ganador» (Cote, 27 nov): queda
+  // aceptado solo y parte la celebración (momento de las luces al tiro)
+  const { seq } = await srv.ok('GET', '/api/momentos');
   for (let i = 0; i < 5; i++) await act(id, 'hit');
   const won = await live.next((m) => m.winner);
   assert.equal(won.winner.name, 'ANA');
   assert.equal(won.winner.full, true);
+  assert.equal(won.winAccepted, true);
+  const moms = (await srv.ok('GET', `/api/momentos?desde=${seq}`)).momentos.map((x) => x.nombre || x.name);
+  assert.equal(moms.filter((x) => x === 'rosko_ganador').length, 1);
   assert.equal(won.crowdSolved['0:0'], full.questions[0][0].a);
   await live.close();
 
@@ -66,6 +71,12 @@ test('rosco: preguntas del banco, la respuesta no sale al público, prioridad en
   assert.deepEqual(rk.people.sort(), ['ANA PRUEBA', 'LUIS PRUEBA']);
   await act(id, 'rank');
   assert.equal((await srv.admin.get(`/api/wheels/${id}`)).rank[0].name, 'ANA PRUEBA');
+  // Ganador de la Trivia: el ranking se recoge para que se vea la tómbola, y el ganador queda 6 s después de detenerse
+  await act(id, 'crowdwin');
+  const cw = await srv.admin.get(`/api/wheels/${id}`);
+  assert.equal(cw.rank, null);
+  assert.equal(cw.crowdWinner.name, 'ANA PRUEBA');
+  assert.equal(cw.crowdWinner.holdMs, 6000);
 
   // Terminó la partida: la pantalla vuelve a obedecer
   assert.deepEqual(await srv.admin.post('/api/stage', { show: 'bingo' }), { show: 'bingo' });
@@ -100,6 +111,7 @@ test('rosco: fallo pasa el turno, deshacer, empate y desempate por sorteo', asyn
   assert.deepEqual(w.tie && w.tie.names, ['ANA', 'BETO']);
   await srv.admin.post(`/api/wheels/${id}/tiebreak`);
   assert.equal((await srv.ok('GET', '/api/stage')).show, 'sorteo');
+  assert.equal((await srv.admin.get(`/api/wheels/${id}`)).winAccepted, false); // mientras gira la tómbola, todavía no
   const r = await srv.ok('GET', '/api/raffle');
   assert.equal(r.mode, 'tie');
   assert.ok(['ANA', 'BETO'].includes(r.roll.winner));

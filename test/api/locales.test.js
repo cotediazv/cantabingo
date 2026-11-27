@@ -73,6 +73,13 @@ test('sala light: el equipo la abre, cambia su GC y el público entra con nombre
   const me = await srv.ok('POST', `/api/light/${opened.id}/join`, { name: 'ana', surname: 'pérez' });
   assert.equal(me.name, 'ANA PÉREZ');
   assert.equal((await srv.ok('GET', '/api/light?local=kennedy')).players, 1);
+  // Día de juegos (Cote, 27 nov): con la sala de juegos de Kennedy abierta, el GC Light pasa a la sala de juegos
+  assert.equal((await srv.ok('GET', '/api/light?local=kennedy')).sala, false);
+  const { sid } = await srv.openRoom({ theme: 'kennedy' });
+  assert.equal((await srv.ok('GET', '/api/light?local=kennedy')).sala, true);
+  assert.equal((await srv.ok('GET', '/api/light?local=frida')).sala, false);
+  await srv.admin.post(`/api/sessions/${sid}/host/close`);
+  assert.equal((await srv.ok('GET', '/api/light?local=kennedy')).sala, false);
   const cart = await srv.ok('GET', '/api/light/cartelera?local=kennedy');
   assert.equal(cart.venue, 'kennedy');
   const consola = await srv.admin.get('/api/consola');

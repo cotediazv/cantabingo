@@ -652,7 +652,6 @@ function renderRosco(w) {
     o += '<div class="q' + (w.runningSince && c.active ? ' live' : '') + '">' + (!c.active ? (w.tie ? (w.tie.rolling ? '<b>Sorteando el desempate…</b> Mira la pantalla.' : '<b>Hay un empate</b> entre ' + h(yJoin(w.tie.names)) + '. Primero desempata por sorteo.') : 'Juego terminado.') :
       !w.runningSince ? '<span class="muted">Pulsa «Iniciar pregunta» para ver la pregunta de esta letra.</span>' : '<div class="qt">' + h(q.q || '') + '</div>' + (q.a ? '<div class="a"><small>Respuesta</small>' + h(q.a) + '</div>' : '')) + '</div>';
     if (w.tie && !w.tie.rolling) o += btn('🎲 Desempatar por sorteo', 'tieRosco', '', 'big warn');
-    if (w.winner && !w.winAccepted) o += btn('✔ Aceptar ganador', 'wheel', d('x', 'acceptwin'), 'big ok');
     if (w.rankDue && !w.runningSince) o += '<div class="ann" style="padding:12px;border-radius:14px;margin:8px 0"><b style="font-size:20px">📊 Terminaron ' + (w.rankEvery || 2) + ' rondas.</b><br>Antes de la próxima pregunta, despliega el ranking de la Trivia del Rosko en pantalla.</div>' + btn('📊 Terminaron ' + (w.rankEvery || 2) + ' rondas: despliega el ranking de la Trivia (obligatorio)', 'roscoRankOn', '', 'big warn rankdue');
     o += '<div class="wkeys">' + btn(w.onScreen ? '📺 Rosko en pantalla ✓' : '📺 Poner rosko en pantalla', 'roscoShow', '', 'big wshow', step !== 1 || w.rankDue);
     o += btn(w.runningSince ? '⏱ Pregunta en curso' : '▶ Iniciar pregunta', 'wheel', d('x', 'start'), 'big primary', step !== 2 || w.rankDue);
@@ -660,6 +659,7 @@ function renderRosco(w) {
     o += '<div class="row">' + btn('⬅️ Un paso atrás', 'wheel', d('x', 'undo'), '', !w.canUndo) + (w.players.length > 1 ? btn('Cambiar turno', 'wheel', d('x', 'turn')) : '') + btn('Reiniciar', 'roscoReset', '', 'bad') + (w.fromBank ? btn('↻ Preguntas nuevas', 'newQ') : '') + '</div>';
   } else {
     if (w.winner) o += ann('🏆 Premio mayor · ' + (w.winner.full ? '¡Completó el rosko!' : 'Ganó El Rosko'), [w.winner.name], [many(w.winner.hits, 'acierto', 'aciertos') + ' · ' + many(w.winner.misses, 'fallo', 'fallos') + (w.winner.byDraw ? ' · salió en el desempate' : '')]);
+    if (!w.crowdWinner && w.canUndo) o += btn('⬅️ Un paso atrás (si el ganador fue un error)', 'wheel', d('x', 'undo')); // ya no hay «Aceptar ganador» (Cote, 27 nov)
     if (!w.crowdWinner) o += ANIM ? btn('🏅 Resultados del público: ranking y ganador', 'crowdBoth', '', 'big primary paso') : btn('🏅 Mostrar ganador de la Trivia del Rosko', 'wheel', d('x', 'crowdwin'), 'big primary');
     else o += w.crowdWinner.none ? ann('🏅 Trivia del Rosko', ['Nadie sumó puntos'], ['Jugaron ' + many(w.crowdWinner.players, 'persona', 'personas')]) : ann('🏅 Premio especial · Ganó la Trivia del Rosko', [w.crowdWinner.name], [many(w.crowdWinner.score, 'punto', 'puntos') + ' · ' + many(w.crowdWinner.hits, 'acierto', 'aciertos'), 'Jugaron ' + many(w.crowdWinner.players, 'persona', 'personas')]);
   }
@@ -1116,7 +1116,6 @@ document.onclick = function (e) {
   if (ANIM) { // «¿Seguro?» solo en lo que no se puede deshacer (30.1)
     var x = t.getAttribute('data-x');
     if (x === 'confirmwin' && !window.confirm('¿Seguro que confirmas a este ganador?')) return;
-    if (x === 'acceptwin' && !window.confirm('¿Seguro que aceptas al ganador?')) return;
     var p = t; while (p && p !== document && p.id !== 'an-opts') p = p.parentNode;
     if (p && p.id === 'an-opts' && t.getAttribute('data-a') !== 'animOpts') { animOptsOpen = false; p.className = ''; }
   }

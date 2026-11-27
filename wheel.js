@@ -65,7 +65,7 @@ module.exports = function wheelGame({ placeOf = () => '', app, db, save, require
     const c = w.players[w.turn];
     if (w.runningSince || !active(c)) return;
     w.runningSince = Date.now();
-    timers[w.id] = setTimeout(() => { settle(w); w.onScreen = false; passTurn(w); rankSeen(w); broadcast(w); require('./momentos.js').emit('rosko_tiempo'); }, c.remainingMs + 30); // se acabó el reloj (luces)
+    timers[w.id] = setTimeout(() => { settle(w); w.onScreen = false; passTurn(w); rankSeen(w); require('./momentos.js').emit('rosko_tiempo'); crown(w); broadcast(w); }, c.remainingMs + 30); // se acabó el reloj (luces); si con eso hay ganador, se celebra
     // Luces (Cote, 24 nov): con 30 s por delante el fondo pasa a rojo suave y en los últimos 10 s parpadea. Si el reloj
     // parte con menos, el aviso sale apenas después de «rosko_pregunta», para no quedar debajo de él
     const r = c.remainingMs;
@@ -112,6 +112,7 @@ module.exports = function wheelGame({ placeOf = () => '', app, db, save, require
   // queda a los que siguen jugando
   const LATE_MS = 60000;
   const CROWD_ROLL_MS = 5500; // la «tómbola» del ganador de la Trivia
+  const CROWD_HOLD_MS = 6000; // y después de detenerse, el ganador queda 6 s en pantalla y sale solo (Cote, 27 nov)
   const late = (w) => winnerOf(w) < 0 && w.players.reduce((t, c, i) => t + (active(c) ? liveRemaining(w, i) : 0), 0) <= LATE_MS;
   const rankDue = (w) => {
     if (winnerOf(w) >= 0 || late(w)) return false;
@@ -202,6 +203,20 @@ module.exports = function wheelGame({ placeOf = () => '', app, db, save, require
     return table;
   }
 
+  // El ganador de El Rosko ya es un hecho apenas aparece (pedido de Cote, 27 nov: «quitar aceptar el ganador; el ganador
+  // no hay que aceptarlo, ya es un hecho»): queda aceptado solo y en ese momento parte la celebración (cortina y confeti
+  // en el GC; las luces y la canción, con el momento «rosko_ganador» en la suite de Code 4). Una sola vez por ganador.
+  function crown(w, quiet) {
+    if (winnerOf(w) < 0 || w.winAccepted) return false;
+    w.winAccepted = true; w.winAcceptedAt = Date.now();
+    if (quiet) return true;
+    festejo('final');
+    require('./momentos.js').emit('rosko_ganador'); require('./momentos.js').emitLater('premio_entrega', 9000);
+    // tras un desempate, la pantalla vuelve al rosko cuando ya se vio el resultado de la tómbola
+    if (db.stage === 'sorteo') setTimeout(() => { if (db.stage === 'sorteo' && db.wheels[w.id] && winnerOf(w) >= 0) { setStage('rueda'); broadcast(w); } }, 4000);
+    return true;
+  }
+
   function act(w, action, b) {
     const c = w.players[w.turn];
     if (winnerOf(w) >= 0 && ['hit', 'miss', 'pass', 'start', 'turn'].includes(action)) return 'La partida terminó: alguien completó el rosko';
@@ -227,18 +242,18 @@ module.exports = function wheelGame({ placeOf = () => '', app, db, save, require
       case 'crowdwin': { // el animador da a conocer al ganador del público
         const table = standings(w).filter((t) => t.score > 0);
         // Sin puntos no hay ganador, pero se puede seguir: queda anotado que nadie sumó (pedido de Cote: el paso es obligatorio)
-        if (!table.length) { crowdOf(w).winner = { none: true, name: '', score: 0, hits: 0, players: standings(w).length, at: Date.now() }; return null; }
+        if (!table.length) { crowdOf(w).winner = { none: true, name: '', score: 0, hits: 0, players: standings(w).length, at: Date.now(), holdMs: CROWD_HOLD_MS }; w.rankShow = false; return null; }
         const top = table.filter((t) => t.score === table[0].score && t.hits === table[0].hits);
         const pick = top[crypto.randomInt(top.length)];
         // Con redoble y una «tómbola» que pasa por los mejores antes de detenerse en el ganador (pedido de Cote, 24 nov)
         const roll = table.slice(0, 8).map((t) => t.name);
-        crowdOf(w).winner = { name: pick.name, score: pick.score, hits: pick.hits, players: standings(w).length, at: Date.now(), roll, rollMs: CROWD_ROLL_MS };
+        crowdOf(w).winner = { name: pick.name, score: pick.score, hits: pick.hits, players: standings(w).length, at: Date.now(), roll, rollMs: CROWD_ROLL_MS, holdMs: CROWD_HOLD_MS };
+        w.rankShow = false; // el ranking se recoge para que se vea la tómbola y el ganador (como en ¿Quién quiere ser ganador?)
         return null;
       }
-      case 'acceptwin': // el animador da por bueno al ganador: la felicitación se recoge abajo al centro
+      case 'acceptwin': // ya no hay botón (Cote, 27 nov: el ganador es un hecho); queda por compatibilidad con paneles viejos
         if (winnerOf(w) < 0) return 'Todavía nadie completó el rosko';
-        w.winAccepted = true; w.winAcceptedAt = Date.now();
-        if (db.stage === 'sorteo') setStage('rueda'); // tras un desempate, la pantalla vuelve al rosco
+        crown(w);
         return null;
       case 'start':
         if (rankDue(w)) return 'Terminaron 2 rondas: primero despliega el ranking de la Trivia en pantalla';
@@ -442,7 +457,6 @@ module.exports = function wheelGame({ placeOf = () => '', app, db, save, require
       const name = { start: 'rosko_pregunta', hit: 'rosko_correcta', miss: 'rosko_incorrecta', pass: 'rosko_pasa' }[act2] || (act2 === 'rank' ? (on ? 'rosko_ranking' : 'rosko_ranking_fin') : '')
         || (act2 === 'show' ? (on ? 'rosko_pantalla' : 'rosko_pantalla_fin') : '') || (act2 === 'turn' && wasOn ? 'rosko_pantalla_fin' : '');
       if (act2 === 'start' && !w.runningSince) { /* no partió (sin letras): nada */ } else if (name) require('./momentos.js').emit(name);
-      if (act2 === 'acceptwin') { require('./momentos.js').emit('rosko_ganador'); require('./momentos.js').emitLater('premio_entrega', 9000); }
       if (act2 === 'crowdwin' && (w.crowd || {}).winner && !w.crowd.winner.none) { // luces: la tómbola y, al detenerse, el ganador
         require('./momentos.js').emit('tombola_gira');
         setTimeout(() => { require('./momentos.js').emit('trivia_ganador'); require('./momentos.js').emitLater('premio_entrega', 9000); }, CROWD_ROLL_MS);
@@ -452,7 +466,7 @@ module.exports = function wheelGame({ placeOf = () => '', app, db, save, require
     if (error) return fail(res, 400, error);
     // Confeti en el GC cuando aparece el ganador de El Rosko o el de la Trivia (pedido de Cote, 23 nov)
     const cw = (w.crowd || {}).winner;
-    if (!had && winnerOf(w) >= 0) festejo('final');
+    if (!had) crown(w); else crown(w, true); // apareció el ganador: celebración al tiro (si ya estaba, solo queda aceptado)
     if (!hadCrowd && cw && !cw.none) setTimeout(festejo, CROWD_ROLL_MS); // el de la Trivia, cuando la tómbola se detiene
     broadcast(w);
     // El estado completo en la respuesta: el panel del iPad se dibuja al instante, sin volver a leer (pedido de Cote, 21 nov)
@@ -478,7 +492,7 @@ module.exports = function wheelGame({ placeOf = () => '', app, db, save, require
     db.raffle.mode = 'tie';
     setStage('sorteo');
     broadcast(w);
-    setTimeout(() => { broadcast(w); festejo('final'); }, TIE_ROLL_MS + 200);
+    setTimeout(() => { crown(w); broadcast(w); }, TIE_ROLL_MS + 200);
     require('./momentos.js').emit('tombola_gira'); require('./momentos.js').emitLater('tombola_resultado', TIE_ROLL_MS); // al terminar la tómbola, el panel recibe al ganador
     res.json({ ok: true });
   });

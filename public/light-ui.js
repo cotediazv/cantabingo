@@ -77,6 +77,7 @@
       last = sig;
       top.innerHTML = `<h1 style="margin:0">${esc(st.title)}</h1><span class="muted">${st.players} ${st.players === 1 ? 'persona entró' : 'personas entraron'} a la sala</span>
         <h2 style="margin:16px 0 10px">En pantalla (GC)</h2>
+        ${st.sala ? '<p class="lp-sala">🎮 <b>Hoy hay sala de juegos en este local:</b> el GC Light de OBS muestra el GC de la sala de juegos (sus juegos, su karaoke y su QR) toda la noche. Estos botones vuelven a mandar en el GC cuando se cierre la sala de juegos.</p>' : ''}
         <div class="lp-stages">${STAGES.map(([k, i, t]) => `<button type="button" data-st="${k}" class="${st.stage === k ? 'on' : ''}"><span>${i}</span>${t}</button>`).join('')}</div>
         <form class="lp-custom${st.stage === 'custom' ? ' on' : ''}"><input type="text" name="text" maxlength="120" autocomplete="off" placeholder="Escribe aquí el texto del GC" value="${esc(st.text || '')}"><button class="${st.stage === 'custom' ? 'on' : ''}">✏️ GC personalizable</button></form>
         <label class="lp-switch${st.video ? ' on' : ''}"><input type="checkbox" data-video ${st.video ? 'checked' : ''}><i></i><span><b>🎬 Video cartelera</b><small>La pantalla vertical deja puesto el video subido hasta que se cambie el GC</small></span></label>`;
@@ -157,6 +158,13 @@
       // Con local (#/light-gc/kennedy) muestra esa sala; sin local, la primera abierta
       const st = await api('GET', `/api/light${VENUES[venue] ? `?local=${venue}` : ''}`).catch(() => null);
       if (!alive || !st || n !== seq) return;
+      // Día de juegos (pedido de Cote, 27 nov): con la sala de juegos de este local abierta, el GC Light muestra el GC de la
+      // sala de juegos (#/escena: sus juegos, su karaoke y su QR) toda la noche; al cerrarse la sala vuelve al GC Light
+      if (st.sala) {
+        if (shown !== 'sala') { shown = 'sala'; stopSub(); document.body.classList.remove('gc-screen'); app.innerHTML = ''; sub = await views.escena(); if (!alive) stopSub(); }
+        return;
+      }
+      if (shown === 'sala') { shown = ''; stopSub(); app.innerHTML = '<div id="lg"></div>'; }
       const stage = st.open ? st.stage : 'none';
       let c = null;
       if (stage === 'show' || stage === 'cartelera' || stage === 'info') c = await api('GET', `/api/light/cartelera?local=${st.venue}`).catch(() => null);
