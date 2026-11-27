@@ -636,6 +636,11 @@ namespace KRB {
     }
 
     public static void Start(int puerto) {
+      // Tiempo real (Cote, 27 nov: «las luces de correcto, incorrecto y pasa salen con casi un segundo de desfase»):
+      // cada pedido se atiende con un hilo de reserva. Las conexiones que los navegadores y el tunel dejan abiertas sin pedir
+      // nada ocupan un hilo hasta 5 s y, si se acaban, Windows agrega hilos de a poco (unos 2 por segundo): el aviso del
+      // juego quedaba esperando. Se dejan 64 hilos listos desde el principio.
+      { int w, io; ThreadPool.GetMinThreads(out w, out io); ThreadPool.SetMinThreads(Math.Max(w, 64), Math.Max(io, 64)); }
       TcpListener l = new TcpListener(IPAddress.Any, puerto);
       l.Start();
       Thread t = new Thread(delegate() {
@@ -651,7 +656,7 @@ namespace KRB {
       renovar = null;
       try {
         NetworkStream s = c.GetStream();
-        s.ReadTimeout = 5000;
+        s.ReadTimeout = 3000;
         StreamReader r = new StreamReader(s, Encoding.ASCII);
         string linea = r.ReadLine();
         if (linea == null) return;
@@ -693,6 +698,9 @@ namespace KRB {
           if (ruta == "/vista3d.js" || ruta == "/lib/three.module.min.js") ok = true;
           // Sesion de por vida (Cote, 25 nov: la estacion de ritmo queda fija): cada vez que se abre la pagina se renueva
           if (ok && tk != null && (ruta == "/" || ruta == "/index.html" || ruta == "/dj")) renovar = CookieSesion(tk);
+          // el aviso de un juego tambien puede venir directo desde un aparato del local con la sesion en la direccion (&tk=),
+          // sin pasar por Render: llega antes
+          if (!ok && ruta == "/api/momento") { string tq = Arg(query, "tk"); lock (SL) { ok = tq != null && sesiones.Contains(tq); } }
           if (!ok && autorizacion != null && autorizacion.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
             ok = IgualSeguro(autorizacion.Substring(7).Trim(), Clave);
           if (!ok && ruta != "/" && ruta != "/index.html" && ruta != "/dj") {
@@ -766,6 +774,14 @@ namespace KRB {
         if (sala != null && sala.ToLower().IndexOf(Sala.ToLower()) < 0) {
           Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":false,\"ignorado\":\"otra sala\",\"sala\":\"" + Esc(sala) + "\"}")); return;
         }
+        // El mismo aviso puede llegar dos veces (desde Render y directo desde el local, con el mismo id): vale el primero
+        string idAviso = Arg(query, "id");
+        if (idAviso != null) { lock (ML) { if (avisosVistos.Contains(idAviso)) { Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":true,\"repetido\":true}")); return; }
+          avisosVistos.Add(idAviso); if (avisosVistos.Count > 200) avisosVistos.RemoveAt(0); } }
+        // Cuanto tardo en llegar (si el que avisa manda su hora en milisegundos, &t=): queda en el registro de la noche
+        double tEnv = Num(Arg(query, "t"), 0);
+        if (tEnv > 0) { double ms = (DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds - tEnv;
+          if (ms > -5000 && ms < 60000) Bitacora.Anotar("Aviso " + n + " llego en " + Math.Round(ms) + " ms" + (Arg(query, "desde") != null ? " (desde " + Arg(query, "desde") + ")" : "")); }
         if (!EjecutarMomento(n)) { Bitacora.Anotar("Momento desconocido (sin luces): " + n); Enviar(s, "404 Not Found", "application/json", Encoding.UTF8.GetBytes("{\"error\":\"momento desconocido\",\"nombre\":\"" + Esc(n) + "\"}")); return; }
         Estado(s); return;
       }
@@ -900,6 +916,7 @@ namespace KRB {
       lock (ML) { momentos = d; }
     }
     static int ContarMomentos() { lock (ML) { return momentos.Count; } }
+    static List<string> avisosVistos = new List<string>();
     static bool EjecutarMomento(string nombre) {
       List<string> acc;
       lock (ML) { if (!momentos.TryGetValue(nombre, out acc)) return false; }
@@ -913,7 +930,7 @@ namespace KRB {
       bool dePaso = acc.Contains("@previo") || acc.Contains("paso");      // "paso": destellos que despues vuelven a donde estaba
       int gen = Interlocked.Increment(ref genMomento);
       MomentoActual = nombre; MomentoN++; UltimaActividad = DateTime.UtcNow;
-      Bitacora.Anotar("Momento de los juegos: " + nombre);
+      Bitacora.Anotar("Momento de los juegos: " + nombre + " (" + DateTime.Now.ToString("HH:mm:ss.fff") + ")");
       if (!dePaso) MomentoEstable = nombre;
       Thread t = new Thread(() => {
         foreach (string l in acc) {
