@@ -1887,7 +1887,9 @@ views.karaokectl = async (local) => {
   const staff = !admin && light && store.get('staffToken') && (await api('GET', '/api/staff/me').catch(() => ({}))).venue === light;
   if (!admin && !staff) { if (light) { location.hash = `#/equipo/${light}`; return undefined; } return viewLogin(); }
   const lq = light ? `?local=${light}` : '';
-  app.innerHTML = `${light ? '<div class="panel" id="kc-lt"></div>' : ''}<div class="panel${light ? ' kc-lpanel' : ''}"><div class="row between"><div><h1 id="kc-title" style="margin:0">Karaoke</h1><span class="muted" id="kc-sub"></span></div></div>
+  // Sala light (pedido de Cote, 27 nov): los botones del GC quedan fijos arriba y, debajo, una pestaña desplegable para ver la
+  // transmisión en vivo del local (se cierra y se esconde; cerrada no gasta: cada minuto visto de la señal propia se paga)
+  app.innerHTML = `${light ? `<div class="kc-fijo"><div class="panel" id="kc-lt"></div><div class="kc-tv"><button type="button" id="kc-tv-btn">📺 Ver la transmisión en vivo <span>▾</span></button><small id="kc-tv-que"></small><div class="kc-tv-box" id="kc-tv-box" hidden></div></div></div>` : ''}<div class="panel${light ? ' kc-lpanel' : ''}"><div class="row between"><div><h1 id="kc-title" style="margin:0">Karaoke</h1><span class="muted" id="kc-sub"></span></div></div>
       <div id="kc-list" ${light ? 'class="kc-1l" ' : ''}style="margin-top:14px"></div>
       <div id="kc-sung-box" hidden><button type="button" id="kc-sung-btn" class="kc-sung-btn">✓ Ya cantaron</button><div id="kc-sung"></div></div>
       <p class="muted small kc-horario" style="margin:14px 0 0">Los pedidos desde el celular se abren y se cierran solos según el horario del local (Mercado Kennedy: jue a sáb 21:45–00:30 · Frida: vie y sáb 18:30–00:00 · Tobalaba: vie 21:00–22:10).</p>
@@ -1897,6 +1899,15 @@ views.karaokectl = async (local) => {
   const stopBar = light && views.lightBar ? views.lightBar($('#kc-lt'), $('#kc-lb'), light, staff) : null;
   if (light === 'kennedy') lucesTab(); // pestaña «Luces»: el panel del DJ de las luces, en el mismo lugar
   const stopMini = light === 'kennedy' ? lucesMini() : null; // mini panel de luces fijo abajo
+  let stopTv = null;
+  const tvClose = () => { if (stopTv) { stopTv(); stopTv = null; } const bx = $('#kc-tv-box'); if (bx) { bx.hidden = true; bx.innerHTML = ''; } if ($('#kc-tv-que')) $('#kc-tv-que').textContent = ''; if ($('#kc-tv-btn')) $('#kc-tv-btn').innerHTML = '📺 Ver la transmisión en vivo <span>▾</span>'; };
+  if (light) $('#kc-tv-btn').onclick = () => {
+    if (stopTv) return tvClose();
+    const bx = $('#kc-tv-box'); bx.hidden = false;
+    $('#kc-tv-btn').innerHTML = '📺 Esconder la transmisión <span>▴</span>';
+    if (window.krbSenal1) stopTv = window.krbSenal1(bx, light, { fit: () => {}, label: (t) => { if ($('#kc-tv-que')) $('#kc-tv-que').textContent = t; } });
+    else bx.innerHTML = '<p class="muted small">No se pudo abrir la transmisión.</p>';
+  };
   if (!light) await api('POST', '/api/stage', { show: 'karaoke' }).catch(fail); // al entrar, el karaoke pasa a la pantalla
   let last = '';
   let k = null; // lo último que se mostró (la lista del servidor, o con los cambios recién tocados)
@@ -2007,7 +2018,7 @@ views.karaokectl = async (local) => {
   await paint();
   if (k && k.edit) paintSung();
   const timer = setInterval(paint, 3000);
-  return () => { clearInterval(timer); if (stopBar) stopBar(); if (stopMini) stopMini(); };
+  return () => { clearInterval(timer); if (stopBar) stopBar(); if (stopMini) stopMini(); tvClose(); };
 };
 
 // Menú de abajo en el panel de todos los juegos (pedido de Cote): «Sortear juego» y después los juegos con su ícono;
