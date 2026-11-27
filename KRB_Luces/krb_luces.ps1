@@ -730,6 +730,10 @@ namespace KRB {
       if (ruta == "/api/pulso") { Dmx.Pulsar(); lock (DJL) { djEstacion = DateTime.UtcNow; } Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":true}")); return; }
       // Estado del panel del DJ, el mismo para todos los aparatos (celular del DJ, estacion que escucha la musica)
       if (ruta == "/api/dj") { Dj(s, query); return; }
+      // Fuerza de la musica (la mide la estacion de ritmo cada 5 s): suave, medio o fuerte, para Auto musica
+      if (ruta == "/api/energia") { string c = Arg(query, "c") ?? "";
+        if (c == "suave" || c == "medio" || c == "fuerte") lock (DJL) { djClase = c; djClaseT = DateTime.UtcNow; }
+        Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":true}")); return; }
       // Nota del iPad para el registro de la noche (por ejemplo, la escena que se eligio)
       if (ruta == "/api/anotar") { string t = Arg(query, "t") ?? ""; if (t.Length > 200) t = t.Substring(0, 200); Bitacora.Anotar("iPad: " + t);
         Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":true}")); return; }
@@ -902,7 +906,7 @@ namespace KRB {
       if (acc.Count == 0) return true;                                     // momento sin acciones (p. ej. bingo_numero): no cambia nada
       // Mandan los juegos (Cote, 26 nov): si el DJ apago, cambio o bajo las luces, el momento nuevo del juego deja atras lo del DJ:
       // se apaga su Automatico (si no, a los 3 minutos volveria su escena), su escena queda sin marcar y la intensidad general vuelve al 100 %
-      lock (DJL) { if (djAuto) Bitacora.Anotar("DJ: Automatico apagado (llego un momento de los juegos)"); djAuto = false; djEscena = -1; }
+      lock (DJL) { if (djAuto || djMusica) Bitacora.Anotar("DJ: Automatico / Auto musica apagado (llego un momento de los juegos)"); djAuto = false; djMusica = false; djEscena = -1; }
       if (Dmx.Master < 0.999) { Dmx.Master = 1f; GuardarMaster(); Bitacora.Anotar("Intensidad general de vuelta al 100 % (momento de los juegos)"); }
       // "@previo" = volver al ultimo momento estable (p. ej. despues del verde de una correcta, al rojo del reloj).
       // Los momentos que terminan en "@previo" son de paso y no cuentan como estables.
@@ -941,7 +945,8 @@ namespace KRB {
     static readonly object DL = new object();
     // ---- Panel del DJ (Cote, 25 nov): escena, automatico e intensidad compartidos; la estacion de ritmo avisa que esta viva ----
     static readonly object DJL = new object();
-    static int djEscena = -1, djInt = 100; static bool djAuto = false;
+    static int djEscena = -1, djInt = 100; static bool djAuto = false, djMusica = false;
+    static string djClase = "", djClaseUsada = ""; static DateTime djClaseT = DateTime.MinValue;
     static DateTime djCambio = DateTime.MinValue, djEstacion = DateTime.MinValue;
     static Random djAzar = new Random();
     static void Dj(NetworkStream s, string query) {
@@ -954,17 +959,25 @@ namespace KRB {
           if (Arg(query, "nombre") != null && !nom.StartsWith("Standby") && Dmx.Master < 0.999) {
             Dmx.Master = 1f; GuardarMaster(); Bitacora.Anotar("Intensidad general de vuelta al 100 % (" + nom + ")"); } }
         if ((v = Arg(query, "auto")) != null) { bool a = v == "1"; if (a != djAuto) Bitacora.Anotar("DJ: Automatico " + (a ? "encendido" : "apagado")); djAuto = a; if (djAuto) djCambio = DateTime.MinValue; }
+        if ((v = Arg(query, "musica")) != null) { bool a = v == "1"; if (a != djMusica) Bitacora.Anotar("DJ: Auto musica " + (a ? "encendido" : "apagado"));
+          djMusica = a; if (a) { djAuto = false; djCambio = DateTime.MinValue; djClaseUsada = ""; } }
+        if (Arg(query, "auto") == "1") djMusica = false;
         if ((v = Arg(query, "int")) != null) int.TryParse(v, out djInt);
         if (Arg(query, "estacion") == "1") djEstacion = DateTime.UtcNow;
         // Automatico: el primer aparato que pregunta cuando ya pasaron 3 minutos recibe la escena nueva y la aplica
         string lista = Arg(query, "turno");
-        if (lista != null && djAuto && (DateTime.UtcNow - djCambio).TotalSeconds >= 180) {
+        // Auto musica: cambia cuando la musica pasa a otra fuerza (con 40 s minimo entre cambios) o cada 3 minutos
+        string clase = Arg(query, "clase");
+        bool cambioClase = djMusica && clase != null && clase != djClaseUsada && (DateTime.UtcNow - djCambio).TotalSeconds >= 40;
+        if (lista != null && (djAuto || djMusica) && ((DateTime.UtcNow - djCambio).TotalSeconds >= 180 || cambioClase)) {
+          if (djMusica && clase != null) { if (clase != djClaseUsada) Bitacora.Anotar("DJ: Auto musica, la musica esta " + clase); djClaseUsada = clase; }
           List<int> op = new List<int>();
           foreach (string x in lista.Split(',')) { int k; if (int.TryParse(x, out k) && k != djEscena) op.Add(k); }
           if (op.Count > 0) { djEscena = op[djAzar.Next(op.Count)]; djCambio = DateTime.UtcNow; aplicar = true; Bitacora.Anotar("DJ: el Automatico cambio a la escena " + djEscena); }
         }
       }
-      string j = "{\"escena\":" + djEscena + ",\"auto\":" + (djAuto ? "true" : "false") + ",\"int\":" + djInt +
+      string cl; lock (DJL) { cl = (DateTime.UtcNow - djClaseT).TotalSeconds < 30 ? djClase : ""; }
+      string j = "{\"escena\":" + djEscena + ",\"auto\":" + (djAuto ? "true" : "false") + ",\"musica\":" + (djMusica ? "true" : "false") + ",\"clase\":\"" + cl + "\",\"int\":" + djInt +
         ",\"aplicar\":" + (aplicar ? "true" : "false") + ",\"estacion\":" + ((DateTime.UtcNow - djEstacion).TotalSeconds < 10 ? "true" : "false") +
         ",\"ritmo\":" + (Dmx.ConRitmo ? "true" : "false") + ",\"bpm\":" + Math.Round(Dmx.Bpm).ToString(System.Globalization.CultureInfo.InvariantCulture) +
         ",\"pulsos\":" + Dmx.Pulsos + "}";

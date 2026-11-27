@@ -232,7 +232,7 @@
   body.dj-cabezas #djToque{display:block}
   #djToqueAyuda{position:absolute;left:8px;top:8px;right:90px;font-size:11px;color:#fff;background:#0009;padding:4px 8px;border-radius:8px;pointer-events:none}
   #djToque.drag #djToqueAyuda{display:none}
-  body.dj-cabezas #djEsc, body.dj-cabezas .djctl, body.dj-cabezas .djent{display:none !important}
+  body.dj-cabezas #djEsc, body.dj-cabezas .djctl, body.dj-cabezas .djent, body.dj-cabezas .djgrupos{display:none !important}
   .djsel{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
   .djsel button{border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:10px;padding:7px 2px;font-size:13px;font-weight:700}
   .djsel button.act{background:#2a3f6e;border-color:var(--acc)}
@@ -258,8 +258,9 @@
      pestanas con los grupos y 4 botones grandes del grupo elegido; sin la entrada de audio (la escucha la estacion) */
   @media (max-width:699px){
     body.dj .djvista{flex:0 0 30%}
-    .djgrupos{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
-    .djgrupos button{border:0;border-radius:10px;padding:8px 0;font-size:12px;font-weight:800;color:#fff;background:#1a1d24;cursor:pointer;position:relative}
+    body.dj.dj-cabezas .djvista{flex:1 1 auto}
+    .djgrupos{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+    .djgrupos button{border:0;border-radius:10px;padding:7px 0;font-size:13px;font-weight:800;color:#fff;background:#1a1d24;cursor:pointer;position:relative}
     .djgrupos button.act{background:var(--acc);color:#fff}
     .djgrupos button.on::after{content:"";position:absolute;top:4px;right:5px;width:7px;height:7px;border-radius:50%;background:#7CFFB2}
     body.dj .djesc{grid-template-columns:1fr 1fr;grid-template-rows:none;grid-auto-rows:1fr;gap:8px;min-height:0}
@@ -269,7 +270,7 @@
     body.dj .djesc .djb::before{opacity:.5}
     body.dj .djesc .djb.act::before{opacity:.9}
     body.dj #djMic, body.dj .djent{display:none !important}
-    body.dj .djctl{grid-template-columns:repeat(3,1fr)}
+    body.dj .djctl{grid-template-columns:1fr 1fr}
     body.dj .djc{padding:12px 4px;font-size:15px;border-radius:14px}
   }
   /* telefono acostado: se pide ponerlo vertical (Cote: «que ojala no gire la pantalla») */
@@ -292,7 +293,7 @@
   .djb.act{box-shadow:inset 0 0 0 3px #fff}
   .djb.act::before{opacity:.75}
   .djb:active{transform:scale(.96)}
-  .djctl{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .djctl{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
   .djc{border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:14px;padding:10px 6px;font-size:14px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px}
   .djc small{font-size:11px;font-weight:500;color:var(--mut)}
   .djc.act{background:#2a3f6e;border-color:var(--acc)}
@@ -327,6 +328,7 @@
   </div>
   <div class="djctl">
     <button class="djc" id="djAuto">🔀 Automático<small>cambia sola</small></button>
+    <button class="djc" id="djMusica">🎵 Auto música<small>según la música</small></button>
     <button class="djc" id="djMic">🎤 Ritmo<small>escuchar música</small></button>
     <button class="djc" id="djTap">👆 Tap<small>marcar el ritmo</small></button>
     <button class="djc off" id="djApagar">⏻ Apagar<small>todo</small></button>
@@ -370,8 +372,8 @@
     <!-- Las escenas del panel del DJ tambien aqui (Cote, 25 nov): las mismas, en sus 5 grupos -->
     <h2 class="sec">Escenas del DJ · de más tranquilo a más intenso</h2>
     <div class="ipadDJ" id="ipadDJ"></div>
-    <div class="row"><button class="chip" id="ipadDJAuto">🔀 Automático</button>
-      <span class="help" style="margin:0">Cambia sola de escena cada 3 min dentro del mismo grupo (en Standby, fundido suave). Es el mismo Automático del panel del DJ.</span></div>
+    <div class="row"><button class="chip" id="ipadDJAuto">🔀 Automático</button><button class="chip" id="ipadDJMusica">🎵 Auto música</button>
+      <span class="help" style="margin:0">Automático: cambia sola de escena cada 3 min dentro del mismo grupo (en Standby, fundido suave). Auto música: escucha la música y elige el programa (suave → Previa, media → Animado, fuerte → Show), siempre con el blanco de frente. Son los mismos del panel del DJ.</span></div>
 
     <h2 class="sec">Color del fondo · perimetrales + focos de pared</h2>
     <div class="bgrow" id="bgRow"></div>
@@ -2130,7 +2132,9 @@ const JUEGOS = [
     { id:'ganador_al_escenario', nombre:'Ganador al escenario', igual:'base_juegos' },
     // Bingo (Cote, 27 nov): «inmediatamente despues de acabarse el bingo, las luces tienen que volver al programa automaticamente;
     // no puede depender de que alguien apriete un boton»: al aparecer el ganador las cabezas vuelven solas al escenario
-    { id:'celebracion_ganador', nombre:'Celebración', detalle:'Pared cambiando de color a 148 BPM', g:BASE, pared:{colores:CICLO, t:0.41} },
+    // Celebracion (Cote, 27 nov: el ganador de El Rosko con la cancion de Luis Miguel): todo al ritmo de la musica (la estacion
+    // detecta los golpes; sin musica sigue a 128 BPM), con el blanco de frente y las cabezas 1 y 2 al escenario
+    { id:'celebracion_ganador', nombre:'Celebración', detalle:'Fiesta al ritmo de la música (colores, mini y cabeza 3); blanco de frente', g:BASE, fiesta:'Fiesta', alRitmo:true },
     { id:'entrega_premio', nombre:'Entrega del premio', detalle:'Pared roja, todo bien iluminado', g:() => ({...BASE(), ...pared('rojo', 100)}) } ]},
   { juego:'Tómbolas', momentos:[
     { id:'tombola_gira', nombre:'Tómbola girando', detalle:'Cabezas a la cara del animador, el resto en estrobo',
@@ -2315,7 +2319,8 @@ function compilarMomento(m){
     }
     if (m.fiesta){                                                              // una escena del DJ (Locura), por tiempo (Cote, 26 nov: inicio de ¿Quién quiere ser ganador?)
       const e = DJ_ESCENAS.find(x => x.n === m.fiesta);
-      if (e) e.capas().forEach(c => ef(c.id, {tipo:'sec', pasos:pasosTxt(c.pasos.map(sinLlave)), t:(c.seg != null ? c.seg : c.ritmo * 60 / 128).toFixed(3), fx:c.fx}));
+      if (e) e.capas().forEach(c => ef(c.id, {tipo:'sec', pasos:pasosTxt(c.pasos.map(sinLlave)), t:(c.seg != null ? c.seg : c.ritmo * 60 / 128).toFixed(3), fx:c.fx,
+        ...(m.alRitmo && c.seg == null ? {ritmo:c.ritmo} : {})}));          // al ritmo: avanza con los golpes de la musica
     }
     if (m.standby){                                                             // fondo como en Standby (sin tocar las cabezas)
       capasStandbyFondo(STANDBY_TONOS).forEach(c => ef(c.id, {tipo:'sec', pasos:pasosTxt(c.pasos), t:c.seg.toFixed(3), fx:c.fx}));
@@ -2452,11 +2457,16 @@ function simDj(q){
   if (q.has('escena')){ SIMDJ.escena = +q.get('escena'); SIMDJ.cambio = t; }
   if (q.has('auto')){ SIMDJ.auto = q.get('auto') === '1'; if (SIMDJ.auto) SIMDJ.cambio = -1e9; }
   if (q.has('int')) SIMDJ.int = +q.get('int');
-  if (q.has('turno') && SIMDJ.auto && t - SIMDJ.cambio >= 180){
+  // demo de Auto musica: la «musica» cambia de fuerza cada 50 s (suave, media, fuerte)
+  if (q.has('musica')){ SIMDJ.musica = q.get('musica') === '1'; if (SIMDJ.musica){ SIMDJ.auto = false; SIMDJ.cambio = -1e9; SIMDJ.usada = ''; } }
+  if (q.get('auto') === '1') SIMDJ.musica = false;
+  const clase = ['suave', 'medio', 'fuerte'][Math.floor(t / 50) % 3], cq = q.get('clase');
+  if (q.has('turno') && SIMDJ.musica && cq && cq !== SIMDJ.usada && t - SIMDJ.cambio >= 40){ SIMDJ.usada = cq; SIMDJ.cambio = -1e9; }
+  if (q.has('turno') && (SIMDJ.auto || SIMDJ.musica) && t - SIMDJ.cambio >= 180){
     const op = q.get('turno').split(',').map(Number).filter(k => k !== SIMDJ.escena);
     if (op.length){ SIMDJ.escena = op[Math.floor(Math.random() * op.length)]; SIMDJ.cambio = t; aplicar = true; } }
   const ritmo = t - SIMDJ.ult < Math.max(2.5, 3 * SIMDJ.P);
-  return { escena: SIMDJ.escena, auto: SIMDJ.auto, int: SIMDJ.int, aplicar, estacion: false, ritmo, bpm: Math.round(60 / SIMDJ.P) };
+  return { escena: SIMDJ.escena, auto: SIMDJ.auto, musica: !!SIMDJ.musica, clase: SIMDJ.musica ? clase : '', int: SIMDJ.int, aplicar, estacion: false, ritmo, bpm: Math.round(60 / SIMDJ.P) };
 }
 async function simApi(path, params){
   const [ruta, qs] = path.split('?'), q = new URLSearchParams(params || qs || '');
@@ -2747,6 +2757,39 @@ function recorridoEscenario(id, j, n){
     if (!apuntarModelo(id, p, zz)) apuntarGeo(id, p, zz);             // cada paso parte del anterior (sin vueltas)
     return { pan: zz.pan, tilt: zz.tilt, zoom: 70 }; });
 }
+// Dos cabezas (1 y 2) por el techo del SALON, en una vuelta larga entre sus dos pilares, en sentidos contrarios: se cruzan
+// dos veces por vuelta, lento (una vuelta cada ~96 s). Pasos cercanos para que en el fundido la luz no baje al publico.
+function recorridoCruce(ids, n){
+  const cs = ids.map(id => aSalon(posCabeza(id))), vc = cs.reduce((a, c) => a + c[1], 0) / cs.length;
+  const medio = Math.max(7, Math.abs(cs[0][1] - (cs[1] || cs[0])[1]) / 2 + 6), out = {};
+  ids.forEach((id, j) => { const zz = {}, sentido = j ? -1 : 1, a0 = j * Math.PI;
+    out[id] = N(n).map(k => { const a = a0 + sentido * k / n * 2 * Math.PI;
+      const p = deSalon(0.6 + 3.0 * Math.sin(a), vc + medio * Math.cos(a), TECHO);
+      if (!apuntarModelo(id, p, zz)) apuntarGeo(id, p, zz);
+      return { pan: zz.pan, tilt: zz.tilt, zoom: 75 }; }); });
+  return out;
+}
+// Movimiento de las mini en Standby, distinto en cada ambientacion
+const MINI_MOV = {
+  ola:     k => { const a = k / 12 * 2 * Math.PI; return [128 + 100 * Math.sin(a), 22 + 16 * Math.sin(2 * a + 1)]; },
+  barrido: k => { const x = k % 12 < 6 ? k % 12 : 12 - k % 12; return [40 + x * 29, 28]; },
+  circulo: k => { const a = k / 12 * 2 * Math.PI; return [128 + 115 * Math.cos(a), 40 + 6 * Math.sin(a)]; },
+  ondas:   k => { const a = k / 12 * 4 * Math.PI; return [128 + 60 * Math.sin(a), 12 + 30 * Math.abs(Math.sin(a * 1.5))]; }
+};
+function capasStandby(tema, estilo){
+  const n = tema.length, cabs = djCabezas().filter(id => segIds().indexOf(id) < 2);   // solo dos cabezas
+  // pared y frontales muy bajos (la intensidad de Standby ademas va a la mitad); mini al 100 %, son las protagonistas
+  const col = N(n * 2).map(k => { const o = { ...grupos(djAbajo(), tema[k % n]), ...grupos(djArriba(), tema[(k + 1) % n]), frontales: tema[(k + 2) % n],
+      ...grupos(djMini(), tema[(k + 1) % n]) }, int = { perimetrales: 22, fondo: 22, frontales: 12, mini: 100, mini_columnas: 100 };
+    cabs.forEach((id, j) => { o[id] = tema[(k + j + 2) % n]; int[id] = 55; });
+    return pasoColor(o, int); });
+  const mm = MINI_MOV[estilo] || MINI_MOV.ola;
+  const mini = N(12).map(k => { const [p, t] = mm(k); return pasoPos({ mini: { pan: p, tilt: t }, mini_columnas: { pan: 255 - p, tilt: t } }); });
+  const capas = [{ ...capa('col', col, 0, 1), seg: 5 }, { ...capa('mini', mini, 0, 1), seg: estilo === 'ondas' ? 1.6 : 2.4 }];
+  if (cabs.length){ const rec = recorridoCruce(cabs, 24);
+    capas.push({ ...capa('cabmov', N(24).map(k => { const o = {}; cabs.forEach(id => o[id] = rec[id][k]); return pasoPos(o); }), 0, 1), seg: 4 }); }
+  return capas;
+}
 const capasCabezasTecho = (tema, sinCabezas) => { const n = tema.length, cabs = sinCabezas ? [] : djCabezas();
   const col = N(n * 2).map(k => { const o = {}, int = { frontales: 30 };
     cabs.forEach((id, j) => { o[id] = tema[(k + j + 1) % n]; int[id] = 70; });
@@ -2777,15 +2820,12 @@ const djDistintos = () => { const c = [...VIVOS].sort(() => Math.random() - 0.5)
 const movFrente = () => capa('frente', N(4).map(k => pasoPos(djPosEsc(...[[0, 0], [2, 1], [0, 2], [-2, 1]][k]))), 4, 1);   // movimiento chico en el escenario
 
 const DJ_ESCENAS = [
-  // ---------- STANDBY ----------
-  { grupo: 'Standby', n: 'Azul', i: '🌙', g: 'linear-gradient(135deg,#0a1a4a,#2b55ff)',
-    capas: () => [capa('col', [0, 1].map(k => djSuave(['azul', 'azul'], k)), 16, 1), ...capasMiniTecho(['azul', 'cian', 'morado']), ...capasCabezasTecho(['azul', 'cian', 'morado'])] },
-  { grupo: 'Standby', n: 'Atardecer', i: '🌅', g: 'linear-gradient(135deg,#ff8a00,#ff3fa0)',
-    capas: () => [capa('col', [0, 1].map(k => djSuave(['ambar', 'rosa'], k)), 16, 1), ...capasMiniTecho(['ambar', 'rosa', 'rojo']), ...capasCabezasTecho(['ambar', 'rosa', 'rojo'])] },
-  { grupo: 'Standby', n: 'Lavanda', i: '🪻', g: 'linear-gradient(135deg,#9b3cff,#2b55ff)',
-    capas: () => [capa('col', [0, 1].map(k => djSuave(['morado', 'azul'], k)), 16, 1), ...capasMiniTecho(['morado', 'rosa', 'azul']), ...capasCabezasTecho(['morado', 'rosa', 'azul'])] },
-  { grupo: 'Standby', n: 'Agua', i: '💧', g: 'linear-gradient(135deg,#22e5ff,#22dd55)',
-    capas: () => [capa('col', [0, 1].map(k => djSuave(['cian', 'verde'], k)), 16, 1), ...capasMiniTecho(['cian', 'verde', 'azul']), ...capasCabezasTecho(['cian', 'verde', 'azul'])] },
+  // ---------- STANDBY (Cote, 27 nov): suavecito, color muy bajo, predominan las mini del escenario; dos cabezas cruzandose
+  // lento por el techo del salon; cada ambientacion distinta (movimiento propio de las mini) ----------
+  { grupo: 'Standby', n: 'Azul', i: '🌙', g: 'linear-gradient(135deg,#0a1a4a,#2b55ff)', capas: () => capasStandby(['azul', 'cian', 'morado'], 'ola') },
+  { grupo: 'Standby', n: 'Atardecer', i: '🌅', g: 'linear-gradient(135deg,#ff8a00,#ff3fa0)', capas: () => capasStandby(['ambar', 'rosa', 'rojo'], 'barrido') },
+  { grupo: 'Standby', n: 'Lavanda', i: '🪻', g: 'linear-gradient(135deg,#9b3cff,#2b55ff)', capas: () => capasStandby(['morado', 'rosa', 'azul'], 'circulo') },
+  { grupo: 'Standby', n: 'Agua', i: '💧', g: 'linear-gradient(135deg,#22e5ff,#22dd55)', capas: () => capasStandby(['cian', 'verde', 'azul'], 'ondas') },
   // ---------- PREVIA (piano bar): blanco de frente siempre ----------
   { grupo: 'Previa', n: 'Piano bar', i: '🎹', g: 'radial-gradient(circle at 50% 30%,#ffd9a0,#ff8a00 60%,#3a1a00)',
     capas: () => [capa('col', N(4).map(k => djPrevia(['ambar', 'rosa'], k)), 16, 1), capa('mov', [pasoPos(djPosEsc())], 16), capa('mini', N(6).map(() => pasoPos(djMiniSuave())), 8, 1)] },
@@ -2812,6 +2852,11 @@ const DJ_ESCENAS = [
     capas: () => { const c = ['rojo', 'ambar', 'amarillo', 'verde', 'cian', 'azul', 'morado', 'rosa'];
       return [capa('col', c.map((x, k) => pasoColor({ ...blancoFrente(), ...grupos(djMini(), c[(k + 4) % 8]), ...grupos(djArriba(), x), ...grupos(djAbajo(), c[(k + 2) % 8]) })), 1, 0.6),
         movFrente(), capa('mini', N(8).map(() => pasoPos(grupos(djMini(), posMini()))), 2, 0.7)]; } },
+  // ---------- ANIMADO (Cote, 27 nov): opciones animadas de luces y fondos, siempre con el blanco en la cara ----------
+  { grupo: 'Animado', n: 'Cara y techo', i: '🎭', g: 'linear-gradient(135deg,#ffd9a0 0 45%,#9b3cff 55%,#22e5ff)', capas: () => animCaraTecho() },
+  { grupo: 'Animado', n: 'Ola', i: '🌊', g: 'linear-gradient(180deg,#2b55ff,#22e5ff 50%,#ff3fa0)', capas: () => animOla() },
+  { grupo: 'Animado', n: 'Constelación', i: '🌌', g: 'radial-gradient(circle at 30% 30%,#fff 0 2px,transparent 3px),radial-gradient(circle at 70% 60%,#fff 0 2px,transparent 3px),linear-gradient(135deg,#120a3a,#3a1a7a)', capas: () => animConstelacion() },
+  { grupo: 'Animado', n: 'Creatividad', i: '🎲', g: 'conic-gradient(from 90deg,#ff3fa0,#ffbe00,#22dd55,#22e5ff,#9b3cff,#ff3fa0)', capas: () => animCreatividad() },
   // ---------- FIESTA: libre, todo sincronizado ----------
   { grupo: 'Fiesta', n: 'Fiesta', i: '🎉', g: 'linear-gradient(135deg,#ff2a2a,#ffbe00,#22dd55,#2b55ff,#9b3cff)',
     capas: () => [capa('col', N(16).map(() => { const c = elegir(VIVOS); return pasoColor({ ...grupos(djCabezas(), c), ...grupos(djMini(), c), ...grupos(djPared(), c), frontales: null }); }), 1),
@@ -2850,6 +2895,51 @@ const DJ_ESCENAS = [
         : pasoColor({ ...djDistintos(), frontales: elegir(VIVOS) })), 0.25),
       capa('mov', N(16).map(k => pasoPos({ ...(k % 4 === 0 ? posCabJuntas('pista') : posCab('salon')), ...grupos(djMini(), posMini()) })), 0.5, 0.1)] }
 ];
+/* Grupo Animado (Cote, 27 nov: «opciones animadas distintas de luces y de fondos, manteniendo el blanco en la cara»;
+   «la cabeza 2 puede quedar en la cara y la cabeza 1 apuntando al techo, con colores distintos, jugando»;
+   karaoke: «un boton de creatividad, con cosas distintas, colores, fundidos»). Siempre: frontales en blanco calido. */
+const djCab = j => djCabezas().filter(id => segIds().indexOf(id) === j);
+function caminoTecho(ids, n){ const o = {}; ids.forEach(id => o[id] = recorridoTecho(id, n)); return N(n).map(k => { const x = {}; ids.forEach(id => x[id] = o[id][k]); return pasoPos(x); }); }
+const caraBlanca = ids => { const o = {}; ids.forEach(id => o[id] = { ...apuntarCabeza(id, CARA), zoom: 30 }); return pasoPos(o); };
+function animCaraTecho(pal){
+  pal = pal || ['morado', 'cian', 'rosa', 'azul'];
+  const c1 = djCab(0), c2 = djCab(1), c3 = djCab(2);
+  const col = N(8).map(k => pasoColor({ frontales: 'blanco_calido', ...grupos(c2, 'blanco_calido'), ...grupos(c1, pal[k % pal.length]), ...grupos(c3, pal[(k + 2) % pal.length]),
+    ...grupos(djAbajo(), pal[(k + 1) % pal.length]), ...grupos(djArriba(), pal[(k + 3) % pal.length]), ...grupos(djMini(), pal[(k + 2) % pal.length]) },
+    { perimetrales: 60, fondo: 60, [c1[0]]: 90, [c3[0]]: 70 }));
+  return [capa('col', col, 2, 0.8), capa('cara', [caraBlanca(c2)], 16), capa('techo1', caminoTecho(c1, 16), 1, 1), capa('techo3', caminoTecho(c3, 16), 1, 1),
+    capa('mini', N(8).map(() => pasoPos(grupos(djMini(), posMini()))), 2, 0.6)];
+}
+function animOla(pal){
+  pal = pal || ['azul', 'cian', 'rosa'];
+  const c3 = djCab(2);
+  // el color sube por la pared: abajo, arriba, mini; cada golpe un paso
+  const col = N(pal.length * 3).map(k => { const c = pal[Math.floor(k / 3) % pal.length], fase = k % 3;
+    return pasoColor({ ...blancoFrente(), ...grupos(djAbajo(), fase >= 0 ? c : null), ...grupos(djArriba(), fase >= 1 ? c : pal[(Math.floor(k / 3) + pal.length - 1) % pal.length]),
+      ...grupos(djMini(), fase === 2 ? 'blanco' : c), ...grupos(c3, c) }); });
+  const mini = N(8).map(k => { const p = 40 + (k < 4 ? k : 8 - k) * 44; return pasoPos({ mini: { pan: p, tilt: 30 }, mini_columnas: { pan: 255 - p, tilt: 30 } }); });
+  return [capa('col', col, 1, 0.5), capa('mov', [pasoPos(djPosEsc())], 16), capa('techo3', caminoTecho(c3, 12), 1, 1), capa('mini', mini, 1, 0.8)];
+}
+function animConstelacion(){
+  const c3 = djCab(2);
+  const col = N(8).map(k => pasoColor({ ...blancoFrente(), ...grupos(djAbajo(), k % 2 ? 'morado' : 'azul'), ...grupos(djArriba(), 'azul'),
+    ...grupos(djMini(), k % 3 ? 'blanco' : 'cian'), ...grupos(c3, 'blanco') }, { perimetrales: 30, fondo: 22, mini: k % 2 ? 100 : 45, mini_columnas: k % 2 ? 45 : 100, [c3[0]]: 50 }));
+  const mini = N(10).map(() => { const p = azar(30, 225), t = azar(0, 30); return pasoPos({ mini: { pan: p, tilt: t }, mini_columnas: { pan: azar(30, 225), tilt: azar(0, 30) } }); });
+  return [capa('col', col, 2, 1), capa('mov', [pasoPos(djPosEsc())], 16), capa('techo3', caminoTecho(c3, 16), 2, 1), capa('mini', mini, 4, 1)];
+}
+// Creatividad: cada vez que se toca (o que el Automatico pasa por ella) arma una combinacion nueva al azar
+function animCreatividad(){
+  const pal = [...VIVOS].sort(() => Math.random() - 0.5).slice(0, 3 + Math.floor(Math.random() * 2));
+  const tipo = elegir(['cara', 'ola', 'fundido', 'alterna', 'chispas']);
+  if (tipo === 'cara') return animCaraTecho(pal);
+  if (tipo === 'ola') return animOla(pal);
+  const c3 = djCab(2), fx = tipo === 'fundido' ? 1 : tipo === 'alterna' ? 0 : 0.2, r = tipo === 'fundido' ? 4 : tipo === 'alterna' ? 1 : 0.5;
+  const col = N(pal.length * 2).map(k => pasoColor({ ...blancoFrente(), ...grupos(djAbajo(), pal[k % pal.length]), ...grupos(djArriba(), pal[(k + 1) % pal.length]),
+    ...grupos(djMini(), tipo === 'chispas' && k % 2 ? 'blanco' : pal[(k + 2) % pal.length]), ...grupos(c3, pal[(k + 1) % pal.length]) }));
+  const mm = MINI_MOV[elegir(Object.keys(MINI_MOV))];
+  const mini = N(12).map(k => { const [p, t] = mm(k); return pasoPos({ mini: { pan: p, tilt: t + 10 }, mini_columnas: { pan: 255 - p, tilt: t + 10 } }); });
+  return [capa('col', col, r, fx), capa('mov', [pasoPos(djPosEsc())], 16), capa('techo3', caminoTecho(c3, 12), elegir([1, 2]), 1), capa('mini', mini, elegir([0.5, 1, 2]), 0.7)];
+}
 // Automatico: cambia entre las escenas del MISMO grupo (en la previa nunca salta a una de fiesta)
 const djGrupo = () => { const g = (DJ_ESCENAS[djEstado.escena] || {}).grupo || 'Fiesta';
   if (g === 'Standby') return [];                                     // en Standby el Automatico es un fundido continuo, no salta de escena
@@ -2866,8 +2956,8 @@ function capasStandbyAuto(e){
   const col = N(n).map(k => pasoColor({ ...grupos(djAbajo(), tono(k)), ...grupos(djArriba(), tono(k ? k - 1 : 0)) },   // parte igual que la escena: sin salto
     { perimetrales: 45, fondo: 45 }));
   const tonos = N(n).map(k => tono(k));
-  return [{ ...capa('col', col, 0, 1), seg: 4.5 },                   // 4,5 s por tono (Cote: 9 s era muy lento), fundido completo
-          ...capasMiniTecho(tonos), ...capasCabezasTecho(tonos)];
+  // Automatico de Standby: los colores van pasando por todos los tonos, con el movimiento de la ambientacion elegida
+  return capasStandby(tonos, ({ Azul: 'ola', Atardecer: 'barrido', Lavanda: 'circulo', Agua: 'ondas' })[e.n] || 'ola');
 }
 
 async function djAplicar(i, auto){
@@ -2875,7 +2965,7 @@ async function djAplicar(i, auto){
   djEstado.escena = i; if (DJ) master = +$('djInt').value; djPintar();
   if (!DJ){ escenaActiva = -1; efectoPared = null; progActivo = null; pintarEscenas(); pintarEfectos(); pintarProgramas(); }
   // vista previa (Cote, 25 nov): en Previa y Show hay alguien en el escenario; en Standby, Fiesta y Locura no
-  V.escenarioVacio = !['Previa', 'Show'].includes(e.grupo); V.sucio = true;
+  V.escenarioVacio = !['Previa', 'Show', 'Animado'].includes(e.grupo); V.sucio = true;
   // en Standby la toma mira un poco mas arriba, para ver como las luces pintan el techo
   djEstado.tomaTecho = e.grupo === 'Standby';
   if (DJ && !document.body.classList.contains('dj-cabezas')) djToma();
@@ -2916,16 +3006,20 @@ function djPintar(){
   document.querySelectorAll('#djGrupos button').forEach(b => b.classList.toggle('on', b.dataset.g === ge));
   document.querySelectorAll('#ipadDJ .djb').forEach((b, i) => b.classList.toggle('act', i === djEstado.escena));
   $('djAuto').classList.toggle('act', djEstado.auto); $('ipadDJAuto').classList.toggle('act', djEstado.auto);
+  $('djMusica').classList.toggle('act', !!djEstado.musica); $('ipadDJMusica').classList.toggle('act', !!djEstado.musica);
+  $('djMusica').querySelector('small').textContent = djEstado.musica ? ({ suave: 'música suave', medio: 'música media', fuerte: 'música fuerte' })[djEstado.clase] || 'esperando música' : 'según la música';
 }
 /* Estado compartido en el Dell (Cote, 25 nov): el DJ se mueve con su celular y un computador fijo (el de OBS, con la
    mezcla por la entrada de linea) escucha la musica. Escena, Automatico e intensidad son los mismos en todos los
    aparatos; el Automatico lo hace el Dell: cada 3 minutos el primer aparato que pregunta aplica la escena nueva. */
 async function djServidor(params){
   const q = new URLSearchParams(params || {});
-  if (djEstado.auto) q.set('turno', djGrupo().join(','));
+  if (djEstado.musica && djEstado.clase){ const g = GRUPO_CLASE[djEstado.clase];
+    q.set('turno', DJ_ESCENAS.map((e, i) => e.grupo === g ? i : -1).filter(i => i >= 0).join(',')); q.set('clase', djEstado.clase); }
+  else if (djEstado.auto) q.set('turno', djGrupo().join(','));
   if (ritmo.mic) q.set('estacion', '1');
   let r; try { r = await api('/api/dj?' + q); } catch(e){ return; }
-  djEstado.auto = !!r.auto;
+  djEstado.auto = !!r.auto; djEstado.musica = !!r.musica; djEstado.clase = r.clase || '';
   if (r.aplicar && r.escena >= 0){ djEstado.bpm = r.bpm || djEstado.bpm; djAplicar(r.escena, true); }
   else if (r.escena !== djEstado.escena){ djEstado.escena = r.escena; }
   if (document.activeElement !== $('djInt') && r.int && +$('djInt').value !== r.int){ $('djInt').value = r.int; $('djIntTxt').textContent = r.int + '%'; }
@@ -2942,10 +3036,15 @@ async function djServidor(params){
   document.querySelector('.djent').style.display = r.estacion && !ritmo.mic ? 'none' : '';
   djPintar();
 }
-$('djAuto').onclick = () => { djEstado.auto = !djEstado.auto; djPintar(); djServidor({ auto: djEstado.auto ? '1' : '0' });
+$('djAuto').onclick = () => { djEstado.auto = !djEstado.auto; if (djEstado.auto) djEstado.musica = false; djPintar(); djServidor({ auto: djEstado.auto ? '1' : '0' });
   // en Standby, prender o apagar el Automatico cambia al fundido continuo (o vuelve a la escena fija) en el acto
   const e = DJ_ESCENAS[djEstado.escena]; if (e && e.grupo === 'Standby') djAplicar(djEstado.escena, true); };
-$('djApagar').onclick = async () => { djEstado.auto = false; djEstado.escena = -1; djPintar(); djServidor({ auto: '0', escena: '-1' });
+// Auto musica (Cote, 27 nov: «que el programa pueda saber si la musica esta suave y cambie solo de programa»): la estacion
+// mide cuanta fuerza tiene la musica y el Dell elige el grupo; siempre con blanco de frente (Previa, Animado, Show)
+const GRUPO_CLASE = { suave: 'Previa', medio: 'Animado', fuerte: 'Show' };
+$('djMusica').onclick = () => { djEstado.musica = !djEstado.musica; if (djEstado.musica) djEstado.auto = false; djPintar();
+  djServidor({ musica: djEstado.musica ? '1' : '0' }); toast(djEstado.musica ? 'Auto música: las luces siguen a la música' : 'Auto música apagado'); };
+$('djApagar').onclick = async () => { djEstado.auto = false; djEstado.musica = false; djEstado.escena = -1; djPintar(); djServidor({ auto: '0', musica: '0', escena: '-1' });
   try { pintarEstado(await api('/api/apagar?f=1')); } catch(e){ sinConexion(); } };
 $('djInt').oninput = () => { $('djIntTxt').textContent = $('djInt').value + '%'; };
 $('djInt').onchange = () => { djServidor({ int: $('djInt').value }); if (djEstado.escena >= 0) djAplicar(djEstado.escena, true); };
@@ -3059,6 +3158,22 @@ async function entradaGuardada(){
     return d ? d.deviceId : (g.id || ''); }
   catch(e){ return g.id || ''; }
 }
+// Fuerza de la musica para Auto musica: promedio de cada 5 s comparado con lo mas fuerte de los ultimos 15 minutos
+// (asi no depende del volumen de la mezcla). Suave, media o fuerte; con poca velocidad (menos de 90 BPM) no pasa de media.
+const energia = { suma: 0, n: 0, ventanas: [], silencio: false, t: 0 };
+function medirEnergia(nv){
+  energia.suma += nv; energia.n++;
+  const ahora = Date.now(); if (ahora - energia.t < 5000) return; energia.t = ahora;
+  const v = energia.n ? energia.suma / energia.n : 0; energia.suma = 0; energia.n = 0;
+  energia.ventanas.push(v); if (energia.ventanas.length > 180) energia.ventanas.shift();
+  const w = energia.ventanas, reciente = w.slice(-4).reduce((a, b) => a + b, 0) / Math.min(4, w.length);
+  let ref = 0; for (let i = 3; i < w.length; i++) ref = Math.max(ref, (w[i] + w[i - 1] + w[i - 2] + w[i - 3]) / 4);
+  ref = Math.max(ref, reciente, 0.01);
+  const x = reciente / ref;
+  let clase = energia.silencio || x < 0.45 ? 'suave' : x < 0.78 ? 'medio' : 'fuerte';
+  if (clase === 'fuerte' && djEstado.bpm && djEstado.bpm < 90) clase = 'medio';
+  fetch('/api/energia?v=' + Math.round(x * 100) + '&c=' + clase, { cache: 'no-store', credentials: 'same-origin' }).catch(() => {});
+}
 async function escucharMusica(){
   if (!(window.AudioWorkletNode)) return escucharMusicaSimple();
   const elegida = await entradaGuardada();
@@ -3078,8 +3193,9 @@ async function escucharMusica(){
   nodo.port.onmessage = e => { const d = e.data;
     if (d.golpe) enviarPulso();
     if (d.bpm){ fijarTempo(60 / d.bpm); $('djAviso').textContent = 'Escuchando la música · ' + d.bpm + ' BPM'; }
-    if (d.nivel != null) $('djNivel').style.width = Math.min(100, Math.round(d.nivel * 400)) + '%';
-    if (d.silencio) $('djAviso').textContent = 'Sin música: las luces siguen solas';
+    if (d.nivel != null){ $('djNivel').style.width = Math.min(100, Math.round(d.nivel * 400)) + '%'; medirEnergia(d.nivel); }
+    if (d.silencio){ $('djAviso').textContent = 'Sin música: las luces siguen solas'; energia.silencio = true; }
+    if (d.activo) energia.silencio = false;
   };
   const lead = setInterval(() => nodo.port.postMessage({ lead: ritmo.rtt / 2 }), 2000);
   ritmo.on = false;                                                                              // el reloj lo lleva el proceso de audio
@@ -3155,7 +3271,7 @@ $('djEntrada').onchange = async () => {
 function djPagina(cab){
   document.body.classList.toggle('dj-cabezas', cab);
   $('djPagEsc').classList.toggle('act', !cab); $('djPagCab').classList.toggle('act', cab);
-  if (cab) vistaSalonArriba(); else { V.aspecto = null; V.fov = 52 * Math.PI / 180; djToma(); }
+  if (cab){ vistaSalonArriba(); setTimeout(vistaSalonArriba, 60); } else { V.aspecto = null; V.fov = 52 * Math.PI / 180; djToma(); }
   $('djFrente').textContent = cab ? '⟲ Salón' : '⟲ De frente';
   V.sucio = true;
 }
@@ -3323,6 +3439,7 @@ function iniciarEscenasDJ(){
     b.innerHTML = `<i>${e.i}</i><span>${e.n}</span>`; b.onclick = () => { djAplicar(i); toast(e.grupo + ' · ' + e.n); }; cont.appendChild(b);
   });
   $('ipadDJAuto').onclick = () => $('djAuto').onclick();
+  $('ipadDJMusica').onclick = () => $('djMusica').onclick();
   djPintar(); djServidor(); setInterval(() => djServidor(), 4000);      // mismo estado que el panel del DJ (y ayuda con el Automatico)
 }
 
