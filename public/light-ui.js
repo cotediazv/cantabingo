@@ -11,7 +11,9 @@
   // Orden y nombres que pidió Cote (27 nov): 1 GC KARAOKE, 2 QR GRANDE, 3 GC SHOW, 4 GC CARTELERA, 5 INFO GRAL, 6 NADA
   const STAGES = [['karaoke', '🎤', 'GC KARAOKE'], ['qr', '📱', 'QR GRANDE'], ['show', '⭐', 'GC SHOW'], ['cartelera', '📅', 'GC CARTELERA'], ['info', '🔄', 'INFO GRAL'], ['none', '⛔', 'NADA']];
   // En Kennedy, «NADA» pasa a ser «FONDO KENNEDY» (pedido de Cote, 27 nov): el video horizontal del local en el GC de OBS
-  const STAGES_K = STAGES.map((x) => (x[0] === 'none' ? ['fondo', '🎬', 'FONDO KENNEDY'] : x));
+  // Después, lo mismo en Frida y Tobalaba (pedido de Cote, 27 nov: «aplicar lo mismo… fondo Tobalaba y Frida»)
+  const FONDO_NAME = { kennedy: 'FONDO KENNEDY', frida: 'FONDO FRIDA', tobalaba: 'FONDO TOBALABA' };
+  const stagesOf = (v) => (FONDO_NAME[v] ? STAGES.map((x) => (x[0] === 'none' ? ['fondo', '🎬', FONDO_NAME[v]] : x)) : STAGES);
   const dayName = (d) => ({ MIERCOLES: 'Miércoles', SABADO: 'Sábado' }[d] || d.charAt(0) + d.slice(1).toLowerCase());
   // Diseño nuevo (tema.js): las etiquetas de las pantallas van sin emojis; con el diseño anterior quedan como siempre
   const se = (s) => (window.sinEmoji ? window.sinEmoji(s) : s);
@@ -81,9 +83,9 @@
       // Titulo chico y en una linea, sin el numero de personas (pedido de Cote, 27 nov: «no es relevante»)
       // Los botones del GC lo mas arriba posible (Cote, 27 nov): sin el subtitulo «En pantalla (GC)» (los botones ya dicen GC)
       top.innerHTML = `<h1 class="lp-title">${esc(st.title)}</h1>
-        ${st.stage === 'fondo' ? '<p class="lp-sala">🎬 <b>Fondo Kennedy en el GC de OBS.</b> Se pone solo a las 19:00 y a la 01:00. Para pasar al GC, toca otro botón.</p>' : ''}
+        ${st.stage === 'fondo' ? `<p class="lp-sala">🎬 <b>${{ kennedy: 'Fondo Kennedy', frida: 'Fondo Frida', tobalaba: 'Fondo Tobalaba' }[v] || 'Fondo'} en el GC de OBS.</b> Se pone solo a las 19:00 y a la 01:00. Para pasar al GC, toca otro botón.</p>` : ''}
         ${st.sala ? '<p class="lp-sala">🎮 <b>Hoy hay sala de juegos en este local:</b> el GC Light de OBS muestra el GC de la sala de juegos (sus juegos, su karaoke y su QR) toda la noche. Estos botones vuelven a mandar en el GC cuando se cierre la sala de juegos.</p>' : ''}
-        <div class="lp-stages">${(v === 'kennedy' ? STAGES_K : STAGES).map(([k, i, t]) => `<button type="button" data-st="${k}" class="${st.stage === k ? 'on' : ''}"><span>${i}</span>${t}</button>`).join('')}</div>
+        <div class="lp-stages">${stagesOf(v).map(([k, i, t]) => `<button type="button" data-st="${k}" class="${st.stage === k ? 'on' : ''}"><span>${i}</span>${t}</button>`).join('')}</div>
 `;
       // Orden de Cote (27 nov): arriba los botones del GC, luego la lista del karaoke y despues el GC personalizable.
       // El switch «Video cartelera» ya no va (Cote: «esta demas, eso funciona automatico»).
