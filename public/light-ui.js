@@ -210,7 +210,7 @@
       } else if (stage === 'info') {
         // La información que va cambiando (pedido de Cote: lo que se ve por defecto en el GC), en una franja abajo para no
         // tapar la transmisión; cambia cada 9 segundos
-        const cap = (t) => String(t || '').toLocaleLowerCase('es').replace(/(^|[\s:(«"-])(\p{L})/gu, (m, a, b) => a + b.toLocaleUpperCase('es'));
+        const cap = (t) => String(t || '').toLocaleLowerCase('es').replace(/(^|[\s:(«"-])(\p{L})/gu, (m, a, b) => a + b.toLocaleUpperCase('es')).replace(/\b(Tributo|Doble) (A|De) /g, (m, a, b) => `${a} ${b.toLowerCase()} `);
         const slides = [];
         if (c && c.current) slides.push(['⏱️ Esta noche', `<b style="--n:${String(c.current.label).length}">${esc(cap(c.current.label))}</b><span>Ahora · desde las <em>${esc(c.current.time)}</em></span>${c.next ? `<span>A continuación · <em>${esc(c.next.time)}</em> ${esc(cap(c.next.label))}</span>` : ''}`]);
         else if (c && c.next) slides.push(['⏱️ Esta noche', `<b style="--n:${String(c.next.label).length}">${esc(cap(c.next.label))}</b><span>Desde las <em>${esc(c.next.time)}</em></span>`]);
@@ -357,7 +357,7 @@
   const NAMES = { kennedy: 'Mercado Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' };
   const DAYS = { LUNES: 'Lunes', MARTES: 'Martes', MIERCOLES: 'Miércoles', JUEVES: 'Jueves', VIERNES: 'Viernes', SABADO: 'Sábado', DOMINGO: 'Domingo' };
   const day = (d) => DAYS[String(d || '').toUpperCase()] || String(d || '');
-  const cap = (t) => String(t || '').toLocaleLowerCase('es').replace(/(^|[\s:(«"-])(\p{L})/gu, (m, a, b) => a + b.toLocaleUpperCase('es'));
+  const cap = (t) => String(t || '').toLocaleLowerCase('es').replace(/(^|[\s:(«"-])(\p{L})/gu, (m, a, b) => a + b.toLocaleUpperCase('es')).replace(/\b(Tributo|Doble) (A|De) /g, (m, a, b) => `${a} ${b.toLowerCase()} `);
   const SLIDE_MS = 9000;
   // Diseño nuevo (tema.js): los títulos de la pantalla van sin emojis; con el diseño anterior quedan como siempre
   const se = (s) => (window.sinEmoji ? window.sinEmoji(s) : s);
