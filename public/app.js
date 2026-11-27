@@ -1799,7 +1799,7 @@ function lucesTab() {
 // panel de las luces de Code 4, cargado oculto (?mini=1: sin la vista 3D), que es el que sabe armar las escenas.
 function lucesMini() {
   const bar = document.createElement('div'); bar.className = 'lm-bar';
-  bar.innerHTML = `<div class="lm-g">${[['Standby', '🌙'], ['Previa', '🎹'], ['Show', '🎤'], ['Fiesta', '🎉']].map(([g, i]) => `<button type="button" data-g="${g}">${i} ${g === 'Standby' ? 'Stand By' : g}</button>`).join('')}</div>
+  bar.innerHTML = `<p class="lm-tit">CONTROL DE LUCES BÁSICO</p><div class="lm-g">${[['Standby', '🌙'], ['Previa', '🎹'], ['Show', '🎤'], ['Fiesta', '🎉']].map(([g, i]) => `<button type="button" data-g="${g}">${i} ${g === 'Standby' ? 'Stand By' : g}</button>`).join('')}</div>
     <div class="lm-i"><span>💡</span><input type="range" min="0" max="100" value="100" aria-label="Intensidad de las luces"><b>100%</b><button type="button" class="lm-off" title="Apagar todas las luces">⏻ Apagar</button></div>
     <p class="lm-msg" hidden></p>`;
   document.body.appendChild(bar); document.body.classList.add('lm-on');
