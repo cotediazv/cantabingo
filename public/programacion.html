@@ -533,7 +533,7 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
     var g = S.data.glosa; var u = g.ultimo;
     var h = '<div class="panel"><h2>Enviar ' + esc(S.data.nombre) + ' a la GLOSA</h2>';
     if (!g.url) h += '<p>Primero conecta la GLOSA (abajo).</p>';
-    else h += '<p>Escribe la hoja TURNOS con lo de este mes y llena la pestaña del mes: semanas de jueves a domingo, presupuesto neto solo los días con actividad (los demás en cero), montos de los shows y el mes en B8. Si falta la pestaña del mes, se crea duplicando la del mes anterior.</p><div class="fila"><button class="btn foco" id="genv">Enviar y llenar el mes</button><button class="btn" id="gcmp">Comparar con la GLOSA</button><button class="btn" id="gtraer">Traer los shows de la GLOSA</button></div>';
+    else h += '<p>Escribe la hoja TURNOS con lo de este mes y llena la pestaña del mes: semanas de jueves a domingo, presupuesto neto solo los días con actividad (los demás en cero), montos de los shows y el mes en B8. Si falta la pestaña del mes, se crea duplicando la del mes anterior.</p><div class="panel" style="background:var(--panel2);margin:8px 0"><h2 style="font-size:17px">Enviar solo los cambios</h2><p>Si ya enviaste el mes y después cambiaste algo aquí, manda solo eso: la GLOSA cambia únicamente esas celdas y respeta lo que arreglaste a mano.</p><div class="fila"><button class="btn foco" id="gcamb">Ver los cambios desde el último envío</button></div><div id="gcambres"></div></div><div class="fila"><button class="btn" id="genv">Enviar y llenar el mes (completo)</button><button class="btn" id="gcmp">Comparar con la GLOSA</button><button class="btn" id="gtraer">Traer los shows de la GLOSA</button></div>';
     h += '<p id="gest">' + (u ? estadoTxt(u) : '') + '</p><div id="gres"></div></div>';
     h += '<div class="panel"><h2>Conectar la GLOSA</h2><ol class="pasos">' +
       '<li>Abre la planilla <b>GLOSA KRB STAGE OFICIAL 2026</b> con la cuenta dueña (la de Kennedy).</li>' +
@@ -548,6 +548,7 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
   }
   function estadoTxt(u) {
     if (u.estado === 'enviando') return 'Enviando ' + u.mes + '… (puede tardar unos minutos)';
+    if (u.estado === 'listo' && u.solo) return '<span class="ok">✔ ' + u.cambios + ' ' + (u.cambios === 1 ? 'cambio aplicado' : 'cambios aplicados') + ' en la GLOSA (' + u.mes + ').</span>' + (u.aviso ? ' <span class="faltan">' + esc(u.aviso) + '</span>' : '');
     if (u.estado === 'listo') return '<span class="ok">✔ ' + u.mes + ' enviado a la GLOSA' + (u.creada ? ' (se creó la pestaña del mes)' : '') + '.</span>' + (u.aviso ? ' <span class="faltan">' + esc(u.aviso) + '</span>' : '');
     if (u.estado === 'error') return '<span class="faltan">No se pudo enviar ' + esc(u.mes) + ': ' + esc(u.error) + '</span>';
     return '';
@@ -557,6 +558,21 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
     var $ = function (id) { return document.getElementById(id); };
     $('gscript').onclick = function () { fetch('/api/prog/glosa/script', { headers: { 'x-prog': TOKEN } }).then(function (r) { return r.text(); }).then(function (t) { var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); try { navigator.clipboard.writeText(t); } catch (e) { document.execCommand('copy'); } document.execCommand('copy'); ta.remove(); aviso('Script copiado'); }); };
     $('gsave').onclick = function () { api('POST', '/api/prog/glosa', { url: $('gurl').value }).then(function (j) { S.data.glosa.url = j.url; aviso('Guardado'); pintar(); }).catch(function (e) { aviso(e.message); }); };
+    if ($('gcamb')) $('gcamb').onclick = function () {
+      $('gcambres').innerHTML = '<p>Revisando…</p>';
+      api('GET', '/api/prog/glosa/cambios?m=' + S.mes).then(function (r) {
+        if (r.sinFoto) {
+          $('gcambres').innerHTML = '<p class="faltan">Este mes todavía no tiene un punto de partida.</p><p>Si la GLOSA ya está bien para este mes (por ejemplo, la arreglaste a mano), toca «La GLOSA ya está al día»: no se envía nada y, desde ahí, solo se mandan los cambios que hagas después. Si no, usa una vez «Enviar y llenar el mes (completo)».</p><button class="btn" id="gbase">La GLOSA ya está al día</button>';
+          $('gbase').onclick = function () { if (!confirm('¿La GLOSA ya está al día para ' + S.data.nombre + '? No se envía nada; desde ahora solo se mandan los cambios.')) return; api('POST', '/api/prog/glosa/base', { mes: S.mes }).then(function () { aviso('Listo'); $('gcambres').innerHTML = '<p class="ok">Listo: desde ahora puedes enviar solo los cambios.</p>'; }).catch(function (e) { aviso(e.message); }); };
+          return;
+        }
+        if (!r.lista.length) { $('gcambres').innerHTML = '<p class="ok">No hay cambios desde el último envío.</p>'; return; }
+        $('gcambres').innerHTML = '<p>' + r.lista.length + ' ' + (r.lista.length === 1 ? 'cambio' : 'cambios') + ':</p><ul>' + r.lista.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul><button class="btn foco" id="gcambenv">Enviar solo estos cambios</button>';
+        $('gcambenv').onclick = function () {
+          api('POST', '/api/prog/glosa/enviar', { mes: S.mes, soloCambios: true }).then(function (u) { $('gest').innerHTML = estadoTxt(u); $('gcambres').innerHTML = ''; setTimeout(seguir, 2000); }).catch(function (e) { aviso(e.message); });
+        };
+      }).catch(function (e) { $('gcambres').innerHTML = '<p class="faltan">' + esc(e.message) + '</p>'; });
+    };
     if ($('genv')) $('genv').onclick = function () {
       if (!confirm('¿Enviar ' + S.data.nombre + ' a la GLOSA? Se reemplaza lo que haya en la hoja TURNOS y se llena la pestaña del mes.')) return;
       api('POST', '/api/prog/glosa/enviar', { mes: S.mes }).then(function (u) { $('gest').innerHTML = estadoTxt(u); setTimeout(seguir, 3000); }).catch(function (e) { aviso(e.message); });

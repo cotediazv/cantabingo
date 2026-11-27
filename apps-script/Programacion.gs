@@ -11,7 +11,7 @@
 // También escribe el mes en B8 y el monto de cada show en la columna siguiente a la del show.
 // llenarMes (el archivo de antes) no se usa ni se toca.
 const CLAVE_PROGRAMACION = '__CLAVE__';
-const PROG_VERSION = 11;
+const PROG_VERSION = 12;
 
 const PR_PRIMERA = 12, PR_ALTO = 39, PR_BLOQUES = 20, PR_RESUMEN = 835;
 const PR_COL = { MK: 3, KENNEDY: 3, EV: 12, EVENTOS: 12, KR: 22, KARAROCK: 22, TOB: 32, TOBALABA: 32, FRI: 42, FRIDA: 42, PAN: 52, PANORAMICO: 52 };
@@ -41,6 +41,7 @@ function doPost(e) {
     const ss = SpreadsheetApp.getActive();
     let creada = false;
     let sh = ss.getSheetByName(b.pestana);
+    if (!sh && b.cambios) return respuestaProg_({ error: 'No encuentro la pestaña ' + b.pestana + ': para enviar solo los cambios, la pestaña tiene que existir. Usa «Enviar y llenar el mes».' });
     if (!sh) {
       const ant = ss.getSheetByName(b.anterior);
       if (!ant) return respuestaProg_({ error: 'No encuentro la pestaña ' + b.pestana + ' ni la del mes anterior (' + b.anterior + ')' });
@@ -61,7 +62,7 @@ function doPost(e) {
     const datos = b.filas.map(function (f) { const r = f.slice(); while (r.length < ancho) r.push(''); return r; });
     t.getRange(1, 1, datos.length, ancho).setNumberFormat('@').setValues(datos);
     let avisos = [];
-    if (b.llenar) avisos = llenarProg_(ss, sh, b);
+    if (b.llenar || b.cambios) avisos = llenarProg_(ss, sh, b);
     return respuestaProg_({ ok: true, version: PROG_VERSION, creada: creada, aviso: avisos.join('; ') });
   } catch (x) {
     return respuestaProg_({ error: String((x && x.message) || x) });
@@ -128,8 +129,12 @@ function llenarProg_(ss, sh, b) {
   const filas = b.filas.filter(function (r) { return /^\d+$/.test(String(r[0]).trim()); });
   const esShow = function (r) { return String(r[2]).trim().toUpperCase() === 'SHOW'; };
   const avisos = [];
+  // Solo los cambios (Cote, 27 nov): no se borra nada; se escriben solo las celdas que cambiaron desde el último envío
+  const parcial = Boolean(b.cambios);
+  const C = b.cambios || {};
 
   // Resumen de shows: SEM 1 a SEM 5 y el día de cada bloque
+  if (!parcial) {
   const semanas = [];
   for (let i = 0; i < PR_BLOQUES; i++) semanas.push([i % 4 === 0 ? 'SEM ' + (i / 4 + 1) : '']);
   sh.getRange(PR_RESUMEN, 1, PR_BLOQUES, 1).setValues(semanas);
@@ -145,6 +150,7 @@ function llenarProg_(ss, sh, b) {
     const top = PR_PRIMERA + k * PR_ALTO;
     // Pagos (Kennedy C) y anticipos (Kennedy F) de toda la lista, de Nicolás Lavé a Dani González, solo de los locales de la plataforma
     PR_COLS.forEach(function (c, i) { if (PR_PROPIOS.indexOf(c) < 0) return; limpiarProg_(sh.getRange(top + 3, c, 30, 1)); limpiarProg_(sh.getRange(top + 3, PR_ANTICIPO[i], 30, 1)); });
+  }
   }
 
   // Nombres cortos → nombres de la planilla (hoja EQUIPO)
@@ -181,7 +187,9 @@ function llenarProg_(ss, sh, b) {
       if (j === i || !m) return false;
       const nj = normProg_(m);
       if (nj.split(' ')[0] !== pi) return false;
-      return nj.split(' ').length > ni.split(' ').length || (nj === ni && (j < i || /\d/.test(n)));
+      // Más corta («Loreto» junto a «Loretto Canales») o con números («Claudia 1.5»). El mismo nombre en dos secciones
+      // no es repetido: una persona puede estar en dos (Jessica en cantantes y en cámaras)
+      return nj.split(' ').length > ni.split(' ').length || (nj === ni && /\d/.test(n) && !/\d/.test(m));
     });
     if (otra) { limpiadas.push(n); escribirNombre(i, ''); }
   });
@@ -189,14 +197,14 @@ function llenarProg_(ss, sh, b) {
   // Fila de una persona según lo que hizo: primero en su sección, después en las parecidas; si no está, en un espacio
   // libre de su sección (por ejemplo, Jessica como cantante va en un espacio libre de animadores y cantantes)
   const ORDEN = { dj: ['dj', 'ent', 'todas'], ent: ['ent', 'dj'], camV: ['camV', 'camH', 'extra', 'todas'], camH: ['camH', 'camV', 'extra', 'todas'], edi: ['edi', 'todas'] };
-  const filaArea = function (area, nombre, corto) {
+  const filaArea = function (area, nombre, corto, sinAgregar) {
     const pasos = ORDEN[area] || ['todas'];
     for (let p = 0; p < pasos.length; p++) {
       const idx = pasos[p] === 'todas' ? todas : SEC[pasos[p]];
       const f = filaEn_(nombres, idx, nombre, corto);
       if (f !== -1) return f;
     }
-    const sec = SEC[area] || [];
+    const sec = sinAgregar ? [] : (SEC[area] || []);
     for (let q = 0; q < sec.length; q++) if (!nombres[sec[q]] && !formB[sec[q]]) { escribirNombre(sec[q], nombre); agregados.push(nombre); return sec[q]; }
     // Sin espacio libre en su sección: va a la fila que ya tiene en otra parte de la lista (Cote, 24 nov: Guille como
     // animador en Tobalaba cae en su fila de cámaras)
@@ -204,7 +212,7 @@ function llenarProg_(ss, sh, b) {
   };
   const agregados = [], faltan = [], suma = {}, activo = {}, banda = {};
 
-  filas.forEach(function (r) {
+  if (!parcial) filas.forEach(function (r) {
     const k = bloqueDe[Number(r[0])];
     const local = String(r[1]).trim().toUpperCase();
     const col = PR_COL[local];
@@ -229,12 +237,13 @@ function llenarProg_(ss, sh, b) {
       suma[key] = (suma[key] || 0) + Number(m[2]);
     });
   });
-  (b.detalle || []).forEach(function (d) {
+  (parcial ? (C.personas || []) : (b.detalle || [])).forEach(function (d) {
     const k = bloqueDe[Number(d.dia)]; const col = PR_COL[String(d.local).toUpperCase()];
     if (k == null || !col) return;
     const corto = String(d.codigo).trim().toUpperCase();
     const nombre = alias[corto] || corto;
-    const off = filaArea(d.area, nombre, corto);
+    // Al sacar a alguien (monto 0) solo se busca su fila: nunca se le crea una
+    const off = filaArea(d.area, nombre, corto, parcial && !Number(d.monto));
     if (off === -2) { avisos.push('Hay más de una fila que puede ser ' + corto + ': revisa los nombres en la pestaña o en EQUIPO'); return; }
     if (off < 0) { if (faltan.indexOf(corto) < 0) faltan.push(corto); return; }
     const key = k + '|' + col + '|' + off;
@@ -242,16 +251,25 @@ function llenarProg_(ss, sh, b) {
   });
   Object.keys(suma).forEach(function (key) {
     const p = key.split('|').map(Number);
-    sh.getRange(PR_PRIMERA + p[0] * PR_ALTO + 3 + p[2], p[1]).setValue(suma[key]);
+    sh.getRange(PR_PRIMERA + p[0] * PR_ALTO + 3 + p[2], p[1]).setValue(suma[key] || '');
   });
 
   // Presupuesto neto de cada día: el monto de la fila 3 según el día, solo si el local tiene actividad; si no, cero.
   // Con banda tributo se suman $35.000 de batería (Cote, 23 nov)
   const OFF_DIA = { 3: 0, 4: 1, 5: 2, 6: 3, 0: 4 }; // MIE, JUE, VIE, SAB, DOM
+  if (parcial) (C.presupuesto || []).forEach(function (p) {
+    const k = bloqueDe[Number(p.dia)]; const c = PR_COL[String(p.local).toUpperCase()];
+    if (k == null || PR_PROPIOS.indexOf(c) < 0) return;
+    if (p.activo) activo[k + '|' + c] = true;
+    if (p.banda) banda[k + '|' + c] = true;
+  });
+  const pptoCambio = {};
+  (C.presupuesto || []).forEach(function (p) { const k = bloqueDe[Number(p.dia)]; if (k != null) pptoCambio[k + '|' + PR_COL[String(p.local).toUpperCase()]] = true; });
   for (let k = 0; k < PR_BLOQUES; k++) {
     const fila = PR_PRIMERA + k * PR_ALTO + 34;
     const x = dias[k];
     PR_PROPIOS.forEach(function (c) {
+      if (parcial && !pptoCambio[k + '|' + c]) return;
       const celda = sh.getRange(fila, c);
       if (!x || cerrado(x.d) || !activo[k + '|' + c]) { celda.setValue(0); return; }
       celda.setFormula('=' + letraProg_(c + OFF_DIA[x.wd]) + '$3' + (banda[k + '|' + c] ? '+35000' : ''));
@@ -259,10 +277,18 @@ function llenarProg_(ss, sh, b) {
   }
 
   // Montos de los shows: en la columna siguiente a la del show
-  (b.shows || []).forEach(function (s) {
+  if (!parcial) (b.shows || []).forEach(function (s) {
     const k = bloqueDe[Number(s.dia)];
     const ci = PR_COLS.indexOf(PR_COL[String(s.local).toUpperCase()]);
     if (k != null && ci >= 0) sh.getRange(PR_RESUMEN + k, PR_DIA_RESUMEN[ci] + 2).setValue(Number(s.monto) || 0);
+  });
+  // Solo los cambios: el show (nombre y monto) de los días que cambiaron
+  if (parcial) (C.shows || []).forEach(function (s) {
+    const k = bloqueDe[Number(s.dia)];
+    const ci = PR_COLS.indexOf(PR_COL[String(s.local).toUpperCase()]);
+    if (k == null || ci < 0 || PR_PROPIOS.indexOf(PR_COLS[ci]) < 0) return;
+    sh.getRange(PR_RESUMEN + k, PR_DIA_RESUMEN[ci] + 1).setValue(String(s.nombre || '').toUpperCase());
+    sh.getRange(PR_RESUMEN + k, PR_DIA_RESUMEN[ci] + 2).setValue(s.monto == null ? '' : Number(s.monto) || 0);
   });
 
   // Diseños de Rodrigo: un flyer por show; Piano Man y Los juegos (antes Bingo de Frida), uno al mes; más la cartelera
@@ -276,7 +302,7 @@ function llenarProg_(ss, sh, b) {
     if (show === 'PIANO MAN' || show === 'BINGO DE FRIDA' || show.indexOf('LOS JUEGOS DE') === 0) dis[loc].unicos[show.indexOf('PIANO') === 0 ? 'PIANO' : 'JUEGOS'] = 1;
     else dis[loc].n++;
   });
-  Object.keys(FILA_DISENO).forEach(function (loc) {
+  if (!parcial || (C.shows || []).length) Object.keys(FILA_DISENO).forEach(function (loc) {
     const x = dis[loc];
     sh.getRange(FILA_DISENO[loc], 77).setValue(x ? x.n + Object.keys(x.unicos).length : 0);
   });
@@ -296,7 +322,7 @@ function llenarProg_(ss, sh, b) {
     mmLoc[wd] = Math.max(mmLoc[wd] || 0, Object.keys(porFecha[d]).length);
     mmDias[wd] = (mmDias[wd] || 0) + 1;
   });
-  Object.keys(COL_MM).forEach(function (wd) {
+  if (!parcial || (C.personas || []).length || (C.presupuesto || []).length) Object.keys(COL_MM).forEach(function (wd) {
     sh.getRange(853, COL_MM[wd]).setValue(mmLoc[wd] || 0);
     sh.getRange(856, COL_MM[wd]).setValue(mmDias[wd] || 0);
   });
@@ -311,7 +337,7 @@ function llenarProg_(ss, sh, b) {
       if (m) bonoOscar += Number(m[1]);
     });
   });
-  sh.getRange('BU866').setValue(bonoOscar);
+  if (!parcial || (C.personas || []).some(function (p) { return /^OSCAR/i.test(String(p.codigo)); })) sh.getRange('BU866').setValue(bonoOscar);
 
   // Billetera (bruto = neto x 1,19): Kennedy en dos (saldo del mes: viernes y sábados, con la batería que ya va en el
   // presupuesto de cada día; y anticipo con los jueves del mes siguiente), Frida y Tobalaba; fecha el día 2 del mes, filas 827 a 842
@@ -350,7 +376,7 @@ function llenarProg_(ss, sh, b) {
       usados[i] = '';
     }
   });
-  FACT.forEach(function (f) {
+  if (!parcial || (C.presupuesto || []).length) FACT.forEach(function (f) {
     const texto = f[0], neto = f[1];
     if (!neto) return;
     let i = usados.indexOf(texto);

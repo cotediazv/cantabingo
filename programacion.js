@@ -753,21 +753,101 @@ module.exports = function programacion({ app, dir }) {
   });
   const GLOSA_URL = () => process.env.PROG_GLOSA_TEST_URL || P.glosa.url;
   let envio = null; // envío en curso o el último
+  // ---------- Enviar solo los cambios (Cote, 27 nov: «subir eso y que detecte los cambios que hubo… y simplemente aplique
+  // ese cambio sobre la planilla, sin tener que cargarla entera») ----------
+  // Foto de lo que quedó en la GLOSA en el último envío: montos por persona y área, shows y días con actividad
+  function fotoMes(y, m) {
+    const a = archivos(y, m);
+    const personas = {};
+    for (const d of a.detalle) { const k = `${d.dia}|${d.local}|${d.codigo}|${d.area}`; personas[k] = (personas[k] || 0) + (Number(d.monto) || 0); }
+    const shows = {}; const ppto = {};
+    for (const f of a.filas) {
+      if (!/^\d+$/.test(f[0] || '')) continue;
+      const k = `${f[0]}|${f[1]}`;
+      ppto[k] ||= { activo: true, banda: false };
+      if (f[2] === 'SHOW') { shows[k] = { nombre: f[3], monto: null }; if (f[4] === 'BANDA') ppto[k].banda = true; }
+    }
+    for (const x of a.shows) { const k = `${x.dia}|${x.local}`; if (shows[k]) shows[k].monto = x.monto; }
+    return { a, personas, shows, ppto };
+  }
+  const AREA_TXT = { dj: 'DJ', ent: 'entretención', camH: 'cámara en vivo', camV: 'cámara vertical', edi: 'edición' };
+  const plata = (n) => `$${Number(n || 0).toLocaleString('es-CL')}`;
+  function cambiosMes(y, m) {
+    const mes = `${y}-${pad(m)}`;
+    const antes = (P.glosa.enviado || {})[mes];
+    const ahora = fotoMes(y, m);
+    if (!antes) return { sinFoto: true, ahora };
+    const dia = (d) => { const f = ymd(y, m, Number(d)); return `${DIA_TURNO[parse(f).wd]} ${Number(d)}`; };
+    const lista = []; const personas = []; const shows = []; const presupuesto = [];
+    // Personas: por cada persona con algún cambio en un día y local, se mandan todos sus montos de ese día y local
+    const todasP = [...new Set([...Object.keys(antes.personas), ...Object.keys(ahora.personas)])];
+    const grupo = {};
+    for (const k of todasP) {
+      const v0 = antes.personas[k] || 0; const v1 = ahora.personas[k] || 0;
+      if (v0 === v1) continue;
+      const [d, l, cod, area] = k.split('|');
+      lista.push(`${dia(d)} · ${ETQ[l]} · ${cod} (${AREA_TXT[area] || area}): ${v0 ? plata(v0) : '—'} → ${v1 ? plata(v1) : 'sin turno'}`);
+      grupo[`${d}|${l}|${cod}`] = true;
+    }
+    for (const g of Object.keys(grupo)) {
+      const [d, l, cod] = g.split('|');
+      const areas = new Set(todasP.filter((k) => k.startsWith(`${g}|`)).map((k) => k.split('|')[3]));
+      for (const area of areas) personas.push({ dia: Number(d), local: l, codigo: cod, area, monto: ahora.personas[`${g}|${area}`] || 0 });
+    }
+    for (const k of new Set([...Object.keys(antes.shows), ...Object.keys(ahora.shows)])) {
+      const s0 = antes.shows[k] || {}; const s1 = ahora.shows[k] || {};
+      if ((s0.nombre || '') === (s1.nombre || '') && (s0.monto ?? null) === (s1.monto ?? null)) continue;
+      const [d, l] = k.split('|');
+      lista.push(`${dia(d)} · ${ETQ[l]} · show: ${s0.nombre || '—'}${s0.monto != null ? ` ${plata(s0.monto)}` : ''} → ${s1.nombre || 'sin show'}${s1.monto != null ? ` ${plata(s1.monto)}` : ''}`);
+      shows.push({ dia: Number(d), local: l, nombre: s1.nombre || '', monto: s1.monto ?? null });
+    }
+    for (const k of new Set([...Object.keys(antes.ppto), ...Object.keys(ahora.ppto)])) {
+      const p0 = antes.ppto[k] || { activo: false, banda: false }; const p1 = ahora.ppto[k] || { activo: false, banda: false };
+      if (p0.activo === p1.activo && p0.banda === p1.banda) continue;
+      const [d, l] = k.split('|');
+      lista.push(`${dia(d)} · ${ETQ[l]} · presupuesto: ${!p1.activo ? 'sin actividad (queda en cero)' : p1.banda ? 'con banda tributo (+$35.000)' : 'con actividad'}`);
+      presupuesto.push({ dia: Number(d), local: l, activo: p1.activo, banda: p1.banda });
+    }
+    return { lista, personas, shows, presupuesto, ahora };
+  }
+  const guardarFoto = (mes, f) => { P.glosa.enviado ||= {}; P.glosa.enviado[mes] = { personas: f.personas, shows: f.shows, ppto: f.ppto }; };
+  // La GLOSA ya está al día (por ejemplo, Cote la arregló a mano): se toma lo de la plataforma como punto de partida, sin enviar nada
+  app.post('/api/prog/glosa/base', auth, (req, res) => {
+    const { y, m } = mesDe((req.body || {}).mes);
+    guardarFoto(`${y}-${pad(m)}`, fotoMes(y, m)); save();
+    res.json({ ok: true });
+  });
+  app.get('/api/prog/glosa/cambios', auth, (req, res) => {
+    const { y, m } = mesDe(req.query.m);
+    const c = cambiosMes(y, m);
+    if (c.sinFoto) return res.json({ sinFoto: true });
+    res.json({ lista: c.lista });
+  });
   app.post('/api/prog/glosa/enviar', auth, (req, res) => {
     if (!GLOSA_URL()) return fail(res, 400, 'Primero conecta la GLOSA');
     if (envio && envio.estado === 'enviando') return res.json(envio);
-    const { y, m } = mesDe((req.body || {}).mes);
-    const a = archivos(y, m);
-    envio = { estado: 'enviando', mes: a.mes, desde: Date.now() };
-    const body = JSON.stringify({ clave: P.glosa.clave, pestana: a.pestana, anterior: a.anterior, b8: a.b8, filas: a.filas, detalle: a.detalle, shows: a.shows, bloques: a.bloques, mes: a.mesNum, anio: a.anio, llenar: (req.body || {}).llenar !== false });
-    fetch(GLOSA_URL(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body, redirect: 'follow', signal: AbortSignal.timeout(6 * 60e3) })
+    const b = req.body || {};
+    const { y, m } = mesDe(b.mes);
+    const solo = Boolean(b.soloCambios);
+    const c = solo ? cambiosMes(y, m) : null;
+    if (solo && c.sinFoto) return fail(res, 400, 'Todavía no hay un envío completo de este mes con la plataforma: primero usa «Enviar y llenar el mes».');
+    if (solo && !c.lista.length) return fail(res, 400, 'No hay cambios desde el último envío.');
+    const foto = solo ? c.ahora : fotoMes(y, m);
+    const a = foto.a;
+    envio = { estado: 'enviando', mes: a.mes, desde: Date.now(), solo, cambios: solo ? c.lista.length : 0 };
+    const datos = { clave: P.glosa.clave, pestana: a.pestana, anterior: a.anterior, b8: a.b8, filas: a.filas, detalle: a.detalle, shows: a.shows, bloques: a.bloques, mes: a.mesNum, anio: a.anio, llenar: !solo && b.llenar !== false };
+    // Un script anterior no conoce «cambios» y, con llenar en falso, solo reescribe la hoja TURNOS: no pisa nada
+    if (solo) datos.cambios = { personas: c.personas, shows: c.shows, presupuesto: c.presupuesto };
+    fetch(GLOSA_URL(), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos), redirect: 'follow', signal: AbortSignal.timeout(6 * 60e3) })
       .then((r) => r.text()).then((t) => {
         let j; try { j = JSON.parse(t); } catch { throw new Error('La GLOSA no respondió como se esperaba (revisa que el script esté publicado como aplicación web)'); }
         if (j.error) throw new Error(j.error);
-        const viejo = !(Number(j.version) >= 11);
-        envio = { estado: 'listo', mes: a.mes, a: Date.now(), creada: Boolean(j.creada), aviso: [j.aviso || '', viejo ? 'El script de la GLOSA es una versión anterior: le faltan los últimos cambios (por ejemplo, poner a cada persona en su sección y limpiar las filas repetidas). Actualiza el script (pestaña GLOSA, «Actualizar el script») y vuelve a enviar.' : ''].filter(Boolean).join(' ') };
+        const viejo = !(Number(j.version) >= 12);
+        if (solo && viejo) throw new Error('El script de la GLOSA es una versión anterior y no sabe aplicar solo los cambios: no se cambió nada. Actualiza el script (pestaña GLOSA, «Actualizar el script») y vuelve a intentar.');
+        guardarFoto(a.mes, foto);
+        envio = { estado: 'listo', mes: a.mes, a: Date.now(), solo, cambios: solo ? c.lista.length : 0, creada: Boolean(j.creada), aviso: [j.aviso || '', viejo ? 'El script de la GLOSA es una versión anterior: le faltan los últimos cambios (por ejemplo, enviar solo los cambios). Actualiza el script (pestaña GLOSA, «Actualizar el script»).' : ''].filter(Boolean).join(' ') };
       })
-      .catch((e) => { envio = { estado: 'error', mes: a.mes, a: Date.now(), error: clean(e && e.message, 300) || 'No se pudo enviar' }; })
+      .catch((e) => { envio = { estado: 'error', mes: a.mes, a: Date.now(), solo, error: clean(e && e.message, 300) || 'No se pudo enviar' }; })
       .finally(() => { P.glosa.ultimo = envio; save(); });
     res.json(envio);
   });
