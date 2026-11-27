@@ -151,6 +151,9 @@
   const weekHTML = (c) => c.week.map((d) => `<div class="lg-day ${d.today ? 'today' : ''}"><b>${esc(dayName(d.day))} ${d.date}</b>
       ${d.show ? `<span class="lg-show">${se('⭐')} ${esc(d.show)}</span>` : ''}
       ${d.hours.length ? `<span class="lg-hours">${d.hours.map((h) => `${esc(h.time)} ${esc(h.label)}`).join(' · ')}</span>` : ''}</div>`).join('');
+  // El fondo del local a pantalla completa, 1280×720 en OBS, llenando hasta los bordes (pedido de Cote, 27 nov). El tamaño va
+  // escrito en el mismo video: aunque OBS se quede con una hoja de estilos anterior, el video no queda de su tamaño natural.
+  const FONDO_CSS = 'position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;min-width:100%;min-height:100%;margin:0;padding:0;border:0;object-fit:cover;background:#000;z-index:0';
   views['light-gc'] = async (venue) => {
     document.body.classList.add('obs', 'gc-screen');
     app.innerHTML = '<div id="lg"></div>';
@@ -170,7 +173,7 @@
       // el video de la pantalla horizontal del local; a las 19:00 vuelve solo al GC (el servidor decide la hora)
       if (st.fondo) {
         const k = `fondo:${st.fondo}`;
-        if (shown !== k) { shown = k; stopSub(); document.body.classList.remove('gc-screen'); document.body.classList.add('lg-fondo-on'); app.innerHTML = `<video class="lg-fondo" src="${esc(st.fondo)}" autoplay muted loop playsinline></video>`; }
+        if (shown !== k) { shown = k; stopSub(); document.body.classList.remove('gc-screen'); document.body.classList.add('lg-fondo-on'); app.innerHTML = `<video class="lg-fondo" src="${esc(st.fondo)}" style="${FONDO_CSS}" autoplay muted loop playsinline></video>`; }
         return;
       }
       if (shown.startsWith('fondo:')) { shown = ''; document.body.classList.remove('lg-fondo-on'); app.innerHTML = '<div id="lg"></div>'; }
@@ -185,7 +188,7 @@
       let k = null;
       if (stage === 'qr') k = await api('GET', `/api/karaoke?local=${st.venue}`).catch(() => null);
       if (!alive || n !== seq) return;
-      const sig = JSON.stringify([stage, st.id, st.venue, stage === 'custom' ? st.text : '', c && [c.show, c.current, c.next, c.week, c.blocks, c.month], k && k.list.map((p) => [p.name, p.song]), stage === 'info' ? Math.floor(Date.now() / 9000) : 0, t2on()]); // t2on: al cambiar de diseño se vuelve a dibujar
+      const sig = JSON.stringify([stage, st.id, st.venue, stage === 'custom' ? st.text : '', c && [c.show, c.current, c.next, c.week, c.blocks, c.month], k && k.list.map((p) => [p.name, p.song]), stage === 'info' ? Math.floor(Date.now() / 9000) : 0, t2on(), stage === 'cartelera' ? st.fondoVideo || '' : '']); // t2on: al cambiar de diseño se vuelve a dibujar
       if (sig === shown) return;
       const wasKaraoke = shown.startsWith('["karaoke"');
       shown = sig;
@@ -196,6 +199,11 @@
       stopSub();
       document.body.classList.add('obs', 'gc-screen'); // al salir del karaoke se quitan; el GC sigue transparente
       if (!$('#lg')) app.innerHTML = '<div id="lg"></div>';
+      // Cartelera de la semana con el fondo del local detrás (pedido de Cote, 27 nov): el video horizontal del local
+      const bgUrl = stage === 'cartelera' ? st.fondoVideo || '' : '';
+      const bg = $('#lg-bg');
+      if (bg && bg.getAttribute('src') !== bgUrl) bg.remove();
+      if (bgUrl && !$('#lg-bg')) app.insertAdjacentHTML('afterbegin', `<video id="lg-bg" src="${esc(bgUrl)}" style="${FONDO_CSS}" autoplay muted loop playsinline></video>`);
       const box = $('#lg');
       box.className = `th-${st.venue || 'kennedy'}`;
       if (stage === 'custom') {

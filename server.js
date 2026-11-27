@@ -1104,6 +1104,9 @@ const FONDO_GC = { kennedy: 'kennedy-h', frida: 'frida-h', tobalaba: 'tobalaba' 
 const salaDe = (v) => { const m = Object.values(db.sessions)[0]; return !!(m && !m.sim && (m.theme || 'frida') === v); };
 const horaChile = () => Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
   .formatToParts(ahora()).map((x) => [x.type, x.value]));
+// El video horizontal del local, haya o no «FONDO» puesto: va de fondo detrás de la cartelera de la semana en el GC Light
+// (pedido de Cote, 27 nov: «al poner la cartelera de la semana, que de fondo se vea siempre el fondo del local»)
+const fondoVid = (v) => { const scr = FONDO_GC[v]; const c = scr && (db.vertical || {})[scr]; return c && c.video ? `/vertical/${scr}.mp4?v=${c.video}` : ''; };
 const fondoDe = (v) => {
   const scr = FONDO_GC[v]; const c = scr && (db.vertical || {})[scr];
   if (!c || !c.video || ((db.lights || {})[v] || {}).stage !== 'fondo') return '';
@@ -1124,7 +1127,7 @@ const fondoAuto = () => {
     }
   }
 };
-lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta, aviso, salaDe, fondoDe, reloj: () => ahora(), progShow: (v, n) => prog.showDe(n.y, n.m, n.d, { kennedy: 'MK', frida: 'FRIDA', tobalaba: 'TOB' }[v]) });
+lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta, aviso, salaDe, fondoDe, fondoVid, reloj: () => ahora(), progShow: (v, n) => prog.showDe(n.y, n.m, n.d, { kennedy: 'MK', frida: 'FRIDA', tobalaba: 'TOB' }[v]) });
 setTimeout(fondoAuto, 2000); setInterval(fondoAuto, 20e3);
 // «El último en pie», versión de prueba (pedido de Cote, 23 nov)
 require('./enpie.js')({ placeOf, roscoBusy: () => roscoLock('enpie'), app, db, save, requireAdmin, fail, setStage, festejo,

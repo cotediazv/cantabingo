@@ -21,6 +21,9 @@ test('fondo Kennedy: queda puesto al publicar y se quita con otro botón del GC'
   assert.equal((await s.ok('GET', '/api/light?local=tobalaba')).fondo, '/vertical/tobalaba.mp4?v=77');
   st = await s.admin.post('/api/light/stage', { local: 'kennedy', show: 'cartelera' });
   assert.equal(st.fondo, '');
+  // con la cartelera de la semana, el video del local va de fondo (pedido de Cote, 27 nov)
+  assert.equal(st.fondoVideo, SRC);
+  assert.equal((await s.ok('GET', '/api/light?local=frida')).fondoVideo, '');
   st = await s.admin.post('/api/light/stage', { local: 'kennedy', show: 'fondo' });
   assert.equal(st.fondo, SRC);
   // con la sala de juegos de Kennedy abierta en la tarde, manda la sala
