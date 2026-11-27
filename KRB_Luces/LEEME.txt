@@ -99,3 +99,10 @@ CAMBIOS DEL 27 NOV (relato del jueves en Kennedy)
   si nada les dice otra cosa.
 - Panel del DJ: colores base, version simple para el celular, grupo Animado, Creatividad y Auto musica.
 - Juegos > Editar las escenas de los juegos: paso a paso, foco por foco; queda en datos.json.
+
+OBS: TRANSMISION AUTOMATICA (27 nov)
+- El programa de luces hace partir y parar la transmision de OBS: jueves, viernes y sabado de 20:00 a 00:30.
+- Usa el servidor WebSocket de OBS (OBS 28 o mas nuevo): Herramientas > Ajustes del servidor WebSocket > activar,
+  puerto 4455, con autenticacion. La clave se escribe en el panel de luces ("?" > OBS) y queda en obs.txt.
+- Si OBS se cae y se vuelve a abrir dentro del horario, vuelve a partir. Si se detiene a mano en el horario, no.
+- Queda anotado en el registro de la noche.

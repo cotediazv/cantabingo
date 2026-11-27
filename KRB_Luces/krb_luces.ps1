@@ -290,6 +290,80 @@ namespace KRB {
     }
   }
 
+  // ---------- OBS: transmite solo en su horario (Cote, 27 nov: «jueves a sabado de 20 a 00:30 hrs») ----------
+  // El programa de luces le habla a OBS por su servidor WebSocket (viene con OBS 28 o mas nuevo; se activa una vez en
+  // OBS > Herramientas > Ajustes del servidor WebSocket). La clave de OBS se escribe en el panel de luces y queda en
+  // obs.txt (nunca en el repositorio). A las 20:00 parte y a las 00:30 para. Si OBS se cae y se vuelve a abrir dentro del
+  // horario, vuelve a partir; si alguien la detiene a mano dentro del horario, no se vuelve a prender.
+  public static class Obs {
+    public static string Clave = "", Archivo = "", Estado = "sin configurar";
+    public static bool Transmitiendo = false;
+    public const string Horario = "jueves, viernes y sabado de 20:00 a 00:30";
+    static int previo = -1;             // -1: no se sabe; 0: fuera del horario; 1: dentro
+    static bool caido = true;           // la ultima vez OBS no respondio
+    static readonly object OL = new object();
+    public static bool EnHorario(DateTime t) {
+      DateTime d = t.AddHours(-6).Date; double m = (t - d).TotalMinutes; int dw = (int)d.DayOfWeek;
+      return (dw == 4 || dw == 5 || dw == 6) && m >= 20 * 60 && m < 24 * 60 + 30;
+    }
+    static string B64Sha(string x) { using (System.Security.Cryptography.SHA256 h = System.Security.Cryptography.SHA256.Create()) return Convert.ToBase64String(h.ComputeHash(Encoding.UTF8.GetBytes(x))); }
+    static string Recibir(System.Net.WebSockets.ClientWebSocket ws) {
+      byte[] buf = new byte[65536]; StringBuilder sb = new StringBuilder();
+      while (true) {
+        var t = ws.ReceiveAsync(new ArraySegment<byte>(buf), CancellationToken.None);
+        if (!t.Wait(5000)) throw new Exception("OBS no contesto");
+        sb.Append(Encoding.UTF8.GetString(buf, 0, t.Result.Count));
+        if (t.Result.EndOfMessage) return sb.ToString();
+      }
+    }
+    static void Mandar(System.Net.WebSockets.ClientWebSocket ws, string j) {
+      byte[] b = Encoding.UTF8.GetBytes(j);
+      if (!ws.SendAsync(new ArraySegment<byte>(b), System.Net.WebSockets.WebSocketMessageType.Text, true, CancellationToken.None).Wait(5000)) throw new Exception("no se pudo mandar a OBS");
+    }
+    static string Campo(string j, string k) { var m = System.Text.RegularExpressions.Regex.Match(j, "\"" + k + "\"\\s*:\\s*\"([^\"]*)\""); return m.Success ? m.Groups[1].Value : null; }
+    // Una conexion corta por cada pedido (OBS 5: Hello -> Identify -> Identified -> Request -> Response)
+    static string Pedir(string tipo) {
+      using (System.Net.WebSockets.ClientWebSocket ws = new System.Net.WebSockets.ClientWebSocket()) {
+        if (!ws.ConnectAsync(new Uri("ws://127.0.0.1:4455"), CancellationToken.None).Wait(4000)) throw new Exception("OBS no esta abierto o su servidor WebSocket esta apagado");
+        string hola = Recibir(ws), auth = "";
+        string ch = Campo(hola, "challenge"), sal = Campo(hola, "salt");
+        if (ch != null && sal != null) { if (Clave == "") throw new Exception("falta la clave de OBS"); auth = ",\"authentication\":\"" + B64Sha(B64Sha(Clave + sal) + ch) + "\""; }
+        Mandar(ws, "{\"op\":1,\"d\":{\"rpcVersion\":1" + auth + "}}");
+        string id = Recibir(ws); if (id.IndexOf("\"op\":2") < 0 && id.IndexOf("\"op\": 2") < 0) throw new Exception("OBS no acepto la clave");
+        Mandar(ws, "{\"op\":6,\"d\":{\"requestType\":\"" + tipo + "\",\"requestId\":\"krb\"}}");
+        string r = Recibir(ws);
+        try { ws.CloseAsync(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, "", CancellationToken.None).Wait(1000); } catch {}
+        return r;
+      }
+    }
+    public static void Revisar() {
+      lock (OL) {
+        bool debe = EnHorario(DateTime.Now); int ahora = debe ? 1 : 0;
+        try {
+          string r = Pedir("GetStreamStatus");
+          Transmitiendo = System.Text.RegularExpressions.Regex.IsMatch(r, "\"outputActive\"\\s*:\\s*true");
+          if (debe && !Transmitiendo && (previo != 1 || caido)) { Pedir("StartStream"); Transmitiendo = true; Bitacora.Anotar("OBS: empezo la transmision (horario: " + Horario + ")"); }
+          else if (!debe && previo == 1 && Transmitiendo) { Pedir("StopStream"); Transmitiendo = false; Bitacora.Anotar("OBS: termino la transmision (horario: " + Horario + ")"); }
+          if (caido) Bitacora.Anotar("OBS: conectado con el programa de luces");
+          caido = false; previo = ahora; Estado = "conectado";
+        } catch (Exception e) {
+          string m = e.InnerException != null ? e.InnerException.Message : e.Message;
+          if (!caido) Bitacora.Anotar("OBS: no responde (" + m + ")");
+          caido = true; Estado = m;
+        }
+      }
+    }
+    public static void Iniciar(string carpeta) {
+      Archivo = Path.Combine(carpeta, "obs.txt");
+      try { if (File.Exists(Archivo)) Clave = File.ReadAllText(Archivo).Trim(); } catch {}
+      new Thread(() => { Thread.Sleep(20000); while (true) { if (Clave != "" || File.Exists(Archivo)) Revisar(); Thread.Sleep(30000); } }) { IsBackground = true }.Start();
+    }
+    public static void GuardarClave(string c) {
+      Clave = (c ?? "").Trim(); try { File.WriteAllText(Archivo, Clave); } catch {}
+      Bitacora.Anotar("OBS: se guardo la clave del servidor WebSocket");
+    }
+  }
+
   // ---------- Efectos que corren en el Dell (siguen aunque el iPad se bloquee) ----------
   public class Efecto {
     public string Tipo;                       // "seno" o "sec"
@@ -851,6 +925,13 @@ namespace KRB {
         if (chs != null) { List<int> l = new List<int>(); foreach (string x in chs.Split(',')) { int c; if (int.TryParse(x, out c) && c >= 1 && c <= 512) l.Add(c); } Dmx.MasterCh = l.ToArray(); }
         if (v >= 0) { Dmx.Master = (float)Math.Min(1, v / 100); GuardarMaster(); }
         Estado(s); return; }
+      // OBS (transmision automatica): estado, guardar la clave y probar
+      if (ruta == "/api/obs") {
+        string c = Arg(query, "clave"); if (c != null) Obs.GuardarClave(c);
+        if (c != null || Arg(query, "probar") != null) Obs.Revisar();
+        Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"clave\":" + (Obs.Clave != "" ? "true" : "false") + ",\"estado\":\"" + Esc(Obs.Estado) +
+          "\",\"transmitiendo\":" + (Obs.Transmitiendo ? "true" : "false") + ",\"enHorario\":" + (Obs.EnHorario(DateTime.Now) ? "true" : "false") + ",\"horario\":\"" + Obs.Horario + "\"}"));
+        return; }
       if (ruta == "/api/aviso-prueba") { Aviso.Mandar("Aviso de prueba de las luces KRB. Si te lleg\u00f3, qued\u00f3 listo.", false);
         Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":" + (Aviso.Tema != "" ? "true" : "false") + "}")); return; }
       if (ruta == "/api/estado") { Estado(s); return; }
@@ -1148,6 +1229,7 @@ try {
 } catch {}
 $estadoCable = if ([KRB.Dmx]::Conectado) { "cable conectado (" + [KRB.Dmx]::PuertoUsado + ")" } elseif ([KRB.Dmx]::Tipo -eq "simulacion") { "modo simulacion" } else { "SIN CABLE: " + [KRB.Dmx]::Error }
 [KRB.Bitacora]::Anotar("Se abrio la suite de luces (" + $estadoCable + ")")
+[KRB.Obs]::Iniciar($root)
 [KRB.Web]::CargarMaster()
 [KRB.Web]::CargarSesiones()
 [KRB.Web]::CargarMomentos()

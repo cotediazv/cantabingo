@@ -580,6 +580,11 @@
       <li>Toca <b>Mandar aviso de prueba</b>: te tiene que llegar en unos segundos.</li>
     </ol>
     <div class="fila"><button class="chip" id="avisoCopiar">Copiar el tema</button><button class="chip" id="avisoProbar">Mandar aviso de prueba</button></div>
+    <h3>OBS: transmisión automática</h3>
+    <p>El Dell hace partir y parar la transmisión de OBS solo: <b>jueves, viernes y sábado de 20:00 a 00:30</b>. Si OBS se cae y se vuelve a abrir dentro del horario, vuelve a partir. Si alguien la detiene a mano dentro del horario, no se vuelve a prender.</p>
+    <p>Estado: <b id="obsEstado">—</b></p>
+    <div class="fila"><input type="password" id="obsClave" placeholder="Clave del servidor WebSocket de OBS" autocomplete="off" style="flex:1;min-width:180px;background:#121419;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px">
+      <button class="chip" id="obsGuardar">Guardar clave</button><button class="chip" id="obsProbar">Probar</button></div>
     <h3>Registro de la noche</h3>
     <p>Lo que pasó cada noche (escenas, momentos, cable), con la hora.</p>
     <div class="fila"><button class="chip" id="verRegistro">Ver registro de esta noche</button><select id="regNoche" hidden></select></div>
@@ -3577,7 +3582,7 @@ function abrirAyuda(){
   $('verDell').textContent = DEMO ? 'versión de prueba (simulación)' : (versionDell || '—');
   $('avisoTema').textContent = DEMO ? 'krb-luces-prueba (solo en el Dell)' : (avisoTema || '— (se crea al abrir la suite nueva)');
   $('ayudaDJ').hidden = !DJ; $('ayudaIpad').hidden = DJ;
-  $('regTexto').hidden = true; $('regNoche').hidden = true; $('ayuda').classList.add('on');
+  $('regTexto').hidden = true; $('regNoche').hidden = true; $('ayuda').classList.add('on'); verObs();
 }
 async function verRegistro(noche){
   let r; try { r = DEMO ? { noche: 'demo', noches: [], texto: 'En la versión de prueba no hay registro: se guarda en el Dell de Kennedy.' }
@@ -3602,6 +3607,13 @@ $('avisoProbar').onclick = async () => {
   try { const r = await api('/api/aviso-prueba'); toast(r.ok ? 'Aviso enviado: revisa la app ntfy' : 'El Dell todavía no tiene tema'); } catch(e){ toast('No se pudo pedir al Dell'); }
 };
 $('regNoche').onchange = () => verRegistro($('regNoche').value);
+// OBS: transmision automatica (Cote, 27 nov: jueves a sabado de 20 a 00:30)
+function pintarObs(r){ $('obsEstado').textContent = !r ? '—' : (r.clave ? '' : 'falta la clave · ') + (r.estado === 'conectado' ? 'conectado con OBS' : (r.estado || 'sin respuesta')) +
+  (r.estado === 'conectado' ? (r.transmitiendo ? ' · transmitiendo' : ' · sin transmitir') : '') + (r.enHorario ? ' · ahora es horario de transmisión' : ''); }
+async function verObs(q){ if (DEMO) { $('obsEstado').textContent = 'en la versión de prueba no hay OBS'; return; }
+  try { pintarObs(q ? await postApi('/api/obs', q) : await api('/api/obs')); } catch(e){ $('obsEstado').textContent = 'no se pudo preguntar al Dell'; } }
+$('obsGuardar').onclick = () => { const c = $('obsClave').value.trim(); if (!c) return toast('Escribe la clave de OBS'); $('obsEstado').textContent = 'Probando…'; verObs({ clave: c }).then(() => { $('obsClave').value = ''; }); };
+$('obsProbar').onclick = () => { $('obsEstado').textContent = 'Probando…'; verObs({ probar: '1' }); };
 $('editarJuegos').onclick = () => { editandoJuegos = !editandoJuegos; $('editarJuegos').classList.toggle('act', editandoJuegos);
   $('editarJuegos').firstChild.textContent = editandoJuegos ? '✏️ Editando: toca un paso para cambiarlo (toca aquí para terminar)' : '✏️ Editar las escenas de los juegos'; };
 $('emEf').onchange = () => { emEd.efectos = $('emEf').checked; };
