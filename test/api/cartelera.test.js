@@ -23,6 +23,8 @@ test('cartelera de la semana: el jueves 3 de diciembre sale con su show si llega
   let c = await srv.ok('GET', '/api/light/cartelera?local=kennedy');
   const jue = (w) => w.week.find((d) => d.date === 3 && d.month === 12);
   assert.equal(c.week[0].date, 27); assert.equal(c.week[0].show, 'PIANO MAN');
+  // hoy y los próximos 6 días con actividades (jue, vie y sáb): 27, 28, 3, 4, 5, 10 y 11 (Cote, 27 nov)
+  assert.deepEqual(c.week.map((d) => d.date), [27, 28, 3, 4, 5, 10, 11]);
   assert.equal(jue(c).show, '');
   // Con `meses` (noviembre y diciembre), sale
   resp = { ...NOV, horarios, meses: [NOV, DIC] };

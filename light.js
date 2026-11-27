@@ -116,12 +116,17 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
     const nowMin = minutesNow();
     const next = blocks.find((b) => { const t = toMin(b.time); return t != null && t > nowMin; }) || null;
     const current = [...blocks].reverse().find((b) => { const t = toMin(b.time); return t != null && t <= nowMin; }) || null;
+    // Hoy y los próximos SEIS DÍAS CON ACTIVIDADES (pedido de Cote, 27 nov: «son los próximos seis días de actividades»),
+    // no seis días de calendario: se avanza hasta juntarlos (como mucho 45 días), aunque crucen de mes
     const week = [];
-    for (let i = 0; i < 7; i++) {
+    let more = 0;
+    for (let i = 0; i < 45 && more < 6; i++) {
       const n = night(i);
       const hours = hoursOf(data, n.dow, n);
       const show = showOf(data, n);
-      if (hours.length || show) week.push({ day: DAYS[n.dow], date: n.d, month: n.m, today: i === 0, show, hours });
+      if (!hours.length && !show) continue;
+      week.push({ day: DAYS[n.dow], date: n.d, month: n.m, today: i === 0, show, hours });
+      if (i > 0) more++;
     }
     // Cartelera del mes (lo que queda desde hoy), para la pantalla vertical de la sala light
     const tm = tabFor(data, today.m);
