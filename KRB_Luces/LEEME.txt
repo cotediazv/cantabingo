@@ -106,3 +106,5 @@ OBS: TRANSMISION AUTOMATICA (27 nov)
   puerto 4455, con autenticacion. La clave se escribe en el panel de luces ("?" > OBS) y queda en obs.txt.
 - Si OBS se cae y se vuelve a abrir dentro del horario, vuelve a partir. Si se detiene a mano en el horario, no.
 - Queda anotado en el registro de la noche.
+- (27 nov) Si OBS se cierra y se vuelve a abrir, retoma la transmision al tiro (revisa cada 10 s).
+- (27 nov) Las luces se encienden solas en Standby (Azul, fundido continuo) a las 19:00, jueves a sabado.

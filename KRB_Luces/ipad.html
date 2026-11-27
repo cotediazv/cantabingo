@@ -581,7 +581,7 @@
     </ol>
     <div class="fila"><button class="chip" id="avisoCopiar">Copiar el tema</button><button class="chip" id="avisoProbar">Mandar aviso de prueba</button></div>
     <h3>OBS: transmisión automática</h3>
-    <p>El Dell hace partir y parar la transmisión de OBS solo: <b>jueves, viernes y sábado de 20:00 a 00:30</b>. Si OBS se cae y se vuelve a abrir dentro del horario, vuelve a partir. Si alguien la detiene a mano dentro del horario, no se vuelve a prender.</p>
+    <p>El Dell hace partir y parar la transmisión de OBS solo: <b>jueves, viernes y sábado de 20:00 a 00:30</b>. Si OBS se cierra y se vuelve a abrir, retoma la transmisión al tiro (si estaba transmitiendo o si es su horario). Si alguien la detiene a mano dentro del horario, no se vuelve a prender. Las luces, además, se encienden solas en Standby a las 19:00 (jueves a sábado).</p>
     <p>Estado: <b id="obsEstado">—</b></p>
     <div class="fila"><input type="password" id="obsClave" placeholder="Clave del servidor WebSocket de OBS" autocomplete="off" style="flex:1;min-width:180px;background:#121419;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px">
       <button class="chip" id="obsGuardar">Guardar clave</button><button class="chip" id="obsProbar">Probar</button></div>
@@ -2152,7 +2152,10 @@ const JUEGOS = [
   { juego:'Inicio y base', momentos:[
     { id:'base_juegos', nombre:'Base juegos', detalle:'Pared azul, frente y cabezas al escenario, mini rojas', g:BASE },
     { id:'inicio_noche', nombre:'Inicio de la noche', igual:'base_juegos' },
-    { id:'siguiente_juego', nombre:'Siguiente juego', igual:'base_juegos' } ]},
+    { id:'siguiente_juego', nombre:'Siguiente juego', igual:'base_juegos' },
+    // Cote (27 nov): «las luces se encienden solas en stand by a las 19 hrs, jueves a sabado»: lo dispara el Dell solo
+    { id:'standby_inicio', nombre:'Standby automático (19:00)', detalle:'Standby Azul con su fundido continuo, a la mitad de intensidad (sin blanco: todavía no hay actividad)',
+      g:() => ({}), standbyDj:'Azul', sinRegla:true } ]},
   { juego:'Bingo', momentos:[
     { id:'bingo_qr', nombre:'QR en pantalla', igual:'base_juegos' },
     { id:'bingo_bolitas', nombre:'Primeras bolitas', igual:'base_juegos' },
@@ -2362,6 +2365,11 @@ function compilarMomento(m){
       conEspejos(['mini']).forEach(id => { const g = grupo(id); if (!g || !g.canales.pan) return; const b = g.direccion - 1;
         ef('mover:' + id, {tipo:'seno', ch:[b + g.canales.pan, b + g.canales.tilt].join(','), centro:'128,105',
           amp:(amplio ? '95,20' : '55,12'), periodo:(amplio ? 5 : 14)}); });
+    }
+    if (m.standbyDj){                                                           // Standby del DJ con su Automatico (fundido continuo), a la mitad
+      const e = DJ_ESCENAS.find(x => x.grupo === 'Standby' && x.n === m.standbyDj);
+      if (e){ master = 50; const cs = capasStandbyAuto(e); master = 100;
+        cs.forEach(c => ef(c.id, {tipo:'sec', pasos:pasosTxt(c.pasos), t:(c.seg != null ? c.seg : c.ritmo * 60 / 128).toFixed(3), fx:c.fx})); }
     }
     if (m.fiesta){                                                              // una escena del DJ (Locura), por tiempo (Cote, 26 nov: inicio de ¿Quién quiere ser ganador?)
       const e = DJ_ESCENAS.find(x => x.n === m.fiesta);

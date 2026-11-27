@@ -301,6 +301,7 @@ namespace KRB {
     public const string Horario = "jueves, viernes y sabado de 20:00 a 00:30";
     static int previo = -1;             // -1: no se sabe; 0: fuera del horario; 1: dentro
     static bool caido = true;           // la ultima vez OBS no respondio
+    static bool transmitiaAlCaer = false;
     static readonly object OL = new object();
     public static bool EnHorario(DateTime t) {
       DateTime d = t.AddHours(-6).Date; double m = (t - d).TotalMinutes; int dw = (int)d.DayOfWeek;
@@ -342,21 +343,36 @@ namespace KRB {
         try {
           string r = Pedir("GetStreamStatus");
           Transmitiendo = System.Text.RegularExpressions.Regex.IsMatch(r, "\"outputActive\"\\s*:\\s*true");
-          if (debe && !Transmitiendo && (previo != 1 || caido)) { Pedir("StartStream"); Transmitiendo = true; Bitacora.Anotar("OBS: empezo la transmision (horario: " + Horario + ")"); }
+          // Cote (27 nov): «si se cierra OBS y se vuelve a abrir, que inmediatamente se ponga a transmitir de nuevo»: si estaba
+          // transmitiendo cuando se cayo (o es su horario), al volver parte solo
+          if (!Transmitiendo && caido && (debe || transmitiaAlCaer)) { Pedir("StartStream"); Transmitiendo = true; Bitacora.Anotar("OBS: se volvio a abrir y retomo la transmision"); }
+          else if (debe && !Transmitiendo && previo != 1) { Pedir("StartStream"); Transmitiendo = true; Bitacora.Anotar("OBS: empezo la transmision (horario: " + Horario + ")"); }
           else if (!debe && previo == 1 && Transmitiendo) { Pedir("StopStream"); Transmitiendo = false; Bitacora.Anotar("OBS: termino la transmision (horario: " + Horario + ")"); }
           if (caido) Bitacora.Anotar("OBS: conectado con el programa de luces");
           caido = false; previo = ahora; Estado = "conectado";
         } catch (Exception e) {
           string m = e.InnerException != null ? e.InnerException.Message : e.Message;
-          if (!caido) Bitacora.Anotar("OBS: no responde (" + m + ")");
+          if (!caido) { Bitacora.Anotar("OBS: no responde (" + m + ")"); transmitiaAlCaer = Transmitiendo; }
           caido = true; Estado = m;
         }
       }
     }
     public static void Iniciar(string carpeta) {
+      new Thread(() => { Thread.Sleep(15000); while (true) { try { RevisarStandby(); } catch {} Thread.Sleep(20000); } }) { IsBackground = true }.Start();
       Archivo = Path.Combine(carpeta, "obs.txt");
       try { if (File.Exists(Archivo)) Clave = File.ReadAllText(Archivo).Trim(); } catch {}
-      new Thread(() => { Thread.Sleep(20000); while (true) { if (Clave != "" || File.Exists(Archivo)) Revisar(); Thread.Sleep(30000); } }) { IsBackground = true }.Start();
+      new Thread(() => { Thread.Sleep(20000); while (true) { if (Clave != "" || File.Exists(Archivo)) Revisar(); Thread.Sleep(10000); } }) { IsBackground = true }.Start();
+    }
+    // Luces en Standby solas a las 19:00, jueves a sabado (Cote, 27 nov). Una vez por noche, hasta las 00:30; si el programa
+    // parte dentro de ese rato (por ejemplo, despues de un corte de luz), tambien, porque el cable parte con todo apagado.
+    static string standbyNoche = "";
+    public static void RevisarStandby() {
+      DateTime t = DateTime.Now, d = t.AddHours(-6).Date; double m = (t - d).TotalMinutes; int dw = (int)d.DayOfWeek;
+      string noche = d.ToString("yyyy-MM-dd");
+      if ((dw == 4 || dw == 5 || dw == 6) && m >= 19 * 60 && m < 24 * 60 + 30 && standbyNoche != noche) {
+        standbyNoche = noche;
+        if (Web.MomentoProgramado("standby_inicio")) Bitacora.Anotar("Luces: Standby automatico de las 19:00");
+      }
     }
     public static void GuardarClave(string c) {
       Clave = (c ?? "").Trim(); try { File.WriteAllText(Archivo, Clave); } catch {}
@@ -1014,6 +1030,7 @@ namespace KRB {
       lock (ML) { momentos = d; }
     }
     static int ContarMomentos() { lock (ML) { return momentos.Count; } }
+    public static bool MomentoProgramado(string n) { return EjecutarMomento(n); }
     static Dictionary<string, DateTime> avisosVistos = new Dictionary<string, DateTime>();
     static bool EjecutarMomento(string nombre) {
       List<string> acc;
