@@ -79,6 +79,7 @@
       // Titulo chico y en una linea, sin el numero de personas (pedido de Cote, 27 nov: «no es relevante»)
       // Los botones del GC lo mas arriba posible (Cote, 27 nov): sin el subtitulo «En pantalla (GC)» (los botones ya dicen GC)
       top.innerHTML = `<h1 class="lp-title">${esc(st.title)}</h1>
+        ${st.fondo ? '<p class="lp-sala">🎬 <b>Fuera del horario del show:</b> el GC Light de OBS muestra el fondo horizontal de Mercado Kennedy. A las 19:00 vuelve solo al GC, hasta la 01:00.</p>' : ''}
         ${st.sala ? '<p class="lp-sala">🎮 <b>Hoy hay sala de juegos en este local:</b> el GC Light de OBS muestra el GC de la sala de juegos (sus juegos, su karaoke y su QR) toda la noche. Estos botones vuelven a mandar en el GC cuando se cierre la sala de juegos.</p>' : ''}
         <div class="lp-stages">${STAGES.map(([k, i, t]) => `<button type="button" data-st="${k}" class="${st.stage === k ? 'on' : ''}"><span>${i}</span>${t}</button>`).join('')}</div>
 `;
@@ -161,6 +162,14 @@
       if (!alive || !st || n !== seq) return;
       // Día de juegos (pedido de Cote, 27 nov): con la sala de juegos de este local abierta, el GC Light muestra el GC de la
       // sala de juegos (#/escena: sus juegos, su karaoke y su QR) toda la noche; al cerrarse la sala vuelve al GC Light
+      // Fondo horizontal fuera del horario del show (Kennedy, pedido de Cote, 27 nov): de 01:00 a 19:00 el GC Light muestra
+      // el video de la pantalla horizontal del local; a las 19:00 vuelve solo al GC (el servidor decide la hora)
+      if (st.fondo) {
+        const k = `fondo:${st.fondo}`;
+        if (shown !== k) { shown = k; stopSub(); document.body.classList.remove('gc-screen'); app.innerHTML = `<video class="lg-fondo" src="${esc(st.fondo)}" autoplay muted loop playsinline></video>`; }
+        return;
+      }
+      if (shown.startsWith('fondo:')) { shown = ''; app.innerHTML = '<div id="lg"></div>'; }
       if (st.sala) {
         if (shown !== 'sala') { shown = 'sala'; stopSub(); document.body.classList.remove('gc-screen'); app.innerHTML = ''; sub = await views.escena(); if (!alive) stopSub(); }
         return;

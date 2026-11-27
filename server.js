@@ -1088,8 +1088,22 @@ const desafio = require('./desafio.js')({ placeOf, roscoBusy: () => roscoLock('d
 // «Síguenos en Instagram»: la cuenta del local de la sala abierta
 const insta = require('./insta.js')({ app, db, save, requireAdmin, fail, venue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
 // Sala light: karaoke, show y cartelera en otro local, al mismo tiempo que la sala principal
-lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta, aviso,
-  salaDe: (v) => { const m = Object.values(db.sessions)[0]; return !!(m && !m.sim && (m.theme || 'frida') === v); } });
+// GC Light de Mercado Kennedy fuera del horario del show (pedido de Cote, 27 nov: «que toda la semana esté puesto el fondo
+// horizontal de Mercado Kennedy. Y se quite y le dé paso al GC en los horarios de show, desde las 7 de la tarde hasta la
+// 1 de la mañana… que cambie sola»): todos los días, de 01:00 a 19:00 (hora de Chile), el GC Light muestra el video de la
+// pantalla horizontal del local (kennedy-h); de 19:00 a 01:00, el GC de siempre. Si esa tarde hay sala de juegos de
+// Kennedy abierta, manda la sala (los juegos pueden partir antes de las 19:00); después de la 01:00 vuelve el fondo.
+const FONDO_GC = { kennedy: 'kennedy-h' };
+const salaDe = (v) => { const m = Object.values(db.sessions)[0]; return !!(m && !m.sim && (m.theme || 'frida') === v); };
+const fondoDe = (v) => {
+  const scr = FONDO_GC[v]; const c = scr && (db.vertical || {})[scr];
+  if (!c || !c.video) return '';
+  const h = +new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', hour: '2-digit', hourCycle: 'h23' }).format(ahora());
+  if (h >= 19 || h < 1) return ''; // horario del show: el GC
+  if (h >= 12 && salaDe(v)) return ''; // tarde con sala de juegos abierta: la sala
+  return `/vertical/${scr}.mp4?v=${c.video}`;
+};
+lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta, aviso, salaDe, fondoDe });
 // «El último en pie», versión de prueba (pedido de Cote, 23 nov)
 require('./enpie.js')({ placeOf, roscoBusy: () => roscoLock('enpie'), app, db, save, requireAdmin, fail, setStage, festejo,
   findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null,
