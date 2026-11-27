@@ -16,12 +16,21 @@ const later = new Map(); // momentos que llegan después (la entrega del premio,
 
 const sala = () => (ctx ? Object.values(ctx.db.sessions || {})[0] : null);
 
-function send(name, extra) {
+// Firma de un momento (para el aviso que sale desde el tablero del local): prueba que el aviso lo hizo la Sala sin
+// entregar la clave de las luces a una página pública. HMAC-SHA256 de «id|nombre» con LUCES_CLAVE (32 primeros hex).
+const firma = (key, id, name) => require('crypto').createHmac('sha256', key).update(`${id}|${name}`).digest('hex').slice(0, 32);
+
+function send(name, extra, id) {
   const url = process.env.LUCES_URL; const key = process.env.LUCES_CLAVE;
   const s = sala();
   if (!url || !key || !s || s.sim || (s.theme || 'frida') !== 'kennedy') return;
   const more = Object.entries(extra || {}).map(([k, v]) => `&${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('');
-  fetch(`${url.replace(/\/$/, '')}/api/momento?nombre=${encodeURIComponent(name)}&sala=kennedy${more}`, { headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(2000) }).catch(() => {});
+  // id y t (pedido de Code 4, 27 nov): el Dell anota cuánto tarda cada aviso y, si le llega dos veces (de Render y del
+  // tablero del local), usa el primero
+  fetch(`${url.replace(/\/$/, '')}/api/momento?nombre=${encodeURIComponent(name)}&sala=kennedy${more}&id=${id}&t=${Date.now()}`, { headers: { Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(2000) }).catch(() => {});
+  // El mismo aviso a las pantallas (pedido de Code 4 y decisión de Cote, 27 nov: «las luces se disparan con el efecto de
+  // sonido»): el tablero de Kennedy que toca los sonidos lo manda directo al Dell desde el local, con la firma
+  if (ctx.momentoLive) ctx.momentoLive({ nombre: name, id, extra: extra || {}, firma: firma(key, id, name), url: url.replace(/\/$/, '') });
 }
 
 // Anuncia un momento. Un momento nuevo cancela los diferidos pendientes. `extra`: datos que van con el aviso
@@ -33,7 +42,7 @@ function emit(name, extra) {
   const s = sala();
   list.push({ seq: ++seq, name, at: Date.now(), venue: s ? s.theme || 'frida' : '', sim: !!(s && s.sim), ...(extra || {}) });
   while (list.length > MAX) list.shift();
-  send(name, extra);
+  send(name, extra, seq);
   if (ctx.aviso) ctx.aviso();
 }
 // Anuncia un momento dentro de `ms` milisegundos (se cancela si antes pasa otro momento)
@@ -53,4 +62,4 @@ function init(c) {
   });
 }
 
-module.exports = { init, emit, emitLater };
+module.exports = { init, emit, emitLater, firma };

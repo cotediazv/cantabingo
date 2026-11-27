@@ -55,7 +55,13 @@ window.onAviso = (() => {
   const fire = () => { clearTimeout(t); t = setTimeout(() => { fns.forEach((f) => { try { f(); } catch (e) { /* cada pantalla se cuida sola */ } }); relay(); }, 20); };
   if (window.__mon) window.addEventListener('message', (e) => { if (e.origin === location.origin && e.data === 'krb-aviso') fire(); });
   const sync = () => {
-    if (fns.size && !es && window.EventSource && !window.__mon) { try { es = new EventSource('/api/live'); es.onmessage = fire; } catch (e) { es = null; } }
+    if (fns.size && !es && window.EventSource && !window.__mon) {
+      try {
+        es = new EventSource('/api/live'); es.onmessage = fire;
+        // momentos de las luces (solo llegan con la sala de Kennedy): los usa el tablero que toca los sonidos
+        es.addEventListener('momento', (e) => { try { window.dispatchEvent(new CustomEvent('krb-momento', { detail: JSON.parse(e.data) })); } catch (err) { /* aviso dañado */ } });
+      } catch (e) { es = null; }
+    }
     else if (!fns.size && es) { es.close(); es = null; }
   };
   return (fn) => { fns.add(fn); sync(); return () => { fns.delete(fn); sync(); }; };
@@ -1624,6 +1630,19 @@ views.tablero = async () => {
   document.addEventListener('pointerdown', enableSound);
   document.addEventListener('keydown', enableSound);
   if (!mute) sfx.unlock(); // donde el navegador lo permite sin tocar (pantallas en modo quiosco), queda activo de inmediato
+  // Luces al ritmo del sonido (pedido de Code 4 y decisión de Cote, 27 nov: «las luces se disparan con el efecto de
+  // sonido»): el tablero que toca los sonidos manda cada momento directo al Dell desde el local, al mismo tiempo que le
+  // llega para sonar. Va con el mismo id del aviso de Render (el Dell usa el que llega primero) y con la firma de la
+  // Sala (nunca la clave de las luces). Solo si este tablero suena: si no, las luces siguen con el aviso de Render.
+  const sentMom = {};
+  const onMomento = (e) => {
+    const m = e.detail || {};
+    if (mute || window.__mon || !sfx.ready() || !m.url || !m.firma || sentMom[m.id]) return;
+    sentMom[m.id] = 1;
+    const more = Object.keys(m.extra || {}).map((k) => `&${encodeURIComponent(k)}=${encodeURIComponent(m.extra[k])}`).join('');
+    fetch(`${m.url}/api/momento?nombre=${encodeURIComponent(m.nombre)}&sala=kennedy${more}&id=${m.id}&t=${Date.now()}&desde=sonido&firma=${m.firma}`, { mode: 'no-cors', cache: 'no-store' }).catch(() => {});
+  };
+  window.addEventListener('krb-momento', onMomento);
   setTimeout(paintSound, 300);
   let again = false; // llegó un aviso mientras se armaba la pantalla: se vuelve a mirar al terminar
   const apply = async () => {
@@ -1667,7 +1686,7 @@ views.tablero = async () => {
   await apply();
   const timer = setInterval(apply, 2000);
   const offAviso = window.onAviso(apply);
-  return () => { clearInterval(timer); offAviso(); window.gcPer.over(''); if (typeof stop === 'function') stop(); joinQr(); document.body.classList.remove('full'); soundBtn.remove(); document.removeEventListener('pointerdown', enableSound); document.removeEventListener('keydown', enableSound); };
+  return () => { clearInterval(timer); offAviso(); window.gcPer.over(''); if (typeof stop === 'function') stop(); joinQr(); document.body.classList.remove('full'); soundBtn.remove(); window.removeEventListener('krb-momento', onMomento); document.removeEventListener('pointerdown', enableSound); document.removeEventListener('keydown', enableSound); };
 };
 
 // Tablero para una pantalla puesta de pie (girada 90° a la izquierda) que recibe la señal horizontal de siempre:

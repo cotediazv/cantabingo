@@ -819,6 +819,8 @@ let roscoRef = null; // El Rosko (wheel.js), una vez cargado
 // preguntar al instante. Si esta conexión falla, siguen preguntando cada pocos segundos como siempre.
 const avisoClients = new Set();
 const aviso = () => { for (const res of avisoClients) res.write('data: cambio\n\n'); };
+// Momento de las luces para el tablero de Kennedy (evento con nombre: las páginas que solo escuchan «cambio» no lo ven)
+const momentoLive = (m) => { const msg = `event: momento\ndata: ${JSON.stringify(m)}\n\n`; for (const res of avisoClients) res.write(msg); };
 app.get('/api/live', (req, res) => {
   res.set({ 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
   res.flushHeaders();
@@ -1044,7 +1046,7 @@ app.post('/api/emisor/reiniciar', requireAdmin, (_req, res) => {
   if (!process.env.RENDER_API_KEY || !process.env.EMISOR_CRON) return fail(res, 409, 'Falta poner RENDER_API_KEY y EMISOR_CRON en Render');
   emisor.latido = 0; emisorCheck(true); res.json({ ok: true });
 });
-require('./momentos.js').init({ app, db, aviso }); // momentos de los juegos para las luces (lista acordada con Code 4)
+require('./momentos.js').init({ app, db, aviso, momentoLive }); // momentos de los juegos para las luces (lista acordada con Code 4)
 // Lugar donde está cada concursante (pedido de Cote, 26 nov: «mostrar bajo el nombre del concursante en Kennedy en qué
 // lugar está»): el que eligió al entrar a la sala (en Kennedy, el local del mercado); vacío si el local no pide lugar
 const placeOf = (name) => {
