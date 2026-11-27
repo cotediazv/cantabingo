@@ -1836,9 +1836,13 @@ function ajustarKl(caja) {
   if (!caja) return;
   caja.querySelectorAll('.kl-song, .kl-name').forEach((el) => {
     el.style.fontSize = ''; el.classList.remove('kl-2l');
+    // se mide el ancho real del texto (el recuadro siempre mide lo mismo que su celda)
+    const rg = document.createRange(); rg.selectNodeContents(el);
+    const ancho = () => rg.getBoundingClientRect().width;
     let f = parseFloat(getComputedStyle(el).fontSize);
-    while (el.scrollWidth > el.clientWidth - 2 && f > 9) { f -= 0.5; el.style.fontSize = `${f}px`; }
-    if (el.scrollWidth > el.clientWidth + 1) el.classList.add('kl-2l');
+    const caja = () => el.getBoundingClientRect().width;
+    while (ancho() > caja() + 0.5 && f > 9) { f -= 0.5; el.style.fontSize = `${f}px`; }
+    if (ancho() > caja() + 0.5) el.classList.add('kl-2l');
   });
 }
 // ---------- Karaoke: panel del animador ----------
@@ -1879,7 +1883,7 @@ views.karaokectl = async (local) => {
     const n = k.list.length;
     // Sala light (Cote, 27 nov, con una foto de la app del equipo: «algo así, incluso más apretado»): una línea por persona,
     // canción – artista a la izquierda, el NOMBRE a la derecha y botones redondos chicos solo con su ícono
-    const fila = (p, i) => `<div class="kc-row kl ${i === 0 ? 'now' : ''}"><em>${i === 0 ? '🎤' : i + 1}</em><span class="kl-song">${esc(p.song)}${p.artist ? ` – ${esc(p.artist)}` : ''}</span><b class="kl-name">${esc(p.name)}</b>${k.edit && p.id ? `<div class="kc-act">
+    const fila = (p, i) => `<div class="kc-row kl ${i === 0 ? 'now' : ''}"><em>${i === 0 ? '🎤' : i + 1}</em><span class="kl-song">${esc(p.song)}${p.artist ? ` – ${esc(p.artist)}` : ''}</span><b class="kl-name">${esc(p.name)}${p.place ? ` <i class="kl-lugar">(${esc(p.place)})</i>` : ''}</b>${k.edit && p.id ? `<div class="kc-act">
         <button type="button" class="kc-up" data-kc="subir" data-id="${esc(p.id)}" ${i === 0 ? 'disabled' : ''} title="Subir" aria-label="Subir">▲</button><button type="button" class="kc-down" data-kc="bajar" data-id="${esc(p.id)}" ${i === n - 1 ? 'disabled' : ''} title="Bajar" aria-label="Bajar">▼</button><button type="button" class="kc-done" data-kc="cantado" data-id="${esc(p.id)}" title="Ya cantó" aria-label="Ya cantó">✓</button></div>` : ''}</div>`;
     if (light) $('#kc-list').innerHTML = n ? k.list.map(fila).join('') : '<p class="muted">Cuando alguien pida una canción, aparecerá aquí.</p>';
     else $('#kc-list').innerHTML = n ? k.list.map((p, i) => `<div class="kc-row ${i === 0 ? 'now' : ''}"><em>${i === 0 ? '🎤' : i + 1}</em><p><small>${i === 0 ? 'Ahora canta' : i === 1 ? 'Sigue' : ''}</small><b>${esc(p.name)}</b><span>${esc(p.song)}${p.artist ? ` · ${esc(p.artist)}` : ''}</span></p>${k.edit && p.id ? `<div class="kc-act">

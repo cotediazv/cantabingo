@@ -4058,3 +4058,6 @@ body:has(.kc-lpanel) #ctl-reload-fixed { display: none; }
 /* sin «…»: la letra se achica para caber (app.js, ajustarKl); si no alcanza, pasa a otra linea */
 .kc-row.kl .kl-song, .kc-row.kl .kl-name { text-overflow: clip; max-width: none; }
 .kc-row.kl .kl-2l { white-space: normal; overflow-wrap: anywhere; }
+/* el lugar donde esta la persona, al lado del nombre: chico, entre parentesis y en naranjo (pedido de Cote, 27 nov) */
+.kc-row.kl .kl-lugar { font-style: normal; font-size: .78em; font-weight: 600; color: #ff9a3c; text-transform: none; letter-spacing: 0; }
+.kc-row.kl .kl-name { padding-top: 2px; line-height: 1.35; }
