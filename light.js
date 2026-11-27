@@ -17,7 +17,7 @@ const NIGHT_STARTS = 6; // la noche cambia a las 6 AM, igual que el karaoke
 const DAYS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 const GLOSA_MS = 10 * 60e3; // la GLOSA se relee cada 10 minutos
 
-module.exports = function light({ app, db, save, requireAdmin, requireLocal = requireAdmin, fail, karaoke, insta, aviso = () => {}, salaDe = () => false, fondoDe = () => '', reloj = () => new Date() }) {
+module.exports = function light({ app, db, save, requireAdmin, requireLocal = requireAdmin, fail, karaoke, insta, aviso = () => {}, salaDe = () => false, fondoDe = () => '', reloj = () => new Date(), progShow = () => null }) {
   // Una sala light por local (Kennedy, Frida y Tobalaba pueden estar abiertas a la vez)
   db.lights ||= {};
   if (db.light) { db.lights[db.light.venue] = db.light; db.light = null; } // salas guardadas antes de este cambio
@@ -82,21 +82,32 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
   // (no se muestra) y entre comillas, la persona o el grupo que hace el tributo. Ej.: «GEORGE MICHAEL "RAFA DAMIÁN" (X)»
   // → «GEORGE MICHAEL (RAFA DAMIÁN)»; «PIANO MAN (X PROJECTS)» → «PIANO MAN». Se entrega con el artista entre paréntesis
   // porque así lo leen todas las pantallas y la página krbstage.cl (título arriba y «por <artista>»).
+  const up = (x) => clean(x, 160).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
   const showName = (t) => {
     const raw = clean(t, 160).replace(/\([^()]*\)/g, ' ');
     const q = raw.match(/["“”«»]\s*([^"“”«»]+?)\s*["“”«»]/);
     const by = q ? clean(q[1], 60) : '';
     let title = clean((q ? raw.replace(q[0], ' ') : raw).replace(/["“”«»]/g, ' ').replace(/^[\s\-–—,:·]+|[\s\-–—,:·]+$/g, ''), 100);
     // si el artista ya va escrito al final del título, no se repite (ej. «ESPECIAL BALADA ITALIANA MATIAS FAJARDO "MATIAS FAJARDO"»)
-    const up = (x) => clean(x, 160).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
     if (by && up(title).endsWith(` ${up(by)}`)) title = clean(title.slice(0, title.length - by.length).replace(/[\s\-–—,:·]+$/, ''), 100);
     return clean(title && by ? `${title} (${by})` : title || by, 120);
   };
   // Show de una fecha: en la cartelera el día se escribe como «SABADO 7» (vale el número del final)
-  const showOf = (data, n) => {
+  // «Tributo a» / «Doble de» (pedido de Cote, 27 nov: «Si sale, hay que decirlo»): la GLOSA guarda solo el nombre del
+  // show («BON JOVI (…)»); el tipo lo sabe Programación (`progShow`). Si ese día y local es un tributo o un doble y el
+  // nombre es el mismo que dice la GLOSA, se antepone; si la GLOSA ya lo dice o el show es otro, queda como está.
+  const conTipo = (venue, n, name) => {
+    if (!name || /\b(TRIBUTO|DOBLE)\b/.test(up(name))) return name;
+    let s = null;
+    try { s = progShow(venue, n); } catch (e) { s = null; }
+    if (!s || (s.tipo !== 'tributo' && s.tipo !== 'doble') || !clean(s.nombre, 80)) return name;
+    if (!up(name).startsWith(up(s.nombre))) return name;
+    return `${s.tipo === 'doble' ? 'DOBLE DE' : s.banda ? 'BANDA TRIBUTO A' : 'TRIBUTO A'} ${name}`;
+  };
+  const showOf = (data, n, venue) => {
     const t = tabFor(data, n.m);
     const row = t ? (t.cartelera || []).find((x) => Number((String(x.dia).match(/(\d+)\s*$/) || [])[1]) === n.d) : null;
-    return row ? showName(row.show) : '';
+    return row ? conTipo(venue, n, showName(row.show)) : '';
   };
   // Mes de la pestaña leída, ej. «NOVIEMBRE26 MASTER TOTAL» → 11
   const MONTHS = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
@@ -123,16 +134,16 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
     for (let i = 0; i < 45 && more < 6; i++) {
       const n = night(i);
       const hours = hoursOf(data, n.dow, n);
-      const show = showOf(data, n);
+      const show = showOf(data, n, venue);
       if (!hours.length && !show) continue;
       week.push({ day: DAYS[n.dow], date: n.d, month: n.m, today: i === 0, show, hours });
       if (i > 0) more++;
     }
     // Cartelera del mes (lo que queda desde hoy), para la pantalla vertical de la sala light
     const tm = tabFor(data, today.m);
-    const month = tm ? (tm.cartelera || []).map((r) => ({ day: clean(r.dia, 20), date: Number((String(r.dia).match(/(\d+)\s*$/) || [])[1]) || 0, show: showName(r.show) }))
+    const month = tm ? (tm.cartelera || []).map((r) => ({ day: clean(r.dia, 20), date: Number((String(r.dia).match(/(\d+)\s*$/) || [])[1]) || 0, show: showName(r.show) })).map((r) => ({ ...r, show: conTipo(venue, { y: today.y, m: today.m, d: r.date }, r.show) }))
       .filter((r) => r.date >= today.d && r.show).sort((a, b) => a.date - b.date) : [];
-    return { venue, name: VENUES[venue], show: showOf(data, today), blocks, current, next, week, month, at: g.at, error: g.error };
+    return { venue, name: VENUES[venue], show: showOf(data, today, venue), blocks, current, next, week, month, at: g.at, error: g.error };
   }
 
   // ---------- Estado ----------

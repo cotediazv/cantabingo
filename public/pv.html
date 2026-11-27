@@ -416,7 +416,7 @@
   function origin() { return PUB || (location.protocol + '//' + location.host); }
   function qrImg(url) { return '<img alt="Código QR" src="/api/qr?text=' + encodeURIComponent(url) + '">'; }
   function clock(ms) { var s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
-  function cap(t) { return String(t || '').toLowerCase().replace(/(^|[\s:(«"\-])([a-záéíóúñü])/g, function (m, a, b) { return a + b.toUpperCase(); }); }
+  function cap(t) { return String(t || '').toLowerCase().replace(/(^|[\s:(«"\-])([a-záéíóúñü])/g, function (m, a, b) { return a + b.toUpperCase(); }).replace(/\b(Tributo|Doble) (A|De) /g, function (m, a, b) { return a + ' ' + b.toLowerCase() + ' '; }); }
   var DAYS = { LUNES: 'Lunes', MARTES: 'Martes', MIERCOLES: 'Miércoles', 'MIÉRCOLES': 'Miércoles', JUEVES: 'Jueves', VIERNES: 'Viernes', SABADO: 'Sábado', 'SÁBADO': 'Sábado', DOMINGO: 'Domingo' };
   function day(d) { return DAYS[String(d || '').toUpperCase()] || String(d || ''); }
   function showHtml(t) {

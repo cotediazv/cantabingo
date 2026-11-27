@@ -59,3 +59,31 @@ test('nombre del show: sin lo de los paréntesis y con el artista de las comilla
   assert.deepEqual(c.month.map((m) => m.show), ['PIANO MAN', 'GEORGE MICHAEL (RAFA DAMIÁN)', 'ESPECIAL MÉXICO (LOS CHARROS)', 'ESPECIAL BALADA ITALIANA (MATIAS FAJARDO)']);
   assert.equal(c.week[1].show, 'GEORGE MICHAEL (RAFA DAMIÁN)');
 });
+
+// Cote, 27 nov: «Si sale, hay que decirlo»: si el show es un tributo o un doble, la cartelera dice «Tributo a…» o
+// «Doble de…». La GLOSA guarda solo el nombre; el tipo lo sabe Programación.
+test('cartelera: «Tributo a» y «Doble de» desde Programación', async () => {
+  const fs = require('fs'); const os = require('os'); const path = require('path');
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'prog-')), 'programacion.json');
+  fs.writeFileSync(file, JSON.stringify({ dias: {
+    '2026-11-28': { MK: { show: { tipo: 'tributo', nombre: 'Bon Jovi' } } },
+    '2026-12-03': { MK: { show: { tipo: 'otro', nombre: 'BINGO + DOBLE DE GEORGE MICHAEL' } } },
+    '2026-12-04': { MK: { show: { tipo: 'tributo', nombre: 'Queen' } } }, // la GLOSA dice otro show: no se toca
+    '2026-12-05': { MK: { show: { tipo: 'tributo', nombre: 'INXS', banda: true } } },
+    '2026-11-27': { FRIDA: { show: { tipo: 'doble', nombre: 'Luis Miguel' } } },
+  } }));
+  const DIC2 = { pestana: 'DICIEMBRE26 MASTER TOTAL', cartelera: [{ dia: 'JUEVES 3', show: 'BINGO + DOBLE DE GEORGE MICHAEL' }, { dia: 'VIERNES 4', show: 'PIANO MAN' }, { dia: 'SABADO 5', show: 'INXS (X)' }] };
+  const NOV2 = { pestana: 'NOVIEMBRE26 MASTER TOTAL', cartelera: [{ dia: 'VIERNES 27', show: 'LUIS MIGUEL "PEDRO" (P)' }, { dia: 'SABADO 28', show: 'BON JOVI (JUAN)' }] };
+  resp = { ...NOV2, horarios, meses: [NOV2, DIC2] };
+  const srv = await startServer({ env: { PROG_FILE: file, GLOSA_TEST_URL: `http://localhost:${mock.address().port}/glosa`, KRB_FECHA: '2026-11-27T15:00:00-03:00' } });
+  srvs.push(srv);
+  const k = await srv.ok('GET', '/api/light/cartelera?local=kennedy');
+  const de = (c, d) => c.week.find((x) => x.date === d).show;
+  assert.equal(de(k, 28), 'TRIBUTO A BON JOVI');
+  assert.equal(de(k, 3), 'BINGO + DOBLE DE GEORGE MICHAEL'); // ya lo dice: no se repite
+  assert.equal(de(k, 4), 'PIANO MAN');
+  assert.equal(de(k, 5), 'BANDA TRIBUTO A INXS');
+  assert.deepEqual(k.month.map((m) => m.show), ['LUIS MIGUEL (PEDRO)', 'TRIBUTO A BON JOVI']); // el 27 es de Frida, no de Kennedy
+  const f = await srv.ok('GET', '/api/light/cartelera?local=frida');
+  assert.equal(f.show, 'DOBLE DE LUIS MIGUEL (PEDRO)');
+});

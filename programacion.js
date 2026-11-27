@@ -894,6 +894,15 @@ module.exports = function programacion({ app, dir }) {
       save(); res.json({ ok: true, mes: `${y}-${pad(m)}`, shows: n });
     } catch (e) { fail(res, 502, `No se pudo leer la GLOSA: ${clean(e && e.message, 200)}`); }
   });
+
+  // Para la cartelera de la Sala (light.js): el tipo de show de una fecha y un local (pedido de Cote, 27 nov: que diga
+  // «Tributo a» o «Doble de»). Solo lectura.
+  return {
+    showDe(y, m, d, local) {
+      const s = celda(ymd(y, m, d), local).show;
+      return s ? { tipo: s.tipo, nombre: s.nombre || '', banda: Boolean(s.banda) } : null;
+    },
+  };
 };
 
 // Script para pegar en la GLOSA (archivo «Programacion» en Extensiones → Apps Script): apps-script/Programacion.gs,

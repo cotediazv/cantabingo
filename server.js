@@ -321,7 +321,7 @@ app.use((req, res, next) => {
   return next();
 });
 // Programación KRB (Code 3): plataforma aparte para la cartelera y los turnos (va antes de las páginas de la sala)
-require('./programacion.js')({ app, dir: path.dirname(DATA_FILE) });
+const prog = require('./programacion.js')({ app, dir: path.dirname(DATA_FILE) });
 // Sin caché: así cada celular recibe siempre la última versión publicada
 app.use(express.static(path.join(__dirname, 'public'), { setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache') }));
 // Enlace corto de la pantalla vertical de Kennedy (pedido de Cote: fácil de escribir con el control del decodificador;
@@ -1124,7 +1124,7 @@ const fondoAuto = () => {
     }
   }
 };
-lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta, aviso, salaDe, fondoDe, reloj: () => ahora() });
+lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta, aviso, salaDe, fondoDe, reloj: () => ahora(), progShow: (v, n) => prog.showDe(n.y, n.m, n.d, { kennedy: 'MK', frida: 'FRIDA', tobalaba: 'TOB' }[v]) });
 setTimeout(fondoAuto, 2000); setInterval(fondoAuto, 20e3);
 // «El último en pie», versión de prueba (pedido de Cote, 23 nov)
 require('./enpie.js')({ placeOf, roscoBusy: () => roscoLock('enpie'), app, db, save, requireAdmin, fail, setStage, festejo,
