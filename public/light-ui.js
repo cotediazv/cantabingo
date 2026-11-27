@@ -153,7 +153,9 @@
       ${d.hours.length ? `<span class="lg-hours">${d.hours.map((h) => `${esc(h.time)} ${esc(h.label)}`).join(' · ')}</span>` : ''}</div>`).join('');
   // El fondo del local a pantalla completa, 1280×720 en OBS, llenando hasta los bordes (pedido de Cote, 27 nov). El tamaño va
   // escrito en el mismo video: aunque OBS se quede con una hoja de estilos anterior, el video no queda de su tamaño natural.
-  const FONDO_CSS = 'position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;min-width:100%;min-height:100%;margin:0;padding:0;border:0;object-fit:cover;background:#000;z-index:0';
+  // Además se agranda un 3 % (recorta un poco los bordes) y detrás va negro: en OBS quedaba una franja delgada arriba y
+  // abajo por donde se veía la cámara (foto de Cote, 27 nov: «recortando si hace falta»).
+  const FONDO_CSS = 'position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;min-width:100%;min-height:100%;margin:0;padding:0;border:0;object-fit:cover;background:#000;z-index:0;transform:scale(1.03);transform-origin:50% 50%';
   views['light-gc'] = async (venue) => {
     document.body.classList.add('obs', 'gc-screen');
     app.innerHTML = '<div id="lg"></div>';
@@ -173,10 +175,10 @@
       // el video de la pantalla horizontal del local; a las 19:00 vuelve solo al GC (el servidor decide la hora)
       if (st.fondo) {
         const k = `fondo:${st.fondo}`;
-        if (shown !== k) { shown = k; stopSub(); document.body.classList.remove('gc-screen'); document.body.classList.add('lg-fondo-on'); app.innerHTML = `<video class="lg-fondo" src="${esc(st.fondo)}" style="${FONDO_CSS}" autoplay muted loop playsinline></video>`; }
+        if (shown !== k) { shown = k; stopSub(); document.body.classList.remove('gc-screen'); document.body.classList.add('lg-fondo-on'); document.documentElement.style.background = document.body.style.background = '#000'; app.innerHTML = `<video class="lg-fondo" src="${esc(st.fondo)}" style="${FONDO_CSS}" autoplay muted loop playsinline></video>`; }
         return;
       }
-      if (shown.startsWith('fondo:')) { shown = ''; document.body.classList.remove('lg-fondo-on'); app.innerHTML = '<div id="lg"></div>'; }
+      if (shown.startsWith('fondo:')) { shown = ''; document.body.classList.remove('lg-fondo-on'); document.documentElement.style.background = document.body.style.background = ''; app.innerHTML = '<div id="lg"></div>'; }
       if (st.sala) {
         if (shown !== 'sala') { shown = 'sala'; stopSub(); document.body.classList.remove('gc-screen'); app.innerHTML = ''; sub = await views.escena(); if (!alive) stopSub(); }
         return;
@@ -244,7 +246,7 @@
     await tick();
     const timer = setInterval(tick, 2500);
     const offAviso = window.onAviso(tick); // el cambio de GC llega al instante
-    return () => { alive = false; clearInterval(timer); offAviso(); stopSub(); document.body.classList.remove('obs', 'gc-screen', 'lg-fondo-on'); };
+    return () => { alive = false; clearInterval(timer); offAviso(); stopSub(); document.body.classList.remove('obs', 'gc-screen', 'lg-fondo-on'); document.documentElement.style.background = document.body.style.background = ''; };
   };
 
   // ---------- Celular del público ----------
