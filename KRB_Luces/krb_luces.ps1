@@ -701,6 +701,18 @@ namespace KRB {
           // el aviso de un juego tambien puede venir directo desde un aparato del local con la sesion en la direccion (&tk=),
           // sin pasar por Render: llega antes
           if (!ok && ruta == "/api/momento") { string tq = Arg(query, "tk"); lock (SL) { ok = tq != null && sesiones.Contains(tq); } }
+          // o con firma (Code 1, 27 nov): el tablero del local es una pagina publica, asi que no lleva la sesion sino una firma
+          // que sirve solo para ese aviso: HMAC-SHA256(clave, "<id>|<nombre>") en hexadecimal, los 32 primeros caracteres
+          if (!ok && ruta == "/api/momento" && Clave != "") {
+            string fi = Arg(query, "firma"), idf = Arg(query, "id"), nf = Arg(query, "nombre");
+            if (fi != null && idf != null && nf != null) {
+              using (System.Security.Cryptography.HMACSHA256 hm = new System.Security.Cryptography.HMACSHA256(Encoding.UTF8.GetBytes(Clave))) {
+                byte[] hb = hm.ComputeHash(Encoding.UTF8.GetBytes(idf + "|" + nf)); StringBuilder hx = new StringBuilder();
+                foreach (byte bx in hb) hx.Append(bx.ToString("x2"));
+                ok = IgualSeguro(fi.ToLower(), hx.ToString().Substring(0, 32));
+              }
+            }
+          }
           if (!ok && autorizacion != null && autorizacion.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
             ok = IgualSeguro(autorizacion.Substring(7).Trim(), Clave);
           if (!ok && ruta != "/" && ruta != "/index.html" && ruta != "/dj") {
@@ -776,8 +788,13 @@ namespace KRB {
         }
         // El mismo aviso puede llegar dos veces (desde Render y directo desde el local, con el mismo id): vale el primero
         string idAviso = Arg(query, "id");
-        if (idAviso != null) { lock (ML) { if (avisosVistos.Contains(idAviso)) { Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":true,\"repetido\":true}")); return; }
-          avisosVistos.Add(idAviso); if (avisosVistos.Count > 200) avisosVistos.RemoveAt(0); } }
+        // se recuerdan solo 30 s (la Sala vuelve a contar desde 1 cada vez que se reinicia)
+        if (idAviso != null) { string claveAviso = idAviso + "|" + (Arg(query, "nombre") ?? ""); DateTime ahoraA = DateTime.UtcNow;
+          lock (ML) {
+            List<string> viejos = new List<string>(); foreach (KeyValuePair<string, DateTime> kv in avisosVistos) if ((ahoraA - kv.Value).TotalSeconds > 30) viejos.Add(kv.Key);
+            foreach (string kx in viejos) avisosVistos.Remove(kx);
+            if (avisosVistos.ContainsKey(claveAviso)) { Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"ok\":true,\"repetido\":true}")); return; }
+            avisosVistos[claveAviso] = ahoraA; } }
         // Cuanto tardo en llegar (si el que avisa manda su hora en milisegundos, &t=): queda en el registro de la noche
         double tEnv = Num(Arg(query, "t"), 0);
         if (tEnv > 0) { double ms = (DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds - tEnv;
@@ -916,7 +933,7 @@ namespace KRB {
       lock (ML) { momentos = d; }
     }
     static int ContarMomentos() { lock (ML) { return momentos.Count; } }
-    static List<string> avisosVistos = new List<string>();
+    static Dictionary<string, DateTime> avisosVistos = new Dictionary<string, DateTime>();
     static bool EjecutarMomento(string nombre) {
       List<string> acc;
       lock (ML) { if (!momentos.TryGetValue(nombre, out acc)) return false; }
