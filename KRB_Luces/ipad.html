@@ -3272,6 +3272,9 @@ async function entradaGuardada(){
   const linea = /l[ií]nea|line/i;
   try { const ins = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput');
     const deLinea = ins.find(x => linea.test(x.label));
+    // Estacion de ritmo (Cote, 27 nov: «la entrada de linea debe estar activada cuando este disponible, siempre»): si el
+    // computador tiene entrada de linea, se usa esa, aunque alguien haya elegido otra a mano
+    if (ESTACION && deLinea) return deLinea.deviceId;
     if (!g.manual && deLinea && (!g.nombre || g.nombre === 'linea')) return deLinea.deviceId;
     if (!g.id && !g.nombre) return '';
     const n = (g.nombre || '').toLowerCase();
@@ -3546,6 +3549,8 @@ function iniciarEstacion(){
     catch(e){ $('djMic').classList.remove('act'); $('djAviso').textContent = 'La estación no pudo abrir la entrada de audio (' + (e.name || e.message) + '). Reintenta en 15 s.'; }
   };
   prender(); setTimeout(prender, 3000); setInterval(prender, 15000);
+  // al enchufar o desenchufar una entrada de audio (o si Windows la vuelve a crear), se revisa al tiro, sin esperar 15 s
+  try { navigator.mediaDevices.addEventListener('devicechange', () => { setTimeout(prender, 800); listarEntradas(); }); } catch(e){}
   // la pagina completa se vuelve a cargar una vez al dia (por si el navegador acumula algo)
   // (solo si el Dell responde, para no quedar en una pagina de error)
   setInterval(async () => { if (performance.now() < 24 * 3600 * 1000) return;
