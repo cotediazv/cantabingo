@@ -85,6 +85,7 @@
       // Los botones del GC lo mas arriba posible (Cote, 27 nov): sin el subtitulo «En pantalla (GC)» (los botones ya dicen GC)
       top.innerHTML = `<h1 class="lp-title">${esc(st.title)}</h1>
         ${st.stage === 'fondo' && !st.sala ? `<p class="lp-sala">🎬 <b>${{ kennedy: 'Fondo Kennedy', frida: 'Fondo Frida', tobalaba: 'Fondo Tobalaba' }[v] || 'Fondo'} en el GC de OBS.</b> Se pone solo a las 19:00 y a la 01:00. Para pasar al GC, toca otro botón.</p>` : ''}
+        ${st.horasRespaldo ? '<p class="lp-sala">🕒 <b>La GLOSA no trae horarios de este local:</b> se usan las horas del mes anterior (cartelera de noviembre). Cuando la GLOSA vuelva a traer horarios, se usan esos solos.</p>' : ''}
         ${st.salaHoy ? `<p class="lp-sala">🎮 <b>Hoy hay sala de juegos en este local.</b> ${st.sala ? 'Ahora el GC muestra la sala de juegos. Toca cualquier botón para poner ese GC.' : 'Ahora el GC muestra el botón que tocaste.'} Cuando el animador cambie de juego, el GC vuelve solo a la sala de juegos.</p>` : ''}
         <div class="lp-stages">${st.salaHoy ? `<button type="button" data-st="sala" class="${st.sala ? 'on' : ''}"><span>🎮</span>SALA DE JUEGOS</button>` : ''}${stagesOf(v).map(([k, i, t]) => `<button type="button" data-st="${k}" class="${st.stage === k && !st.sala ? 'on' : ''}"><span>${i}</span>${t}</button>`).join('')}</div>
 `;

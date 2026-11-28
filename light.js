@@ -17,7 +17,7 @@ const NIGHT_STARTS = 6; // la noche cambia a las 6 AM, igual que el karaoke
 const DAYS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 const GLOSA_MS = 10 * 60e3; // la GLOSA se relee cada 10 minutos
 
-module.exports = function light({ app, db, save, requireAdmin, requireLocal = requireAdmin, fail, karaoke, insta, aviso = () => {}, salaDe = () => false, salaManda = salaDe, fondoDe = () => '', fondoVid = () => '', alCambiar = () => {}, reloj = () => new Date(), progShow = () => null }) {
+module.exports = function light({ horasRespaldo = () => [], app, db, save, requireAdmin, requireLocal = requireAdmin, fail, karaoke, insta, aviso = () => {}, salaDe = () => false, salaManda = salaDe, fondoDe = () => '', fondoVid = () => '', alCambiar = () => {}, reloj = () => new Date(), progShow = () => null }) {
   // Una sala light por local (Kennedy, Frida y Tobalaba pueden estar abiertas a la vez)
   db.lights ||= {};
   if (db.light) { db.lights[db.light.venue] = db.light; db.light = null; } // salas guardadas antes de este cambio
@@ -114,16 +114,27 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
   const monthOf = (data) => { const t = plain(data.pestana || ''); const i = MONTHS.findIndex((m) => t.startsWith(m)); return i + 1; };
   // Horarios de un día de la semana; con `n` (la fecha), los de la pestaña de su mes si llegó con sus propios horarios
   // (días del mes siguiente en la cartelera de la semana, pedido de Cote, 27 nov)
-  const hoursOf = (data, dow, n) => ((n && (tabFor(data, n.m) || {}).horarios) || (data && Array.isArray(data.horarios) ? data.horarios : []))
-    .filter((x) => plain(x.dia).replace(/S$/, '') === DAYS[dow].replace(/S$/, ''))
-    .map((x) => ({ time: clean(x.hora, 10), label: clean(x.actividad, 60) }))
-    .filter((x) => x.time && x.label);
+  const fromGlosa = (data, n) => {
+    const t = n && (tabFor(data, n.m) || {}).horarios; // los de la pestaña de su mes, si trae alguno
+    return Array.isArray(t) && t.length ? t : (data && Array.isArray(data.horarios) ? data.horarios : []);
+  };
+  // Horas del mes anterior (orden 9 de Code 0, pedido de Cote, 28 nov: Frida y Tobalaba quedaron sin horarios en la GLOSA;
+  // «Usar las mismas horas del mes anterior»): si el GC Show entrega los horarios de esa pestaña TOTALMENTE vacíos, se usan
+  // las de la cartelera pegada de noviembre (agenda.js); apenas la GLOSA vuelva a traer horarios, mandan los de la GLOSA
+  const sinHorarios = (data, n) => !!data && !fromGlosa(data, n).length;
+  const hoursOf = (data, dow, n, venue) => {
+    if (venue && sinHorarios(data, n)) { try { return horasRespaldo(venue, dow) || []; } catch (e) { return []; } }
+    return fromGlosa(data, n)
+      .filter((x) => plain(x.dia).replace(/S$/, '') === DAYS[dow].replace(/S$/, ''))
+      .map((x) => ({ time: clean(x.hora, 10), label: clean(x.actividad, 60) }))
+      .filter((x) => x.time && x.label);
+  };
   // Lo que ven pantallas y celulares: show de hoy, lo que viene esta noche y la semana
   async function cartelera(venue) {
     const g = await readGlosa(venue);
     const data = g.data;
     const today = night(0);
-    const blocks = hoursOf(data, today.dow);
+    const blocks = hoursOf(data, today.dow, null, venue);
     const nowMin = minutesNow();
     const next = blocks.find((b) => { const t = toMin(b.time); return t != null && t > nowMin; }) || null;
     const current = [...blocks].reverse().find((b) => { const t = toMin(b.time); return t != null && t <= nowMin; }) || null;
@@ -133,7 +144,7 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
     let more = 0;
     for (let i = 0; i < 45 && more < 6; i++) {
       const n = night(i);
-      const hours = hoursOf(data, n.dow, n);
+      const hours = hoursOf(data, n.dow, n, venue);
       const show = showOf(data, n, venue);
       if (!hours.length && !show) continue;
       week.push({ day: DAYS[n.dow], date: n.d, month: n.m, today: i === 0, show, hours });
@@ -143,16 +154,17 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
     const tm = tabFor(data, today.m);
     const month = tm ? (tm.cartelera || []).map((r) => ({ day: clean(r.dia, 20), date: Number((String(r.dia).match(/(\d+)\s*$/) || [])[1]) || 0, show: showName(r.show) })).map((r) => ({ ...r, show: conTipo(venue, { y: today.y, m: today.m, d: r.date }, r.show) }))
       .filter((r) => r.date >= today.d && r.show).sort((a, b) => a.date - b.date) : [];
-    return { venue, name: VENUES[venue], show: showOf(data, today, venue), blocks, current, next, week, month, at: g.at, error: g.error };
+    return { venue, name: VENUES[venue], show: showOf(data, today, venue), blocks, current, next, week, month, at: g.at, error: g.error, horasRespaldo: sinHorarios(data, null) };
   }
 
   // ---------- Estado ----------
+  const respaldoHoras = (v) => { const d = (glosa[v] || {}).data; return sinHorarios(d, null); };
   const pub = (v) => {
     const l = db.lights[v];
     // fondo: con el botón «FONDO KENNEDY», el video horizontal del local en lugar del GC (pedido de Cote, 27 nov)
     // sala: hoy hay sala de juegos (no simulada) de este local; el GC Light muestra el GC de la sala de juegos toda la
     // noche, enganchado a su QR (pedido de Cote, 27 nov: «tener que cambiarlo en OBS es una lata»)
-    return l ? { open: true, id: l.id, venue: v, name: VENUES[v], title: `Sala light · ${VENUES[v]}`, stage: l.stage, text: l.text || '', video: !!l.video, players: Object.keys(l.players).length, sala: !!salaManda(v), salaHoy: !!salaDe(v), fondo: fondoDe(v), fondoVideo: fondoVid(v) } : { open: false, venue: v, name: VENUES[v], sala: !!salaManda(v), salaHoy: !!salaDe(v), fondo: fondoDe(v) };
+    return l ? { open: true, id: l.id, venue: v, name: VENUES[v], title: `Sala light · ${VENUES[v]}`, stage: l.stage, text: l.text || '', video: !!l.video, players: Object.keys(l.players).length, sala: !!salaManda(v), salaHoy: !!salaDe(v), fondo: fondoDe(v), fondoVideo: fondoVid(v), horasRespaldo: respaldoHoras(v) } : { open: false, venue: v, name: VENUES[v], sala: !!salaManda(v), salaHoy: !!salaDe(v), fondo: fondoDe(v) };
   };
   // Sin ?local= devuelve la lista de las salas light abiertas (y, por compatibilidad, la primera)
   app.get('/api/light', (req, res) => {

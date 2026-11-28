@@ -145,5 +145,10 @@ module.exports = function agenda({ app, db, save, requireAdmin, fail, currentVen
     res.json({ ...state(), month: db.agenda.month, text: db.agenda.text, venues: VENUES });
   });
 
-  return { state };
+  // Horas de respaldo para la sala light (orden 9 de Code 0, pedido de Cote, 28 nov: «Usar las mismas horas del mes
+  // anterior»): las de la cartelera pegada de ese local para un día de la semana (0 = domingo), sin el «Cierre»
+  const horasDe = (venue, dow) => (parse(db.agenda.text[venue]).blocks[dow] || [])
+    .filter((b) => !/^cierre\b/i.test(b.label))
+    .map((b) => ({ time: b.time, label: b.label.toUpperCase() }));
+  return { state, horasDe };
 };

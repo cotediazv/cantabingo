@@ -1188,7 +1188,8 @@ const fondoAuto = () => {
     }
   }
 };
-lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta, aviso, salaDe, salaManda, fondoDe, fondoVid, alCambiar: () => { for (const s of Object.values(db.sessions)) broadcast(s); }, reloj: () => ahora(), progShow: (v, n) => prog.showDe(n.y, n.m, n.d, { kennedy: 'MK', frida: 'FRIDA', tobalaba: 'TOB' }[v]) });
+let agendaApi = null; // horas de respaldo de la sala light (la cartelera pegada), orden 9 de Code 0, 28 nov
+lightApi = require('./light.js')({ horasRespaldo: (v, dow) => (agendaApi ? agendaApi.horasDe(v, dow) : []), app, db, save, requireAdmin, requireLocal, fail, karaoke, insta, aviso, salaDe, salaManda, fondoDe, fondoVid, alCambiar: () => { for (const s of Object.values(db.sessions)) broadcast(s); }, reloj: () => ahora(), progShow: (v, n) => prog.showDe(n.y, n.m, n.d, { kennedy: 'MK', frida: 'FRIDA', tobalaba: 'TOB' }[v]) });
 setTimeout(fondoAuto, 2000); setInterval(fondoAuto, 20e3);
 // «El último en pie», versión de prueba (pedido de Cote, 23 nov)
 require('./enpie.js')({ placeOf, roscoBusy: () => roscoLock('enpie'), app, db, save, requireAdmin, fail, setStage, festejo,
@@ -1256,7 +1257,7 @@ app.get('/api/consola', requireAdmin, async (_req, res) => {
   res.json({ locales: out, at: Date.now() });
 });
 // Programación del local del día: el de la sala abierta o, si no hay, el elegido en la sección Karaoke
-require('./agenda.js')({ app, db, save, requireAdmin, fail, currentVenue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
+agendaApi = require('./agenda.js')({ app, db, save, requireAdmin, fail, currentVenue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
 
 // Sorteo del siguiente juego (pedido de Cote): la sala parte en Juegos, sin bingo (21 nov), y se sortea entre todos los juegos
 // (Bingo, El Rosko, El Festival y El objeto más extraño; el karaoke no es un juego), el bingo incluido desde el primer
