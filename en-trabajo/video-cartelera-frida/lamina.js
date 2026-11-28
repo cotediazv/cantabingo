@@ -1,0 +1,20 @@
+// Lámina de cartelera de Frida sobre el cuadro original del video: tapa los textos viejos y escribe los nuevos.
+const { chromium } = require('playwright'); const fs = require('fs'); const path = require('path');
+const LAYOUT = { // filas (y del bloque) para cada cuadro base
+  3: { base: 'base3.png', rows: [[340, 530], [580, 770], [815, 1005]] },
+  2: { base: 'base2.png', rows: [[345, 600], [655, 905]] } };
+const [,, out, json] = process.argv; const filas = JSON.parse(json);
+const L = LAYOUT[filas.length];
+const img = 'data:image/png;base64,' + fs.readFileSync(path.join(path.dirname(out), L.base)).toString('base64');
+const html = `<!doctype html><html><head><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Besley:wght@800;900&display=swap">
+<style>*{margin:0;padding:0;box-sizing:border-box}body{width:1920px;height:1080px;position:relative;background:url(${img}) 0 0/1920px 1080px;font-family:Besley,serif}
+.m{position:absolute;background:#020202}.d{position:absolute;text-align:center;color:#f3eee6;line-height:1}
+.d small{display:block;font-weight:800;letter-spacing:.01em}.d b{display:block;color:#e8247c;font-weight:900}
+.n{position:absolute;color:#f3eee6;line-height:1;white-space:nowrap}.n small{display:block;font-weight:800}.n b{display:block;font-weight:900;transform-origin:0 50%}</style></head><body>
+${filas.map((f, i) => { const [y0, y1] = L.rows[i]; const h = y1 - y0; const big = filas.length === 3 ? 130 : 170; const sm = filas.length === 3 ? 50 : 58;
+  return `
+  <div class="d" style="left:290px;width:300px;top:${y0 + 6}px"><small style="font-size:${sm}px">${f.dia}</small><b style="font-size:${big}px;margin-top:${filas.length===3?2:6}px">${f.num}</b></div>
+  <div class="n" style="left:680px;top:${y0 + 6}px;width:1060px">${f.antes ? `<small style="font-size:${sm}px">${f.antes}</small>` : ''}<b class="fit" style="font-size:${big}px;margin-top:${f.antes ? (filas.length===3?2:6) : (filas.length===3?30:40)}px">${f.nom}</b></div>`; }).join('')}
+<script>document.fonts.ready.then(()=>{document.querySelectorAll('.fit').forEach(b=>{const w=b.scrollWidth, max=1060; if(w>max) b.style.transform='scaleX('+(max/w)+')';});document.body.dataset.ok=1})</script></body></html>`;
+(async () => { const b = await chromium.launch(fs.existsSync('/opt/pw-browsers/chromium') ? { executablePath: '/opt/pw-browsers/chromium' } : {}); const p = await b.newPage({ viewport: { width: 1920, height: 1080 } });
+  await p.setContent(html, { waitUntil: 'networkidle' }); await p.waitForSelector('body[data-ok]'); await p.screenshot({ path: out }); await b.close(); })();
