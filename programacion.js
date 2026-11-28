@@ -741,6 +741,23 @@ module.exports = function programacion({ app, dir }) {
     for (const l of LOCALES) if (typeof b[l] === 'string') P.horarios[l] = b[l].slice(0, 2000).replace(/\r/g, '');
     save(); res.json({ ok: true, horarios: P.horarios });
   });
+  // Cartelera de solo lectura (orden de Code 0, 28 nov): para que Code 2 haga los flyers sin pedirle a Cote que copie.
+  // Pública y solo con lo que ya sale en la cartelera: fecha, local, show, artista y horarios. Nunca montos, personas
+  // ni la cuenta a la que se paga.
+  app.get('/api/prog/cartelera', (req, res) => {
+    const { y, m } = mesDe(req.query.m);
+    const locales = LOCALES.map((l) => ({
+      local: l, nombre: NOMBRE_LOCAL[l], instagram: INSTAGRAM[l], horarios: String(P.horarios[l] || '').trim(),
+      dias: fechasMes(y, m).filter(({ fecha }) => abierto(fecha, l) && !showVacio(celda(fecha, l).show)).map(({ fecha }) => {
+        const sh = celda(fecha, l).show;
+        return { fecha, dia: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][parse(fecha).wd], tipo: TIPOS[sh.tipo] || sh.tipo || '', show: clean(sh.nombre, 120), artista: clean(sh.artista, 120), cartelera: showCartelera(sh, l) };
+      }),
+    }));
+    const texto = req.query.formato === 'texto';
+    res.set('Access-Control-Allow-Origin', '*').set('Cache-Control', 'no-cache');
+    if (texto) return res.type('text/plain; charset=utf-8').send(archivos(y, m).cartelera);
+    res.json({ mes: `${y}-${pad(m)}`, nombre: `${titulo(MESES[m - 1])} ${y}`, locales });
+  });
   // Respaldo (pedido de Cote por Code 0, 28 nov): todos los datos de la plataforma en un archivo para guardar aparte
   app.get('/api/prog/respaldo', auth, (_req, res) => {
     const f = new Date().toISOString().slice(0, 10);
