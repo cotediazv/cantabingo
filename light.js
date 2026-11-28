@@ -104,10 +104,21 @@ module.exports = function light({ horasRespaldo = () => [], app, db, save, requi
     if (!up(name).startsWith(up(s.nombre))) return name;
     return `${s.tipo === 'doble' ? 'DOBLE DE' : s.banda ? 'BANDA TRIBUTO A' : 'TRIBUTO A'} ${name}`;
   };
+  // «Noche de juegos» y «Tarde de juegos» (pedido de Cote, 28 nov, por Code 0: «antes hacíamos bingo. Pero ahora cambiémoslo
+  // por noche de juegos»; Tobalaba viernes también; «los domingos de Frida se llaman Tarde de juegos»; «quiero que eso también
+  // cambie en los GC, en todo»): en la cartelera, el show y los horarios, lo que diga «Bingo», «El Bingo de…» o «Los Juegos
+  // de…» (venga de la GLOSA o de los horarios de respaldo) se muestra como NOCHE DE JUEGOS, o TARDE DE JUEGOS los domingos de
+  // Frida. El nombre de la sala de juegos y los títulos dentro del bingo no cambian.
+  const JUEGO_RE = /^(?:EL\s+)?BINGO(?:\s+DE\s+.+)?$|^LOS\s+JUEGOS\s+DE\s+.+$/;
+  const conJuegos = (venue, dow, txt) => {
+    if (!txt) return txt;
+    const nombre = venue === 'frida' && dow === 0 ? 'TARDE DE JUEGOS' : 'NOCHE DE JUEGOS';
+    return String(txt).split(/\s*\+\s*/).map((p) => (JUEGO_RE.test(up(p)) ? nombre : p)).join(' + ');
+  };
   const showOf = (data, n, venue) => {
     const t = tabFor(data, n.m);
     const row = t ? (t.cartelera || []).find((x) => Number((String(x.dia).match(/(\d+)\s*$/) || [])[1]) === n.d) : null;
-    return row ? conTipo(venue, n, showName(row.show)) : '';
+    return row ? conJuegos(venue, n.dow, conTipo(venue, n, showName(row.show))) : '';
   };
   // Mes de la pestaña leída, ej. «NOVIEMBRE26 MASTER TOTAL» → 11
   const MONTHS = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
@@ -123,11 +134,15 @@ module.exports = function light({ horasRespaldo = () => [], app, db, save, requi
   // las de la cartelera pegada de noviembre (agenda.js); apenas la GLOSA vuelva a traer horarios, mandan los de la GLOSA
   const sinHorarios = (data, n) => !!data && !fromGlosa(data, n).length;
   const hoursOf = (data, dow, n, venue) => {
-    if (venue && sinHorarios(data, n)) { try { return horasRespaldo(venue, dow) || []; } catch (e) { return []; } }
-    return fromGlosa(data, n)
-      .filter((x) => plain(x.dia).replace(/S$/, '') === DAYS[dow].replace(/S$/, ''))
-      .map((x) => ({ time: clean(x.hora, 10), label: clean(x.actividad, 60) }))
-      .filter((x) => x.time && x.label);
+    let list;
+    if (venue && sinHorarios(data, n)) { try { list = horasRespaldo(venue, dow) || []; } catch (e) { list = []; } }
+    else {
+      list = fromGlosa(data, n)
+        .filter((x) => plain(x.dia).replace(/S$/, '') === DAYS[dow].replace(/S$/, ''))
+        .map((x) => ({ time: clean(x.hora, 10), label: clean(x.actividad, 60) }))
+        .filter((x) => x.time && x.label);
+    }
+    return list.map((x) => ({ ...x, label: conJuegos(venue, dow, x.label) })); // «Noche/Tarde de juegos» (Cote, 28 nov)
   };
   // Lo que ven pantallas y celulares: show de hoy, lo que viene esta noche y la semana
   async function cartelera(venue) {
@@ -152,7 +167,7 @@ module.exports = function light({ horasRespaldo = () => [], app, db, save, requi
     }
     // Cartelera del mes (lo que queda desde hoy), para la pantalla vertical de la sala light
     const tm = tabFor(data, today.m);
-    const month = tm ? (tm.cartelera || []).map((r) => ({ day: clean(r.dia, 20), date: Number((String(r.dia).match(/(\d+)\s*$/) || [])[1]) || 0, show: showName(r.show) })).map((r) => ({ ...r, show: conTipo(venue, { y: today.y, m: today.m, d: r.date }, r.show) }))
+    const month = tm ? (tm.cartelera || []).map((r) => ({ day: clean(r.dia, 20), date: Number((String(r.dia).match(/(\d+)\s*$/) || [])[1]) || 0, show: showName(r.show) })).map((r) => ({ ...r, show: conJuegos(venue, new Date(Date.UTC(today.y, today.m - 1, r.date || 1)).getUTCDay(), conTipo(venue, { y: today.y, m: today.m, d: r.date }, r.show)) }))
       .filter((r) => r.date >= today.d && r.show).sort((a, b) => a.date - b.date) : [];
     return { venue, name: VENUES[venue], show: showOf(data, today, venue), blocks, current, next, week, month, at: g.at, error: g.error, horasRespaldo: sinHorarios(data, null) };
   }
