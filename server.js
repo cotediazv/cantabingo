@@ -899,20 +899,25 @@ const cortinaJuego = () => { const s = Object.values(db.sessions)[0]; if (s) cap
 // Necesita en Render RENDER_API_KEY (clave de la API de Render; nunca en el repositorio) y EMISOR_CRON (el id del Cron
 // Job, crn-…). El emisor se apaga solo tras 10 minutos sin juego.
 const emisor = { latido: 0, pedido: 0, error: '' };
+// Solo el emisor puede avisar que corre, mandar su foto o las imágenes del plan B (orden de Code 0, 28 nov: «que rechace por
+// defecto»): con EMISOR_CLAVE puesta en Render, en el servicio y en el Cron Job, con el mismo valor (nunca en el
+// repositorio). Sin ella, el emisor queda apagado: la Sala no lo arranca y rechaza sus avisos.
+const emisorClave = () => String(process.env.EMISOR_CLAVE || '');
+const emisorAuth = (req) => {
+  const k = emisorClave(); const v = String(req.get('x-emisor') || '');
+  if (!k || v.length !== k.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(v), Buffer.from(k));
+};
 const BOOT_AT = Date.now(); let emisorBootDone = false;
 app.post('/api/emisor/latido', (req, res) => {
+  if (!emisorAuth(req)) return res.status(403).json({ error: 'No autorizado' });
   if (String((req.body || {}).pantalla || '') !== 'kennedy') return res.json({ ok: true });
   emisor.latido = Date.now();
   // Tras cada publicación (la Sala recién arrancada), el emisor que ya venía corriendo se reinicia una vez: su página pudo
   // recargarse mientras la Sala no respondía y quedar en algo que no es la pantalla vertical (26 nov: transmitió el ingreso
   // del moderador). Solo en los primeros 3 minutos tras arrancar y una sola vez (el turno nuevo ya no se reinicia)
   if (!emisorBootDone && Date.now() - BOOT_AT < 180000 && process.env.RENDER_API_KEY && process.env.EMISOR_CRON) { emisorBootDone = true; setTimeout(() => { emisor.latido = 0; emisorCheck(true); }, 1000); }
-  // la marca para mandar las imágenes del plan B (si no hay EMISOR_CLAVE): una nueva cada vez que parte un turno del emisor,
-  // y se entrega una sola vez, en el primer aviso de ese turno
-  const run = String((req.body || {}).run || '').slice(0, 40);
-  let marca;
-  if (!process.env.EMISOR_CLAVE && run && run !== cuadroRun) { cuadroRun = run; cuadroMarca = crypto.randomBytes(16).toString('hex'); marca = cuadroMarca; }
-  res.json({ ok: true, marca });
+  res.json({ ok: true });
 });
 // Panel del DJ de las luces de Kennedy dentro del karaoke de la sala light (pedido de Cote, 25 nov, por Claude 1 y Code 4:
 // «que se pueda cambiar la pestaña… y que se transforme en la página que ve el DJ para mover las luces… todo en un solo
@@ -1009,6 +1014,7 @@ app.post('/api/deco/recargar', requireAdmin, (req, res) => {
 // abrió y si la captura sale negra). La manda el emisor cada minuto; solo en memoria, solo la última.
 let emisorFoto = null;
 app.post('/api/emisor/foto', express.raw({ type: 'image/jpeg', limit: '700kb' }), (req, res) => {
+  if (!emisorAuth(req)) return res.status(403).json({ error: 'No autorizado' });
   if (!Buffer.isBuffer(req.body) || req.body.length < 100) return res.json({ ok: false });
   emisorFoto = { img: req.body, at: Date.now(), luz: Number(req.get('x-luz')), cap: (() => { const c = String(req.get('x-cap') || ''); try { return decodeURIComponent(c).slice(0, 300); } catch (e) { return c.slice(0, 300); } })() }; // con lo que ve el navegador del emisor (26 nov)
   res.json({ ok: true });
@@ -1021,13 +1027,11 @@ app.get('/api/emisor/foto', requireAdmin, (_req, res) => {
 // funcionar… otro tipo de transmisión, otro formato, algo más antiguo»): además de la transmisión en vivo (WebRTC), el
 // emisor manda una imagen por segundo de la misma página; la pantalla liviana (pv.html) la muestra cuando su navegador no
 // tiene WebRTC, cuando la transmisión no llega o cuando está puesto el plan B en /emisor. Solo en memoria, solo la última.
-// Las imágenes solo las acepta del emisor: con EMISOR_CLAVE en Render (las dos partes) o, si no está, con la marca que el
-// servidor le entrega al emisor en su primer aviso de vida (una vez por cada vez que parte el servidor)
-let emisorCuadro = null; let cuadroMarca = ''; let cuadroRun = '';
-const cuadroClave = () => process.env.EMISOR_CLAVE || cuadroMarca;
+// Las imágenes solo las acepta del emisor: con EMISOR_CLAVE en Render (las dos partes; desde el 28 nov ya no hay marca sin
+// clave: sin EMISOR_CLAVE se rechazan)
+let emisorCuadro = null;
 app.post('/api/emisor/cuadro', express.raw({ type: 'image/jpeg', limit: '500kb' }), (req, res) => {
-  const k = String(req.get('x-emisor') || '');
-  if (!k || k !== cuadroClave()) return res.status(403).json({ error: 'No autorizado' });
+  if (!emisorAuth(req)) return res.status(403).json({ error: 'No autorizado' });
   if (!Buffer.isBuffer(req.body) || req.body.length < 100) return res.json({ ok: false });
   emisorCuadro = { img: req.body, at: Date.now(), p: String(req.get('x-pantalla') || 'kennedy') };
   res.json({ ok: true });
@@ -1061,7 +1065,7 @@ app.post('/api/emisor/codec', requireAdmin, (req, res) => {
   db.emisorCodec = c; save(); res.json({ codec: c });
 });
 app.post('/api/emisor/prueba', requireAdmin, (req, res) => { db.emisorPrueba = !!(req.body || {}).on; save(); setTimeout(() => emisorCheck(), 0); res.json({ prueba: db.emisorPrueba }); });
-app.get('/api/emisor', requireAdmin, (_req, res) => res.json({ planB: emisorModo() === 'b', modo: emisorModo(), codec: db.emisorCodec || 'vp8', res: db.emisorRes || 720, cuadro: emisorCuadro ? Math.round((Date.now() - emisorCuadro.at) / 1000) : null, corriendo: Date.now() - emisor.latido < 90000, prueba: !!db.emisorPrueba, latido: emisor.latido, pedido: emisor.pedido, error: emisor.error, configurado: !!(process.env.RENDER_API_KEY && process.env.EMISOR_CRON) }));
+app.get('/api/emisor', requireAdmin, (_req, res) => res.json({ planB: emisorModo() === 'b', modo: emisorModo(), codec: db.emisorCodec || 'vp8', res: db.emisorRes || 720, cuadro: emisorCuadro ? Math.round((Date.now() - emisorCuadro.at) / 1000) : null, corriendo: Date.now() - emisor.latido < 90000, prueba: !!db.emisorPrueba, latido: emisor.latido, pedido: emisor.pedido, error: emisor.error, configurado: !!(process.env.RENDER_API_KEY && process.env.EMISOR_CRON), clave: !!emisorClave() }));
 // Hay un juego de verdad en pantalla (no solo la sala abierta con el QR): lo mismo que hace pasar la pantalla vertical a la sala
 const juegoEnPantalla = (s) => {
   const st = db.stage;
@@ -1073,7 +1077,7 @@ const juegoEnPantalla = (s) => {
 const emisorCheck = (forzar) => {
   const key = process.env.RENDER_API_KEY; const cron = process.env.EMISOR_CRON;
   const s = Object.values(db.sessions)[0];
-  if (!key || !cron) return;
+  if (!key || !cron || !emisorClave()) return; // sin EMISOR_CLAVE no se arranca: sus avisos se rechazarían
   // Modo prueba (Cote, 25 nov: «hoy necesita que se quede en prueba y prendido todo el tiempo»): el emisor corre y transmite
   // siempre, haya o no juego (se enciende y apaga en el Centro de control)
   if (!db.emisorPrueba && !forzar) {
@@ -1091,6 +1095,7 @@ setInterval(emisorCheck, 30000);
 // última versión del emisor). Para cuando la emisión quedó pegada en algo raro.
 app.post('/api/emisor/reiniciar', requireAdmin, (_req, res) => {
   if (!process.env.RENDER_API_KEY || !process.env.EMISOR_CRON) return fail(res, 409, 'Falta poner RENDER_API_KEY y EMISOR_CRON en Render');
+  if (!emisorClave()) return fail(res, 409, 'Falta poner EMISOR_CLAVE en Render (en cantabingo y en el Cron Job del emisor, el mismo valor)');
   emisor.latido = 0; emisorCheck(true); res.json({ ok: true });
 });
 require('./momentos.js').init({ app, db, aviso, momentoLive }); // momentos de los juegos para las luces (lista acordada con Code 4)
@@ -1535,7 +1540,11 @@ app.post('/api/gamevote/reset', requireAdmin, (_req, res) => {
 
 // Leer la pantalla actual es público, para que la fuente de OBS no necesite iniciar sesión; cambiarla es del moderador.
 // Diseño nuevo de las pantallas (pedido de Cote, 22 nov): encendido salvo que se apague en el Centro de control
-app.get('/api/tema', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json({ on: db.tema !== false, pub: db.pubUrl || '', evento: EVENTO }); });
+app.get('/api/tema', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json({ on: db.tema !== false, pub: db.pubUrl || '', evento: EVENTO, priv: !!db.privacidad }); });
+// Aviso de datos personales al entrar (decisión de Cote, pregunta 9.2: desde diciembre, Ley 21.719; preparado por orden de
+// Code 0, 28 nov): una línea en la entrada de la sala de juegos y de la sala light. Apagado por defecto; se enciende en el
+// Centro de control. El texto final y la fecha los confirma Cote.
+app.post('/api/privacidad', requireAdmin, (req, res) => { db.privacidad = (req.body || {}).on === true; save(); aviso(); res.json({ on: db.privacidad }); });
 app.post('/api/tema', requireAdmin, (req, res) => { db.tema = (req.body || {}).on !== false; save(); res.json({ on: db.tema }); });
 // Dirección de los QR (pedido de Cote, 22 nov: llevar a la gente a krbstage.cl; eligió la opción A, juegos.krbstage.cl):
 // la sala es la misma y las direcciones de siempre siguen funcionando (OBS, pantallas y decodificadores no se tocan);

@@ -115,6 +115,14 @@ window.gcPer = (() => {
 })();
 // Marca al azar de este navegador (sin datos personales): sirve para contar a los conectados sin repetir y para saber,
 // en el registro de clientes, cuántas veces vuelve el mismo celular
+// Aviso de datos personales en la entrada (pregunta 9.2 de Cote; apagado salvo que se encienda en el Centro de control)
+const PRIV_URL = 'https://krbstage.cl/privacidad.html';
+window.privLine = async () => {
+  try {
+    const r = await (await fetch('/api/tema', { cache: 'no-store' })).json();
+    return r && r.priv ? `<p class="priv-line small muted">Al participar aceptas que KRB Stage guarde tu nombre y tu participación. <a href="${PRIV_URL}" target="_blank" rel="noopener">Política de privacidad</a></p>` : '';
+  } catch (e) { return ''; }
+};
 window.vid = () => { let v = store.get('vid'); if (!v) { v = rnd(8); store.set('vid', v); } return v; };
 let toastTimer;
 function toast(msg) {
@@ -752,6 +760,9 @@ function hostSetup(p) {
 window.readAloud = (game, lines) => `<details class="panel howto" open><summary>📢 Instrucciones · ${esc(game)}</summary><ul>${lines.map((l) => `<li>${l}</li>`).join('')}</ul></details>`;
 // Pedido de Cote (20 nov): las instrucciones en pantalla van ordenadas, cada una en su línea, sin pasarse para abajo:
 // si no cabe en el ancho de la pantalla, se achica la letra
+// Top 5 de la Trivia en el celular (pedido de Code 2 por Code 0, 28 nov; regla de Cote: nombres siempre completos): si un
+// nombre no cabe, se achica la letra en vez de cortarlo con «…»
+window.fitTopNames = (root) => { if (root) root.querySelectorAll('.pcrowd-top span').forEach((el) => window.fitOneLine(el, 9)); };
 window.fitOneLine = (el, min = 9) => {
   if (!el || !el.isConnected) return;
   el.style.fontSize = '';
@@ -985,6 +996,7 @@ views.jugar = async (sid) => {
   if (!me) {
     let info;
     try { info = await api('GET', `/api/sessions/${sid}`); } catch { backToStart(); return undefined; }
+    const priv = await window.privLine();
     app.innerHTML = `<form class="panel" id="f" style="max-width:460px;margin:0 auto">
       <h1>${esc(info.name)}</h1><p class="muted">Recibirás ${info.cardsPerPlayer} ${info.cardsPerPlayer > 1 ? 'cartones' : 'cartón'} en este dispositivo. No necesitas cuenta.</p>
       <div class="fields" style="grid-template-columns:1fr">
@@ -992,7 +1004,7 @@ views.jugar = async (sid) => {
         <label class="f">Apellido<input type="text" name="surname" maxlength="25" autocomplete="family-name" autocapitalize="words" value="${esc(store.get('playerLast') || '')}" required></label>
         ${info.places && info.places.length ? `<label class="f">¿Dónde estás?<select name="place" required><option value="">Elige tu lugar</option>${info.places.map((x) => `<option>${esc(x)}</option>`).join('')}</select></label>` : ''}
         ${info.locked ? '<label class="f">Contraseña de la sesión<input type="text" name="password" required></label>' : ''}
-        <button class="primary big">Unirse</button>
+        <button class="primary big">Unirse</button>${priv}
       </div></form>`;
     $('#f').onsubmit = async (e) => {
       e.preventDefault();
@@ -1096,6 +1108,7 @@ views.jugar = async (sid) => {
     $('#prosco').innerHTML = `<div class="prosco-head big"><b>Trivia del Rosko</b><span></span><span class="prosco-clock" id="prosco-clock">${rosco.winner || rosco.finished ? '' : fmtClock(roscoLeft())}</span></div>
       ${rankBox}${body}${reveal}${crowdHTML()}
       ${top}`;
+    window.fitTopNames($('#prosco'));
   };
   const stopRosco = () => { if (roscoEs) roscoEs.close(); clearInterval(roscoTick); clearTimeout(crowdTimer); roscoEs = null; roscoId = null; rosco = null; crowdMine = {}; crowdOrder = []; crowdInfo = null; };
   // Durante el karaoke: se guarda el cartón y aparece el formulario para pedir canción.

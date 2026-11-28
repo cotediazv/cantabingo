@@ -29,12 +29,13 @@ const MAX_MS = 6 * 3600000;
 const IDLE_MS = (Number(process.env.SIN_JUEGO) || 10) * 60000;
 let ultimoJuego = Date.now(); // al partir se cuenta como si recién hubiera un juego (lo arrancó el servidor por eso)
 // Avisa al servidor de la Sala que está corriendo (así no lo vuelve a arrancar, lo que lo reiniciaría)
-// RUN: este turno del emisor; con el primer aviso la Sala entrega la marca para mandar las imágenes del plan B
+// Todo lo que manda a la Sala va con EMISOR_CLAVE (la misma que en el servicio cantabingo; desde el 28 nov la Sala
+// rechaza sin clave)
 const RUN = Math.random().toString(36).slice(2, 12);
-let marca = '';
-const clave = () => process.env.EMISOR_CLAVE || marca;
-const latido = () => fetch(`${SITIO}/api/emisor/latido`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ pantalla: PANTALLA, run: RUN }) })
-  .then((r) => r.json()).then((j) => { if (j && j.marca) marca = j.marca; }).catch(() => {});
+const clave = () => process.env.EMISOR_CLAVE || '';
+if (!clave()) console.log('Falta EMISOR_CLAVE: la Sala va a rechazar los avisos del emisor');
+const latido = () => fetch(`${SITIO}/api/emisor/latido`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-emisor': clave() }, body: JSON.stringify({ pantalla: PANTALLA, run: RUN }) })
+  .then((r) => r.json()).catch(() => {});
 
 // Hay juego cuando la pantalla vertical muestra la sala de juegos (no la cartelera ni la información del local) y en la
 // sala no está el karaoke ni el show (no son juegos: esos los sigue mostrando el decodificador)
@@ -133,7 +134,7 @@ const mandarFoto = async (page) => {
     // cuánto texto tiene y el último error de la página
     const diag = await page.evaluate(() => { const b = document.body; return `${location.hash || location.pathname} · ${b ? (b.className || 'sin clase') : 'sin body'} · fondo ${b ? getComputedStyle(b).backgroundColor : '-'} · ${b ? b.innerText.replace(/\s+/g, ' ').trim().slice(0, 60) : ''}`; }).catch((e) => `sin respuesta de la página: ${e.message}`);
     ultimaLuz = luz;
-    await fetch(`${SITIO}/api/emisor/foto`, { method: 'POST', headers: { 'content-type': 'image/jpeg', 'x-luz': String(luz), 'x-cap': encodeURIComponent(`${cap} · navegador ${modoNav} · ${diag}${ultimoError ? ` · error: ${ultimoError}` : ''}`.slice(0, 300)) }, body: img });
+    await fetch(`${SITIO}/api/emisor/foto`, { method: 'POST', headers: { 'content-type': 'image/jpeg', 'x-emisor': clave(), 'x-luz': String(luz), 'x-cap': encodeURIComponent(`${cap} · navegador ${modoNav} · ${diag}${ultimoError ? ` · error: ${ultimoError}` : ''}`.slice(0, 300)) }, body: img });
     log('Foto enviada · luz de la captura:', luz, '·', cap, '·', diag);
   } catch (e) { log('No se pudo mandar la foto:', e.message); }
 };

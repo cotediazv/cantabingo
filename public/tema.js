@@ -20,6 +20,7 @@
   // pantalla con QR está abierta (tablero, GC, pantallas del local), esa pantalla se recarga sola una vez para rehacer
   // sus QR (solo si la dirección quedó guardada en el navegador: así nunca se recarga en círculo).
   let pub = null;
+  let priv = null; // aviso de datos personales en la entrada (apagado por defecto)
   const setPub = (u) => {
     const was = window.__pub || ''; window.__pub = u; let kept = false;
     try { localStorage.setItem('pub', u); kept = localStorage.getItem('pub') === u; } catch (e) { kept = false; }
@@ -31,6 +32,7 @@
       // Copia de eventos (MODO_EVENTO): solo Bingo y ¿Quién quiere ser ganador?, nombre libre (Cote, 27 nov)
       window.EVENTO = !!r.evento; document.documentElement.classList.toggle('evento', !!r.evento);
       if (typeof r.pub === 'string' && r.pub !== pub) { pub = r.pub; setPub(r.pub); paintPub(); }
+      if (typeof r.priv === 'boolean' && r.priv !== priv) { priv = r.priv; paintPriv(); }
       if (typeof r.on === 'boolean' && r.on !== last) { last = r.on; set(r.on); paint(); }
     } catch (e) { /* sin conexión: queda como está */ }
   };
@@ -42,6 +44,14 @@
     box.innerHTML = `<h2>Dirección de los QR</h2>
       <p class="muted small">A dónde lleva el código QR que escanea el público. La sala es la misma en las dos; las direcciones de OBS y de las pantallas no cambian. Antes de cambiar, se comprueba que la dirección responde.</p>
       <div class="row">${PUBS.map(([u, name, nota]) => `<button type="button" class="${pub === u ? 'primary' : ''}" data-pub="${u}">${name}${pub === u ? ' · puesta' : ` · ${nota}`}</button>`).join('')}</div>`;
+  };
+  // Centro de control: aviso de datos personales en la entrada de la sala de juegos y de la sala light
+  const paintPriv = () => {
+    const box = document.getElementById('priv-box');
+    if (!box || priv === null) return;
+    box.innerHTML = `<h2>Aviso de datos personales</h2>
+      <p class="muted small">Línea bajo el botón de entrada de la sala de juegos y de la sala light: «Al participar aceptas que KRB Stage guarde tu nombre y tu participación», con enlace a la Política de privacidad de krbstage.cl. Vale para quien entra desde ese momento.</p>
+      <div class="row"><button type="button" class="${priv ? '' : 'primary'}" data-priv="0">Apagado${priv ? '' : ' · puesto'}</button><button type="button" class="${priv ? 'primary' : ''}" data-priv="1">🔒 Encendido${priv ? ' · puesto' : ''}</button></div>`;
   };
   // Centro de control: recuadro para encender o apagar el diseño nuevo
   const paint = () => {
@@ -69,6 +79,13 @@
       try { b.disabled = true; const r = await api('POST', '/api/pub', { url: b.dataset.pub }); pub = r.pub; setPub(r.pub); paintPub(); toast(r.pub ? `Los QR ahora llevan a ${r.pub.replace('https://', '')}` : 'Los QR vuelven a cantabingo.onrender.com'); } catch (err) { toast(err.message); paintPub(); }
     };
     paintPub();
+    const vbox = document.createElement('div'); vbox.className = 'panel'; vbox.id = 'priv-box';
+    pbox.parentNode.insertBefore(vbox, pbox.nextSibling);
+    vbox.onclick = async (e) => {
+      const b = e.target.closest('button[data-priv]'); if (!b) return;
+      try { const r = await api('POST', '/api/privacidad', { on: b.dataset.priv === '1' }); priv = r.on; paintPriv(); toast(r.on ? 'Aviso de datos personales encendido' : 'Aviso de datos personales apagado'); } catch (err) { toast(err.message); }
+    };
+    paintPriv();
   };
   sync(); setInterval(sync, 10000); setInterval(mount, 1000);
 })();

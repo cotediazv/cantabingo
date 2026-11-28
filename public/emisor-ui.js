@@ -32,7 +32,7 @@
     const wasOpen = !!(box.querySelector('.emi-lec') && box.querySelector('.emi-lec').open);
     const oldImg = box.querySelector('img[data-foto]'); const oldFoto = oldImg ? [oldImg.dataset.foto, oldImg.src] : null;
     box.innerHTML = `<h2>📡 Emisión de la pantalla vertical · Mercado Kennedy</h2>
-      <p class="muted small">${r.configurado ? '' : 'Falta poner RENDER_API_KEY y EMISOR_CRON en Render. '}El emisor parte solo cuando hay un juego en pantalla en Mercado Kennedy y se apaga a los 10 minutos sin juego. Con el <b>modo prueba</b> queda encendido y transmitiendo todo el tiempo (cada minuto encendido se cobra).</p>
+      <p class="muted small">${r.configurado ? '' : 'Falta poner RENDER_API_KEY y EMISOR_CRON en Render. '}${r.clave === false ? '<b>Falta poner EMISOR_CLAVE en Render</b> (en cantabingo y en el Cron Job del emisor, el mismo valor): sin ella el emisor no parte. ' : ''}El emisor parte solo cuando hay un juego en pantalla en Mercado Kennedy y se apaga a los 10 minutos sin juego. Con el <b>modo prueba</b> queda encendido y transmitiendo todo el tiempo (cada minuto encendido se cobra).</p>
       <p><b>${estado}</b>${r.prueba ? ' · <b>modo prueba puesto</b>' : ''}${r.error ? ` · <span class="muted small">Último error: ${esc(r.error)}</span>` : ''}</p>
       ${decoTxt}${porQue}
       <div class="row"><button type="button" data-emi-reload>↻ Recargar la pantalla vertical de Kennedy a distancia</button><button type="button" data-emi-restart>↻ Reiniciar el emisor</button></div>
