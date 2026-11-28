@@ -265,13 +265,14 @@
     let me = null;
     try { me = JSON.parse(store.get(key) || 'null'); } catch { me = null; }
     if (me && me.token) me = await api('POST', `/api/light/${id}/join`, { token: me.token, vid: window.vid() }).catch(() => null);
+    const priv = await window.privLine();
     const joinForm = () => {
       app.innerHTML = `<div class="panel"><h1 style="margin-top:0">${esc(info.title)}</h1><p class="muted">Entra con tu nombre para pedir canciones de karaoke y ver la cartelera.</p>
         <form id="lj" class="fields" style="grid-template-columns:1fr">
           <label class="f">Nombre<input type="text" name="name" maxlength="20" required autocomplete="given-name" autocapitalize="words"></label>
           <label class="f">Apellido<input type="text" name="surname" maxlength="25" required autocomplete="family-name" autocapitalize="words"></label>
           ${info.places.length ? `<label class="f">¿Dónde estás?<select name="place" required><option value="">Elige tu lugar</option>${info.places.map((x) => `<option>${esc(x)}</option>`).join('')}</select></label>` : ''}
-          <button class="primary big">Entrar</button></form></div><p class="lm-web">Ve los registros en vivo de esta y todas las noches en <a href="https://krbstage.cl" target="_blank" rel="noopener"><b>krbstage.cl</b></a></p>`;
+          <button class="primary big">Entrar</button>${priv}</form></div><p class="lm-web">Ve los registros en vivo de esta y todas las noches en <a href="https://krbstage.cl" target="_blank" rel="noopener"><b>krbstage.cl</b></a></p>`;
       $('#lj').onsubmit = async (e) => {
         e.preventDefault();
         try { me = await api('POST', `/api/light/${id}/join`, { ...Object.fromEntries(new FormData(e.target)), vid: window.vid() }); store.set(key, JSON.stringify({ token: me.token })); main(); } catch (err) { fail(err); }
