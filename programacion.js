@@ -741,6 +741,11 @@ module.exports = function programacion({ app, dir }) {
     for (const l of LOCALES) if (typeof b[l] === 'string') P.horarios[l] = b[l].slice(0, 2000).replace(/\r/g, '');
     save(); res.json({ ok: true, horarios: P.horarios });
   });
+  // Respaldo (pedido de Cote por Code 0, 28 nov): todos los datos de la plataforma en un archivo para guardar aparte
+  app.get('/api/prog/respaldo', auth, (_req, res) => {
+    const f = new Date().toISOString().slice(0, 10);
+    res.set('Content-Disposition', `attachment; filename="programacion-respaldo-${f}.json"`).set('Cache-Control', 'no-store').json(P);
+  });
   app.get('/api/prog/archivos', auth, (req, res) => { const { y, m } = mesDe(req.query.m); res.json(archivos(y, m)); });
   app.post('/api/prog/importar', auth, (req, res) => res.json({ ok: true, ...importar(req.body || {}) }));
 
