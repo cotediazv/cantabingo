@@ -56,7 +56,7 @@ test('respaldo: automático a las 05:00 (hora de Chile) y copia al Drive solo si
   const got = [];
   const mock = http.createServer((q, s) => { let b = ''; q.on('data', (c) => { b += c; }); q.on('end', () => { got.push(JSON.parse(b)); s.writeHead(200, { 'content-type': 'application/json' }); s.end('{"ok":true}'); }); });
   await new Promise((r) => mock.listen(0, r)); mocks.push(mock);
-  const srv = await startServer({ env: { KRB_FECHA: '2026-11-30T05:10:00-03:00', RESPALDO_PRIMERO_MS: '500', RESPALDO_URL: `http://localhost:${mock.address().port}/exec`, RESPALDO_CLAVE: 'clave-de-prueba' } });
+  const srv = await startServer({ env: { KRB_FECHA: '2026-11-30T05:10:00-03:00', RESPALDO_AUTO: '1', RESPALDO_PRIMERO_MS: '500', RESPALDO_URL: `http://localhost:${mock.address().port}/exec`, RESPALDO_CLAVE: 'clave-de-prueba' } });
   srvs.push(srv);
   await sleep(2500);
   const st = await srv.admin.get('/api/respaldo');

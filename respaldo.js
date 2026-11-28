@@ -96,8 +96,10 @@ module.exports = function respaldo({ app, db, save, requireAdmin, dataFile, relo
     if (h < HOUR || h >= 11 || info().day === day || running) return;
     run('automático').catch(() => {});
   };
-  setInterval(tick, 5 * 60000);
-  setTimeout(tick, Number(process.env.RESPALDO_PRIMERO_MS) || 20000); // (la variable es solo para las pruebas)
+  if (process.env.RESPALDO_AUTO !== '0') { // (RESPALDO_AUTO=0 solo en las pruebas: así no respaldan solas)
+    setInterval(tick, 5 * 60000);
+    setTimeout(tick, Number(process.env.RESPALDO_PRIMERO_MS) || 20000); // (la variable es solo para las pruebas)
+  }
 
   app.get('/api/respaldo', requireAdmin, async (_req, res) => {
     res.json({ ...info(), copias: await list(), libre: await freeBytes(), drive: !!(process.env.RESPALDO_URL && process.env.RESPALDO_CLAVE), driveUltimo: info().drive || '' });
