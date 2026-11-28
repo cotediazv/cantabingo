@@ -74,6 +74,7 @@ async function startServer({ env = {}, data, port: fixedPort } = {}) {
     const ctrl = new AbortController();
     const messages = [];
     const waiters = [];
+    let cursor = 0; // hasta dónde ya se revisaron los mensajes con next()
     const done = (async () => {
       try {
         const r = await fetch(url + p, { signal: ctrl.signal });
@@ -100,9 +101,13 @@ async function startServer({ env = {}, data, port: fixedPort } = {}) {
     })();
     return {
       messages,
+      // Mira primero los mensajes que ya llegaron y todavía no se revisaron (28 nov: el servidor puede mandar el mensaje antes
+      // de que la prueba empiece a esperarlo; antes se perdía y la prueba fallaba de vez en cuando, sobre todo con carga)
       next(pred = () => true, ms = 4000) {
+        for (let i = cursor; i < messages.length; i++) if (pred(messages[i])) { cursor = i + 1; return Promise.resolve(messages[i]); }
+        cursor = messages.length;
         return new Promise((resolve, reject) => {
-          const w = { pred, resolve: (m) => { clearTimeout(t); resolve(m); } };
+          const w = { pred, resolve: (m) => { clearTimeout(t); cursor = messages.indexOf(m) + 1; resolve(m); } };
           const t = setTimeout(() => { waiters.splice(waiters.indexOf(w), 1); reject(new Error(`Sin mensaje SSE esperado en ${p}`)); }, ms);
           waiters.push(w);
         });
