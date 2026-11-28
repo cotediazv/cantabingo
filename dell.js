@@ -1,7 +1,8 @@
 // Semáforo en vivo del Dell de las luces de Mercado Kennedy (orden 7 y 13 de Code 0, pedido de Cote, 28 nov: «las luces
 // bajo control»; contrato de Code 4). El Dell manda un latido cada 15 s con la clave de las luces (LUCES_CLAVE de Render,
-// nunca en el repositorio); la Sala lo traduce a colores (verde, amarillo, rojo, gris) que ve el moderador en el Centro de
-// control y en el GC Master, y avisa por ntfy (tema que manda el mismo Dell, guardado en los datos y nunca mostrado) si en
+// nunca en el repositorio); la Sala lo traduce a colores (verde, amarillo, rojo, gris) que ven el moderador y el equipo de
+// Kennedy en el panel de la sala light de Kennedy (Cote, 28 nov: «eso debería ir en el GC Lite… y también podría ser en la
+// sala de luces»), y avisa por ntfy (tema que manda el mismo Dell, guardado en los datos y nunca mostrado) si en
 // horario de Kennedy (jueves a sábado, 18:30 a 00:30, hora de Chile) el Dell deja de responder o algo pasa a rojo.
 const crypto = require('crypto');
 
@@ -9,7 +10,7 @@ const COSAS = ['latido', 'cable', 'adaptador', 'obs', 'tunel', 'ritmo', 'memoria
 const NOMBRES = { latido: 'Latido del Dell', cable: 'Cable de las luces', adaptador: 'Adaptador USB', obs: 'OBS (transmisión)', tunel: 'Túnel a internet', ritmo: 'Ritmo de la música', memoria: 'Memoria', disco: 'Disco', cpu: 'Procesador', windows: 'Windows' };
 const SIN_LATIDO_MS = Number(process.env.DELL_SIN_MS) || 120000; // (las pruebas lo acortan)
 
-module.exports = function dell({ app, db, save, requireAdmin, fail, reloj = () => new Date(), ntfyBase = () => process.env.NTFY_URL || 'https://ntfy.sh' }) {
+module.exports = function dell({ app, db, save, puedeVer, fail, reloj = () => new Date(), ntfyBase = () => process.env.NTFY_URL || 'https://ntfy.sh' }) {
   let ultimo = null; // { at, data }: solo en memoria (no va a data.json)
   const inicio = Date.now(); // si la Sala se reinicia y el Dell no manda nada en 2 min, también se avisa
   const inesp = {}; // reinicios inesperados de Windows al primer latido de cada noche (para ver si aumentaron)
@@ -121,7 +122,7 @@ module.exports = function dell({ app, db, save, requireAdmin, fail, reloj = () =
     res.json({ ok: true });
   });
 
-  app.get('/api/luces/salud', requireAdmin, (_req, res) => {
+  app.get('/api/luces/salud', puedeVer, (_req, res) => {
     res.set('Cache-Control', 'no-store');
     res.json({ recibido: ultimo ? ultimo.at : 0, segundos: ultimo ? Math.round((Date.now() - ultimo.at) / 1000) : null, latido: ultimo ? ultimo.data : null, luces: luces(), textos: textos(), nombres: NOMBRES, orden: COSAS, horario: enHorario(), avisos: !!db.dellTema });
   });

@@ -4112,10 +4112,10 @@ html.evento .games-nav [data-game][hidden] { display: none !important; }
 /* Semáforo del Dell de Kennedy (orden 13 de Code 0, 28 nov): una fila por cosa, con su color, su estado en palabras y una
    línea de texto (el color nunca va solo) */
 .dell-rows { display: grid; gap: 6px; }
-.dell-row { display: grid; grid-template-columns: 14px minmax(0, 11em) auto 1fr; gap: 4px 10px; align-items: center; padding: 6px 10px; border-radius: 8px; background: rgba(255, 255, 255, .04); }
+.dell-row { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; gap: 2px 10px; align-items: center; padding: 6px 10px; border-radius: 8px; background: rgba(255, 255, 255, .04); }
 .dell-row i { width: 14px; height: 14px; border-radius: 50%; background: #8a8a96; }
 .dell-row span { font-weight: 800; font-size: .85rem; }
-.dell-row small { color: var(--muted, #aaa); font-size: .85rem; min-width: 0; overflow-wrap: anywhere; }
+.dell-row small { grid-column: 2 / -1; color: var(--muted, #aaa); font-size: .85rem; min-width: 0; overflow-wrap: anywhere; }
 .dell-verde i { background: #2bb673; } .dell-amarillo i { background: #f4bf5a; } .dell-rojo i { background: #e5413a; }
 .dell-rojo { background: rgba(229, 65, 58, .14); } .dell-amarillo { background: rgba(244, 191, 90, .1); }
 .dell-compact { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
@@ -4123,5 +4123,4 @@ html.evento .games-nav [data-game][hidden] { display: none !important; }
 .dell-compact .dell-row i { width: 10px; height: 10px; }
 .dell-compact .dell-row b { font-size: .72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dell-compact .dell-row span { grid-column: 2; font-size: .68rem; font-weight: 700; }
-.gm-dell { padding: 6px 8px; }
-.gm-dell .dell-head { margin: 0 0 4px; font-size: .78rem; }
+.lz-dell { padding: 4px 8px; } .lz-dell .dell-head { margin: 0 0 4px; font-size: .78rem; }

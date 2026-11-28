@@ -1,5 +1,5 @@
 // Semáforo del Dell de las luces de Kennedy (orden 13 de Code 0, 28 nov; contrato de Code 4): el Dell manda su latido con
-// la clave de las luces, el moderador ve los colores y, en horario de Kennedy, la Sala avisa por ntfy si el Dell deja de
+// la clave de las luces, el moderador y el equipo de Kennedy ven los colores (panel de la sala light de Kennedy) y, en horario de Kennedy, la Sala avisa por ntfy si el Dell deja de
 // responder o algo pasa a rojo (una vez por cosa y por noche). El tema de los avisos nunca se muestra.
 const { test, after } = require('node:test');
 const assert = require('node:assert/strict');
@@ -26,7 +26,13 @@ test('Dell: latido con la clave, colores y avisos por ntfy en horario', async ()
   srvs.push(srv);
   const latido = (b, k = CLAVE) => fetch(`${srv.url}/api/luces/latido`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${k}` }, body: JSON.stringify(b) });
   assert.equal((await latido(bien(), 'otra-clave-de-prueba')).status, 401);
-  assert.equal((await srv.call('GET', '/api/luces/salud')).status, 401); // solo el moderador
+  assert.equal((await srv.call('GET', '/api/luces/salud')).status, 401); // solo el moderador y el equipo de Kennedy
+  await srv.admin.post('/api/staff/clave', { local: 'kennedy', clave: 'equipo-k' });
+  await srv.admin.post('/api/staff/clave', { local: 'frida', clave: 'equipo-f' });
+  const sk = (await srv.ok('POST', '/api/staff/login', { local: 'kennedy', clave: 'equipo-k' })).token;
+  const sf = (await srv.ok('POST', '/api/staff/login', { local: 'frida', clave: 'equipo-f' })).token;
+  assert.equal((await srv.call('GET', '/api/luces/salud', undefined, { staff: sk })).status, 200);
+  assert.equal((await srv.call('GET', '/api/luces/salud?local=frida', undefined, { staff: sf })).status, 401);
   let s = await srv.admin.get('/api/luces/salud');
   assert.equal(s.recibido, 0); assert.equal(s.luces.latido, 'gris');
   // todo bien: verde

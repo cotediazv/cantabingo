@@ -408,7 +408,9 @@ require('./clientes.js')({ app, db, requireAdmin, dir: path.dirname(DATA_FILE), 
 // Respaldo diario de los datos (Code 0, 28 nov): en el disco (14 días) y, si se configura, en el Drive de Cote
 require('./respaldo.js')({ app, db, save, requireAdmin, dataFile: DATA_FILE, reloj: () => ahora() });
 // Semáforo del Dell de las luces de Kennedy (orden 13 de Code 0, 28 nov; contrato de Code 4): /api/luces/latido y /api/luces/salud
-require('./dell.js')({ app, db, save, requireAdmin, fail, reloj: () => ahora() });
+// Lo ven el moderador y el equipo de Mercado Kennedy (va en el panel de la sala light de Kennedy: Cote, 28 nov, por Code 0)
+const requireKennedy = (req, res, next) => ((validToken(req.get('x-admin')) || staffVenue(req.get('x-staff')) === 'kennedy') ? next() : fail(res, 401, 'Solo el moderador o el equipo de Mercado Kennedy'));
+require('./dell.js')({ app, db, save, puedeVer: requireKennedy, fail, reloj: () => ahora() });
 const attempts = {}; // ip -> { n, until }: frena los intentos de adivinar la contraseña
 
 // ---------- Acceso del equipo de cada local (sala light) ----------
