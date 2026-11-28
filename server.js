@@ -407,6 +407,8 @@ const requireAdmin = (req, res, next) => (validToken(req.get('x-admin')) ? next(
 require('./clientes.js')({ app, db, requireAdmin, dir: path.dirname(DATA_FILE), port: PORT });
 // Respaldo diario de los datos (Code 0, 28 nov): en el disco (14 días) y, si se configura, en el Drive de Cote
 require('./respaldo.js')({ app, db, save, requireAdmin, dataFile: DATA_FILE, reloj: () => ahora() });
+// Semáforo del Dell de las luces de Kennedy (orden 13 de Code 0, 28 nov; contrato de Code 4): /api/luces/latido y /api/luces/salud
+require('./dell.js')({ app, db, save, requireAdmin, fail, reloj: () => ahora() });
 const attempts = {}; // ip -> { n, until }: frena los intentos de adivinar la contraseña
 
 // ---------- Acceso del equipo de cada local (sala light) ----------
