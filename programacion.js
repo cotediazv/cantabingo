@@ -19,7 +19,7 @@ const MES_CORTO = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep'
 const titulo = (s) => s.charAt(0) + s.slice(1).toLowerCase();
 // Tipos de show y cómo se escriben en la cartelera y en la GLOSA (criterios de los nombres de show)
 const TIPOS = {
-  standup: 'Stand Up', piano: 'Piano Man', tributo: 'Tributo', doble: 'Doble', bingo: 'Los juegos de…', otro: 'Especial u otro',
+  standup: 'Stand Up', piano: 'Piano Man', tributo: 'Tributo', doble: 'Doble', bingo: 'Noche o tarde de juegos', otro: 'Especial u otro',
 };
 const ROLES = ['dj', 'extra', 'cantante', 'cantantex', 'animador', 'animadorx', 'camH', 'camHx', 'camV', 'camVx', 'editor', 'editorx'];
 // Turnos extra (la persona entre paréntesis): Cote los paga de su bolsillo y el monto se ve caso a caso, siempre a mano
@@ -221,8 +221,8 @@ module.exports = function programacion({ app, dir }) {
   // ---------- Cómo se escribe cada show ----------
   // «El Bingo de…» pasó a ser «Los juegos de» + el local (Cote, 23 nov)
   const JUEGOS_DE = { MK: 'Mercado Kennedy', TOB: 'Tobalaba', FRIDA: 'Frida' };
-  // Frida, los domingos a las 2 de la tarde: «Tarde de juegos» (Cote, 28 nov)
-  const losJuegos = (local) => (local === 'FRIDA' ? 'Tarde de juegos' : `Los juegos de ${JUEGOS_DE[local] || 'Frida'}`);
+  // Desde el 28 nov (Cote): «Noche de juegos» en Mercado Kennedy y Tobalaba; en Frida, los domingos a las 2 de la tarde, «Tarde de juegos»
+  const losJuegos = (local) => (local === 'FRIDA' ? 'Tarde de juegos' : 'Noche de juegos');
   function showGlosa(s, local) {
     if (!s) return '';
     if (s.tipo === 'standup') return `Stand Up: ${plain(s.nombre) ? s.nombre.toUpperCase() : ''}`.trim();
@@ -447,7 +447,7 @@ module.exports = function programacion({ app, dir }) {
     let x;
     if ((x = t.match(/^Stand Up:\s*(.+)$/i))) return { tipo: 'standup', nombre: x[1].trim() };
     if (/piano man/i.test(t)) return { tipo: 'piano' };
-    if (/bingo de frida|^los juegos de|^tarde de juegos$/i.test(t)) return { tipo: 'bingo' };
+    if (/bingo de frida|^los juegos de|^(tarde|noche) de juegos$/i.test(t)) return { tipo: 'bingo' };
     if ((x = t.match(/^Banda Tributo a\s+(.+)$/i))) return { tipo: 'tributo', nombre: x[1].trim(), banda: true };
     if ((x = t.match(/^Tributo a\s+(.+)$/i))) return { tipo: 'tributo', nombre: x[1].trim() };
     if ((x = t.match(/^Doble de\s+(.+)$/i))) return { tipo: 'doble', nombre: x[1].trim() };
@@ -465,7 +465,7 @@ module.exports = function programacion({ app, dir }) {
     const con = (o) => (persona ? { ...o, persona } : o);
     if ((x = t.match(/^Stand Up:\s*(.+)$/i))) return con({ tipo: 'standup', nombre: x[1].trim() });
     if (/^piano man$/i.test(t)) return { tipo: 'piano' };
-    if (/^(bingo de frida|los juegos de .+|tarde de juegos)$/i.test(t)) return { tipo: 'bingo' };
+    if (/^(bingo de frida|los juegos de .+|tarde de juegos|noche de juegos)$/i.test(t)) return { tipo: 'bingo' };
     if (banda) return con({ tipo: 'tributo', nombre: t, banda: true });
     if (/^especial/i.test(t) || local === 'TOB') { x = t.match(/^(.+?)\s*\(([^)]+)\)\s*$/); return x ? { tipo: 'otro', nombre: x[1].trim(), artista: x[2].trim() } : { tipo: 'otro', nombre: t }; }
     if (local === 'FRIDA' && (wd === 5 || wd === 6)) return con({ tipo: 'doble', nombre: t });

@@ -291,7 +291,7 @@ function llenarProg_(ss, sh, b) {
     sh.getRange(PR_RESUMEN + k, PR_DIA_RESUMEN[ci] + 2).setValue(s.monto == null ? '' : Number(s.monto) || 0);
   });
 
-  // Diseños de Rodrigo: un flyer por show; Piano Man y Los juegos (antes Bingo de Frida; desde el 28 nov «Tarde de juegos» en Frida), uno al mes; más la cartelera
+  // Diseños de Rodrigo: un flyer por show; Piano Man y Los juegos (antes Bingo de Frida; desde el 28 nov «Noche de juegos» y «Tarde de juegos»), uno al mes; más la cartelera
   const FILA_DISENO = { MK: 877, TOB: 879, FRIDA: 880 }; // Panorámico (878) lo maneja Cote
   const dis = {};
   filas.forEach(function (r) {
@@ -299,7 +299,7 @@ function llenarProg_(ss, sh, b) {
     const loc = String(r[1]).trim().toUpperCase();
     const show = String(r[3]).trim().toUpperCase();
     if (!dis[loc]) dis[loc] = { n: 1, unicos: {} };
-    if (show === 'PIANO MAN' || show === 'BINGO DE FRIDA' || show === 'TARDE DE JUEGOS' || show.indexOf('LOS JUEGOS DE') === 0) dis[loc].unicos[show.indexOf('PIANO') === 0 ? 'PIANO' : 'JUEGOS'] = 1;
+    if (show === 'PIANO MAN' || show === 'BINGO DE FRIDA' || show === 'TARDE DE JUEGOS' || show === 'NOCHE DE JUEGOS' || show.indexOf('LOS JUEGOS DE') === 0) dis[loc].unicos[show.indexOf('PIANO') === 0 ? 'PIANO' : 'JUEGOS'] = 1;
     else dis[loc].n++;
   });
   if (!parcial || (C.shows || []).length) Object.keys(FILA_DISENO).forEach(function (loc) {
