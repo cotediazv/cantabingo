@@ -1,19 +1,29 @@
 Generador de flyers por volumen (Code 2, orden de Code 0, 28 nov). No publica nada.
 Cruza la cartelera del mes (cantabingo.onrender.com/api/prog/cartelera?m=AAAA-MM) con las fotos del diseñador.
 
-Formato de las fotos (decision de Cote, 28 nov):
-  Fotos artistas AAAA-MM / Kennedy | Frida | Tobalaba / NN_show_artista.jpg
+Formato de las fotos (decision de Cote, 28 nov, 13:55: "el numero y el doble, o el tributo segun corresponda"):
+  Fotos artistas AAAA-MM / Kennedy | Frida | Tobalaba / NN_doble-a-quien.jpg  o  NN_tributo-a-quien.jpg
+  Ejemplos: 01_doble-karol-g.jpg, 03_tributo-inxs.jpg. Sin el nombre del artista que lo interpreta.
   NN = ORDEN dentro del mes (01, 02...), no la fecha: sirve para contar y pagar al disenador.
-  El generador ubica la fecha buscando el nombre del show en la cartelera de ese local (sin tildes, mayusculas
-  ni de/a/el, tolerando errores chicos). Una foto sirve para todas las fechas de ese show en ese local.
-  Mismo show dos veces con artistas distintos: terminar el archivo en _diaDD (ej. 06_doble-chayanne_pedro_dia19.jpg);
-  si no, el informe lo avisa en vez de adivinar.
+  El generador ubica la fecha buscando el show en la cartelera de ese local: doble o tributo tiene que coincidir;
+  el nombre se compara sin tildes ni mayusculas y tolera errores chicos (chayane = chayanne).
+  No adivina: si el show sale en mas de una fecha del local, o hay dos fotos del mismo show, lo avisa en el informe
+  y esas fechas quedan sin foto hasta que alguien confirme.
+  Las noches que no son doble ni tributo (Piano Man, especiales) salen aparte en el informe: el formato no les pide foto.
+
+Instrucciones para Rodrigo (texto corto):
+  Guarda cada foto en la carpeta del local (Kennedy, Frida o Tobalaba) dentro de "Fotos artistas AAAA-MM".
+  Nombre: numero de orden del mes, guion bajo, "doble" o "tributo", guion, a quien.
+  Ejemplos: 01_doble-karol-g.jpg · 02_tributo-inxs.jpg · 03_doble-luis-miguel.jpg
+  Todo en minusculas, sin tildes ni espacios (guiones entre palabras). No pongas el nombre del artista que lo interpreta.
+  Una foto por show. Si el mismo show va en dos fechas, avisa a Cote.
 
 Uso:
   node generar.js --mes 2026-12 --dir <carpeta con Kennedy/ Frida/ Tobalaba/>
   node generar.js --mes 2026-12 --drive <id carpeta del Drive> --bajar <carpeta de trabajo>
   --solo-revisar  solo lista las fechas sin foto
+  --cartelera <archivo.json>  usa una cartelera guardada (para probar)
 Sale jobs-<mes>.json (un flyer por fecha y local, con su foto) e informe-<mes>.txt: fechas sin foto, dudas,
 fotos que no calzan con ningun show, nombres fuera del formato y total de fotos por local.
-Los domingos «Los juegos de Frida» no piden foto de artista.
+Los domingos «Tarde de juegos» de Frida no piden foto de artista.
 Las fotos nunca van al repositorio (es publico). La plantilla de los flyers se aprueba con Cote el lunes.
