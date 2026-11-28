@@ -85,10 +85,13 @@ test('sala light: el equipo la abre, cambia su GC y el público entra con nombre
   // «En pantalla» (Cote, 28 nov): el servidor dice el local de la sala abierta, y las pantallas del local siguen a la sala light
   assert.equal((await srv.ok('GET', '/api/stage')).venue, 'kennedy');
   assert.equal((await srv.ok('GET', '/api/vertical/kennedy')).activity, null);
+  // Un solo QR toda la noche (Cote, 28 nov): con el karaoke de la sala light en pantalla, el celular de la sala de juegos puede pedir canciones
+  assert.equal((await srv.ok('GET', `/api/sessions/${sid}/state`)).luzKar, true);
   await sleep(5);
   await srv.admin.post('/api/stage', { show: 'qr' }); // un botón de la sala de juegos: el GC vuelve a la sala
   assert.equal((await srv.ok('GET', '/api/light?local=kennedy')).sala, true);
   assert.equal((await srv.ok('GET', '/api/vertical/kennedy')).activity, 'sala');
+  assert.equal((await srv.ok('GET', `/api/sessions/${sid}/state`)).luzKar, false);
   await sleep(5);
   await srv.admin.post('/api/light/stage', { local: 'kennedy', show: 'cartelera' });
   assert.equal((await srv.ok('GET', '/api/light?local=kennedy')).sala, false);

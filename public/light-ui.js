@@ -157,6 +157,8 @@
   // Además se agranda un 3 % (recorta un poco los bordes) y detrás va negro: en OBS quedaba una franja delgada arriba y
   // abajo por donde se veía la cámara (foto de Cote, 27 nov: «recortando si hace falta»).
   const FONDO_CSS = 'position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;min-width:100%;min-height:100%;margin:0;padding:0;border:0;object-fit:cover;background:#000;z-index:0;transform:scale(1.03);transform-origin:50% 50%';
+  // Con sala de juegos abierta en el local, el QR es el de la sala de juegos toda la noche (Cote, 28 nov)
+  const joinOf = (st) => (st && st.salaHoy ? `${window.pubBase()}#/jugar` : lightJoin(st.id));
   views['light-gc'] = async (venue) => {
     document.body.classList.add('obs', 'gc-screen');
     app.innerHTML = '<div id="lg"></div>';
@@ -191,12 +193,12 @@
       let k = null;
       if (stage === 'qr') k = await api('GET', `/api/karaoke?local=${st.venue}`).catch(() => null);
       if (!alive || n !== seq) return;
-      const sig = JSON.stringify([stage, st.id, st.venue, stage === 'custom' ? st.text : '', c && [c.show, c.current, c.next, c.week, c.blocks, c.month], k && k.list.map((p) => [p.name, p.song]), stage === 'info' ? Math.floor(Date.now() / 9000) : 0, t2on(), stage === 'cartelera' ? st.fondoVideo || '' : '']); // t2on: al cambiar de diseño se vuelve a dibujar
+      const sig = JSON.stringify([stage, st.id, st.venue, stage === 'custom' ? st.text : '', c && [c.show, c.current, c.next, c.week, c.blocks, c.month], k && k.list.map((p) => [p.name, p.song]), stage === 'info' ? Math.floor(Date.now() / 9000) : 0, t2on(), stage === 'cartelera' ? st.fondoVideo || '' : '', st.salaHoy]); // t2on: al cambiar de diseño se vuelve a dibujar
       if (sig === shown) return;
-      const wasKaraoke = shown.startsWith('["karaoke"');
+      const wasKaraoke = shown.startsWith('["karaoke"') && shown.endsWith(`,${!!st.salaHoy}]`); // si cambia el QR (sala de juegos), se vuelve a armar
       shown = sig;
       if (stage === 'karaoke') {
-        if (!wasKaraoke) { stopSub(); sub = await views.karaokeGC({ local: st.venue, join: lightJoin(st.id), nextUp: '' }); }
+        if (!wasKaraoke) { stopSub(); sub = await views.karaokeGC({ local: st.venue, join: joinOf(st), nextUp: '' }); }
         return;
       }
       stopSub();
@@ -240,7 +242,7 @@
           ${c && c.week.length ? weekHTML(c) : '<p class="lg-empty">Pronto la cartelera de la semana</p>'}</div>`;
       } else if (stage === 'qr') {
         const list = k ? k.list.slice(0, 6) : [];
-        box.innerHTML = `<div class="lg-card lg-qr"><div class="lg-qrbox">${qr(lightJoin(st.id))}<b>Escanea el código QR con tu celular</b><span>Pide tu canción de karaoke</span></div>
+        box.innerHTML = `<div class="lg-card lg-qr"><div class="lg-qrbox">${qr(joinOf(st))}<b>Escanea el código QR con tu celular</b><span>Pide tu canción de karaoke</span></div>
           <div class="lg-list"><small>${se('🎤 Próximos en cantar')}</small>${list.length ? list.map((p, i) => `<div><em>${i + 1}</em><p><b>${esc(p.name)}</b><span>${esc(p.song)}${p.artist ? ` · ${esc(p.artist)}` : ''}</span></p></div>`).join('') : '<p class="lg-empty">¡Sé el primero en pedir tu canción!</p>'}</div></div>`;
       } else box.innerHTML = '';
     };
@@ -404,7 +406,7 @@
     let joinUrl = '';
     const light = await api('GET', `/api/light?local=${v}`).catch(() => null);
     if (location.hash !== mine) return () => {};
-    if (light && light.id) { joinUrl = `${window.pubBase()}#/l/${light.id}`; $('.lv-qrbox').innerHTML = qr(joinUrl); }
+    if (light && light.id) { joinUrl = light.salaHoy ? `${window.pubBase()}#/jugar` : `${window.pubBase()}#/l/${light.id}`; $('.lv-qrbox').innerHTML = qr(joinUrl); } // con sala de juegos: su QR (Cote, 28 nov)
     // Qué recuadros hay para mostrar (solo los que tienen algo)
     const slides = () => {
       const out = [];

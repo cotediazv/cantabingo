@@ -1148,7 +1148,7 @@ views.jugar = async (sid) => {
     };
   };
   const syncKar = () => {
-    const on = st.stage === 'karaoke';
+    const on = st.stage === 'karaoke' || !!st.luzKar; // también con el karaoke de la sala light en pantalla (un solo QR, Cote 28 nov)
     $('#pkar').hidden = !on;
     if (on && !karTimer) { karShown = ''; drawKar(); karTimer = setInterval(drawKar, 5000); }
     if (!on && karTimer) { clearInterval(karTimer); karTimer = null; karSent = false; }

@@ -621,8 +621,8 @@
   var QR_ONLY_KAR = { kennedy: true };
   var lightUrl = '';
   function lightJoin(cb) {
-    if (lightUrl) { cb(lightUrl); return; }
-    get('/api/light?local=' + VENUE, function (l) { if (l && l.id) lightUrl = origin() + '/#/l/' + l.id; cb(lightUrl || origin() + '/#/jugar'); });
+    // con sala de juegos abierta en el local, el QR es el de la sala de juegos toda la noche (Cote, 28 nov)
+    get('/api/light?local=' + VENUE, function (l) { lightUrl = l && l.id && !l.salaHoy ? origin() + '/#/l/' + l.id : origin() + '/#/jugar'; cb(lightUrl); });
   }
 
   // Información del local (como el fondo vertical de la sala light): lo de esta noche, un recuadro que va cambiando y el QR

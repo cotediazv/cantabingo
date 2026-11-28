@@ -17,7 +17,7 @@ const NIGHT_STARTS = 6; // la noche cambia a las 6 AM, igual que el karaoke
 const DAYS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 const GLOSA_MS = 10 * 60e3; // la GLOSA se relee cada 10 minutos
 
-module.exports = function light({ app, db, save, requireAdmin, requireLocal = requireAdmin, fail, karaoke, insta, aviso = () => {}, salaDe = () => false, salaManda = salaDe, fondoDe = () => '', fondoVid = () => '', reloj = () => new Date(), progShow = () => null }) {
+module.exports = function light({ app, db, save, requireAdmin, requireLocal = requireAdmin, fail, karaoke, insta, aviso = () => {}, salaDe = () => false, salaManda = salaDe, fondoDe = () => '', fondoVid = () => '', alCambiar = () => {}, reloj = () => new Date(), progShow = () => null }) {
   // Una sala light por local (Kennedy, Frida y Tobalaba pueden estar abiertas a la vez)
   db.lights ||= {};
   if (db.light) { db.lights[db.light.venue] = db.light; db.light = null; } // salas guardadas antes de este cambio
@@ -182,7 +182,7 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
     const show = String(b.show || '');
     if (!db.lights[v]) return fail(res, 404, 'No hay una sala light abierta en este local');
     // «Sala de juegos» (días con sala de juegos en el local): el GC Light vuelve a mostrar la sala de juegos
-    if (show === 'sala') { db.lights[v].stageAt = 0; save(); aviso(); return res.json(pub(v)); }
+    if (show === 'sala') { db.lights[v].stageAt = 0; save(); aviso(); alCambiar(); return res.json(pub(v)); }
     if (!STAGES.includes(show)) return fail(res, 400, 'Opción no válida');
     // Los días con sala de juegos, el botón que se toca manda en el GC (gana lo último que se tocó; ver salaManda en server.js)
     db.lights[v].stageAt = Date.now();
@@ -194,6 +194,7 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
     save();
     if (show === 'karaoke' || show === 'qr') karaoke.refreshVenue(v);
     aviso(); // las pantallas cambian al instante
+    alCambiar(); // y los celulares de la sala de juegos (pueden pedir canciones con el karaoke de la sala light en pantalla)
     res.json(pub(v));
   });
   // Switch «Video cartelera» (pedido de Cote, 21 nov): deja puesto en la pantalla vertical del local (versión completa y

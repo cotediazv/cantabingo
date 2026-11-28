@@ -26,7 +26,7 @@ const SETTLE_MS = 30e3; // recién después de un cambio, una lista vacía de Go
 const MAX_ACTIVE = 2; // pedidos sin cantar que puede tener una persona a la vez
 const SEPARATORS = [' – ', ' • ', ' - ']; // "Canción – Artista": se corta por la última aparición
 
-module.exports = function karaoke({ app, db, save, requireAdmin, requireLocal = requireAdmin, fail, findPlayer, salaVenue, lightVenue = () => '', extraVenues = () => [] }) {
+module.exports = function karaoke({ karAbierto = () => false, app, db, save, requireAdmin, requireLocal = requireAdmin, fail, findPlayer, salaVenue, lightVenue = () => '', extraVenues = () => [] }) {
   db.karaoke ||= {};
   db.karaoke.venue ||= 'frida';
   // Los pedidos se hacen desde la Sala de juegos: quedan activados (el interruptor del Centro de control los puede apagar)
@@ -385,7 +385,7 @@ module.exports = function karaoke({ app, db, save, requireAdmin, requireLocal = 
     // En la sala light el karaoke está siempre abierto; en la principal, solo cuando está en pantalla
     const light = lightVenue(String(b.sid || ''));
     const venue = light || venueNow();
-    if (!light && db.stage !== 'karaoke') return fail(res, 400, 'El karaoke no está abierto en este momento');
+    if (!light && db.stage !== 'karaoke' && !karAbierto()) return fail(res, 400, 'El karaoke no está abierto en este momento');
     if (!phoneOn(venue)) return fail(res, 400, 'Por ahora no se están recibiendo pedidos desde el celular');
     touch(venue); // un pedido cuenta como actividad: lo abierto a mano sigue abierto
     const song = bare(b.song);

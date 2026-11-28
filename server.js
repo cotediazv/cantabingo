@@ -199,6 +199,7 @@ function publicState(s, full = false) { // eslint-disable-line complexity
     bigQr: !!s.bigQr, tieWinner: s.tieWinner || null, rollMs: 6500, figAt: s.figAt || 0,
     celebrate: !s.hideWin && s.results.some((r) => r.validated && !r.dismissed),
     // Durante El Rosko los celulares cambian el cartón por las preguntas del rosko en curso
+    luzKar: luzKar(), // el karaoke de la sala light está en pantalla: el celular puede pedir canciones
     stage: db.stage || 'bingo', roscoId: db.stage === 'rueda' ? (Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).id || null : null,
     celebrateAt: s.celebrateAt || 0,
     voteRev: (db.vote || {}).rev || 0, // los celulares vuelven a leer la votación cuando cambia
@@ -1078,7 +1079,7 @@ const connectedNames = () => {
 require('./raffle.js')({ placeOf, app, db, save, requireAdmin, fail, setStage, refreshAll, connectedNames, festejo });
 
 let lightApi = null; // sala light (light.js): se conecta más abajo
-const karaoke = require('./karaoke.js')({ app, db, save, requireAdmin, requireLocal, fail, salaVenue: () => (Object.values(db.sessions)[0] || {}).theme || '',
+const karaoke = require('./karaoke.js')({ karAbierto: () => luzKar(), app, db, save, requireAdmin, requireLocal, fail, salaVenue: () => (Object.values(db.sessions)[0] || {}).theme || '',
   findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || (lightApi ? lightApi.findPlayer(sid, token) : null),
   lightVenue: (sid) => (lightApi ? lightApi.venueOf(sid) : ''), extraVenues: () => (lightApi ? lightApi.pollVenues() : []) });
 // Votación del público (nota del 1 al 10 desde el celular)
@@ -1109,6 +1110,10 @@ const salaDe = (v) => { const m = Object.values(db.sessions)[0]; return !!(m && 
 // El botón «Sala de juegos» del panel light también la devuelve (stageAt = 0). Lo que el servidor pone solo (el fondo de
 // las 19:00 y la 01:00) no cuenta como toque.
 const salaManda = (v) => salaDe(v) && !((((db.lights || {})[v] || {}).stageAt || 0) > (db.salaAt || 0));
+// Un solo QR toda la noche de juegos (respuesta de Cote, 28 nov: «El QR durante la noche de juegos se mantiene igual hasta
+// el final»): con la sala de juegos abierta, el GC KARAOKE y el QR GRANDE de la sala light muestran el QR de la sala de
+// juegos y, mientras están en pantalla, el celular de la sala de juegos puede pedir canciones (como con su propio karaoke)
+function luzKar() { try { const m = Object.values(db.sessions)[0]; if (!m || m.sim) return false; const v = m.theme || 'frida'; const l = (db.lights || {})[v]; return !!l && !salaManda(v) && ['karaoke', 'qr'].includes(l.stage); } catch (e) { return false; } } // función (no const): la usa el estado de la sala, que puede armarse antes de esta línea
 const horaChile = () => Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
   .formatToParts(ahora()).map((x) => [x.type, x.value]));
 // El video horizontal del local, haya o no «FONDO» puesto: va de fondo detrás de la cartelera de la semana en el GC Light
@@ -1136,7 +1141,7 @@ const fondoAuto = () => {
     }
   }
 };
-lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta, aviso, salaDe, salaManda, fondoDe, fondoVid, reloj: () => ahora(), progShow: (v, n) => prog.showDe(n.y, n.m, n.d, { kennedy: 'MK', frida: 'FRIDA', tobalaba: 'TOB' }[v]) });
+lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta, aviso, salaDe, salaManda, fondoDe, fondoVid, alCambiar: () => { for (const s of Object.values(db.sessions)) broadcast(s); }, reloj: () => ahora(), progShow: (v, n) => prog.showDe(n.y, n.m, n.d, { kennedy: 'MK', frida: 'FRIDA', tobalaba: 'TOB' }[v]) });
 setTimeout(fondoAuto, 2000); setInterval(fondoAuto, 20e3);
 // «El último en pie», versión de prueba (pedido de Cote, 23 nov)
 require('./enpie.js')({ placeOf, roscoBusy: () => roscoLock('enpie'), app, db, save, requireAdmin, fail, setStage, festejo,
