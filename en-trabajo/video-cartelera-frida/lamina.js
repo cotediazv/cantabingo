@@ -16,7 +16,7 @@ ${filas.map((f, i) => { const [y0, y1] = L.rows[i]; const h = y1 - y0; const big
   return `
   <div class="d" style="left:290px;width:300px;top:${y0 + 6}px"><small style="font-size:${sm}px;${f.color ? 'color:' + f.color : ''}">${f.dia}</small><b style="font-size:${big}px;margin-top:${filas.length===3?2:6}px;${f.color ? 'color:' + f.color : ''}">${f.num}</b></div>
   <div class="n" style="left:680px;top:${y0 + 6}px;width:1060px">${f.antes ? `<small style="font-size:${sm}px">${f.antes}</small>` : ''}<b class="fit" style="font-size:${big}px;margin-top:${f.antes ? (filas.length===3?2:6) : (filas.length===3?48:58)}px;${f.nomColor || f.color ? 'color:' + (f.nomColor || f.color) : ''}">${f.nom}</b></div>
-  ${f.hora ? `<div class="h" style="right:${1920 - 1720}px;top:${y0 + 8}px;font-size:${sm}px;${f.color ? 'color:' + f.color : ''}">${f.hora}</div>` : ''}`; }).join('')}
+  ${f.hora ? `<div class="h" style="right:${1920 - 1720}px;top:${y0 + 8}px;font-size:${sm}px;${f.horaColor || f.color ? 'color:' + (f.horaColor || f.color) : ''}">${f.hora}</div>` : ''}`; }).join('')}
 <script>
 // Sangría pareja (regla de Cote): lo que hay entre el borde izquierdo del cuadro y la palabra del día
 // es lo mismo que queda entre la hora (y los nombres) y el borde derecho del cuadro.
