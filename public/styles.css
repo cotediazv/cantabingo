@@ -4081,9 +4081,8 @@ video.lg-fondo { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; 
 /* Con el fondo Kennedy en el GC Light, sin los logos de arriba (pedido de Cote, 27 nov) */
 body.lg-fondo-on #venue-mark { display: none !important; }
 
-/* Copia de eventos (MODO_EVENTO, Cote 27 nov): solo «Manual» con Bingo y ¿Quién quiere ser ganador?; de las otras
-   actividades queda solo el QR */
-html.evento .games-nav [data-draw-mode="sorteo"], html.evento .games-nav [data-draw-mode="votacion"] { display: none !important; }
+/* Copia de eventos (MODO_EVENTO, Cote 27 nov): de las otras actividades queda solo el QR (desde el 28 nov, todos los juegos
+   y las tres formas de elegirlos: órdenes 12 y 13 de Code 0) */
 html.evento .games-nav a[href="#/showctl"], html.evento .games-nav a[href="#/karaokectl"], html.evento .games-nav a[href="#/instactl"] { display: none !important; }
 html.evento .games-nav [data-game][hidden] { display: none !important; }
 /* Sala light (pedido de Cote, 27 nov): botones del GC fijos arriba y, debajo, la transmision en vivo desplegable */

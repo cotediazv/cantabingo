@@ -490,7 +490,7 @@ views.nuevo = function () {
     var o = topBar(['#/', 'Inicio']) + '<h1>Nuevo proyecto de bingo</h1><div class="panel"><p>¿Qué bingo es?</p><div class="row">';
     var ks = ['frida', 'tobalaba', 'kennedy'];
     for (var i = 0; i < ks.length; i++) o += btn(V[ks[i]], 'venue', d('v', ks[i]), 'third' + (ks[i] === v ? ' on' : ''));
-    o += '</div><p class="muted">Se llamará «Los Juegos de ' + V[v] + '».</p><p>Número de cartones <span class="muted">de 25 a 3.000</span></p><input id="count" type="number" min="25" max="3000" value="320">' + btn('Crear los cartones', 'crear', d('v', v), 'big primary paso') + '</div>';
+    o += '</div><p class="muted">Se llamará «Los Juegos de ' + V[v] + '».</p><p>Número de participantes <span class="muted">de 25 a 3.000</span></p><input id="count" type="number" min="25" max="3000" value="320">' + btn('Crear juego', 'crear', d('v', v), 'big primary paso') + '</div>';
     render(o);
   };
   A.venue = function (el) { v = el.getAttribute('data-v'); var c = $('count').value; paint(); $('count').value = c; };
