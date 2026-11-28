@@ -420,7 +420,7 @@ views.control = async () => {
       <div class="ctl-links">
         <p><b>📱 Participar</b><small>Lo que abre el público al escanear el QR</small><a class="link" href="${joinUrl()}" target="_blank">${esc(joinUrl())}</a></p>
         <p><b>🖥️ Tablero</b><small>Pantalla del DJ, con sonido</small><a class="link" href="${boardUrl()}" target="_blank">${esc(boardUrl())}</a></p>
-        <p><b>🎬 OBS</b><small>Fuente de navegador, 1920×1080, transparente</small><a class="link" href="${stageUrl()}" target="_blank">${esc(stageUrl())}</a></p>
+        <p id="ctl-obs"><b>🎬 OBS</b><small>Fuente de navegador, 1920×1080, transparente</small><a class="link" href="${stageUrl()}" target="_blank">${esc(stageUrl())}</a></p>
       </div>
     </details>
     <a class="btn lp-open" href="#/light">💡 Sala light · karaoke, show y cartelera en otro local</a>
@@ -535,6 +535,13 @@ views.control = async () => {
     if (sig === stSig) return;
     if (document.activeElement && form.contains(document.activeElement)) return; // no se pierde lo que se está escribiendo
     stSig = sig; stVenue = v;
+    // El link de OBS es el GC Light del local de la sala (Cote, 28 nov: abrió #/escena desde aquí y veía fijo el QR de la
+    // sala; los botones de «En pantalla» mandan en el GC Light, que es el que va en OBS)
+    const obs = $('#ctl-obs');
+    if (obs) {
+      const url = v ? `${location.origin}${location.pathname}#/light-gc/${v}` : stageUrl();
+      obs.innerHTML = `<b>🎬 OBS${v ? ` · GC Light de ${esc((l && l.name) || v)}` : ''}</b><small>Fuente de navegador, 1920×1080, transparente${v ? '. Muestra lo que eligen estos botones' : ''}</small><a class="link" href="${esc(url)}" target="_blank">${esc(url)}</a>`;
+    }
     if (!v || !l || !l.open) {
       box.innerHTML = ''; form.hidden = true;
       note.textContent = v ? 'La sala light de este local no está disponible.' : 'No hay sala de juegos abierta. Los botones del GC de cada local están en su sala light.';
