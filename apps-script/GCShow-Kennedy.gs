@@ -3,7 +3,7 @@ const TITULO = 'GC Show Kennedy';
 const FILA_INICIO = 835;   // primera fila de la cartelera
 const FILAS = 40;          // cuántas filas revisar hacia abajo para el show de hoy
 const CART_COL = 2;  // Kennedy: B (días) y C (show)
-const HOR_FILA = 857;      // títulos DIA | HORA | ACTIVIDAD
+const HOR_FILA = 857;      // donde termina la cartelera (los horarios se buscan solos por su título DIA, filas 850 a 870)
 const HOR_COL = 2;   // Kennedy: B, C, D
 // Tipos que van arriba, chico, en el GC de OBS
 const TIPOS = /^(BANDA TRIBUTO A|BANDA TRIBUTO|TRIBUTO A|TRIBUTO|DOBLE DE|DOBLE|ESPECIAL|STAND UP KENNEDY|STAND UP)(?:\s*:\s*|\s+)(.+)$/i;
@@ -97,15 +97,36 @@ function leerCartelera_(hoja) {
     .map(r => ({ dia: String(r[0]).trim(), show: String(r[1]).trim() }));
 }
 
-// Horarios de una pestaña: desde la fila siguiente a los títulos, hasta la primera fila vacía
+// Horarios de una pestaña (mejorado el 28 nov, pedido de Code 0: el 28 nov Frida y Tobalaba dejaron de mostrar horarios
+// sin ningún aviso). Ahora:
+// 1) busca el título «DIA» (o «DÍA») en su columna entre las filas 850 y 870, en vez de suponer la 857;
+// 2) salta las filas vacías y corta recién después de 3 vacías seguidas;
+// 3) si la celda del día viene vacía (el día escrito solo en la primera fila), repite el último día;
+// 4) si no encuentra horarios, devuelve un aviso claro (la Sala lo puede mostrar en el panel del local).
+const HOR_DESDE = 850, HOR_HASTA = 870;
+function columna_(n) { let s = ''; while (n > 0) { const r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = Math.floor((n - 1) / 26); } return s; }
 function leerHorarios_(hoja) {
-  const horarios = [];
-  const filas = hoja.getRange(HOR_FILA + 1, HOR_COL, 60, 3).getDisplayValues();
-  for (const [dia, hora, actividad] of filas) {
-    if (!String(dia).trim()) break;
-    horarios.push({ dia: String(dia).trim().toUpperCase(), hora: String(hora).trim(), actividad: String(actividad).trim() });
+  const titulos = hoja.getRange(HOR_DESDE, HOR_COL, HOR_HASTA - HOR_DESDE + 1, 1).getDisplayValues();
+  let fila = 0;
+  for (let i = 0; i < titulos.length; i++) {
+    const t = String(titulos[i][0]).trim().toUpperCase().replace('Í', 'I');
+    if (t === 'DIA' || t === 'DIAS') { fila = HOR_DESDE + i; break; }
   }
-  return horarios;
+  const donde = 'columna ' + columna_(HOR_COL) + ' de la pestaña ' + hoja.getName();
+  if (!fila) return { lista: [], aviso: 'No encontré el título DIA entre las filas ' + HOR_DESDE + ' y ' + HOR_HASTA + ' (' + donde + ')' };
+  const lista = [];
+  let dia = '';
+  let vacias = 0;
+  const filas = hoja.getRange(fila + 1, HOR_COL, 60, 3).getDisplayValues();
+  for (const [d, hora, actividad] of filas) {
+    const dd = String(d).trim(), hh = String(hora).trim(), aa = String(actividad).trim();
+    if (!dd && !hh && !aa) { vacias++; if (vacias >= 3) break; continue; }
+    vacias = 0;
+    if (dd) dia = dd.toUpperCase();
+    if (!dia || !hh || !aa) continue; // fila a medio llenar: se salta
+    lista.push({ dia: dia, hora: hh, actividad: aa });
+  }
+  return { lista: lista, aviso: lista.length ? '' : 'No hay horarios debajo del título DIA (fila ' + fila + ', ' + donde + ')' };
 }
 
 // Lo que lee la Sala (?modo=json): show de hoy, cartelera y horarios del mes y, en «meses», la pestaña de este mes y la del
@@ -116,11 +137,11 @@ function getCartelera() {
   const actual = hojaDe_(d);
   if (!actual) throw new Error('No encontré la pestaña ' + pestanaDe_(d));
   const cartelera = leerCartelera_(actual.hoja);
-  const horarios = leerHorarios_(actual.hoja);
-  const meses = [{ pestana: actual.pestana, cartelera: cartelera, horarios: horarios }];
+  const h = leerHorarios_(actual.hoja);
+  const meses = [{ pestana: actual.pestana, cartelera: cartelera, horarios: h.lista, avisoHorarios: h.aviso }];
   const siguiente = hojaDe_(new Date(d.getFullYear(), d.getMonth() + 1, 1, 12));
-  if (siguiente) meses.push({ pestana: siguiente.pestana, cartelera: leerCartelera_(siguiente.hoja), horarios: leerHorarios_(siguiente.hoja) });
-  return { pestana: actual.pestana, hoy: getShow(), cartelera: cartelera, horarios: horarios, meses: meses };
+  if (siguiente) { const h2 = leerHorarios_(siguiente.hoja); meses.push({ pestana: siguiente.pestana, cartelera: leerCartelera_(siguiente.hoja), horarios: h2.lista, avisoHorarios: h2.aviso }); }
+  return { pestana: actual.pestana, hoy: getShow(), cartelera: cartelera, horarios: h.lista, avisoHorarios: h.aviso, meses: meses };
 }
 
 // Para probar: elegir arriba «probar» o «probarCartelera» y apretar Ejecutar
