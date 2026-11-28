@@ -2924,7 +2924,10 @@ const STANDBY_HISTORIA = [
 ];
 function capasStandbyHistoria(inicio){
   const n = STANDBY_HISTORIA.length, cabs = djCabezas().filter(id => segIds().indexOf(id) < 2);
-  const caps = N(n).map(k => STANDBY_HISTORIA[(inicio + k) % n]);
+  // empieza y termina siempre en azul (Cote: «el azul de fondo siempre se ve espectacular»); al medio, el recorrido
+  // de cada boton parte en un capitulo distinto
+  const medio = STANDBY_HISTORIA.slice(1, n - 1), m0 = Math.max(0, inicio - 1) % medio.length;
+  const caps = [STANDBY_HISTORIA[0], ...medio.slice(m0), ...medio.slice(0, m0), STANDBY_HISTORIA[n - 1]];
   const col = [], mini = [];
   caps.forEach(cp => { const t = cp.tema, m = t.length, mm = MINI_MOV[cp.mov] || MINI_MOV.ola;
     N(9).forEach(k => { const o = { ...grupos(djAbajo(), t[k % m]), ...grupos(djArriba(), t[(k + 1) % m]), frontales: null, ...grupos(djMini(), t[(k + 1) % m]) },
