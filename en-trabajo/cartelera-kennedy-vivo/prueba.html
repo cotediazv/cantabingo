@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cartelera Kennedy (prueba ES5)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Manrope:wght@500;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="cartelera.css">
+<style>html,body{margin:0;background:#000}#r{position:relative;width:720px;height:1280px;transform-origin:0 0}</style>
+</head><body><div id="r"></div>
+<script src="cartelera.js"></script><script src="prueba-datos.js"></script>
+<script>
+// Prueba: datos guardados de /api/light/cartelera?local=kennedy (28 nov). ?s=N deja fijo el paso N.
+var r = document.getElementById('r');
+var P = KC.pasos(KC_PRUEBA, new Date(2026, 10, 28));
+r.innerHTML = KC.pantalla(P, { krb: '../../public/krb-stage.svg', local: '../../public/logo-kennedy.png' });
+function listo() {
+  KC.encajar(r);
+  var m = /[?&]s=(\d+)/.exec(location.search), i = 0;
+  if (m) { KC.mostrar(r, +m[1]); window.LISTO = P.length; return; }
+  setInterval(function () { i = KC.mostrar(r, i + 1); }, KC.SEG * 1000);
+  window.LISTO = P.length;
+}
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(listo); else setTimeout(listo, 1500);
+</script></body></html>

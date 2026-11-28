@@ -1,0 +1,118 @@
+/* Cartelera vertical de Mercado Kennedy, versión 6 del diseño (28 nov), para Chrome antiguo. Code 2.
+   Pantalla fija de 720x1280 (.kc); quien la usa la escala. Sin inset, aspect-ratio, clamp/min/max, env,
+   gap en flex ni min-content. Letras: Big Shoulders Display (títulos), Manrope (textos), JetBrains Mono (etiquetas). */
+.kc{position:absolute;left:0;top:0;width:720px;height:1280px;overflow:hidden;background:#0c0b12;color:#f3eee6;font-family:Manrope,Arial,sans-serif;
+  --disp:"Big Shoulders Display",Impact,"Arial Narrow",sans-serif;--mono:"JetBrains Mono",monospace;--tarima:#15131e;--tarima2:#1d1929;--tenue:#a59fb0;--foco:#f4bf5a;--tinta:#1a1407;--k3:#7fdcff}
+.kc *{box-sizing:border-box}
+.kc-fondo{position:absolute;left:-8%;top:-8%;right:-8%;bottom:-8%;background:radial-gradient(circle at 16% 10%,rgba(71,184,230,.38) 0,transparent 40%),radial-gradient(circle at 90% 82%,rgba(244,191,90,.2) 0,transparent 36%),linear-gradient(170deg,#141b26 0%,#0c0b12 52%,#07060c 100%)}
+.kc-paso{position:absolute;left:0;top:0;right:0;bottom:0;padding:54px 40px 0;display:flex;flex-direction:column;opacity:0;transition:opacity .7s ease}
+.kc-paso.kc-on{opacity:1}
+.kc-logos{position:absolute;left:0;right:0;bottom:0;height:118px;display:flex;align-items:center;justify-content:center;background:linear-gradient(0deg,rgba(7,6,12,.97),rgba(7,6,12,.6));border-top:2px solid rgba(71,184,230,.5);z-index:3}
+.kc-logos img{height:58px;width:auto}
+.kc-logos i{width:2px;height:56px;background:rgba(243,238,230,.35);margin:0 28px}
+.kc-puntos{position:absolute;left:0;right:0;bottom:132px;text-align:center;z-index:3;font-size:0}
+.kc-puntos b{display:inline-block;width:34px;height:6px;margin:0 5px;background:rgba(243,238,230,.22)}
+.kc-puntos b.kc-on{background:#47b8e6}
+.kc-eti{display:inline-block;font-family:var(--mono);font-weight:700;font-size:20px;letter-spacing:.22em;text-transform:uppercase;background:#47b8e6;color:#06131a;padding:9px 26px 8px 16px;-webkit-clip-path:polygon(0 0,100% 0,calc(100% - 14px) 100%,0 100%);clip-path:polygon(0 0,100% 0,calc(100% - 14px) 100%,0 100%);align-self:flex-start;white-space:nowrap}
+.kc-eti.kc-oro{background:var(--foco);color:var(--tinta)}
+.kc-tit{font-family:var(--disp);font-weight:900;text-transform:uppercase;line-height:.86;font-size:100px;margin-top:16px;white-space:nowrap}
+.kc-tit b{color:var(--foco)}
+.kc-sub{font-family:var(--mono);font-size:22px;letter-spacing:.16em;text-transform:uppercase;color:var(--k3);margin-top:12px}
+.kc-ico{-webkit-flex:none;flex:none}
+.kc-ico svg{width:100%;height:100%;overflow:visible}
+.kc-foto img{width:100%;height:100%;object-fit:cover;display:block}
+.kc-fit{white-space:nowrap;overflow:hidden}
+
+/* semana en tarjetas */
+.kc-dias{-webkit-flex:1;flex:1;display:flex;flex-direction:column;margin-top:26px;padding-bottom:192px}
+.kc-dia{position:relative;-webkit-flex:1 1 0;flex:1 1 0;min-height:0;display:flex;flex-direction:column;justify-content:center;background:var(--tarima);border-top:5px solid #47b8e6;margin-top:16px;padding:16px 20px 16px 16px;-webkit-clip-path:polygon(0 0,100% 0,100% calc(100% - 22px),calc(100% - 22px) 100%,0 100%);clip-path:polygon(0 0,100% 0,100% calc(100% - 22px),calc(100% - 22px) 100%,0 100%)}
+.kc-dia:first-child{margin-top:0}
+.kc-dia.kc-hoy{background:var(--tarima2);box-shadow:inset 0 0 0 2px var(--foco)}
+.kc-dia.kc-jue{-webkit-flex:1.55 1 0;flex:1.55 1 0}
+.kc-dia.kc-juegos{padding-top:0}
+.kc-fila{display:flex;align-items:center}
+.kc-fecha{width:118px;-webkit-flex:none;flex:none;text-align:center;line-height:.9}
+.kc-fecha small{display:block;font-family:var(--mono);font-size:18px;letter-spacing:.14em;text-transform:uppercase;color:var(--tenue)}
+.kc-fecha b{display:block;font-family:var(--disp);font-weight:900;font-size:90px}
+.kc-fecha em{display:block;font-family:var(--mono);font-style:normal;font-size:16px;letter-spacing:.14em;color:var(--tenue);text-transform:uppercase}
+.kc-que{-webkit-flex:1;flex:1;min-width:0;margin:0 18px}
+.kc-tipo{font-family:var(--mono);font-size:17px;letter-spacing:.18em;text-transform:uppercase;white-space:nowrap}
+.kc-nom{font-family:var(--disp);font-weight:800;text-transform:uppercase;font-size:58px;line-height:.95;margin-top:4px}
+.kc-art{font-family:var(--mono);font-size:16px;letter-spacing:.1em;text-transform:uppercase;color:var(--tenue);margin-top:2px}
+.kc-hora{margin-top:8px;font-family:var(--mono);font-size:18px;color:var(--tenue);white-space:nowrap}
+.kc-hora b{color:var(--foco);font-weight:700}
+.kc-dia .kc-ico{width:112px;height:112px}
+.kc-nj{margin:0 -20px 12px -16px;background:linear-gradient(90deg,#f4bf5a,#ffd98a);color:var(--tinta);display:flex;align-items:center;justify-content:space-between;padding:10px 22px 8px}
+.kc-nj b{font-family:var(--disp);font-weight:900;font-size:44px;text-transform:uppercase;line-height:1}
+.kc-nj span{font-family:var(--mono);font-weight:700;font-size:22px}
+.kc-hoyb{position:absolute;right:0;top:0;background:var(--foco);color:var(--tinta);font-family:var(--mono);font-weight:700;font-size:15px;letter-spacing:.18em;padding:4px 12px 4px 16px;z-index:2}
+.kc-dia.kc-juegos .kc-hoyb{top:auto;bottom:0}
+/* el jueves, más grande */
+.kc-jue .kc-fecha b{font-size:112px}
+.kc-jue .kc-nom{font-size:74px}
+.kc-jue .kc-tipo{font-family:var(--disp);font-weight:900;font-size:40px;letter-spacing:.03em;line-height:1}
+.kc-jue .kc-ico{width:116px;height:150px}
+/* con 4 tarjetas: el jueves mide lo que pide su contenido y las otras se compactan */
+.kc-cuatro .kc-dia.kc-jue{min-height:252px}
+.kc-cuatro .kc-dia{padding-top:10px;padding-bottom:10px}
+.kc-cuatro .kc-dia.kc-juegos{padding-top:0}
+.kc-cuatro .kc-dia:not(.kc-jue) .kc-fecha b{font-size:70px}
+.kc-cuatro .kc-dia:not(.kc-jue) .kc-nom{font-size:50px}
+.kc-cuatro .kc-dia:not(.kc-jue) .kc-ico{width:96px;height:88px}
+.kc-cuatro .kc-dia:not(.kc-jue) .kc-tipo{font-size:15px}
+.kc-cuatro .kc-dia:not(.kc-jue) .kc-hora{margin-top:4px}
+
+/* una noche en grande */
+.kc-spot{-webkit-flex:1;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding-bottom:178px}
+.kc-spot .kc-ico-spot{width:300px;height:230px;margin-bottom:18px}
+.kc-cuando{font-family:var(--mono);font-size:26px;letter-spacing:.2em;text-transform:uppercase;color:var(--k3)}
+.kc-cuando b{color:var(--foco)}
+.kc-tipo2{font-family:var(--disp);font-weight:800;font-size:48px;text-transform:uppercase;letter-spacing:.04em;line-height:1;margin-top:16px}
+.kc-nom2{font-family:var(--disp);font-weight:900;font-size:124px;text-transform:uppercase;line-height:.86;max-width:640px;margin-top:4px}
+.kc-art2{font-family:var(--mono);font-size:22px;letter-spacing:.14em;text-transform:uppercase;color:var(--tenue);margin-top:8px}
+.kc-njg{margin-top:18px;background:var(--foco);color:var(--tinta);padding:12px 34px 10px}
+.kc-njg b{display:block;font-family:var(--disp);font-weight:900;font-size:64px;text-transform:uppercase;line-height:.95}
+.kc-njg span{display:block;font-family:var(--mono);font-weight:700;font-size:20px;letter-spacing:.14em;text-transform:uppercase}
+.kc-horas{display:flex;margin-top:28px;background:var(--tarima);border-top:3px solid #2a2636;width:100%}
+.kc-horas div{-webkit-flex:1;flex:1;padding:14px 6px 12px;border-left:2px solid #2a2636;min-width:0}
+.kc-horas div:first-child{border-left:0}
+.kc-horas b{display:block;font-family:var(--disp);font-weight:900;font-size:38px;color:var(--foco);line-height:1}
+.kc-horas span{display:block;font-family:var(--mono);font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--tenue);margin-top:4px;white-space:nowrap}
+.kc-horas div.kc-top{background:var(--foco)}
+.kc-horas div.kc-top b,.kc-horas div.kc-top span{color:var(--tinta)}
+
+/* noche de juegos */
+.kc-grande{position:relative;font-family:var(--disp);font-weight:900;text-transform:uppercase;line-height:.82;font-size:132px;margin-top:16px}
+.kc-grande b{color:var(--foco);display:block}
+.kc-h20{position:absolute;right:0;top:12px;line-height:.8;white-space:nowrap}
+.kc-h20 b{display:inline-block;color:#f3eee6;font-size:116px}
+.kc-h20 span{display:inline-block;font-size:52px;color:var(--foco);margin-left:12px}
+.kc-como{display:flex;align-items:center;margin-top:18px}
+.kc-como .kc-ico{width:150px;height:116px;margin-right:18px}
+.kc-como p{margin:0;font-size:29px;line-height:1.3;color:var(--tenue)}
+.kc-como p b{color:#f3eee6}
+.kc-jueves{-webkit-flex:1;flex:1;display:flex;flex-direction:column;margin-top:22px}
+.kc-jf{-webkit-flex:1 1 0;flex:1 1 0;display:flex;align-items:center;background:var(--tarima);border-left:8px solid #47b8e6;padding:8px 16px;margin-top:12px;min-height:0}
+.kc-jf:first-child{margin-top:0}
+.kc-fj{width:130px;-webkit-flex:none;flex:none;text-align:center;line-height:.9}
+.kc-fj small{display:block;font-family:var(--mono);font-size:19px;letter-spacing:.14em;text-transform:uppercase;color:var(--tenue)}
+.kc-fj b{display:block;font-family:var(--disp);font-weight:900;font-size:104px}
+.kc-qj{-webkit-flex:1;flex:1;min-width:0;margin:0 16px}
+.kc-qj em{display:block;font-style:normal;font-family:var(--disp);font-weight:900;font-size:44px;text-transform:uppercase;line-height:1}
+.kc-qj span{display:block;font-family:var(--disp);font-weight:800;font-size:58px;text-transform:uppercase;line-height:.95;margin-top:4px}
+.kc-qj i{display:block;font-style:normal;font-family:var(--mono);font-weight:700;font-size:24px;letter-spacing:.14em;color:var(--foco);margin-top:6px}
+.kc-jf .kc-ico{width:120px;height:104px}
+.kc-kn{margin:12px 0 192px;display:flex;align-items:baseline;justify-content:space-between;background:var(--tarima);border-left:8px solid #4fd08b;padding:14px 22px 12px}
+.kc-kn b{font-family:var(--disp);font-weight:900;font-size:56px;line-height:1;color:var(--foco)}
+.kc-kn span{font-family:var(--disp);font-weight:800;font-size:48px;line-height:1;text-transform:uppercase}
+
+/* el mes completo */
+.kc-mes{display:grid;grid-template-columns:1fr 1fr;grid-gap:12px;margin-top:24px}
+.kc-m{background:var(--tarima);border-left:6px solid #47b8e6;padding:12px 14px 12px 16px;min-width:0}
+.kc-m small{display:block;font-family:var(--mono);font-size:17px;letter-spacing:.12em;text-transform:uppercase;color:var(--tenue);white-space:nowrap}
+.kc-m small em{font-style:normal;color:var(--foco)}
+.kc-m i{display:block;font-style:normal;font-family:var(--disp);font-weight:900;font-size:30px;text-transform:uppercase;line-height:1;margin-top:4px}
+.kc-m b{display:block;font-family:var(--disp);font-weight:800;font-size:40px;line-height:.95;text-transform:uppercase;margin-top:3px}
+.kc-m.kc-ancho,.kc-m.kc-mj{grid-column:1 / 3}
+.kc-m.kc-mj{border-left-width:10px;background:var(--tarima2)}
+.kc-m.kc-mj b{font-size:58px}
