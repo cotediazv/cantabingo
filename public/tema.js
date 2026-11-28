@@ -118,7 +118,7 @@
   };
   sync(); setInterval(sync, 10000); setInterval(mount, 1000);
   // Semáforo del Dell de las luces de Kennedy (orden 13 de Code 0, 28 nov): una fila por cosa, con su color y una línea de
-  // texto, y arriba «Último latido hace N s». Lo usan el Centro de control y la pestaña de Mercado Kennedy del GC Master
+  // texto, y arriba «Último latido hace N s». Va en el panel de la sala light de Mercado Kennedy y en su pestaña «Luces»
   const COLOR = { verde: 'Bien', amarillo: 'Atención', rojo: 'Problema', gris: 'Sin datos' };
   window.dellHtml = (r, compact) => {
     if (!r) return '<p class="muted small">No se pudo leer el estado del Dell.</p>';
@@ -126,13 +126,4 @@
     const rows = (r.orden || []).map((k) => `<div class="dell-row dell-${r.luces[k]}"><i aria-hidden="true"></i><b>${esc(r.nombres[k])}</b><span>${esc(COLOR[r.luces[k]] || '')}</span>${compact ? '' : `<small>${esc(r.textos[k] || '')}</small>`}</div>`).join('');
     return `<p class="small dell-head"><b>${esc(head)}</b>${r.horario ? ' · horario de Kennedy' : ''}${r.avisos ? ' · avisos al celular activos' : ''}</p><div class="dell-rows${compact ? ' dell-compact' : ''}">${rows}</div>`;
   };
-  setInterval(async () => {
-    if (!/^#\/control\b/.test(location.hash)) return;
-    const prev = document.getElementById('resp-box');
-    if (!prev) return;
-    let box = document.getElementById('dell-box');
-    if (!box) { box = document.createElement('div'); box.className = 'panel'; box.id = 'dell-box'; prev.parentNode.insertBefore(box, prev.nextSibling); box.innerHTML = '<h2>💡 Dell de Kennedy</h2><div class="dell-in"></div>'; }
-    const r = await api('GET', '/api/luces/salud').catch(() => null);
-    if (box.isConnected) box.querySelector('.dell-in').innerHTML = window.dellHtml(r);
-  }, 5000);
 })();

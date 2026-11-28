@@ -1860,7 +1860,7 @@ function lucesTab() {
   bar.innerHTML = '<button type="button" class="on" data-lz="kar">🎤 Karaoke</button><button type="button" data-lz="luces">💡 Luces</button>';
   app.prepend(bar);
   const box = document.createElement('div'); box.className = 'lz-box'; box.hidden = true;
-  box.innerHTML = '<div class="lz-top"><button type="button" data-lz="kar">🎤 Volver al karaoke</button><b>💡 Luces · Mercado Kennedy</b><button type="button" data-lz="nuevo" title="Si el panel pide la clave">↻ Sesión nueva</button></div><div class="lz-frame"><p class="muted" id="lz-msg">Cargando el panel de las luces…</p></div>';
+  box.innerHTML = '<div class="lz-top"><button type="button" data-lz="kar">🎤 Volver al karaoke</button><b>💡 Luces · Mercado Kennedy</b><button type="button" data-lz="nuevo" title="Si el panel pide la clave">↻ Sesión nueva</button></div><div class="lz-dell"></div><div class="lz-frame"><p class="muted" id="lz-msg">Cargando el panel de las luces…</p></div>';
   app.appendChild(box);
   const load = async (nuevo) => {
     const msg = box.querySelector('#lz-msg');
@@ -1974,10 +1974,20 @@ views.karaokectl = async (local) => {
       <p class="muted small kc-horario" style="margin:14px 0 0">Los pedidos desde el celular se abren y se cierran solos según el horario del local (Mercado Kennedy: jue a sáb 21:45–00:30 · Frida: vie y sáb 18:30–00:00 · Tobalaba: vie 21:00–22:10).</p>
       <p class="muted small" id="kc-note" style="margin-top:10px"></p>
     </div>
-    ${light ? `<div class="panel" id="kc-lb"></div>${staff ? '' : '<p class="back"><a href="#/light">← Salas light</a></p>'}` : activitiesNav('karaoke')}`;
+    ${light ? `<div class="panel" id="kc-lb"></div>${light === 'kennedy' ? '<div class="panel" id="kc-dell"><h2>💡 Dell de las luces</h2><div class="dell-in"></div></div>' : ''}${staff ? '' : '<p class="back"><a href="#/light">← Salas light</a></p>'}` : activitiesNav('karaoke')}`;
   const stopBar = light && views.lightBar ? views.lightBar($('#kc-lt'), $('#kc-lb'), light, staff) : null;
   if (light === 'kennedy') lucesTab(); // pestaña «Luces»: el panel del DJ de las luces, en el mismo lugar
   const stopMini = light === 'kennedy' ? lucesMini() : null; // mini panel de luces fijo abajo
+  // Semáforo del Dell de las luces (orden 13 de Code 0, Cote, 28 nov: «eso debería ir en el GC Lite, porque eso muestra el
+  // estado de los computadores siempre. Y también podría ser en la sala de luces»): en el panel y, compacto, en «Luces»
+  const dellPaint = async () => {
+    if (!window.dellHtml || !$('#kc-dell')) return;
+    const r = await api('GET', '/api/luces/salud').catch(() => null);
+    const a = document.querySelector('#kc-dell .dell-in'); if (a) a.innerHTML = window.dellHtml(r);
+    const b = document.querySelector('.lz-dell'); if (b) b.innerHTML = window.dellHtml(r, true);
+  };
+  const dellT = light === 'kennedy' ? setInterval(dellPaint, 10000) : 0;
+  if (dellT) dellPaint();
   let stopTv = null;
   const tvClose = () => { if (stopTv) { stopTv(); stopTv = null; } const bx = $('#kc-tv-box'); if (bx) { bx.hidden = true; bx.innerHTML = ''; } if ($('#kc-tv-que')) $('#kc-tv-que').textContent = ''; if ($('#kc-tv-btn')) $('#kc-tv-btn').innerHTML = '📺 Ver la transmisión en vivo <span>▾</span>'; };
   if (light) $('#kc-tv-btn').onclick = () => {
@@ -2097,7 +2107,7 @@ views.karaokectl = async (local) => {
   await paint();
   if (k && k.edit) paintSung();
   const timer = setInterval(paint, 3000);
-  return () => { clearInterval(timer); if (stopBar) stopBar(); if (stopMini) stopMini(); tvClose(); };
+  return () => { clearInterval(timer); clearInterval(dellT); if (stopBar) stopBar(); if (stopMini) stopMini(); tvClose(); };
 };
 
 // Menú de abajo en el panel de todos los juegos (pedido de Cote): «Sortear juego» y después los juegos con su ícono;
