@@ -2,6 +2,7 @@
 
 Plataforma web para shows en vivo de KRB Stage (locales **Frida Kahlo**, **Kennedy** y **Tobalaba**).
 Sitio: https://cantabingo.onrender.com · Render (plan Starter, disco de 1 GB) · se despliega solo al subir a `main`.
+Al Render donde está el servicio cantabingo se entra con la cuenta **«Cote Díaz»**, no con la cuenta KRB (Cote, 28 nov, por Code 0).
 
 ## Cómo trabajar con Cote (el dueño)
 
