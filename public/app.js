@@ -425,6 +425,7 @@ views.control = async () => {
     </details>
     <a class="btn lp-open" href="#/light">💡 Sala light · karaoke, show y cartelera en otro local</a>
     <a class="btn lp-open" href="#/consola">🖥️ Consola general · los 3 locales en una pantalla</a>
+    <a class="btn lp-open" href="#/lucesreg">📋 Registro de las luces del Dell (Kennedy)</a>
     <a class="btn lp-open" href="#/master">🎛️ GC Master · centro de control de transmisión</a>
     <a class="btn lp-open" href="/sala">📱 Sala de juegos en el teléfono · para guardar en el inicio</a>
     <div class="panel"><h2>Karaoke</h2>
@@ -1915,6 +1916,25 @@ function ajustarKl(caja) {
     if (ancho() > caja() + 0.5) el.classList.add('kl-2l');
   });
 }
+// Registro de las luces del Dell en línea (pedido de Cote, 28 nov): lo sube el Dell solo; aquí se lee, y el enlace de
+// lectura es para Code 4 (se pega una vez en el Registro)
+views.lucesreg = async () => {
+  if (!(await isAdmin())) return viewLogin();
+  app.innerHTML = '<p class="back"><a href="#/control">← Centro de control</a></p><h1>Registro de las luces del Dell</h1><div class="panel" id="lr"><p class="muted">Cargando…</p></div>';
+  const pinta = async (noche) => {
+    let r; try { r = await api('GET', `/api/luces/registro${noche ? `?noche=${encodeURIComponent(noche)}` : ''}`); } catch (err) { $('#lr').innerHTML = `<p>${esc(err.message)}</p>`; return; }
+    const cuando = (t) => (t ? new Date(t).toLocaleString('es-CL', { timeZone: 'America/Santiago' }) : 'nunca');
+    $('#lr').innerHTML = `<p class="small">Subido por el Dell: <b>${esc(cuando(r.at))}</b> · versión ${esc(r.version || '—')}. El Dell lo sube solo cada 10 minutos.</p>
+      <p class="small"><b>Enlace para Code 4</b> (solo lectura; pegarlo una vez en el Registro): <input readonly style="width:100%" value="${esc(r.enlace || '')}"></p>
+      <label class="small">Noche: <select id="lr-n">${r.noches.map((n) => `<option ${n === r.noche ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
+      <pre style="white-space:pre-wrap;font-size:.75rem;max-height:55vh;overflow:auto">${esc(r.texto || 'Todavía no llega nada del Dell.')}</pre>
+      <h2>Diagnóstico (${esc(cuando(r.diagAt))})</h2><pre style="white-space:pre-wrap;font-size:.75rem;max-height:55vh;overflow:auto">${esc(r.diag || 'Todavía no llega el diagnóstico.')}</pre>`;
+    const sel = $('#lr-n'); if (sel) sel.onchange = () => pinta(sel.value);
+  };
+  await pinta('');
+  return undefined;
+};
+
 // ---------- Karaoke: panel del animador ----------
 // Pone el karaoke en pantalla y muestra la cola. El local es el de la sala abierta.
 // «Ya cantó», Subir y Bajar: cuando el local ya tiene instalado Sala.gs, se pueden usar aquí o en la app del equipo.
