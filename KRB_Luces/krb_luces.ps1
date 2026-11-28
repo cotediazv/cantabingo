@@ -340,31 +340,46 @@ namespace KRB {
         return r;
       }
     }
+    // Cote (28 nov): «OBS no partio solo a las 20:00». Antes, si OBS rechazaba la orden de partir, se daba por hecha y no se
+    // volvia a intentar. Ahora: al entrar al horario queda «por partir» y se insiste cada 10 s hasta que OBS confirma que esta
+    // transmitiendo (y se anota el motivo si OBS dice que no); igual al terminar el horario, hasta que confirma que paro.
+    static bool porPartir = false, porParar = false; static int intentos = 0;
+    public static DateTime? Reloj = null;                    // solo para probar (null = la hora real)
+    static string Resultado(string r) {                    // null si OBS dijo que si; si no, su motivo
+      if (System.Text.RegularExpressions.Regex.IsMatch(r, "\"result\"\\s*:\\s*true")) return null;
+      string c = Campo(r, "comment"); var m = System.Text.RegularExpressions.Regex.Match(r, "\"code\"\\s*:\\s*(\\d+)");
+      return (c ?? "sin detalle") + (m.Success ? " (codigo " + m.Groups[1].Value + ")" : "");
+    }
     public static void Revisar() {
       lock (OL) {
-        bool debe = EnHorario(DateTime.Now); int ahora = debe ? 1 : 0;
+        bool debe = EnHorario(Reloj ?? DateTime.Now); int ahora = debe ? 1 : 0;
         try {
           string r = Pedir("GetStreamStatus");
           Transmitiendo = System.Text.RegularExpressions.Regex.IsMatch(r, "\"outputActive\"\\s*:\\s*true");
-          // Cote (27 nov): «si se cierra OBS y se vuelve a abrir, que inmediatamente se ponga a transmitir de nuevo»: si estaba
-          // transmitiendo cuando se cayo (o es su horario), al volver parte solo
-          if (!Transmitiendo && caido && (debe || transmitiaAlCaer)) { Pedir("StartStream"); Transmitiendo = true; Bitacora.Anotar("OBS: se volvio a abrir y retomo la transmision"); }
-          else if (debe && !Transmitiendo && previo != 1) { Pedir("StartStream"); Transmitiendo = true; Bitacora.Anotar("OBS: empezo la transmision (horario: " + Horario + ")"); }
-          else if (!debe && previo == 1 && Transmitiendo) { Pedir("StopStream"); Transmitiendo = false; Bitacora.Anotar("OBS: termino la transmision (horario: " + Horario + ")"); }
+          if (debe && previo != 1) { porPartir = true; porParar = false; intentos = 0; }          // entro al horario (o el programa partio dentro)
+          if (!debe && previo == 1) { porParar = true; porPartir = false; intentos = 0; }        // termino el horario
+          // «si se cierra OBS y se vuelve a abrir, que se ponga a transmitir de nuevo»
+          if (caido && !Transmitiendo && (debe || transmitiaAlCaer)) { porPartir = true; intentos = 0; Bitacora.Anotar("OBS: se volvio a abrir; se retoma la transmision"); }
+          if (porPartir) {
+            if (Transmitiendo) { porPartir = false; Bitacora.Anotar("OBS: transmitiendo (confirmado por OBS)"); }
+            else { intentos++; string no = Resultado(Pedir("StartStream"));
+              if (no == null) Bitacora.Anotar("OBS: se pidio partir la transmision (intento " + intentos + ")");
+              else if (intentos <= 3 || intentos % 30 == 0) Bitacora.Anotar("OBS NO PARTIO la transmision (intento " + intentos + "): " + no); }
+          }
+          if (porParar) {
+            if (!Transmitiendo) { porParar = false; Bitacora.Anotar("OBS: transmision detenida (horario: " + Horario + ")"); }
+            else { intentos++; string no = Resultado(Pedir("StopStream"));
+              if (no != null && (intentos <= 3 || intentos % 30 == 0)) Bitacora.Anotar("OBS NO PARO la transmision (intento " + intentos + "): " + no); }
+          }
           if (caido) Bitacora.Anotar("OBS: conectado con el programa de luces");
-          caido = false; previo = ahora; Estado = "conectado";
+          caido = false; previo = ahora;
+          Estado = "conectado" + (porPartir ? " (intentando partir: " + intentos + " intentos)" : "");
         } catch (Exception e) {
           string m = e.InnerException != null ? e.InnerException.Message : e.Message;
-          if (!caido) { Bitacora.Anotar("OBS: no responde (" + m + ")"); transmitiaAlCaer = Transmitiendo; }
+          if (!caido) { Bitacora.Anotar("OBS: no responde (" + m + ")"); transmitiaAlCaer = Transmitiendo || porPartir; }
           caido = true; Estado = m;
         }
       }
-    }
-    public static void Iniciar(string carpeta) {
-      new Thread(() => { Thread.Sleep(15000); while (true) { try { RevisarStandby(); } catch {} Thread.Sleep(20000); } }) { IsBackground = true }.Start();
-      Archivo = Path.Combine(carpeta, "obs.txt");
-      try { if (File.Exists(Archivo)) Clave = File.ReadAllText(Archivo).Trim(); } catch {}
-      new Thread(() => { Thread.Sleep(20000); while (true) { if (Clave != "" || File.Exists(Archivo)) Revisar(); Thread.Sleep(10000); } }) { IsBackground = true }.Start();
     }
     // Luces en Standby solas a las 19:00, jueves a sabado (Cote, 27 nov). Una vez por noche, hasta las 00:30; si el programa
     // parte dentro de ese rato (por ejemplo, despues de un corte de luz), tambien, porque el cable parte con todo apagado.
