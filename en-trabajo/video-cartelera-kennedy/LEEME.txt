@@ -1,6 +1,6 @@
 Video vertical de la cartelera de Mercado Kennedy (Code 2, 28 nov, orden de Code 0): version 6 del diseño (la que
 tiene Cote para aprobar) grabada como video, porque el deco antiguo de Kennedy no corre la pagina pero si un video.
-720x1280, 30 cps, sin audio, H.264 CRF 27, tope 0,9 Mbps. 7 pasos de 9 s con fundido de 0,7 s; termina en el
+720x1280, 30 cps, sin audio, H.264 perfil Main nivel 3.1, yuv420p, CRF 27, tope 0,9 Mbps, faststart (lo que pide el deco, dato de Code 1). 7 pasos de 9 s con fundido de 0,7 s; termina en el
 primer paso, asi el bucle empalma limpio. 58,9 s, 1,1 MB.
 Los datos son los de la Programacion al sabado 28 de noviembre: dice "HOY" sabado 28 (Bon Jovi) y "Esta semana"
 del 28 de noviembre al 5 de diciembre. Hay que regenerarlo cuando cambie la semana (o usar la version en vivo).
