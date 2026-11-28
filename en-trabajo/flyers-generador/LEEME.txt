@@ -1,17 +1,19 @@
 Generador de flyers por volumen (Code 2, orden de Code 0, 28 nov). No publica nada.
 Cruza la cartelera del mes (cantabingo.onrender.com/api/prog/cartelera?m=AAAA-MM) con las fotos del diseñador.
 
-Formato de las fotos (propuesto a Cote, falta su visto bueno):
-  Fotos artistas AAAA-MM / Kennedy | Frida | Tobalaba / DD_show_artista.jpg
-  DD = dia del show con dos numeros; minusculas, sin tildes ni espacios; guiones dentro de cada parte.
-  Ej.: Kennedy/03_doble-george-michael_juan-perez.jpg · Tobalaba/04_especial-rock-90s_carlos-cleaver.jpg
-  Show repetido con la misma foto: una sola vez, con el primer dia (el generador la reusa para los otros dias).
-  Artista en dos locales: la foto en las dos carpetas. Sin nombre de artista: se omite esa parte.
+Formato de las fotos (decision de Cote, 28 nov):
+  Fotos artistas AAAA-MM / Kennedy | Frida | Tobalaba / NN_show_artista.jpg
+  NN = ORDEN dentro del mes (01, 02...), no la fecha: sirve para contar y pagar al disenador.
+  El generador ubica la fecha buscando el nombre del show en la cartelera de ese local (sin tildes, mayusculas
+  ni de/a/el, tolerando errores chicos). Una foto sirve para todas las fechas de ese show en ese local.
+  Mismo show dos veces con artistas distintos: terminar el archivo en _diaDD (ej. 06_doble-chayanne_pedro_dia19.jpg);
+  si no, el informe lo avisa en vez de adivinar.
 
 Uso:
   node generar.js --mes 2026-12 --dir <carpeta con Kennedy/ Frida/ Tobalaba/>
   node generar.js --mes 2026-12 --drive <id carpeta del Drive> --bajar <carpeta de trabajo>
   --solo-revisar  solo lista las fechas sin foto
-Sale jobs-<mes>.json (un flyer por fecha y local, con la foto que le toca) y faltan-<mes>.txt.
+Sale jobs-<mes>.json (un flyer por fecha y local, con su foto) e informe-<mes>.txt: fechas sin foto, dudas,
+fotos que no calzan con ningun show, nombres fuera del formato y total de fotos por local.
 Los domingos «Los juegos de Frida» no piden foto de artista.
 Las fotos nunca van al repositorio (es publico). La plantilla de los flyers se aprueba con Cote el lunes.
