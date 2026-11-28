@@ -268,6 +268,9 @@ function bingoName(name, theme) {
   if (BINGO_LOCAL[theme] && /^(?:Los Juegos de|Noche de juegos|Tarde de juegos)\b/i.test(String(name || ''))) return `El Bingo de ${BINGO_LOCAL[theme]}`;
   return String(name || '').replace(/^Los Juegos de /, 'El Bingo de ');
 }
+// En el panel y el Centro de control, el local va al lado del nombre de la sala (Cote, 28 nov, por Code 0: «Tomo la
+// recomendación»: en pantallas, GC y celular solo «Noche de juegos»; el local, solo al lado en el panel y el Centro de control)
+window.salaConLocal = (s) => { const n = String((s && s.name) || ''); const l = BINGO_LOCAL[s && s.theme]; return l && !n.includes(l) ? `${n} · ${l}` : n; };
 // Nombre de la sala de cada local, como lo decide el servidor (/api/tema: «Noche de juegos», «Tarde de juegos»…)
 window.salaNombre = (v) => ((window.SALAS || {})[v] || { frida: 'Tarde de juegos', kennedy: 'Noche de juegos', tobalaba: 'Noche de juegos' }[v] || '');
 const joinUrl = () => `${window.pubBase()}#/jugar`; // el QR del público: a la dirección elegida en el Centro de control
@@ -367,7 +370,7 @@ views.home = async () => {
   app.innerHTML = `
     <div class="home">
       <h1>KRB Stage · Sala de juegos</h1>
-      ${open ? `<a class="home-create open" href="${bingoHref}"><span>▶</span>Continuar: ${esc(open.name)}</a>
+      ${open ? `<a class="home-create open" href="${bingoHref}"><span>▶</span>Continuar: ${esc(window.salaConLocal(open))}</a>
         <p class="muted small home-note">Hay una sala abierta. Para crear otra, primero ciérrala en el Centro de control.</p>`
     : '<a class="home-create" href="#/nuevo"><span>🎮</span>Crear sala de juegos</a>'}
       <a class="home-control home-control-sm" href="#/control">🎛️ Centro de control</a>
@@ -554,9 +557,9 @@ views.control = async () => {
     const list = await activeSessions();
     if (!$('#open-list')) return;
     // Pedido de Cote (21 nov): desde el Centro de control, ir directo a la sala en juego o crear una
-    $('#ctl-sala-go').innerHTML = list.length ? `<a class="home-create open ctl-go" href="#/juegos"><span>▶</span>Ir a la sala en juego: ${esc(list[0].name)}</a>`
+    $('#ctl-sala-go').innerHTML = list.length ? `<a class="home-create open ctl-go" href="#/juegos"><span>▶</span>Ir a la sala en juego: ${esc(window.salaConLocal(list[0]))}</a>`
       : '<a class="home-create ctl-go" href="#/nuevo"><span>🎮</span>Crear sala de juegos</a>';
-    $('#open-list').innerHTML = list.length ? `${list.map((s) => `<div class="open-row"><span><b>${esc(s.name)}</b><br><small class="muted">Ronda ${s.round}</small></span><button class="danger" data-close="${s.id}">Cerrar</button></div>`).join('')}
+    $('#open-list').innerHTML = list.length ? `${list.map((s) => `<div class="open-row"><span><b>${esc(window.salaConLocal(s))}</b><br><small class="muted">Ronda ${s.round}</small></span><button class="danger" data-close="${s.id}">Cerrar</button></div>`).join('')}
       ${list.length > 1 ? '<button class="danger big" id="close-all" style="width:100%;margin-top:12px">Cerrar todos</button>' : ''}` : '<p class="muted">No hay ningún bingo abierto.</p>';
   };
   const closeOne = (id) => api('POST', `/api/sessions/${id}/host/close`);
