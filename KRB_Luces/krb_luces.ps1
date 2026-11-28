@@ -1598,6 +1598,55 @@ $script:diagNoche = ""
 Mostrar-Version
 $proxima = (Get-Date).AddSeconds(60)
 $avisoPausa = $false
+# Ajustes de Windows para el show (C4-5, 28 nov; decision de Code 0 con la recomendacion de Code 4): una sola vez y fuera del
+# horario de actividades. Modo de energia "Mejor rendimiento", sin suspension enchufado, y Google Drive, OneDrive, Edge y
+# Enlace movil dejan de partir con Windows (NO se borran: quedan "deshabilitados", como lo hace el Administrador de tareas).
+# Lo que se cambio queda en ajustes-windows.txt. Para deshacer: Administrador de tareas > Aplicaciones de arranque >
+# clic derecho > Habilitar; y Configuracion > Sistema > Energia > Modo de energia > Equilibrado.
+function Ajustar-Windows {
+  $marca = Join-Path $root "ajustes-windows.txt"
+  if (Test-Path $marca) { return }
+  $hecho = New-Object System.Collections.Generic.List[string]
+  $hecho.Add("AJUSTES DE WINDOWS PARA EL SHOW - " + (Get-Date -Format "yyyy-MM-dd HH:mm"))
+  try { $r = & powercfg /overlaysetactive ded574b5-45a0-4f42-8737-46345c09c238 2>&1; $hecho.Add("Modo de energia: Mejor rendimiento " + $(if ($LASTEXITCODE -eq 0) { "(listo)" } else { "(no se pudo: " + ($r -join " ") + ")" })) } catch { $hecho.Add("Modo de energia: no se pudo") }
+  try { & powercfg /change standby-timeout-ac 0 2>&1 | Out-Null; & powercfg /change hibernate-timeout-ac 0 2>&1 | Out-Null; $hecho.Add("Suspension con el cargador puesto: nunca") } catch {}
+  $quitar = '^(GoogleDriveFS|OneDrive|MicrosoftEdgeAutoLaunch)'
+  $apagado = [byte[]](3,0,0,0,0,0,0,0,0,0,0,0)
+  foreach ($base in @("HKCU:", "HKLM:")) {
+    foreach ($run in @("Software\Microsoft\Windows\CurrentVersion\Run", "Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Run")) {
+      try {
+        $k = Get-Item -Path (Join-Path $base $run) -ErrorAction Stop
+        $aprob = Join-Path $base $(if ($run -like "*WOW6432Node*") { "Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run32" } else { "Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run" })
+        foreach ($n in $k.GetValueNames()) {
+          if ($n -notmatch $quitar) { continue }
+          try {
+            if (-not (Test-Path $aprob)) { New-Item -Path $aprob -Force | Out-Null }
+            Set-ItemProperty -Path $aprob -Name $n -Value $apagado -Type Binary -ErrorAction Stop
+            $hecho.Add("Ya no parte con Windows: " + $n + " (" + $base + ")")
+          } catch { $hecho.Add("No se pudo deshabilitar " + $n + " (" + $base + "; necesita administrador)") }
+        }
+      } catch {}
+    }
+  }
+  try {
+    $carp = [Environment]::GetFolderPath("Startup"); $aprobC = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\StartupFolder"
+    foreach ($f in (Get-ChildItem $carp -Filter *.lnk -ErrorAction SilentlyContinue)) {
+      if ($f.Name -notmatch '(Google Drive|OneDrive)') { continue }
+      if (-not (Test-Path $aprobC)) { New-Item -Path $aprobC -Force | Out-Null }
+      Set-ItemProperty -Path $aprobC -Name $f.Name -Value $apagado -Type Binary; $hecho.Add("Ya no parte con Windows: " + $f.Name)
+    }
+  } catch {}
+  try {
+    $tel = "HKCU:\Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\SystemAppData\Microsoft.YourPhone_8wekyb3d8bbwe"
+    foreach ($t in (Get-ChildItem $tel -ErrorAction SilentlyContinue)) {
+      if ($null -ne (Get-ItemProperty -Path $t.PSPath -Name State -ErrorAction SilentlyContinue)) { Set-ItemProperty -Path $t.PSPath -Name State -Value 1 -Type DWord; $hecho.Add("Ya no parte con Windows: Enlace movil (Phone Link)") }
+    }
+  } catch {}
+  $hecho.Add("Para deshacer: Administrador de tareas > Aplicaciones de arranque > clic derecho > Habilitar. Energia: Configuracion > Sistema > Energia > Modo de energia.")
+  try { Set-Content -Path $marca -Value $hecho -Encoding UTF8 } catch {}
+  foreach ($h in $hecho) { [KRB.Bitacora]::Anotar($h) }
+}
+$script:ajustesListos = $false
 while ($true) {
   Start-Sleep -Seconds 1
   if ((Get-Date) -ge $proximoConsumo) { Anotar-Consumo; $proximoConsumo = (Get-Date).AddMinutes(10) }
@@ -1608,6 +1657,7 @@ while ($true) {
   if ($ahoraN.Hour -eq 1 -and $ahoraN.Minute -ge 35 -and $script:diagNoche -ne $nocheAyer -and -not $enActividad) { $script:diagNoche = $nocheAyer; try { Diagnostico } catch {}; $proximaSubida = Get-Date }
   if ((Get-Date) -ge $proximaSubida) { Subir-Registro; $proximaSubida = (Get-Date).AddMinutes(10) }
   if ((Get-Date) -ge $proximoTunel) { Revisar-Tunel; $proximoTunel = (Get-Date).AddMinutes(5) }
+  if (-not $script:ajustesListos -and -not [KRB.Aviso]::EnActividad((Get-Date))) { $script:ajustesListos = $true; try { Ajustar-Windows } catch {} }
   $forzar = [KRB.Web]::PedirActualizar
   # Nunca durante las actividades (Cote, 27 nov): en el horario del local (con margen) no se busca ni se reinicia; solo si se
   # pide a mano con "Buscar actualizacion ahora"
