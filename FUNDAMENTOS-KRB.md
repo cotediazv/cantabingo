@@ -1,13 +1,13 @@
-# LIBRO SAGRADO de KRB Stage
+# Fundamentos del proyecto KRB
 
 Un solo documento, comprimido, con todo lo que hay y cómo funciona. Todos los Code y Claude acuden aquí primero, sin tener que revisar los registros.
 Lo mantiene **Code Cero**. Última puesta al día: **sábado 28 nov 2026, 13:30 (hora de Chile)**.
 
-Reglas de este libro:
-- Si algo de aquí choca con un registro, **vale lo último que dijo Cote**; se avisa a Code Cero para corregir el libro.
+Reglas de este documento:
+- Si algo de aquí choca con un registro, **vale lo último que dijo Cote**; se avisa a Code Cero para corregir el documento.
 - Aquí **no van** claves, contraseñas, PIN, enlaces privados ni montos de personas.
 - Lo que no está comprobado lleva la marca **(sin comprobar)**.
-- El detalle técnico fino de la Sala sigue en `CLAUDE.md` (en `main`). Este libro es el mapa; `CLAUDE.md` es el manual de la Sala.
+- El detalle técnico fino de la Sala sigue en `CLAUDE.md` (en `main`). Este documento es el mapa; `CLAUDE.md` es el manual de la Sala.
 
 ---
 
@@ -168,7 +168,7 @@ Reglas de este libro:
 5. Datos personales del público: el aviso está hecho y apagado («segunda etapa»); plazo de borrado sin definir.
 6. Los Apps Script se pegan a mano: lo que está en el repositorio puede no ser lo que corre en Google (sin comprobar).
 
-## 10. Cómo se pone al día este libro
+## 10. Cómo se pone al día este documento
 
-- Cada Code avisa a Code Cero cuando cambia algo de su área; Code Cero corrige el libro.
+- Cada Code avisa a Code Cero cuando cambia algo de su área; Code Cero corrige el documento.
 - Nadie más lo edita. Si ves un error, avisa a Code Cero.
