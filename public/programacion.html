@@ -514,11 +514,17 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
           '<td><input type="number" data-tk="monto" value="' + t.monto + '" step="5000" min="0"></td><td><button class="btn chico" data-tdel="' + i + '">✕</button></td></tr>';
       }).join('') + '</table><div class="fila" style="margin-top:8px"><button class="btn chico" id="tadd">＋ Tarifa</button><button class="btn foco chico" id="tsave">Guardar tarifas</button></div></div>';
     var hor = '<div class="panel"><h2>Horarios de la cartelera</h2><p>Lo que va bajo el nombre de cada local en la cartelera.</p>' + LOCS.map(function (l) { return '<div class="campo" style="margin:8px 0"><small>' + NL[l] + '</small><textarea rows="5" data-h="' + l + '">' + esc(d.horarios[l] || '') + '</textarea></div>'; }).join('') + '<button class="btn foco chico" id="hsave">Guardar horarios</button></div>';
-    return pers + tar + hor;
+    var resp = '<div class="panel"><h2>Respaldo</h2><p>Baja un archivo con todos los datos de la plataforma: equipo, tarifas, meses, shows y la conexión con la GLOSA. Guárdalo en un lugar seguro (trae la clave del script de la GLOSA). Conviene bajarlo una vez al mes.</p><button class="btn foco chico" id="rbajar">⬇ Bajar respaldo</button></div>';
+    return pers + tar + hor + resp;
   }
   function leerPersonas() { return Array.prototype.map.call(document.querySelectorAll('tr[data-p]'), function (tr) { return { nombre: tr.querySelector('[data-pk=nombre]').value, codigo: tr.querySelector('[data-pk=codigo]').value, roles: Array.prototype.filter.call(tr.querySelectorAll('[data-pr]'), function (c) { return c.checked; }).map(function (c) { return c.dataset.pr; }) }; }); }
   function leerTarifas() { return Array.prototype.map.call(document.querySelectorAll('tr[data-t]'), function (tr) { var o = {}; tr.querySelectorAll('[data-tk]').forEach(function (e) { o[e.dataset.tk] = e.value; }); return o; }); }
   function enlazarEquipo() {
+    document.getElementById('rbajar').onclick = function () {
+      fetch('/api/prog/respaldo', { headers: { 'x-prog': TOKEN } }).then(function (r) { if (!r.ok) throw new Error('No se pudo bajar el respaldo'); return r.blob(); }).then(function (b) {
+        var a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = 'programacion-respaldo-' + new Date().toISOString().slice(0, 10) + '.json'; document.body.appendChild(a); a.click(); a.remove(); aviso('Respaldo bajado');
+      }).catch(function (e) { aviso(e.message); });
+    };
     document.getElementById('padd').onclick = function () { S.data.personas = leerPersonas(); S.data.personas.push({ nombre: '', codigo: '', roles: [] }); pintar(); };
     document.querySelectorAll('[data-pdel]').forEach(function (b) { b.onclick = function () { S.data.personas = leerPersonas(); S.data.personas.splice(Number(b.dataset.pdel), 1); pintar(); }; });
     document.getElementById('psave').onclick = function () { api('POST', '/api/prog/personas', { personas: leerPersonas() }).then(function (j) { S.data.personas = j.personas; aviso('Equipo guardado'); cargar(); }).catch(function (e) { aviso(e.message); }); };
