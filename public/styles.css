@@ -4104,3 +4104,8 @@ html.evento .games-nav [data-game][hidden] { display: none !important; }
 .pcrowd-top { grid-template-columns: minmax(0, 1fr); }
 .pcrowd-top > div { min-width: 0; }
 .pcrowd-top span { text-overflow: clip; }
+
+/* Copia de eventos (orden 12 de Code 0, pedido de Cote, 28 nov): la portada dice «Eventos» y el botón principal va en el
+   dorado de la marca, para no confundirla con la Sala de los locales */
+.home-evento .home-ev-tag { display: block; width: fit-content; justify-self: center; margin: 36px auto 4px; padding: 6px 16px; border-radius: 999px; background: #f4bf5a; color: #1a1407; font-weight: 900; font-size: 1.1rem; letter-spacing: .12em; text-transform: uppercase; }
+.home-evento .home-create, .home-evento .home-create.open { background: linear-gradient(135deg, #f4bf5a, #d99a2b); color: #1a1407; box-shadow: 0 10px 28px rgba(244, 191, 90, .35); }

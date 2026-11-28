@@ -23,7 +23,7 @@
   const withPlace = (p, txt) => [txt, p && p.place ? p.place : ''].filter(Boolean).join(' · ');
   const withThing = (p) => (p.thing ? `${p.name} · ${p.thing}` : p.name);
   const isK = (st) => st.mode === 'karaoke';
-  const fest = (st) => `El Festival de ${{ frida: 'Frida', kennedy: 'Mercado Kennedy', tobalaba: 'Tobalaba' }[st.venue] || 'Frida'}`;
+  const fest = (st) => (st.venue === 'evento' && st.mode === 'karaoke' && st.title ? st.title : `El Festival de ${window.lugarCorto ? window.lugarCorto(st.venue) : 'Frida'}`);
   // Para leer al partir cada juego (pedido de Cote)
   const howtoLines = (st) => (isK(st) ? [
     `${st.max} participantes cantan. Si se inscriben más, sorteo.`,
