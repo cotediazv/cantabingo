@@ -3633,9 +3633,9 @@ $('obsProbar').onclick = () => { $('obsEstado').textContent = 'Probando…'; ver
 // Diagnostico del Dell (Cote, 28 nov): lo arma el Dell (tarda unos segundos) y aqui se ve y se copia
 $('diagVer').onclick = async () => {
   if (DEMO) return toast('En la versión de prueba no hay Dell');
-  const pre = $('diagTexto'); pre.hidden = false; pre.textContent = 'Armando el diagnóstico en el Dell (unos 20 segundos)…';
+  const pre = $('diagTexto'); pre.hidden = false; pre.textContent = 'Armando el diagnóstico en el Dell (puede tardar hasta 2 minutos)…';
   let antes = ''; try { antes = (await api('/api/diagnostico?nuevo=1')).texto || ''; } catch(e){ pre.textContent = 'No se pudo preguntar al Dell'; return; }
-  for (let i = 0; i < 30; i++){ await new Promise(r => setTimeout(r, 3000));
+  for (let i = 0; i < 60; i++){ await new Promise(r => setTimeout(r, 3000));
     try { const r = await api('/api/diagnostico'); if (!r.pedido && r.texto && r.texto !== antes){ pre.textContent = r.texto; $('diagCopiar').hidden = false; return; } } catch(e){} }
   pre.textContent = antes || 'El Dell no alcanzó a armarlo. Prueba de nuevo en un minuto.'; $('diagCopiar').hidden = !antes;
 };

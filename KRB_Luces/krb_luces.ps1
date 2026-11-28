@@ -1421,6 +1421,35 @@ function Diagnostico {
   try { $ventanas = Get-Process | Where-Object { $_.MainWindowTitle -and ($_.ProcessName -eq 'msedge' -or $_.ProcessName -eq 'chrome') } | ForEach-Object { $_.ProcessName + ": " + $_.MainWindowTitle }
     & $L ("Ventanas de navegador abiertas: " + (@($ventanas).Count)); foreach ($v in $ventanas) { & $L ("  - " + $v) } } catch {}
   & $L ""
+  # Lo que corre escondido del sistema de luces (Cote, 28 nov: revisar todos los procesos ocultos y cuanto gastan)
+  try { & $L "Lo que corre escondido del sistema de luces:"
+    foreach ($w in Get-CimInstance Win32_Process -Filter "Name='wscript.exe' or Name='powershell.exe' or Name='cloudflared.exe'") {
+      $cl = [string]$w.CommandLine; $que = $null
+      if ($cl -like "*INICIAR_OCULTO.vbs*") { $que = "vigilante de las luces (vuelve a abrir el programa si se cierra)" }
+      elseif ($cl -like "*estacion.vbs*") { $que = "vigilante de la estacion de ritmo" }
+      elseif ($cl -like "*krb_luces.ps1*") { $que = "programa de luces (salida DMX, servidor del panel, OBS, avisos)" }
+      elseif ($w.Name -eq "cloudflared.exe") { $que = "tunel de internet (luces.krbstage.cl)" }
+      if ($que) { $pr = Get-Process -Id $w.ProcessId -ErrorAction SilentlyContinue
+        $seg = "?"; try { $seg = [Math]::Round($pr.TotalProcessorTime.TotalSeconds) } catch {}
+        & $L ("  - " + $que + ": " + $(if ($pr) { [Math]::Round($pr.WorkingSet64/1MB) } else { "?" }) + " MB, " + $seg + " s de procesador desde que partio") } }
+    $est = @(Get-CimInstance Win32_Process -Filter "Name='msedge.exe' or Name='chrome.exe'" | Where-Object { [string]$_.CommandLine -like "*KRB_Estacion*" })
+    if ($est.Count) { $mb = 0; foreach ($e in $est) { $pr = Get-Process -Id $e.ProcessId -ErrorAction SilentlyContinue; if ($pr) { $mb += $pr.WorkingSet64 } }
+      & $L ("  - estacion de ritmo (navegador escondido que escucha la musica, " + $est.Count + " procesos): " + [Math]::Round($mb/1MB) + " MB") }
+    & $L "  Dentro del programa de luces (no son programas aparte, son tareas chicas del mismo): revisar OBS cada 10 s, buscar version nueva cada 5 min (nunca en el horario de actividades), medir el consumo cada 10 min, Standby de las 19:00."
+  } catch {}
+  # Disco (Cote, 28 nov: al disco le queda poco espacio): que lo esta llenando
+  try { & $L "Que ocupa el disco (carpetas que se pueden revisar):"
+    $tam = { param($d) if (-not (Test-Path -LiteralPath $d)) { return -1 }; $t = 0; Get-ChildItem -LiteralPath $d -Recurse -File -Force -ErrorAction SilentlyContinue | ForEach-Object { $t += $_.Length }; return $t }
+    $rec = ""; try { $r = [KRB.Obs]::Consultar("GetRecordDirectory", $null); if ($r -match '"recordDirectory"\s*:\s*"([^"]+)"') { $rec = $Matches[1] -replace '\\\\', '\' } } catch {}
+    $lista = @(@("Videos", (Join-Path $env:USERPROFILE "Videos")), @("Descargas", (Join-Path $env:USERPROFILE "Downloads")), @("Escritorio", (Join-Path $env:USERPROFILE "Desktop")),
+      @("Archivos temporales", $env:TEMP), @("Temporales de Windows", "C:\Windows\Temp"), @("Papelera", 'C:\$Recycle.Bin'), @("Windows.old (version anterior de Windows)", "C:\Windows.old"),
+      @("Actualizaciones descargadas de Windows", "C:\Windows\SoftwareDistribution\Download"), @("Registros de OBS", (Join-Path $env:APPDATA "obs-studio\logs")),
+      @("Cache de Edge", (Join-Path $env:LOCALAPPDATA "Microsoft\Edge\User Data\Default\Cache")), @("Cache de Chrome", (Join-Path $env:LOCALAPPDATA "Google\Chrome\User Data\Default\Cache")),
+      @("Carpeta de luces KRB", $root))
+    if ($rec) { $lista += ,@(("Grabaciones de OBS (" + $rec + ")"), $rec) }
+    foreach ($x in $lista) { $b = & $tam $x[1]; if ($b -ge 0) { & $L ("  - " + $x[0] + ": " + [Math]::Round($b/1GB, 2) + " GB") } }
+  } catch {}
+  & $L ""
   try { & $L "Programas que parten con Windows:"; foreach ($x in Get-CimInstance Win32_StartupCommand) { & $L ("  - " + $x.Name + " (" + $x.Location + ")") } } catch {}
   try { $wu = Get-Service wuauserv; & $L ("Windows Update: " + $wu.Status)
     $h = Get-HotFix | Where-Object InstalledOn | Sort-Object InstalledOn -Descending | Select-Object -First 1; if ($h) { & $L ("  Ultima actualizacion instalada: " + $h.HotFixID + " el " + $h.InstalledOn.ToString("dd-MM-yyyy")) }
@@ -1458,14 +1487,14 @@ function Diagnostico {
 }
 Anotar-Consumo
 $proximoConsumo = (Get-Date).AddMinutes(10)
-$proximoDiag = (Get-Date).AddSeconds(90)
 Mostrar-Version
 $proxima = (Get-Date).AddSeconds(60)
 $avisoPausa = $false
 while ($true) {
   Start-Sleep -Seconds 1
   if ((Get-Date) -ge $proximoConsumo) { Anotar-Consumo; $proximoConsumo = (Get-Date).AddMinutes(10) }
-  if ([KRB.Web]::PedirDiagnostico -or (Get-Date) -ge $proximoDiag) { [KRB.Web]::PedirDiagnostico = $false; try { Diagnostico } catch {}; $proximoDiag = (Get-Date).AddMinutes(30) }
+  # el diagnostico se arma solo cuando se pide con el boton (Cote, 28 nov: «entre mas procesos ocultos, peor»)
+  if ([KRB.Web]::PedirDiagnostico) { [KRB.Web]::PedirDiagnostico = $false; try { Diagnostico } catch {} }
   $forzar = [KRB.Web]::PedirActualizar
   # Nunca durante las actividades (Cote, 27 nov): en el horario del local (con margen) no se busca ni se reinicia; solo si se
   # pide a mano con "Buscar actualizacion ahora"
