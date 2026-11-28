@@ -142,9 +142,11 @@ var KC = (function () {
       else P.push({ nombre: 'Semana ' + (j + 1), html: '<span class="kc-eti">' + eti + '</span><div class="kc-tit"><b>Del</b> ' + s.noches[0].d.getDate() + ' al ' + s.noches[s.noches.length - 1].d.getDate() + '</div><div class="kc-sub">' + rango(s) + '</div>' + dias(s) });
     }
     // 5) el mes completo: solo si la Sala entrega 4 noches o más en «month»
-    var M = (datos && datos.month) || [];
+    // si el mes en curso ya trae pocas noches, se muestra el mes siguiente («nextMonth», mismo formato; lo agrega Code 1)
+    var M = (datos && datos.month) || [], mesN = hoy.getMonth();
+    if (M.length < 4 && datos && datos.nextMonth && datos.nextMonth.length >= 4) { M = datos.nextMonth; mesN = (mesN + 1) % 12; }
     if (M.length >= 4) {
-      var mesN = hoy.getMonth(), h = '', col = 0, x, c, solo;
+      var h = '', col = 0, x, c, solo;
       for (i = 0; i < M.length; i++) {
         c = clasifica(M[i].show); x = String(M[i].day || '');
         var esJ = /^JUEVES/i.test(x);

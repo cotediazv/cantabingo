@@ -14,7 +14,7 @@ Archivos:
 
 Pasos y orden (9 s cada uno, al final vuelve al primero):
   1 Esta semana (tarjetas)  2 Hoy / La proxima noche (en grande)  3 Noche de juegos (los jueves que vienen, hasta 3)
-  4 Semanas siguientes (tarjetas, o en grande si es una sola noche)  5 Todo <mes> (solo si "month" trae 4 o mas noches)
+  4 Semanas siguientes (tarjetas, o en grande si es una sola noche)  5 Todo <mes> (si "month" trae 4 o mas noches; si no, el mes siguiente con "nextMonth", que agrega Code 1)
 Tamaños de letra (maximo -> minimo 18 px al achicar): nombre en tarjeta 58 (jueves 74; con 4 tarjetas 50),
   nombre en grande 124, nombre en los jueves de "Noche de juegos" 58, nombre del mes 40 (jueves 58).
 Horas de "Noche de juegos": 20 HORAS, 21 HORAS y 22 HORAS · KARAOKE NIGHT, como las dijo Cote (28 nov, 14:02).
