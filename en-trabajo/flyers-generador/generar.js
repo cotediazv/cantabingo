@@ -2,13 +2,14 @@
 // con las fotos que deja el diseñador y arma la lista de flyers (jobs.json) para la plantilla aprobada.
 // No publica nada. Las fotos no van al repositorio (es público): se bajan a una carpeta de trabajo.
 //
-// Formato de las fotos (decisión de Cote, 28 nov, 13:55: «el número y el doble, o el tributo según corresponda»):
-//   «Fotos artistas AAAA-MM» → carpetas «Kennedy», «Frida», «Tobalaba» → archivos «NN_doble-a-quien.jpg» o
-//   «NN_tributo-a-quien.jpg» (ej. 01_doble-karol-g.jpg, 03_tributo-inxs.jpg). Sin el nombre del artista que lo interpreta.
-//   NN es el ORDEN dentro del mes (01, 02…; sirve para contar y pagar), no la fecha.
-//   La fecha se busca por el show en la cartelera de ese local (doble o tributo tiene que coincidir; el nombre sin
-//   tildes, mayúsculas ni «de/a/el», tolerando diferencias chicas). No se adivina: si el show sale en más de una
-//   fecha del local, o hay dos fotos del mismo show, se avisa en el informe y esa fecha queda sin foto.
+// Formato de las fotos (decisión final de Cote, 28 nov, 14:10: «el número y el show, tal como va en la lista…
+//   solamente George Michael, o Bee Gees, o Piano Man»; «una carpeta por local y nada más»):
+//   carpeta del mes en el Drive → una carpeta por local («Kennedy», «Frida», «Tobalaba») → «NN Nombre.jpg»
+//   (ej. «01 George Michael.jpg», «05 Bee Gees.jpg», «02 Piano Man.jpg»). NN es el ORDEN dentro del mes en ese local.
+//   El generador busca SOLO el nombre en la cartelera del local (el tipo —doble, tributo, piano— sale de la cartelera);
+//   tolera mayúsculas, tildes, guiones y errores chicos, y acepta que venga «doble de…» o «tributo a…» escrito.
+//   No adivina: si un nombre calza con más de una fecha del local, o hay dos fotos del mismo nombre, lo avisa
+//   en el informe y esas fechas quedan sin foto hasta que alguien confirme.
 //
 // Uso:
 //   node generar.js --mes 2026-12 --dir <carpeta local con Kennedy/ Frida/ Tobalaba/>
@@ -27,7 +28,9 @@ const DIAS = { Lun: 'Lunes', Mar: 'Martes', 'Mié': 'Miércoles', Mie: 'Miércol
 
 // misma forma de escribir que el diseñador: minúsculas, sin tildes, guiones; sin palabras de relleno para comparar
 const slug = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/['’]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-const RELLENO = new Set(['de', 'a', 'al', 'el', 'la', 'los', 'las', 'y', 'bingo', 'por', 'karaoke', 'night', 'show', 'tributo', 'doble', 'especial', 'banda']);
+const RELLENO = new Set(['de', 'a', 'al', 'el', 'la', 'los', 'las', 'y', 'bingo', 'por', 'karaoke', 'night', 'show', 'tributo', 'doble', 'especial', 'banda', 'noche', 'juegos']);
+// lo que va entre paréntesis en la cartelera es a quién se le paga: no es parte del nombre del show
+const sinParen = (s) => String(s || '').replace(/\([^)]*\)/g, ' ');
 const clave = (s) => slug(s).split('-').filter((w) => w && !RELLENO.has(w)).join('-');
 
 // fotos: { local: [{ dia, show, artista, archivo, fuente }] }
@@ -41,9 +44,9 @@ async function fotosDir(dir) {
 }
 const malos = [];
 function leerNombre(f, fuente) {
-  const m = /^(\d{1,3})_(doble|tributo)-([a-z0-9][a-z0-9-]*)\.(jpe?g|png|webp)$/i.exec(f);
-  if (!m) { malos.push(f); return null; }
-  return { orden: +m[1], tipo: m[2].toLowerCase(), show: m[3], archivo: f, fuente };
+  const m = /^(\d{1,3})[\s_.-]+(.+?)\.(jpe?g|png|webp)$/i.exec(f);
+  if (!m || !clave(m[2])) { malos.push(f); return null; }
+  return { orden: +m[1], show: m[2], archivo: f, fuente };
 }
 // parecido entre dos textos ya normalizados (0 a 1), para tolerar errores chicos de escritura
 function parecido(a, b) {
@@ -82,20 +85,19 @@ async function fotosDrive(id, bajar) {
   if (!cart.locales) { console.error('La cartelera no respondió para', MES, cart); process.exit(1); }
   const fotos = arg('drive') ? await fotosDrive(arg('drive'), arg('bajar')) : arg('dir') ? await fotosDir(arg('dir')) : {};
   const [anio, mm] = MES.split('-').map(Number);
-  const jobs = []; const faltan = []; const otros = []; const sueltas = []; const dudas = []; const total = {};
+  const jobs = []; const faltan = []; const sueltas = []; const dudas = []; const total = {};
   for (const L of cart.locales) {
     const loc = LOCALES[L.local] || slug(L.nombre); const lista = (fotos[loc] || []).slice().sort((x, y) => x.orden - y.orden);
     total[L.nombre] = lista.length;
     const dias = L.dias.map((d) => { const texto = d.cartelera || [d.tipo, d.show].filter(Boolean).join(' ');
-      const tipo = /tributo/i.test(texto) ? 'tributo' : /doble/i.test(texto) ? 'doble' : '';
-      return { d, dia: +d.fecha.slice(8, 10), texto, tipo, k: clave(texto) || clave(d.tipo), foto: null, juegos: /juegos de|tarde de juegos/i.test(texto) }; });
+      return { d, dia: +d.fecha.slice(8, 10), texto, k: clave(sinParen(texto)) || clave(d.tipo), foto: null, juegos: /juegos de|tarde de juegos/i.test(texto) }; });
     // cada foto busca su show en la cartelera del local (el número del archivo no es la fecha)
     const porDia = {};
     for (const f of lista) {
-      const k = clave(f.show); const mismos = dias.filter((x) => x.tipo === f.tipo && !x.juegos); let mejor = 0;
+      const k = clave(f.show); const mismos = dias.filter((x) => !x.juegos && x.k); let mejor = 0;
       for (const x of mismos) mejor = Math.max(mejor, parecido(k, x.k));
       const calzan = mejor >= 0.8 ? mismos.filter((x) => parecido(k, x.k) >= mejor - 0.001) : [];
-      if (!calzan.length) { sueltas.push(`${L.nombre}: ${f.archivo} (no hay ${f.tipo === 'doble' ? 'un doble' : 'un tributo'} con ese nombre este mes)`); continue; }
+      if (!calzan.length) { sueltas.push(`${L.nombre}: ${f.archivo} (no hay un show con ese nombre este mes)`); continue; }
       if (calzan.length > 1) { dudas.push(`${L.nombre} · ${f.archivo}: el show sale ${calzan.length} veces (${calzan.map((x) => `${x.d.dia} ${x.dia}`).join(', ')}). Confirmar si es la misma persona; mientras tanto esas fechas quedan sin foto.`); calzan.forEach((x) => { x.duda = true; }); continue; }
       (porDia[calzan[0].dia] ||= []).push(f);
     }
@@ -103,7 +105,7 @@ async function fotosDrive(id, bajar) {
       const c = porDia[x.dia] || [];
       if (c.length === 1 && !x.duda) x.foto = c[0];
       else if (c.length > 1) { dudas.push(`${L.nombre} · ${x.d.dia} ${x.dia} · ${x.texto}: hay ${c.length} fotos del mismo show (${c.map((f) => f.archivo).join(', ')}). Dejar una sola.`); x.duda = true; }
-      if (!x.foto && !x.juegos && !x.duda) (x.tipo ? faltan : otros).push(`${L.nombre} · ${x.d.dia} ${x.dia} · ${x.texto}`);
+      if (!x.foto && !x.juegos && !x.duda) faltan.push(`${L.nombre} · ${x.d.dia} ${x.dia} · ${x.texto}`);
       const foto = x.foto;
       jobs.push({ name: `${x.d.fecha}_${loc}_${slug(x.texto).slice(0, 40)}`, local: loc, fecha: `${DIAS[x.d.dia] || x.d.dia} <b>${x.dia}</b> · ${MESES[mm - 1]}`, tipo: x.d.tipo, show: x.d.show, artista: x.d.artista, cartelera: x.texto, horarios: L.horarios, instagram: L.instagram, foto: foto ? foto.fuente : null, fotoArchivo: foto ? foto.archivo : null, juegos: x.juegos });
     }
@@ -111,7 +113,7 @@ async function fotosDrive(id, bajar) {
   if (!arg('solo-revisar')) fs.writeFileSync(`jobs-${MES}.json`, JSON.stringify(jobs, null, 2));
   const sec = (t, l) => `${t} (${l.length})` + (l.length ? ':\n  ' + l.join('\n  ') : '');
   const informe = [`Flyers ${MES}: ${jobs.length} fechas; con foto ${jobs.filter((j) => j.foto).length}.`,
-    sec('Fechas sin foto', faltan), sec('Noches que no son doble ni tributo (el formato no les pide foto; revisar a mano)', otros), sec('Dudas: no se adivina', dudas),
+    sec('Fechas sin foto', faltan), sec('Dudas: no se adivina', dudas),
     sec('Fotos que no calzan con ningún show', sueltas), sec('Archivos con nombre fuera del formato', malos),
     'Total de fotos por local (para pagar al diseñador): ' + Object.entries(total).map(([k, v]) => `${k} ${v}`).join(' · ') + ` · en total ${Object.values(total).reduce((a, b) => a + b, 0)}`].join('\n\n');
   fs.writeFileSync(`informe-${MES}.txt`, informe + '\n');

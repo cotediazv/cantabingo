@@ -1,22 +1,15 @@
 Generador de flyers por volumen (Code 2, orden de Code 0, 28 nov). No publica nada.
 Cruza la cartelera del mes (cantabingo.onrender.com/api/prog/cartelera?m=AAAA-MM) con las fotos del diseñador.
 
-Formato de las fotos (decision de Cote, 28 nov, 13:55: "el numero y el doble, o el tributo segun corresponda"):
-  Fotos artistas AAAA-MM / Kennedy | Frida | Tobalaba / NN_doble-a-quien.jpg  o  NN_tributo-a-quien.jpg
-  Ejemplos: 01_doble-karol-g.jpg, 03_tributo-inxs.jpg. Sin el nombre del artista que lo interpreta.
-  NN = ORDEN dentro del mes (01, 02...), no la fecha: sirve para contar y pagar al disenador.
-  El generador ubica la fecha buscando el show en la cartelera de ese local: doble o tributo tiene que coincidir;
-  el nombre se compara sin tildes ni mayusculas y tolera errores chicos (chayane = chayanne).
-  No adivina: si el show sale en mas de una fecha del local, o hay dos fotos del mismo show, lo avisa en el informe
-  y esas fechas quedan sin foto hasta que alguien confirme.
-  Las noches que no son doble ni tributo (Piano Man, especiales) salen aparte en el informe: el formato no les pide foto.
-
-Instrucciones para Rodrigo (texto corto):
-  Guarda cada foto en la carpeta del local (Kennedy, Frida o Tobalaba) dentro de "Fotos artistas AAAA-MM".
-  Nombre: numero de orden del mes, guion bajo, "doble" o "tributo", guion, a quien.
-  Ejemplos: 01_doble-karol-g.jpg · 02_tributo-inxs.jpg · 03_doble-luis-miguel.jpg
-  Todo en minusculas, sin tildes ni espacios (guiones entre palabras). No pongas el nombre del artista que lo interpreta.
-  Una foto por show. Si el mismo show va en dos fechas, avisa a Cote.
+Formato de las fotos (decision final de Cote, 28 nov, 14:10):
+  En el mismo Drive, mes a mes: carpeta del mes -> una carpeta por local (Kennedy, Frida, Tobalaba) -> "NN Nombre.jpg".
+  Ejemplos: "01 George Michael.jpg", "05 Bee Gees.jpg", "02 Piano Man.jpg". NN = orden dentro del mes en ese local
+  (sirve para contar y pagar). Solo el nombre del show, sin "doble de" ni "tributo a" (el tipo sale de la cartelera).
+  El generador busca el nombre en la cartelera del local: tolera mayusculas, tildes, guiones y errores chicos
+  (Chayane = Chayanne) y acepta que venga "doble de..." escrito. Lo que va entre parentesis en la cartelera no cuenta.
+  No adivina: si un nombre calza con mas de una fecha del local (por ejemplo Piano Man, todos los viernes) o hay
+  dos fotos del mismo nombre, lo avisa en el informe y esas fechas quedan sin foto hasta que alguien confirme.
+  El texto para Rodrigo lo escribe Cote.
 
 Uso:
   node generar.js --mes 2026-12 --dir <carpeta con Kennedy/ Frida/ Tobalaba/>
