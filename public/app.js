@@ -420,29 +420,58 @@ views.simulada = async () => {
 };
 
 // Centro de control: qué gráfica se ve en la pantalla de OBS
+// Centro de control en secciones plegadas (orden 14 de Code 0, pedido de Cote, 28 nov): cada recuadro con título (también
+// los que agregan tema.js, emisor-ui.js y animador-ui.js) queda plegado y se abre o se cierra tocando su título. Solo los
+// enlaces de las pantallas de la sala de juegos (.ctl-main) quedan a la vista. No se quita ni se cambia nada de adentro.
+const ctlFold = () => {
+  if (!/^#\/control\b/.test(location.hash)) return;
+  app.querySelectorAll(':scope > .panel:not(details):not(.ctl-main)').forEach((p) => {
+    const h = p.querySelector(':scope > h2');
+    if (!h) return;
+    p.classList.add('ctl-col');
+    if (!h.hasAttribute('role')) { h.setAttribute('role', 'button'); h.tabIndex = 0; }
+    h.setAttribute('aria-expanded', p.classList.contains('open') ? 'true' : 'false');
+  });
+};
+setInterval(ctlFold, 600);
+const ctlToggle = (e) => {
+  const h = e.target.closest && e.target.closest('#app > .ctl-col > h2');
+  if (!h || (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ')) return;
+  e.preventDefault();
+  h.parentNode.classList.toggle('open'); ctlFold();
+};
+document.addEventListener('click', ctlToggle);
+document.addEventListener('keydown', ctlToggle);
 views.control = async () => {
   if (!(await isAdmin())) return viewLogin();
   // Pedido de Cote (20 nov): en la aplicación instalada no hay cómo recargar; botoncito «Refrescar página»
   app.innerHTML = `<p class="back ctl-top"><a href="#/">← Inicio</a><button type="button" class="ctl-reload" onclick="location.reload()">↻ Refrescar página</button></p><h1>Centro de control</h1>
-    <div class="panel"><h2>Sala de juegos abierta</h2>
-      <p class="muted small">Si hay más de una, a la gente le aparece una lista para elegir. Cierra las que ya no se usan.</p>
-      <div id="ctl-sala-go"></div><div id="open-list"></div></div>
-    <a class="btn lp-open" href="#/verticalctl/kennedy">📺 Pantallas de los locales · videos vertical y horizontal</a>
-    <details class="panel ctl-fold" id="ctl-stage-fold"><summary><h2>En pantalla</h2><span class="muted small">Tocar para abrir</span></summary>
-      <p class="muted small" id="stage-note"></p>
-      <div class="lp-stages" id="stage"></div>
-      <form class="lp-custom" id="stage-custom" hidden><input type="text" name="text" maxlength="120" autocomplete="off" placeholder="Escribe aquí el texto del GC"><button>✏️ GC personalizable</button></form>
+    <!-- Centro de control en secciones (orden 14 de Code 0, pedido de Cote, 28 nov: «todas las informaciones estén en pestañas…
+         minimizadas… lo único que se vea como en primera opción son los enlaces de las pantallas de la sala de juego»): a la vista
+         solo los enlaces de las pantallas; todo lo demás queda plegado y se abre tocando su título (ctlFold) -->
+    <div class="panel ctl-main" id="ctl-links-box"><h2>📺 Pantallas de la sala de juegos</h2>
       <div class="ctl-links">
         <p><b>📱 Participar</b><small>Lo que abre el público al escanear el QR</small><a class="link" href="${joinUrl()}" target="_blank">${esc(joinUrl())}</a></p>
         <p><b>🖥️ Tablero</b><small>Pantalla del DJ, con sonido</small><a class="link" href="${boardUrl()}" target="_blank">${esc(boardUrl())}</a></p>
         <p id="ctl-obs"><b>🎬 OBS</b><small>Fuente de navegador, 1920×1080, transparente</small><a class="link" href="${stageUrl()}" target="_blank">${esc(stageUrl())}</a></p>
       </div>
+    </div>
+    <div class="panel"><h2>Sala de juegos abierta</h2>
+      <p class="muted small">Si hay más de una, a la gente le aparece una lista para elegir. Cierra las que ya no se usan.</p>
+      <div id="ctl-sala-go"></div><div id="open-list"></div></div>
+    <details class="panel ctl-fold" id="ctl-stage-fold"><summary><h2>En pantalla</h2><span class="muted small">Tocar para abrir</span></summary>
+      <p class="muted small" id="stage-note"></p>
+      <div class="lp-stages" id="stage"></div>
+      <form class="lp-custom" id="stage-custom" hidden><input type="text" name="text" maxlength="120" autocomplete="off" placeholder="Escribe aquí el texto del GC"><button>✏️ GC personalizable</button></form>
     </details>
+    <div class="panel" id="ctl-pages"><h2>🔗 Otras páginas</h2>
+    <a class="btn lp-open" href="#/verticalctl/kennedy">📺 Pantallas de los locales · videos vertical y horizontal</a>
     <a class="btn lp-open" href="#/light">💡 Sala light · karaoke, show y cartelera en otro local</a>
     <a class="btn lp-open" href="#/consola">🖥️ Consola general · los 3 locales en una pantalla</a>
     <a class="btn lp-open" href="#/lucesreg">📋 Registro de las luces del Dell (Kennedy)</a>
     <a class="btn lp-open" href="#/master">🎛️ GC Master · centro de control de transmisión</a>
     <a class="btn lp-open" href="/sala">📱 Sala de juegos en el teléfono · para guardar en el inicio</a>
+    </div>
     <div class="panel"><h2>Karaoke</h2>
       <p class="muted small">Muestra en pantalla la lista de pedidos del sistema de karaoke (formulario y app del equipo).</p>
       <div class="venue-tabs" id="kar-venue" role="tablist"></div>

@@ -4124,3 +4124,14 @@ html.evento .games-nav [data-game][hidden] { display: none !important; }
 .dell-compact .dell-row b { font-size: .72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dell-compact .dell-row span { grid-column: 2; font-size: .68rem; font-weight: 700; }
 .lz-dell { padding: 4px 8px; } .lz-dell .dell-head { margin: 0 0 4px; font-size: .78rem; }
+
+/* Centro de control en secciones plegadas (orden 14 de Code 0, pedido de Cote, 28 nov): solo el título a la vista; se abre
+   tocándolo. Los enlaces de las pantallas de la sala de juegos (.ctl-main) quedan siempre abiertos */
+#app > .ctl-col > h2 { cursor: pointer; margin: 0; user-select: none; }
+#app > .ctl-col > h2::before { content: '▸ '; }
+#app > .ctl-col.open > h2::before { content: '▾ '; }
+#app > .ctl-col.open > h2 { margin-bottom: 10px; }
+#app > .ctl-col:not(.open) > :not(h2) { display: none !important; }
+#app > .ctl-col:not(.open) { padding-top: 14px; padding-bottom: 14px; }
+#ctl-links-box .ctl-links { margin-top: 10px; }
+#ctl-pages .lp-open { margin: 8px 0 0; }
