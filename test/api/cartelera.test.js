@@ -80,7 +80,7 @@ test('cartelera: «Tributo a» y «Doble de» desde Programación', async () => 
   const k = await srv.ok('GET', '/api/light/cartelera?local=kennedy');
   const de = (c, d) => c.week.find((x) => x.date === d).show;
   assert.equal(de(k, 28), 'TRIBUTO A BON JOVI');
-  assert.equal(de(k, 3), 'BINGO + DOBLE DE GEORGE MICHAEL'); // ya lo dice: no se repite
+  assert.equal(de(k, 3), 'NOCHE DE JUEGOS + DOBLE DE GEORGE MICHAEL'); // ya lo dice: no se repite; «BINGO» se muestra como «Noche de juegos» (Cote, 28 nov)
   assert.equal(de(k, 4), 'PIANO MAN');
   assert.equal(de(k, 5), 'BANDA TRIBUTO A INXS');
   assert.deepEqual(k.month.map((m) => m.show), ['LUIS MIGUEL (PEDRO)', 'TRIBUTO A BON JOVI']); // el 27 es de Frida, no de Kennedy
@@ -109,7 +109,14 @@ test('sin horarios en la GLOSA: se usan las horas del mes anterior y vuelven las
   assert.equal((await srv.ok('GET', '/api/light?local=frida')).horasRespaldo, true); // el panel del local lo avisa
   // Tobalaba (viernes): las suyas
   c = await srv.ok('GET', '/api/light/cartelera?local=tobalaba');
-  assert.deepEqual(c.week.find((d) => d.date === 4 && d.month === 12).hours.map((h) => `${h.time} ${h.label}`), ['18:30 MÚSICA', '19:00 PREVIA', '19:30 LOS JUEGOS DE TOBALABA', '20:15 SHOW', '21:15 KARAOKE']);
+  assert.deepEqual(c.week.find((d) => d.date === 4 && d.month === 12).hours.map((h) => `${h.time} ${h.label}`), ['18:30 MÚSICA', '19:00 PREVIA', '19:30 NOCHE DE JUEGOS', '20:15 SHOW', '21:15 KARAOKE']);
+  // «Noche de juegos» / «Tarde de juegos» (pedido de Cote, 28 nov, por Code 0): el domingo de Frida, el bingo del respaldo y
+  // el show «LOS JUEGOS DE FRIDA» de la GLOSA se muestran como TARDE DE JUEGOS
+  c = await srv.ok('GET', '/api/light/cartelera?local=frida');
+  const dom = c.week.find((d) => d.date === 29);
+  assert.deepEqual(dom.hours.map((h) => `${h.time} ${h.label}`), ['13:30 MÚSICA', '14:00 TARDE DE JUEGOS']);
+  assert.equal(dom.show, 'TARDE DE JUEGOS');
+  assert.deepEqual(c.month.map((m) => m.show), ['DOBLE DE RICKY MARTIN', 'TARDE DE JUEGOS']);
   // La GLOSA vuelve a traer horarios: mandan esos (otro servidor, porque la GLOSA se relee cada 10 minutos)
   resp = { ...VACIO, horarios: [{ dia: 'SABADO', hora: '20:00', actividad: 'PREVIA' }] };
   const srv2 = await startServer({ env: { GLOSA_TEST_URL: `http://localhost:${mock.address().port}/glosa`, KRB_FECHA: '2026-11-28T20:10:00-03:00' } });
