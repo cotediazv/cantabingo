@@ -21,15 +21,19 @@ const titulo = (s) => s.charAt(0) + s.slice(1).toLowerCase();
 const TIPOS = {
   standup: 'Stand Up', piano: 'Piano Man', tributo: 'Tributo', doble: 'Doble', bingo: 'Los juegos de…', otro: 'Especial u otro',
 };
-const ROLES = ['dj', 'extra', 'cantante', 'animador', 'camH', 'camHx', 'camV', 'camVx', 'editor'];
+const ROLES = ['dj', 'extra', 'cantante', 'cantantex', 'animador', 'animadorx', 'camH', 'camHx', 'camV', 'camVx', 'editor', 'editorx'];
+// Turnos extra (la persona entre paréntesis): Cote los paga de su bolsillo y el monto se ve caso a caso, siempre a mano
+// (Cote, 28 nov: «que siempre pide el monto a mano»; «Nunca pasa» que un extra no se pague)
+const EXTRAS = ['extra', 'cantantex', 'animadorx', 'camHx', 'camVx', 'editorx'];
+const XKEYS = ['cantantex', 'animadorx', 'camHx', 'camVx', 'editorx'];
 // Los pasos del asistente para prellenar el mes, en el orden que pidió Cote (23 nov)
 const PASOS = [
   { id: 'Oscar', nombre: 'Oscar', tipo: 'fijo' }, { id: 'Fer', nombre: 'Fer', tipo: 'fijo' },
   { id: 'mati', nombre: 'Matías', tipo: 'viernes' }, { id: 'dispPriss', nombre: 'Priss', tipo: 'disp' }, { id: 'dispKony', nombre: 'Kony', tipo: 'disp' },
 ];
-const AREA = { dj: 'dj', extra: 'ent', cantante: 'ent', animador: 'ent', camH: 'camH', camHx: 'camH', camV: 'camV', camVx: 'camV', editor: 'edi' };
+const AREA = { dj: 'dj', extra: 'ent', cantante: 'ent', cantantex: 'ent', animador: 'ent', animadorx: 'ent', editorx: 'edi', camH: 'camH', camHx: 'camH', camV: 'camV', camVx: 'camV', editor: 'edi' };
 const SIN_PAGO = ['COTE']; // Cote, 23 nov: «todo lo que sea Cote no se anota»
-const ROL_TARIFA = { dj: 'ent', extra: 'ent', cantante: 'ent', animador: 'ent', camH: 'cam', camHx: 'cam', camV: 'cam', camVx: 'cam', editor: 'edi' };
+const ROL_TARIFA = { dj: 'ent', extra: 'ent', cantante: 'ent', cantantex: 'ent', animador: 'ent', animadorx: 'ent', editorx: 'edi', camH: 'cam', camHx: 'cam', camV: 'cam', camVx: 'cam', editor: 'edi' };
 
 const pad = (n) => String(n).padStart(2, '0');
 const plain = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().trim();
@@ -160,18 +164,18 @@ module.exports = function programacion({ app, dir }) {
     // Nombres limpios (Cote, 23 nov: «Caro», no «Caro (Guille)»; «Claudia», no «Claudia 1.5»). En cámaras, el nombre
     // entre paréntesis es un turno extra de un turno que normalmente hace otra persona: queda aparte (camHx, camVx)
     for (const r of ROLES) {
-      if (r === 'camHx' || r === 'camVx') continue; // van más abajo
+      if (XKEYS.includes(r)) continue; // van más abajo
       let v = clean(c[r], 60).replace(/\s*[x×*]?\s*\d+(?:[.,]\d+)?\s*$/i, '');
       const x = v.match(/^(.+?)\s*\(([^)]*)\)\s*(.*)$/);
       if (x) {
         v = `${x[1]} ${x[3]}`.trim().replace(/\s*[x×*]?\s*\d+(?:[.,]\d+)?\s*$/i, '');
         const p = clean(x[2], 40);
-        if (p && !/\d/.test(p)) { if ((r === 'camH' || r === 'camV') && !c[`${r}x`]) o[`${r}x`] = p; else if (r === 'dj' && !c.extra) o.extra = p; }
+        if (p && !/\d/.test(p)) { if (XKEYS.includes(`${r}x`) && !c[`${r}x`]) o[`${r}x`] = p; else if (r === 'dj' && !c.extra) o.extra = p; }
       }
       v = clean(v, 40);
       if (v) o[r] = v;
     }
-    for (const k of ['camHx', 'camVx']) { const v = clean(c[k], 40).replace(/\s*\(.*$/, '').replace(/\s*[x×*]?\s*\d+(?:[.,]\d+)?\s*$/i, ''); if (v && o[k.slice(0, 4)]) o[k] = v; }
+    for (const k of XKEYS) { const v = clean(c[k], 40).replace(/\s*\(.*$/, '').replace(/\s*[x×*]?\s*\d+(?:[.,]\d+)?\s*$/i, ''); if (v && o[k.slice(0, -1)]) o[k] = v; }
     for (const k of ['showPor', 'camNota']) { const v = clean(c[k], 40); if (v) o[k] = v; }
     if (c.montos && typeof c.montos === 'object') {
       const m = {};
@@ -184,7 +188,6 @@ module.exports = function programacion({ app, dir }) {
     P.dias[f] ||= {};
     P.dias[f][local] = limpiaCelda(c);
     for (const r of ROLES) if (P.dias[f][local][r]) persona(P.dias[f][local][r], ROL_TARIFA[r]);
-    for (const k of ['camHx', 'camVx']) if (P.dias[f][local][k]) persona(P.dias[f][local][k], 'cam');
   };
   // Una vez al abrir: limpia los nombres que ya estaban guardados con agregados y saca esas «personas» de la lista
   {
@@ -276,7 +279,7 @@ module.exports = function programacion({ app, dir }) {
     return ORDEN_ENT[wd].filter((l) => abierto(f, l)).map((l) => {
       const c = celda(f, l);
       const dj = c.dj ? c.dj + (c.extra ? ` (${c.extra})` : '') : '';
-      const ns = [dj, c.cantante, c.animador].filter(Boolean);
+      const ns = [dj, c.cantante && c.cantante + (c.cantantex ? ` (${c.cantantex})` : ''), c.animador && c.animador + (c.animadorx ? ` (${c.animadorx})` : '')].filter(Boolean);
       if (!ns.length) return '';
       return `${ETQ[l]}: ${ns.join(' - ')}${c.showPor ? ` (${c.showPor} Show)` : ''}`;
     }).filter(Boolean);
@@ -291,7 +294,7 @@ module.exports = function programacion({ app, dir }) {
   };
   const lineaEdi = (f) => {
     const wd = parse(f).wd;
-    return ORDEN_EDI[wd].filter((l) => abierto(f, l)).map((l) => { const c = celda(f, l); return c.editor ? `${etqEdi(l, wd)}: ${c.editor}` : ''; }).filter(Boolean);
+    return ORDEN_EDI[wd].filter((l) => abierto(f, l)).map((l) => { const c = celda(f, l); return c.editor ? `${etqEdi(l, wd)}: ${c.editor}${c.editorx ? ` (${c.editorx})` : ''}` : ''; }).filter(Boolean);
   };
   // Quién se paga en una celda y cuánto (en el orden del bloque de TURNOS)
   function pagos(f, l) {
@@ -302,13 +305,14 @@ module.exports = function programacion({ app, dir }) {
       const cod = codigoDe(c[r]);
       if (SIN_PAGO.includes(cod)) continue; // Cote no se anota (no tiene tarifa)
       const fijo = c.montos && c.montos[r] != null ? c.montos[r] : null;
-      const monto = fijo != null ? fijo : tarifa(cod, ROL_TARIFA[r], l, wd);
+      const extra = EXTRAS.includes(r);
+      // El turno extra no usa tarifa: siempre el monto que escribe Cote
+      const monto = fijo != null ? fijo : extra ? null : tarifa(cod, ROL_TARIFA[r], l, wd);
       // Quien está en entretención y en cámara (Andrés en Tobalaba, que anima y graba) se paga una vez, salvo que su
       // cámara tenga monto o tarifa propia (Guille en Tobalaba: entretención y cámara, Cote, 23 nov)
-      if (r !== 'editor' && vistos.has(cod) && monto == null) continue;
+      if (!extra && r !== 'editor' && vistos.has(cod) && monto == null) continue;
       if (r !== 'editor') vistos.add(cod);
-      if (r === 'extra' && monto == null) continue; // en capacitación: solo se paga si tiene tarifa o monto
-      out.push({ rol: r, nombre: c[r], codigo: cod, monto, falta: monto == null });
+      out.push({ rol: r, nombre: c[r], codigo: cod, monto, falta: monto == null, extra });
     }
     return out;
   }
@@ -363,7 +367,7 @@ module.exports = function programacion({ app, dir }) {
       for (const l of ['MK', 'FRIDA', 'TOB']) {
         if (!abierto(fecha, l)) continue;
         const ps = pagos(fecha, l);
-        ps.filter((p) => p.falta).forEach((p) => faltan.push(`${etiquetaTurno(fecha)} ${ETQ[l]}: falta la tarifa de ${p.nombre} (${ROL_TARIFA[p.rol] === 'ent' ? 'entretención' : ROL_TARIFA[p.rol] === 'cam' ? 'cámara' : 'edición'})`));
+        ps.filter((p) => p.falta).forEach((p) => faltan.push(p.extra ? `${etiquetaTurno(fecha)} ${ETQ[l]}: falta el monto de ${p.nombre} (turno extra entre paréntesis)` : `${etiquetaTurno(fecha)} ${ETQ[l]}: falta la tarifa de ${p.nombre} (${ROL_TARIFA[p.rol] === 'ent' ? 'entretención' : ROL_TARIFA[p.rol] === 'cam' ? 'cámara' : 'edición'})`));
         if (ps.length) filas.push([String(parse(fecha).d), l, ps.map((p) => `${p.codigo} ${p.monto || 0}`).join(', ')]);
         // Lo mismo con el área de cada uno, para que el script lo ponga en su sección de la lista (Cote, 24 nov)
         ps.forEach((p) => detalle.push({ dia: parse(fecha).d, local: l, codigo: p.codigo, monto: p.monto || 0, area: AREA[p.rol] }));
@@ -742,7 +746,7 @@ module.exports = function programacion({ app, dir }) {
     save(); res.json({ ok: true, horarios: P.horarios });
   });
   // ---------- Revisar turnos (orden de Code 0, 28 nov): solo para mirar, sin montos ----------
-  const ROL_TXT = { dj: 'DJ', extra: 'capacitación o técnico', cantante: 'animador cantante', animador: 'animador', camH: 'cámara en vivo', camHx: 'cámara en vivo (extra)', camV: 'cámara vertical', camVx: 'cámara vertical (extra)', editor: 'editor' };
+  const ROL_TXT = { dj: 'DJ', extra: 'capacitación o técnico', cantante: 'animador cantante', cantantex: 'animador cantante (extra)', animador: 'animador', animadorx: 'animador (extra)', editorx: 'editor (extra)', camH: 'cámara en vivo', camHx: 'cámara en vivo (extra)', camV: 'cámara vertical', camVx: 'cámara vertical (extra)', editor: 'editor' };
   const AREA_PAL = { dj: 'DJ', ent: 'entretención', camH: 'cámara en vivo', camV: 'cámara vertical', edi: 'edición' };
   const diaTxt = (f) => { const x = parse(f); return `${['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][x.wd]} ${x.d}`; };
   const nombreDe = (cod) => { const p = P.personas.find((q) => plain(q.codigo) === plain(cod)); return p ? p.nombre : titulo(String(cod || '')); };
@@ -758,10 +762,11 @@ module.exports = function programacion({ app, dir }) {
         if (cerrado(fecha) && conGente && c.abierto !== true) { av(fecha, l, 'El día está marcado como cerrado pero tiene turnos'); continue; }
         if (!abierto(fecha, l)) continue;
         if (showVacio(c.show)) av(fecha, l, 'Falta el show');
+        // Un día sin nadie es un solo aviso (no uno por puesto)
+        if (!conGente) { av(fecha, l, 'Abierto y sin nadie en los turnos'); continue; }
         const tipo = P.plantilla[`${parse(fecha).wd}|${l}`] || {};
         for (const r of ['dj', 'cantante', 'animador', 'camH', 'camV', 'editor']) if (tipo[r] && !c[r]) av(fecha, l, `Falta ${ROL_TXT[r]} (la semana tipo tiene a ${tipo[r]})`);
-        if (!conGente) av(fecha, l, 'Abierto y sin nadie en los turnos');
-        for (const p of pagos(fecha, l)) if (p.falta) av(fecha, l, `${p.nombre} no tiene tarifa como ${ROL_TXT[p.rol]}`);
+        for (const p of pagos(fecha, l)) if (p.falta) av(fecha, l, p.extra ? `Falta el monto de ${p.nombre} (turno extra entre paréntesis, ${ROL_TXT[p.rol].replace(/ \(extra\)/, '')})` : `${p.nombre} no tiene tarifa como ${ROL_TXT[p.rol]}`);
         for (const r of ROLES) {
           if (!c[r] || r === 'editor') continue; // el editor puede editar más de un local
           const k = `${fecha}|${plain(c[r])}`; (quien[k] ||= new Set()).add(l);
@@ -823,6 +828,14 @@ module.exports = function programacion({ app, dir }) {
       cambios.sort((a, b) => a.fecha.localeCompare(b.fecha) || LOCALES.indexOf(a.local) - LOCALES.indexOf(b.local));
     }
     return { mes, avisos, personas, cambios, sinFoto: !antes };
+  }
+  function extrasSinMonto(y, m) {
+    const out = [];
+    for (const { fecha } of fechasMes(y, m)) for (const l of LOCALES) {
+      if (!abierto(fecha, l)) continue;
+      for (const p of pagos(fecha, l)) if (p.extra && p.falta) out.push({ fecha, local: l, rol: p.rol, nombre: p.nombre, dia: diaTxt(fecha), etq: NOMBRE_LOCAL[l], puesto: ROL_TXT[p.rol].replace(/ \(extra\)/, '') });
+    }
+    return out;
   }
   app.get('/api/prog/revisar', auth, (req, res) => { const { y, m } = mesDe(req.query.m); res.json(revisar(y, m)); });
   // La hoja TURNOS de la GLOSA contra la plataforma, por día y local, solo con nombres (sin montos)
@@ -973,6 +986,9 @@ module.exports = function programacion({ app, dir }) {
     const b = req.body || {};
     const { y, m } = mesDe(b.mes);
     const solo = Boolean(b.soloCambios);
+    // Ningún turno extra sale a la GLOSA sin su monto (Cote, 28 nov): se detiene y se pregunta
+    const sinMonto = extrasSinMonto(y, m);
+    if (sinMonto.length) return res.status(409).json({ error: `Falta el monto de ${sinMonto.length} ${sinMonto.length === 1 ? 'turno extra' : 'turnos extra'} entre paréntesis`, faltanExtras: sinMonto });
     const c = solo ? cambiosMes(y, m) : null;
     if (solo && c.sinFoto) return fail(res, 400, 'Todavía no hay un envío completo de este mes con la plataforma: primero usa «Enviar y llenar el mes».');
     if (solo && !c.lista.length) return fail(res, 400, 'No hay cambios desde el último envío.');

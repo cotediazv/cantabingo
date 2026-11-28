@@ -120,7 +120,7 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
   function aviso(t) { var a = document.getElementById('aviso'); a.textContent = t; a.classList.add('on'); clearTimeout(aviso.t); aviso.t = setTimeout(function () { a.classList.remove('on'); }, 1800); }
   function api(met, url, body) {
     return fetch(url, { method: met, headers: { 'Content-Type': 'application/json', 'x-prog': TOKEN }, body: body ? JSON.stringify(body) : undefined })
-      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (r.status === 401 && url !== '/api/prog/login') { TOKEN = ''; login(); throw new Error('Entra de nuevo'); } if (!r.ok) throw new Error(j.error || 'Error'); return j; }); });
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { if (r.status === 401 && url !== '/api/prog/login') { TOKEN = ''; login(); throw new Error('Entra de nuevo'); } if (!r.ok) { var er = new Error(j.error || 'Error'); er.data = j; throw er; } return j; }); });
   }
   function mesActual() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
   function moverMes(n) { var p = S.mes.split('-').map(Number); var d = new Date(p[0], p[1] - 1 + n, 1); S.mes = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); try { localStorage.setItem('progMes', S.mes); } catch (e) {} cargar(); }
@@ -163,6 +163,32 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
     window.scrollTo(0, y);
   }
 
+  // Antes de enviar a la GLOSA: los turnos extra sin monto se preguntan aquí (Cote, 28 nov)
+  function faltanExtras(e) {
+    var xs = e && e.data && e.data.faltanExtras; if (!xs || !xs.length) return false;
+    var box = document.getElementById('gextras'); if (!box) return false;
+    box.innerHTML = '<div class="panel extras"><h2>Antes de enviar: montos de los turnos extra</h2><p>Estas personas están entre paréntesis (turno extra que pagas tú). Escribe cuánto le pagas a cada una ese día; después se envía.</p>' +
+      '<table class="rev">' + xs.map(function (x, i) { return '<tr><td class="rd">' + esc(x.dia) + '<small>' + esc(x.etq) + '</small></td><td>' + esc(x.nombre) + '<small style="display:block;color:var(--suave)">' + esc(x.puesto) + '</small></td><td class="ri"><input type="text" inputmode="numeric" data-xm="' + i + '" placeholder="Monto" style="width:120px"></td></tr>'; }).join('') + '</table>' +
+      '<div class="fila" style="margin-top:10px"><button class="btn foco" id="xsave">Guardar los montos</button><span class="vacio" id="xmsg"></span></div></div>';
+    box.scrollIntoView({ block: 'start' });
+    document.getElementById('xsave').onclick = function () {
+      var cola = Promise.resolve(); var n = 0;
+      xs.forEach(function (x, i) {
+        var v = String(box.querySelector('[data-xm="' + i + '"]').value || '').replace(/[^\d]/g, ''); if (v === '') return; n++;
+        cola = cola.then(function () {
+          return api('GET', '/api/prog/mes?m=' + x.fecha.slice(0, 7)).then(function (d) {
+            var z = d.fechas.filter(function (q) { return q.fecha === x.fecha; })[0]; var c = sinPagos(z.locales[x.local]);
+            c.montos = Object.assign({}, c.montos || {}); c.montos[x.rol] = Number(v);
+            return api('POST', '/api/prog/celda', { fecha: x.fecha, local: x.local, celda: c });
+          });
+        });
+      });
+      if (!n) { document.getElementById('xmsg').textContent = 'Escribe al menos un monto.'; return; }
+      cola.then(function () { aviso('Montos guardados: vuelve a tocar el botón de enviar'); cargar(); }).catch(function (er) { aviso(er.message); });
+    };
+    return true;
+  }
+
   // ---------- Revisar turnos (orden de Code 0, 28 nov): solo para mirar; nada se envía ni se cambia ----------
   function irDia(f) {
     S.vista = 'mes'; try { localStorage.setItem('progVista', 'mes'); } catch (e) {} pintar();
@@ -196,6 +222,11 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
 
   // ---------- Programación del mes ----------
   function personasDe(rol) { return S.data.personas.filter(function (p) { return p.roles.indexOf(rol) >= 0; }).map(function (p) { return p.nombre; }); }
+  var EXTRAS = ['extra', 'cantantex', 'animadorx', 'camHx', 'camVx', 'editorx'];
+  function pedirMonto(nombre) {
+    var r = prompt('¿Cuánto le pagas a ' + nombre + ' este día?\nEs un turno extra (entre paréntesis): el monto va a mano.');
+    if (r === null) return null; r = String(r).replace(/[^\d]/g, ''); return r === '' ? null : Number(r);
+  }
   function selPersona(f, l, campo, valor, rol, etiqueta) {
     var pref = personasDe(rol); var otros = S.data.personas.map(function (p) { return p.nombre; }).filter(function (n) { return pref.indexOf(n) < 0; });
     if (valor && pref.indexOf(valor) < 0 && otros.indexOf(valor) < 0) pref.push(valor);
@@ -404,12 +435,13 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
     if (!c.abierto) return h + '</div>';
     h += bloqueShow(f, l, x.wd, c);
     h += '<div class="grupo"><label>Entretención</label><div class="fila">' + selPersona(f, l, 'dj', c.dj, 'ent', 'DJ') + selPersona(f, l, 'extra', c.extra, 'ent', 'Capacitación o técnico') + '</div><div class="fila" style="margin-top:6px">' +
-      selPersona(f, l, 'cantante', c.cantante, 'ent', 'Animador cantante') + selPersona(f, l, 'animador', c.animador, 'ent', 'Animador') + '</div><div class="fila" style="margin-top:6px">' + selPersona(f, l, 'showPor', c.showPor, 'ent', 'Hace el show (si es del equipo)') + '</div></div>';
+      selPersona(f, l, 'cantante', c.cantante, 'ent', 'Animador cantante') + selPersona(f, l, 'animador', c.animador, 'ent', 'Animador') + '</div>' +
+      (c.cantante || c.animador ? '<div class="fila" style="margin-top:6px">' + (c.cantante ? selPersona(f, l, 'cantantex', c.cantantex, 'ent', 'Turno extra con el cantante') : '') + (c.animador ? selPersona(f, l, 'animadorx', c.animadorx, 'ent', 'Turno extra con el animador') : '') + '</div>' : '') + '<div class="fila" style="margin-top:6px">' + selPersona(f, l, 'showPor', c.showPor, 'ent', 'Hace el show (si es del equipo)') + '</div></div>';
     h += '<div class="grupo"><label>Cámaras</label><div class="fila">' + selPersona(f, l, 'camH', c.camH, 'cam', 'En vivo horizontal') + selPersona(f, l, 'camV', c.camV, 'cam', 'Vertical para redes') +
       (c.camH ? selPersona(f, l, 'camHx', c.camHx, 'cam', 'Turno extra con la horizontal') : '') + (c.camV ? selPersona(f, l, 'camVx', c.camVx, 'cam', 'Turno extra con la vertical') : '') +
       '<div class="campo" style="flex:0 1 110px"><small>Horario (opcional)</small><input type="text" placeholder="21 a 22" value="' + esc(c.camNota) + '" data-f="' + f + '" data-l="' + l + '" data-k="camNota"></div></div></div>';
-    h += '<div class="grupo"><label>Edición</label><div class="fila">' + selPersona(f, l, 'editor', c.editor, 'edi', 'Editor') + '</div></div>';
-    if (c.pagos && c.pagos.length) h += '<div class="pagos">' + c.pagos.map(function (p) { return p.falta ? '<span class="falta">' + esc(p.codigo) + ' sin tarifa</span>' : esc(p.codigo) + ' ' + plata(p.monto); }).join(' · ') + ' <button class="btn chico" data-montos="' + f + '|' + l + '">Cambiar montos</button></div>';
+    h += '<div class="grupo"><label>Edición</label><div class="fila">' + selPersona(f, l, 'editor', c.editor, 'edi', 'Editor') + (c.editor ? selPersona(f, l, 'editorx', c.editorx, 'edi', 'Turno extra con el editor') : '') + '</div></div>';
+    if (c.pagos && c.pagos.length) h += '<div class="pagos">' + c.pagos.map(function (p) { return p.falta ? '<span class="falta">' + esc(p.codigo) + (p.extra ? ' (extra) sin monto' : ' sin tarifa') + '</span>' : esc(p.codigo) + (p.extra ? ' (extra)' : '') + ' ' + plata(p.monto); }).join(' · ') + ' <button class="btn chico" data-montos="' + f + '|' + l + '">Cambiar montos</button></div>';
     return h + '</div>';
   }
   function vistaMes() {
@@ -434,8 +466,8 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
     x.locales[l] = Object.assign({ abreDefault: x.locales[l].abreDefault }, c);
     return api('POST', '/api/prog/celda', { fecha: f, local: l, celda: c }).then(function (j) {
       x.locales[l] = Object.assign({ abreDefault: x.locales[l].abreDefault }, j.celda);
-      ['dj', 'extra', 'cantante', 'animador', 'showPor', 'camH', 'camV', 'camHx', 'camVx', 'editor'].forEach(function (k) {
-        var n = j.celda[k]; if (!n) return; var rol = k === 'editor' ? 'edi' : k.indexOf('cam') === 0 ? 'cam' : 'ent';
+      ['dj', 'extra', 'cantante', 'cantantex', 'animador', 'animadorx', 'showPor', 'camH', 'camV', 'camHx', 'camVx', 'editor', 'editorx'].forEach(function (k) {
+        var n = j.celda[k]; if (!n) return; var rol = k.indexOf('editor') === 0 ? 'edi' : k.indexOf('cam') === 0 ? 'cam' : 'ent';
         var p = S.data.personas.filter(function (q) { return q.nombre.toLowerCase() === n.toLowerCase(); })[0];
         if (!p) S.data.personas.push({ nombre: n, codigo: n.toUpperCase(), roles: [rol] }); else if (p.roles.indexOf(rol) < 0) p.roles.push(rol);
       });
@@ -450,7 +482,13 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
       s.onchange = function () {
         var v = s.value;
         if (v === '+') { v = (prompt('Nombre corto de la persona (como va en los turnos):') || '').trim(); if (!v) { pintar(); return; } }
-        guardar(s.dataset.f, s.dataset.l, function (x) { if (v) x[s.dataset.k] = v; else delete x[s.dataset.k]; });
+        var k = s.dataset.k; var monto = null;
+        // Turno extra (la persona entre paréntesis): Cote lo paga de su bolsillo; se pregunta el monto al tiro (Cote, 28 nov)
+        if (v && EXTRAS.indexOf(k) >= 0) { monto = pedirMonto(v); }
+        guardar(s.dataset.f, s.dataset.l, function (x) {
+          if (v) x[k] = v; else delete x[k];
+          if (EXTRAS.indexOf(k) >= 0) { x.montos = Object.assign({}, x.montos || {}); if (monto != null) x.montos[k] = monto; else delete x.montos[k]; }
+        });
       };
     });
     c.querySelectorAll('input[data-k]').forEach(function (i) { i.onchange = function () { guardar(i.dataset.f, i.dataset.l, function (x) { var v = i.value.trim(); if (v) x[i.dataset.k] = v; else delete x[i.dataset.k]; }); }; });
@@ -477,7 +515,7 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
         var p = b.dataset.montos.split('|'); var x = buscar(p[0]); var cel = x.locales[p[1]];
         var ms = Object.assign({}, cel.montos || {});
         (cel.pagos || []).forEach(function (pg) {
-          var r = prompt('Monto de ' + pg.nombre + ' (' + (pg.rol === 'editor' ? 'edición' : pg.rol.indexOf('cam') === 0 ? (pg.rol.length > 4 ? 'turno extra de cámara' : 'cámara') : 'entretención') + ') este día.\nDéjalo vacío para usar su tarifa.', ms[pg.rol] != null ? ms[pg.rol] : '');
+          var r = prompt('Monto de ' + pg.nombre + ' (' + (pg.extra ? 'turno extra entre paréntesis' : pg.rol === 'editor' ? 'edición' : pg.rol.indexOf('cam') === 0 ? 'cámara' : 'entretención') + ') este día.\n' + (pg.extra ? 'Es un turno extra: el monto va a mano.' : 'Déjalo vacío para usar su tarifa.'), ms[pg.rol] != null ? ms[pg.rol] : '');
           if (r === null) return; r = r.replace(/[^\d]/g, ''); if (r === '') delete ms[pg.rol]; else ms[pg.rol] = Number(r);
         });
         guardar(p[0], p[1], function (y) { y.montos = ms; });
@@ -497,7 +535,7 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
             LOCS.forEach(function (l) {
               if (!x.locales[l].abierto || !xa.locales[l].abierto) return;
               var ya = ['dj', 'cantante', 'animador', 'camH', 'camV', 'editor'].some(function (k) { return x.locales[l][k]; }); if (ya) return;
-              cola = cola.then(function () { n++; return guardar(x.fecha, l, function (y) { ['dj', 'extra', 'cantante', 'animador', 'camH', 'camHx', 'camV', 'camVx', 'camNota', 'editor'].forEach(function (k) { if (xa.locales[l][k]) y[k] = xa.locales[l][k]; }); }, false); });
+              cola = cola.then(function () { n++; return guardar(x.fecha, l, function (y) { ['dj', 'extra', 'cantante', 'cantantex', 'animador', 'animadorx', 'camH', 'camHx', 'camV', 'camVx', 'camNota', 'editor', 'editorx'].forEach(function (k) { if (xa.locales[l][k]) y[k] = xa.locales[l][k]; }); }, false); });
             });
           }));
         });
@@ -575,7 +613,7 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
   // ---------- GLOSA ----------
   function vistaGlosa() {
     var g = S.data.glosa; var u = g.ultimo;
-    var h = '<div class="panel"><h2>Enviar ' + esc(S.data.nombre) + ' a la GLOSA</h2>';
+    var h = '<div id="gextras"></div><div class="panel"><h2>Enviar ' + esc(S.data.nombre) + ' a la GLOSA</h2>';
     if (!g.url) h += '<p>Primero conecta la GLOSA (abajo).</p>';
     else h += '<p>Escribe la hoja TURNOS con lo de este mes y llena la pestaña del mes: semanas de jueves a domingo, presupuesto neto solo los días con actividad (los demás en cero), montos de los shows y el mes en B8. Si falta la pestaña del mes, se crea duplicando la del mes anterior.</p><div class="panel" style="background:var(--panel2);margin:8px 0"><h2 style="font-size:17px">Enviar solo los cambios</h2><p>Si ya enviaste el mes y después cambiaste algo aquí, manda solo eso: la GLOSA cambia únicamente esas celdas y respeta lo que arreglaste a mano.</p><div class="fila"><button class="btn foco" id="gcamb">Ver los cambios desde el último envío</button></div><div id="gcambres"></div></div><div class="fila"><button class="btn" id="genv">Enviar y llenar el mes (completo)</button><button class="btn" id="gcmp">Comparar con la GLOSA</button><button class="btn" id="gtraer">Traer los shows de la GLOSA</button></div>';
     h += '<p id="gest">' + (u ? estadoTxt(u) : '') + '</p><div id="gres"></div></div>';
@@ -613,13 +651,13 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
         if (!r.lista.length) { $('gcambres').innerHTML = '<p class="ok">No hay cambios desde el último envío.</p>'; return; }
         $('gcambres').innerHTML = '<p>' + r.lista.length + ' ' + (r.lista.length === 1 ? 'cambio' : 'cambios') + ':</p><ul>' + r.lista.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul><button class="btn foco" id="gcambenv">Enviar solo estos cambios</button>';
         $('gcambenv').onclick = function () {
-          api('POST', '/api/prog/glosa/enviar', { mes: S.mes, soloCambios: true }).then(function (u) { $('gest').innerHTML = estadoTxt(u); $('gcambres').innerHTML = ''; setTimeout(seguir, 2000); }).catch(function (e) { aviso(e.message); });
+          api('POST', '/api/prog/glosa/enviar', { mes: S.mes, soloCambios: true }).then(function (u) { $('gest').innerHTML = estadoTxt(u); $('gcambres').innerHTML = ''; setTimeout(seguir, 2000); }).catch(function (e) { if (!faltanExtras(e)) aviso(e.message); });
         };
       }).catch(function (e) { $('gcambres').innerHTML = '<p class="faltan">' + esc(e.message) + '</p>'; });
     };
     if ($('genv')) $('genv').onclick = function () {
       if (!confirm('¿Enviar ' + S.data.nombre + ' a la GLOSA? Se reemplaza lo que haya en la hoja TURNOS y se llena la pestaña del mes.')) return;
-      api('POST', '/api/prog/glosa/enviar', { mes: S.mes }).then(function (u) { $('gest').innerHTML = estadoTxt(u); setTimeout(seguir, 3000); }).catch(function (e) { aviso(e.message); });
+      api('POST', '/api/prog/glosa/enviar', { mes: S.mes }).then(function (u) { $('gest').innerHTML = estadoTxt(u); setTimeout(seguir, 3000); }).catch(function (e) { if (!faltanExtras(e)) aviso(e.message); });
     };
     if ($('gcmp')) $('gcmp').onclick = function () {
       $('gres').innerHTML = '<p>Leyendo la GLOSA…</p>';
