@@ -2363,9 +2363,23 @@ function fitJoinQr() {
 addEventListener('resize', fitJoinQr);
 if (document.fonts) document.fonts.ready.then(fitJoinQr);
 
+// #/escena es la misma escena que el GC Light del local (Cote, 28 nov: «igual como pasa en Kennedy los jueves…
+// por aquí pasan los juegos y se enganchan al karaoke usando la misma escena en OBS»): con la sala de juegos abierta en un
+// local, #/escena muestra lo mismo que #/light-gc/<local> (la sala de juegos y, si se toca un botón de la sala light, ese
+// GC; gana lo último que se tocó). Así da lo mismo cuál de los dos links esté en OBS. Sin sala, en una sala simulada o
+// en la copia de eventos, es la escena de siempre.
+views.escena = async () => {
+  const st = await api('GET', '/api/stage').catch(() => null);
+  const v = st && st.venue;
+  if (v && /^(kennedy|frida|tobalaba)$/.test(v) && views['light-gc']) {
+    const l = await api('GET', `/api/light?local=${v}`).catch(() => null);
+    if (l && l.salaHoy) return views['light-gc'](v);
+  }
+  return views.escenaSala();
+};
 // Pantalla única para OBS: muestra la gráfica que el moderador elija en «Juegos».
 // No requiere iniciar sesión y queda transparente cuando no hay nada que mostrar.
-views.escena = async () => {
+views.escenaSala = async () => {
   let current = null;
   let stop = null;
   let busy = false;

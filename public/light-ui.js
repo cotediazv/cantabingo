@@ -183,7 +183,7 @@
       }
       if (shown.startsWith('fondo:')) { shown = ''; document.body.classList.remove('lg-fondo-on'); document.documentElement.style.background = document.body.style.background = ''; app.innerHTML = '<div id="lg"></div>'; }
       if (st.sala) {
-        if (shown !== 'sala') { shown = 'sala'; stopSub(); document.body.classList.remove('gc-screen'); app.innerHTML = ''; sub = await views.escena(); if (!alive) stopSub(); }
+        if (shown !== 'sala') { shown = 'sala'; stopSub(); document.body.classList.remove('gc-screen'); app.innerHTML = ''; sub = await views.escenaSala(); if (!alive) stopSub(); }
         return;
       }
       if (shown === 'sala') { shown = ''; stopSub(); app.innerHTML = '<div id="lg"></div>'; }
