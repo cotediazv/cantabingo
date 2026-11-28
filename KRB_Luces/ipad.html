@@ -323,6 +323,12 @@
   @keyframes djlatir{0%,12%{background:#ffcc00;box-shadow:0 0 10px #ffcc00}30%,100%{background:#333;box-shadow:none}}
   #djAviso{font-size:12px;color:var(--warn);min-height:14px}
 
+  /* Show con 7 escenas (Cote, 28 nov): en el computador las filas no se aplastan; en el celular, icono al lado del nombre */
+  @media (min-width:700px){ body.dj .djesc{grid-template-rows:none;grid-auto-rows:auto;overflow-y:auto;align-content:start} body.dj .djesc .djb{min-height:34px} }
+  @media (max-width:699px){
+    body.dj .djesc.muchas .djb{flex-direction:row;font-size:15px;gap:8px;border-radius:14px}
+    body.dj .djesc.muchas .djb i{font-size:22px}
+  }
 </style>
 </head>
 <body>
@@ -3023,6 +3029,19 @@ const DJ_ESCENAS = [
     capas: () => { const c = ['rojo', 'ambar', 'amarillo', 'lima', 'cian', 'azul', 'morado', 'rosa'];
       return [capa('col', c.map((x, k) => pasoColor({ ...blancoFrente(), ...grupos(djMini(), c[(k + 4) % 8]), ...grupos(djArriba(), x), ...grupos(djAbajo(), c[(k + 2) % 8]) })), 1, 0.6),
         movFrente(), capa('mini', N(8).map(() => pasoPos(grupos(djMini(), posMini()))), 2, 0.7)]; } },
+  // las de antes (Cote, por Code 0, 28 nov: que el DJ no pierda lo que conoce); el Automatico usa las nuevas
+  { grupo: 'Show', n: 'Colores', i: '🎤', g: 'linear-gradient(135deg,#ff2a2a,#ffd9a0 50%,#2b55ff)',
+    capas: () => [capa('col', N(12).map(() => pasoColor({ ...blancoFrente(), ...grupos(djMini(), elegir(VIVOS)), ...grupos(djArriba(), elegir(VIVOS)), ...grupos(djAbajo(), elegir(VIVOS)) })), 1),
+      movFrente(), capa('mini', N(12).map(() => pasoPos(grupos(djMini(), posMini()))), 1, 0.3)] },
+  { grupo: 'Show', n: 'Estrobo', i: '⚡', g: 'repeating-linear-gradient(90deg,#fff 0 8px,#222 8px 16px)',
+    capas: () => { const c = elegir(VIVOS);
+      return [capa('col', N(8).map(k => pasoColor({ ...blancoFrente(), ...grupos(djMini(), k % 2 ? 'blanco' : c), ...grupos(djArriba(), k % 2 ? null : 'blanco'), ...grupos(djAbajo(), k % 2 ? c : null) })), 0.25),
+        movFrente(), capa('mini', N(12).map(() => pasoPos(grupos(djMini(), posMini()))), 0.5, 0.2)]; } },
+  { grupo: 'Show', n: 'Arriba/abajo', i: '↕️', g: 'linear-gradient(180deg,#9b3cff 50%,#22e5ff 50%)',
+    capas: () => { const pares = [['morado', 'cian'], ['rojo', 'amarillo'], ['azul', 'rosa'], ['lima', 'morado']];
+      return [capa('col', N(8).map(k => { const [x, y] = pares[Math.floor(k / 2) % 4]; return pasoColor({ ...blancoFrente(), ...grupos(djMini(), k % 2 ? x : y),
+          ...grupos(djArriba(), k % 2 ? x : y), ...grupos(djAbajo(), k % 2 ? y : x) }); }), 1),
+        movFrente(), capa('mini', N(8).map(() => pasoPos(grupos(djMini(), posMini()))), 1, 0.5)]; } },
   // ---------- ANIMADO (Cote, 27 nov): opciones animadas de luces y fondos, siempre con el blanco en la cara ----------
   { grupo: 'Animado', n: 'Cara y techo', i: '🎭', g: 'linear-gradient(135deg,#ffd9a0 0 45%,#9b3cff 55%,#22e5ff)', capas: () => animCaraTecho() },
   { grupo: 'Animado', n: 'Ola', i: '🌊', g: 'linear-gradient(180deg,#2b55ff,#22e5ff 50%,#ff3fa0)', capas: () => animOla() },
@@ -3128,7 +3147,11 @@ const djGrupo = () => { const g = djGrupoActual();
   const todas = DJ_ESCENAS.map((e, i) => e.grupo === g ? i : -1).filter(i => i >= 0);
   const fuerza = djEstado.clase && ENERGIA[g] && ENERGIA[g][djEstado.clase];
   const porMusica = fuerza ? todas.filter(i => fuerza.includes(DJ_ESCENAS[i].n)) : [];
-  return porMusica.length ? porMusica : todas; };
+  if (porMusica.length) return porMusica;
+  // sin datos de la musica, el Automatico usa solo las escenas de su lista (en Show, las nuevas; Cote, 28 nov)
+  const lista = ENERGIA[g] ? [...new Set([].concat(...Object.values(ENERGIA[g])))] : null;
+  const deLista = lista ? todas.filter(i => lista.includes(DJ_ESCENAS[i].n)) : [];
+  return deLista.length ? deLista : todas; };
 /* Standby con Automatico (Cote, 25 nov): el fondo cambia suave de color, en fundido continuo, y el color "sube" de abajo
    (perimetrales) hacia arriba (focos de fondo). Va por tiempo (no por el ritmo) para que siempre sea parejo.
    Cabezas grandes y frontales apagados; mini cabezas lentas. Parte del color de la escena de Standby elegida. */
@@ -3192,6 +3215,8 @@ function djVerGrupo(g){
   djGrupoVisto = g;
   document.querySelectorAll('#djEsc [data-grupo]').forEach(x => x.classList.toggle('fuera', x.dataset.grupo !== g));
   document.querySelectorAll('#djGrupos button').forEach(x => x.classList.toggle('act', x.dataset.g === g));
+  // grupo con mas de 4 escenas (Show, 7): en el celular van en filas mas bajas, con el icono al lado del nombre
+  $('djEsc').classList.toggle('muchas', document.querySelectorAll('#djEsc .djb[data-grupo="' + g + '"]').length > 4);
 }
 // Color base (Cote, 27 nov): la pared del color elegido, blanco de frente (cabezas 1 y 2 al escenario y frontales) y las mini
 // del mismo color moviendose. Deja la escena del DJ y su Automatico. Es el mismo armado que los momentos de los juegos.
