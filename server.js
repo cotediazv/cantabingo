@@ -1535,7 +1535,11 @@ app.post('/api/gamevote/reset', requireAdmin, (_req, res) => {
 
 // Leer la pantalla actual es público, para que la fuente de OBS no necesite iniciar sesión; cambiarla es del moderador.
 // Diseño nuevo de las pantallas (pedido de Cote, 22 nov): encendido salvo que se apague en el Centro de control
-app.get('/api/tema', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json({ on: db.tema !== false, pub: db.pubUrl || '', evento: EVENTO }); });
+app.get('/api/tema', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json({ on: db.tema !== false, pub: db.pubUrl || '', evento: EVENTO, priv: !!db.privacidad }); });
+// Aviso de datos personales al entrar (decisión de Cote, pregunta 9.2: desde diciembre, Ley 21.719; preparado por orden de
+// Code 0, 28 nov): una línea en la entrada de la sala de juegos y de la sala light. Apagado por defecto; se enciende en el
+// Centro de control. El texto final y la fecha los confirma Cote.
+app.post('/api/privacidad', requireAdmin, (req, res) => { db.privacidad = (req.body || {}).on === true; save(); aviso(); res.json({ on: db.privacidad }); });
 app.post('/api/tema', requireAdmin, (req, res) => { db.tema = (req.body || {}).on !== false; save(); res.json({ on: db.tema }); });
 // Dirección de los QR (pedido de Cote, 22 nov: llevar a la gente a krbstage.cl; eligió la opción A, juegos.krbstage.cl):
 // la sala es la misma y las direcciones de siempre siguen funcionando (OBS, pantallas y decodificadores no se tocan);
