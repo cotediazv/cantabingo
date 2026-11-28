@@ -760,6 +760,9 @@ function hostSetup(p) {
 window.readAloud = (game, lines) => `<details class="panel howto" open><summary>📢 Instrucciones · ${esc(game)}</summary><ul>${lines.map((l) => `<li>${l}</li>`).join('')}</ul></details>`;
 // Pedido de Cote (20 nov): las instrucciones en pantalla van ordenadas, cada una en su línea, sin pasarse para abajo:
 // si no cabe en el ancho de la pantalla, se achica la letra
+// Top 5 de la Trivia en el celular (pedido de Code 2 por Code 0, 28 nov; regla de Cote: nombres siempre completos): si un
+// nombre no cabe, se achica la letra en vez de cortarlo con «…»
+window.fitTopNames = (root) => { if (root) root.querySelectorAll('.pcrowd-top span').forEach((el) => window.fitOneLine(el, 9)); };
 window.fitOneLine = (el, min = 9) => {
   if (!el || !el.isConnected) return;
   el.style.fontSize = '';
@@ -1105,6 +1108,7 @@ views.jugar = async (sid) => {
     $('#prosco').innerHTML = `<div class="prosco-head big"><b>Trivia del Rosko</b><span></span><span class="prosco-clock" id="prosco-clock">${rosco.winner || rosco.finished ? '' : fmtClock(roscoLeft())}</span></div>
       ${rankBox}${body}${reveal}${crowdHTML()}
       ${top}`;
+    window.fitTopNames($('#prosco'));
   };
   const stopRosco = () => { if (roscoEs) roscoEs.close(); clearInterval(roscoTick); clearTimeout(crowdTimer); roscoEs = null; roscoId = null; rosco = null; crowdMine = {}; crowdOrder = []; crowdInfo = null; };
   // Durante el karaoke: se guarda el cartón y aparece el formulario para pedir canción.

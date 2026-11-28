@@ -267,6 +267,7 @@
         : st.top && st.top.length ? `<div class="pcrowd-top"><small>Top 5 · ${TRIVIA}</small>${st.top.map((x, i) => `<div class="${me && me.rank === i + 1 ? 'me' : ''}"><em>${i + 1}</em><span>${esc(x.name)}</span><b>${x.score}</b></div>`).join('')}${meRow(5)}</div>` : '';
       const score = me ? `<p class="pcrowd-score">Tus puntos: <b>${me.score}</b> · ${many(me.hits, 'acierto', 'aciertos')}${me.score > 0 ? ` · ${me.rank}.º lugar` : ''}</p>` : '';
       box.innerHTML = head + body + score + list;
+      window.fitTopNames(box); // nombres completos en el top 5 (se achica la letra, no se cortan)
       box.onclick = async (e) => {
         const b = e.target.closest('[data-c]');
         if (!b || b.disabled) return;

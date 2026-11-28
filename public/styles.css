@@ -4099,3 +4099,8 @@ html.evento .games-nav [data-game][hidden] { display: none !important; }
 /* Aviso de datos personales en la entrada (pregunta 9.2 de Cote; apagado salvo que se encienda) */
 .priv-line { margin: 10px 0 0; text-align: center; line-height: 1.35; }
 .priv-line a { color: inherit; text-decoration: underline; }
+
+/* Top 5 de la Trivia en el celular: nombres completos (se achica la letra con fitTopNames, nunca «…»; Code 2 por Code 0, 28 nov) */
+.pcrowd-top { grid-template-columns: minmax(0, 1fr); }
+.pcrowd-top > div { min-width: 0; }
+.pcrowd-top span { text-overflow: clip; }
