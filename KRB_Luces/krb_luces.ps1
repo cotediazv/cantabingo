@@ -1100,7 +1100,7 @@ namespace KRB {
       if (acc.Count == 0) return true;                                     // momento sin acciones (p. ej. bingo_numero): no cambia nada
       // Mandan los juegos (Cote, 26 nov): si el DJ apago, cambio o bajo las luces, el momento nuevo del juego deja atras lo del DJ:
       // se apaga su Automatico (si no, a los 3 minutos volveria su escena), su escena queda sin marcar y la intensidad general vuelve al 100 %
-      lock (DJL) { if (djAuto || djMusica) Bitacora.Anotar("DJ: Automatico / Auto musica apagado (llego un momento de los juegos)"); djAuto = false; djMusica = false; djEscena = -1; }
+      lock (DJL) { if (djAuto || djMusica) Bitacora.Anotar("DJ: Automatico / Auto musica apagado (llego un momento de los juegos)"); djAuto = false; djMusica = false; djEscena = -1; djGrupo = ""; }
       if (Dmx.Master < 0.999) { Dmx.Master = 1f; GuardarMaster(); Bitacora.Anotar("Intensidad general de vuelta al 100 % (momento de los juegos)"); }
       // "@previo" = volver al ultimo momento estable (p. ej. despues del verde de una correcta, al rojo del reloj).
       // Los momentos que terminan en "@previo" son de paso y no cuentan como estables.
@@ -1140,7 +1140,7 @@ namespace KRB {
     // ---- Panel del DJ (Cote, 25 nov): escena, automatico e intensidad compartidos; la estacion de ritmo avisa que esta viva ----
     static readonly object DJL = new object();
     static int djEscena = -1, djInt = 100; static bool djAuto = false, djMusica = false;
-    static string djClase = "", djClaseUsada = ""; static DateTime djClaseT = DateTime.MinValue;
+    static string djClase = "", djClaseUsada = "", djGrupo = ""; static DateTime djClaseT = DateTime.MinValue;
     static DateTime djCambio = DateTime.MinValue, djEstacion = DateTime.MinValue;
     static Random djAzar = new Random();
     static void Dj(NetworkStream s, string query) {
@@ -1149,25 +1149,31 @@ namespace KRB {
         string v;
         if ((v = Arg(query, "escena")) != null) { int.TryParse(v, out djEscena); djCambio = DateTime.UtcNow;
           string nom = Arg(query, "nombre") ?? v; Bitacora.Anotar("DJ: escena " + nom);
+          // grupo que eligio el DJ («Previa · Piano bar» -> «Previa»): el Automatico no puede salir de el (Cote, 28 nov)
+          if (Arg(query, "nombre") != null) { int ix = nom.IndexOf(" \u00b7 "); djGrupo = ix > 0 ? nom.Substring(0, ix) : nom; }
+          if (djEscena < 0) djGrupo = "";
           // Cote, 26 nov: la intensidad general baja se mantiene en Standby; al pasar a Previa, Show, Fiesta o Locura vuelve al 100 %
           if (Arg(query, "nombre") != null && !nom.StartsWith("Standby") && Dmx.Master < 0.999) {
             Dmx.Master = 1f; GuardarMaster(); Bitacora.Anotar("Intensidad general de vuelta al 100 % (" + nom + ")"); } }
         if ((v = Arg(query, "auto")) != null) { bool a = v == "1"; if (a != djAuto) Bitacora.Anotar("DJ: Automatico " + (a ? "encendido" : "apagado")); djAuto = a; if (djAuto) djCambio = DateTime.MinValue; }
-        if ((v = Arg(query, "musica")) != null) { bool a = v == "1"; if (a != djMusica) Bitacora.Anotar("DJ: Auto musica " + (a ? "encendido" : "apagado"));
-          djMusica = a; if (a) { djAuto = false; djCambio = DateTime.MinValue; djClaseUsada = ""; } }
-        if (Arg(query, "auto") == "1") djMusica = false;
+        // «Auto musica» ya no es aparte: el Automatico escucha la musica dentro del grupo (un aparato viejo que lo pida, prende el Automatico)
+        if (Arg(query, "musica") == "1") { if (!djAuto) Bitacora.Anotar("DJ: Automatico encendido"); djAuto = true; djCambio = DateTime.MinValue; }
+        djMusica = false;
         if ((v = Arg(query, "int")) != null) int.TryParse(v, out djInt);
         if (Arg(query, "estacion") == "1") djEstacion = DateTime.UtcNow;
         // Automatico: el primer aparato que pregunta cuando ya pasaron 3 minutos recibe la escena nueva y la aplica
         string lista = Arg(query, "turno");
         // Auto musica: cambia cuando la musica pasa a otra fuerza (con 40 s minimo entre cambios) o cada 3 minutos
         string clase = Arg(query, "clase");
-        bool cambioClase = djMusica && clase != null && clase != djClaseUsada && (DateTime.UtcNow - djCambio).TotalSeconds >= 40;
-        if (lista != null && (djAuto || djMusica) && ((DateTime.UtcNow - djCambio).TotalSeconds >= 180 || cambioClase)) {
-          if (djMusica && clase != null) { if (clase != djClaseUsada) Bitacora.Anotar("DJ: Auto musica, la musica esta " + clase); djClaseUsada = clase; }
+        bool cambioClase = clase != null && clase != "" && clase != djClaseUsada && (DateTime.UtcNow - djCambio).TotalSeconds >= 40;
+        // solo dentro del grupo que eligio el DJ: si el aparato no dice el grupo (version vieja) o dice otro, no se cambia nada
+        string grupoPedido = Arg(query, "grupo");
+        bool mismoGrupo = grupoPedido != null && djGrupo != "" && grupoPedido == djGrupo;
+        if (lista != null && djAuto && mismoGrupo && ((DateTime.UtcNow - djCambio).TotalSeconds >= 180 || cambioClase)) {
+          if (clase != null && clase != "" && clase != djClaseUsada) { Bitacora.Anotar("DJ: la musica esta " + clase + " (" + djGrupo + ")"); djClaseUsada = clase; }
           List<int> op = new List<int>();
           foreach (string x in lista.Split(',')) { int k; if (int.TryParse(x, out k) && k != djEscena) op.Add(k); }
-          if (op.Count > 0) { djEscena = op[djAzar.Next(op.Count)]; djCambio = DateTime.UtcNow; aplicar = true; Bitacora.Anotar("DJ: el Automatico cambio a la escena " + djEscena); }
+          if (op.Count > 0) { djEscena = op[djAzar.Next(op.Count)]; djCambio = DateTime.UtcNow; aplicar = true; Bitacora.Anotar("DJ: el Automatico cambio a la escena " + djEscena + " (" + djGrupo + ")"); }
         }
       }
       string cl; lock (DJL) { cl = (DateTime.UtcNow - djClaseT).TotalSeconds < 30 ? djClase : ""; }
@@ -1537,8 +1543,29 @@ function Diagnostico {
   }
   [IO.File]::WriteAllText((Join-Path $root "diagnostico.txt"), ($o -join "`r`n"), (New-Object Text.UTF8Encoding $false))
 }
+# ---------- Registro en linea (Cote, 28 nov: «no voy a ir a buscar el registro al Dell; busquense una forma de verlo online») ----------
+# Cada 10 minutos (solo si cambio) el Dell sube a la Sala de juegos (Render) la noche actual, la anterior y el ultimo
+# diagnostico, con la clave de las luces. Al terminar cada noche (01:35) arma un diagnostico nuevo y lo sube. Lo leen el
+# moderador (Centro de control > Registro de las luces) y Code 4 con su enlace de lectura.
+$salaUrl = if ($cfg.sala_url) { [string]$cfg.sala_url } else { "https://cantabingo.onrender.com" }
+$script:ultimaSubida = ""
+function Subir-Registro {
+  if ([KRB.Web]::Clave -eq "") { return }
+  try {
+    $hoy = [KRB.Bitacora]::Noche((Get-Date)); $ayer = [KRB.Bitacora]::Noche((Get-Date).AddDays(-1))
+    $diag = ""; $pd = Join-Path $root "diagnostico.txt"; if (Test-Path $pd) { $diag = [IO.File]::ReadAllText($pd) }
+    $cuerpo = @{ version = [KRB.Web]::Version; diagnostico = $diag; noches = @(@{ noche = $hoy; texto = [KRB.Bitacora]::Leer($hoy) }, @{ noche = $ayer; texto = [KRB.Bitacora]::Leer($ayer) }) } | ConvertTo-Json -Depth 4 -Compress
+    $huella = [Convert]::ToBase64String([Security.Cryptography.SHA1]::Create().ComputeHash([Text.Encoding]::UTF8.GetBytes($cuerpo)))
+    if ($huella -eq $script:ultimaSubida) { return }
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    Invoke-RestMethod -Uri ($salaUrl.TrimEnd('/') + "/api/luces/registro") -Method Post -ContentType "application/json; charset=utf-8" -Body ([Text.Encoding]::UTF8.GetBytes($cuerpo)) -Headers @{ Authorization = ("Bearer " + [KRB.Web]::Clave) } -TimeoutSec 30 | Out-Null
+    $script:ultimaSubida = $huella
+  } catch {}
+}
 Anotar-Consumo
 $proximoConsumo = (Get-Date).AddMinutes(10)
+$proximaSubida = (Get-Date).AddMinutes(2)
+$script:diagNoche = ""
 Mostrar-Version
 $proxima = (Get-Date).AddSeconds(60)
 $avisoPausa = $false
@@ -1546,7 +1573,11 @@ while ($true) {
   Start-Sleep -Seconds 1
   if ((Get-Date) -ge $proximoConsumo) { Anotar-Consumo; $proximoConsumo = (Get-Date).AddMinutes(10) }
   # el diagnostico se arma solo cuando se pide con el boton (Cote, 28 nov: «entre mas procesos ocultos, peor»)
-  if ([KRB.Web]::PedirDiagnostico) { [KRB.Web]::PedirDiagnostico = $false; try { Diagnostico } catch {} }
+  if ([KRB.Web]::PedirDiagnostico) { [KRB.Web]::PedirDiagnostico = $false; try { Diagnostico } catch {}; $proximaSubida = Get-Date }
+  # al terminar la noche (01:35, ya fuera del horario de actividades): un diagnostico nuevo, una vez por noche
+  $ahoraN = Get-Date; $nocheAyer = [KRB.Bitacora]::Noche($ahoraN)
+  if ($ahoraN.Hour -eq 1 -and $ahoraN.Minute -ge 35 -and $script:diagNoche -ne $nocheAyer -and -not $enActividad) { $script:diagNoche = $nocheAyer; try { Diagnostico } catch {}; $proximaSubida = Get-Date }
+  if ((Get-Date) -ge $proximaSubida) { Subir-Registro; $proximaSubida = (Get-Date).AddMinutes(10) }
   $forzar = [KRB.Web]::PedirActualizar
   # Nunca durante las actividades (Cote, 27 nov): en el horario del local (con margen) no se busca ni se reinicia; solo si se
   # pide a mano con "Buscar actualizacion ahora"

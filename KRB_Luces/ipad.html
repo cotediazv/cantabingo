@@ -306,7 +306,7 @@
   .djb.act{box-shadow:inset 0 0 0 3px #fff}
   .djb.act::before{opacity:.75}
   .djb:active{transform:scale(.96)}
-  .djctl{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+  .djctl{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
   .djc{border:1px solid var(--line);background:var(--card);color:var(--txt);border-radius:14px;padding:10px 6px;font-size:14px;font-weight:700;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px}
   .djc small{font-size:11px;font-weight:500;color:var(--mut)}
   .djc.act{background:#2a3f6e;border-color:var(--acc)}
@@ -340,13 +340,13 @@
     <div class="djacc"><button class="djc" id="djSegOn">💡 Encender cabezas</button><button class="djc" id="djSoltar">↩ Soltar · vuelven a la escena</button></div>
   </div>
   <div class="djctl">
-    <button class="djc" id="djAuto">🔀 Automático<small>cambia sola</small></button>
-    <button class="djc" id="djMusica">🎵 Auto música<small>según la música</small></button>
+    <button class="djc" id="djAuto">🔀 Automático<small>dentro del grupo</small></button>
+    <button class="djc" id="djMusica" hidden>🎵 Auto música<small>según la música</small></button>
     <button class="djc" id="djMic">🎤 Ritmo<small>escuchar música</small></button>
     <button class="djc" id="djTap">👆 Tap<small>marcar el ritmo</small></button>
     <button class="djc off" id="djApagar">⏻ Apagar<small>todo</small></button>
   </div>
-  <div class="djint">Intensidad <input type="range" id="djInt" min="10" max="100" value="100"><span id="djIntTxt">100%</span></div>
+  <div class="djint">Intensidad <input type="range" id="djInt" min="0" max="100" value="100"><span id="djIntTxt">100%</span></div>
   <div class="djent">Entrada <select id="djEntrada"><option value="">Micrófono (predeterminado)</option></select><span class="djnivel"><i id="djNivel"></i></span></div>
   <div id="djAviso"></div>
   <div id="djGira">📱<b>Pon el teléfono vertical</b></div>
@@ -385,8 +385,8 @@
     <!-- Las escenas del panel del DJ tambien aqui (Cote, 25 nov): las mismas, en sus 5 grupos -->
     <h2 class="sec">Escenas del DJ · de más tranquilo a más intenso</h2>
     <div class="ipadDJ" id="ipadDJ"></div>
-    <div class="row"><button class="chip" id="ipadDJAuto">🔀 Automático</button><button class="chip" id="ipadDJMusica">🎵 Auto música</button>
-      <span class="help" style="margin:0">Automático: cambia sola de escena cada 3 min dentro del mismo grupo (en Standby, fundido suave). Auto música: escucha la música y elige el programa (suave → Previa, media → Animado, fuerte → Show), siempre con el blanco de frente. Son los mismos del panel del DJ.</span></div>
+    <div class="row"><button class="chip" id="ipadDJAuto">🔀 Automático</button><button class="chip" id="ipadDJMusica" hidden>🎵 Auto música</button>
+      <span class="help" style="margin:0">Automático: cambia solo de escena, siempre dentro del grupo elegido (en Previa nunca salta a Fiesta). Cada 3 min, o antes si la música cambia de fuerza (la escucha la estación de ritmo): en las partes fuertes del Show entra el estrobo. En Standby, fundido suave. Es el mismo del panel del DJ.</span></div>
 
     <h2 class="sec">Color del fondo · perimetrales + focos de pared</h2>
     <div class="bgrow" id="bgRow"></div>
@@ -1547,6 +1547,8 @@ function pintarTodo(){ pintarEscenas(); pintarFondo(); pintarZonas(); pintarSegu
 /* ---------- Estado de la conexion ---------- */
 function pintarEstado(e){
   // la intensidad general la guarda el Dell: todos los aparatos ven la misma (sin pisar al que la esta moviendo)
+  if (e && e.master != null && DJ && !MINI && MASTER_DELL && document.activeElement !== $('djInt') && Date.now() - djIntMovido > 2000 && +$('djInt').value !== e.master){
+    $('djInt').value = e.master; $('djIntTxt').textContent = e.master + '%'; }
   if (e && e.master != null && MASTER_DELL && (!DJ || MINI) && Date.now() - masterMovido > 2000 && +$('master').value !== e.master){
     $('master').value = e.master; $('masterTxt').textContent = e.master + '%'; if (MINI) miniAvisar(); }
   if (e.canales) canales = e.canales;
@@ -1571,7 +1573,14 @@ function pintarEstado(e){
   if (e.version != null && !DEMO){
     // version nueva instalada en el Dell: la estacion (oculta) se recarga sola; en los paneles aparece un aviso para recargar
     if (versionDell && e.version !== versionDell && /^[0-9a-f]{7} /.test(e.version)){
-      if (ESTACION) setTimeout(() => location.reload(), 3000); else $('avisoVersion').hidden = false;
+      // Cote (28 nov): un aparato con la version vieja leia mal los numeros de las escenas (Animado se veia como Fiesta).
+      // Ahora todos se recargan solos con la version nueva: el panel del DJ y el mini panel al tiro (salvo si el DJ esta
+      // siguiendo a alguien con el dedo); el panel principal cuando nadie lo toca hace 1 minuto.
+      if (ESTACION || MINI) setTimeout(() => location.reload(), 3000);
+      else { $('avisoVersion').hidden = false;
+        const intentar = () => { const quieto = Date.now() - ultimoToque > (DJ ? 5000 : 60000);
+          if (quieto && !(document.body.classList.contains('dj-cabezas') && djSeg.activo)) location.reload(); else setTimeout(intentar, 5000); };
+        setTimeout(intentar, 3000); }
     }
     versionDell = e.version;
     if (e.aviso) avisoTema = e.aviso;
@@ -2576,7 +2585,7 @@ const SIMDJ = { escena: -1, auto: false, int: 100, cambio: 0, ult: -99, P: 0.5 }
 function simPulso(){ const t = performance.now() / 1000, d = t - SIMDJ.ult; if (d > 0.2 && d < 2) SIMDJ.P = SIMDJ.P * 0.7 + d * 0.3; SIMDJ.ult = t; }
 function simDj(q){
   const t = performance.now() / 1000; let aplicar = false;
-  if (q.has('escena')){ SIMDJ.escena = +q.get('escena'); SIMDJ.cambio = t; }
+  if (q.has('escena')){ SIMDJ.escena = +q.get('escena'); SIMDJ.cambio = t; if (q.has('nombre')) SIMDJ.grupo = q.get('nombre').split(' · ')[0]; if (SIMDJ.escena < 0) SIMDJ.grupo = ''; }
   if (q.has('auto')){ SIMDJ.auto = q.get('auto') === '1'; if (SIMDJ.auto) SIMDJ.cambio = -1e9; }
   if (q.has('int')) SIMDJ.int = +q.get('int');
   // demo de Auto musica: la «musica» cambia de fuerza cada 50 s (suave, media, fuerte)
@@ -2584,7 +2593,7 @@ function simDj(q){
   if (q.get('auto') === '1') SIMDJ.musica = false;
   const clase = ['suave', 'medio', 'fuerte'][Math.floor(t / 50) % 3], cq = q.get('clase');
   if (q.has('turno') && SIMDJ.musica && cq && cq !== SIMDJ.usada && t - SIMDJ.cambio >= 40){ SIMDJ.usada = cq; SIMDJ.cambio = -1e9; }
-  if (q.has('turno') && (SIMDJ.auto || SIMDJ.musica) && t - SIMDJ.cambio >= 180){
+  if (q.has('turno') && SIMDJ.auto && SIMDJ.grupo && q.get('grupo') === SIMDJ.grupo && t - SIMDJ.cambio >= 180){
     const op = q.get('turno').split(',').map(Number).filter(k => k !== SIMDJ.escena);
     if (op.length){ SIMDJ.escena = op[Math.floor(Math.random() * op.length)]; SIMDJ.cambio = t; aplicar = true; } }
   const ritmo = t - SIMDJ.ult < Math.max(2.5, 3 * SIMDJ.P);
@@ -3064,9 +3073,23 @@ function animCreatividad(){
   return [capa('col', col, r, fx), capa('mov', [pasoPos(djPosEsc())], 16), capa('techo3', caminoTecho(c3, 12), elegir([1, 2]), 1), capa('mini', mini, elegir([0.5, 1, 2]), 0.7)];
 }
 // Automatico: cambia entre las escenas del MISMO grupo (en la previa nunca salta a una de fiesta)
-const djGrupo = () => { const g = (DJ_ESCENAS[djEstado.escena] || {}).grupo || 'Fiesta';
-  if (g === 'Standby') return [];                                     // en Standby el Automatico es un fundido continuo, no salta de escena
-  return DJ_ESCENAS.map((e, i) => e.grupo === g ? i : -1).filter(i => i >= 0); };
+// Cote (28 nov): «tiene que estar en automatico, pero dentro del contexto que elige el DJ… en ningun caso, si el DJ pone
+// Previa, se tiene que saltar a Fiesta». El Automatico SOLO elige dentro del grupo de la escena actual; si no hay escena
+// elegida, no elige nada (antes tomaba Fiesta por defecto). Si la estacion escucha la musica, segun su fuerza elige la
+// escena del mismo grupo: en Previa todo es suave; en Show, en las partes fuertes entra el estrobo.
+const ENERGIA = {
+  Previa:  { suave: ['Piano bar', 'Jazz azul', 'Vino', 'Dorado'], medio: ['Piano bar', 'Jazz azul', 'Vino', 'Dorado'], fuerte: ['Piano bar', 'Jazz azul', 'Vino', 'Dorado'] },
+  Show:    { suave: ['Colores', 'Arriba/abajo'], medio: ['Arriba/abajo', 'Arcoíris', 'Colores'], fuerte: ['Arcoíris', 'Estrobo'] },
+  Animado: { suave: ['Constelación', 'Cara y techo'], medio: ['Cara y techo', 'Ola', 'Creatividad'], fuerte: ['Ola', 'Creatividad'] },
+  Fiesta:  { suave: ['Pista', 'Fiesta'], medio: ['Fiesta', 'Disco', 'Pista'], fuerte: ['Destello', 'Disco'] }
+};
+const djGrupoActual = () => (DJ_ESCENAS[djEstado.escena] || {}).grupo || '';
+const djGrupo = () => { const g = djGrupoActual();
+  if (!g || g === 'Standby') return [];                               // sin escena: nada; en Standby el Automatico es un fundido continuo
+  const todas = DJ_ESCENAS.map((e, i) => e.grupo === g ? i : -1).filter(i => i >= 0);
+  const fuerza = djEstado.clase && ENERGIA[g] && ENERGIA[g][djEstado.clase];
+  const porMusica = fuerza ? todas.filter(i => fuerza.includes(DJ_ESCENAS[i].n)) : [];
+  return porMusica.length ? porMusica : todas; };
 /* Standby con Automatico (Cote, 25 nov): el fondo cambia suave de color, en fundido continuo, y el color "sube" de abajo
    (perimetrales) hacia arriba (focos de fondo). Va por tiempo (no por el ritmo) para que siempre sea parejo.
    Cabezas grandes y frontales apagados; mini cabezas lentas. Parte del color de la escena de Standby elegida. */
@@ -3085,7 +3108,7 @@ function capasStandbyAuto(e){
 
 async function djAplicar(i, auto){
   const e = DJ_ESCENAS[i]; if (!e || !conf) return;
-  djEstado.escena = i; if (DJ) master = +$('djInt').value; djPintar();
+  djEstado.escena = i; master = (DEMO || CONTROL) && DJ ? +$('djInt').value : 100; djPintar();   // la intensidad la baja el Dell (fader)
   if (!DJ){ escenaActiva = -1; efectoPared = null; progActivo = null; pintarEscenas(); pintarEfectos(); pintarProgramas(); }
   // vista previa (Cote, 25 nov): en Previa y Show hay alguien en el escenario; en Standby, Fiesta y Locura no
   V.escenarioVacio = !['Previa', 'Show', 'Animado'].includes(e.grupo); V.sucio = true;
@@ -3157,15 +3180,14 @@ function djPintar(){
    aparatos; el Automatico lo hace el Dell: cada 3 minutos el primer aparato que pregunta aplica la escena nueva. */
 async function djServidor(params){
   const q = new URLSearchParams(params || {});
-  if (djEstado.musica && djEstado.clase){ const g = GRUPO_CLASE[djEstado.clase];
-    q.set('turno', DJ_ESCENAS.map((e, i) => e.grupo === g ? i : -1).filter(i => i >= 0).join(',')); q.set('clase', djEstado.clase); }
-  else if (djEstado.auto) q.set('turno', djGrupo().join(','));
+  // el Dell solo acepta cambiar dentro del grupo que eligio el DJ (por eso va el nombre del grupo)
+  if (djEstado.auto && djGrupo().length){ q.set('turno', djGrupo().join(',')); q.set('grupo', djGrupoActual()); if (djEstado.clase) q.set('clase', djEstado.clase); }
   if (ritmo.mic) q.set('estacion', '1');
   let r; try { r = await api('/api/dj?' + q); } catch(e){ return; }
-  djEstado.auto = !!r.auto; djEstado.musica = !!r.musica; djEstado.clase = r.clase || '';
+  djEstado.auto = !!r.auto || !!r.musica; djEstado.musica = false; djEstado.clase = r.clase || '';
   if (r.aplicar && r.escena >= 0){ djEstado.bpm = r.bpm || djEstado.bpm; djAplicar(r.escena, true); }
   else if (r.escena !== djEstado.escena){ djEstado.escena = r.escena; }
-  if (document.activeElement !== $('djInt') && r.int && +$('djInt').value !== r.int){ $('djInt').value = r.int; $('djIntTxt').textContent = r.int + '%'; }
+
   // ritmo que llega al Dell (de este aparato o de la estacion)
   const lat = $('djLatido');
   const local = ritmo.on || ritmo.mic;                                  // los pulsos los manda este aparato: Tap ya late con cada uno
@@ -3189,8 +3211,13 @@ $('djMusica').onclick = () => { djEstado.musica = !djEstado.musica; if (djEstado
   djServidor({ musica: djEstado.musica ? '1' : '0' }); toast(djEstado.musica ? 'Auto música: las luces siguen a la música' : 'Auto música apagado'); };
 $('djApagar').onclick = async () => { djEstado.auto = false; djEstado.musica = false; djEstado.escena = -1; djPintar(); djServidor({ auto: '0', musica: '0', escena: '-1' });
   try { pintarEstado(await api('/api/apagar?f=1')); } catch(e){ sinConexion(); } };
-$('djInt').oninput = () => { $('djIntTxt').textContent = $('djInt').value + '%'; };
-$('djInt').onchange = () => { djServidor({ int: $('djInt').value }); if (djEstado.escena >= 0) djAplicar(djEstado.escena, true); };
+// Fader del DJ (Cote, 28 nov: «el fader no sirve mucho»): antes volvia a armar la escena al soltarlo, y si otro aparato
+// cambiaba de escena volvia al 100 %. Ahora es la intensidad general del Dell: baja todo al instante y se mantiene.
+let djIntMovido = 0;
+$('djInt').oninput = () => { const v = +$('djInt').value; $('djIntTxt').textContent = v + '%'; djIntMovido = Date.now();
+  if (DEMO || CONTROL){ master = v; return; }
+  limitar('djint', () => api('/api/master?v=' + v + '&ch=' + canalesIntensidad().join(',')).catch(() => {})); };
+$('djInt').onchange = () => { if (DEMO && djEstado.escena >= 0) djAplicar(djEstado.escena, true); };
 
 /* ---------- Ritmo: reloj de golpes que se ajusta a la musica ---------- */
 const ritmo = { on: false, P: 0.5, prox: 0, rtt: 0.08, golpes: [], taps: [], mic: null, ultOnset: 0 };
@@ -3593,7 +3620,8 @@ function iniciarEscenasDJ(){
 
 /* ---------- Ayuda y registro de la noche ---------- */
 function anotar(t){ if (DEMO || CONTROL) return; fetch('/api/anotar?t=' + encodeURIComponent(t), {cache: 'no-store', credentials: 'same-origin'}).catch(() => {}); }
-let versionDell = '', avisoTema = '';
+let versionDell = '', avisoTema = '', ultimoToque = Date.now();
+['pointerdown', 'keydown', 'input'].forEach(t => addEventListener(t, () => { ultimoToque = Date.now(); }, true));
 function abrirAyuda(){
   $('verDell').textContent = DEMO ? 'versión de prueba (simulación)' : (versionDell || '—');
   $('avisoTema').textContent = DEMO ? 'krb-luces-prueba (solo en el Dell)' : (avisoTema || '— (se crea al abrir la suite nueva)');
