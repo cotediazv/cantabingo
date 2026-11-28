@@ -95,6 +95,25 @@ module.exports = function vertical({ cuadroOf = () => 0, planB = () => false, so
   // queda el video tal como se subió
   for (const v of Object.keys(SCREENS)) { const c = db.vertical[v]; if (c && c.opt && (c.opt.state === 'procesando' || c.opt.state === 'esperando')) { c.opt = { ...c.opt, state: 'error' }; save(); } try { fs.rmSync(`${file(v)}.optimizando.mp4`, { force: true }); } catch { /* nada */ } }
 
+  // Videos «semilla» (orden de Cote por Code 0, 28 nov, 15:30: «una vez que esté listo, lo publicas de una. Y que se empiece a
+  // ver desde ya en la pantalla. Porque la cartelera que tiene actualmente ya caducó»): un video que viene en el repositorio
+  // (semillas/vertical-<pantalla>-<marca sin guiones>.mp4) se instala UNA sola vez como video de esa pantalla, igual que una subida
+  // normal (mismo archivo y versión nueva, así el decodificador lo toma solo). No cambia el modo ni las otras pantallas. Si
+  // después se sube otro video a mano, manda ese: la misma semilla no se vuelve a instalar (db.vertical[v].semilla).
+  const SEMILLAS = process.env.SEMILLAS_DIR || path.join(__dirname, 'semillas');
+  try {
+    for (const name of fs.readdirSync(SEMILLAS).sort()) {
+      const m = /^vertical-(.+)-([A-Za-z0-9_]+)\.mp4$/.exec(name); // la marca va sin guiones (hay pantallas con guion: kennedy-h)
+      if (!m || !SCREENS[m[1]]) continue;
+      const v = m[1]; const c = conf(v); const marca = `${v}-${m[2]}`;
+      if (c.semilla === marca) continue; // ya se instaló esta semilla una vez
+      fs.copyFileSync(path.join(SEMILLAS, name), file(v));
+      c.video = Date.now(); c.size = fs.statSync(file(v)).size; c.opt = null; c.semilla = marca;
+      save();
+      console.log(`Pantallas: video ${name} instalado en la pantalla ${v}`);
+    }
+  } catch (e) { if (e.code !== 'ENOENT') console.log('Pantallas: no se pudo instalar un video semilla', e.message); }
+
   // Qué actividad hay ahora en el local: la sala de juegos completa de ese local abierta y con algo en juego
   // (pedido de Cote: si la sala está abierta pero sin bingo, El Rosko ni otro juego en curso, se ve la información
   // del local con los shows que vienen). En el bingo cuenta como «en juego» si ya salieron números, si está el QR
