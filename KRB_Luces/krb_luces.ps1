@@ -381,6 +381,38 @@ namespace KRB {
         }
       }
     }
+    // OBS se abre solo si se cerro (Cote, 28 nov: «que todo funcione en el show… que el Dell no se caiga»): si en su horario (o
+    // si estaba transmitiendo) OBS lleva 20 s sin responder y no esta abierto, el Dell lo abre de nuevo, sin la pantalla de
+    // «modo seguro» que OBS muestra despues de caerse, y pide transmitir. Como mucho un intento por minuto. Avisa al celular.
+    static DateTime caidoDesde = DateTime.MinValue, ultimoAbrir = DateTime.MinValue;
+    static string RutaObs() {
+      string[] c = { @"C:\Program Files\obs-studio\bin\64bit\obs64.exe", @"C:\Program Files (x86)\obs-studio\bin\64bit\obs64.exe" };
+      foreach (string x in c) if (File.Exists(x)) return x;
+      try { using (RegistryKey k = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\OBS Studio")) { string d = k == null ? null : k.GetValue("") as string; if (d != null && File.Exists(Path.Combine(d, @"bin\64bit\obs64.exe"))) return Path.Combine(d, @"bin\64bit\obs64.exe"); } } catch {}
+      return null;
+    }
+    public static void Vigilar() {
+      if (!caido) { caidoDesde = DateTime.MinValue; return; }
+      if (caidoDesde == DateTime.MinValue) caidoDesde = DateTime.Now;
+      bool debe = EnHorario(Reloj ?? DateTime.Now);
+      if (!(debe || transmitiaAlCaer) || Clave == "") return;
+      if ((DateTime.Now - caidoDesde).TotalSeconds < 20 || (DateTime.Now - ultimoAbrir).TotalSeconds < 60) return;
+      if (Process.GetProcessesByName("obs64").Length > 0) return;          // esta abierto (quizas cargando): no se toca
+      string ruta = RutaObs(); if (ruta == null) { Estado = "OBS cerrado y no se encontro obs64.exe para abrirlo"; return; }
+      ultimoAbrir = DateTime.Now;
+      try {
+        ProcessStartInfo pi = new ProcessStartInfo(ruta, "--disable-shutdown-check --startstreaming");
+        pi.WorkingDirectory = Path.GetDirectoryName(ruta); pi.UseShellExecute = true; Process.Start(pi);
+        Bitacora.Anotar("OBS estaba cerrado: el Dell lo abrio de nuevo y pidio transmitir");
+        Aviso.Mandar("OBS se habia cerrado en el show. El Dell lo abrio de nuevo (" + DateTime.Now.ToString("HH:mm") + ").", true);
+      } catch (Exception e) { Bitacora.Anotar("OBS: no se pudo abrir (" + e.Message + ")"); }
+    }
+    public static void Iniciar(string carpeta) {
+      new Thread(() => { Thread.Sleep(15000); while (true) { try { RevisarStandby(); } catch {} Thread.Sleep(20000); } }) { IsBackground = true }.Start();
+      Archivo = Path.Combine(carpeta, "obs.txt");
+      try { if (File.Exists(Archivo)) Clave = File.ReadAllText(Archivo).Trim(); } catch {}
+      new Thread(() => { Thread.Sleep(20000); while (true) { if (Clave != "" || File.Exists(Archivo)) { Revisar(); try { Vigilar(); } catch {} } Thread.Sleep(10000); } }) { IsBackground = true }.Start();
+    }
     // Luces en Standby solas a las 19:00, jueves a sabado (Cote, 27 nov). Una vez por noche, hasta las 00:30; si el programa
     // parte dentro de ese rato (por ejemplo, despues de un corte de luz), tambien, porque el cable parte con todo apagado.
     static string standbyNoche = "";
@@ -1401,6 +1433,8 @@ function Anotar-Consumo {
     $top = $uso.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 5 |
       ForEach-Object { $_.Key + " " + [Math]::Round($_.Value / $seg / $nucleos * 100) + "%" }
     $script:ultimoConsumo = "procesador " + [Math]::Round($total / $seg / $nucleos * 100) + "%, memoria " + $ram + "% en uso. Lo que mas usa: " + ($top -join ", ")
+    # Aviso al celular antes de que se caiga (Cote, 28 nov): memoria sobre 90 % en horario de actividades
+    if ($ram -ne "?" -and [double]$ram -ge 90 -and [KRB.Aviso]::EnActividad((Get-Date))) { [KRB.Aviso]::Mandar("El Dell esta casi sin memoria (" + $ram + "% en uso). Cierra pestanas del navegador que no se usen en el Dell.", $true) }
     [KRB.Bitacora]::Anotar("Consumo del Dell: " + $script:ultimoConsumo)
   } catch {}
 }
