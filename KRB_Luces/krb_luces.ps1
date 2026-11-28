@@ -323,7 +323,10 @@ namespace KRB {
     }
     static string Campo(string j, string k) { var m = System.Text.RegularExpressions.Regex.Match(j, "\"" + k + "\"\\s*:\\s*\"([^\"]*)\""); return m.Success ? m.Groups[1].Value : null; }
     // Una conexion corta por cada pedido (OBS 5: Hello -> Identify -> Identified -> Request -> Response)
-    static string Pedir(string tipo) {
+    // Consulta libre para el diagnostico del Dell (estadisticas, codificador, etc.). Nunca cambia nada en OBS.
+    public static string Consultar(string tipo, string datos) { try { return Pedir(tipo, datos); } catch (Exception e) { return "{\"error\":\"" + (e.InnerException != null ? e.InnerException.Message : e.Message).Replace("\"", "'") + "\"}"; } }
+    static string Pedir(string tipo) { return Pedir(tipo, null); }
+    static string Pedir(string tipo, string datos) {
       using (System.Net.WebSockets.ClientWebSocket ws = new System.Net.WebSockets.ClientWebSocket()) {
         if (!ws.ConnectAsync(new Uri("ws://127.0.0.1:4455"), CancellationToken.None).Wait(4000)) throw new Exception("OBS no esta abierto o su servidor WebSocket esta apagado");
         string hola = Recibir(ws), auth = "";
@@ -331,7 +334,7 @@ namespace KRB {
         if (ch != null && sal != null) { if (Clave == "") throw new Exception("falta la clave de OBS"); auth = ",\"authentication\":\"" + B64Sha(B64Sha(Clave + sal) + ch) + "\""; }
         Mandar(ws, "{\"op\":1,\"d\":{\"rpcVersion\":1" + auth + "}}");
         string id = Recibir(ws); if (id.IndexOf("\"op\":2") < 0 && id.IndexOf("\"op\": 2") < 0) throw new Exception("OBS no acepto la clave");
-        Mandar(ws, "{\"op\":6,\"d\":{\"requestType\":\"" + tipo + "\",\"requestId\":\"krb\"}}");
+        Mandar(ws, "{\"op\":6,\"d\":{\"requestType\":\"" + tipo + "\",\"requestId\":\"krb\"" + (datos != null ? ",\"requestData\":" + datos : "") + "}}");
         string r = Recibir(ws);
         try { ws.CloseAsync(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, "", CancellationToken.None).Wait(1000); } catch {}
         return r;
@@ -674,6 +677,7 @@ namespace KRB {
   // ---------- Servidor web minimo (sin permisos de administrador) ----------
   public static class Web {
     public static string Root;
+    public static volatile bool PedirDiagnostico = false;
     public static string ConfigPath;
     public static string Clave = "";               // vacia = sin clave
     public static bool PedirEnWifiLocal = false;    // false = en el WiFi del local no se pide clave
@@ -941,6 +945,14 @@ namespace KRB {
         if (chs != null) { List<int> l = new List<int>(); foreach (string x in chs.Split(',')) { int c; if (int.TryParse(x, out c) && c >= 1 && c <= 512) l.Add(c); } Dmx.MasterCh = l.ToArray(); }
         if (v >= 0) { Dmx.Master = (float)Math.Min(1, v / 100); GuardarMaster(); }
         Estado(s); return; }
+      // Diagnostico del Dell (Cote, 28 nov: «revisar por que fallaron las luces y por que se apaga OBS»): lo arma el programa
+      // cada 10 minutos (y al pedirlo) en diagnostico.txt; el panel lo muestra para copiarlo al registro
+      if (ruta == "/api/diagnostico") {
+        if (Arg(query, "nuevo") != null) PedirDiagnostico = true;
+        string f = Path.Combine(Root, "diagnostico.txt"), tx = "";
+        try { if (File.Exists(f)) tx = File.ReadAllText(f); } catch {}
+        Enviar(s, "200 OK", "application/json", Encoding.UTF8.GetBytes("{\"pedido\":" + (PedirDiagnostico ? "true" : "false") + ",\"texto\":\"" + tx.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "").Replace("\n", "\\n").Replace("\t", " ") + "\"}"));
+        return; }
       // OBS (transmision automatica): estado, guardar la clave y probar
       if (ruta == "/api/obs") {
         string c = Arg(query, "clave"); if (c != null) Obs.GuardarClave(c);
@@ -1356,7 +1368,7 @@ function Revisar-Actualizacion {
 }
 # Consumo del Dell (Cote, 27 nov: OBS se cerro 3 veces; ver que esta consumiendo): cada 10 minutos queda en el registro de la
 # noche el uso del procesador y de la memoria, y los 5 programas que mas procesador usaron en esos 10 minutos.
-$script:cpuAntes = @{}; $script:cpuCuando = Get-Date
+$script:cpuAntes = @{}; $script:cpuCuando = Get-Date; $script:ultimoConsumo = "(todavia no medido)"; $script:avisoReinicio = $false
 function Anotar-Consumo {
   try {
     $ahora = Get-Date; $seg = ($ahora - $script:cpuCuando).TotalSeconds; $nucleos = [Environment]::ProcessorCount
@@ -1373,17 +1385,87 @@ function Anotar-Consumo {
     $ram = if ($os) { [Math]::Round(($os.TotalVisibleMemorySize - $os.FreePhysicalMemory) / $os.TotalVisibleMemorySize * 100) } else { "?" }
     $top = $uso.GetEnumerator() | Sort-Object Value -Descending | Select-Object -First 5 |
       ForEach-Object { $_.Key + " " + [Math]::Round($_.Value / $seg / $nucleos * 100) + "%" }
-    [KRB.Bitacora]::Anotar("Consumo del Dell: procesador " + [Math]::Round($total / $seg / $nucleos * 100) + "%, memoria " + $ram + "% en uso. Lo que mas usa: " + ($top -join ", "))
+    $script:ultimoConsumo = "procesador " + [Math]::Round($total / $seg / $nucleos * 100) + "%, memoria " + $ram + "% en uso. Lo que mas usa: " + ($top -join ", ")
+    [KRB.Bitacora]::Anotar("Consumo del Dell: " + $script:ultimoConsumo)
   } catch {}
+}
+# ---------- Diagnostico del Dell (Cote, 28 nov) ----------
+# Solo lee: equipo, procesador, memoria (y sus ranuras), disco, video, programas que mas gastan, navegadores, inicio de
+# Windows, Windows Update, antivirus, temperatura, plan de energia, errores de Windows de las ultimas 24 h y OBS
+# (version, codificador, estadisticas y sus caidas). Nunca cambia nada.
+function Diagnostico {
+  $o = New-Object System.Collections.Generic.List[string]
+  $L = { param($t) $o.Add([string]$t) }
+  & $L ("DIAGNOSTICO DEL DELL - " + (Get-Date -Format "yyyy-MM-dd HH:mm:ss"))
+  try { $cs = Get-CimInstance Win32_ComputerSystem; & $L ("Equipo: " + $cs.Manufacturer + " " + $cs.Model) } catch {}
+  try { $os = Get-CimInstance Win32_OperatingSystem
+    & $L ("Windows: " + $os.Caption + " " + $os.Version + " - prendido desde " + $os.LastBootUpTime.ToString("dd-MM HH:mm"))
+    & $L ("Memoria: " + [Math]::Round($os.TotalVisibleMemorySize/1MB,1) + " GB en total, " + [Math]::Round($os.FreePhysicalMemory/1MB,1) + " GB libres (" + [Math]::Round(($os.TotalVisibleMemorySize-$os.FreePhysicalMemory)/$os.TotalVisibleMemorySize*100) + "% en uso)") } catch {}
+  try { foreach ($c in Get-CimInstance Win32_Processor) { & $L ("Procesador: " + $c.Name.Trim() + " - " + $c.NumberOfCores + " nucleos / " + $c.NumberOfLogicalProcessors + " hilos - " + $c.CurrentClockSpeed + " de " + $c.MaxClockSpeed + " MHz - carga " + $c.LoadPercentage + "%") } } catch {}
+  try { $arr = Get-CimInstance Win32_PhysicalMemoryArray | Select-Object -First 1; $mods = @(Get-CimInstance Win32_PhysicalMemory)
+    $tipo = @{20='DDR';21='DDR2';24='DDR3';26='DDR4';34='DDR5'}; $forma = @{8='DIMM (escritorio)';12='SODIMM (notebook)'}
+    & $L ("Ranuras de memoria: " + $arr.MemoryDevices + " en total, " + $mods.Count + " ocupadas - maximo " + [Math]::Round($arr.MaxCapacity/1MB) + " GB")
+    foreach ($m in $mods) { & $L ("  - " + [Math]::Round($m.Capacity/1GB) + " GB " + $tipo[[int]$m.SMBIOSMemoryType] + " " + $forma[[int]$m.FormFactor] + " a " + $m.Speed + " MHz - " + $m.Manufacturer + " " + ($m.PartNumber -replace '\s+$','') + " - ranura " + $m.DeviceLocator) } } catch {}
+  try { foreach ($g in Get-CimInstance Win32_VideoController) { & $L ("Video: " + $g.Name + " (controlador " + $g.DriverVersion + ")") } } catch {}
+  try { $d = Get-PSDrive C; & $L ("Disco C: " + [Math]::Round($d.Free/1GB,1) + " GB libres de " + [Math]::Round(($d.Used+$d.Free)/1GB) + " GB") } catch {}
+  try { $pp = (powercfg /getactivescheme) -join " "; & $L ("Plan de energia: " + ($pp -replace '.*\(([^)]*)\).*','$1')) } catch {}
+  try { $t = Get-CimInstance -Namespace root/wmi -ClassName MSAcpi_ThermalZoneTemperature -ErrorAction Stop
+    & $L ("Temperatura: " + (($t | ForEach-Object { [Math]::Round($_.CurrentTemperature/10 - 273.15) }) -join ", ") + " C") } catch { & $L "Temperatura: Windows no la entrega sin permisos de administrador" }
+  & $L ""
+  & $L ("Consumo de los ultimos 10 minutos: " + $script:ultimoConsumo)
+  try { $ps = Get-Process | Sort-Object WorkingSet64 -Descending
+    & $L "Los 10 programas que mas memoria usan:"
+    foreach ($p in ($ps | Select-Object -First 10)) { & $L ("  - " + $p.ProcessName + ": " + [Math]::Round($p.WorkingSet64/1MB) + " MB") }
+    foreach ($n in @('msedge','chrome','firefox','obs64','powershell','cloudflared')) { $g = @($ps | Where-Object { $_.ProcessName -eq $n })
+      if ($g.Count) { & $L ("  " + $n + ": " + $g.Count + " procesos, " + [Math]::Round((($g | Measure-Object WorkingSet64 -Sum).Sum)/1MB) + " MB en total") } } } catch {}
+  try { $ventanas = Get-Process | Where-Object { $_.MainWindowTitle -and ($_.ProcessName -eq 'msedge' -or $_.ProcessName -eq 'chrome') } | ForEach-Object { $_.ProcessName + ": " + $_.MainWindowTitle }
+    & $L ("Ventanas de navegador abiertas: " + (@($ventanas).Count)); foreach ($v in $ventanas) { & $L ("  - " + $v) } } catch {}
+  & $L ""
+  try { & $L "Programas que parten con Windows:"; foreach ($x in Get-CimInstance Win32_StartupCommand) { & $L ("  - " + $x.Name + " (" + $x.Location + ")") } } catch {}
+  try { $wu = Get-Service wuauserv; & $L ("Windows Update: " + $wu.Status)
+    $h = Get-HotFix | Where-Object InstalledOn | Sort-Object InstalledOn -Descending | Select-Object -First 1; if ($h) { & $L ("  Ultima actualizacion instalada: " + $h.HotFixID + " el " + $h.InstalledOn.ToString("dd-MM-yyyy")) }
+    $ax = Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings" -ErrorAction SilentlyContinue
+    if ($ax -and $ax.ActiveHoursStart -ne $null) { & $L ("  Horas activas (no reinicia en ese rato): " + $ax.ActiveHoursStart + ":00 a " + $ax.ActiveHoursEnd + ":00") } } catch {}
+  try { $av = Get-CimInstance -Namespace root/SecurityCenter2 -ClassName AntiVirusProduct -ErrorAction Stop; & $L ("Antivirus: " + (($av | ForEach-Object displayName) -join ", ")) } catch {}
+  try { $mp = Get-MpComputerStatus -ErrorAction Stop; $pr = Get-MpPreference -ErrorAction Stop
+    & $L ("Windows Defender: proteccion en tiempo real " + $mp.RealTimeProtectionEnabled + " - ultimo analisis rapido " + $mp.QuickScanEndTime + " - analisis programado dia " + $pr.ScanScheduleDay + " a las " + $pr.ScanScheduleQuickScanTime) } catch {}
+  & $L ""
+  try { $desde = (Get-Date).AddDays(-1)
+    $ev = @(Get-WinEvent -FilterHashtable @{LogName='Application'; Id=1000,1002; StartTime=$desde} -ErrorAction SilentlyContinue)
+    & $L ("Programas que se cayeron o se colgaron (24 h): " + $ev.Count)
+    foreach ($e in ($ev | Select-Object -First 6)) { & $L ("  - " + $e.TimeCreated.ToString("dd-MM HH:mm") + " " + (($e.Message -split "`n")[0]).Trim()) }
+    $mem = @(Get-WinEvent -FilterHashtable @{LogName='System'; ProviderName='Microsoft-Windows-Resource-Exhaustion-Detector'; StartTime=$desde} -ErrorAction SilentlyContinue)
+    & $L ("Avisos de Windows por memoria agotada (24 h): " + $mem.Count)
+    foreach ($e in ($mem | Select-Object -First 3)) { & $L ("  - " + $e.TimeCreated.ToString("dd-MM HH:mm") + " " + (($e.Message -split "`n")[0]).Trim()) }
+    $kp = @(Get-WinEvent -FilterHashtable @{LogName='System'; Id=41,6008; StartTime=$desde} -ErrorAction SilentlyContinue)
+    & $L ("Apagados o reinicios inesperados (24 h): " + $kp.Count) } catch {}
+  & $L ""
+  try { $od = Join-Path $env:APPDATA "obs-studio"
+    $cr = @(Get-ChildItem (Join-Path $od "crashes") -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending)
+    & $L ("OBS: informes de caida guardados: " + $cr.Count + $(if ($cr.Count) { " - el ultimo: " + $cr[0].LastWriteTime.ToString("dd-MM HH:mm") } else { "" }))
+    if ($cr.Count -and $cr[0].LastWriteTime -gt (Get-Date).AddDays(-2)) { foreach ($x in (Get-Content $cr[0].FullName -TotalCount 12)) { if ($x.Trim()) { & $L ("    " + $x.Trim()) } } }
+    $lg = Get-ChildItem (Join-Path $od "logs") -File -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if ($lg) { & $L ("OBS: ultimo registro " + $lg.Name)
+      foreach ($x in (Select-String -Path $lg.FullName -Pattern 'encoder|x264|qsv|nvenc|amf|bitrate|Output ''|skipped|lagged|dropped|Multiple|rtmp|Max Memory|Physical Memory' -ErrorAction SilentlyContinue | Select-Object -Last 25)) { & $L ("    " + $x.Line.Trim()) } } } catch {}
+  foreach ($q in @(@('GetVersion',$null), @('GetStats',$null), @('GetVideoSettings',$null), @('GetStreamStatus',$null), @('GetRecordStatus',$null),
+                   @('GetProfileParameter','{"parameterCategory":"Output","parameterName":"Mode"}'),
+                   @('GetProfileParameter','{"parameterCategory":"SimpleOutput","parameterName":"StreamEncoder"}'),
+                   @('GetProfileParameter','{"parameterCategory":"SimpleOutput","parameterName":"VBitrate"}'),
+                   @('GetProfileParameter','{"parameterCategory":"AdvOut","parameterName":"Encoder"}'))) {
+    try { $r = [KRB.Obs]::Consultar($q[0], $q[1]); $r = $r -replace '^.*"responseData":', '' -replace '"requestStatus".*$', ''; & $L ("OBS " + $q[0] + $(if ($q[1]) { " " + $q[1] } else { "" }) + ": " + $r) } catch {}
+  }
+  [IO.File]::WriteAllText((Join-Path $root "diagnostico.txt"), ($o -join "`r`n"), (New-Object Text.UTF8Encoding $false))
 }
 Anotar-Consumo
 $proximoConsumo = (Get-Date).AddMinutes(10)
+$proximoDiag = (Get-Date).AddSeconds(90)
 Mostrar-Version
 $proxima = (Get-Date).AddSeconds(60)
 $avisoPausa = $false
 while ($true) {
   Start-Sleep -Seconds 1
   if ((Get-Date) -ge $proximoConsumo) { Anotar-Consumo; $proximoConsumo = (Get-Date).AddMinutes(10) }
+  if ([KRB.Web]::PedirDiagnostico -or (Get-Date) -ge $proximoDiag) { [KRB.Web]::PedirDiagnostico = $false; try { Diagnostico } catch {}; $proximoDiag = (Get-Date).AddMinutes(30) }
   $forzar = [KRB.Web]::PedirActualizar
   # Nunca durante las actividades (Cote, 27 nov): en el horario del local (con margen) no se busca ni se reinicia; solo si se
   # pide a mano con "Buscar actualizacion ahora"
@@ -1393,7 +1475,10 @@ while ($true) {
   if ($forzar -or ((Get-Date) -ge $proxima -and -not $enActividad)) { [KRB.Web]::PedirActualizar = $false; Revisar-Actualizacion; $proxima = (Get-Date).AddMinutes(5) }
   if ($script:reiniciar) {
     $quieto = ([DateTime]::UtcNow - [KRB.Web]::UltimaActividad).TotalMinutes -ge 20 -and -not $enActividad
-    if ($quieto -or $forzar) {
+    # Cote (28 nov): en el show, «Buscar actualizacion ahora» reinicio el programa y las luces se demoraron. En el horario de
+    # actividades se instala lo nuevo del panel, pero el programa NO se reinicia hasta que termine la noche
+    if ($forzar -and $enActividad -and -not $script:avisoReinicio) { [KRB.Bitacora]::Anotar("Actualizacion instalada; el programa se reinicia cuando termine el horario de actividades"); $script:avisoReinicio = $true }
+    if ($quieto -or ($forzar -and -not $enActividad)) {
       [KRB.Bitacora]::Anotar("Se reinicia para terminar la actualizacion (vuelve en unos segundos)")
       try { Stop-Transcript | Out-Null } catch {}
       exit

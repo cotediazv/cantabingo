@@ -585,6 +585,10 @@
     <p>Estado: <b id="obsEstado">—</b></p>
     <div class="fila"><input type="password" id="obsClave" placeholder="Clave del servidor WebSocket de OBS" autocomplete="off" style="flex:1;min-width:180px;background:#121419;color:var(--txt);border:1px solid var(--line);border-radius:8px;padding:8px">
       <button class="chip" id="obsGuardar">Guardar clave</button><button class="chip" id="obsProbar">Probar</button></div>
+    <h3>Diagnóstico del Dell</h3>
+    <p>Qué está gastando el Dell, su memoria, OBS, Windows Update, antivirus y errores de las últimas 24 horas. Solo mira, no cambia nada. Toca «Copiar» y pégalo en el registro para Code 4.</p>
+    <div class="fila"><button class="chip" id="diagVer">🩺 Ver diagnóstico</button><button class="chip" id="diagCopiar" hidden>Copiar</button></div>
+    <pre id="diagTexto" hidden></pre>
     <h3>Registro de la noche</h3>
     <p>Lo que pasó cada noche (escenas, momentos, cable), con la hora.</p>
     <div class="fila"><button class="chip" id="verRegistro">Ver registro de esta noche</button><select id="regNoche" hidden></select></div>
@@ -619,6 +623,9 @@ if (TV) document.body.classList.add('tv');
 const DJ = location.pathname === '/dj' || PARAMS.has('dj');
 // Estacion de ritmo fija (Cote, 25 nov): el computador de la mezcla abre /dj?estacion=1 solo al prender y escucha siempre
 const ESTACION = DJ && PARAMS.get('estacion') === '1';
+// Panel abierto en el mismo Dell (Cote, 28 nov: el Dell no da abasto): la vista 3D usa el chip de video, el mismo que necesita
+// OBS. En el Dell parte oculta (se puede mostrar con «Mostrar»).
+const EN_EL_DELL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 // Mini panel (Cote, 27 nov): la pagina del karaoke de la sala light carga este panel oculto (?mini=1) y le manda ordenes
 // (Standby, Previa, Show, Fiesta con Automatico, intensidad, apagar). Sin vista 3D, para no gastar el celular.
 const MINI = DJ && PARAMS.get('mini') === '1';
@@ -2057,7 +2064,7 @@ function dibujar3D(){
     b.addEventListener('pointerdown', e => { e.preventDefault(); accion[b.dataset.nav](); parar(); rep = setInterval(accion[b.dataset.nav], 60); });
     ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => b.addEventListener(ev, parar));
   });
-  const vp = JSON.parse(localStorage.getItem('krb_vista') || '{"oculta":false,"grande":false}');
+  const vp = JSON.parse(localStorage.getItem('krb_vista') || (EN_EL_DELL ? '{"oculta":true,"grande":false}' : '{"oculta":false,"grande":false}'));
   const aplicar = () => {
     $('vista').classList.toggle('oculta', vp.oculta);
     $('vista').style.setProperty('--vh', vp.grande ? 'min(60vh,560px)' : (window.innerWidth < 640 ? '200px' : '300px'));
@@ -3526,7 +3533,7 @@ function djMomento(nombre){
 function iniciarDJ(){
   // la vista 3D (lo que de verdad sale por el cable) arriba, con la toma fija del escenario de frente
   // (en la estacion de ritmo no: corre en el computador de OBS y no debe quitarle fuerza a la transmision)
-  if (ESTACION || MINI){ $('djVista').style.display = 'none'; $('vista').classList.add('oculta'); }
+  if (ESTACION || MINI || EN_EL_DELL){ $('djVista').style.display = 'none'; $('vista').classList.add('oculta'); }
   else { $('djVista').insertBefore($('vista'), $('djFrente'));
     $('vista').classList.remove('oculta'); $('vista').style.setProperty('--vh', '100%'); }
   tomaFija(); V.sucio = true;
@@ -3623,6 +3630,16 @@ async function verObs(q){ if (DEMO) { $('obsEstado').textContent = 'en la versi�
   try { pintarObs(q ? await postApi('/api/obs', q) : await api('/api/obs')); } catch(e){ $('obsEstado').textContent = 'no se pudo preguntar al Dell'; } }
 $('obsGuardar').onclick = () => { const c = $('obsClave').value.trim(); if (!c) return toast('Escribe la clave de OBS'); $('obsEstado').textContent = 'Probando…'; verObs({ clave: c }).then(() => { $('obsClave').value = ''; }); };
 $('obsProbar').onclick = () => { $('obsEstado').textContent = 'Probando…'; verObs({ probar: '1' }); };
+// Diagnostico del Dell (Cote, 28 nov): lo arma el Dell (tarda unos segundos) y aqui se ve y se copia
+$('diagVer').onclick = async () => {
+  if (DEMO) return toast('En la versión de prueba no hay Dell');
+  const pre = $('diagTexto'); pre.hidden = false; pre.textContent = 'Armando el diagnóstico en el Dell (unos 20 segundos)…';
+  let antes = ''; try { antes = (await api('/api/diagnostico?nuevo=1')).texto || ''; } catch(e){ pre.textContent = 'No se pudo preguntar al Dell'; return; }
+  for (let i = 0; i < 30; i++){ await new Promise(r => setTimeout(r, 3000));
+    try { const r = await api('/api/diagnostico'); if (!r.pedido && r.texto && r.texto !== antes){ pre.textContent = r.texto; $('diagCopiar').hidden = false; return; } } catch(e){} }
+  pre.textContent = antes || 'El Dell no alcanzó a armarlo. Prueba de nuevo en un minuto.'; $('diagCopiar').hidden = !antes;
+};
+$('diagCopiar').onclick = async () => { try { await navigator.clipboard.writeText($('diagTexto').textContent); toast('Copiado: pégalo en el registro'); } catch(e){ toast('Mantén apretado el texto para copiarlo'); } };
 $('editarJuegos').onclick = () => { editandoJuegos = !editandoJuegos; $('editarJuegos').classList.toggle('act', editandoJuegos);
   $('editarJuegos').firstChild.textContent = editandoJuegos ? '✏️ Editando: toca un paso para cambiarlo (toca aquí para terminar)' : '✏️ Editar las escenas de los juegos'; };
 $('emEf').onchange = () => { emEd.efectos = $('emEf').checked; };
