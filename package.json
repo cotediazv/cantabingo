@@ -5,7 +5,7 @@
   "description": "Generador de cartones de bingo y sesiones virtuales en tiempo real",
   "scripts": {
     "start": "node server.js",
-    "test": "eslint && node --test --test-concurrency=1 test/compat.test.js 'test/api/*.test.js'",
+    "test": "eslint && node --test --test-concurrency=1 test/compat.test.js test/gcshow.test.js 'test/api/*.test.js'",
     "test:e2e": "playwright test"
   },
   "dependencies": {
