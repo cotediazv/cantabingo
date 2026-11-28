@@ -402,6 +402,8 @@ const requireAdmin = (req, res, next) => (validToken(req.get('x-admin')) ? next(
 // Registro de clientes (pedido de Cote, 22 nov): va antes de las rutas, porque mira pasar lo que el público hace desde el
 // celular (entrar, responder la Trivia, votar, pedir canciones…) y lo anota en la ficha de cada persona (clientes.js)
 require('./clientes.js')({ app, db, requireAdmin, dir: path.dirname(DATA_FILE), port: PORT });
+// Respaldo diario de los datos (Code 0, 28 nov): en el disco (14 días) y, si se configura, en el Drive de Cote
+require('./respaldo.js')({ app, db, save, requireAdmin, dataFile: DATA_FILE, reloj: () => ahora() });
 const attempts = {}; // ip -> { n, until }: frena los intentos de adivinar la contraseña
 
 // ---------- Acceso del equipo de cada local (sala light) ----------

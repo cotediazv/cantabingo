@@ -86,6 +86,34 @@
       try { const r = await api('POST', '/api/privacidad', { on: b.dataset.priv === '1' }); priv = r.on; paintPriv(); toast(r.on ? 'Aviso de datos personales encendido' : 'Aviso de datos personales apagado'); } catch (err) { toast(err.message); }
     };
     paintPriv();
+    // Respaldo de los datos (Code 0, 28 nov): estado del último, «Respaldar ahora» y «Bajar respaldo ahora»
+    const rbox = document.createElement('div'); rbox.className = 'panel'; rbox.id = 'resp-box';
+    vbox.parentNode.insertBefore(rbox, vbox.nextSibling);
+    const mb = (n) => (n == null ? '—' : n < 1048576 ? `${Math.max(1, Math.round(n / 1024))} KB` : `${(n / 1048576).toFixed(1)} MB`);
+    const paintResp = async () => {
+      const r = await api('GET', '/api/respaldo').catch(() => null);
+      if (!r || !document.getElementById('resp-box')) return;
+      const when = r.at ? new Date(r.at).toLocaleString('es-CL', { timeZone: 'America/Santiago', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+      rbox.innerHTML = `<h2>Respaldo de los datos</h2>
+        <p class="muted small">Todos los días a las 05:00 se guarda una copia de los datos de la Sala, del registro de clientes y de Programación en el disco de Render (quedan los últimos 14 días)${r.drive ? ' y en el Google Drive' : ''}. Los videos no van.</p>
+        <p class="small">${r.at ? `${r.ok ? '✅' : '⚠️'} Último: ${esc(when)} · ${mb(r.size)}${r.ok ? '' : ` · ${esc(r.error)}`}` : 'Todavía no hay respaldos.'}${r.drive ? ` · Drive: ${r.driveUltimo === 'ok' ? 'llegó' : esc(r.driveUltimo || '—')}` : ' · Drive: sin configurar'}<br>Copias en el disco: ${r.copias.length}${r.copias.length ? ` (${esc(r.copias[0].name.slice(9, 19))} a ${esc(r.copias[r.copias.length - 1].name.slice(9, 19))})` : ''} · Libre en el disco: ${mb(r.libre)}</p>
+        <div class="row"><button type="button" data-resp="ahora">💾 Respaldar ahora</button><button type="button" data-resp="bajar">⬇ Bajar respaldo ahora</button></div>`;
+    };
+    rbox.onclick = async (e) => {
+      const b = e.target.closest('button[data-resp]'); if (!b) return;
+      b.disabled = true;
+      try {
+        if (b.dataset.resp === 'ahora') { const r = await api('POST', '/api/respaldo/ahora', {}); toast(r.ok ? 'Respaldo guardado' : r.error); }
+        else {
+          const res = await fetch('/api/respaldo/bajar', { headers: { 'x-admin': localStorage.getItem('adminToken') || '' } });
+          if (!res.ok) throw new Error('No se pudo bajar el respaldo');
+          const name = (/filename="([^"]+)"/.exec(res.headers.get('content-disposition') || '') || [])[1] || 'respaldo-sala.json.gz';
+          const a = document.createElement('a'); a.href = URL.createObjectURL(await res.blob()); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+        }
+      } catch (err) { toast(err.message); }
+      b.disabled = false; paintResp();
+    };
+    paintResp();
   };
   sync(); setInterval(sync, 10000); setInterval(mount, 1000);
 })();
