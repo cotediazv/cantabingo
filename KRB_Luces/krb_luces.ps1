@@ -290,6 +290,65 @@ namespace KRB {
     }
   }
 
+  // ---------- Latido del Dell (Code 0, 28 nov: plan de control, nivel A) ----------
+  // Cada 15 s el Dell manda a la Sala como esta: cable, OBS, ritmo, tunel y lo que PowerShell mide cada minuto (Windows,
+  // adaptador, disco, memoria). La Sala lo muestra como semaforo y avisa si deja de llegar. Va en su propio hilo: si la
+  // Sala no responde, las luces siguen igual.
+  public static class Salud {
+    public static string Url = "";
+    public static string Extra = "{}";
+    public static int Tunel = -1;                                   // 1 responde, 0 no responde, -1 sin probar
+    public static DateTime UltimoOk = DateTime.MinValue;
+    public static string UltimoError = "";
+    static long bytesAntes = -1; static DateTime tAntes = DateTime.MinValue;
+    public static void Iniciar() {
+      new Thread(() => { Thread.Sleep(20000); while (true) { try { Latir(); } catch (Exception e) { UltimoError = e.Message; } Thread.Sleep(15000); } }) { IsBackground = true }.Start();
+    }
+    static string Esc(string x) { return (x ?? "").Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", " ").Replace("\n", " "); }
+    static string Num(string json, string campo) {
+      System.Text.RegularExpressions.Match m = System.Text.RegularExpressions.Regex.Match(json ?? "", "\"" + campo + "\"\\s*:\\s*(-?[0-9.]+(?:[eE][-+]?[0-9]+)?|true|false)");
+      return m.Success ? m.Groups[1].Value : "null";
+    }
+    public static string Armar() {
+      StringBuilder b = new StringBuilder("{");
+      b.Append("\"t\":").Append((long)(DateTime.UtcNow - new DateTime(1970, 1, 1)).TotalMilliseconds);
+      b.Append(",\"version\":\"").Append(Esc(Web.Version)).Append("\"");
+      b.Append(",\"enHorario\":").Append(Aviso.EnHorario(DateTime.Now) ? "true" : "false");
+      b.Append(",\"obsHorario\":").Append(Obs.EnHorario(DateTime.Now) ? "true" : "false");
+      b.Append(",\"cable\":{\"ok\":").Append(Dmx.Conectado ? "true" : "false").Append(",\"puerto\":\"").Append(Esc(Dmx.PuertoUsado))
+       .Append("\",\"error\":\"").Append(Esc(Dmx.Error)).Append("\",\"envios\":").Append(Dmx.Tramas).Append(",\"fallas\":").Append(Dmx.Errores).Append("}");
+      string ss = Obs.Transmitiendo ? Obs.Consultar("GetStreamStatus", null) : "";
+      string kbps = "null"; long bytes = -1;
+      long.TryParse(Num(ss, "outputBytes"), out bytes);
+      DateTime ahora = DateTime.UtcNow;
+      if (bytes > 0 && bytesAntes > 0 && bytes >= bytesAntes && (ahora - tAntes).TotalSeconds > 1) kbps = Math.Round((bytes - bytesAntes) * 8.0 / 1000.0 / (ahora - tAntes).TotalSeconds).ToString();
+      bytesAntes = bytes > 0 ? bytes : -1; tAntes = ahora;
+      b.Append(",\"obs\":{\"estado\":\"").Append(Esc(Obs.Estado)).Append("\",\"transmitiendo\":").Append(Obs.Transmitiendo ? "true" : "false")
+       .Append(",\"cuadrosPerdidos\":").Append(Num(ss, "outputSkippedFrames")).Append(",\"cuadrosTotal\":").Append(Num(ss, "outputTotalFrames"))
+       .Append(",\"congestion\":").Append(Num(ss, "outputCongestion")).Append(",\"kbps\":").Append(kbps).Append("}");
+      b.Append(",\"ritmo\":{\"estacion\":").Append(Web.EstacionViva ? "true" : "false").Append(",\"musica\":").Append(Dmx.ConRitmo ? "true" : "false")
+       .Append(",\"bpm\":").Append(Math.Round(Dmx.Bpm)).Append("}");
+      b.Append(",\"tunel\":").Append(Tunel == 1 ? "true" : Tunel == 0 ? "false" : "null");
+      b.Append(",\"momento\":\"").Append(Esc(Web.MomentoActual)).Append("\"");
+      b.Append(",\"avisoTema\":\"").Append(Esc(Aviso.Tema)).Append("\"");
+      b.Append(",\"windows\":").Append(string.IsNullOrEmpty(Extra) ? "{}" : Extra);
+      b.Append("}");
+      return b.ToString();
+    }
+    static void Latir() {
+      if (Url == "" || Web.Clave == "") return;
+      byte[] cuerpo = Encoding.UTF8.GetBytes(Armar());
+      ServicePointManager.SecurityProtocol |= (SecurityProtocolType)3072;
+      HttpWebRequest r = (HttpWebRequest)WebRequest.Create(Url.TrimEnd('/') + "/api/luces/latido");
+      r.Method = "POST"; r.Timeout = 8000; r.ReadWriteTimeout = 8000;
+      r.Headers["Authorization"] = "Bearer " + Web.Clave;
+      r.ContentType = "application/json; charset=utf-8"; r.ContentLength = cuerpo.Length;
+      using (Stream o = r.GetRequestStream()) o.Write(cuerpo, 0, cuerpo.Length);
+      using (WebResponse w = r.GetResponse()) {}
+      UltimoOk = DateTime.Now; UltimoError = "";
+    }
+  }
+
   // ---------- OBS: transmite solo en su horario (Cote, 27 nov: «jueves a sabado de 20 a 00:30 hrs») ----------
   // El programa de luces le habla a OBS por su servidor WebSocket (viene con OBS 28 o mas nuevo; se activa una vez en
   // OBS > Herramientas > Ajustes del servidor WebSocket). La clave de OBS se escribe en el panel de luces y queda en
@@ -1146,6 +1205,7 @@ namespace KRB {
     static int djEscena = -1, djInt = 100; static bool djAuto = false, djMusica = false;
     static string djClase = "", djClaseUsada = "", djGrupo = ""; static DateTime djClaseT = DateTime.MinValue;
     static DateTime djCambio = DateTime.MinValue, djEstacion = DateTime.MinValue;
+    public static bool EstacionViva { get { return (DateTime.UtcNow - djEstacion).TotalSeconds < 15; } }
     static Random djAzar = new Random();
     static void Dj(NetworkStream s, string query) {
       bool aplicar = false;
@@ -1582,6 +1642,7 @@ function Revisar-Tunel {
       try { $r = Invoke-WebRequest -Uri ("https://" + $script:tunelHost + "/api/estado") -UseBasicParsing -TimeoutSec 15; $ok = $true }
       catch { $code = 0; try { $code = [int]$_.Exception.Response.StatusCode } catch {}; if ($code -eq 401 -or $code -eq 200) { $ok = $true } }
     }
+    [KRB.Salud]::Tunel = $(if ($ok) { 1 } else { 0 })
     if ($ok) { $script:tunelFallos = 0; return }
     $script:tunelFallos++
     if (-not $corre -or $script:tunelFallos -ge 2) {
@@ -1594,6 +1655,78 @@ function Revisar-Tunel {
     }
   } catch {}
 }
+# ---------- Salud del Dell (Code 0, 28 nov: plan de control) ----------
+# Cada minuto mide lo que el latido no puede ver desde adentro del programa: procesador, memoria, disco, el adaptador DMX
+# (si Windows lo ve, con que controlador y si tiene error), si Windows quiere reiniciarse, por que se reinicio la ultima vez
+# (evento 1074) y si hubo apagados inesperados (evento 6008). Todo sin permisos de administrador. Va en el latido.
+$script:salud = $null
+$script:saludEventos = $null; $script:saludEventosT = [DateTime]::MinValue
+function Medir-Salud {
+  $h = [ordered]@{}
+  try { $h.cpu = [int](Get-CimInstance Win32_Processor -ErrorAction Stop | Measure-Object -Property LoadPercentage -Average).Average } catch { $h.cpu = $null }
+  try { $os = Get-CimInstance Win32_OperatingSystem -ErrorAction Stop
+        $h.ram = [int](100 - 100 * $os.FreePhysicalMemory / $os.TotalVisibleMemorySize)
+        $h.arranque = $os.LastBootUpTime.ToString("yyyy-MM-dd HH:mm") } catch {}
+  try { $d = Get-CimInstance Win32_LogicalDisk -Filter "DeviceID='C:'" -ErrorAction Stop; $h.discoGB = [Math]::Round($d.FreeSpace / 1GB, 1) } catch {}
+  $ad = [ordered]@{ visto = $false }
+  try {
+    $dev = Get-CimInstance Win32_PnPEntity -Filter "DeviceID LIKE 'USB\\VID_16C0&PID_05DC%'" -ErrorAction Stop | Select-Object -First 1
+    if ($dev) { $ad.visto = $true; $ad.nombre = [string]$dev.Name; $ad.estado = [string]$dev.Status; $ad.error = [int]$dev.ConfigManagerErrorCode; $ad.controlador = [string]$dev.Service }
+  } catch {}
+  $h.adaptador = $ad
+  $pend = $false
+  foreach ($k in @("HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired", "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending")) { if (Test-Path $k) { $pend = $true } }
+  $h.reinicioPendiente = $pend
+  try { $pz = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings" -ErrorAction Stop).PauseUpdatesExpiryTime; if ($pz) { $h.pausaHasta = ([DateTime]$pz).ToLocalTime().ToString("yyyy-MM-dd HH:mm") } } catch {}
+  if (((Get-Date) - $script:saludEventosT).TotalMinutes -ge 5) {
+    $ev = [ordered]@{}
+    try {
+      $e = Get-WinEvent -FilterHashtable @{ LogName = 'System'; Id = 1074 } -MaxEvents 1 -ErrorAction Stop
+      $ev.hora = $e.TimeCreated.ToString("yyyy-MM-dd HH:mm"); $ev.programa = [string]$e.Properties[0].Value; $ev.motivo = [string]$e.Properties[2].Value; $ev.tipo = [string]$e.Properties[4].Value; $ev.usuario = [string]$e.Properties[6].Value
+    } catch {}
+    try { $ev.inesperados7d = @(Get-WinEvent -FilterHashtable @{ LogName = 'System'; Id = 6008; StartTime = (Get-Date).AddDays(-7) } -ErrorAction Stop).Count } catch { $ev.inesperados7d = 0 }
+    $script:saludEventos = $ev; $script:saludEventosT = Get-Date
+  }
+  $h.ultimoReinicio = $script:saludEventos
+  $script:salud = $h
+  try { [KRB.Salud]::Extra = ($h | ConvertTo-Json -Depth 4 -Compress) } catch {}
+}
+# ---------- Chequeo de las 18:00 (Code 0, 28 nov: plan de control, nivel C) ----------
+# Jueves, viernes y sabado, una vez por noche entre las 18:00 y las 18:30: revisa lo que el show necesita y manda al celular
+# «Todo listo para el show» o «Falta: ...» con que hacer. Queda en el registro de la noche.
+function Chequeo-Show([switch]$Forzar) {
+  $ahora = Get-Date; $dw = [int]$ahora.DayOfWeek; $min = $ahora.Hour * 60 + $ahora.Minute
+  $noche = [KRB.Bitacora]::Noche($ahora); $marca = Join-Path $root "chequeo-noche.txt"
+  if (-not $Forzar) {
+    if (-not (@(4, 5, 6) -contains $dw) -or $min -lt 18 * 60 -or $min -ge 18 * 60 + 30) { return }
+    try { if ((Test-Path $marca) -and ([IO.File]::ReadAllText($marca).Trim() -eq $noche)) { return } } catch {}
+    try { [IO.File]::WriteAllText($marca, $noche) } catch {}
+  }
+  try { Revisar-Tunel } catch {}
+  Medir-Salud
+  $h = $script:salud; $falta = New-Object System.Collections.Generic.List[string]
+  if (-not [KRB.Dmx]::Conectado) { $falta.Add("cable de las luces sin funcionar: desenchufar y enchufar el USB del adaptador") }
+  $ad = $h.adaptador
+  if (-not $ad.visto) { $falta.Add("Windows no ve el adaptador DMX: revisar que el USB este enchufado") }
+  elseif ($ad.error -ne 0 -or ($ad.controlador -and $ad.controlador -ne "WinUSB")) { $falta.Add("el adaptador DMX no tiene su controlador (" + $ad.controlador + ", error " + $ad.error + "): reinstalar WinUSB con Zadig") }
+  if ([KRB.Obs]::Clave -ne "" -and -not (Get-Process obs64 -ErrorAction SilentlyContinue)) { $falta.Add("OBS no esta abierto: abrirlo (a las 20:00 parte solo la transmision)") }
+  if ([KRB.Salud]::Tunel -eq 0) { $falta.Add("luces.krbstage.cl no responde desde internet") }
+  if (-not [KRB.Web]::EstacionViva) { $falta.Add("la estacion de ritmo no esta escuchando: abrir 'Ver estacion de ritmo KRB' en el Escritorio") }
+  if ($h.discoGB -ne $null -and $h.discoGB -lt 20) { $falta.Add("disco casi lleno (" + $h.discoGB + " GB libres): borrar videos") }
+  if ($h.ram -ne $null -and $h.ram -ge 85) { $falta.Add("memoria al " + $h.ram + "%: cerrar programas y pestanas que no se usen") }
+  if ($h.reinicioPendiente) { $falta.Add("Windows quiere reiniciarse: reiniciar el Dell AHORA, antes del show") }
+  if ($falta.Count -eq 0) {
+    $txt = "Todo listo para el show (" + $ahora.ToString("HH:mm") + "): cable, adaptador, OBS, internet, ritmo, disco, memoria y Windows OK."
+    [KRB.Bitacora]::Anotar("Chequeo del show: todo listo"); [KRB.Aviso]::Mandar($txt, $false)
+  } else {
+    $txt = "Chequeo del show (" + $ahora.ToString("HH:mm") + "), falta: " + ($falta -join "; ") + "."
+    [KRB.Bitacora]::Anotar("Chequeo del show, falta: " + ($falta -join "; ")); [KRB.Aviso]::Mandar($txt, $true)
+  }
+}
+[KRB.Salud]::Url = $salaUrl
+[KRB.Salud]::Iniciar()
+Medir-Salud
+$proximaSalud = (Get-Date).AddMinutes(1)
 Anotar-Consumo
 $proximoConsumo = (Get-Date).AddMinutes(10)
 $proximoTunel = (Get-Date).AddMinutes(3)
@@ -1602,6 +1735,55 @@ $script:diagNoche = ""
 Mostrar-Version
 $proxima = (Get-Date).AddSeconds(60)
 $avisoPausa = $false
+# Ajustes de Windows para el show (C4-5, 28 nov; decision de Code 0 con la recomendacion de Code 4): una sola vez y fuera del
+# horario de actividades. Modo de energia "Mejor rendimiento", sin suspension enchufado, y Google Drive, OneDrive, Edge y
+# Enlace movil dejan de partir con Windows (NO se borran: quedan "deshabilitados", como lo hace el Administrador de tareas).
+# Lo que se cambio queda en ajustes-windows.txt. Para deshacer: Administrador de tareas > Aplicaciones de arranque >
+# clic derecho > Habilitar; y Configuracion > Sistema > Energia > Modo de energia > Equilibrado.
+function Ajustar-Windows {
+  $marca = Join-Path $root "ajustes-windows.txt"
+  if (Test-Path $marca) { return }
+  $hecho = New-Object System.Collections.Generic.List[string]
+  $hecho.Add("AJUSTES DE WINDOWS PARA EL SHOW - " + (Get-Date -Format "yyyy-MM-dd HH:mm"))
+  try { $r = & powercfg /overlaysetactive ded574b5-45a0-4f42-8737-46345c09c238 2>&1; $hecho.Add("Modo de energia: Mejor rendimiento " + $(if ($LASTEXITCODE -eq 0) { "(listo)" } else { "(no se pudo: " + ($r -join " ") + ")" })) } catch { $hecho.Add("Modo de energia: no se pudo") }
+  try { & powercfg /change standby-timeout-ac 0 2>&1 | Out-Null; & powercfg /change hibernate-timeout-ac 0 2>&1 | Out-Null; $hecho.Add("Suspension con el cargador puesto: nunca") } catch {}
+  $quitar = '^(GoogleDriveFS|OneDrive|MicrosoftEdgeAutoLaunch)'
+  $apagado = [byte[]](3,0,0,0,0,0,0,0,0,0,0,0)
+  foreach ($base in @("HKCU:", "HKLM:")) {
+    foreach ($run in @("Software\Microsoft\Windows\CurrentVersion\Run", "Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Run")) {
+      try {
+        $k = Get-Item -Path (Join-Path $base $run) -ErrorAction Stop
+        $aprob = Join-Path $base $(if ($run -like "*WOW6432Node*") { "Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run32" } else { "Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run" })
+        foreach ($n in $k.GetValueNames()) {
+          if ($n -notmatch $quitar) { continue }
+          try {
+            if (-not (Test-Path $aprob)) { New-Item -Path $aprob -Force | Out-Null }
+            Set-ItemProperty -Path $aprob -Name $n -Value $apagado -Type Binary -ErrorAction Stop
+            $hecho.Add("Ya no parte con Windows: " + $n + " (" + $base + ")")
+          } catch { $hecho.Add("No se pudo deshabilitar " + $n + " (" + $base + "; necesita administrador)") }
+        }
+      } catch {}
+    }
+  }
+  try {
+    $carp = [Environment]::GetFolderPath("Startup"); $aprobC = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\StartupFolder"
+    foreach ($f in (Get-ChildItem $carp -Filter *.lnk -ErrorAction SilentlyContinue)) {
+      if ($f.Name -notmatch '(Google Drive|OneDrive)') { continue }
+      if (-not (Test-Path $aprobC)) { New-Item -Path $aprobC -Force | Out-Null }
+      Set-ItemProperty -Path $aprobC -Name $f.Name -Value $apagado -Type Binary; $hecho.Add("Ya no parte con Windows: " + $f.Name)
+    }
+  } catch {}
+  try {
+    $tel = "HKCU:\Software\Classes\Local Settings\Software\Microsoft\Windows\CurrentVersion\AppModel\SystemAppData\Microsoft.YourPhone_8wekyb3d8bbwe"
+    foreach ($t in (Get-ChildItem $tel -ErrorAction SilentlyContinue)) {
+      if ($null -ne (Get-ItemProperty -Path $t.PSPath -Name State -ErrorAction SilentlyContinue)) { Set-ItemProperty -Path $t.PSPath -Name State -Value 1 -Type DWord; $hecho.Add("Ya no parte con Windows: Enlace movil (Phone Link)") }
+    }
+  } catch {}
+  $hecho.Add("Para deshacer: Administrador de tareas > Aplicaciones de arranque > clic derecho > Habilitar. Energia: Configuracion > Sistema > Energia > Modo de energia.")
+  try { Set-Content -Path $marca -Value $hecho -Encoding UTF8 } catch {}
+  foreach ($h in $hecho) { [KRB.Bitacora]::Anotar($h) }
+}
+$script:ajustesListos = $false
 while ($true) {
   Start-Sleep -Seconds 1
   if ((Get-Date) -ge $proximoConsumo) { Anotar-Consumo; $proximoConsumo = (Get-Date).AddMinutes(10) }
@@ -1612,6 +1794,8 @@ while ($true) {
   if ($ahoraN.Hour -eq 1 -and $ahoraN.Minute -ge 35 -and $script:diagNoche -ne $nocheAyer -and -not $enActividad) { $script:diagNoche = $nocheAyer; try { Diagnostico } catch {}; $proximaSubida = Get-Date }
   if ((Get-Date) -ge $proximaSubida) { Subir-Registro; $proximaSubida = (Get-Date).AddMinutes(10) }
   if ((Get-Date) -ge $proximoTunel) { Revisar-Tunel; $proximoTunel = (Get-Date).AddMinutes(5) }
+  if ((Get-Date) -ge $proximaSalud) { try { Medir-Salud } catch {}; $proximaSalud = (Get-Date).AddMinutes(1); try { Chequeo-Show } catch {} }
+  if (-not $script:ajustesListos -and -not [KRB.Aviso]::EnActividad((Get-Date))) { $script:ajustesListos = $true; try { Ajustar-Windows } catch {} }
   $forzar = [KRB.Web]::PedirActualizar
   # Nunca durante las actividades (Cote, 27 nov): en el horario del local (con margen) no se busca ni se reinicia; solo si se
   # pide a mano con "Buscar actualizacion ahora"
