@@ -741,6 +741,128 @@ module.exports = function programacion({ app, dir }) {
     for (const l of LOCALES) if (typeof b[l] === 'string') P.horarios[l] = b[l].slice(0, 2000).replace(/\r/g, '');
     save(); res.json({ ok: true, horarios: P.horarios });
   });
+  // ---------- Revisar turnos (orden de Code 0, 28 nov): solo para mirar, sin montos ----------
+  const ROL_TXT = { dj: 'DJ', extra: 'capacitación o técnico', cantante: 'animador cantante', animador: 'animador', camH: 'cámara en vivo', camHx: 'cámara en vivo (extra)', camV: 'cámara vertical', camVx: 'cámara vertical (extra)', editor: 'editor' };
+  const AREA_PAL = { dj: 'DJ', ent: 'entretención', camH: 'cámara en vivo', camV: 'cámara vertical', edi: 'edición' };
+  const diaTxt = (f) => { const x = parse(f); return `${['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][x.wd]} ${x.d}`; };
+  const nombreDe = (cod) => { const p = P.personas.find((q) => plain(q.codigo) === plain(cod)); return p ? p.nombre : titulo(String(cod || '')); };
+  function revisar(y, m) {
+    const delMes = fechasMes(y, m);
+    const avisos = [];
+    const av = (fecha, local, texto) => avisos.push({ fecha, local, dia: fecha ? diaTxt(fecha) : '', etq: local ? NOMBRE_LOCAL[local] : '', texto });
+    const quien = {};
+    for (const { fecha } of delMes) {
+      for (const l of LOCALES) {
+        const c = celda(fecha, l);
+        const conGente = ROLES.some((r) => c[r]);
+        if (cerrado(fecha) && conGente && c.abierto !== true) { av(fecha, l, 'El día está marcado como cerrado pero tiene turnos'); continue; }
+        if (!abierto(fecha, l)) continue;
+        if (showVacio(c.show)) av(fecha, l, 'Falta el show');
+        const tipo = P.plantilla[`${parse(fecha).wd}|${l}`] || {};
+        for (const r of ['dj', 'cantante', 'animador', 'camH', 'camV', 'editor']) if (tipo[r] && !c[r]) av(fecha, l, `Falta ${ROL_TXT[r]} (la semana tipo tiene a ${tipo[r]})`);
+        if (!conGente) av(fecha, l, 'Abierto y sin nadie en los turnos');
+        for (const p of pagos(fecha, l)) if (p.falta) av(fecha, l, `${p.nombre} no tiene tarifa como ${ROL_TXT[p.rol]}`);
+        for (const r of ROLES) {
+          if (!c[r] || r === 'editor') continue; // el editor puede editar más de un local
+          const k = `${fecha}|${plain(c[r])}`; (quien[k] ||= new Set()).add(l);
+        }
+      }
+    }
+    for (const [k, ls] of Object.entries(quien)) {
+      if (ls.size < 2) continue;
+      const [fecha] = k.split('|'); const l = [...ls][0];
+      // Cámaras con horario (Guille en Kennedy a las 22:30 y en Frida de 21 a 22, como en la semana tipo): no es un error
+      if ([...ls].some((x) => celda(fecha, x).camNota)) continue;
+      const n = ROLES.map((r) => celda(fecha, l)[r]).find((v) => v && `${fecha}|${plain(v)}` === k);
+      av(fecha, l, `${n} está en dos locales: ${[...ls].map((x) => NOMBRE_LOCAL[x]).join(' y ')}`);
+    }
+    // Reglas del mes (las mismas de Archivos): Oscar y Fer, 3 días por semana completa; Matías, 2 viernes
+    for (const t of archivos(y, m).faltan) if (/ tiene \d+ /.test(t)) av('', '', t);
+    avisos.sort((a, b) => (a.fecha || '9').localeCompare(b.fecha || '9') || LOCALES.indexOf(a.local) - LOCALES.indexOf(b.local));
+    // Resumen por persona: días y turnos del mes (sin montos; los montos están en «Personas»)
+    const pers = {};
+    for (const { fecha } of delMes) for (const l of LOCALES) {
+      if (!abierto(fecha, l)) continue;
+      const c = celda(fecha, l);
+      for (const r of ROLES) {
+        if (!c[r]) continue;
+        const n = c[r]; const q = (pers[plain(n)] ||= { nombre: n, dias: new Set(), turnos: 0, locales: new Set(), roles: new Set() });
+        q.dias.add(fecha); q.turnos++; q.locales.add(NOMBRE_LOCAL[l]); q.roles.add(ROL_TXT[r].replace(/ \(extra\)/, ''));
+      }
+    }
+    const personas = Object.values(pers).map((q) => ({ nombre: q.nombre, dias: q.dias.size, turnos: q.turnos, locales: [...q.locales], roles: [...q.roles] })).sort((a, b) => b.dias - a.dias || a.nombre.localeCompare(b.nombre));
+    // Qué cambió desde el último envío, en palabras (sin montos)
+    const mes = `${y}-${pad(m)}`;
+    const antes = (P.glosa.enviado || {})[mes];
+    let cambios = null;
+    if (antes) {
+      const ahora = fotoMes(y, m); cambios = [];
+      const grupos = (fo) => { const g = {}; for (const k of Object.keys(fo.personas)) { const [d, l, cod, area] = k.split('|'); (g[`${d}|${l}|${area}`] ||= []).push(cod); } return g; };
+      const g0 = grupos(antes); const g1 = grupos(ahora);
+      for (const k of [...new Set([...Object.keys(g0), ...Object.keys(g1)])]) {
+        const a0 = (g0[k] || []).filter((x) => !(g1[k] || []).includes(x)); const a1 = (g1[k] || []).filter((x) => !(g0[k] || []).includes(x));
+        const [d, l, area] = k.split('|'); const f = ymd(y, m, Number(d));
+        if (a0.length || a1.length) cambios.push({ fecha: f, local: l, dia: diaTxt(f), etq: NOMBRE_LOCAL[l], texto: `${AREA_PAL[area] || area}: ${a0.map(nombreDe).join(', ') || '—'} → ${a1.map(nombreDe).join(', ') || 'nadie'}` });
+        else {
+          const cambio = (g1[k] || []).filter((cod) => (antes.personas[`${k.split('|').slice(0, 2).join('|')}|${cod}|${area}`] || 0) !== (ahora.personas[`${k.split('|').slice(0, 2).join('|')}|${cod}|${area}`] || 0));
+          if (cambio.length) cambios.push({ fecha: f, local: l, dia: diaTxt(f), etq: NOMBRE_LOCAL[l], texto: `${AREA_PAL[area] || area}: cambió el monto de ${cambio.map(nombreDe).join(', ')}` });
+        }
+      }
+      for (const k of new Set([...Object.keys(antes.shows), ...Object.keys(ahora.shows)])) {
+        const s0 = antes.shows[k] || {}; const s1 = ahora.shows[k] || {};
+        const [d, l] = k.split('|'); const f = ymd(y, m, Number(d));
+        if ((s0.nombre || '') !== (s1.nombre || '')) cambios.push({ fecha: f, local: l, dia: diaTxt(f), etq: NOMBRE_LOCAL[l], texto: `show: ${s0.nombre || '—'} → ${s1.nombre || 'sin show'}` });
+        else if ((s0.monto ?? null) !== (s1.monto ?? null)) cambios.push({ fecha: f, local: l, dia: diaTxt(f), etq: NOMBRE_LOCAL[l], texto: 'show: cambió el monto' });
+      }
+      for (const k of new Set([...Object.keys(antes.ppto), ...Object.keys(ahora.ppto)])) {
+        const p0 = antes.ppto[k] || {}; const p1 = ahora.ppto[k] || {};
+        if (Boolean(p0.activo) === Boolean(p1.activo) && Boolean(p0.banda) === Boolean(p1.banda)) continue;
+        const [d, l] = k.split('|'); const f = ymd(y, m, Number(d));
+        cambios.push({ fecha: f, local: l, dia: diaTxt(f), etq: NOMBRE_LOCAL[l], texto: !p1.activo ? 'el local queda sin actividad ese día' : p1.banda ? 'ahora con banda tributo (batería)' : p0.activo ? 'ya no lleva batería' : 'ahora el local abre ese día' });
+      }
+      cambios.sort((a, b) => a.fecha.localeCompare(b.fecha) || LOCALES.indexOf(a.local) - LOCALES.indexOf(b.local));
+    }
+    return { mes, avisos, personas, cambios, sinFoto: !antes };
+  }
+  app.get('/api/prog/revisar', auth, (req, res) => { const { y, m } = mesDe(req.query.m); res.json(revisar(y, m)); });
+  // La hoja TURNOS de la GLOSA contra la plataforma, por día y local, solo con nombres (sin montos)
+  app.get('/api/prog/revisar/glosa', auth, async (req, res) => {
+    if (!GLOSA_URL()) return fail(res, 400, 'Primero conecta la GLOSA en la pestaña GLOSA');
+    const { y, m } = mesDe(req.query.m);
+    try {
+      const r = await fetch(`${GLOSA_URL()}?clave=${encodeURIComponent(P.glosa.clave)}`, { redirect: 'follow', signal: AbortSignal.timeout(60e3) });
+      const j = JSON.parse(await r.text());
+      if (j.error) return fail(res, 502, j.error);
+      const filas = (j.filas || []).map((f) => f.map((x) => String(x).trim()));
+      const mesGlosa = Number((filas[0] || [])[1]); const anioGlosa = Number((filas[0] || [])[3]);
+      const quienes = (fs) => {
+        const o = {};
+        for (const f of fs) {
+          if (!/^\d+$/.test(f[0] || '') || !LOCALES.includes(String(f[1]).toUpperCase())) continue;
+          const k = `${Number(f[0])}|${String(f[1]).toUpperCase()}`;
+          if (String(f[2]).toUpperCase() === 'SHOW') { (o[k] ||= { gente: new Set(), show: '' }).show = String(f[3] || '').replace(/\s*\([^)]*\)\s*$/, '').trim(); continue; }
+          const g = (o[k] ||= { gente: new Set(), show: '' }).gente;
+          String(f[2] || '').split(',').map((x) => x.trim().replace(/\s+-?\d+(?:[.,]\d+)?$/, '').trim()).filter(Boolean).forEach((x) => g.add(plain(x)));
+        }
+        return o;
+      };
+      const g = quienes(filas); const a = quienes(archivos(y, m).filas);
+      const dif = [];
+      for (const k of [...new Set([...Object.keys(g), ...Object.keys(a)])]) {
+        const [d, l] = k.split('|'); const f = ymd(y, m, Number(d));
+        const x = g[k] || { gente: new Set(), show: '' }; const z = a[k] || { gente: new Set(), show: '' };
+        const soloG = [...x.gente].filter((n) => !z.gente.has(n)); const soloA = [...z.gente].filter((n) => !x.gente.has(n));
+        const partes = [];
+        if (soloG.length) partes.push(`solo en la GLOSA: ${soloG.map(nombreDe).join(', ')}`);
+        if (soloA.length) partes.push(`solo en la plataforma: ${soloA.map(nombreDe).join(', ')}`);
+        if (plain(x.show) !== plain(z.show)) partes.push(`show en la GLOSA: ${x.show || '—'} · en la plataforma: ${z.show || '—'}`);
+        if (partes.length) dif.push({ fecha: f, local: l, dia: diaTxt(f), etq: NOMBRE_LOCAL[l], texto: partes.join(' · ') });
+      }
+      dif.sort((p, q) => p.fecha.localeCompare(q.fecha) || LOCALES.indexOf(p.local) - LOCALES.indexOf(q.local));
+      res.json({ mismoMes: mesGlosa === m && anioGlosa === y, mesGlosa, anioGlosa, dif });
+    } catch (e) { fail(res, 502, `No se pudo leer la GLOSA: ${clean(e && e.message, 200)}`); }
+  });
+
   // Cartelera de solo lectura (orden de Code 0, 28 nov): para que Code 2 haga los flyers sin pedirle a Cote que copie.
   // Pública y solo con lo que ya sale en la cartelera: fecha, local, show, artista y horarios. Nunca montos, personas
   // ni la cuenta a la que se paga.

@@ -81,6 +81,12 @@ select:focus, input:focus, textarea:focus { outline: 2px solid var(--foco); outl
 .panel p { margin: 6px 0; color: var(--suave); }
 textarea.salida { font: 500 13px/1.45 'JetBrains Mono', monospace; min-height: 220px; white-space: pre; }
 .faltan { color: var(--mal); margin: 0; padding-left: 18px; }
+.rev { width: 100%; border-collapse: collapse; margin-top: 8px; }
+.rev td, .rev th { padding: 6px 8px; border-top: 1px solid var(--linea); text-align: left; vertical-align: top; }
+.rev .rd { white-space: nowrap; font-weight: 700; }
+.rev .rd small { display: block; font-weight: 400; color: var(--suave); }
+.rev .ri { text-align: right; white-space: nowrap; width: 1%; }
+.dia.marcado { outline: 2px solid var(--foco, #f4bf5a); outline-offset: 4px; }
 .ok { color: var(--bien); }
 table { width: 100%; border-collapse: collapse; }
 td, th { padding: 4px; text-align: left; font-size: 13px; }
@@ -131,7 +137,7 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
   }
 
   function marco(contenido) {
-    var tabs = [['mes', 'Programación'], ['prellenar', 'Prellenar'], ['shows', 'Shows'], ['personas', 'Personas'], ['archivos', 'Archivos'], ['equipo', 'Equipo'], ['glosa', 'GLOSA']];
+    var tabs = [['mes', 'Programación'], ['prellenar', 'Prellenar'], ['shows', 'Shows'], ['personas', 'Personas'], ['revisar', 'Revisar'], ['archivos', 'Archivos'], ['equipo', 'Equipo'], ['glosa', 'GLOSA']];
     return '<div class="top"><div class="wrap"><h1>Programación</h1><div class="mes"><button class="btn chico" data-mes="-1">◀</button><b>' + esc(S.data.nombre) + '</b><button class="btn chico" data-mes="1">▶</button></div></div></div>' +
       '<div class="wrap" id="cont">' + contenido + '</div>' +
       '<nav class="tabs">' + tabs.map(function (t) { return '<button data-vista="' + t[0] + '" class="' + (S.vista === t[0] ? 'on' : '') + '">' + t[1] + '</button>'; }).join('') + '</nav>';
@@ -143,7 +149,7 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
   }
   function pintar() {
     var y = window.scrollY;
-    var html = S.vista === 'archivos' ? '<div id="arch"><p class="vacio">Armando los archivos…</p></div>' + vistaImportar() : S.vista === 'shows' ? vistaShows() : S.vista === 'prellenar' ? vistaPrellenar() : S.vista === 'personas' ? vistaPersonas() : S.vista === 'equipo' ? vistaEquipo() : S.vista === 'glosa' ? vistaGlosa() : vistaMes();
+    var html = S.vista === 'archivos' ? '<div id="arch"><p class="vacio">Armando los archivos…</p></div>' + vistaImportar() : S.vista === 'shows' ? vistaShows() : S.vista === 'prellenar' ? vistaPrellenar() : S.vista === 'personas' ? vistaPersonas() : S.vista === 'equipo' ? vistaEquipo() : S.vista === 'glosa' ? vistaGlosa() : S.vista === 'revisar' ? '<div id="rev"><p class="vacio">Revisando el mes…</p></div>' : vistaMes();
     $app.innerHTML = marco(html);
     $app.querySelectorAll('[data-vista]').forEach(function (b) { b.onclick = function () { S.vista = b.dataset.vista; try { localStorage.setItem('progVista', S.vista); } catch (e) {} window.scrollTo(0, 0); pintar(); }; });
     $app.querySelectorAll('[data-mes]').forEach(function (b) { b.onclick = function () { moverMes(Number(b.dataset.mes)); }; });
@@ -153,7 +159,39 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
     if (S.vista === 'archivos') { cargarArchivos(); enlazarImportar(); }
     if (S.vista === 'equipo') enlazarEquipo();
     if (S.vista === 'glosa') enlazarGlosa();
+    if (S.vista === 'revisar') cargarRevisar();
     window.scrollTo(0, y);
+  }
+
+  // ---------- Revisar turnos (orden de Code 0, 28 nov): solo para mirar; nada se envía ni se cambia ----------
+  function irDia(f) {
+    S.vista = 'mes'; try { localStorage.setItem('progVista', 'mes'); } catch (e) {} pintar();
+    var el = document.getElementById('d-' + f); if (el) { el.scrollIntoView({ block: 'start' }); window.scrollBy(0, -70); el.classList.add('marcado'); setTimeout(function () { el.classList.remove('marcado'); }, 2500); }
+  }
+  function filasRev(lista, vacio) {
+    if (!lista.length) return '<p class="ok">' + vacio + '</p>';
+    return '<table class="rev">' + lista.map(function (a) {
+      return '<tr><td class="rd">' + (a.dia ? esc(a.dia) + '<small>' + esc(a.etq) + '</small>' : '<small>Todo el mes</small>') + '</td><td>' + esc(a.texto) + '</td><td class="ri">' + (a.fecha ? '<button class="btn chico" data-ir="' + a.fecha + '">Ir al día</button>' : '') + '</td></tr>';
+    }).join('') + '</table>';
+  }
+  function cargarRevisar() {
+    api('GET', '/api/prog/revisar?m=' + S.mes).then(function (r) {
+      var el = document.getElementById('rev'); if (!el) return;
+      var h = '<div class="panel"><h2>1 · Lo que falta o suena raro</h2><p>Puestos vacíos según la semana tipo, personas sin tarifa, alguien en dos locales el mismo día y las reglas del mes. «Ir al día» abre el día en Programación.</p>' + filasRev(r.avisos, 'Nada raro: el mes está completo.') + '</div>';
+      h += '<div class="panel"><h2>2 · Qué cambió desde el último envío</h2>' + (r.sinFoto ? '<p class="vacio">Este mes todavía no se ha enviado a la GLOSA (o no se marcó «La GLOSA ya está al día»), así que no hay con qué comparar.</p>' : filasRev(r.cambios, 'Sin cambios desde el último envío.')) + '</div>';
+      h += '<div class="panel"><h2>Resumen por persona</h2><p>Días y turnos del mes. Los montos están en «Personas».</p><table class="rev"><tr><th>Persona</th><th>Días</th><th>Turnos</th><th>Locales</th><th>Qué hace</th></tr>' +
+        r.personas.map(function (p) { return '<tr><td>' + esc(p.nombre) + '</td><td>' + p.dias + '</td><td>' + p.turnos + '</td><td>' + esc(p.locales.join(', ')) + '</td><td>' + esc(p.roles.join(', ')) + '</td></tr>'; }).join('') + '</table></div>';
+      h += '<div class="panel"><h2>3 · Comparar con la GLOSA</h2><p>Lee la hoja TURNOS de la GLOSA y muestra, día por día, quién está solo en un lado. No envía ni cambia nada.</p><button class="btn chico" id="revg">Comparar ahora</button><div id="revgres"></div></div>';
+      el.innerHTML = h;
+      el.querySelectorAll('[data-ir]').forEach(function (b) { b.onclick = function () { irDia(b.dataset.ir); }; });
+      document.getElementById('revg').onclick = function () {
+        var out = document.getElementById('revgres'); out.innerHTML = '<p class="vacio">Leyendo la GLOSA…</p>';
+        api('GET', '/api/prog/revisar/glosa?m=' + S.mes).then(function (g) {
+          out.innerHTML = (g.mismoMes ? '' : '<p class="faltan">Ojo: la hoja TURNOS tiene ' + esc(String(g.mesGlosa)) + '-' + esc(String(g.anioGlosa)) + ', no este mes. Envía el mes para compararlo.</p>') + filasRev(g.dif, 'La GLOSA y la plataforma tienen a las mismas personas y shows.');
+          out.querySelectorAll('[data-ir]').forEach(function (b) { b.onclick = function () { irDia(b.dataset.ir); }; });
+        }).catch(function (e) { out.innerHTML = '<p class="faltan">' + esc(e.message) + '</p>'; });
+      };
+    }).catch(function (e) { aviso(e.message); });
   }
 
   // ---------- Programación del mes ----------
@@ -381,7 +419,7 @@ code { font-family: 'JetBrains Mono', monospace; background: #0f0d16; padding: 1
       var p = x.fecha.split('-').map(Number); var dt = new Date(p[0], p[1] - 1, p[2]); var lunes = new Date(dt); lunes.setDate(dt.getDate() - ((dt.getDay() + 6) % 7));
       var k = lunes.toDateString();
       if (k !== sem) { sem = k; h += '<div class="semana"><h2>Semana del ' + lunes.getDate() + ' de ' + MESES[lunes.getMonth()] + '</h2><button class="btn chico" data-repetir="' + x.fecha + '">Repetir el equipo de la semana anterior</button></div>'; }
-      h += '<section class="dia"><header><h3>' + DIAS[x.wd] + ' ' + p[2] + (x.cortesia ? ' de ' + MESES[p[1] - 1] : '') + '</h3>' + (x.cortesia ? '<span class="tag">Cortesía · mes anterior</span>' : '') + (x.cerrado ? '<span class="tag mal">Cerrado</span>' : '') + '</header><div class="locs">' +
+      h += '<section class="dia" id="d-' + x.fecha + '"><header><h3>' + DIAS[x.wd] + ' ' + p[2] + (x.cortesia ? ' de ' + MESES[p[1] - 1] : '') + '</h3>' + (x.cortesia ? '<span class="tag">Cortesía · mes anterior</span>' : '') + (x.cerrado ? '<span class="tag mal">Cerrado</span>' : '') + '</header><div class="locs">' +
         LOCS.filter(function (l) { return x.locales[l].abierto || x.locales[l].abreDefault || hayDatos(x.locales[l]); }).map(function (l) { return bloqueLocal(x, l); }).join('') +
         (LOCS.some(function (l) { return !(x.locales[l].abierto || x.locales[l].abreDefault || hayDatos(x.locales[l])); }) ? '<div class="loc" style="--c:var(--linea)"><button class="btn chico" data-otro="' + x.fecha + '">＋ Abrir otro local este día</button></div>' : '') + '</div></section>';
     });
