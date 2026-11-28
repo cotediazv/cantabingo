@@ -420,7 +420,7 @@ namespace KRB {
     // parte dentro de ese rato (por ejemplo, despues de un corte de luz), tambien, porque el cable parte con todo apagado.
     static string standbyNoche = null;
     public static void RevisarStandby() {
-      DateTime t = DateTime.Now, d = t.AddHours(-6).Date; double m = (t - d).TotalMinutes; int dw = (int)d.DayOfWeek;
+      DateTime t = Reloj ?? DateTime.Now, d = t.AddHours(-6).Date; double m = (t - d).TotalMinutes; int dw = (int)d.DayOfWeek;
       string noche = d.ToString("yyyy-MM-dd");
       // la noche ya hecha queda en un archivo: si el programa se vuelve a abrir en pleno show, NO repite el Standby
       // (registro del 27 nov: se repitio a las 20:22 y 20:58, despues de que el programa se cerro solo)
