@@ -109,7 +109,7 @@ test('sin horarios en la GLOSA: se usan las horas del mes anterior y vuelven las
   assert.equal((await srv.ok('GET', '/api/light?local=frida')).horasRespaldo, true); // el panel del local lo avisa
   // Tobalaba (viernes): las suyas
   c = await srv.ok('GET', '/api/light/cartelera?local=tobalaba');
-  assert.deepEqual(c.week.find((d) => d.date === 4 && d.month === 12).hours.map((h) => `${h.time} ${h.label}`), ['18:30 MÚSICA', '19:00 PREVIA', '19:30 BINGO', '20:15 SHOW', '21:15 KARAOKE']);
+  assert.deepEqual(c.week.find((d) => d.date === 4 && d.month === 12).hours.map((h) => `${h.time} ${h.label}`), ['18:30 MÚSICA', '19:00 PREVIA', '19:30 LOS JUEGOS DE TOBALABA', '20:15 SHOW', '21:15 KARAOKE']);
   // La GLOSA vuelve a traer horarios: mandan esos (otro servidor, porque la GLOSA se relee cada 10 minutos)
   resp = { ...VACIO, horarios: [{ dia: 'SABADO', hora: '20:00', actividad: 'PREVIA' }] };
   const srv2 = await startServer({ env: { GLOSA_TEST_URL: `http://localhost:${mock.address().port}/glosa`, KRB_FECHA: '2026-11-28T20:10:00-03:00' } });
