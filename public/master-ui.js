@@ -654,6 +654,7 @@
     app.innerHTML = `<div id="gm" class="${single ? 'gm-one' : 'gm-all'}">
       ${navHTML(single ? list[0] : 'todos')}
       <div class="gm-grid">${list.map(venueHTML).join('')}</div>
+      ${single && list[0] === 'kennedy' ? '<div class="gm-dell" title="Dell de las luces de Kennedy"></div>' : ''}
       ${single ? '' : `<div class="gm-audio"><small>Audio · escuchar la señal 1 de un local (los otros se apagan)</small><div class="gm-audiorow">${list.map((v, i) => `<button type="button" class="gm-key" data-audio="${v}"><i></i><span>🔇</span><b>${i + 1} · ${esc(VENUES[v])}</b></button>`).join('')}</div></div>`}</div>`;
     const root = $('#gm');
     const fitter = encaja(root); // todo a la vista sin bajar la página (pedido de Cote, 25 nov)
@@ -844,7 +845,12 @@
     const t1 = setInterval(load, 3000);
     const offAviso = window.onAviso(load); // el botón encendido y los monitores cambian al instante (aviso del servidor)
     const t2 = setInterval(loadLive, 20000);
-    return () => { alive = false; offAviso(); clearInterval(t1); clearInterval(t2); clearInterval(t3); ro.disconnect(); document.removeEventListener('visibilitychange', onVisible); list.forEach((v) => { clearInterval(fades[v]); ownStop(v); }); fitter.stop(); document.body.classList.remove('gm-on'); };
+    // Semáforo del Dell de las luces (orden 13 de Code 0, 28 nov), solo en la pestaña de Mercado Kennedy
+    const dellBox = root.querySelector('.gm-dell');
+    const dellPaint = async () => { if (!dellBox || !window.dellHtml) return; const r = await api('GET', '/api/luces/salud').catch(() => null); if (alive) dellBox.innerHTML = window.dellHtml(r, true); };
+    dellPaint();
+    const tDell = dellBox ? setInterval(dellPaint, 10000) : 0;
+    return () => { alive = false; offAviso(); clearInterval(t1); clearInterval(t2); clearInterval(t3); clearInterval(tDell); ro.disconnect(); document.removeEventListener('visibilitychange', onVisible); list.forEach((v) => { clearInterval(fades[v]); ownStop(v); }); fitter.stop(); document.body.classList.remove('gm-on'); };
   };
 
   // #/master: los 3 locales juntos · #/master/<local>: la página de un local · #/master/juegos: la sala de juegos ·
