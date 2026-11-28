@@ -79,12 +79,16 @@ test('Noche de juegos en Tobalaba y Tarde de juegos en Frida (Cote, 28 nov): nad
   const tok = (await (await j('POST', '/api/prog/login', ADMIN)).json()).token;
   await j('POST', '/api/prog/celda', { fecha: '2026-12-04', local: 'TOB', celda: { show: { tipo: 'otro', nombre: 'Especial Rock' }, editor: 'Vero' } }, tok);
   await j('POST', '/api/prog/celda', { fecha: '2026-12-06', local: 'FRIDA', celda: { show: { tipo: 'bingo' }, editor: 'Meni' } }, tok);
+  await j('POST', '/api/prog/celda', { fecha: '2026-12-03', local: 'MK', celda: { show: { tipo: 'bingo' } } }, tok);
   const c = await (await j('GET', '/api/prog/cartelera?m=2026-12')).json();
   assert.equal(c.locales.find((l) => l.local === 'TOB').dias[0].cartelera, 'Noche de juegos + Especial Rock');
+  assert.equal(c.locales.find((l) => l.local === 'MK').dias[0].cartelera, 'Noche de juegos');
   assert.equal(c.locales.find((l) => l.local === 'FRIDA').dias[0].cartelera, 'Tarde de juegos');
   const a = await (await j('GET', '/api/prog/archivos?m=2026-12', null, tok)).json();
   assert.match(a.cartelera, /Dom 6 - Tarde de juegos/);
   assert.match(a.camaras, /Frida Tarde de juegos: Meni/);
   assert.ok(a.filas.some((f) => f[1] === 'FRIDA' && f[2] === 'SHOW' && f[3] === 'Tarde de juegos'));
+  assert.ok(a.filas.some((f) => f[1] === 'MK' && f[2] === 'SHOW' && f[3] === 'Noche de juegos'));
+  assert.doesNotMatch(JSON.stringify(a.filas), /los juegos de/i);
   assert.doesNotMatch(a.cartelera + a.camaras + a.entretencion + a.turnos, /bingo/i);
 });
