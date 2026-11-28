@@ -630,7 +630,7 @@ const EN_EL_DELL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 // (Standby, Previa, Show, Fiesta con Automatico, intensidad, apagar). Sin vista 3D, para no gastar el celular.
 const MINI = DJ && PARAMS.get('mini') === '1';
 if (DJ) document.body.classList.add('dj');
-const COLOR_CSS = {blanco_calido:'#ffd9a0',blanco:'#ffffff',azul:'#2b55ff',rojo:'#ff2a2a',verde:'#22dd55',amarillo:'#ffbe00',ambar:'#ff8a00',morado:'#9b3cff',rosa:'#ff3fa0',cian:'#22e5ff'};
+const COLOR_CSS = {blanco_calido:'#ffd9a0',blanco:'#ffffff',azul:'#2b55ff',rojo:'#ff2a2a',verde:'#22dd55',lima:'#a6ff00',amarillo:'#ffbe00',ambar:'#ff8a00',morado:'#9b3cff',rosa:'#ff3fa0',cian:'#22e5ff'};
 // Las 4 marcas de calibracion: las que uso Cote en Kennedy (25 nov), con su lugar real en el salon (sal = [u, v] en metros:
 // u = de lado, + cocinas / - columnas; v = a lo largo desde el escenario). u/v chicos = posicion en el rectangulo antiguo.
 const ESQUINAS = [
@@ -2798,7 +2798,7 @@ function marcaAnimador(a){                                              // el an
 const djEstado = { escena: -1, auto: false, autoTimer: null, bpm: 120 };
 const azar = (a, b) => a + Math.random() * (b - a);
 const elegir = arr => arr[Math.floor(Math.random() * arr.length)];
-const VIVOS = ['rojo', 'azul', 'verde', 'amarillo', 'morado', 'rosa', 'cian', 'ambar'];
+const VIVOS = ['rojo', 'azul', 'lima', 'amarillo', 'morado', 'rosa', 'cian', 'ambar'];
 // Puntos del salon para las cabezas grandes (u: de lado, + cocinas; v: a lo largo desde el escenario)
 const PUNTOS = {
   pista:  () => puntoPiso(azar(-3, 3), azar(1, 9)),
@@ -2854,7 +2854,11 @@ const djArriba = () => idsPared().filter(id => id === 'fondo');                 
 const djAbajo = () => idsPared().filter(id => id !== 'fondo');                        // perimetrales: en el piso
 // blanco calido de frente: cabezas 1 y 2 al escenario + frontales
 const blancoFrente = () => ({ ...grupos(djCab12(), 'blanco_calido'), ...grupos(djCab3(), null), frontales: 'blanco_calido' });
+// Cabezas 1 y 2 a la CARA de quien canta (Cote, 28 nov: «estan enfocando mas el cuerpo y los pies que la cara; subir
+// ligeramente el campo sobre el escenario»): en las escenas del DJ apuntan a 1,75 m de alto (antes al pecho/posicion guardada)
+const ESC_CARA = [0, 1.75, -1.8];
 const djPosEsc = (dp, dt) => { const o = {}; djCab12().forEach((id, j) => { const z = {}; fijarPosicion(z, 'escenario', id);
+  const m = modeloCabeza(id); if (m){ const r = panTiltModelo(m, ESC_CARA, null); z.pan = r.pan; z.tilt = r.tilt; }
   o[id] = { pan: (z.pan || 128) + (dp || 0) * (j ? -1 : 1), tilt: (z.tilt || 100) + (dt || 0), zoom: z.zoom }; }); return o; };
 const djMiniSuave = () => grupos(djMini(), { pan: azar(50, 205), tilt: azar(0, 35) });
 const djSuave = (c, k) => pasoColor(grupos(djPared(), c[k % c.length]), { perimetrales: 45, fondo: 45 });
@@ -2907,6 +2911,32 @@ const MINI_MOV = {
   circulo: k => { const a = k / 12 * 2 * Math.PI; return [128 + 115 * Math.cos(a), 40 + 6 * Math.sin(a)]; },
   ondas:   k => { const a = k / 12 * 4 * Math.PI; return [128 + 60 * Math.sin(a), 12 + 30 * Math.abs(Math.sin(a * 1.5))]; }
 };
+// Standby que cuenta una historia (Cote, 28 nov: «que en el stand-by las luces vayan contando una historia durante todo el
+// tiempo que este puesto»): capitulos de unos 90 s, cada uno con su paleta y su forma de moverse las mini; despues de 6
+// capitulos (unos 9 minutos) vuelve a empezar. Cada escena de Standby parte en un capitulo distinto.
+const STANDBY_HISTORIA = [
+  { tema: ['azul', 'cian', 'morado'], mov: 'ola' },        // noche azul
+  { tema: ['morado', 'rosa', 'azul'], mov: 'circulo' },    // lavanda
+  { tema: ['ambar', 'rosa', 'rojo'], mov: 'barrido' },     // atardecer
+  { tema: ['rojo', 'ambar', 'morado'], mov: 'ondas' },     // brasas
+  { tema: ['cian', 'azul', 'lima'], mov: 'ondas' },        // agua
+  { tema: ['azul', 'morado', 'cian'], mov: 'circulo' }     // vuelta a la noche
+];
+function capasStandbyHistoria(inicio){
+  const n = STANDBY_HISTORIA.length, cabs = djCabezas().filter(id => segIds().indexOf(id) < 2);
+  const caps = N(n).map(k => STANDBY_HISTORIA[(inicio + k) % n]);
+  const col = [], mini = [];
+  caps.forEach(cp => { const t = cp.tema, m = t.length, mm = MINI_MOV[cp.mov] || MINI_MOV.ola;
+    N(9).forEach(k => { const o = { ...grupos(djAbajo(), t[k % m]), ...grupos(djArriba(), t[(k + 1) % m]), frontales: null, ...grupos(djMini(), t[(k + 1) % m]) },
+        int = { perimetrales: 22, fondo: 22, mini: 100, mini_columnas: 100 };
+      cabs.forEach((id, j) => { o[id] = t[(k + j + 2) % m]; int[id] = 55; });
+      col.push(pasoColor(o, int)); });                                                     // 9 pasos de 10 s = 90 s por capitulo
+    N(36).forEach(k => { const [p, tt] = mm(k); mini.push(pasoPos({ mini: { pan: p, tilt: tt }, mini_columnas: { pan: 255 - p, tilt: tt } })); }); });
+  const capas = [{ ...capa('col', col, 0, 1), seg: 10 }, { ...capa('mini', mini, 0, 1), seg: 2.5 }];
+  if (cabs.length){ const rec = recorridoCruce(cabs, 24);
+    capas.push({ ...capa('cabmov', N(24).map(k => { const o = {}; cabs.forEach(id => o[id] = rec[id][k]); return pasoPos(o); }), 0, 1), seg: 4 }); }
+  return capas;
+}
 function capasStandby(tema, estilo){
   const n = tema.length, cabs = djCabezas().filter(id => segIds().indexOf(id) < 2);   // solo dos cabezas
   // pared y frontales muy bajos (la intensidad de Standby ademas va a la mitad); mini al 100 %, son las protagonistas
@@ -2939,49 +2969,55 @@ function capasStandbyFondo(tonos){ const n = tonos.length;
 // Mini cabezas en Standby (Cote, 25 nov): pintan el TECHO moviendose suave, con colores del tema de la escena,
 // y los cambios de color se notan (cada 3 s, con un fundido corto). Van por tiempo: en Standby puede no haber musica.
 // las mini van en color de CONTRASTE con la pared (Cote, 25 nov), con mas movimiento (una vuelta cada 16 s)
-const CONTRASTE = { azul: 'ambar', cian: 'rosa', morado: 'amarillo', ambar: 'azul', rosa: 'cian', rojo: 'cian', verde: 'morado', amarillo: 'morado' };
+const CONTRASTE = { azul: 'ambar', cian: 'rosa', morado: 'amarillo', ambar: 'azul', rosa: 'cian', rojo: 'cian', verde: 'morado', lima: 'morado', amarillo: 'morado' };
 const capasMiniTecho = tema => [
   { ...capa('minicol', N(tema.length * 2).map(k => pasoColor(grupos(djMini(), CONTRASTE[tema[k % tema.length]] || 'blanco'), { mini: 85, mini_columnas: 85 })), 0, 0.35), seg: 3 },
   { ...capa('mini', N(8).map(k => { const a = k / 8 * 2 * Math.PI, p = 128 + 105 * Math.sin(a), t = 18 + 16 * Math.sin(2 * a + 1);
       return pasoPos({ mini: { pan: p, tilt: t }, mini_columnas: { pan: 255 - p, tilt: t } }); }), 0, 1), seg: 2 }];
 const djPrevia = (cs, k) => pasoColor({ ...blancoFrente(), ...grupos(djMini(), cs[(k + 1) % cs.length]), ...grupos(djArriba(), cs[k % cs.length]), ...grupos(djAbajo(), cs[(k + 1) % cs.length]) },
-  { perimetrales: 70, fondo: 70, mini: 80, mini_columnas: 80 });
+  { perimetrales: 45, fondo: 45, mini: 60, mini_columnas: 60 });                      // contenida (Cote, 28 nov)
 // Locura: cada equipo con un color distinto (sin repetir mientras alcancen los colores)
 const djDistintos = () => { const c = [...VIVOS].sort(() => Math.random() - 0.5), o = {};
   [...djCabezas(), ...djMini(), ...djPared()].forEach((id, j) => o[id] = c[j % c.length]); return o; };
+/* Show «rock» (Cote, 28 nov): base de pared completa (el azul y el rojo «se ven espectaculares»), blanco a la cara SIEMPRE
+   (cabezas 1 y 2 nunca se apagan), mini y fondo con acentos al golpe, y RAFAGAS cortas de realce: los frontales de las
+   columnas (97) en estrobo blanco y la pared que se apaga y se prende al golpe. Estrobo con medida: la rafaga dura
+   «rafaga» golpes y despues vienen «calma» golpes sin estrobo. Avanza con el ritmo de la musica (un paso por golpe). */
+function capasRock(base, acentos, calma, rafaga){
+  const pasos = [], cara = grupos(djCab12(), 'blanco_calido');
+  N(calma).forEach(k => { const a = acentos[Math.floor(k / 4) % acentos.length];
+    const p = pasoColor({ ...cara, ...grupos(djCab3(), null), frontales: 'blanco_calido', ...grupos(djAbajo(), base), ...grupos(djArriba(), k % 8 < 4 ? base : a),
+      ...grupos(djMini(), k % 2 ? a : base) }, { mini: 100, mini_columnas: 100 });
+    pasos.push(p, p); });                                                                  // medio golpe por paso
+  N(rafaga * 2).forEach(k => { const on = k % 2 === 0;                                   // destello cada medio golpe
+    pasos.push(pasoColor({ ...cara, ...grupos(djCab3(), null), frontales: on ? 'blanco' : null, ...grupos(djAbajo(), on ? base : null), ...grupos(djArriba(), on ? null : 'blanco'),
+      ...grupos(djMini(), 'blanco') })); });
+  return [capa('col', pasos, 0.5, 0), movFrente(), capa('mini', N(16).map(() => pasoPos(grupos(djMini(), posMini()))), 1, 0.3)];
+}
 const movFrente = () => capa('frente', N(4).map(k => pasoPos(djPosEsc(...[[0, 0], [2, 1], [0, 2], [-2, 1]][k]))), 4, 1);   // movimiento chico en el escenario
 
 const DJ_ESCENAS = [
   // ---------- STANDBY (Cote, 27 nov): suavecito, color muy bajo, predominan las mini del escenario; dos cabezas cruzandose
   // lento por el techo del salon; cada ambientacion distinta (movimiento propio de las mini) ----------
-  { grupo: 'Standby', n: 'Azul', i: '🌙', g: 'linear-gradient(135deg,#0a1a4a,#2b55ff)', capas: () => capasStandby(['azul', 'cian', 'morado'], 'ola') },
-  { grupo: 'Standby', n: 'Atardecer', i: '🌅', g: 'linear-gradient(135deg,#ff8a00,#ff3fa0)', capas: () => capasStandby(['ambar', 'rosa', 'rojo'], 'barrido') },
-  { grupo: 'Standby', n: 'Lavanda', i: '🪻', g: 'linear-gradient(135deg,#9b3cff,#2b55ff)', capas: () => capasStandby(['morado', 'rosa', 'azul'], 'circulo') },
-  { grupo: 'Standby', n: 'Agua', i: '💧', g: 'linear-gradient(135deg,#22e5ff,#22dd55)', capas: () => capasStandby(['cian', 'verde', 'azul'], 'ondas') },
+  { grupo: 'Standby', n: 'Azul', i: '🌙', g: 'linear-gradient(135deg,#0a1a4a,#2b55ff)', capas: () => capasStandbyHistoria(0) },
+  { grupo: 'Standby', n: 'Atardecer', i: '🌅', g: 'linear-gradient(135deg,#ff8a00,#ff3fa0)', capas: () => capasStandbyHistoria(2) },
+  { grupo: 'Standby', n: 'Lavanda', i: '🪻', g: 'linear-gradient(135deg,#9b3cff,#2b55ff)', capas: () => capasStandbyHistoria(1) },
+  { grupo: 'Standby', n: 'Agua', i: '💧', g: 'linear-gradient(135deg,#22e5ff,#22dd55)', capas: () => capasStandbyHistoria(4) },
   // ---------- PREVIA (piano bar): blanco de frente siempre ----------
   { grupo: 'Previa', n: 'Piano bar', i: '🎹', g: 'radial-gradient(circle at 50% 30%,#ffd9a0,#ff8a00 60%,#3a1a00)',
-    capas: () => [capa('col', N(4).map(k => djPrevia(['ambar', 'rosa'], k)), 16, 1), capa('mov', [pasoPos(djPosEsc())], 16), capa('mini', N(6).map(() => pasoPos(djMiniSuave())), 8, 1)] },
+    capas: () => [capa('col', N(8).map(k => djPrevia(['ambar', 'rosa', 'ambar', 'morado'], k)), 16, 1), capa('mov', [pasoPos(djPosEsc())], 16), capa('mini', N(6).map(() => pasoPos(djMiniSuave())), 8, 1)] },
   { grupo: 'Previa', n: 'Jazz azul', i: '🎷', g: 'radial-gradient(circle at 50% 30%,#ffd9a0,#2b55ff 60%,#0a1033)',
-    capas: () => [capa('col', N(4).map(k => djPrevia(['azul', 'cian'], k)), 16, 1), capa('mov', [pasoPos(djPosEsc())], 16), capa('mini', N(6).map(() => pasoPos(djMiniSuave())), 8, 1)] },
+    capas: () => [capa('col', N(8).map(k => djPrevia(['azul', 'cian', 'azul', 'morado'], k)), 16, 1), capa('mov', [pasoPos(djPosEsc())], 16), capa('mini', N(6).map(() => pasoPos(djMiniSuave())), 8, 1)] },
   { grupo: 'Previa', n: 'Vino', i: '🍷', g: 'radial-gradient(circle at 50% 30%,#ffd9a0,#9b1030 60%,#2a0010)',
-    capas: () => [capa('col', N(4).map(k => djPrevia(['rojo', 'morado'], k)), 16, 1), capa('mov', [pasoPos(djPosEsc())], 16), capa('mini', N(6).map(() => pasoPos(djMiniSuave())), 8, 1)] },
+    capas: () => [capa('col', N(8).map(k => djPrevia(['rojo', 'morado', 'rojo', 'ambar'], k)), 16, 1), capa('mov', [pasoPos(djPosEsc())], 16), capa('mini', N(6).map(() => pasoPos(djMiniSuave())), 8, 1)] },
   { grupo: 'Previa', n: 'Dorado', i: '✨', g: 'radial-gradient(circle at 50% 30%,#fff3c4,#ffbe00 60%,#3a2a00)',
-    capas: () => [capa('col', N(4).map(k => djPrevia(['amarillo', 'ambar'], k)), 16, 1), capa('mov', [pasoPos(djPosEsc())], 16), capa('mini', N(6).map(() => pasoPos(djMiniSuave())), 8, 1)] },
+    capas: () => [capa('col', N(8).map(k => djPrevia(['amarillo', 'ambar', 'lima', 'ambar'], k)), 16, 1), capa('mov', [pasoPos(djPosEsc())], 16), capa('mini', N(6).map(() => pasoPos(djMiniSuave())), 8, 1)] },
   // ---------- SHOW: blanco de frente siempre, fondo libre ----------
-  { grupo: 'Show', n: 'Colores', i: '🎤', g: 'linear-gradient(135deg,#ff2a2a,#ffd9a0 50%,#2b55ff)',
-    capas: () => [capa('col', N(12).map(() => pasoColor({ ...blancoFrente(), ...grupos(djMini(), elegir(VIVOS)), ...grupos(djArriba(), elegir(VIVOS)), ...grupos(djAbajo(), elegir(VIVOS)) })), 1),
-      movFrente(), capa('mini', N(12).map(() => pasoPos(grupos(djMini(), posMini()))), 1, 0.3)] },
-  { grupo: 'Show', n: 'Estrobo', i: '⚡', g: 'repeating-linear-gradient(90deg,#fff 0 8px,#222 8px 16px)',
-    capas: () => { const c = elegir(VIVOS);
-      return [capa('col', N(8).map(k => pasoColor({ ...blancoFrente(), ...grupos(djMini(), k % 2 ? 'blanco' : c), ...grupos(djArriba(), k % 2 ? null : 'blanco'), ...grupos(djAbajo(), k % 2 ? c : null) })), 0.25),
-        movFrente(), capa('mini', N(12).map(() => pasoPos(grupos(djMini(), posMini()))), 0.5, 0.2)]; } },
-  { grupo: 'Show', n: 'Arriba/abajo', i: '↕️', g: 'linear-gradient(180deg,#9b3cff 50%,#22e5ff 50%)',
-    capas: () => { const pares = [['morado', 'cian'], ['rojo', 'amarillo'], ['azul', 'rosa'], ['verde', 'morado']];
-      return [capa('col', N(8).map(k => { const [x, y] = pares[Math.floor(k / 2) % 4]; return pasoColor({ ...blancoFrente(), ...grupos(djMini(), k % 2 ? x : y),
-          ...grupos(djArriba(), k % 2 ? x : y), ...grupos(djAbajo(), k % 2 ? y : x) }); }), 1),
-        movFrente(), capa('mini', N(8).map(() => pasoPos(grupos(djMini(), posMini()))), 1, 0.5)]; } },
+  { grupo: 'Show', n: 'Rock azul', i: '🎸', g: 'linear-gradient(135deg,#2b55ff,#ffd9a0 55%,#ff2a2a)', capas: () => capasRock('azul', ['rojo', 'ambar', 'blanco'], 40, 8) },
+  { grupo: 'Show', n: 'Rock rojo', i: '🔥', g: 'linear-gradient(135deg,#ff2a2a,#ffd9a0 55%,#ff8a00)', capas: () => capasRock('rojo', ['ambar', 'azul', 'blanco'], 40, 8) },
+  { grupo: 'Show', n: 'Golpes', i: '⚡', g: 'repeating-linear-gradient(90deg,#fff 0 8px,#ff2a2a 8px 16px)', capas: () => capasRock(elegir(['azul', 'rojo']), ['blanco', 'ambar', 'morado'], 24, 12) },
   { grupo: 'Show', n: 'Arcoíris', i: '🌈', g: 'linear-gradient(135deg,#ff2a2a,#ffbe00,#22dd55,#22e5ff,#9b3cff)',
-    capas: () => { const c = ['rojo', 'ambar', 'amarillo', 'verde', 'cian', 'azul', 'morado', 'rosa'];
+    capas: () => { const c = ['rojo', 'ambar', 'amarillo', 'lima', 'cian', 'azul', 'morado', 'rosa'];
       return [capa('col', c.map((x, k) => pasoColor({ ...blancoFrente(), ...grupos(djMini(), c[(k + 4) % 8]), ...grupos(djArriba(), x), ...grupos(djAbajo(), c[(k + 2) % 8]) })), 1, 0.6),
         movFrente(), capa('mini', N(8).map(() => pasoPos(grupos(djMini(), posMini()))), 2, 0.7)]; } },
   // ---------- ANIMADO (Cote, 27 nov): opciones animadas de luces y fondos, siempre con el blanco en la cara ----------
@@ -3017,7 +3053,7 @@ const DJ_ESCENAS = [
       const pasos = []; N(4).forEach(() => { pasos.push(oscuro(), oscuro(), rayo(), oscuro(), rayo(), rayo(), oscuro(), oscuro()); });
       return [capa('col', pasos, 0.25), capa('mov', N(12).map(() => pasoPos({ ...posCab('salon'), ...grupos(djMini(), posMini()) })), 1, 0.3)]; } },
   { grupo: 'Locura', n: 'Caleidoscopio', i: '🔮', g: 'conic-gradient(from 45deg,#ff3fa0,#22e5ff,#ffbe00,#9b3cff,#22dd55,#ff3fa0)',
-    capas: () => { const c = ['rojo', 'ambar', 'amarillo', 'verde', 'cian', 'azul', 'morado', 'rosa'], ids = djLibres();
+    capas: () => { const c = ['rojo', 'ambar', 'amarillo', 'lima', 'cian', 'azul', 'morado', 'rosa'], ids = djLibres();
       const col = N(16).map(k => { const o = {}; ids.forEach((id, j) => o[id] = c[(k + j * 3) % 8]); return pasoColor(o); });
       const mov = N(16).map(() => { const p = azar(10, 245), t = azar(0, 90);
         return pasoPos({ ...posCab('salon'), mini: { pan: p, tilt: t }, mini_columnas: { pan: 255 - p, tilt: t } }); });
@@ -3079,7 +3115,7 @@ function animCreatividad(){
 // escena del mismo grupo: en Previa todo es suave; en Show, en las partes fuertes entra el estrobo.
 const ENERGIA = {
   Previa:  { suave: ['Piano bar', 'Jazz azul', 'Vino', 'Dorado'], medio: ['Piano bar', 'Jazz azul', 'Vino', 'Dorado'], fuerte: ['Piano bar', 'Jazz azul', 'Vino', 'Dorado'] },
-  Show:    { suave: ['Colores', 'Arriba/abajo'], medio: ['Arriba/abajo', 'Arcoíris', 'Colores'], fuerte: ['Arcoíris', 'Estrobo'] },
+  Show:    { suave: ['Rock azul', 'Arcoíris'], medio: ['Rock azul', 'Rock rojo', 'Arcoíris'], fuerte: ['Golpes', 'Rock rojo'] },
   Animado: { suave: ['Constelación', 'Cara y techo'], medio: ['Cara y techo', 'Ola', 'Creatividad'], fuerte: ['Ola', 'Creatividad'] },
   Fiesta:  { suave: ['Pista', 'Fiesta'], medio: ['Fiesta', 'Disco', 'Pista'], fuerte: ['Destello', 'Disco'] }
 };
@@ -3093,7 +3129,7 @@ const djGrupo = () => { const g = djGrupoActual();
 /* Standby con Automatico (Cote, 25 nov): el fondo cambia suave de color, en fundido continuo, y el color "sube" de abajo
    (perimetrales) hacia arriba (focos de fondo). Va por tiempo (no por el ritmo) para que siempre sea parejo.
    Cabezas grandes y frontales apagados; mini cabezas lentas. Parte del color de la escena de Standby elegida. */
-const STANDBY_TONOS = ['azul', 'morado', 'rosa', 'ambar', 'cian', 'verde'];
+const STANDBY_TONOS = ['azul', 'morado', 'rosa', 'ambar', 'cian', 'lima'];
 const STANDBY_INICIO = { Azul: 'azul', Atardecer: 'ambar', Lavanda: 'morado', Agua: 'cian' };
 function capasStandbyAuto(e){
   const k0 = Math.max(0, STANDBY_TONOS.indexOf(STANDBY_INICIO[e.n] || 'azul')), n = STANDBY_TONOS.length;
@@ -3126,7 +3162,8 @@ async function djAplicar(i, auto){
   capas.forEach(c => Object.keys(c.pasos[0] || {}).forEach(k => delete base[k]));
   djSeguidas().forEach(id => Object.assign(base, valoresGrupo(grupo(id))));   // las cabezas que sigue el DJ quedan como estan
   enviar(base, 0);
-  capas.forEach(c => efecto(c.id, {tipo: 'sec', pasos: pasosTxt(c.pasos), t: (c.seg != null ? c.seg : c.ritmo * seg).toFixed(3), fx: c.fx, ritmo: c.ritmo}));
+  capas.forEach(c => { const p = {tipo: 'sec', pasos: pasosTxt(c.pasos), t: (c.seg != null ? c.seg : c.ritmo * seg).toFixed(3), fx: c.fx, ritmo: c.ritmo};
+    p.pasos.length > 1500 ? efectoPost(c.id, p) : efecto(c.id, p); });                  // las largas (Standby de 9 min) van por POST
 }
 /* Ordenes del mini panel (pagina del karaoke de la sala light de Kennedy) */
 const MINI_ORIGEN = o => /^https:\/\/([a-z0-9-]+\.)*(onrender\.com|krbstage\.cl)$/.test(o) || /^http:\/\/localhost(:\d+)?$/.test(o);
@@ -3586,7 +3623,7 @@ function iniciarDJ(){
   $('djGrupos').querySelectorAll('button').forEach(b => b.onclick = () => djVerGrupo(b.dataset.g));
   djVerGrupo(gs[0]);
   // colores base al costado de la vista previa
-  const bases = ['azul', 'rojo', 'verde', 'amarillo', 'morado', 'cian'].filter(c => conf.colores[c]);
+  const bases = ['azul', 'rojo', 'lima', 'amarillo', 'morado', 'cian'].filter(c => conf.colores[c]);
   $('djBase').innerHTML = bases.map(c => `<button data-c="${c}" style="background:${COLOR_CSS[c]}" title="Base ${c}"></button>`).join('');
   $('djBase').querySelectorAll('button').forEach(b => b.onclick = () => djBase(b.dataset.c));
   // el estado de conexion del panel normal se copia al del DJ
