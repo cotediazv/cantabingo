@@ -122,15 +122,15 @@ var KC = (function () {
     P.push({ nombre: 'Esta semana', html: '<span class="kc-eti kc-oro">Esta semana</span><div class="kc-tit">Esta <b>semana</b></div><div class="kc-sub">' + rango(SEM[0]) + '</div>' + dias(SEM[0]) });
     // 2) la próxima noche en grande
     P.push({ nombre: N[0].hoy ? 'Hoy' : 'Próxima noche', html: '<span class="kc-eti">' + (N[0].hoy ? 'Hoy en el escenario' : 'La próxima noche') + '</span>' + spot(N[0]) });
-    // 3) noche de juegos (horas que dijo Cote, 28 nov 14:02: 20 horas juegos, 21 horas el show, 22 horas karaoke night)
+    // 3) noche de juegos: aspecto de la versión 4 con las horas que dijo Cote (28 nov): 20 horas juegos, 21 horas el show, 22 horas karaoke night
     var jue = [];
     for (i = 0; i < N.length && jue.length < 3; i++) if (N[i].juegos) jue.push(N[i]);
     if (jue.length) {
       var f = '';
       for (i = 0; i < jue.length; i++) f += '<div class="kc-jf" style="border-left-color:' + jue[i].col + '"><div class="kc-fj"><small>Jueves</small><b>' + jue[i].d.getDate() + '</b></div>' +
         '<div class="kc-qj"><em class="kc-fit kc-igual-t" style="color:' + jue[i].col + '">' + esc(jue[i].tipo) + '</em><span class="kc-fit kc-igual-n">' + esc(jue[i].nom) + '</span><i>21 HORAS</i></div>' + foto(jue[i], jue[i].ico, jue[i].col) + '</div>';
-      P.push({ nombre: 'Noche de juegos', html: '<span class="kc-eti kc-oro">Todos los jueves</span>' +
-        '<div class="kc-grande">Noche <b>de juegos</b><div class="kc-h20"><b>20</b><span>HORAS</span></div></div>' +
+      P.push({ nombre: 'Noche de juegos', html: '<span class="kc-eti kc-oro">Todos los jueves · 20 HORAS</span>' +
+        '<div class="kc-grande">Noche <b>de juegos</b></div>' +
         '<div class="kc-como">' + ico('juegos', COL.foco) + '<p>Juegas desde tu celular: <b>bingo, trivia y más</b>, con premios.</p></div>' +
         '<div class="kc-jueves">' + f + '</div><div class="kc-kn"><b>22 HORAS</b><span>Karaoke Night</span></div>' });
     }
