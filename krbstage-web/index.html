@@ -1325,6 +1325,30 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
 </footer>
 
 <script>
+/* Si la Sala se reinicia o no responde, la página usa lo último bueno que recibió (guardado en este navegador):
+   cartelera, pantallas, Instagram, seguidores, YouTube y Twitch. Lo «en vivo» (Twitch, pantallas) solo vale 10 min;
+   Instagram, 2 días (sus enlaces a los videos vencen); lo demás, 7 días. */
+(function(){
+  const nat=window.fetch.bind(window),SALA='https://cantabingo.onrender.com/api/';
+  const vivo=u=>/\/api\/web\/(twitch|pantallas)/.test(u);
+  const vence=u=>vivo(u)?10*60e3:/\/instagram/.test(u)?2*86400e3:7*86400e3;
+  const items=o=>Array.isArray(o)?o.length:o&&typeof o==='object'?Object.values(o).reduce((n,x)=>n+items(x),0):0; /* respuesta vacía = sin listas con datos */
+  const clave=u=>'krb-ultimo:'+u.slice(SALA.length);
+  const leer=u=>{try{const g=JSON.parse(localStorage.getItem(clave(u))||'null');return g&&Date.now()-g.t<vence(u)?g.b:null}catch(_){return null}};
+  const guardar=(u,b)=>{if(b.length>1500000)return;try{localStorage.setItem(clave(u),JSON.stringify({t:Date.now(),b}))}catch(_){}};
+  const resp=b=>new Response(b,{status:200,headers:{'content-type':'application/json','x-krb-guardado':'1'}});
+  window.fetch=function(input,init){
+    const u=typeof input==='string'?input:(input&&input.url)||'';
+    const m=((init&&init.method)||'GET').toUpperCase();
+    if(m!=='GET'||u.indexOf(SALA)!==0||/\/instagram\/buscar/.test(u))return nat(input,init);
+    return nat(input,init).then(r=>{
+      if(!r.ok){const b=leer(u);if(b!=null)return resp(b);return r}
+      return r.clone().text().then(t=>{let j;try{j=JSON.parse(t)}catch(_){return r}
+        if(!vivo(u)&&!items(j)){const g=leer(u);if(g!=null)return resp(g);return r} /* recién reiniciada, la Sala puede responder vacío */
+        guardar(u,t);return r}).catch(()=>r);
+    },e=>{const b=leer(u);if(b!=null)return resp(b);throw e});
+  };
+})();
 const $=s=>document.querySelector(s);
 const hamb=$('#hamb'),menu=$('#menu');
 hamb.addEventListener('click',()=>{const a=menu.classList.toggle('abierto');hamb.setAttribute('aria-expanded',a)});
