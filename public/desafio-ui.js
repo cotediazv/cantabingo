@@ -378,6 +378,7 @@
   const REVELA = 'audio/desafio-revela.mp3';
   const CORRECTA = 'audio/desafio-correcta.mp3';
   let revKey = '';
+  let endKey = ''; // la música del cierre suena una sola vez por partida
   // Comodín de la llamada (pedido de Cote, 26 nov: «este audio es para el comodín telefónico, son 30 segundos»): suena
   // mientras corre el reloj de la llamada (en lugar del tic-tac); al terminar vuelve la cortina sin el golpe del comienzo
   const LLAMADA = 'audio/desafio-llamada.mp3';
@@ -400,6 +401,15 @@
       const fest = st.step && st.step % (st.stage || 4) === 0 ? INTRO : CORRECTA;
       if (revKey !== k && sfx.playing() !== fest) sfx.music(fest, { vol: 1 }); // si aún no estaba bajado, parte en el próximo segundo
       if (sfx.playing() === fest) revKey = k;
+      return;
+    }
+    // Cierre de la partida (oferta del 26 nov, aceptada por Code 0 por Cote el 28 nov: «música también al terminar la
+    // partida»): al terminar (ganó, perdió el último o se retiró) suena una vez el mismo audio «intro y cierre»; si ya venía
+    // sonando por el premio de la pregunta 12, sigue sin partir de nuevo
+    if (st && st.phase === 'end') {
+      const k = `${(st.team || []).join('|')}|${st.outcome || ''}|${st.step || 0}`;
+      if (endKey !== k && sfx.playing() !== INTRO) sfx.music(INTRO, { vol: 1 });
+      if (sfx.playing() === INTRO) endKey = k;
       return;
     }
     // La música del comienzo la toca el tablero al cargarse el juego (Cote, 26 nov: «al iniciar el juego… ahí sale la
