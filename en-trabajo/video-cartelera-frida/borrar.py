@@ -10,5 +10,15 @@ for src, dst, rows in [('cart1.png', 'base3.png', [(338, 532), (578, 772), (813,
         zona[y0:y1, 288:592] = True; zona[y0:y1, 662:1726] = True; zonaw[y0:y1, 1726:1752] = True
     t = (((blanco | rosa) & zona) | (blanco & zonaw))
     m = np.asarray(Image.fromarray((t * 255).astype('uint8')).filter(ImageFilter.MaxFilter(9))) > 0
-    out = im.copy(); out[m] = [2, 2, 2]
-    Image.fromarray(out.astype('uint8')).save(dst)
+    out = im.copy().astype(float); out[m] = [2, 2, 2]
+    # donde la letra vieja tapaba flores (borde derecho), se rellena con lo que la rodea en vez de negro
+    flor = m.copy(); flor[:, :1640] = False
+    if flor.any():
+        w = (~m).astype(float); img = im.astype(float) * w[..., None]
+        for _ in range(6):
+            wb = np.asarray(Image.fromarray((w * 255).astype('uint8')).filter(ImageFilter.GaussianBlur(6))).astype(float) / 255
+            ib = np.stack([np.asarray(Image.fromarray(np.clip(img[..., k], 0, 255).astype('uint8')).filter(ImageFilter.GaussianBlur(6))).astype(float) for k in range(3)], -1)
+            rel = ib / np.maximum(wb[..., None], 1e-3)
+            img = np.where(m[..., None], rel * np.minimum(wb[..., None] * 4, 1), img); w = np.maximum(w, np.minimum(wb * 4, 1))
+        out[flor] = rel[flor]
+    Image.fromarray(np.clip(out, 0, 255).astype('uint8')).save(dst)

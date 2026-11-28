@@ -1,8 +1,9 @@
 Video de la pantalla horizontal de Frida con la cartelera nueva (Code 2, 28 nov; pedido de Cote por Code 0). NO esta puesto en la pantalla: Cote lo aprueba antes.
 frida-horizontal-cartelera.mp4: 1280x720, 30 cps, sin audio, H.264 (unos 0,54 Mbps, 8,6 MB). Todo igual al video de noviembre salvo
 las dos laminas de cartelera (71,4-88,5 s y 100,1-120,2 s), que en el original eran de octubre:
-  1) Viernes 4 Doble de Karol G · Sabado 5 Doble de Chayanne · Domingo 6 Los Juegos de Frida
-  2) Viernes 11 Doble de Jesse y Joy · Sabado 12 Doble de Romeo Santos · Domingo 13 Los Juegos de Frida
+  1) Viernes 4 Doble de Karol G 21 horas · Sabado 5 Doble de Chayanne 21 horas · Domingo 6 Tarde de juegos 14 horas
+  2) Viernes 11 Doble de Jesse y Joy 21 horas · Sabado 12 Doble de Romeo Santos 21 horas · Domingo 13 Tarde de juegos 14 horas
+La hora va arriba a la derecha de cada fila, en el rosado del numero; el domingo va entero en amarillo (pedidos de Cote, 28 nov).
 Para otro mes (unos minutos): bajar el original de la Sala (https://cantabingo.onrender.com/vertical/frida-h.mp4, no va al repositorio)
-y correr ./generar.sh <original> <carpeta de trabajo> '<filas lamina 1>' '<filas lamina 2>' (cada fila: {"dia","num","antes","nom"};
+y correr ./generar.sh <original> <carpeta de trabajo> '<filas lamina 1>' '<filas lamina 2>' (cada fila: {"dia","num","antes","nom","hora","color"}; color solo para el domingo, ej. "#ffd23f";
 2 o 3 filas por lamina). Necesita ffmpeg, Python con Pillow y Playwright.
