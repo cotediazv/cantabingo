@@ -78,6 +78,18 @@ test('sala light: el equipo la abre, cambia su GC y el público entra con nombre
   const { sid } = await srv.openRoom({ theme: 'kennedy' });
   assert.equal((await srv.ok('GET', '/api/light?local=kennedy')).sala, true);
   assert.equal((await srv.ok('GET', '/api/light?local=frida')).sala, false);
+  // Los botones del GC Light también mandan (reclamo de Cote, 27 nov, noche): gana lo último que se tocó
+  await sleep(5);
+  let gs = await srv.admin.post('/api/light/stage', { local: 'kennedy', show: 'karaoke' });
+  assert.equal(gs.sala, false); assert.equal(gs.salaHoy, true); assert.equal(gs.stage, 'karaoke');
+  await sleep(5);
+  await srv.admin.post('/api/stage', { show: 'qr' }); // un botón de la sala de juegos: el GC vuelve a la sala
+  assert.equal((await srv.ok('GET', '/api/light?local=kennedy')).sala, true);
+  await sleep(5);
+  await srv.admin.post('/api/light/stage', { local: 'kennedy', show: 'cartelera' });
+  assert.equal((await srv.ok('GET', '/api/light?local=kennedy')).sala, false);
+  gs = await srv.admin.post('/api/light/stage', { local: 'kennedy', show: 'sala' }); // botón «Sala de juegos» del panel light
+  assert.equal(gs.sala, true); assert.equal(gs.stage, 'cartelera');
   await srv.admin.post(`/api/sessions/${sid}/host/close`);
   assert.equal((await srv.ok('GET', '/api/light?local=kennedy')).sala, false);
   const cart = await srv.ok('GET', '/api/light/cartelera?local=kennedy');

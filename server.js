@@ -577,6 +577,7 @@ app.post('/api/projects/:id/session', (req, res) => {
   res.json({ id: started.id });
 });
 function startSession(p, b) {
+  db.salaAt = Date.now(); // al abrir la sala, el GC Light del local pasa a la sala de juegos
   const s = {
     id: shortId(), projectId: p.id, name: str(b.name, 50, p.name), password: str(b.password, 40),
     cardsPerPlayer: clamp(b.cardsPerPlayer, 1, 4, 1),
@@ -860,7 +861,7 @@ const setStage = (show) => {
   const famBefore = familyOf(db.stage);
   db.stage = show;
   if (changed && familyOf(show) && familyOf(show) !== famBefore) { cortinaJuego(); setTimeout(() => emisorCheck(), 0); if (familyOf(show) === 'desafio') { desafioIntroAt = Date.now(); require('./momentos.js').emit('desafio_inicio'); } } // desafio_inicio: 15 s de fiesta de luces con la música del comienzo (pedido de Cote por Code 4, 26 nov) // se cargó otro juego: la cortina (y en Kennedy, el emisor de la pantalla vertical)
-  if (changed) { perOff(); if (db.carton) db.carton.on = false; } // un juego tomó la pantalla: el GC PER y el cartón salen
+  if (changed) { perOff(); if (db.carton) db.carton.on = false; db.salaAt = Date.now(); } // un juego tomó la pantalla: el GC PER y el cartón salen
   save();
   if (changed) for (const s of Object.values(db.sessions)) broadcast(s); // los celulares se enteran del cambio de juego
   if (changed) aviso(); // y las pantallas, al instante
@@ -1102,6 +1103,12 @@ const insta = require('./insta.js')({ app, db, save, requireAdmin, fail, venue: 
 // manda la sala (como antes).
 const FONDO_GC = { kennedy: 'kennedy-h', frida: 'frida-h', tobalaba: 'tobalaba' }; // Frida y Tobalaba, igual (pedido de Cote, 27 nov)
 const salaDe = (v) => { const m = Object.values(db.sessions)[0]; return !!(m && !m.sim && (m.theme || 'frida') === v); };
+// Los días con sala de juegos, los botones del GC Light también mandan (reclamo de Cote, 27 nov, noche en Tobalaba: «les
+// pedí que los botones funcionaran»): gana lo último que se tocó. Un botón del GC Light pone su GC; cuando la sala de
+// juegos cambia lo que muestra (abrir la sala, cargar un juego, un botón de «En pantalla», el GC PER), el GC vuelve a la sala.
+// El botón «Sala de juegos» del panel light también la devuelve (stageAt = 0). Lo que el servidor pone solo (el fondo de
+// las 19:00 y la 01:00) no cuenta como toque.
+const salaManda = (v) => salaDe(v) && !((((db.lights || {})[v] || {}).stageAt || 0) > (db.salaAt || 0));
 const horaChile = () => Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
   .formatToParts(ahora()).map((x) => [x.type, x.value]));
 // El video horizontal del local, haya o no «FONDO» puesto: va de fondo detrás de la cartelera de la semana en el GC Light
@@ -1111,7 +1118,7 @@ const fondoDe = (v) => {
   const scr = FONDO_GC[v]; const c = scr && (db.vertical || {})[scr];
   if (!c || !c.video || ((db.lights || {})[v] || {}).stage !== 'fondo') return '';
   const h = +horaChile().hour;
-  if ((h >= 12 || h < 1) && salaDe(v)) return ''; // con la sala de juegos de este local abierta, manda la sala
+  if ((h >= 12 || h < 1) && salaManda(v)) return ''; // con la sala de juegos de este local abierta, manda la sala
   return `/vertical/${scr}.mp4?v=${c.video}`;
 };
 const fondoAuto = () => {
@@ -1127,7 +1134,7 @@ const fondoAuto = () => {
     }
   }
 };
-lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta, aviso, salaDe, fondoDe, fondoVid, reloj: () => ahora(), progShow: (v, n) => prog.showDe(n.y, n.m, n.d, { kennedy: 'MK', frida: 'FRIDA', tobalaba: 'TOB' }[v]) });
+lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta, aviso, salaDe, salaManda, fondoDe, fondoVid, reloj: () => ahora(), progShow: (v, n) => prog.showDe(n.y, n.m, n.d, { kennedy: 'MK', frida: 'FRIDA', tobalaba: 'TOB' }[v]) });
 setTimeout(fondoAuto, 2000); setInterval(fondoAuto, 20e3);
 // «El último en pie», versión de prueba (pedido de Cote, 23 nov)
 require('./enpie.js')({ placeOf, roscoBusy: () => roscoLock('enpie'), app, db, save, requireAdmin, fail, setStage, festejo,
@@ -1570,6 +1577,7 @@ app.post('/api/gcper', requireAdmin, (req, res) => {
   const text = b.text != null ? perClean(b.text) : perMain().text;
   if (b.on !== false && !text) return fail(res, 400, 'Escribe el texto del GC PER');
   db.gcper = { on: b.on !== false, text };
+  if (db.gcper.on) db.salaAt = Date.now();
   save(); aviso();
   res.json(perMain());
 });
@@ -1577,6 +1585,7 @@ app.post('/api/stage', requireAdmin, (req, res) => {
   const show = String((req.body || {}).show);
   if (!STAGES.includes(show)) return fail(res, 400, 'Opción no válida');
   if (setStage(show) === false) return fail(res, 409, 'El Rosko está en juego: la pantalla sigue en El Rosko hasta que termine la partida');
+  db.salaAt = Date.now(); aviso(); // un botón del GC de la sala de juegos: el GC Light vuelve a la sala (ver salaManda)
   if (perOff()) aviso(); // tocar un botón del GC saca el GC PER, aunque el escenario sea el mismo
   if (show === 'karaoke') karaoke.refresh(); // primera lectura inmediata, sin esperar al siguiente ciclo
   res.json({ show });

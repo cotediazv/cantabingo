@@ -17,7 +17,7 @@ const NIGHT_STARTS = 6; // la noche cambia a las 6 AM, igual que el karaoke
 const DAYS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 const GLOSA_MS = 10 * 60e3; // la GLOSA se relee cada 10 minutos
 
-module.exports = function light({ app, db, save, requireAdmin, requireLocal = requireAdmin, fail, karaoke, insta, aviso = () => {}, salaDe = () => false, fondoDe = () => '', fondoVid = () => '', reloj = () => new Date(), progShow = () => null }) {
+module.exports = function light({ app, db, save, requireAdmin, requireLocal = requireAdmin, fail, karaoke, insta, aviso = () => {}, salaDe = () => false, salaManda = salaDe, fondoDe = () => '', fondoVid = () => '', reloj = () => new Date(), progShow = () => null }) {
   // Una sala light por local (Kennedy, Frida y Tobalaba pueden estar abiertas a la vez)
   db.lights ||= {};
   if (db.light) { db.lights[db.light.venue] = db.light; db.light = null; } // salas guardadas antes de este cambio
@@ -152,7 +152,7 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
     // fondo: con el botón «FONDO KENNEDY», el video horizontal del local en lugar del GC (pedido de Cote, 27 nov)
     // sala: hoy hay sala de juegos (no simulada) de este local; el GC Light muestra el GC de la sala de juegos toda la
     // noche, enganchado a su QR (pedido de Cote, 27 nov: «tener que cambiarlo en OBS es una lata»)
-    return l ? { open: true, id: l.id, venue: v, name: VENUES[v], title: `Sala light · ${VENUES[v]}`, stage: l.stage, text: l.text || '', video: !!l.video, players: Object.keys(l.players).length, sala: !!salaDe(v), fondo: fondoDe(v), fondoVideo: fondoVid(v) } : { open: false, venue: v, name: VENUES[v], sala: !!salaDe(v), fondo: fondoDe(v) };
+    return l ? { open: true, id: l.id, venue: v, name: VENUES[v], title: `Sala light · ${VENUES[v]}`, stage: l.stage, text: l.text || '', video: !!l.video, players: Object.keys(l.players).length, sala: !!salaManda(v), salaHoy: !!salaDe(v), fondo: fondoDe(v), fondoVideo: fondoVid(v) } : { open: false, venue: v, name: VENUES[v], sala: !!salaManda(v), salaHoy: !!salaDe(v), fondo: fondoDe(v) };
   };
   // Sin ?local= devuelve la lista de las salas light abiertas (y, por compatibilidad, la primera)
   app.get('/api/light', (req, res) => {
@@ -181,7 +181,11 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
     const v = String(b.local || '');
     const show = String(b.show || '');
     if (!db.lights[v]) return fail(res, 404, 'No hay una sala light abierta en este local');
+    // «Sala de juegos» (días con sala de juegos en el local): el GC Light vuelve a mostrar la sala de juegos
+    if (show === 'sala') { db.lights[v].stageAt = 0; save(); aviso(); return res.json(pub(v)); }
     if (!STAGES.includes(show)) return fail(res, 400, 'Opción no válida');
+    // Los días con sala de juegos, el botón que se toca manda en el GC (gana lo último que se tocó; ver salaManda en server.js)
+    db.lights[v].stageAt = Date.now();
     // GC personalizable: el texto que se escribe en el panel (queda guardado para volver a usarlo)
     if (b.text != null) db.lights[v].text = clean(b.text, 120);
     if (show === 'custom' && !db.lights[v].text) return fail(res, 400, 'Escribe el texto del GC personalizable');

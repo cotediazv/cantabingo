@@ -83,9 +83,9 @@
       // Titulo chico y en una linea, sin el numero de personas (pedido de Cote, 27 nov: «no es relevante»)
       // Los botones del GC lo mas arriba posible (Cote, 27 nov): sin el subtitulo «En pantalla (GC)» (los botones ya dicen GC)
       top.innerHTML = `<h1 class="lp-title">${esc(st.title)}</h1>
-        ${st.stage === 'fondo' ? `<p class="lp-sala">🎬 <b>${{ kennedy: 'Fondo Kennedy', frida: 'Fondo Frida', tobalaba: 'Fondo Tobalaba' }[v] || 'Fondo'} en el GC de OBS.</b> Se pone solo a las 19:00 y a la 01:00. Para pasar al GC, toca otro botón.</p>` : ''}
-        ${st.sala ? '<p class="lp-sala">🎮 <b>Hoy hay sala de juegos en este local:</b> el GC Light de OBS muestra el GC de la sala de juegos (sus juegos, su karaoke y su QR) toda la noche. Estos botones vuelven a mandar en el GC cuando se cierre la sala de juegos.</p>' : ''}
-        <div class="lp-stages">${stagesOf(v).map(([k, i, t]) => `<button type="button" data-st="${k}" class="${st.stage === k ? 'on' : ''}"><span>${i}</span>${t}</button>`).join('')}</div>
+        ${st.stage === 'fondo' && !st.sala ? `<p class="lp-sala">🎬 <b>${{ kennedy: 'Fondo Kennedy', frida: 'Fondo Frida', tobalaba: 'Fondo Tobalaba' }[v] || 'Fondo'} en el GC de OBS.</b> Se pone solo a las 19:00 y a la 01:00. Para pasar al GC, toca otro botón.</p>` : ''}
+        ${st.salaHoy ? `<p class="lp-sala">🎮 <b>Hoy hay sala de juegos en este local.</b> ${st.sala ? 'Ahora el GC muestra la sala de juegos. Toca cualquier botón para poner ese GC.' : 'Ahora el GC muestra el botón que tocaste.'} Cuando el animador cambie de juego, el GC vuelve solo a la sala de juegos.</p>` : ''}
+        <div class="lp-stages">${st.salaHoy ? `<button type="button" data-st="sala" class="${st.sala ? 'on' : ''}"><span>🎮</span>SALA DE JUEGOS</button>` : ''}${stagesOf(v).map(([k, i, t]) => `<button type="button" data-st="${k}" class="${st.stage === k && !st.sala ? 'on' : ''}"><span>${i}</span>${t}</button>`).join('')}</div>
 `;
       // Orden de Cote (27 nov): arriba los botones del GC, luego la lista del karaoke y despues el GC personalizable.
       // El switch «Video cartelera» ya no va (Cote: «esta demas, eso funciona automatico»).
