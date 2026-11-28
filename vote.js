@@ -24,7 +24,7 @@ const FINAL_MS = Number(process.env.VOTE_OPEN_MS) || 8000; // la gran final tamb
 const GRACE_MS = 1000; // margen para los votos que venían en camino al llegar a cero
 const SIGNUP_MS = 90000; // El objeto más extraño: la inscripción dura 90 segundos (pedido de Cote, 20 nov)
 
-module.exports = function vote({ placeOf = () => '', app, db, save, requireAdmin, fail, setStage, findPlayer, venue, notify, festejo = () => {} }) {
+module.exports = function vote({ eventoNombre = () => '', placeOf = () => '', app, db, save, requireAdmin, fail, setStage, findPlayer, venue, notify, festejo = () => {} }) {
   const DRAW_STEP_MS = 1300; // la tómbola del sorteo de participantes: uno cada 1,3 s
   // Mientras gira la tómbola en pantalla no se sube a nadie (simulación del 26 nov: el botón verde se podía apretar y cortaba el sorteo)
   const rollingNow = (s) => !!(s.drawRoll && Date.now() - s.drawRoll.at < s.drawRoll.ms - 300);
@@ -46,7 +46,7 @@ module.exports = function vote({ placeOf = () => '', app, db, save, requireAdmin
   const scoreOf = (p) => ({ score: decOf(p) === 2 ? round2(avg(p)) : round1(avg(p)), dec: decOf(p) });
   const cap = () => v().max || MAX_PLAYERS;
   const karaoke = () => v().mode === 'karaoke';
-  const festival = () => `El Festival de ${SHORT[venue()] || 'Frida'}`;
+  const festival = () => `El Festival de ${SHORT[venue()] || (venue() === 'evento' && eventoNombre()) || 'Frida'}`; // en la copia de eventos, el nombre del evento
   const titleOf = (s) => s.title || (s.mode === 'karaoke' ? festival() : TITLE);
   const openMs = () => (karaoke() ? K_OPEN_MS : OPEN_MS);
   const signupMs = () => (karaoke() ? K_SIGNUP_MS : SIGNUP_MS);

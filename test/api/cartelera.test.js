@@ -87,3 +87,35 @@ test('cartelera: «Tributo a» y «Doble de» desde Programación', async () => 
   const f = await srv.ok('GET', '/api/light/cartelera?local=frida');
   assert.equal(f.show, 'DOBLE DE LUIS MIGUEL (PEDRO)');
 });
+
+// Horas del mes anterior (orden 9 de Code 0, pedido de Cote, 28 nov: Frida y Tobalaba quedaron sin horarios en la GLOSA;
+// «Usar las mismas horas del mes anterior»): si el GC Show entrega los horarios totalmente vacíos, la Sala usa los de la
+// cartelera pegada de ese local (sin el «Cierre»); el panel lo sabe; apenas la GLOSA trae horarios, mandan esos.
+test('sin horarios en la GLOSA: se usan las horas del mes anterior y vuelven las de la GLOSA apenas llegan', async () => {
+  if (!mock.listening) await new Promise((r) => mock.listen(0, r));
+  const VACIO = { pestana: 'NOVIEMBRE26 MASTER TOTAL', cartelera: [{ dia: 'SABADO 28', show: 'DOBLE DE RICKY MARTIN' }, { dia: 'DOMINGO 29', show: 'LOS JUEGOS DE FRIDA' }], horarios: [] };
+  resp = { ...VACIO, meses: [VACIO, { pestana: 'DICIEMBRE26 MASTER TOTAL', cartelera: [{ dia: 'VIERNES 4', show: 'DOBLE DE KAROL G' }], horarios: [] }] };
+  // sábado 28 a las 20:10: en la cartelera de noviembre de Frida, 19:00 Música, 19:30 Previa, 21:00 Dobles, 22:00 Karaoke y Fiesta
+  const srv = await startServer({ env: { GLOSA_TEST_URL: `http://localhost:${mock.address().port}/glosa`, KRB_FECHA: '2026-11-28T20:10:00-03:00' } });
+  srvs.push(srv);
+  let c = await srv.ok('GET', '/api/light/cartelera?local=frida');
+  assert.deepEqual(c.blocks.map((b) => `${b.time} ${b.label}`), ['19:00 MÚSICA', '19:30 PREVIA EN VIVO + KARAOKE', '21:00 DOBLES', '22:00 KARAOKE Y FIESTA']);
+  assert.equal(c.current.label, 'PREVIA EN VIVO + KARAOKE');
+  assert.equal(c.next.time, '21:00');
+  assert.equal(c.horasRespaldo, true);
+  assert.ok(!c.blocks.some((b) => /CIERRE/.test(b.label))); // el cierre no se muestra al público
+  assert.deepEqual(c.week.find((d) => d.date === 29).hours.map((h) => h.time), ['13:30', '14:00']); // domingo
+  assert.deepEqual(c.week.find((d) => d.date === 4 && d.month === 12).hours.map((h) => h.time), ['19:00', '19:30', '21:00', '22:00']);
+  assert.equal((await srv.ok('GET', '/api/light?local=frida')).horasRespaldo, true); // el panel del local lo avisa
+  // Tobalaba (viernes): las suyas
+  c = await srv.ok('GET', '/api/light/cartelera?local=tobalaba');
+  assert.deepEqual(c.week.find((d) => d.date === 4 && d.month === 12).hours.map((h) => `${h.time} ${h.label}`), ['18:30 MÚSICA', '19:00 PREVIA', '19:30 LOS JUEGOS DE TOBALABA', '20:15 SHOW', '21:15 KARAOKE']);
+  // La GLOSA vuelve a traer horarios: mandan esos (otro servidor, porque la GLOSA se relee cada 10 minutos)
+  resp = { ...VACIO, horarios: [{ dia: 'SABADO', hora: '20:00', actividad: 'PREVIA' }] };
+  const srv2 = await startServer({ env: { GLOSA_TEST_URL: `http://localhost:${mock.address().port}/glosa`, KRB_FECHA: '2026-11-28T20:10:00-03:00' } });
+  srvs.push(srv2);
+  c = await srv2.ok('GET', '/api/light/cartelera?local=frida');
+  assert.deepEqual(c.blocks.map((b) => `${b.time} ${b.label}`), ['20:00 PREVIA']);
+  assert.equal(c.horasRespaldo, false);
+  assert.equal((await srv2.ok('GET', '/api/light?local=frida')).horasRespaldo, false);
+});

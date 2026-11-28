@@ -145,5 +145,12 @@ module.exports = function agenda({ app, db, save, requireAdmin, fail, currentVen
     res.json({ ...state(), month: db.agenda.month, text: db.agenda.text, venues: VENUES });
   });
 
-  return { state };
+  // Horas de respaldo para la sala light (orden 9 de Code 0, pedido de Cote, 28 nov: «Usar las mismas horas del mes
+  // anterior»): las de la cartelera pegada de ese local para un día de la semana (0 = domingo), sin el «Cierre»
+  // En Tobalaba, «Bingo» se dice como lo entregaba la GLOSA el 19 nov (Code 0, 28 nov)
+  const RENOMBRA = { tobalaba: { BINGO: 'LOS JUEGOS DE TOBALABA' } };
+  const horasDe = (venue, dow) => (parse(db.agenda.text[venue]).blocks[dow] || [])
+    .filter((b) => !/^cierre\b/i.test(b.label))
+    .map((b) => ({ time: b.time, label: (RENOMBRA[venue] || {})[b.label.toUpperCase()] || b.label.toUpperCase() }));
+  return { state, horasDe };
 };

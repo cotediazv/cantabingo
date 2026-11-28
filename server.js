@@ -15,6 +15,9 @@ const DATA_FILE = process.env.DATA_FILE || path.join(hasDisk ? DISK_DIR : __dirn
 // 29 nov). Nombre libre al crear la sala, colores de la marca y sin logos de locales, solo Bingo y ¿Quién quiere ser
 // ganador?, y sin nada automático de los locales (salas, karaoke, luces).
 const EVENTO = process.env.MODO_EVENTO === '1';
+// Nombre del evento de la sala abierta («Los Juegos de Colada Continua» → «Colada Continua»): lo usan los juegos que en un
+// local llevan su nombre, como «El Festival de <local>» (orden 12 de Code 0, 28 nov)
+const eventoNombre = () => { const s = Object.values(db.sessions || {})[0]; return String((s && s.name) || '').replace(/^Los Juegos de\s+/i, '').trim(); };
 const SESSION_HOURS = EVENTO ? 14 : 8; // cuánto dura una sesión de bingo desde que se activa (un evento puede ir de 9:00 a 18:00)
 
 // ---------- Almacenamiento (JSON en disco) ----------
@@ -402,6 +405,8 @@ const requireAdmin = (req, res, next) => (validToken(req.get('x-admin')) ? next(
 // Registro de clientes (pedido de Cote, 22 nov): va antes de las rutas, porque mira pasar lo que el público hace desde el
 // celular (entrar, responder la Trivia, votar, pedir canciones…) y lo anota en la ficha de cada persona (clientes.js)
 require('./clientes.js')({ app, db, requireAdmin, dir: path.dirname(DATA_FILE), port: PORT });
+// Respaldo diario de los datos (Code 0, 28 nov): en el disco (14 días) y, si se configura, en el Drive de Cote
+require('./respaldo.js')({ app, db, save, requireAdmin, dataFile: DATA_FILE, reloj: () => ahora() });
 const attempts = {}; // ip -> { n, until }: frena los intentos de adivinar la contraseña
 
 // ---------- Acceso del equipo de cada local (sala light) ----------
@@ -899,20 +904,25 @@ const cortinaJuego = () => { const s = Object.values(db.sessions)[0]; if (s) cap
 // Necesita en Render RENDER_API_KEY (clave de la API de Render; nunca en el repositorio) y EMISOR_CRON (el id del Cron
 // Job, crn-…). El emisor se apaga solo tras 10 minutos sin juego.
 const emisor = { latido: 0, pedido: 0, error: '' };
+// Solo el emisor puede avisar que corre, mandar su foto o las imágenes del plan B (orden de Code 0, 28 nov: «que rechace por
+// defecto»): con EMISOR_CLAVE puesta en Render, en el servicio y en el Cron Job, con el mismo valor (nunca en el
+// repositorio). Sin ella, el emisor queda apagado: la Sala no lo arranca y rechaza sus avisos.
+const emisorClave = () => String(process.env.EMISOR_CLAVE || '');
+const emisorAuth = (req) => {
+  const k = emisorClave(); const v = String(req.get('x-emisor') || '');
+  if (!k || v.length !== k.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(v), Buffer.from(k));
+};
 const BOOT_AT = Date.now(); let emisorBootDone = false;
 app.post('/api/emisor/latido', (req, res) => {
+  if (!emisorAuth(req)) return res.status(403).json({ error: 'No autorizado' });
   if (String((req.body || {}).pantalla || '') !== 'kennedy') return res.json({ ok: true });
   emisor.latido = Date.now();
   // Tras cada publicación (la Sala recién arrancada), el emisor que ya venía corriendo se reinicia una vez: su página pudo
   // recargarse mientras la Sala no respondía y quedar en algo que no es la pantalla vertical (26 nov: transmitió el ingreso
   // del moderador). Solo en los primeros 3 minutos tras arrancar y una sola vez (el turno nuevo ya no se reinicia)
   if (!emisorBootDone && Date.now() - BOOT_AT < 180000 && process.env.RENDER_API_KEY && process.env.EMISOR_CRON) { emisorBootDone = true; setTimeout(() => { emisor.latido = 0; emisorCheck(true); }, 1000); }
-  // la marca para mandar las imágenes del plan B (si no hay EMISOR_CLAVE): una nueva cada vez que parte un turno del emisor,
-  // y se entrega una sola vez, en el primer aviso de ese turno
-  const run = String((req.body || {}).run || '').slice(0, 40);
-  let marca;
-  if (!process.env.EMISOR_CLAVE && run && run !== cuadroRun) { cuadroRun = run; cuadroMarca = crypto.randomBytes(16).toString('hex'); marca = cuadroMarca; }
-  res.json({ ok: true, marca });
+  res.json({ ok: true });
 });
 // Panel del DJ de las luces de Kennedy dentro del karaoke de la sala light (pedido de Cote, 25 nov, por Claude 1 y Code 4:
 // «que se pueda cambiar la pestaña… y que se transforme en la página que ve el DJ para mover las luces… todo en un solo
@@ -1009,6 +1019,7 @@ app.post('/api/deco/recargar', requireAdmin, (req, res) => {
 // abrió y si la captura sale negra). La manda el emisor cada minuto; solo en memoria, solo la última.
 let emisorFoto = null;
 app.post('/api/emisor/foto', express.raw({ type: 'image/jpeg', limit: '700kb' }), (req, res) => {
+  if (!emisorAuth(req)) return res.status(403).json({ error: 'No autorizado' });
   if (!Buffer.isBuffer(req.body) || req.body.length < 100) return res.json({ ok: false });
   emisorFoto = { img: req.body, at: Date.now(), luz: Number(req.get('x-luz')), cap: (() => { const c = String(req.get('x-cap') || ''); try { return decodeURIComponent(c).slice(0, 300); } catch (e) { return c.slice(0, 300); } })() }; // con lo que ve el navegador del emisor (26 nov)
   res.json({ ok: true });
@@ -1021,13 +1032,11 @@ app.get('/api/emisor/foto', requireAdmin, (_req, res) => {
 // funcionar… otro tipo de transmisión, otro formato, algo más antiguo»): además de la transmisión en vivo (WebRTC), el
 // emisor manda una imagen por segundo de la misma página; la pantalla liviana (pv.html) la muestra cuando su navegador no
 // tiene WebRTC, cuando la transmisión no llega o cuando está puesto el plan B en /emisor. Solo en memoria, solo la última.
-// Las imágenes solo las acepta del emisor: con EMISOR_CLAVE en Render (las dos partes) o, si no está, con la marca que el
-// servidor le entrega al emisor en su primer aviso de vida (una vez por cada vez que parte el servidor)
-let emisorCuadro = null; let cuadroMarca = ''; let cuadroRun = '';
-const cuadroClave = () => process.env.EMISOR_CLAVE || cuadroMarca;
+// Las imágenes solo las acepta del emisor: con EMISOR_CLAVE en Render (las dos partes; desde el 28 nov ya no hay marca sin
+// clave: sin EMISOR_CLAVE se rechazan)
+let emisorCuadro = null;
 app.post('/api/emisor/cuadro', express.raw({ type: 'image/jpeg', limit: '500kb' }), (req, res) => {
-  const k = String(req.get('x-emisor') || '');
-  if (!k || k !== cuadroClave()) return res.status(403).json({ error: 'No autorizado' });
+  if (!emisorAuth(req)) return res.status(403).json({ error: 'No autorizado' });
   if (!Buffer.isBuffer(req.body) || req.body.length < 100) return res.json({ ok: false });
   emisorCuadro = { img: req.body, at: Date.now(), p: String(req.get('x-pantalla') || 'kennedy') };
   res.json({ ok: true });
@@ -1061,7 +1070,7 @@ app.post('/api/emisor/codec', requireAdmin, (req, res) => {
   db.emisorCodec = c; save(); res.json({ codec: c });
 });
 app.post('/api/emisor/prueba', requireAdmin, (req, res) => { db.emisorPrueba = !!(req.body || {}).on; save(); setTimeout(() => emisorCheck(), 0); res.json({ prueba: db.emisorPrueba }); });
-app.get('/api/emisor', requireAdmin, (_req, res) => res.json({ planB: emisorModo() === 'b', modo: emisorModo(), codec: db.emisorCodec || 'vp8', res: db.emisorRes || 720, cuadro: emisorCuadro ? Math.round((Date.now() - emisorCuadro.at) / 1000) : null, corriendo: Date.now() - emisor.latido < 90000, prueba: !!db.emisorPrueba, latido: emisor.latido, pedido: emisor.pedido, error: emisor.error, configurado: !!(process.env.RENDER_API_KEY && process.env.EMISOR_CRON) }));
+app.get('/api/emisor', requireAdmin, (_req, res) => res.json({ planB: emisorModo() === 'b', modo: emisorModo(), codec: db.emisorCodec || 'vp8', res: db.emisorRes || 720, cuadro: emisorCuadro ? Math.round((Date.now() - emisorCuadro.at) / 1000) : null, corriendo: Date.now() - emisor.latido < 90000, prueba: !!db.emisorPrueba, latido: emisor.latido, pedido: emisor.pedido, error: emisor.error, configurado: !!(process.env.RENDER_API_KEY && process.env.EMISOR_CRON), clave: !!emisorClave() }));
 // Hay un juego de verdad en pantalla (no solo la sala abierta con el QR): lo mismo que hace pasar la pantalla vertical a la sala
 const juegoEnPantalla = (s) => {
   const st = db.stage;
@@ -1073,7 +1082,7 @@ const juegoEnPantalla = (s) => {
 const emisorCheck = (forzar) => {
   const key = process.env.RENDER_API_KEY; const cron = process.env.EMISOR_CRON;
   const s = Object.values(db.sessions)[0];
-  if (!key || !cron) return;
+  if (!key || !cron || !emisorClave()) return; // sin EMISOR_CLAVE no se arranca: sus avisos se rechazarían
   // Modo prueba (Cote, 25 nov: «hoy necesita que se quede en prueba y prendido todo el tiempo»): el emisor corre y transmite
   // siempre, haya o no juego (se enciende y apaga en el Centro de control)
   if (!db.emisorPrueba && !forzar) {
@@ -1091,6 +1100,7 @@ setInterval(emisorCheck, 30000);
 // última versión del emisor). Para cuando la emisión quedó pegada en algo raro.
 app.post('/api/emisor/reiniciar', requireAdmin, (_req, res) => {
   if (!process.env.RENDER_API_KEY || !process.env.EMISOR_CRON) return fail(res, 409, 'Falta poner RENDER_API_KEY y EMISOR_CRON en Render');
+  if (!emisorClave()) return fail(res, 409, 'Falta poner EMISOR_CLAVE en Render (en cantabingo y en el Cron Job del emisor, el mismo valor)');
   emisor.latido = 0; emisorCheck(true); res.json({ ok: true });
 });
 require('./momentos.js').init({ app, db, aviso, momentoLive }); // momentos de los juegos para las luces (lista acordada con Code 4)
@@ -1123,7 +1133,7 @@ const karaoke = require('./karaoke.js')({ karAbierto: () => luzKar(), app, db, s
   findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || (lightApi ? lightApi.findPlayer(sid, token) : null),
   lightVenue: (sid) => (lightApi ? lightApi.venueOf(sid) : ''), extraVenues: () => (lightApi ? lightApi.pollVenues() : []) });
 // Votación del público (nota del 1 al 10 desde el celular)
-const vote = require('./vote.js')({ placeOf, app, db, save, requireAdmin, fail, setStage, festejo,
+const vote = require('./vote.js')({ eventoNombre, placeOf, app, db, save, requireAdmin, fail, setStage, festejo,
   findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null,
   venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
   notify: () => Object.values(db.sessions).forEach((s) => broadcast(s)) });
@@ -1181,7 +1191,8 @@ const fondoAuto = () => {
     }
   }
 };
-lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta, aviso, salaDe, salaManda, fondoDe, fondoVid, alCambiar: () => { for (const s of Object.values(db.sessions)) broadcast(s); }, reloj: () => ahora(), progShow: (v, n) => prog.showDe(n.y, n.m, n.d, { kennedy: 'MK', frida: 'FRIDA', tobalaba: 'TOB' }[v]) });
+let agendaApi = null; // horas de respaldo de la sala light (la cartelera pegada), orden 9 de Code 0, 28 nov
+lightApi = require('./light.js')({ horasRespaldo: (v, dow) => (agendaApi ? agendaApi.horasDe(v, dow) : []), app, db, save, requireAdmin, requireLocal, fail, karaoke, insta, aviso, salaDe, salaManda, fondoDe, fondoVid, alCambiar: () => { for (const s of Object.values(db.sessions)) broadcast(s); }, reloj: () => ahora(), progShow: (v, n) => prog.showDe(n.y, n.m, n.d, { kennedy: 'MK', frida: 'FRIDA', tobalaba: 'TOB' }[v]) });
 setTimeout(fondoAuto, 2000); setInterval(fondoAuto, 20e3);
 // «El último en pie», versión de prueba (pedido de Cote, 23 nov)
 require('./enpie.js')({ placeOf, roscoBusy: () => roscoLock('enpie'), app, db, save, requireAdmin, fail, setStage, festejo,
@@ -1249,7 +1260,7 @@ app.get('/api/consola', requireAdmin, async (_req, res) => {
   res.json({ locales: out, at: Date.now() });
 });
 // Programación del local del día: el de la sala abierta o, si no hay, el elegido en la sección Karaoke
-require('./agenda.js')({ app, db, save, requireAdmin, fail, currentVenue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
+agendaApi = require('./agenda.js')({ app, db, save, requireAdmin, fail, currentVenue: () => (Object.values(db.sessions)[0] || {}).theme || (db.karaoke || {}).venue || 'frida' });
 
 // Sorteo del siguiente juego (pedido de Cote): la sala parte en Juegos, sin bingo (21 nov), y se sortea entre todos los juegos
 // (Bingo, El Rosko, El Festival y El objeto más extraño; el karaoke no es un juego), el bingo incluido desde el primer
@@ -1257,10 +1268,12 @@ require('./agenda.js')({ app, db, save, requireAdmin, fail, currentVenue: () => 
 // El sorteo se ve en el tablero y en el GC (escenario «juego»).
 // ¿Quién quiere ser ganador? entra a los juegos disponibles (Manual, Por sorteo y Por votación): Cote, 26 nov, respuesta 34.1
 // («que lo deje dentro de los juegos ya disponibles, porque el juego ya está terminado»)
-const DRAW_GAMES = EVENTO ? ['bingo', 'desafio'] : ['bingo', 'rosco', 'festival', 'objeto', 'desafio']; // en un evento, solo Bingo y ¿Quién quiere ser ganador?
+// Copia de eventos: todos los juegos, igual que en los locales (orden 12 de Code 0, pedido de Cote, 28 nov: «Quisiera que
+// estuvieran todos los juegos»; antes solo Bingo y ¿Quién quiere ser ganador?)
+const DRAW_GAMES = ['bingo', 'rosco', 'festival', 'objeto', 'desafio'];
 db.gameDraw ||= { played: [], last: null };
 if (!db.gameDraw.rule2) { db.gameDraw.played = db.gameDraw.last ? [db.gameDraw.last.game] : []; db.gameDraw.rule2 = true; }
-const drawPub = () => ({ ...db.gameDraw, total: Math.max(db.gameDraw.total || 3, (db.gameDraw.list || []).length + 1), how: howOf(), free: howOf() === 'manual', undo: undefined, undoable: !!(db.gameDraw.undo || []).length, games: DRAW_GAMES, evento: EVENTO, venue: (Object.values(db.sessions)[0] || {}).theme || 'frida', now: Date.now() });
+const drawPub = () => ({ ...db.gameDraw, total: Math.max(db.gameDraw.total || 3, (db.gameDraw.list || []).length + 1), how: howOf(), free: howOf() === 'manual', undo: undefined, undoable: !!(db.gameDraw.undo || []).length, games: DRAW_GAMES, evento: EVENTO, ...(EVENTO ? { eventoNombre: eventoNombre() } : {}), venue: (Object.values(db.sessions)[0] || {}).theme || 'frida', now: Date.now() });
 app.get('/api/gamedraw', (_req, res) => res.json(drawPub()));
 // Cuántos juegos se sortean esa noche (pedido de Cote): 1.º, 2.º, 3.º… sorteados
 db.gameDraw.list ||= [];
@@ -1535,7 +1548,11 @@ app.post('/api/gamevote/reset', requireAdmin, (_req, res) => {
 
 // Leer la pantalla actual es público, para que la fuente de OBS no necesite iniciar sesión; cambiarla es del moderador.
 // Diseño nuevo de las pantallas (pedido de Cote, 22 nov): encendido salvo que se apague en el Centro de control
-app.get('/api/tema', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json({ on: db.tema !== false, pub: db.pubUrl || '', evento: EVENTO }); });
+app.get('/api/tema', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json({ on: db.tema !== false, pub: db.pubUrl || '', evento: EVENTO, ...(EVENTO ? { eventoNombre: eventoNombre() } : {}), priv: !!db.privacidad }); });
+// Aviso de datos personales al entrar (decisión de Cote, pregunta 9.2: desde diciembre, Ley 21.719; preparado por orden de
+// Code 0, 28 nov): una línea en la entrada de la sala de juegos y de la sala light. Apagado por defecto; se enciende en el
+// Centro de control. El texto final y la fecha los confirma Cote.
+app.post('/api/privacidad', requireAdmin, (req, res) => { db.privacidad = (req.body || {}).on === true; save(); aviso(); res.json({ on: db.privacidad }); });
 app.post('/api/tema', requireAdmin, (req, res) => { db.tema = (req.body || {}).on !== false; save(); res.json({ on: db.tema }); });
 // Dirección de los QR (pedido de Cote, 22 nov: llevar a la gente a krbstage.cl; eligió la opción A, juegos.krbstage.cl):
 // la sala es la misma y las direcciones de siempre siguen funcionando (OBS, pantallas y decodificadores no se tocan);
@@ -1588,7 +1605,7 @@ const cartonInfo = () => {
     }
   } else if (st === 'voto') {
     const v = db.vote || {};
-    out.title = v.mode === 'karaoke' ? (v.title || `El Festival de ${({ kennedy: 'Mercado Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' })[out.venue] || ''}`) : (v.title || 'El objeto más extraño');
+    out.title = v.mode === 'karaoke' ? (v.title || `El Festival de ${({ kennedy: 'Mercado Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' })[out.venue] || (out.venue === 'evento' ? eventoNombre() : '')}`) : (v.title || 'El objeto más extraño');
     const id = v.open || v.onstage; const p = (v.players || []).find((x) => x.id === id);
     out.big = p ? p.name : v.winner ? v.winner.name : '¡Participa!'; out.small = p ? (v.mode === 'karaoke' ? 'En el escenario' : 'Presenta su objeto') : v.winner ? 'Ganó' : '';
     if (p && p.thing) out.lines.push(p.thing);

@@ -115,6 +115,14 @@ window.gcPer = (() => {
 })();
 // Marca al azar de este navegador (sin datos personales): sirve para contar a los conectados sin repetir y para saber,
 // en el registro de clientes, cuántas veces vuelve el mismo celular
+// Aviso de datos personales en la entrada (pregunta 9.2 de Cote; apagado salvo que se encienda en el Centro de control)
+const PRIV_URL = 'https://krbstage.cl/privacidad.html';
+window.privLine = async () => {
+  try {
+    const r = await (await fetch('/api/tema', { cache: 'no-store' })).json();
+    return r && r.priv ? `<p class="priv-line small muted">Al participar aceptas que KRB Stage guarde tu nombre y tu participación. <a href="${PRIV_URL}" target="_blank" rel="noopener">Política de privacidad</a></p>` : '';
+  } catch (e) { return ''; }
+};
 window.vid = () => { let v = store.get('vid'); if (!v) { v = rnd(8); store.set('vid', v); } return v; };
 let toastTimer;
 function toast(msg) {
@@ -360,6 +368,13 @@ views.home = async () => {
       <p style="margin-top:28px"><button id="logout">Cerrar sesión de moderador</button></p>
     </div>`;
   $('#logout').onclick = () => { store.del('adminToken'); route(); };
+  // Copia de eventos (orden 12 de Code 0, pedido de Cote, 28 nov: «debería decir en alguna parte eventos y cambiar el color
+  // del botón»): arriba «Eventos» y el botón principal en el dorado de la marca
+  const tm = await fetch('/api/tema', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({}));
+  if (tm.evento && document.querySelector('.home')) {
+    document.querySelector('.home').classList.add('home-evento');
+    document.querySelector('.home h1').insertAdjacentHTML('beforebegin', '<p class="home-ev-tag">🎪 Eventos</p>');
+  }
   // Si la sala abierta es simulada, se dice al lado de «Continuar»
   const sim = await api('GET', '/api/sim').catch(() => null);
   const go = document.querySelector('.home-create.open');
@@ -626,11 +641,15 @@ views.nuevo = async () => {
   // Copia de eventos (Cote, 27 nov: «una sala aparte… para eventos externos»): en vez del local, el nombre del evento
   const ev = !!(await fetch('/api/tema', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({}))).evento;
   if (ev) {
+    // orden 12 de Code 0, pedido de Cote (28 nov): «debería decir número de participantes. Y crear juego»
+    const cnt = f.querySelector('input[name="count"]').closest('label');
+    cnt.innerHTML = cnt.innerHTML.replace('Número de cartones', 'Número de participantes');
+    f.querySelector('.wide button.primary').textContent = 'Crear juego';
     f.querySelector('.wide').outerHTML = `<label class="f wide">Nombre del evento<input type="text" id="evname" maxlength="45" required placeholder="Ej.: Colada Continua"></label>
-      <p class="muted small wide" id="ev-note">La sala se llamará «Los Juegos de …» y el bingo «El Bingo de …». Juegos: Bingo y ¿Quién quiere ser ganador?</p>`;
+      <p class="muted small wide" id="ev-note">La sala se llamará «Los Juegos de …» y el bingo «El Bingo de …».</p>`;
     $('#pname-wrap').remove(); $('#ptheme-wrap').remove();
     f.insertAdjacentHTML('afterbegin', '<input type="hidden" name="theme" value="evento"><input type="hidden" name="name" value="">');
-    $('#evname').oninput = (e) => { const n = e.target.value.trim(); f.name.value = n ? `Los Juegos de ${n}` : ''; $('#ev-note').textContent = n ? `La sala se llamará «Los Juegos de ${n}» y el bingo «El Bingo de ${n}». Juegos: Bingo y ¿Quién quiere ser ganador?` : 'La sala se llamará «Los Juegos de …» y el bingo «El Bingo de …». Juegos: Bingo y ¿Quién quiere ser ganador?'; };
+    $('#evname').oninput = (e) => { const n = e.target.value.trim(); f.name.value = n ? `Los Juegos de ${n}` : ''; $('#ev-note').textContent = n ? `La sala se llamará «Los Juegos de ${n}» y el bingo «El Bingo de ${n}».` : 'La sala se llamará «Los Juegos de …» y el bingo «El Bingo de …».'; };
     setTimeout(() => $('#evname').focus(), 50);
   }
   // Pestañas de local: cada una fija el nombre y los colores de la pantalla; «Otro nombre» deja elegirlos
@@ -752,6 +771,9 @@ function hostSetup(p) {
 window.readAloud = (game, lines) => `<details class="panel howto" open><summary>📢 Instrucciones · ${esc(game)}</summary><ul>${lines.map((l) => `<li>${l}</li>`).join('')}</ul></details>`;
 // Pedido de Cote (20 nov): las instrucciones en pantalla van ordenadas, cada una en su línea, sin pasarse para abajo:
 // si no cabe en el ancho de la pantalla, se achica la letra
+// Top 5 de la Trivia en el celular (pedido de Code 2 por Code 0, 28 nov; regla de Cote: nombres siempre completos): si un
+// nombre no cabe, se achica la letra en vez de cortarlo con «…»
+window.fitTopNames = (root) => { if (root) root.querySelectorAll('.pcrowd-top span').forEach((el) => window.fitOneLine(el, 9)); };
 window.fitOneLine = (el, min = 9) => {
   if (!el || !el.isConnected) return;
   el.style.fontSize = '';
@@ -985,6 +1007,7 @@ views.jugar = async (sid) => {
   if (!me) {
     let info;
     try { info = await api('GET', `/api/sessions/${sid}`); } catch { backToStart(); return undefined; }
+    const priv = await window.privLine();
     app.innerHTML = `<form class="panel" id="f" style="max-width:460px;margin:0 auto">
       <h1>${esc(info.name)}</h1><p class="muted">Recibirás ${info.cardsPerPlayer} ${info.cardsPerPlayer > 1 ? 'cartones' : 'cartón'} en este dispositivo. No necesitas cuenta.</p>
       <div class="fields" style="grid-template-columns:1fr">
@@ -992,7 +1015,7 @@ views.jugar = async (sid) => {
         <label class="f">Apellido<input type="text" name="surname" maxlength="25" autocomplete="family-name" autocapitalize="words" value="${esc(store.get('playerLast') || '')}" required></label>
         ${info.places && info.places.length ? `<label class="f">¿Dónde estás?<select name="place" required><option value="">Elige tu lugar</option>${info.places.map((x) => `<option>${esc(x)}</option>`).join('')}</select></label>` : ''}
         ${info.locked ? '<label class="f">Contraseña de la sesión<input type="text" name="password" required></label>' : ''}
-        <button class="primary big">Unirse</button>
+        <button class="primary big">Unirse</button>${priv}
       </div></form>`;
     $('#f').onsubmit = async (e) => {
       e.preventDefault();
@@ -1096,6 +1119,7 @@ views.jugar = async (sid) => {
     $('#prosco').innerHTML = `<div class="prosco-head big"><b>Trivia del Rosko</b><span></span><span class="prosco-clock" id="prosco-clock">${rosco.winner || rosco.finished ? '' : fmtClock(roscoLeft())}</span></div>
       ${rankBox}${body}${reveal}${crowdHTML()}
       ${top}`;
+    window.fitTopNames($('#prosco'));
   };
   const stopRosco = () => { if (roscoEs) roscoEs.close(); clearInterval(roscoTick); clearTimeout(crowdTimer); roscoEs = null; roscoId = null; rosco = null; crowdMine = {}; crowdOrder = []; crowdInfo = null; };
   // Durante el karaoke: se guarda el cartón y aparece el formulario para pedir canción.
@@ -2082,10 +2106,12 @@ views.karaokectl = async (local) => {
 
 // Menú de abajo en el panel de todos los juegos (pedido de Cote): «Sortear juego» y después los juegos con su ícono;
 // más abajo, las demás actividades
+// Nombre corto del local (o del evento, en la copia de eventos: orden 12 de Code 0, 28 nov)
+window.lugarCorto = (v) => ({ frida: 'Frida', kennedy: 'Mercado Kennedy', tobalaba: 'Tobalaba' })[v] || (v === 'evento' ? (window.EVENTO_NOMBRE || 'el evento') : 'Frida');
 const GAME_INFO = (venue) => ({
   bingo: { icon: '🎱', name: 'Bingo', href: '' },
   rosco: { icon: '🎡', name: 'El Rosko', href: '#/sorteoctl' },
-  festival: { icon: '🎤', name: `El Festival de ${{ frida: 'Frida', kennedy: 'Mercado Kennedy', tobalaba: 'Tobalaba' }[venue] || 'Frida'}`, href: '#/votoctl/festival' },
+  festival: { icon: '🎤', name: `El Festival de ${window.lugarCorto(venue)}`, href: '#/votoctl/festival' },
   objeto: { icon: '🗳️', name: 'El objeto más extraño', href: '#/votoctl/objeto' },
   desafio: { icon: '🏆', name: '¿Quién quiere ser ganador?', href: '#/desafioctl' },
 });
@@ -2155,6 +2181,7 @@ async function paintGameNav() {
   const how = g.how || (g.free ? 'manual' : 'sorteo'); // pestaña elegida: «Manual», «Por sorteo» o «Por votación»
   // Copia de eventos (Cote, 27 nov): solo los juegos del evento y la pestaña «Manual», abierta de una
   if (g.evento) {
+    if (g.eventoNombre) window.EVENTO_NOMBRE = g.eventoNombre;
     document.querySelectorAll('.games-nav [data-game]').forEach((el) => { el.hidden = !(g.games || []).includes(el.dataset.game); });
     if (!navOpen) navOpen = 'manual';
   }
