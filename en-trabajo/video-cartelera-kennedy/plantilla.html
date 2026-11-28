@@ -137,32 +137,17 @@ body{background:var(--noche);color:var(--texto);font-family:var(--txt);padding-l
 .dia,.dia.jue{max-height:none}
 .njpaso .jueves{flex:1;padding-bottom:192px}
 .njpaso .jueves>div{flex:1 1 0}
-/* paso 3 sin la frase: los jueves ocupan el espacio con letra más grande */
-.njpaso .jueves{margin-top:40px;gap:16px}
-.njpaso .jueves>div{grid-template-columns:130px minmax(0,1fr) 130px}
-.njpaso .jueves .fj small{font-size:19px}
-.njpaso .jueves .fj b{font-size:124px}
-.njpaso .jueves em{font-size:54px}
-.njpaso .jueves span{font-size:64px}
-.njpaso .jueves .ico{width:130px;height:120px}
-/* versión 6 (Cote, 14:02): 20 horas grande, 21 horas en cada show, 22 horas karaoke night */
-.njpaso .grande{position:relative}
-.njpaso .h20{position:absolute;right:0;top:12px;display:flex;align-items:baseline;gap:12px;line-height:.8}
-.njpaso .h20 b{display:block;color:var(--texto);font-size:116px}
-.njpaso .h20 span{display:block;font-family:var(--disp);font-weight:900;font-size:52px;letter-spacing:.02em;color:var(--foco)}
-.njpaso .como{margin-top:18px;gap:18px}
-.njpaso .como .ico{width:150px;height:116px}
-.njpaso .como p{font-size:29px;line-height:1.3}
-.njpaso .jueves{margin-top:22px;gap:12px;padding-bottom:0;flex:1}
-.njpaso .jueves>div{padding-top:8px;padding-bottom:8px}
+/* versión 7 (Cote, 15:29): «Noche de juegos» con el aspecto de la versión 4 y las horas discretas (V-A) */
+.njpaso .jueves .h21{display:block;font-style:normal;font-family:var(--mono);font-weight:700;font-size:20px;letter-spacing:.14em;color:var(--foco);margin-top:6px}
+.njpaso .jueves{padding-bottom:0}
+.njpaso .jueves>div{padding-top:6px;padding-bottom:6px;min-height:0}
 .njpaso .jueves .fj b{font-size:104px}
-.njpaso .jueves .ico{width:120px;height:104px}
-.njpaso .jueves em{font-size:44px}
+.njpaso .jueves em{font-size:46px}
 .njpaso .jueves span{font-size:58px}
-.njpaso .jueves .h21{display:block;font-style:normal;font-family:var(--mono);font-weight:700;font-size:24px;letter-spacing:.14em;color:var(--foco);margin-top:6px}
-.njpaso .kn{margin:12px 0 192px;display:flex;align-items:baseline;justify-content:space-between;background:var(--tarima);border-left:8px solid var(--verde);padding:14px 22px 12px}
-.njpaso .kn b{font-family:var(--disp);font-weight:900;font-size:56px;line-height:1;color:var(--foco)}
-.njpaso .kn span{font-family:var(--disp);font-weight:800;font-size:48px;line-height:1;text-transform:uppercase}
+.njpaso .jueves .ico{width:120px;height:104px}
+.njpaso .kn{margin:12px 0 192px;display:flex;align-items:baseline;justify-content:space-between;background:var(--tarima);border-left:8px solid var(--verde);padding:12px 22px 10px}
+.njpaso .kn b{font-family:var(--disp);font-weight:900;font-size:44px;line-height:1;color:var(--foco)}
+.njpaso .kn span{font-family:var(--disp);font-weight:800;font-size:40px;line-height:1;text-transform:uppercase}
 /* el jueves nunca se corta: mide al menos lo que pide su contenido; con 4 tarjetas, las otras se compactan */
 .dia.jue{min-height:min-content}
 .dias.cuatro .dia:not(.jue){min-height:0;padding-top:10px;padding-bottom:10px}
@@ -177,7 +162,7 @@ body{background:var(--noche);color:var(--texto);font-family:var(--txt);padding-l
 <div class="pagina">
   <header>
     <h1>Cartelera vertical · <b>Mercado Kennedy</b></h1>
-    <p>Propuesta única (versión 4): la semana en tarjetas de la A, con la noche destacada en grande y el mes completo de la B. Gira sola; toca un paso para verlo fijo.</p>
+    <p>Propuesta única (versión 7): la semana en tarjetas de la A, con la noche destacada en grande y el mes completo de la B. Gira sola; toca un paso para verlo fijo.</p>
   </header>
   <div class="vista">
     <div class="marco"><div class="escala"><div class="scr" id="s"></div></div></div>
@@ -305,8 +290,8 @@ function pasos() {
   P.push({ n: esHoy(prox) ? 'Hoy' : 'Próxima noche', h: `<span class="eti">${esHoy(prox) ? 'Hoy en el escenario' : 'La próxima noche'}</span><div class="spot">${spot(prox)}</div>` });
   // 3) noche de juegos, grande
   const jue = NOCHES.filter(n => n.juegos);
-  P.push({ n: 'Noche de juegos', h: `<div class="njpaso" style="display:contents"><span class="eti oro">Todos los jueves</span>
-    <div class="grande">Noche <b>de juegos</b><div class="h20"><b>20</b><span>HORAS</span></div></div>
+  P.push({ n: 'Noche de juegos', h: `<div class="njpaso" style="display:contents"><span class="eti oro">Todos los jueves · 20 HORAS</span>
+    <div class="grande">Noche <b>de juegos</b></div>
     <div class="como">${ico('juegos', 'var(--foco)')}<p>Juegas desde tu celular: <b>bingo, trivia y más</b>, con premios.</p></div>
     <div class="jueves">${jue.slice(0, 3).map(n => `<div style="--c:${n.col}"><div class="fj"><small>Jueves</small><b>${n.d.getDate()}</b></div><div class="qj"><em class="fit3">${n.tipo}</em><span class="fit3">${n.nom}</span><i class="h21">21 HORAS</i></div>${foto(n, n.ico, n.col)}</div>`).join('')}</div>
     <div class="kn"><b>22 HORAS</b><span>Karaoke Night</span></div></div>` });
