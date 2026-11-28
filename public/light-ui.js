@@ -14,6 +14,7 @@
   // Después, lo mismo en Frida y Tobalaba (pedido de Cote, 27 nov: «aplicar lo mismo… fondo Tobalaba y Frida»)
   const FONDO_NAME = { kennedy: 'FONDO KENNEDY', frida: 'FONDO FRIDA', tobalaba: 'FONDO TOBALABA' };
   const stagesOf = (v) => (FONDO_NAME[v] ? STAGES.map((x) => (x[0] === 'none' ? ['fondo', '🎬', FONDO_NAME[v]] : x)) : STAGES);
+  window.lightStagesOf = stagesOf; // los mismos botones en «En pantalla» del Centro de control (pedido de Cote, 28 nov)
   const dayName = (d) => ({ MIERCOLES: 'Miércoles', SABADO: 'Sábado' }[d] || d.charAt(0) + d.slice(1).toLowerCase());
   // Diseño nuevo (tema.js): las etiquetas de las pantallas van sin emojis; con el diseño anterior quedan como siempre
   const se = (s) => (window.sinEmoji ? window.sinEmoji(s) : s);

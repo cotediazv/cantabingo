@@ -1156,7 +1156,7 @@ app.get('/api/vertical/:local', (req, _res, next) => {
   for (const k of Object.keys(L)) if (Date.now() - L[k].at > 10 * 60000) delete L[k];
   next();
 });
-require('./vertical.js')({ cuadroOf: (v) => (emisorCuadro && emisorCuadro.p === v && Date.now() - emisorCuadro.at < 8000 ? emisorCuadro.at : 0), planB: () => emisorModo() === 'b', soloA: () => emisorModo() === 'a', emisorVivo: () => Date.now() - emisor.latido < 90000, app, db, save, requireAdmin, fail, karaoke, perOf, dir: path.dirname(DATA_FILE) }); // pantalla vertical: video del mes y actividades
+require('./vertical.js')({ cuadroOf: (v) => (emisorCuadro && emisorCuadro.p === v && Date.now() - emisorCuadro.at < 8000 ? emisorCuadro.at : 0), planB: () => emisorModo() === 'b', soloA: () => emisorModo() === 'a', emisorVivo: () => Date.now() - emisor.latido < 90000, app, db, save, requireAdmin, fail, karaoke, perOf, luzManda: (v) => salaDe(v) && !salaManda(v), dir: path.dirname(DATA_FILE) }); // pantalla vertical: video del mes y actividades
 // Conectados (pedido de Cote, 22 nov): números en vivo por local, gráfico de las últimas 3 horas y registro por jornada
 require('./conectados.js')({ app, db, save, requireAdmin, port: process.env.PORT || 3000,
   // personas de la sala de juegos de ese local: conectadas ahora (con la sala abierta en el celular) e inscritas en total
@@ -1508,7 +1508,7 @@ app.post('/api/pub', requireAdmin, async (req, res) => {
   db.pubUrl = url; save(); aviso();
   res.json({ pub: url });
 });
-app.get('/api/stage', (_req, res) => res.json({ show: roscoLock(db.stage) ? 'rueda' : STAGES.includes(db.stage) ? db.stage : 'bingo', per: perMain(), carton: !!(db.carton && db.carton.on), desIntro: desafioIntroAt, desIntroHace: desafioIntroAt ? Date.now() - desafioIntroAt : null }));
+app.get('/api/stage', (_req, res) => res.json({ show: roscoLock(db.stage) ? 'rueda' : STAGES.includes(db.stage) ? db.stage : 'bingo', venue: (() => { const m = Object.values(db.sessions)[0]; return m ? m.theme || 'frida' : null; })(), per: perMain(), carton: !!(db.carton && db.carton.on), desIntro: desafioIntroAt, desIntroHace: desafioIntroAt ? Date.now() - desafioIntroAt : null }));
 // «Cartón al centro» (pregunta 20 de Cote, 24 nov: «1 lo que recomienda, 2 siempre el QR y el nombre del juego»): en una
 // pausa, el GC de OBS cambia la franja de abajo por un cartón mediano al centro con la información del juego en ese
 // momento, el QR y el nombre del juego. Se pone y se quita con el mismo botón; sale solo cuando cambia lo que está en

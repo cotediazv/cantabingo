@@ -414,15 +414,9 @@ views.control = async () => {
       <div id="ctl-sala-go"></div><div id="open-list"></div></div>
     <a class="btn lp-open" href="#/verticalctl/kennedy">📺 Pantallas de los locales · videos vertical y horizontal</a>
     <details class="panel ctl-fold" id="ctl-stage-fold"><summary><h2>En pantalla</h2><span class="muted small">Tocar para abrir</span></summary>
-      <p class="muted small">La pantalla cambia sola al activar un bingo, lanzar un sorteo o cargar un rosco. Aquí puedes cambiarla a mano.</p>
-      <div class="control-grid" id="stage">
-        <button data-show="bingo"><span>🎱</span>Bingo</button><button data-show="sorteo"><span>🎲</span>Sorteo</button>
-        <button data-show="rueda"><span>🎡</span>El Rosko</button><button data-show="qr"><span>📱</span>QR en pantalla completa</button>
-        <button data-show="karaoke"><span>🎤</span>Karaoke</button><button data-show="show"><span>⭐</span>Show</button>
-        <button data-show="voto"><span>🗳️</span>Votación</button><button data-show="insta"><span>📸</span>Instagram</button>
-        <button data-show="desafio" class="wide"><span>🏆</span>¿Quién quiere ser ganador?</button>
-        <button data-show="none" class="wide"><span>⬛</span>Nada</button>
-      </div>
+      <p class="muted small" id="stage-note"></p>
+      <div class="lp-stages" id="stage"></div>
+      <form class="lp-custom" id="stage-custom" hidden><input type="text" name="text" maxlength="120" autocomplete="off" placeholder="Escribe aquí el texto del GC"><button>✏️ GC personalizable</button></form>
       <div class="ctl-links">
         <p><b>📱 Participar</b><small>Lo que abre el público al escanear el QR</small><a class="link" href="${joinUrl()}" target="_blank">${esc(joinUrl())}</a></p>
         <p><b>🖥️ Tablero</b><small>Pantalla del DJ, con sonido</small><a class="link" href="${boardUrl()}" target="_blank">${esc(boardUrl())}</a></p>
@@ -525,15 +519,46 @@ views.control = async () => {
     paintOpen();
   };
   paintOpen();
-  const paintStage = (show) => $$('#stage button').forEach((b) => b.classList.toggle('on', b.dataset.show === show));
-  paintStage((await api('GET', '/api/stage').catch(() => ({}))).show);
+  // «En pantalla» (pedido de Cote, 28 nov: «no me sirve tener el botón del bingo… tiene que ser un botón para el juego en
+  // vivo. Y luego GC karaoke. Luego QR del karaoke en grande… y tienen que tener los botones que tienen la sala light. No
+  // necesito otros botones, porque los juegos van cargando las nuevas escenas»): «🎮 JUEGO EN VIVO» (el GC vuelve a la sala
+  // de juegos) y los mismos botones de la sala light del local de la sala abierta (/api/light/stage; gana lo último que se tocó)
+  let stVenue = null; let stSig = '';
+  const paintStage = async () => {
+    const st = await api('GET', '/api/stage').catch(() => null);
+    const v = st && st.venue;
+    const l = v ? await api('GET', `/api/light?local=${v}`).catch(() => null) : null;
+    const box = $('#stage'); const form = $('#stage-custom'); const note = $('#stage-note');
+    if (!box) return;
+    const sig = JSON.stringify([v, l && [l.open, l.sala, l.stage, l.text]]);
+    if (sig === stSig) return;
+    if (document.activeElement && form.contains(document.activeElement)) return; // no se pierde lo que se está escribiendo
+    stSig = sig; stVenue = v;
+    if (!v || !l || !l.open) {
+      box.innerHTML = ''; form.hidden = true;
+      note.textContent = v ? 'La sala light de este local no está disponible.' : 'No hay sala de juegos abierta. Los botones del GC de cada local están en su sala light.';
+      return;
+    }
+    const keys = [['sala', '🎮', 'JUEGO EN VIVO'], ...(window.lightStagesOf ? window.lightStagesOf(v) : [])];
+    box.innerHTML = keys.map(([k, i, t]) => `<button type="button" data-show="${k}" class="${(k === 'sala' ? l.sala : !l.sala && l.stage === k) ? 'on' : ''}"><span>${i}</span>${t}</button>`).join('');
+    form.hidden = false; form.classList.toggle('on', !l.sala && l.stage === 'custom');
+    const inp = form.querySelector('input'); if (!inp.value) inp.value = l.text || '';
+    note.textContent = `${l.name}: ${l.sala ? 'ahora el GC muestra el juego en vivo.' : 'ahora el GC muestra el botón que tocaste; «Juego en vivo» lo devuelve al juego.'} Los juegos cargan sus escenas solos.`;
+  };
+  await paintStage();
   $('#stage').onclick = async (e) => {
     const btn = e.target.closest('[data-show]');
-    if (!btn) return;
-    try { paintStage((await api('POST', '/api/stage', { show: btn.dataset.show })).show); } catch (err) { fail(err); }
+    if (!btn || !stVenue) return;
+    try { await api('POST', '/api/light/stage', { local: stVenue, show: btn.dataset.show }); stSig = ''; paintStage(); } catch (err) { fail(err); }
+  };
+  $('#stage-custom').onsubmit = async (e) => {
+    e.preventDefault();
+    const text = e.target.text.value.trim();
+    if (!text) return toast('Escribe el texto del GC');
+    try { await api('POST', '/api/light/stage', { local: stVenue, show: 'custom', text }); stSig = ''; e.target.text.blur(); paintStage(); } catch (err) { fail(err); }
   };
   // Refleja los cambios automáticos mientras el panel está abierto
-  const timer = setInterval(async () => paintStage((await api('GET', '/api/stage').catch(() => ({}))).show), 3000);
+  const timer = setInterval(paintStage, 3000);
   return () => clearInterval(timer);
 };
 
