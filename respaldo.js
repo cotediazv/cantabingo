@@ -4,8 +4,9 @@
 //    guarda en el mismo disco, en <carpeta de los datos>/respaldos/, un archivo comprimido con data.json, clientes.json y
 //    programacion.json (este último solo se lee: es de Code 3). Quedan los últimos 14 días; los más viejos se borran solos.
 //    Si el disco tiene menos de 150 MB libres (o el respaldo no cabe dejando ese margen), no se respalda y se avisa.
-// B) Si en Render están RESPALDO_URL y RESPALDO_CLAVE, la misma copia se manda al Apps Script de Cote, que la guarda en su
-//    Google Drive (apps-script/Respaldo.gs). Sin esas variables no se manda nada.
+// B) Si en Render están RESPALDO_URL y RESPALDO_CLAVE, una copia SIN programacion.json (trae la clave del script de la
+//    GLOSA) se manda al Apps Script de Cote, que la guarda en su Google Drive (apps-script/Respaldo.gs). Sin esas variables no
+//    se manda nada. La carpeta respaldos/ no la sirve ninguna ruta; bajar una copia exige sesión de moderador.
 // C) Centro de control: estado del último respaldo, «Respaldar ahora» y «⬇ Bajar respaldo ahora» (solo el moderador).
 // No hay botón de restaurar (a propósito): se recupera a mano, eligiendo una copia.
 // Los videos de las pantallas no van (pesan mucho y Cote tiene los originales).
@@ -33,9 +34,11 @@ module.exports = function respaldo({ app, db, save, requireAdmin, dataFile, relo
   let running = false;
 
   // Arma el respaldo comprimido: un JSON con cada archivo tal como está en el disco
-  const bundle = async (when) => {
+  // paraDrive: sin programacion.json (trae la clave del script de la GLOSA; Code 0 y Code 3, 28 nov: fuera de Drive por ahora)
+  const bundle = async (when, paraDrive) => {
     const archivos = {};
     for (const [name, file] of files()) {
+      if (paraDrive && name === 'programacion.json') continue;
       if (name === 'data.json') { archivos[name] = JSON.stringify(db, (k, v) => (k === 'lucesTk' ? undefined : v)); continue; } // sin la sesión de las luces (se vuelve a pedir sola) // lo de la memoria: es lo más reciente (el disco se escribe con 1 s de atraso)
       try { archivos[name] = await fs.promises.readFile(file, 'utf8'); } catch (e) { /* ese archivo todavía no existe */ }
     }
@@ -51,10 +54,11 @@ module.exports = function respaldo({ app, db, save, requireAdmin, dataFile, relo
     } catch (e) { return []; }
   };
   // B) copia fuera de Render (solo con RESPALDO_URL y RESPALDO_CLAVE en Render)
-  const toDrive = async (name, buf) => {
+  const toDrive = async (name, when) => {
     const url = process.env.RESPALDO_URL; const key = process.env.RESPALDO_CLAVE;
     if (!url || !key) return '';
     try {
+      const buf = await bundle(when, true);
       const r = await fetch(url, { method: 'POST', headers: { 'content-type': 'text/plain' }, body: JSON.stringify({ clave: key, nombre: name, datos: buf.toString('base64') }), signal: AbortSignal.timeout(60000) });
       const t = await r.text();
       return r.ok && /"ok"\s*:\s*true/.test(t) ? 'ok' : `Drive respondió ${r.status}: ${t.slice(0, 120)}`;
@@ -80,7 +84,7 @@ module.exports = function respaldo({ app, db, save, requireAdmin, dataFile, relo
       await fs.promises.rename(path.join(folder, `${name}.tmp`), path.join(folder, name));
       const all = await list(); // se quedan los últimos 14 días
       for (const f of all.slice(0, Math.max(0, all.length - KEEP))) await fs.promises.unlink(path.join(folder, f.name)).catch(() => {});
-      const drive = await toDrive(name, buf);
+      const drive = await toDrive(name, now);
       Object.assign(st, { at: Date.now(), ok: true, size: buf.length, error: '', drive, day, por: porQue });
       save();
       return st;

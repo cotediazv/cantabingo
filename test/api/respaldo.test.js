@@ -56,7 +56,9 @@ test('respaldo: automático a las 05:00 (hora de Chile) y copia al Drive solo si
   const got = [];
   const mock = http.createServer((q, s) => { let b = ''; q.on('data', (c) => { b += c; }); q.on('end', () => { got.push(JSON.parse(b)); s.writeHead(200, { 'content-type': 'application/json' }); s.end('{"ok":true}'); }); });
   await new Promise((r) => mock.listen(0, r)); mocks.push(mock);
-  const srv = await startServer({ env: { KRB_FECHA: '2026-11-30T05:10:00-03:00', RESPALDO_AUTO: '1', RESPALDO_PRIMERO_MS: '500', RESPALDO_URL: `http://localhost:${mock.address().port}/exec`, RESPALDO_CLAVE: 'clave-de-prueba' } });
+  const prog = path.join(fs.mkdtempSync(path.join(require('os').tmpdir(), 'krb-prog-')), 'programacion.json');
+  fs.writeFileSync(prog, JSON.stringify({ dias: {}, personas: [] }));
+  const srv = await startServer({ data: { sessions: {}, projects: {}, lucesTk: 'sesion-de-prueba' }, env: { PROG_FILE: prog, KRB_FECHA: '2026-11-30T05:10:00-03:00', RESPALDO_AUTO: '1', RESPALDO_PRIMERO_MS: '500', RESPALDO_URL: `http://localhost:${mock.address().port}/exec`, RESPALDO_CLAVE: 'clave-de-prueba' } });
   srvs.push(srv);
   await sleep(2500);
   const st = await srv.admin.get('/api/respaldo');
@@ -66,5 +68,10 @@ test('respaldo: automático a las 05:00 (hora de Chile) y copia al Drive solo si
   assert.equal(got.length, 1);
   assert.equal(got[0].clave, 'clave-de-prueba');
   assert.equal(got[0].nombre, 'respaldo-2026-11-30.json.gz');
-  assert.ok(abrir(Buffer.from(got[0].datos, 'base64')).archivos['data.json']);
+  const enDrive = abrir(Buffer.from(got[0].datos, 'base64')).archivos;
+  assert.ok(enDrive['data.json']);
+  assert.equal(enDrive['programacion.json'], undefined);
+  const enDisco = abrir(fs.readFileSync(path.join(path.dirname(srv.dataFile), 'respaldos', 'respaldo-2026-11-30.json.gz'))).archivos;
+  assert.ok(enDisco['programacion.json']); // en el disco sí (Code 3 de acuerdo) // Programación no va a Drive (trae la clave del script de la GLOSA)
+  assert.equal(JSON.parse(enDrive['data.json']).lucesTk, undefined);
 });
