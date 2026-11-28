@@ -199,6 +199,7 @@ function publicState(s, full = false) { // eslint-disable-line complexity
     bigQr: !!s.bigQr, tieWinner: s.tieWinner || null, rollMs: 6500, figAt: s.figAt || 0,
     celebrate: !s.hideWin && s.results.some((r) => r.validated && !r.dismissed),
     // Durante El Rosko los celulares cambian el cartón por las preguntas del rosko en curso
+    luzKar: luzKar(), // el karaoke de la sala light está en pantalla: el celular puede pedir canciones
     stage: db.stage || 'bingo', roscoId: db.stage === 'rueda' ? (Object.values(db.wheels || {}).sort((a, b) => b.created - a.created)[0] || {}).id || null : null,
     celebrateAt: s.celebrateAt || 0,
     voteRev: (db.vote || {}).rev || 0, // los celulares vuelven a leer la votación cuando cambia
@@ -321,7 +322,7 @@ app.use((req, res, next) => {
   return next();
 });
 // Programación KRB (Code 3): plataforma aparte para la cartelera y los turnos (va antes de las páginas de la sala)
-require('./programacion.js')({ app, dir: path.dirname(DATA_FILE) });
+const prog = require('./programacion.js')({ app, dir: path.dirname(DATA_FILE) });
 // Sin caché: así cada celular recibe siempre la última versión publicada
 app.use(express.static(path.join(__dirname, 'public'), { setHeaders: (res) => res.setHeader('Cache-Control', 'no-cache') }));
 // Enlace corto de la pantalla vertical de Kennedy (pedido de Cote: fácil de escribir con el control del decodificador;
@@ -577,6 +578,7 @@ app.post('/api/projects/:id/session', (req, res) => {
   res.json({ id: started.id });
 });
 function startSession(p, b) {
+  db.salaAt = Date.now(); // al abrir la sala, el GC Light del local pasa a la sala de juegos
   const s = {
     id: shortId(), projectId: p.id, name: str(b.name, 50, p.name), password: str(b.password, 40),
     cardsPerPlayer: clamp(b.cardsPerPlayer, 1, 4, 1),
@@ -860,7 +862,7 @@ const setStage = (show) => {
   const famBefore = familyOf(db.stage);
   db.stage = show;
   if (changed && familyOf(show) && familyOf(show) !== famBefore) { cortinaJuego(); setTimeout(() => emisorCheck(), 0); if (familyOf(show) === 'desafio') { desafioIntroAt = Date.now(); require('./momentos.js').emit('desafio_inicio'); } } // desafio_inicio: 15 s de fiesta de luces con la música del comienzo (pedido de Cote por Code 4, 26 nov) // se cargó otro juego: la cortina (y en Kennedy, el emisor de la pantalla vertical)
-  if (changed) { perOff(); if (db.carton) db.carton.on = false; } // un juego tomó la pantalla: el GC PER y el cartón salen
+  if (changed) { perOff(); if (db.carton) db.carton.on = false; db.salaAt = Date.now(); } // un juego tomó la pantalla: el GC PER y el cartón salen
   save();
   if (changed) for (const s of Object.values(db.sessions)) broadcast(s); // los celulares se enteran del cambio de juego
   if (changed) aviso(); // y las pantallas, al instante
@@ -940,6 +942,46 @@ app.get('/api/luces/dj', async (req, res) => {
     if (why) return res.json({ url: `${base}/dj`, aviso: `Pon la clave de las luces aquí abajo, una vez. No entró solo porque ${why}.` });
   }
   res.json({ url: `${base}/dj#tk=${encodeURIComponent(db.lucesTk)}` });
+});
+// Registro de las luces del Dell, en línea (pedido de Cote, 28 nov: «no voy a ir a buscar el registro al Dell semana a
+// semana; búsquense una forma en la cual puedan verlo online»). El Dell lo sube solo cada 10 minutos (solo si cambió) con la
+// clave de las luces (la misma LUCES_CLAVE de Render, que nunca está en el repositorio): las últimas noches y el diagnóstico.
+// Lo leen el moderador (#/lucesreg) y Code 4 con un enlace de lectura (?k=…; solo lee, no toca nada; se cambia con ?nueva=1).
+app.post('/api/luces/registro', (req, res) => {
+  const key = process.env.LUCES_CLAVE || '';
+  const got = String(req.get('authorization') || '').replace(/^Bearer\s+/i, '');
+  if (!key || !got || got.length !== key.length || !crypto.timingSafeEqual(Buffer.from(got), Buffer.from(key))) return fail(res, 401, 'Clave de las luces incorrecta');
+  const b = req.body || {};
+  const r = db.lucesReg ||= { noches: {} };
+  const corta = (t, n) => String(t || '').slice(-n);
+  for (const n of Array.isArray(b.noches) ? b.noches.slice(0, 3) : []) {
+    if (n && /^\d{4}-\d{2}-\d{2}$/.test(String(n.noche || ''))) r.noches[n.noche] = { texto: corta(n.texto, 300000), at: Date.now() };
+  }
+  const fechas = Object.keys(r.noches).sort();
+  while (fechas.length > 21) delete r.noches[fechas.shift()];
+  if (b.diagnostico) r.diag = { texto: corta(b.diagnostico, 200000), at: Date.now() };
+  r.version = String(b.version || '').slice(0, 80); r.at = Date.now();
+  save();
+  res.json({ ok: true });
+});
+app.get('/api/luces/registro', (req, res) => {
+  db.lucesLectura ||= crypto.randomBytes(12).toString('hex');
+  const admin = validToken(req.get('x-admin'));
+  const k = String(req.query.k || '');
+  const okK = k.length === db.lucesLectura.length && crypto.timingSafeEqual(Buffer.from(k), Buffer.from(db.lucesLectura));
+  if (!admin && !okK) return fail(res, 401, 'Sin permiso');
+  if (admin && req.query.nueva) { db.lucesLectura = crypto.randomBytes(12).toString('hex'); save(); }
+  const r = db.lucesReg || { noches: {} };
+  const noches = Object.keys(r.noches).sort().reverse();
+  const noche = noches.includes(String(req.query.noche)) ? String(req.query.noche) : noches[0] || '';
+  const out = { at: r.at || 0, version: r.version || '', noches, noche, texto: noche ? r.noches[noche].texto : '', diag: (r.diag || {}).texto || '', diagAt: (r.diag || {}).at || 0 };
+  if (admin) out.enlace = `${/^localhost|^127\./.test(req.get('host') || '') ? 'http' : 'https'}://${req.get('host')}/api/luces/registro?k=${db.lucesLectura}&formato=texto`;
+  if (req.query.formato === 'texto') {
+    res.type('text/plain; charset=utf-8');
+    return res.send(`REGISTRO DE LAS LUCES (Dell de Kennedy) · subido ${out.at ? new Date(out.at).toLocaleString('es-CL', { timeZone: 'America/Santiago' }) : 'nunca'} · versión ${out.version}\nNoches guardadas: ${noches.join(', ')}\n\n=== NOCHE ${noche} ===\n${out.texto}\n\n=== DIAGNÓSTICO (${out.diagAt ? new Date(out.diagAt).toLocaleString('es-CL', { timeZone: 'America/Santiago' }) : 'sin diagnóstico'}) ===\n${out.diag}\n`);
+  }
+  if (!admin) { delete out.enlace; }
+  res.json(out);
 });
 // Qué está mostrando cada pantalla liviana (pv.html, el deco): avisa cada 30 s (pedido de Cote, 25 nov: verlo desde la
 // casa en el Centro de control). Solo en memoria.
@@ -1077,7 +1119,7 @@ const connectedNames = () => {
 require('./raffle.js')({ placeOf, app, db, save, requireAdmin, fail, setStage, refreshAll, connectedNames, festejo });
 
 let lightApi = null; // sala light (light.js): se conecta más abajo
-const karaoke = require('./karaoke.js')({ app, db, save, requireAdmin, requireLocal, fail, salaVenue: () => (Object.values(db.sessions)[0] || {}).theme || '',
+const karaoke = require('./karaoke.js')({ karAbierto: () => luzKar(), app, db, save, requireAdmin, requireLocal, fail, salaVenue: () => (Object.values(db.sessions)[0] || {}).theme || '',
   findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || (lightApi ? lightApi.findPlayer(sid, token) : null),
   lightVenue: (sid) => (lightApi ? lightApi.venueOf(sid) : ''), extraVenues: () => (lightApi ? lightApi.pollVenues() : []) });
 // Votación del público (nota del 1 al 10 desde el celular)
@@ -1102,13 +1144,27 @@ const insta = require('./insta.js')({ app, db, save, requireAdmin, fail, venue: 
 // manda la sala (como antes).
 const FONDO_GC = { kennedy: 'kennedy-h', frida: 'frida-h', tobalaba: 'tobalaba' }; // Frida y Tobalaba, igual (pedido de Cote, 27 nov)
 const salaDe = (v) => { const m = Object.values(db.sessions)[0]; return !!(m && !m.sim && (m.theme || 'frida') === v); };
+// Los días con sala de juegos, los botones del GC Light también mandan (reclamo de Cote, 27 nov, noche en Tobalaba: «les
+// pedí que los botones funcionaran»): gana lo último que se tocó. Un botón del GC Light pone su GC; cuando la sala de
+// juegos cambia lo que muestra (abrir la sala, cargar un juego, un botón de «En pantalla», el GC PER), el GC vuelve a la sala.
+// El botón «Sala de juegos» del panel light también la devuelve (stageAt = 0). Lo que el servidor pone solo (el fondo de
+// las 19:00 y la 01:00) no cuenta como toque.
+const salaManda = (v) => salaDe(v) && !((((db.lights || {})[v] || {}).stageAt || 0) > (db.salaAt || 0));
+// Un solo QR toda la noche de juegos (respuesta de Cote, 28 nov: «El QR durante la noche de juegos se mantiene igual hasta
+// el final»): con la sala de juegos abierta, el GC KARAOKE y el QR GRANDE de la sala light muestran el QR de la sala de
+// juegos y, mientras están en pantalla, el celular de la sala de juegos puede pedir canciones (como con su propio karaoke)
+function luzKar() { try { const m = Object.values(db.sessions)[0]; if (!m || m.sim) return false; const v = m.theme || 'frida'; const l = (db.lights || {})[v]; return !!l && !salaManda(v) && ['karaoke', 'qr'].includes(l.stage); } catch (e) { return false; } } // función (no const): la usa el estado de la sala, que puede armarse antes de esta línea
 const horaChile = () => Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Santiago', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
   .formatToParts(ahora()).map((x) => [x.type, x.value]));
+// El video horizontal del local, haya o no «FONDO» puesto: va de fondo detrás de la cartelera de la semana en el GC Light
+// (pedido de Cote, 27 nov: «al poner la cartelera de la semana, que de fondo se vea siempre el fondo del local»)
+const fondoVid = (v) => { const scr = FONDO_GC[v]; const c = scr && (db.vertical || {})[scr]; return c && c.video ? `/vertical/${scr}.mp4?v=${c.video}` : ''; };
 const fondoDe = (v) => {
   const scr = FONDO_GC[v]; const c = scr && (db.vertical || {})[scr];
   if (!c || !c.video || ((db.lights || {})[v] || {}).stage !== 'fondo') return '';
-  const h = +horaChile().hour;
-  if ((h >= 12 || h < 1) && salaDe(v)) return ''; // con la sala de juegos de este local abierta, manda la sala
+  // Con la sala de juegos de este local abierta y mandando (gana lo último que se tocó), el GC muestra la sala, a cualquier
+  // hora (Cote, 28 nov, 02:45: creó una sala en Tobalaba después de la 01:00 y el GC Light quedó pegado en el fondo)
+  if (salaManda(v)) return '';
   return `/vertical/${scr}.mp4?v=${c.video}`;
 };
 const fondoAuto = () => {
@@ -1120,11 +1176,12 @@ const fondoAuto = () => {
     if (!db.fondoAuto[`${v}:ini`]) { db.fondoAuto[`${v}:ini`] = day; l.stage = 'fondo'; l.video = false; save(); aviso(); }
     for (const at of [60, 19 * 60]) { // 01:00 y 19:00 (si el servicio se estaba reiniciando justo ahí, hasta 15 minutos después)
       const k = `${v}:${at}`;
-      if (min >= at && min < at + 15 && db.fondoAuto[k] !== day) { db.fondoAuto[k] = day; l.stage = 'fondo'; l.video = false; save(); aviso(); }
+      // A la 01:00 el fondo le gana a la sala de juegos que siga abierta (cuenta como un toque); a las 19:00 no: si hay sala, manda la sala
+      if (min >= at && min < at + 15 && db.fondoAuto[k] !== day) { db.fondoAuto[k] = day; l.stage = 'fondo'; l.video = false; if (at === 60) l.stageAt = Date.now(); save(); aviso(); }
     }
   }
 };
-lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta, aviso, salaDe, fondoDe, reloj: () => ahora() });
+lightApi = require('./light.js')({ app, db, save, requireAdmin, requireLocal, fail, karaoke, insta, aviso, salaDe, salaManda, fondoDe, fondoVid, alCambiar: () => { for (const s of Object.values(db.sessions)) broadcast(s); }, reloj: () => ahora(), progShow: (v, n) => prog.showDe(n.y, n.m, n.d, { kennedy: 'MK', frida: 'FRIDA', tobalaba: 'TOB' }[v]) });
 setTimeout(fondoAuto, 2000); setInterval(fondoAuto, 20e3);
 // «El último en pie», versión de prueba (pedido de Cote, 23 nov)
 require('./enpie.js')({ placeOf, roscoBusy: () => roscoLock('enpie'), app, db, save, requireAdmin, fail, setStage, festejo,
@@ -1146,7 +1203,7 @@ app.get('/api/vertical/:local', (req, _res, next) => {
   for (const k of Object.keys(L)) if (Date.now() - L[k].at > 10 * 60000) delete L[k];
   next();
 });
-require('./vertical.js')({ cuadroOf: (v) => (emisorCuadro && emisorCuadro.p === v && Date.now() - emisorCuadro.at < 8000 ? emisorCuadro.at : 0), planB: () => emisorModo() === 'b', soloA: () => emisorModo() === 'a', emisorVivo: () => Date.now() - emisor.latido < 90000, app, db, save, requireAdmin, fail, karaoke, perOf, dir: path.dirname(DATA_FILE) }); // pantalla vertical: video del mes y actividades
+require('./vertical.js')({ cuadroOf: (v) => (emisorCuadro && emisorCuadro.p === v && Date.now() - emisorCuadro.at < 8000 ? emisorCuadro.at : 0), planB: () => emisorModo() === 'b', soloA: () => emisorModo() === 'a', emisorVivo: () => Date.now() - emisor.latido < 90000, app, db, save, requireAdmin, fail, karaoke, perOf, luzManda: (v) => salaDe(v) && !salaManda(v), dir: path.dirname(DATA_FILE) }); // pantalla vertical: video del mes y actividades
 // Conectados (pedido de Cote, 22 nov): números en vivo por local, gráfico de las últimas 3 horas y registro por jornada
 require('./conectados.js')({ app, db, save, requireAdmin, port: process.env.PORT || 3000,
   // personas de la sala de juegos de ese local: conectadas ahora (con la sala abierta en el celular) e inscritas en total
@@ -1498,7 +1555,7 @@ app.post('/api/pub', requireAdmin, async (req, res) => {
   db.pubUrl = url; save(); aviso();
   res.json({ pub: url });
 });
-app.get('/api/stage', (_req, res) => res.json({ show: roscoLock(db.stage) ? 'rueda' : STAGES.includes(db.stage) ? db.stage : 'bingo', per: perMain(), carton: !!(db.carton && db.carton.on), desIntro: desafioIntroAt, desIntroHace: desafioIntroAt ? Date.now() - desafioIntroAt : null }));
+app.get('/api/stage', (_req, res) => res.json({ show: roscoLock(db.stage) ? 'rueda' : STAGES.includes(db.stage) ? db.stage : 'bingo', venue: (() => { const m = Object.values(db.sessions)[0]; return m ? m.theme || 'frida' : null; })(), per: perMain(), carton: !!(db.carton && db.carton.on), desIntro: desafioIntroAt, desIntroHace: desafioIntroAt ? Date.now() - desafioIntroAt : null }));
 // «Cartón al centro» (pregunta 20 de Cote, 24 nov: «1 lo que recomienda, 2 siempre el QR y el nombre del juego»): en una
 // pausa, el GC de OBS cambia la franja de abajo por un cartón mediano al centro con la información del juego en ese
 // momento, el QR y el nombre del juego. Se pone y se quita con el mismo botón; sale solo cuando cambia lo que está en
@@ -1567,6 +1624,7 @@ app.post('/api/gcper', requireAdmin, (req, res) => {
   const text = b.text != null ? perClean(b.text) : perMain().text;
   if (b.on !== false && !text) return fail(res, 400, 'Escribe el texto del GC PER');
   db.gcper = { on: b.on !== false, text };
+  if (db.gcper.on) db.salaAt = Date.now();
   save(); aviso();
   res.json(perMain());
 });
@@ -1574,6 +1632,7 @@ app.post('/api/stage', requireAdmin, (req, res) => {
   const show = String((req.body || {}).show);
   if (!STAGES.includes(show)) return fail(res, 400, 'Opción no válida');
   if (setStage(show) === false) return fail(res, 409, 'El Rosko está en juego: la pantalla sigue en El Rosko hasta que termine la partida');
+  db.salaAt = Date.now(); aviso(); // un botón del GC de la sala de juegos: el GC Light vuelve a la sala (ver salaManda)
   if (perOff()) aviso(); // tocar un botón del GC saca el GC PER, aunque el escenario sea el mismo
   if (show === 'karaoke') karaoke.refresh(); // primera lectura inmediata, sin esperar al siguiente ciclo
   res.json({ show });

@@ -414,23 +414,18 @@ views.control = async () => {
       <div id="ctl-sala-go"></div><div id="open-list"></div></div>
     <a class="btn lp-open" href="#/verticalctl/kennedy">📺 Pantallas de los locales · videos vertical y horizontal</a>
     <details class="panel ctl-fold" id="ctl-stage-fold"><summary><h2>En pantalla</h2><span class="muted small">Tocar para abrir</span></summary>
-      <p class="muted small">La pantalla cambia sola al activar un bingo, lanzar un sorteo o cargar un rosco. Aquí puedes cambiarla a mano.</p>
-      <div class="control-grid" id="stage">
-        <button data-show="bingo"><span>🎱</span>Bingo</button><button data-show="sorteo"><span>🎲</span>Sorteo</button>
-        <button data-show="rueda"><span>🎡</span>El Rosko</button><button data-show="qr"><span>📱</span>QR en pantalla completa</button>
-        <button data-show="karaoke"><span>🎤</span>Karaoke</button><button data-show="show"><span>⭐</span>Show</button>
-        <button data-show="voto"><span>🗳️</span>Votación</button><button data-show="insta"><span>📸</span>Instagram</button>
-        <button data-show="desafio" class="wide"><span>🏆</span>¿Quién quiere ser ganador?</button>
-        <button data-show="none" class="wide"><span>⬛</span>Nada</button>
-      </div>
+      <p class="muted small" id="stage-note"></p>
+      <div class="lp-stages" id="stage"></div>
+      <form class="lp-custom" id="stage-custom" hidden><input type="text" name="text" maxlength="120" autocomplete="off" placeholder="Escribe aquí el texto del GC"><button>✏️ GC personalizable</button></form>
       <div class="ctl-links">
         <p><b>📱 Participar</b><small>Lo que abre el público al escanear el QR</small><a class="link" href="${joinUrl()}" target="_blank">${esc(joinUrl())}</a></p>
         <p><b>🖥️ Tablero</b><small>Pantalla del DJ, con sonido</small><a class="link" href="${boardUrl()}" target="_blank">${esc(boardUrl())}</a></p>
-        <p><b>🎬 OBS</b><small>Fuente de navegador, 1920×1080, transparente</small><a class="link" href="${stageUrl()}" target="_blank">${esc(stageUrl())}</a></p>
+        <p id="ctl-obs"><b>🎬 OBS</b><small>Fuente de navegador, 1920×1080, transparente</small><a class="link" href="${stageUrl()}" target="_blank">${esc(stageUrl())}</a></p>
       </div>
     </details>
     <a class="btn lp-open" href="#/light">💡 Sala light · karaoke, show y cartelera en otro local</a>
     <a class="btn lp-open" href="#/consola">🖥️ Consola general · los 3 locales en una pantalla</a>
+    <a class="btn lp-open" href="#/lucesreg">📋 Registro de las luces del Dell (Kennedy)</a>
     <a class="btn lp-open" href="#/master">🎛️ GC Master · centro de control de transmisión</a>
     <a class="btn lp-open" href="/sala">📱 Sala de juegos en el teléfono · para guardar en el inicio</a>
     <div class="panel"><h2>Karaoke</h2>
@@ -525,15 +520,60 @@ views.control = async () => {
     paintOpen();
   };
   paintOpen();
-  const paintStage = (show) => $$('#stage button').forEach((b) => b.classList.toggle('on', b.dataset.show === show));
-  paintStage((await api('GET', '/api/stage').catch(() => ({}))).show);
+  // «En pantalla» (pedido de Cote, 28 nov: «no me sirve tener el botón del bingo… tiene que ser un botón para el juego en
+  // vivo. Y luego GC karaoke. Luego QR del karaoke en grande… y tienen que tener los botones que tienen la sala light. No
+  // necesito otros botones, porque los juegos van cargando las nuevas escenas»): «🎮 JUEGO EN VIVO» (el GC vuelve a la sala
+  // de juegos) y los mismos botones de la sala light del local de la sala abierta (/api/light/stage; gana lo último que se tocó)
+  let stVenue = null; let stSig = '';
+  const paintStage = async () => {
+    const st = await api('GET', '/api/stage').catch(() => null);
+    const v = st && st.venue;
+    const l = v ? await api('GET', `/api/light?local=${v}`).catch(() => null) : null;
+    const box = $('#stage'); const form = $('#stage-custom'); const note = $('#stage-note');
+    if (!box) return;
+    const insta = !!(l && l.sala && st.show === 'insta'); // «Redes sociales» en pantalla
+    const sig = JSON.stringify([v, insta, l && [l.open, l.sala, l.stage, l.text]]);
+    if (sig === stSig) return;
+    if (document.activeElement && form.contains(document.activeElement)) return; // no se pierde lo que se está escribiendo
+    stSig = sig; stVenue = v;
+    // El link de OBS es el GC Light del local de la sala (Cote, 28 nov: abrió #/escena desde aquí y veía fijo el QR de la
+    // sala; los botones de «En pantalla» mandan en el GC Light, que es el que va en OBS)
+    const obs = $('#ctl-obs');
+    if (obs) {
+      const url = v ? `${location.origin}${location.pathname}#/light-gc/${v}` : stageUrl();
+      obs.innerHTML = `<b>🎬 OBS${v ? ` · GC Light de ${esc((l && l.name) || v)}` : ''}</b><small>Fuente de navegador, 1920×1080, transparente${v ? '. Muestra lo que eligen estos botones' : ''}</small><a class="link" href="${esc(url)}" target="_blank">${esc(url)}</a>`;
+    }
+    if (!v || !l || !l.open) {
+      box.innerHTML = ''; form.hidden = true;
+      note.textContent = v ? 'La sala light de este local no está disponible.' : 'No hay sala de juegos abierta. Los botones del GC de cada local están en su sala light.';
+      return;
+    }
+    // «Redes sociales» (Cote, 28 nov: «falta redes sociales»): el «Síguenos en Instagram» de la sala de juegos
+    const keys = [['sala', '🎮', 'JUEGO EN VIVO'], ...(window.lightStagesOf ? window.lightStagesOf(v) : []), ['insta', '📸', 'REDES SOCIALES']];
+    const isOn = (k) => (k === 'sala' ? l.sala && !insta : k === 'insta' ? insta : !l.sala && l.stage === k);
+    box.innerHTML = keys.map(([k, i, t]) => `<button type="button" data-show="${k}" class="${isOn(k) ? 'on' : ''}"><span>${i}</span>${t}</button>`).join('');
+    form.hidden = false; form.classList.toggle('on', !l.sala && l.stage === 'custom');
+    const inp = form.querySelector('input'); if (!inp.value) inp.value = l.text || '';
+    note.textContent = `${l.name}: ${l.sala ? 'ahora el GC muestra el juego en vivo.' : 'ahora el GC muestra el botón que tocaste; «Juego en vivo» lo devuelve al juego.'} Los juegos cargan sus escenas solos.`;
+  };
+  await paintStage();
   $('#stage').onclick = async (e) => {
     const btn = e.target.closest('[data-show]');
-    if (!btn) return;
-    try { paintStage((await api('POST', '/api/stage', { show: btn.dataset.show })).show); } catch (err) { fail(err); }
+    if (!btn || !stVenue) return;
+    try {
+      if (btn.dataset.show === 'insta') await api('POST', '/api/stage', { show: 'insta' }); // la escena de la sala: el GC vuelve a la sala
+      else await api('POST', '/api/light/stage', { local: stVenue, show: btn.dataset.show });
+      stSig = ''; paintStage();
+    } catch (err) { fail(err); }
+  };
+  $('#stage-custom').onsubmit = async (e) => {
+    e.preventDefault();
+    const text = e.target.text.value.trim();
+    if (!text) return toast('Escribe el texto del GC');
+    try { await api('POST', '/api/light/stage', { local: stVenue, show: 'custom', text }); stSig = ''; e.target.text.blur(); paintStage(); } catch (err) { fail(err); }
   };
   // Refleja los cambios automáticos mientras el panel está abierto
-  const timer = setInterval(async () => paintStage((await api('GET', '/api/stage').catch(() => ({}))).show), 3000);
+  const timer = setInterval(paintStage, 3000);
   return () => clearInterval(timer);
 };
 
@@ -1109,7 +1149,7 @@ views.jugar = async (sid) => {
     };
   };
   const syncKar = () => {
-    const on = st.stage === 'karaoke';
+    const on = st.stage === 'karaoke' || !!st.luzKar; // también con el karaoke de la sala light en pantalla (un solo QR, Cote 28 nov)
     $('#pkar').hidden = !on;
     if (on && !karTimer) { karShown = ''; drawKar(); karTimer = setInterval(drawKar, 5000); }
     if (!on && karTimer) { clearInterval(karTimer); karTimer = null; karSent = false; }
@@ -1876,6 +1916,25 @@ function ajustarKl(caja) {
     if (ancho() > caja() + 0.5) el.classList.add('kl-2l');
   });
 }
+// Registro de las luces del Dell en línea (pedido de Cote, 28 nov): lo sube el Dell solo; aquí se lee, y el enlace de
+// lectura es para Code 4 (se pega una vez en el Registro)
+views.lucesreg = async () => {
+  if (!(await isAdmin())) return viewLogin();
+  app.innerHTML = '<p class="back"><a href="#/control">← Centro de control</a></p><h1>Registro de las luces del Dell</h1><div class="panel" id="lr"><p class="muted">Cargando…</p></div>';
+  const pinta = async (noche) => {
+    let r; try { r = await api('GET', `/api/luces/registro${noche ? `?noche=${encodeURIComponent(noche)}` : ''}`); } catch (err) { $('#lr').innerHTML = `<p>${esc(err.message)}</p>`; return; }
+    const cuando = (t) => (t ? new Date(t).toLocaleString('es-CL', { timeZone: 'America/Santiago' }) : 'nunca');
+    $('#lr').innerHTML = `<p class="small">Subido por el Dell: <b>${esc(cuando(r.at))}</b> · versión ${esc(r.version || '—')}. El Dell lo sube solo cada 10 minutos.</p>
+      <p class="small"><b>Enlace para Code 4</b> (solo lectura; pegarlo una vez en el Registro): <input readonly style="width:100%" value="${esc(r.enlace || '')}"></p>
+      <label class="small">Noche: <select id="lr-n">${r.noches.map((n) => `<option ${n === r.noche ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></label>
+      <pre style="white-space:pre-wrap;font-size:.75rem;max-height:55vh;overflow:auto">${esc(r.texto || 'Todavía no llega nada del Dell.')}</pre>
+      <h2>Diagnóstico (${esc(cuando(r.diagAt))})</h2><pre style="white-space:pre-wrap;font-size:.75rem;max-height:55vh;overflow:auto">${esc(r.diag || 'Todavía no llega el diagnóstico.')}</pre>`;
+    const sel = $('#lr-n'); if (sel) sel.onchange = () => pinta(sel.value);
+  };
+  await pinta('');
+  return undefined;
+};
+
 // ---------- Karaoke: panel del animador ----------
 // Pone el karaoke en pantalla y muestra la cola. El local es el de la sala abierta.
 // «Ya cantó», Subir y Bajar: cuando el local ya tiene instalado Sala.gs, se pueden usar aquí o en la app del equipo.
@@ -1887,7 +1946,9 @@ views.karaokectl = async (local) => {
   const staff = !admin && light && store.get('staffToken') && (await api('GET', '/api/staff/me').catch(() => ({}))).venue === light;
   if (!admin && !staff) { if (light) { location.hash = `#/equipo/${light}`; return undefined; } return viewLogin(); }
   const lq = light ? `?local=${light}` : '';
-  app.innerHTML = `${light ? '<div class="panel" id="kc-lt"></div>' : ''}<div class="panel${light ? ' kc-lpanel' : ''}"><div class="row between"><div><h1 id="kc-title" style="margin:0">Karaoke</h1><span class="muted" id="kc-sub"></span></div></div>
+  // Sala light (pedido de Cote, 27 nov): los botones del GC quedan fijos arriba y, debajo, una pestaña desplegable para ver la
+  // transmisión en vivo del local (se cierra y se esconde; cerrada no gasta: cada minuto visto de la señal propia se paga)
+  app.innerHTML = `${light ? `<div class="kc-fijo"><div class="panel" id="kc-lt"></div><div class="kc-tv"><button type="button" id="kc-tv-btn">📺 Ver la transmisión en vivo <span>▾</span></button><small id="kc-tv-que"></small><div class="kc-tv-box" id="kc-tv-box" hidden></div></div></div>` : ''}<div class="panel${light ? ' kc-lpanel' : ''}"><div class="row between"><div><h1 id="kc-title" style="margin:0">Karaoke</h1><span class="muted" id="kc-sub"></span></div></div>
       <div id="kc-list" ${light ? 'class="kc-1l" ' : ''}style="margin-top:14px"></div>
       <div id="kc-sung-box" hidden><button type="button" id="kc-sung-btn" class="kc-sung-btn">✓ Ya cantaron</button><div id="kc-sung"></div></div>
       <p class="muted small kc-horario" style="margin:14px 0 0">Los pedidos desde el celular se abren y se cierran solos según el horario del local (Mercado Kennedy: jue a sáb 21:45–00:30 · Frida: vie y sáb 18:30–00:00 · Tobalaba: vie 21:00–22:10).</p>
@@ -1897,6 +1958,15 @@ views.karaokectl = async (local) => {
   const stopBar = light && views.lightBar ? views.lightBar($('#kc-lt'), $('#kc-lb'), light, staff) : null;
   if (light === 'kennedy') lucesTab(); // pestaña «Luces»: el panel del DJ de las luces, en el mismo lugar
   const stopMini = light === 'kennedy' ? lucesMini() : null; // mini panel de luces fijo abajo
+  let stopTv = null;
+  const tvClose = () => { if (stopTv) { stopTv(); stopTv = null; } const bx = $('#kc-tv-box'); if (bx) { bx.hidden = true; bx.innerHTML = ''; } if ($('#kc-tv-que')) $('#kc-tv-que').textContent = ''; if ($('#kc-tv-btn')) $('#kc-tv-btn').innerHTML = '📺 Ver la transmisión en vivo <span>▾</span>'; };
+  if (light) $('#kc-tv-btn').onclick = () => {
+    if (stopTv) return tvClose();
+    const bx = $('#kc-tv-box'); bx.hidden = false;
+    $('#kc-tv-btn').innerHTML = '📺 Esconder la transmisión <span>▴</span>';
+    if (window.krbSenal1) stopTv = window.krbSenal1(bx, light, { fit: () => {}, label: (t) => { if ($('#kc-tv-que')) $('#kc-tv-que').textContent = t; } });
+    else bx.innerHTML = '<p class="muted small">No se pudo abrir la transmisión.</p>';
+  };
   if (!light) await api('POST', '/api/stage', { show: 'karaoke' }).catch(fail); // al entrar, el karaoke pasa a la pantalla
   let last = '';
   let k = null; // lo último que se mostró (la lista del servidor, o con los cambios recién tocados)
@@ -2007,7 +2077,7 @@ views.karaokectl = async (local) => {
   await paint();
   if (k && k.edit) paintSung();
   const timer = setInterval(paint, 3000);
-  return () => { clearInterval(timer); if (stopBar) stopBar(); if (stopMini) stopMini(); };
+  return () => { clearInterval(timer); if (stopBar) stopBar(); if (stopMini) stopMini(); tvClose(); };
 };
 
 // Menú de abajo en el panel de todos los juegos (pedido de Cote): «Sortear juego» y después los juegos con su ícono;
@@ -2293,9 +2363,23 @@ function fitJoinQr() {
 addEventListener('resize', fitJoinQr);
 if (document.fonts) document.fonts.ready.then(fitJoinQr);
 
+// #/escena es la misma escena que el GC Light del local (Cote, 28 nov: «igual como pasa en Kennedy los jueves…
+// por aquí pasan los juegos y se enganchan al karaoke usando la misma escena en OBS»): con la sala de juegos abierta en un
+// local, #/escena muestra lo mismo que #/light-gc/<local> (la sala de juegos y, si se toca un botón de la sala light, ese
+// GC; gana lo último que se tocó). Así da lo mismo cuál de los dos links esté en OBS. Sin sala, en una sala simulada o
+// en la copia de eventos, es la escena de siempre.
+views.escena = async () => {
+  const st = await api('GET', '/api/stage').catch(() => null);
+  const v = st && st.venue;
+  if (v && /^(kennedy|frida|tobalaba)$/.test(v) && views['light-gc']) {
+    const l = await api('GET', `/api/light?local=${v}`).catch(() => null);
+    if (l && l.salaHoy) return views['light-gc'](v);
+  }
+  return views.escenaSala();
+};
 // Pantalla única para OBS: muestra la gráfica que el moderador elija en «Juegos».
 // No requiere iniciar sesión y queda transparente cuando no hay nada que mostrar.
-views.escena = async () => {
+views.escenaSala = async () => {
   let current = null;
   let stop = null;
   let busy = false;

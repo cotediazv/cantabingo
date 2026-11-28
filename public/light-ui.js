@@ -14,6 +14,7 @@
   // Después, lo mismo en Frida y Tobalaba (pedido de Cote, 27 nov: «aplicar lo mismo… fondo Tobalaba y Frida»)
   const FONDO_NAME = { kennedy: 'FONDO KENNEDY', frida: 'FONDO FRIDA', tobalaba: 'FONDO TOBALABA' };
   const stagesOf = (v) => (FONDO_NAME[v] ? STAGES.map((x) => (x[0] === 'none' ? ['fondo', '🎬', FONDO_NAME[v]] : x)) : STAGES);
+  window.lightStagesOf = stagesOf; // los mismos botones en «En pantalla» del Centro de control (pedido de Cote, 28 nov)
   const dayName = (d) => ({ MIERCOLES: 'Miércoles', SABADO: 'Sábado' }[d] || d.charAt(0) + d.slice(1).toLowerCase());
   // Diseño nuevo (tema.js): las etiquetas de las pantallas van sin emojis; con el diseño anterior quedan como siempre
   const se = (s) => (window.sinEmoji ? window.sinEmoji(s) : s);
@@ -83,9 +84,9 @@
       // Titulo chico y en una linea, sin el numero de personas (pedido de Cote, 27 nov: «no es relevante»)
       // Los botones del GC lo mas arriba posible (Cote, 27 nov): sin el subtitulo «En pantalla (GC)» (los botones ya dicen GC)
       top.innerHTML = `<h1 class="lp-title">${esc(st.title)}</h1>
-        ${st.stage === 'fondo' ? `<p class="lp-sala">🎬 <b>${{ kennedy: 'Fondo Kennedy', frida: 'Fondo Frida', tobalaba: 'Fondo Tobalaba' }[v] || 'Fondo'} en el GC de OBS.</b> Se pone solo a las 19:00 y a la 01:00. Para pasar al GC, toca otro botón.</p>` : ''}
-        ${st.sala ? '<p class="lp-sala">🎮 <b>Hoy hay sala de juegos en este local:</b> el GC Light de OBS muestra el GC de la sala de juegos (sus juegos, su karaoke y su QR) toda la noche. Estos botones vuelven a mandar en el GC cuando se cierre la sala de juegos.</p>' : ''}
-        <div class="lp-stages">${stagesOf(v).map(([k, i, t]) => `<button type="button" data-st="${k}" class="${st.stage === k ? 'on' : ''}"><span>${i}</span>${t}</button>`).join('')}</div>
+        ${st.stage === 'fondo' && !st.sala ? `<p class="lp-sala">🎬 <b>${{ kennedy: 'Fondo Kennedy', frida: 'Fondo Frida', tobalaba: 'Fondo Tobalaba' }[v] || 'Fondo'} en el GC de OBS.</b> Se pone solo a las 19:00 y a la 01:00. Para pasar al GC, toca otro botón.</p>` : ''}
+        ${st.salaHoy ? `<p class="lp-sala">🎮 <b>Hoy hay sala de juegos en este local.</b> ${st.sala ? 'Ahora el GC muestra la sala de juegos. Toca cualquier botón para poner ese GC.' : 'Ahora el GC muestra el botón que tocaste.'} Cuando el animador cambie de juego, el GC vuelve solo a la sala de juegos.</p>` : ''}
+        <div class="lp-stages">${st.salaHoy ? `<button type="button" data-st="sala" class="${st.sala ? 'on' : ''}"><span>🎮</span>SALA DE JUEGOS</button>` : ''}${stagesOf(v).map(([k, i, t]) => `<button type="button" data-st="${k}" class="${st.stage === k && !st.sala ? 'on' : ''}"><span>${i}</span>${t}</button>`).join('')}</div>
 `;
       // Orden de Cote (27 nov): arriba los botones del GC, luego la lista del karaoke y despues el GC personalizable.
       // El switch «Video cartelera» ya no va (Cote: «esta demas, eso funciona automatico»).
@@ -151,6 +152,13 @@
   const weekHTML = (c) => c.week.map((d) => `<div class="lg-day ${d.today ? 'today' : ''}"><b>${esc(dayName(d.day))} ${d.date}</b>
       ${d.show ? `<span class="lg-show">${se('⭐')} ${esc(d.show)}</span>` : ''}
       ${d.hours.length ? `<span class="lg-hours">${d.hours.map((h) => `${esc(h.time)} ${esc(h.label)}`).join(' · ')}</span>` : ''}</div>`).join('');
+  // El fondo del local a pantalla completa, 1280×720 en OBS, llenando hasta los bordes (pedido de Cote, 27 nov). El tamaño va
+  // escrito en el mismo video: aunque OBS se quede con una hoja de estilos anterior, el video no queda de su tamaño natural.
+  // Además se agranda un 3 % (recorta un poco los bordes) y detrás va negro: en OBS quedaba una franja delgada arriba y
+  // abajo por donde se veía la cámara (foto de Cote, 27 nov: «recortando si hace falta»).
+  const FONDO_CSS = 'position:fixed;top:0;left:0;right:0;bottom:0;width:100vw;height:100vh;min-width:100%;min-height:100%;margin:0;padding:0;border:0;object-fit:cover;background:#000;z-index:0;transform:scale(1.03);transform-origin:50% 50%';
+  // Con sala de juegos abierta en el local, el QR es el de la sala de juegos toda la noche (Cote, 28 nov)
+  const joinOf = (st) => (st && st.salaHoy ? `${window.pubBase()}#/jugar` : lightJoin(st.id));
   views['light-gc'] = async (venue) => {
     document.body.classList.add('obs', 'gc-screen');
     app.innerHTML = '<div id="lg"></div>';
@@ -170,12 +178,12 @@
       // el video de la pantalla horizontal del local; a las 19:00 vuelve solo al GC (el servidor decide la hora)
       if (st.fondo) {
         const k = `fondo:${st.fondo}`;
-        if (shown !== k) { shown = k; stopSub(); document.body.classList.remove('gc-screen'); document.body.classList.add('lg-fondo-on'); app.innerHTML = `<video class="lg-fondo" src="${esc(st.fondo)}" autoplay muted loop playsinline></video>`; }
+        if (shown !== k) { shown = k; stopSub(); document.body.classList.remove('gc-screen'); document.body.classList.add('lg-fondo-on'); document.documentElement.style.background = document.body.style.background = '#000'; app.innerHTML = `<video class="lg-fondo" src="${esc(st.fondo)}" style="${FONDO_CSS}" autoplay muted loop playsinline></video>`; }
         return;
       }
-      if (shown.startsWith('fondo:')) { shown = ''; document.body.classList.remove('lg-fondo-on'); app.innerHTML = '<div id="lg"></div>'; }
+      if (shown.startsWith('fondo:')) { shown = ''; document.body.classList.remove('lg-fondo-on'); document.documentElement.style.background = document.body.style.background = ''; app.innerHTML = '<div id="lg"></div>'; }
       if (st.sala) {
-        if (shown !== 'sala') { shown = 'sala'; stopSub(); document.body.classList.remove('gc-screen'); app.innerHTML = ''; sub = await views.escena(); if (!alive) stopSub(); }
+        if (shown !== 'sala') { shown = 'sala'; stopSub(); document.body.classList.remove('gc-screen'); app.innerHTML = ''; sub = await views.escenaSala(); if (!alive) stopSub(); }
         return;
       }
       if (shown === 'sala') { shown = ''; stopSub(); app.innerHTML = '<div id="lg"></div>'; }
@@ -185,17 +193,22 @@
       let k = null;
       if (stage === 'qr') k = await api('GET', `/api/karaoke?local=${st.venue}`).catch(() => null);
       if (!alive || n !== seq) return;
-      const sig = JSON.stringify([stage, st.id, st.venue, stage === 'custom' ? st.text : '', c && [c.show, c.current, c.next, c.week, c.blocks, c.month], k && k.list.map((p) => [p.name, p.song]), stage === 'info' ? Math.floor(Date.now() / 9000) : 0, t2on()]); // t2on: al cambiar de diseño se vuelve a dibujar
+      const sig = JSON.stringify([stage, st.id, st.venue, stage === 'custom' ? st.text : '', c && [c.show, c.current, c.next, c.week, c.blocks, c.month], k && k.list.map((p) => [p.name, p.song]), stage === 'info' ? Math.floor(Date.now() / 9000) : 0, t2on(), stage === 'cartelera' ? st.fondoVideo || '' : '', st.salaHoy]); // t2on: al cambiar de diseño se vuelve a dibujar
       if (sig === shown) return;
-      const wasKaraoke = shown.startsWith('["karaoke"');
+      const wasKaraoke = shown.startsWith('["karaoke"') && shown.endsWith(`,${!!st.salaHoy}]`); // si cambia el QR (sala de juegos), se vuelve a armar
       shown = sig;
       if (stage === 'karaoke') {
-        if (!wasKaraoke) { stopSub(); sub = await views.karaokeGC({ local: st.venue, join: lightJoin(st.id), nextUp: '' }); }
+        if (!wasKaraoke) { stopSub(); sub = await views.karaokeGC({ local: st.venue, join: joinOf(st), nextUp: '' }); }
         return;
       }
       stopSub();
       document.body.classList.add('obs', 'gc-screen'); // al salir del karaoke se quitan; el GC sigue transparente
       if (!$('#lg')) app.innerHTML = '<div id="lg"></div>';
+      // Cartelera de la semana con el fondo del local detrás (pedido de Cote, 27 nov): el video horizontal del local
+      const bgUrl = stage === 'cartelera' ? st.fondoVideo || '' : '';
+      const bg = $('#lg-bg');
+      if (bg && bg.getAttribute('src') !== bgUrl) bg.remove();
+      if (bgUrl && !$('#lg-bg')) app.insertAdjacentHTML('afterbegin', `<video id="lg-bg" src="${esc(bgUrl)}" style="${FONDO_CSS}" autoplay muted loop playsinline></video>`);
       const box = $('#lg');
       box.className = `th-${st.venue || 'kennedy'}`;
       if (stage === 'custom') {
@@ -210,7 +223,7 @@
       } else if (stage === 'info') {
         // La información que va cambiando (pedido de Cote: lo que se ve por defecto en el GC), en una franja abajo para no
         // tapar la transmisión; cambia cada 9 segundos
-        const cap = (t) => String(t || '').toLocaleLowerCase('es').replace(/(^|[\s:(«"-])(\p{L})/gu, (m, a, b) => a + b.toLocaleUpperCase('es'));
+        const cap = (t) => String(t || '').toLocaleLowerCase('es').replace(/(^|[\s:(«"-])(\p{L})/gu, (m, a, b) => a + b.toLocaleUpperCase('es')).replace(/\b(Tributo|Doble) (A|De) /g, (m, a, b) => `${a} ${b.toLowerCase()} `);
         const slides = [];
         if (c && c.current) slides.push(['⏱️ Esta noche', `<b style="--n:${String(c.current.label).length}">${esc(cap(c.current.label))}</b><span>Ahora · desde las <em>${esc(c.current.time)}</em></span>${c.next ? `<span>A continuación · <em>${esc(c.next.time)}</em> ${esc(cap(c.next.label))}</span>` : ''}`]);
         else if (c && c.next) slides.push(['⏱️ Esta noche', `<b style="--n:${String(c.next.label).length}">${esc(cap(c.next.label))}</b><span>Desde las <em>${esc(c.next.time)}</em></span>`]);
@@ -229,14 +242,14 @@
           ${c && c.week.length ? weekHTML(c) : '<p class="lg-empty">Pronto la cartelera de la semana</p>'}</div>`;
       } else if (stage === 'qr') {
         const list = k ? k.list.slice(0, 6) : [];
-        box.innerHTML = `<div class="lg-card lg-qr"><div class="lg-qrbox">${qr(lightJoin(st.id))}<b>Escanea el código QR con tu celular</b><span>Pide tu canción de karaoke</span></div>
+        box.innerHTML = `<div class="lg-card lg-qr"><div class="lg-qrbox">${qr(joinOf(st))}<b>Escanea el código QR con tu celular</b><span>Pide tu canción de karaoke</span></div>
           <div class="lg-list"><small>${se('🎤 Próximos en cantar')}</small>${list.length ? list.map((p, i) => `<div><em>${i + 1}</em><p><b>${esc(p.name)}</b><span>${esc(p.song)}${p.artist ? ` · ${esc(p.artist)}` : ''}</span></p></div>`).join('') : '<p class="lg-empty">¡Sé el primero en pedir tu canción!</p>'}</div></div>`;
       } else box.innerHTML = '';
     };
     await tick();
     const timer = setInterval(tick, 2500);
     const offAviso = window.onAviso(tick); // el cambio de GC llega al instante
-    return () => { alive = false; clearInterval(timer); offAviso(); stopSub(); document.body.classList.remove('obs', 'gc-screen', 'lg-fondo-on'); };
+    return () => { alive = false; clearInterval(timer); offAviso(); stopSub(); document.body.classList.remove('obs', 'gc-screen', 'lg-fondo-on'); document.documentElement.style.background = document.body.style.background = ''; };
   };
 
   // ---------- Celular del público ----------
@@ -357,7 +370,7 @@
   const NAMES = { kennedy: 'Mercado Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' };
   const DAYS = { LUNES: 'Lunes', MARTES: 'Martes', MIERCOLES: 'Miércoles', JUEVES: 'Jueves', VIERNES: 'Viernes', SABADO: 'Sábado', DOMINGO: 'Domingo' };
   const day = (d) => DAYS[String(d || '').toUpperCase()] || String(d || '');
-  const cap = (t) => String(t || '').toLocaleLowerCase('es').replace(/(^|[\s:(«"-])(\p{L})/gu, (m, a, b) => a + b.toLocaleUpperCase('es'));
+  const cap = (t) => String(t || '').toLocaleLowerCase('es').replace(/(^|[\s:(«"-])(\p{L})/gu, (m, a, b) => a + b.toLocaleUpperCase('es')).replace(/\b(Tributo|Doble) (A|De) /g, (m, a, b) => `${a} ${b.toLowerCase()} `);
   const SLIDE_MS = 9000;
   // Diseño nuevo (tema.js): los títulos de la pantalla van sin emojis; con el diseño anterior quedan como siempre
   const se = (s) => (window.sinEmoji ? window.sinEmoji(s) : s);
@@ -393,7 +406,7 @@
     let joinUrl = '';
     const light = await api('GET', `/api/light?local=${v}`).catch(() => null);
     if (location.hash !== mine) return () => {};
-    if (light && light.id) { joinUrl = `${window.pubBase()}#/l/${light.id}`; $('.lv-qrbox').innerHTML = qr(joinUrl); }
+    if (light && light.id) { joinUrl = light.salaHoy ? `${window.pubBase()}#/jugar` : `${window.pubBase()}#/l/${light.id}`; $('.lv-qrbox').innerHTML = qr(joinUrl); } // con sala de juegos: su QR (Cote, 28 nov)
     // Qué recuadros hay para mostrar (solo los que tienen algo)
     const slides = () => {
       const out = [];
@@ -415,7 +428,7 @@
       const nextDay = cart && !(cart.blocks || []).length && (cart.week || []).find((d) => !d.today && d.hours && d.hours.length);
       if (nextDay) out.push(`<h2>🕗 ${esc(day(nextDay.day))} ${nextDay.date}</h2>${nextDay.show ? `<div class="lv-now lv-next"><small>Show</small><b>${showHtml(nextDay.show)}</b></div>` : ''}<ul class="lv-hours">${nextDay.hours.map((b) => `<li><em>${esc(b.time)}</em><b>${esc(cap(b.label))}</b></li>`).join('')}</ul>`);
       if (cart && cart.blocks && cart.blocks.length) out.push(`<h2>🕗 Horarios de hoy</h2><ul class="lv-hours">${cart.blocks.map((b) => `<li class="${cart.current && cart.current.time === b.time ? 'on' : ''}"><em>${esc(b.time)}</em><b>${esc(cap(b.label))}</b></li>`).join('')}</ul>`);
-      if (cart && cart.week && cart.week.length) out.push(`<h2>📅 Esta semana</h2><ul class="lv-week">${cart.week.slice(0, 5).map((d) => `<li class="${d.today ? 'on' : ''}"><em>${esc(day(d.day))} ${d.date}</em><b>${d.show ? showHtml(d.show) : esc(cap((d.hours[0] || {}).label || ''))}</b></li>`).join('')}</ul>`);
+      if (cart && cart.week && cart.week.length) out.push(`<h2>📅 Esta semana</h2><ul class="lv-week">${cart.week.slice(0, 7).map((d) => `<li class="${d.today ? 'on' : ''}"><em>${esc(day(d.day))} ${d.date}</em><b>${d.show ? showHtml(d.show) : esc(cap((d.hours[0] || {}).label || ''))}</b></li>`).join('')}</ul>`);
       if (cart && cart.month && cart.month.length) out.push(`<h2>🗓️ Cartelera del mes</h2><ul class="lv-week">${cart.month.slice(0, 6).map((d) => `<li><em>${esc(cap(d.day))}</em><b>${showHtml(d.show)}</b></li>`).join('')}</ul>`);
       if (focus === 'show') {
         const keep = out.filter((x) => x.startsWith('<h2>⏱️') || x.startsWith('<h2>🕗'));

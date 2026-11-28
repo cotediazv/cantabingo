@@ -22,7 +22,7 @@ const SCREENS = { kennedy: 'kennedy', frida: 'frida', 'tobalaba-v': 'tobalaba', 
 const MODES = ['auto', 'video', 'actividad'];
 const MAX_BYTES = 300 * 1024 * 1024; // 300 MB por video
 
-module.exports = function vertical({ cuadroOf = () => 0, planB = () => false, soloA = () => false, emisorVivo = () => false, app, db, save, requireAdmin, fail, dir, karaoke, perOf = () => null }) {
+module.exports = function vertical({ cuadroOf = () => 0, planB = () => false, soloA = () => false, emisorVivo = () => false, app, db, save, requireAdmin, fail, dir, karaoke, perOf = () => null, luzManda = () => false }) {
   db.vertical ||= {}; // local -> { video: número de versión (fecha de subida), size, mode }
   const file = (v) => path.join(dir, `vertical-${v}.mp4`);
   const conf = (v) => (db.vertical[v] ||= { video: 0, size: 0, mode: 'auto' });
@@ -102,6 +102,9 @@ module.exports = function vertical({ cuadroOf = () => 0, planB = () => false, so
   const activityOf = (v) => {
     const s = Object.values(db.sessions)[0];
     if (!s || (s.theme || 'frida') !== v || !db.stage || db.stage === 'none') return null;
+    // Lo último que se tocó fue un botón del GC Light (Cote, 28 nov: «si estoy poniendo el QR en grande, es para el karaoke»):
+    // las pantallas del local siguen a la sala light (su karaoke, su QR del karaoke…) hasta que la sala de juegos cambie de escena
+    if (luzManda(v)) return null;
     if (db.stage === 'bingo') {
       const celebrate = !s.hideWin && (s.results || []).some((r) => r.validated && !r.dismissed);
       // también desde que se elige la figura (Cote, 24 nov: la figura se ve en grande «en todos los dispositivos»)

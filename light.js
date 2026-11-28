@@ -17,7 +17,7 @@ const NIGHT_STARTS = 6; // la noche cambia a las 6 AM, igual que el karaoke
 const DAYS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 const GLOSA_MS = 10 * 60e3; // la GLOSA se relee cada 10 minutos
 
-module.exports = function light({ app, db, save, requireAdmin, requireLocal = requireAdmin, fail, karaoke, insta, aviso = () => {}, salaDe = () => false, fondoDe = () => '', reloj = () => new Date() }) {
+module.exports = function light({ app, db, save, requireAdmin, requireLocal = requireAdmin, fail, karaoke, insta, aviso = () => {}, salaDe = () => false, salaManda = salaDe, fondoDe = () => '', fondoVid = () => '', alCambiar = () => {}, reloj = () => new Date(), progShow = () => null }) {
   // Una sala light por local (Kennedy, Frida y Tobalaba pueden estar abiertas a la vez)
   db.lights ||= {};
   if (db.light) { db.lights[db.light.venue] = db.light; db.light = null; } // salas guardadas antes de este cambio
@@ -82,21 +82,32 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
   // (no se muestra) y entre comillas, la persona o el grupo que hace el tributo. Ej.: «GEORGE MICHAEL "RAFA DAMIÁN" (X)»
   // → «GEORGE MICHAEL (RAFA DAMIÁN)»; «PIANO MAN (X PROJECTS)» → «PIANO MAN». Se entrega con el artista entre paréntesis
   // porque así lo leen todas las pantallas y la página krbstage.cl (título arriba y «por <artista>»).
+  const up = (x) => clean(x, 160).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
   const showName = (t) => {
     const raw = clean(t, 160).replace(/\([^()]*\)/g, ' ');
     const q = raw.match(/["“”«»]\s*([^"“”«»]+?)\s*["“”«»]/);
     const by = q ? clean(q[1], 60) : '';
     let title = clean((q ? raw.replace(q[0], ' ') : raw).replace(/["“”«»]/g, ' ').replace(/^[\s\-–—,:·]+|[\s\-–—,:·]+$/g, ''), 100);
     // si el artista ya va escrito al final del título, no se repite (ej. «ESPECIAL BALADA ITALIANA MATIAS FAJARDO "MATIAS FAJARDO"»)
-    const up = (x) => clean(x, 160).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
     if (by && up(title).endsWith(` ${up(by)}`)) title = clean(title.slice(0, title.length - by.length).replace(/[\s\-–—,:·]+$/, ''), 100);
     return clean(title && by ? `${title} (${by})` : title || by, 120);
   };
   // Show de una fecha: en la cartelera el día se escribe como «SABADO 7» (vale el número del final)
-  const showOf = (data, n) => {
+  // «Tributo a» / «Doble de» (pedido de Cote, 27 nov: «Si sale, hay que decirlo»): la GLOSA guarda solo el nombre del
+  // show («BON JOVI (…)»); el tipo lo sabe Programación (`progShow`). Si ese día y local es un tributo o un doble y el
+  // nombre es el mismo que dice la GLOSA, se antepone; si la GLOSA ya lo dice o el show es otro, queda como está.
+  const conTipo = (venue, n, name) => {
+    if (!name || /\b(TRIBUTO|DOBLE)\b/.test(up(name))) return name;
+    let s = null;
+    try { s = progShow(venue, n); } catch (e) { s = null; }
+    if (!s || (s.tipo !== 'tributo' && s.tipo !== 'doble') || !clean(s.nombre, 80)) return name;
+    if (!up(name).startsWith(up(s.nombre))) return name;
+    return `${s.tipo === 'doble' ? 'DOBLE DE' : s.banda ? 'BANDA TRIBUTO A' : 'TRIBUTO A'} ${name}`;
+  };
+  const showOf = (data, n, venue) => {
     const t = tabFor(data, n.m);
     const row = t ? (t.cartelera || []).find((x) => Number((String(x.dia).match(/(\d+)\s*$/) || [])[1]) === n.d) : null;
-    return row ? showName(row.show) : '';
+    return row ? conTipo(venue, n, showName(row.show)) : '';
   };
   // Mes de la pestaña leída, ej. «NOVIEMBRE26 MASTER TOTAL» → 11
   const MONTHS = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
@@ -116,18 +127,23 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
     const nowMin = minutesNow();
     const next = blocks.find((b) => { const t = toMin(b.time); return t != null && t > nowMin; }) || null;
     const current = [...blocks].reverse().find((b) => { const t = toMin(b.time); return t != null && t <= nowMin; }) || null;
+    // Hoy y los próximos SEIS DÍAS CON ACTIVIDADES (pedido de Cote, 27 nov: «son los próximos seis días de actividades»),
+    // no seis días de calendario: se avanza hasta juntarlos (como mucho 45 días), aunque crucen de mes
     const week = [];
-    for (let i = 0; i < 7; i++) {
+    let more = 0;
+    for (let i = 0; i < 45 && more < 6; i++) {
       const n = night(i);
       const hours = hoursOf(data, n.dow, n);
-      const show = showOf(data, n);
-      if (hours.length || show) week.push({ day: DAYS[n.dow], date: n.d, month: n.m, today: i === 0, show, hours });
+      const show = showOf(data, n, venue);
+      if (!hours.length && !show) continue;
+      week.push({ day: DAYS[n.dow], date: n.d, month: n.m, today: i === 0, show, hours });
+      if (i > 0) more++;
     }
     // Cartelera del mes (lo que queda desde hoy), para la pantalla vertical de la sala light
     const tm = tabFor(data, today.m);
-    const month = tm ? (tm.cartelera || []).map((r) => ({ day: clean(r.dia, 20), date: Number((String(r.dia).match(/(\d+)\s*$/) || [])[1]) || 0, show: showName(r.show) }))
+    const month = tm ? (tm.cartelera || []).map((r) => ({ day: clean(r.dia, 20), date: Number((String(r.dia).match(/(\d+)\s*$/) || [])[1]) || 0, show: showName(r.show) })).map((r) => ({ ...r, show: conTipo(venue, { y: today.y, m: today.m, d: r.date }, r.show) }))
       .filter((r) => r.date >= today.d && r.show).sort((a, b) => a.date - b.date) : [];
-    return { venue, name: VENUES[venue], show: showOf(data, today), blocks, current, next, week, month, at: g.at, error: g.error };
+    return { venue, name: VENUES[venue], show: showOf(data, today, venue), blocks, current, next, week, month, at: g.at, error: g.error };
   }
 
   // ---------- Estado ----------
@@ -136,7 +152,7 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
     // fondo: con el botón «FONDO KENNEDY», el video horizontal del local en lugar del GC (pedido de Cote, 27 nov)
     // sala: hoy hay sala de juegos (no simulada) de este local; el GC Light muestra el GC de la sala de juegos toda la
     // noche, enganchado a su QR (pedido de Cote, 27 nov: «tener que cambiarlo en OBS es una lata»)
-    return l ? { open: true, id: l.id, venue: v, name: VENUES[v], title: `Sala light · ${VENUES[v]}`, stage: l.stage, text: l.text || '', video: !!l.video, players: Object.keys(l.players).length, sala: !!salaDe(v), fondo: fondoDe(v) } : { open: false, venue: v, name: VENUES[v], sala: !!salaDe(v), fondo: fondoDe(v) };
+    return l ? { open: true, id: l.id, venue: v, name: VENUES[v], title: `Sala light · ${VENUES[v]}`, stage: l.stage, text: l.text || '', video: !!l.video, players: Object.keys(l.players).length, sala: !!salaManda(v), salaHoy: !!salaDe(v), fondo: fondoDe(v), fondoVideo: fondoVid(v) } : { open: false, venue: v, name: VENUES[v], sala: !!salaManda(v), salaHoy: !!salaDe(v), fondo: fondoDe(v) };
   };
   // Sin ?local= devuelve la lista de las salas light abiertas (y, por compatibilidad, la primera)
   app.get('/api/light', (req, res) => {
@@ -165,7 +181,11 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
     const v = String(b.local || '');
     const show = String(b.show || '');
     if (!db.lights[v]) return fail(res, 404, 'No hay una sala light abierta en este local');
+    // «Sala de juegos» (días con sala de juegos en el local): el GC Light vuelve a mostrar la sala de juegos
+    if (show === 'sala') { db.lights[v].stageAt = 0; save(); aviso(); alCambiar(); return res.json(pub(v)); }
     if (!STAGES.includes(show)) return fail(res, 400, 'Opción no válida');
+    // Los días con sala de juegos, el botón que se toca manda en el GC (gana lo último que se tocó; ver salaManda en server.js)
+    db.lights[v].stageAt = Date.now();
     // GC personalizable: el texto que se escribe en el panel (queda guardado para volver a usarlo)
     if (b.text != null) db.lights[v].text = clean(b.text, 120);
     if (show === 'custom' && !db.lights[v].text) return fail(res, 400, 'Escribe el texto del GC personalizable');
@@ -174,6 +194,7 @@ module.exports = function light({ app, db, save, requireAdmin, requireLocal = re
     save();
     if (show === 'karaoke' || show === 'qr') karaoke.refreshVenue(v);
     aviso(); // las pantallas cambian al instante
+    alCambiar(); // y los celulares de la sala de juegos (pueden pedir canciones con el karaoke de la sala light en pantalla)
     res.json(pub(v));
   });
   // Switch «Video cartelera» (pedido de Cote, 21 nov): deja puesto en la pantalla vertical del local (versión completa y

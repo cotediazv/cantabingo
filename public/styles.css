@@ -4086,3 +4086,12 @@ body.lg-fondo-on #venue-mark { display: none !important; }
 html.evento .games-nav [data-draw-mode="sorteo"], html.evento .games-nav [data-draw-mode="votacion"] { display: none !important; }
 html.evento .games-nav a[href="#/showctl"], html.evento .games-nav a[href="#/karaokectl"], html.evento .games-nav a[href="#/instactl"] { display: none !important; }
 html.evento .games-nav [data-game][hidden] { display: none !important; }
+/* Sala light (pedido de Cote, 27 nov): botones del GC fijos arriba y, debajo, la transmision en vivo desplegable */
+.kc-fijo { position: sticky; top: 0; z-index: 30; background: var(--bg, #12101c); padding-top: 4px; margin-bottom: 10px; }
+.kc-fijo #kc-lt { margin-bottom: 6px; }
+.kc-tv { display: grid; gap: 4px; }
+.kc-tv #kc-tv-btn { padding: 7px 10px; font-size: .85rem; border-radius: 10px; min-height: 0; text-align: left; display: flex; justify-content: space-between; }
+.kc-tv small { font-size: .7rem; opacity: .7; }
+.kc-tv-box { position: relative; aspect-ratio: 16 / 9; background: #000; border-radius: 10px; overflow: hidden; max-height: 40vh; }
+.kc-tv-box video, .kc-tv-box .gm-p1in, .kc-tv-box iframe { position: absolute; top: 0; right: 0; bottom: 0; left: 0; width: 100%; height: 100%; border: 0; object-fit: contain; }
+.kc-tv-box .gm-p1in iframe { position: absolute; top: 0; right: 0; bottom: 0; left: 0; }

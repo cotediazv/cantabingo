@@ -416,7 +416,7 @@
   function origin() { return PUB || (location.protocol + '//' + location.host); }
   function qrImg(url) { return '<img alt="Código QR" src="/api/qr?text=' + encodeURIComponent(url) + '">'; }
   function clock(ms) { var s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + ('0' + (s % 60)).slice(-2); }
-  function cap(t) { return String(t || '').toLowerCase().replace(/(^|[\s:(«"\-])([a-záéíóúñü])/g, function (m, a, b) { return a + b.toUpperCase(); }); }
+  function cap(t) { return String(t || '').toLowerCase().replace(/(^|[\s:(«"\-])([a-záéíóúñü])/g, function (m, a, b) { return a + b.toUpperCase(); }).replace(/\b(Tributo|Doble) (A|De) /g, function (m, a, b) { return a + ' ' + b.toLowerCase() + ' '; }); }
   var DAYS = { LUNES: 'Lunes', MARTES: 'Martes', MIERCOLES: 'Miércoles', 'MIÉRCOLES': 'Miércoles', JUEVES: 'Jueves', VIERNES: 'Viernes', SABADO: 'Sábado', 'SÁBADO': 'Sábado', DOMINGO: 'Domingo' };
   function day(d) { return DAYS[String(d || '').toUpperCase()] || String(d || ''); }
   function showHtml(t) {
@@ -621,8 +621,8 @@
   var QR_ONLY_KAR = { kennedy: true };
   var lightUrl = '';
   function lightJoin(cb) {
-    if (lightUrl) { cb(lightUrl); return; }
-    get('/api/light?local=' + VENUE, function (l) { if (l && l.id) lightUrl = origin() + '/#/l/' + l.id; cb(lightUrl || origin() + '/#/jugar'); });
+    // con sala de juegos abierta en el local, el QR es el de la sala de juegos toda la noche (Cote, 28 nov)
+    get('/api/light?local=' + VENUE, function (l) { lightUrl = l && l.id && !l.salaHoy ? origin() + '/#/l/' + l.id : origin() + '/#/jugar'; cb(lightUrl); });
   }
 
   // Información del local (como el fondo vertical de la sala light): lo de esta noche, un recuadro que va cambiando y el QR
@@ -671,7 +671,7 @@
       }
       if (week.length) {
         var ws = '<h2>📅 Esta semana</h2><ul class="lv-week">';
-        for (i = 0; i < week.length && i < 5; i++) ws += '<li class="' + (week[i].today ? 'on' : '') + '"><em>' + h(day(week[i].day)) + ' ' + h(week[i].date) + '</em><b>' + (week[i].show ? showHtml(week[i].show) : h(cap(((week[i].hours || [])[0] || {}).label || ''))) + '</b></li>';
+        for (i = 0; i < week.length && i < 7; i++) ws += '<li class="' + (week[i].today ? 'on' : '') + '"><em>' + h(day(week[i].day)) + ' ' + h(week[i].date) + '</em><b>' + (week[i].show ? showHtml(week[i].show) : h(cap(((week[i].hours || [])[0] || {}).label || ''))) + '</b></li>';
         out.push(ws + '</ul>');
       }
       if (month.length) {

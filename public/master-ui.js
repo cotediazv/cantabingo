@@ -119,6 +119,8 @@
     stop.sound = (on) => { sound = !!on; paint(); if (sound && own) vid.play().catch(() => {}); };
     return stop;
   };
+  // la usa también el panel del karaoke de cada sala light («Ver la transmisión en vivo», pedido de Cote, 27 nov)
+  window.krbSenal1 = signal1;
 
   // Sonido y pantalla grande de los monitores de la sala de juegos (pedido de Cote, 23 nov: «habilitar sonido para pantalla
   // 1 y 2, yo elijo cuál suena, también la opción de pantalla completa dentro de la zona delimitada para pantalla»). Todo

@@ -203,6 +203,11 @@ var LINES = [['linea', 'Línea (cualquiera)'], ['horizontal', 'Línea horizontal
 var SHAPES = [['esquinas', 'Cuatro esquinas'], ['sello', 'Sello (2×2 en una esquina)'], ['cruz', 'Cruz'], ['marco', 'Marco'], ['cuadro', 'Cuadro central'], ['diamante', 'Diamante'], ['piramide', 'Pirámide'], ['piramide-inv', 'Pirámide invertida'], ['reloj', 'Reloj de arena'], ['corazon', 'Corazón'], ['estrella', 'Estrella'], ['lleno', 'Cartón lleno']];
 var LETTERS = []; (function () { var l = 'abcdefghijklmnopqrstuvwxyz'; for (var i = 0; i < l.length; i++) LETTERS.push([l.charAt(i), 'Figura ' + l.charAt(i).toUpperCase()]); })();
 var STAGES = [['bingo', '🎱 Bingo'], ['sorteo', '🎲 Sorteo'], ['rueda', '🎡 El Rosko'], ['qr', '📱 QR en pantalla completa'], ['karaoke', '🎤 Karaoke'], ['show', '⭐ Show'], ['voto', '🗳️ Votación'], ['insta', '📸 Instagram'], ['none', '⬛ Nada']];
+// Botones de «En pantalla» (pedido de Cote, 28 nov): los de la sala light del local, con «Juego en vivo» primero
+var FONDO_LUZ = { kennedy: 'FONDO KENNEDY', frida: 'FONDO FRIDA', tobalaba: 'FONDO TOBALABA' };
+function luzKeys(v) {
+  return [['sala', '🎮 JUEGO EN VIVO'], ['karaoke', '🎤 GC KARAOKE'], ['qr', '📱 QR GRANDE'], ['show', '⭐ GC SHOW'], ['cartelera', '📅 GC CARTELERA'], ['info', '🔄 INFO GRAL'], FONDO_LUZ[v] ? ['fondo', '🎬 ' + FONDO_LUZ[v]] : ['none', '⛔ NADA'], ['insta', '📸 REDES SOCIALES']];
+}
 
 function $(id) { return document.getElementById(id); }
 function h(t) { return String(t == null ? '' : t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
@@ -955,14 +960,26 @@ views.control = function () {
         o += S.sala && S.sala.length ? '<a class="create open" href="#/juegos">▶<br>Ir a la sala en juego: ' + h(S.sala[0].name) + '</a>' : '<a class="create" href="#/nuevo">🎮<br>Crear sala de juegos</a>';
         if (S.sala && S.sala.length) for (var i = 0; i < S.sala.length; i++) o += '<div class="item"><span class="r">' + btn('Cerrar', 'closeSala', d('sid', S.sala[i].id), 'bad') + '</span><b>' + h(S.sala[i].name) + '</b><br><span class="muted">Ronda ' + S.sala[i].round + '</span></div>';
         else o += '<p class="muted">No hay ninguna sala abierta.</p>';
-        o += '</div><div class="panel"><h2>En pantalla</h2><p class="muted">La pantalla cambia sola al activar un bingo, lanzar un sorteo o cargar un rosco. Aquí puedes cambiarla a mano.</p><div class="row">';
-        for (var k = 0; k < STAGES.length; k++) o += btn(STAGES[k][1], 'stage', d('s', STAGES[k][0]), 'half' + (show === STAGES[k][0] ? ' on' : ''));
-        o += '</div></div>';
-        render(o);
+        // «En pantalla» (pedido de Cote, 28 nov): «Juego en vivo» y los mismos botones de la sala light del local de la sala abierta
+        var v = stg && stg.venue;
+        var paintEnPantalla = function (l) {
+          o += '</div><div class="panel"><h2>En pantalla</h2>';
+          if (!v || !l || !l.open) o += '<p class="muted">' + (v ? 'La sala light de este local no está disponible.' : 'No hay sala de juegos abierta. Los botones del GC de cada local están en su sala light.') + '</p>';
+          else {
+            o += '<p class="muted">' + h(l.name) + ': ' + (l.sala ? 'ahora el GC muestra el juego en vivo.' : 'ahora el GC muestra el botón que tocaste; «Juego en vivo» lo devuelve al juego.') + ' Los juegos cargan sus escenas solos.</p><div class="row">';
+            var keys = luzKeys(v); var insta = !!(l.sala && show === 'insta');
+            for (var k = 0; k < keys.length; k++) { var kk = keys[k][0]; o += btn(keys[k][1], kk === 'insta' ? 'stage' : 'luz', d('s', kk) + d('v', v), 'half' + ((kk === 'sala' ? l.sala && !insta : kk === 'insta' ? insta : !l.sala && l.stage === kk) ? ' on' : '')); }
+            o += '</div><p><input id="luztext" maxlength="120" placeholder="Escribe aquí el texto del GC" value="' + h(l.text || '') + '"> ' + btn('✏️ GC personalizable', 'luzText', d('v', v), (!l.sala && l.stage === 'custom') ? 'on' : '') + '</p>';
+          }
+          o += '</div>';
+          render(o);
+        };
+        if (!v) paintEnPantalla(null);
+        else api('GET', '/api/light?local=' + v, null, function (e3, l) { paintEnPantalla(e3 ? null : l); });
       });
     });
   };
-  load(); poll = setInterval(load, 4000);
+  load(); poll = setInterval(function () { if (!document.activeElement || document.activeElement.id !== 'luztext') load(); }, 4000); // no se borra el texto del GC mientras se escribe
 };
 
 // ---------- Acciones ----------
@@ -1058,6 +1075,8 @@ A.game = function (el) {
   if (ready) { api('POST', '/api/gamedraw/pick', { game: k }, function (err, r) { if (err) { toast(err); return; } if (r) S.draw = r; toast('Siguiente juego: ' + gameName(k)); toGame(k); }); return; }
   toGame(k);
 };
+A.luz = function (el) { act('POST', '/api/light/stage', { local: el.getAttribute('data-v'), show: el.getAttribute('data-s') }, 'En pantalla'); };
+A.luzText = function (el) { var t = ($('luztext').value || '').replace(/^\s+|\s+$/g, ''); if (!t) { toast('Escribe el texto del GC'); return; } act('POST', '/api/light/stage', { local: el.getAttribute('data-v'), show: 'custom', text: t }, 'GC personalizable en pantalla'); };
 A.stage = function (el) { var s = el.getAttribute('data-s'); act('POST', '/api/stage', { show: s }, s === 'qr' ? 'QR en pantalla completa' : 'En pantalla'); };
 A.goKaraoke = function () { go('#/karaoke'); };
 A.raffleDraw = function () { act('POST', '/api/raffle/draw', null, 'Sorteando en pantalla…'); };
