@@ -530,7 +530,8 @@ views.control = async () => {
     const l = v ? await api('GET', `/api/light?local=${v}`).catch(() => null) : null;
     const box = $('#stage'); const form = $('#stage-custom'); const note = $('#stage-note');
     if (!box) return;
-    const sig = JSON.stringify([v, l && [l.open, l.sala, l.stage, l.text]]);
+    const insta = !!(l && l.sala && st.show === 'insta'); // «Redes sociales» en pantalla
+    const sig = JSON.stringify([v, insta, l && [l.open, l.sala, l.stage, l.text]]);
     if (sig === stSig) return;
     if (document.activeElement && form.contains(document.activeElement)) return; // no se pierde lo que se está escribiendo
     stSig = sig; stVenue = v;
@@ -539,8 +540,10 @@ views.control = async () => {
       note.textContent = v ? 'La sala light de este local no está disponible.' : 'No hay sala de juegos abierta. Los botones del GC de cada local están en su sala light.';
       return;
     }
-    const keys = [['sala', '🎮', 'JUEGO EN VIVO'], ...(window.lightStagesOf ? window.lightStagesOf(v) : [])];
-    box.innerHTML = keys.map(([k, i, t]) => `<button type="button" data-show="${k}" class="${(k === 'sala' ? l.sala : !l.sala && l.stage === k) ? 'on' : ''}"><span>${i}</span>${t}</button>`).join('');
+    // «Redes sociales» (Cote, 28 nov: «falta redes sociales»): el «Síguenos en Instagram» de la sala de juegos
+    const keys = [['sala', '🎮', 'JUEGO EN VIVO'], ...(window.lightStagesOf ? window.lightStagesOf(v) : []), ['insta', '📸', 'REDES SOCIALES']];
+    const isOn = (k) => (k === 'sala' ? l.sala && !insta : k === 'insta' ? insta : !l.sala && l.stage === k);
+    box.innerHTML = keys.map(([k, i, t]) => `<button type="button" data-show="${k}" class="${isOn(k) ? 'on' : ''}"><span>${i}</span>${t}</button>`).join('');
     form.hidden = false; form.classList.toggle('on', !l.sala && l.stage === 'custom');
     const inp = form.querySelector('input'); if (!inp.value) inp.value = l.text || '';
     note.textContent = `${l.name}: ${l.sala ? 'ahora el GC muestra el juego en vivo.' : 'ahora el GC muestra el botón que tocaste; «Juego en vivo» lo devuelve al juego.'} Los juegos cargan sus escenas solos.`;
@@ -549,7 +552,11 @@ views.control = async () => {
   $('#stage').onclick = async (e) => {
     const btn = e.target.closest('[data-show]');
     if (!btn || !stVenue) return;
-    try { await api('POST', '/api/light/stage', { local: stVenue, show: btn.dataset.show }); stSig = ''; paintStage(); } catch (err) { fail(err); }
+    try {
+      if (btn.dataset.show === 'insta') await api('POST', '/api/stage', { show: 'insta' }); // la escena de la sala: el GC vuelve a la sala
+      else await api('POST', '/api/light/stage', { local: stVenue, show: btn.dataset.show });
+      stSig = ''; paintStage();
+    } catch (err) { fail(err); }
   };
   $('#stage-custom').onsubmit = async (e) => {
     e.preventDefault();

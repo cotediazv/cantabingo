@@ -206,7 +206,7 @@ var STAGES = [['bingo', '🎱 Bingo'], ['sorteo', '🎲 Sorteo'], ['rueda', '�
 // Botones de «En pantalla» (pedido de Cote, 28 nov): los de la sala light del local, con «Juego en vivo» primero
 var FONDO_LUZ = { kennedy: 'FONDO KENNEDY', frida: 'FONDO FRIDA', tobalaba: 'FONDO TOBALABA' };
 function luzKeys(v) {
-  return [['sala', '🎮 JUEGO EN VIVO'], ['karaoke', '🎤 GC KARAOKE'], ['qr', '📱 QR GRANDE'], ['show', '⭐ GC SHOW'], ['cartelera', '📅 GC CARTELERA'], ['info', '🔄 INFO GRAL'], FONDO_LUZ[v] ? ['fondo', '🎬 ' + FONDO_LUZ[v]] : ['none', '⛔ NADA']];
+  return [['sala', '🎮 JUEGO EN VIVO'], ['karaoke', '🎤 GC KARAOKE'], ['qr', '📱 QR GRANDE'], ['show', '⭐ GC SHOW'], ['cartelera', '📅 GC CARTELERA'], ['info', '🔄 INFO GRAL'], FONDO_LUZ[v] ? ['fondo', '🎬 ' + FONDO_LUZ[v]] : ['none', '⛔ NADA'], ['insta', '📸 REDES SOCIALES']];
 }
 
 function $(id) { return document.getElementById(id); }
@@ -967,8 +967,8 @@ views.control = function () {
           if (!v || !l || !l.open) o += '<p class="muted">' + (v ? 'La sala light de este local no está disponible.' : 'No hay sala de juegos abierta. Los botones del GC de cada local están en su sala light.') + '</p>';
           else {
             o += '<p class="muted">' + h(l.name) + ': ' + (l.sala ? 'ahora el GC muestra el juego en vivo.' : 'ahora el GC muestra el botón que tocaste; «Juego en vivo» lo devuelve al juego.') + ' Los juegos cargan sus escenas solos.</p><div class="row">';
-            var keys = luzKeys(v);
-            for (var k = 0; k < keys.length; k++) o += btn(keys[k][1], 'luz', d('s', keys[k][0]) + d('v', v), 'half' + ((keys[k][0] === 'sala' ? l.sala : !l.sala && l.stage === keys[k][0]) ? ' on' : ''));
+            var keys = luzKeys(v); var insta = !!(l.sala && show === 'insta');
+            for (var k = 0; k < keys.length; k++) { var kk = keys[k][0]; o += btn(keys[k][1], kk === 'insta' ? 'stage' : 'luz', d('s', kk) + d('v', v), 'half' + ((kk === 'sala' ? l.sala && !insta : kk === 'insta' ? insta : !l.sala && l.stage === kk) ? ' on' : '')); }
             o += '</div><p><input id="luztext" maxlength="120" placeholder="Escribe aquí el texto del GC" value="' + h(l.text || '') + '"> ' + btn('✏️ GC personalizable', 'luzText', d('v', v), (!l.sala && l.stage === 'custom') ? 'on' : '') + '</p>';
           }
           o += '</div>';
