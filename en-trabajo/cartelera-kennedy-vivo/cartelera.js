@@ -152,7 +152,7 @@ var KC = (function () {
         var esJ = /^JUEVES/i.test(x);
         if (esJ) col = 0;
         solo = !esJ && col === 0 && (i + 1 >= M.length || /^JUEVES/i.test(String(M[i + 1].day || '')));
-        h += '<div class="kc-m' + (esJ ? ' kc-mj' : '') + (solo ? ' kc-ancho' : '') + '" style="border-left-color:' + c.col + '"><small>' + esc(x.slice(0, 3)) + ' ' + M[i].date + (c.juegos ? ' · <em>Noche de juegos</em>' : '') + '</small>' +
+        h += '<div class="kc-m' + (esJ ? ' kc-mj' : '') + (solo ? ' kc-ancho' : '') + '" style="border-left-color:' + c.col + '"><small>' + esc((DIAS[x.split(' ')[0].toUpperCase()] || x).slice(0, 3)) + ' ' + M[i].date + (c.juegos ? ' · <em>Noche de juegos</em>' : '') + '</small>' +
           (esJ ? '<i style="color:' + c.col + '">' + esc(c.tipo) + '</i>' : '') + '<b class="kc-fit">' + esc(c.nom) + '</b></div>';
         if (!esJ) col = (col + 1) % 2;
       }
