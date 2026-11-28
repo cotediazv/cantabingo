@@ -1,0 +1,352 @@
+<title>Cartelera vertical Kennedy</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Cartelera vertical de Mercado Kennedy (720x1280), versión 2: base A (semana en tarjetas) con lo mejor de B
+   (noche destacada en grande y el mes completo). Estética de la Sala: noche + foco dorado + celeste de Kennedy. */
+:root{
+  --noche:#0c0b12; --tarima:#15131e; --tarima2:#1d1929; --linea:#2a2636; --texto:#f3eee6; --tenue:#a59fb0;
+  --foco:#f4bf5a; --tinta:#1a1407; --k:#47b8e6; --k3:#7fdcff; --rojo:#ff4d5e; --verde:#4fd08b; --rosa:#e0338f; --lila:#a77bff;
+  --disp:"Big Shoulders Display",Impact,"Arial Narrow",sans-serif; --txt:Manrope,system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,monospace;
+  color-scheme:dark;
+}
+body{background:var(--noche);color:var(--texto);font-family:var(--txt);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 40px}
+.pagina{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.pagina>header h1{font-family:var(--disp);font-weight:900;font-size:clamp(30px,5vw,46px);text-transform:uppercase;line-height:1;margin:0;text-wrap:balance}
+.pagina>header h1 b{color:var(--k)}
+.pagina>header p{margin:8px 0 0;color:var(--tenue);max-width:70ch;line-height:1.55}
+.vista{display:grid;grid-template-columns:minmax(0,430px) minmax(0,1fr);gap:28px;align-items:start}
+@media (max-width:760px){.vista{grid-template-columns:1fr}}
+.marco{position:relative;width:100%;aspect-ratio:720/1280;max-width:100%;overflow:hidden;border:2px solid var(--linea);background:#000}
+.marco .escala{position:absolute;left:0;top:0;width:720px;height:1280px;transform-origin:0 0}
+.lado{display:flex;flex-direction:column;gap:14px;min-width:0}
+.ctl{display:flex;flex-wrap:wrap;gap:8px}
+.ctl button{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;background:var(--tarima);color:var(--texto);border:1px solid var(--linea);padding:8px 11px;cursor:pointer}
+.ctl button[aria-pressed="true"]{background:var(--k);color:#06131a;border-color:var(--k)}
+.ctl button:focus-visible{outline:2px solid var(--foco);outline-offset:2px}
+.lado ul{margin:0;padding-left:18px;color:var(--tenue);line-height:1.6;font-size:14px}
+.lado ul b{color:var(--texto)}
+
+/* ===== pantalla 720x1280 ===== */
+.scr{position:absolute;inset:0;overflow:hidden;background:var(--noche);color:var(--texto);font-family:var(--txt)}
+.fondo{position:absolute;inset:-8%;background:radial-gradient(circle at 16% 10%,rgba(71,184,230,.38) 0,transparent 40%),radial-gradient(circle at 90% 82%,rgba(244,191,90,.2) 0,transparent 36%),linear-gradient(170deg,#141b26 0%,#0c0b12 52%,#07060c 100%)}
+.rayos{position:absolute;left:-20%;top:-30%;width:140%;height:70%;background:repeating-conic-gradient(from 200deg at 50% 0%,rgba(127,220,255,.07) 0deg 6deg,transparent 6deg 18deg);mask-image:linear-gradient(180deg,#000,transparent);-webkit-mask-image:linear-gradient(180deg,#000,transparent)}
+.paso{position:absolute;inset:0;padding:54px 40px 0;display:flex;flex-direction:column;opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease;pointer-events:none}
+.paso.on{opacity:1;transform:none}
+.logos{position:absolute;left:0;right:0;bottom:0;height:118px;display:flex;align-items:center;justify-content:center;gap:28px;background:linear-gradient(0deg,rgba(7,6,12,.97),rgba(7,6,12,.6));border-top:2px solid rgba(71,184,230,.5);z-index:3}
+.logos img{height:58px;width:auto}
+.logos i{width:2px;height:56px;background:rgba(243,238,230,.35)}
+.puntos{position:absolute;left:0;right:0;bottom:132px;display:flex;justify-content:center;gap:10px;z-index:3}
+.puntos b{width:34px;height:6px;background:rgba(243,238,230,.22);clip-path:polygon(4px 0,100% 0,calc(100% - 4px) 100%,0 100%)}
+.puntos b.on{background:var(--k)}
+.eti{display:inline-block;font-family:var(--mono);font-weight:700;font-size:20px;letter-spacing:.22em;text-transform:uppercase;background:var(--k);color:#06131a;padding:9px 26px 8px 16px;clip-path:polygon(0 0,100% 0,calc(100% - 14px) 100%,0 100%);align-self:flex-start;white-space:nowrap}
+.eti.oro{background:var(--foco);color:var(--tinta)}
+.tit{font-family:var(--disp);font-weight:900;text-transform:uppercase;line-height:.86;font-size:100px;margin-top:16px;white-space:nowrap}
+.tit b{color:var(--foco)}
+.sub{font-family:var(--mono);font-size:22px;letter-spacing:.16em;text-transform:uppercase;color:var(--k3);margin-top:12px}
+.ico{flex:none;display:grid;place-items:center}
+.ico svg{width:100%;height:100%;overflow:visible}
+
+/* semana en tarjetas (de A) */
+.dias{flex:1;display:flex;flex-direction:column;gap:16px;margin-top:26px;padding-bottom:168px}
+.dia{position:relative;flex:0 1 calc((100% - 16px * (var(--n) - 1)) / var(--n));max-height:280px;min-height:150px;display:grid;grid-template-columns:118px minmax(0,1fr) 116px;align-items:center;column-gap:18px;background:var(--tarima);border-top:5px solid var(--c,var(--k));padding:16px 20px 16px 16px;clip-path:polygon(0 0,100% 0,100% calc(100% - 22px),calc(100% - 22px) 100%,0 100%)}
+.dia.hoy{background:var(--tarima2);box-shadow:inset 0 0 0 2px var(--foco)}
+.dia.juegos{grid-template-rows:auto 1fr;padding-top:0}
+.fecha{text-align:center;line-height:.9}
+.fecha small{display:block;font-family:var(--mono);font-size:18px;letter-spacing:.14em;text-transform:uppercase;color:var(--tenue)}
+.fecha b{display:block;font-family:var(--disp);font-weight:900;font-size:90px}
+.fecha em{display:block;font-family:var(--mono);font-style:normal;font-size:16px;letter-spacing:.14em;color:var(--tenue);text-transform:uppercase}
+.que{min-width:0;overflow:hidden}
+.tipo{font-family:var(--mono);font-size:17px;letter-spacing:.18em;text-transform:uppercase;color:var(--c,var(--k));white-space:nowrap}
+.nom{font-family:var(--disp);font-weight:800;text-transform:uppercase;font-size:58px;line-height:.95;margin-top:4px;white-space:nowrap}
+.hora{display:flex;gap:14px;margin-top:8px;font-family:var(--mono);font-size:18px;color:var(--tenue);white-space:nowrap}
+.hora b{color:var(--foco);font-weight:700}
+.dia .ico{width:112px;height:112px}
+.nj{grid-column:1/-1;margin:0 -20px 12px -16px;background:linear-gradient(90deg,var(--foco),#ffd98a);color:var(--tinta);display:flex;align-items:center;justify-content:space-between;padding:10px 22px 8px}
+.nj b{font-family:var(--disp);font-weight:900;font-size:44px;text-transform:uppercase;line-height:1;letter-spacing:.02em}
+.nj span{font-family:var(--mono);font-weight:700;font-size:22px}
+.hoyb{position:absolute;right:0;top:0;background:var(--foco);color:var(--tinta);font-family:var(--mono);font-weight:700;font-size:15px;letter-spacing:.18em;padding:4px 12px 4px 16px;clip-path:polygon(10px 0,100% 0,100% 100%,0 100%);z-index:2}
+.dia.juegos .hoyb{top:auto;bottom:0}
+
+/* noche destacada en grande (de B) */
+.spot{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding-bottom:178px;gap:4px}
+.spot .ico{width:300px;height:230px;margin-bottom:14px}
+.spot .cuando{font-family:var(--mono);font-size:26px;letter-spacing:.2em;text-transform:uppercase;color:var(--k3)}
+.spot .tipo2{font-family:var(--disp);font-weight:800;font-size:48px;text-transform:uppercase;color:var(--c);letter-spacing:.04em;line-height:1;margin-top:12px}
+.spot .nom2{font-family:var(--disp);font-weight:900;font-size:124px;text-transform:uppercase;line-height:.86;max-width:640px;text-wrap:balance}
+.spot .njg{margin-top:18px;background:var(--foco);color:var(--tinta);padding:12px 34px 10px;clip-path:polygon(16px 0,100% 0,calc(100% - 16px) 100%,0 100%);display:flex;flex-direction:column;align-items:center}
+.spot .njg b{font-family:var(--disp);font-weight:900;font-size:64px;text-transform:uppercase;line-height:.95}
+.spot .njg span{font-family:var(--mono);font-weight:700;font-size:20px;letter-spacing:.14em;text-transform:uppercase}
+.horas{display:flex;margin-top:24px;background:var(--tarima);border-top:3px solid var(--linea);width:100%}
+.horas div{flex:1;padding:14px 6px 12px;border-left:2px solid var(--linea);min-width:0}
+.horas div:first-child{border-left:0}
+.horas b{display:block;font-family:var(--disp);font-weight:900;font-size:38px;color:var(--foco);line-height:1}
+.horas span{display:block;font-family:var(--mono);font-size:14px;letter-spacing:.06em;text-transform:uppercase;color:var(--tenue);margin-top:4px;white-space:nowrap}
+.horas div.top{background:var(--foco)}
+.horas div.top b,.horas div.top span{color:var(--tinta)}
+
+/* noche de juegos (paso propio) */
+.njpaso .grande{font-family:var(--disp);font-weight:900;text-transform:uppercase;line-height:.82;font-size:170px;margin-top:22px}
+.njpaso .grande b{color:var(--foco);display:block}
+.njpaso .jueves{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:40px}
+.njpaso .jueves div{background:var(--tarima);border-top:5px solid var(--foco);padding:20px 12px 24px;text-align:center;min-width:0}
+.njpaso .jueves small{display:block;font-family:var(--mono);font-size:17px;letter-spacing:.14em;text-transform:uppercase;color:var(--tenue)}
+.njpaso .jueves b{display:block;font-family:var(--disp);font-weight:900;font-size:96px;line-height:1}
+.njpaso .jueves span{display:block;white-space:nowrap;font-family:var(--disp);font-weight:800;font-size:34px;text-transform:uppercase;line-height:1;margin-top:6px;color:var(--k3)}
+.njpaso .como{display:flex;align-items:center;gap:22px;margin-top:28px}
+.njpaso .como .ico{width:230px;height:190px}
+.njpaso .como p{margin:0;font-size:30px;line-height:1.35;color:var(--tenue)}
+.njpaso .como p b{color:var(--texto)}
+
+/* mes completo (de B) */
+.mes{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:24px}
+.mes div{background:var(--tarima);border-left:6px solid var(--c);padding:12px 14px 12px 16px;min-width:0}
+.mes small{display:block;font-family:var(--mono);font-size:17px;letter-spacing:.12em;text-transform:uppercase;color:var(--tenue);white-space:nowrap}
+.mes small em{font-style:normal;color:var(--foco)}
+.mes b{display:block;font-family:var(--disp);font-weight:800;font-size:40px;line-height:.95;text-transform:uppercase;margin-top:3px;white-space:nowrap}
+/* versión 3: los jueves más grandes y el tipo de show arriba */
+.dia{flex:1 1 0}
+.dia.jue{flex:1.55 1 0;max-height:430px}
+.dia.jue .fecha b{font-size:112px}
+.dia.jue .nom{font-size:74px}
+.dia.jue .tipo{font-family:var(--disp);font-weight:900;font-size:40px;letter-spacing:.03em;line-height:1}
+.dia.jue .ico{width:116px;height:150px}
+.ico.foto img{width:100%;height:100%;object-fit:cover;display:block}
+.njpaso .grande{font-size:132px;margin-top:16px}
+.njpaso .como{margin-top:14px}
+.njpaso .como .ico{width:190px;height:150px}
+.njpaso .como p{font-size:28px}
+.njpaso .jueves{display:flex;flex-direction:column;margin-top:24px;gap:12px}
+.njpaso .jueves>div{display:grid;grid-template-columns:110px minmax(0,1fr) 130px;align-items:center;column-gap:16px;padding:14px 16px;text-align:left;border-top:0;border-left:8px solid var(--c);background:var(--tarima)}
+.njpaso .jueves>div div{background:none;border-top:0;padding:0}
+.njpaso .jueves .qj{text-align:left}
+.njpaso .jueves .fj{text-align:center;line-height:.9}
+.njpaso .jueves .fj small{font-size:17px;color:var(--tenue)}
+.njpaso .jueves .fj b{font-size:96px}
+.njpaso .jueves .qj{min-width:0}
+.njpaso .jueves em{display:block;font-style:normal;font-family:var(--disp);font-weight:900;font-size:44px;text-transform:uppercase;line-height:1;color:var(--c);white-space:nowrap}
+.njpaso .jueves span{display:block;font-family:var(--disp);font-weight:800;font-size:62px;text-transform:uppercase;line-height:.95;margin-top:4px;color:var(--texto);white-space:nowrap}
+.njpaso .jueves .ico{width:130px;height:110px}
+.mes div.ancho{grid-column:1/-1}
+.mes div.jue{grid-column:1/-1;text-align:left;border-left-width:10px;background:var(--tarima2)}
+.mes div.jue i{display:block;font-style:normal;font-family:var(--disp);font-weight:900;font-size:30px;text-transform:uppercase;color:var(--c);line-height:1;margin-top:4px}
+.mes div.jue b{font-size:58px}
+/* versión 4: las tarjetas llenan el alto, con 54 px libres sobre los puntitos (lo mismo que arriba) */
+.dias{padding-bottom:192px}
+.dia,.dia.jue{max-height:none}
+.njpaso .jueves{flex:1;padding-bottom:192px}
+.njpaso .jueves>div{flex:1 1 0}
+/* paso 3 sin la frase: los jueves ocupan el espacio con letra más grande */
+.njpaso .jueves{margin-top:40px;gap:16px}
+.njpaso .jueves>div{grid-template-columns:130px minmax(0,1fr) 130px}
+.njpaso .jueves .fj small{font-size:19px}
+.njpaso .jueves .fj b{font-size:124px}
+.njpaso .jueves em{font-size:54px}
+.njpaso .jueves span{font-size:64px}
+.njpaso .jueves .ico{width:130px;height:120px}
+/* versión 6 (Cote, 14:02): 20 horas grande, 21 horas en cada show, 22 horas karaoke night */
+.njpaso .grande{position:relative}
+.njpaso .h20{position:absolute;right:0;top:12px;display:flex;align-items:baseline;gap:12px;line-height:.8}
+.njpaso .h20 b{display:block;color:var(--texto);font-size:116px}
+.njpaso .h20 span{display:block;font-family:var(--disp);font-weight:900;font-size:52px;letter-spacing:.02em;color:var(--foco)}
+.njpaso .como{margin-top:18px;gap:18px}
+.njpaso .como .ico{width:150px;height:116px}
+.njpaso .como p{font-size:29px;line-height:1.3}
+.njpaso .jueves{margin-top:22px;gap:12px;padding-bottom:0;flex:1}
+.njpaso .jueves>div{padding-top:8px;padding-bottom:8px}
+.njpaso .jueves .fj b{font-size:104px}
+.njpaso .jueves .ico{width:120px;height:104px}
+.njpaso .jueves em{font-size:44px}
+.njpaso .jueves span{font-size:58px}
+.njpaso .jueves .h21{display:block;font-style:normal;font-family:var(--mono);font-weight:700;font-size:24px;letter-spacing:.14em;color:var(--foco);margin-top:6px}
+.njpaso .kn{margin:12px 0 192px;display:flex;align-items:baseline;justify-content:space-between;background:var(--tarima);border-left:8px solid var(--verde);padding:14px 22px 12px}
+.njpaso .kn b{font-family:var(--disp);font-weight:900;font-size:56px;line-height:1;color:var(--foco)}
+.njpaso .kn span{font-family:var(--disp);font-weight:800;font-size:48px;line-height:1;text-transform:uppercase}
+/* el jueves nunca se corta: mide al menos lo que pide su contenido; con 4 tarjetas, las otras se compactan */
+.dia.jue{min-height:min-content}
+.dias.cuatro .dia:not(.jue){min-height:0;padding-top:10px;padding-bottom:10px}
+.dias.cuatro .dia:not(.jue) .fecha b{font-size:70px}
+.dias.cuatro .dia:not(.jue) .nom{font-size:50px}
+.dias.cuatro .dia:not(.jue) .ico{width:96px;height:88px}
+.dias.cuatro .dia:not(.jue) .tipo{font-size:15px}
+.dias.cuatro .dia:not(.jue) .hora{margin-top:4px}
+@media (prefers-reduced-motion:reduce){.paso{transition:none}}
+</style>
+
+<div class="pagina">
+  <header>
+    <h1>Cartelera vertical · <b>Mercado Kennedy</b></h1>
+    <p>Propuesta única (versión 4): la semana en tarjetas de la A, con la noche destacada en grande y el mes completo de la B. Gira sola; toca un paso para verlo fijo.</p>
+  </header>
+  <div class="vista">
+    <div class="marco"><div class="escala"><div class="scr" id="s"></div></div></div>
+    <div class="lado">
+      <div class="ctl" id="c"></div>
+      <ul>
+        <li><b>Jueves:</b> arriba y grande qué es («Doble de», «Tributo a», tal como dice la cartelera), y los jueves más grandes en todos los pasos.</li>
+        <li><b>Fotos:</b> cada tarjeta tiene su lugar para la foto del doble o tributo; por ahora va el ícono.</li>
+        <li><b>Noche de juegos</b> en vez de «El Bingo de Mercado Kennedy», grande y en dorado, y con un paso propio.</li>
+        <li><b>Bandas tributo:</b> batería electrónica, guitarra eléctrica, bajo y micrófono (sin guitarra acústica).</li>
+        <li><b>Dobles:</b> micrófono de escenario con foco. <b>Piano Man:</b> teclado con micrófono.</li>
+        <li>Ningún dibujo encima de letras ni de horas: cada tarjeta tiene su columna para el ícono.</li>
+        <li>Datos: Programación KRB al sábado 28 de noviembre. En la pantalla real se lee en vivo y avanza sola cada semana.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+/*LOGOS*/
+const DATOS = /*DATOS*/;
+const HOY = new Date(2026, 10, 28);
+const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const DIAN = {Lun:'Lunes',Mar:'Martes','Mié':'Miércoles',Jue:'Jueves',Vie:'Viernes','Sáb':'Sábado',Dom:'Domingo'};
+const fd = s => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const HOR = {};
+for (const lin of (DATOS.horarios||'').split('\n')) {
+  const m = /^(Jueves|Viernes|Sábado)\s*:\s*(.*)$/i.exec(lin.trim()); if (!m) continue;
+  HOR[m[1]] = m[2].split('/').map(p => { p = p.trim(); const h = /(\d{1,2}:\d{2})/.exec(p); if (!h) return null;
+    let t = p.replace(h[1], '').trim(); if (/juegos/i.test(t)) t = 'Noche de juegos'; return { h: h[1], t: t.charAt(0).toUpperCase() + t.slice(1) }; })
+    .filter(Boolean).filter(x => !/fiesta/i.test(x.t)).sort((a, b) => a.h.localeCompare(b.h));
+}
+function clasifica(x) {
+  const c = x.cartelera || ''; const juegos = /bingo/i.test(c);
+  let nom = c.replace(/^\s*bingo\s*\+\s*/i, '').replace(/karaoke night show\s*\+\s*/i, '').trim(), tipo, col, ico;
+  if (/stand ?up/i.test(c)) { tipo = 'Stand up'; col = 'var(--rosa)'; ico = 'risa'; nom = nom.replace(/^stand ?up\s*:\s*/i, ''); }
+  else if (/piano/i.test(c)) { tipo = 'Karaoke Night Show'; col = 'var(--verde)'; ico = 'piano'; nom = 'Piano Man'; }
+  else if (/tributo/i.test(c)) { tipo = /banda/i.test(c) ? 'Banda tributo a' : 'Tributo a'; col = 'var(--rojo)'; ico = 'banda'; nom = nom.replace(/^(banda\s+)?tributo\s+a\s+/i, ''); }
+  else if (/doble/i.test(c)) { tipo = 'Doble de'; col = 'var(--k)'; ico = 'micro'; nom = nom.replace(/^doble\s+de\s+/i, ''); }
+  else { tipo = 'Especial'; col = 'var(--lila)'; ico = 'estrella'; nom = nom.replace(/^especial\s+/i, ''); }
+  const horas = (HOR[DIAN[x.dia]] || []).map(h => ({ ...h }));
+  // la palabra de la hora sale de la cartelera, no del horario general (el jueves el horario dice «Dobles» aunque sea un tributo)
+  const palabra = /^doble/i.test(tipo) ? 'Doble' : /tributo/i.test(tipo) ? 'Tributo' : /piano/i.test(c) ? 'Piano' : /stand ?up/i.test(c) ? 'Stand up' : 'Show';
+  horas.forEach(h => { if (/show|dobles|piano/i.test(h.t)) h.t = palabra; });
+  const show = horas.find(h => h.t === palabra);
+  return { ...x, d: fd(x.fecha), tipo, nom, col, ico, juegos, horas, show };
+}
+const NOCHES = DATOS.dias.map(clasifica).filter(n => n.d >= HOY).sort((a, b) => a.d - b.d);
+function semanas() {
+  const lunes = d => { const x = new Date(d); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return +x; };
+  const out = [];
+  for (const n of NOCHES) { const k = lunes(n.d); let s = out.find(s => s.k === k); if (!s) out.push(s = { k, noches: [] }); s.noches.push(n); }
+  if (out.length > 1 && out[0].noches.length < 2) { out[1].noches = out[0].noches.concat(out[1].noches); out.shift(); }
+  return out;
+}
+const SEM = semanas();
+const rango = s => { const a = s.noches[0].d, b = s.noches[s.noches.length - 1].d; return a.getMonth() === b.getMonth() ? `${a.getDate()} al ${b.getDate()} de ${MESES[b.getMonth()]}` : `${a.getDate()} de ${MESES[a.getMonth()]} al ${b.getDate()} de ${MESES[b.getMonth()]}`; };
+const esHoy = n => +n.d === +HOY;
+
+// íconos propios con más onda: escenario, focos y brillo
+const ICO = {
+  // banda: batería electrónica (pads, platillos de goma y rack), guitarra eléctrica, bajo y micrófono
+  banda: c => `<svg viewBox="0 0 200 150">
+    <ellipse cx="100" cy="140" rx="92" ry="8" fill="#000" opacity=".35"/>
+    <g stroke="#3a3550" stroke-width="5" fill="none"><path d="M60 128V70h80v58"/><path d="M60 78h80"/></g>
+    <g fill="#1c1828" stroke="${c}" stroke-width="3"><rect x="52" y="58" width="30" height="12" rx="3"/><rect x="85" y="54" width="30" height="12" rx="3"/><rect x="118" y="58" width="30" height="12" rx="3"/></g>
+    <ellipse cx="58" cy="40" rx="20" ry="5" fill="#2b2740" stroke="${c}" stroke-width="3"/><ellipse cx="142" cy="36" rx="20" ry="5" fill="#2b2740" stroke="${c}" stroke-width="3"/>
+    <path d="M58 45v22M142 41v26" stroke="#3a3550" stroke-width="4"/>
+    <rect x="80" y="86" width="40" height="40" rx="6" fill="#1c1828" stroke="${c}" stroke-width="3"/><circle cx="100" cy="106" r="11" fill="${c}"/>
+    <rect x="94" y="64" width="12" height="7" rx="2" fill="#7fdcff"/>
+    <g transform="rotate(-28 34 100)"><path d="M28 120c-10-4-12-16-6-22 4-4 2-10 8-12 6-2 10 2 14 0 6-3 10 2 8 8-2 6 4 8 2 14-3 9-14 15-26 12z" fill="${c}"/><rect x="32" y="40" width="7" height="56" fill="#e8e1d4"/><rect x="29" y="30" width="13" height="14" rx="2" fill="#2b2740"/><rect x="28" y="102" width="16" height="4" fill="#0c0b12"/><circle cx="36" cy="112" r="3" fill="#0c0b12"/></g>
+    <g transform="rotate(24 170 100)"><path d="M160 124c-9-3-10-15-5-21 4-5 1-11 7-13s9 2 13 0c6-2 9 3 7 9-2 5 3 8 1 13-3 9-13 15-23 12z" fill="#f3eee6"/><rect x="165" y="30" width="7" height="66" fill="#e8e1d4"/><rect x="162" y="20" width="13" height="14" rx="2" fill="#2b2740"/><rect x="161" y="104" width="15" height="4" fill="#0c0b12"/></g>
+    <g><rect x="186" y="78" width="4" height="62" fill="#a59fb0"/><rect x="180" y="60" width="16" height="22" rx="8" fill="#f3eee6"/><path d="M178 140h20" stroke="#a59fb0" stroke-width="4"/></g>
+  </svg>`,
+  micro: c => `<svg viewBox="0 0 200 150"><path d="M100 0L40 150h120z" fill="${c}" opacity=".16"/><ellipse cx="100" cy="142" rx="60" ry="7" fill="#000" opacity=".35"/>
+    <rect x="97" y="64" width="6" height="74" fill="#a59fb0"/><path d="M76 140h48" stroke="#a59fb0" stroke-width="6" stroke-linecap="round"/>
+    <rect x="84" y="14" width="32" height="54" rx="16" fill="${c}"/>${[24,32,40,48,56].map(y=>`<line x1="87" x2="113" y1="${y}" y2="${y}" stroke="#0c0b12" stroke-width="2.4" opacity=".4"/>`).join('')}
+    <rect x="84" y="56" width="32" height="10" fill="#e8e1d4"/><path d="M150 26l4 10 10 4-10 4-4 10-4-10-10-4 10-4z" fill="#f4bf5a"/><path d="M46 46l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" fill="#f3eee6"/></svg>`,
+  piano: c => `<svg viewBox="0 0 200 150"><ellipse cx="100" cy="142" rx="80" ry="7" fill="#000" opacity=".35"/>
+    <path d="M40 140l14-50M160 140l-14-50" stroke="#3a3550" stroke-width="6"/>
+    <rect x="22" y="62" width="156" height="34" rx="4" fill="#1c1828" stroke="${c}" stroke-width="3"/>
+    <rect x="30" y="76" width="140" height="16" fill="#f3eee6"/>${Array.from({length:13},(_,i)=>`<line x1="${30+i*10.77}" x2="${30+i*10.77}" y1="76" y2="92" stroke="#0c0b12" stroke-width="1.6"/>`).join('')}
+    ${[1,2,4,5,6,8,9,11,12].map(i=>`<rect x="${30+i*10.77-3.5}" y="76" width="7" height="9" fill="#0c0b12"/>`).join('')}
+    <circle cx="40" cy="69" r="3" fill="${c}"/><circle cx="50" cy="69" r="3" fill="#f4bf5a"/>
+    <path d="M150 62V20" stroke="#a59fb0" stroke-width="4"/><rect x="142" y="6" width="16" height="22" rx="8" fill="#f3eee6"/>
+    <path d="M80 30v22" stroke="${c}" stroke-width="5"/><circle cx="74" cy="52" r="7" fill="${c}"/><path d="M80 30l16 6v10l-16-6z" fill="${c}"/></svg>`,
+  juegos: c => `<svg viewBox="0 0 200 150"><ellipse cx="100" cy="142" rx="80" ry="7" fill="#000" opacity=".35"/>
+    <defs><radialGradient id="gbj" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#fff"/><stop offset=".55" stop-color="#ffe3a3"/><stop offset="1" stop-color="#c9902e"/></radialGradient></defs>
+    <circle cx="78" cy="78" r="58" fill="url(#gbj)"/><circle cx="78" cy="78" r="30" fill="#f3eee6" stroke="#1a1407" stroke-opacity=".2"/>
+    <text x="78" y="92" text-anchor="middle" font-family="Big Shoulders Display,Impact" font-weight="900" font-size="40" fill="#1a1407">75</text>
+    <g transform="rotate(14 150 104)"><rect x="122" y="76" width="56" height="56" rx="10" fill="#e0338f"/><circle cx="136" cy="90" r="5" fill="#fff"/><circle cx="150" cy="104" r="5" fill="#fff"/><circle cx="164" cy="118" r="5" fill="#fff"/><circle cx="164" cy="90" r="5" fill="#fff"/><circle cx="136" cy="118" r="5" fill="#fff"/></g>
+    <path d="M168 20l5 12 12 5-12 5-5 12-5-12-12-5 12-5z" fill="#7fdcff"/></svg>`,
+  risa: c => `<svg viewBox="0 0 200 150"><circle cx="100" cy="66" r="52" fill="${c}"/><circle cx="82" cy="54" r="7" fill="#0c0b12"/><circle cx="118" cy="54" r="7" fill="#0c0b12"/><path d="M74 78q26 32 52 0z" fill="#0c0b12"/><rect x="97" y="118" width="6" height="22" fill="#a59fb0"/></svg>`,
+  estrella: c => `<svg viewBox="0 0 200 150"><path d="M100 6l18 42 46 4-35 30 11 45-40-25-40 25 11-45-35-30 46-4z" fill="${c}"/></svg>`,
+  karaoke: c => `<svg viewBox="0 0 200 150"><rect x="84" y="20" width="32" height="54" rx="16" fill="${c}"/><rect x="97" y="72" width="6" height="64" fill="#a59fb0"/><path d="M150 24v40" stroke="#f3eee6" stroke-width="6"/><circle cx="142" cy="66" r="10" fill="#f3eee6"/><path d="M150 24l20 7v12l-20-7z" fill="#f3eee6"/><path d="M50 40v34" stroke="#f4bf5a" stroke-width="6"/><circle cx="42" cy="76" r="10" fill="#f4bf5a"/></svg>`,
+};
+const ico = (k, c, st = '') => `<div class="ico" style="${st}">${ICO[k](c)}</div>`;
+// Fotos de dobles y tributos: cuando lleguen (Fotos artistas AAAA-MM/Kennedy/NN_show_artista.jpg) se anotan aquí por fecha
+// y reemplazan al ícono en el mismo lugar. Por ahora vacío: se ven los íconos.
+const FOTOS = {};
+const foto = (n, k, c, st = '') => FOTOS[n.fecha] ? `<div class="ico foto" style="${st}"><img src="${FOTOS[n.fecha]}" alt="${n.nom}"></div>` : `<div class="ico foto" style="${st}">${ICO[k](c)}</div>`;
+const logos = () => `<div class="logos"><img src="${LOGO_KRB}" alt="KRB Stage"><i></i><img src="${LOGO_K}" alt="Mercado Kennedy"></div>`;
+
+const tarjeta = n => `<div class="dia${esHoy(n) ? ' hoy' : ''}${n.juegos ? ' juegos' : ''}${n.dia === 'Jue' ? ' jue' : ''}" style="--c:${n.col}">
+  ${n.juegos ? `<div class="nj"><b>Noche de juegos</b><span>20 HORAS</span></div>` : ''}
+  ${esHoy(n) ? '<span class="hoyb">HOY</span>' : ''}
+  <div class="fecha"><small>${DIAN[n.dia]}</small><b>${n.d.getDate()}</b><em>${MESES[n.d.getMonth()].slice(0,3)}</em></div>
+  <div class="que"><div class="tipo">${n.tipo}</div><div class="nom fit">${n.nom}</div>
+    <div class="hora">${n.show ? `${n.show.t} <b>${n.show.h}</b>` : ''}${n.horas.find(h => /karaoke/i.test(h.t)) ? ` · Karaoke <b>${n.horas.find(h => /karaoke/i.test(h.t)).h}</b>` : ''}</div></div>
+  ${foto(n, n.ico, n.col)}
+</div>`;
+const spot = n => `${foto(n, n.ico, n.col)}
+  <div class="cuando">${esHoy(n) ? '<b style="color:var(--foco)">Hoy</b> · ' : ''}${DIAN[n.dia]} ${n.d.getDate()} de ${MESES[n.d.getMonth()]}</div>
+  <div class="tipo2" style="--c:${n.col}">${n.tipo}</div>
+  <div class="nom2 fit">${n.nom}</div>
+  ${n.juegos ? '<div class="njg"><b>+ Noche de juegos</b><span>Desde las 20 horas</span></div>' : ''}
+  ${n.horas.length ? `<div class="horas">${n.horas.map(h => `<div class="${/juegos/i.test(h.t) ? 'top' : ''}"><b>${h.h}</b><span>${h.t}</span></div>`).join('')}</div>` : ''}`;
+
+function pasos() {
+  const P = [];
+  // 1) esta semana en tarjetas
+  P.push({ n: 'Esta semana', h: `<span class="eti oro">Esta semana</span><div class="tit">Esta <b>semana</b></div><div class="sub">${rango(SEM[0])}</div><div class="dias${SEM[0].noches.length > 3 ? ' cuatro' : ''}" style="--n:${SEM[0].noches.length}">${SEM[0].noches.map(tarjeta).join('')}</div>` });
+  // 2) la próxima noche en grande
+  const prox = NOCHES[0];
+  P.push({ n: esHoy(prox) ? 'Hoy' : 'Próxima noche', h: `<span class="eti">${esHoy(prox) ? 'Hoy en el escenario' : 'La próxima noche'}</span><div class="spot">${spot(prox)}</div>` });
+  // 3) noche de juegos, grande
+  const jue = NOCHES.filter(n => n.juegos);
+  P.push({ n: 'Noche de juegos', h: `<div class="njpaso" style="display:contents"><span class="eti oro">Todos los jueves</span>
+    <div class="grande">Noche <b>de juegos</b><div class="h20"><b>20</b><span>HORAS</span></div></div>
+    <div class="como">${ico('juegos', 'var(--foco)')}<p>Juegas desde tu celular: <b>bingo, trivia y más</b>, con premios.</p></div>
+    <div class="jueves">${jue.slice(0, 3).map(n => `<div style="--c:${n.col}"><div class="fj"><small>Jueves</small><b>${n.d.getDate()}</b></div><div class="qj"><em class="fit3">${n.tipo}</em><span class="fit3">${n.nom}</span><i class="h21">21 HORAS</i></div>${foto(n, n.ico, n.col)}</div>`).join('')}</div>
+    <div class="kn"><b>22 HORAS</b><span>Karaoke Night</span></div></div>` });
+  // 4) semanas siguientes en tarjetas
+  SEM.slice(1).forEach((s, i) => s.noches.length === 1 ? P.push({ n: `${s.noches[0].dia} ${s.noches[0].d.getDate()}`, h: `<span class="eti">${i === 0 ? 'Próxima semana' : MESES[s.noches[0].d.getMonth()]}</span><div class="spot">${spot(s.noches[0])}</div>` }) : P.push({ n: `Semana ${i + 2}`, h: `<span class="eti">${i === 0 ? 'Próxima semana' : MESES[s.noches[0].d.getMonth()]}</span><div class="tit">${s.noches.length === 1 ? `<b>${DIAN[s.noches[0].dia]}</b> ${s.noches[0].d.getDate()}` : `<b>Del</b> ${s.noches[0].d.getDate()} al ${s.noches[s.noches.length - 1].d.getDate()}`}</div><div class="sub">${rango(s)}</div><div class="dias${s.noches.length > 3 ? ' cuatro' : ''}" style="--n:${s.noches.length}">${s.noches.map(tarjeta).join('')}</div>` }));
+  // 5) el mes completo
+  const dic = NOCHES.filter(n => n.d.getMonth() === 11);
+  // simetría: una noche que quedaría sola en media fila (sin compañera al lado) ocupa la fila entera
+  const solo = (l, k) => { let col = 0; for (let j = 0; j <= k; j++) { if (l[j].dia === 'Jue') { col = 0; continue; } if (j === k) return col === 0 && (k + 1 >= l.length || l[k + 1].dia === 'Jue'); col = (col + 1) % 2; } };
+  P.push({ n: 'Diciembre', h: `<span class="eti oro">Diciembre</span><div class="tit">Todo <b>diciembre</b></div><div class="sub">Jueves: Noche de juegos</div><div class="mes">${dic.map((n, k) => `<div class="${n.dia === 'Jue' ? 'jue' : ''}${solo(dic, k) ? ' ancho' : ''}" style="--c:${n.col}"><small>${n.dia} ${n.d.getDate()}${n.juegos ? ' · <em>Noche de juegos</em>' : ''}</small>${n.dia === 'Jue' ? `<i>${n.tipo}</i>` : ''}<b class="fit">${n.nom}</b></div>`).join('')}</div>` });
+  return P;
+}
+
+function encaja(root) {
+  root.querySelectorAll('.fit,.fit3').forEach(el => {
+    let fz = parseFloat(getComputedStyle(el).fontSize); el.style.whiteSpace = 'nowrap';
+    el.style.overflow = 'hidden';
+    while (el.scrollWidth > el.clientWidth + 1 && fz > 16) { fz -= 2; el.style.fontSize = fz + 'px'; }
+    el.style.overflow = '';
+  });
+  // simetría: en las filas de los jueves, todos los nombres (y todos los tipos) quedan del mismo tamaño, el del más largo
+  ['.jueves span', '.jueves em'].forEach(q => { const l = [...root.querySelectorAll(q)]; if (!l.length) return;
+    const m = Math.min(...l.map(e => parseFloat(getComputedStyle(e).fontSize))); l.forEach(e => { e.style.fontSize = m + 'px'; }); });
+}
+function montar() {
+  const P = pasos(); const scr = document.getElementById('s'); const ctl = document.getElementById('c');
+  scr.innerHTML = '<div class="fondo"></div><div class="rayos"></div>' + P.map((p, i) => `<div class="paso${i ? '' : ' on'}">${p.h}</div>`).join('') + `<div class="puntos">${P.map((_, i) => `<b class="${i ? '' : 'on'}"></b>`).join('')}</div>` + logos();
+  const els = [...scr.querySelectorAll('.paso')], pts = [...scr.querySelectorAll('.puntos b')];
+  els.forEach(e => { e.classList.add('on'); encaja(e); e.classList.remove('on'); }); els[0].classList.add('on');
+  let i = 0, fijo = false;
+  const ver = k => { i = (k + els.length) % els.length; els.forEach((e, j) => e.classList.toggle('on', j === i)); pts.forEach((e, j) => e.classList.toggle('on', j === i)); [...ctl.querySelectorAll('[data-i]')].forEach((b, j) => b.setAttribute('aria-pressed', j === i)); };
+  ctl.innerHTML = P.map((p, k) => `<button type="button" data-i="${k}" aria-pressed="${k === 0}">${p.n}</button>`).join('') + '<button type="button" data-g aria-pressed="true">▶ Girar</button>';
+  ctl.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; const g = ctl.querySelector('[data-g]');
+    if (b.hasAttribute('data-g')) { fijo = !fijo; g.setAttribute('aria-pressed', !fijo); g.textContent = fijo ? '❚❚ Detenido' : '▶ Girar'; return; }
+    fijo = true; g.setAttribute('aria-pressed', false); g.textContent = '❚❚ Detenido'; ver(+b.dataset.i); });
+  setInterval(() => { if (!fijo) ver(i + 1); }, matchMedia('(prefers-reduced-motion: reduce)').matches ? 12000 : 8000);
+  const q = new URLSearchParams(location.search); if (q.has('s')) { fijo = true; ver(+q.get('s')); }
+  window.NPASOS = els.length;
+}
+function escalar() { const m = document.querySelector('.marco'); m.querySelector('.escala').style.transform = `scale(${m.clientWidth / 720})`; }
+document.fonts.ready.then(() => { montar(); escalar(); });
+addEventListener('resize', escalar);
+</script>
