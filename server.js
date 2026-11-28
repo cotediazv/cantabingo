@@ -15,6 +15,9 @@ const DATA_FILE = process.env.DATA_FILE || path.join(hasDisk ? DISK_DIR : __dirn
 // 29 nov). Nombre libre al crear la sala, colores de la marca y sin logos de locales, solo Bingo y ¿Quién quiere ser
 // ganador?, y sin nada automático de los locales (salas, karaoke, luces).
 const EVENTO = process.env.MODO_EVENTO === '1';
+// Nombre del evento de la sala abierta («Los Juegos de Colada Continua» → «Colada Continua»): lo usan los juegos que en un
+// local llevan su nombre, como «El Festival de <local>» (orden 12 de Code 0, 28 nov)
+const eventoNombre = () => { const s = Object.values(db.sessions || {})[0]; return String((s && s.name) || '').replace(/^Los Juegos de\s+/i, '').trim(); };
 const SESSION_HOURS = EVENTO ? 14 : 8; // cuánto dura una sesión de bingo desde que se activa (un evento puede ir de 9:00 a 18:00)
 
 // ---------- Almacenamiento (JSON en disco) ----------
@@ -1130,7 +1133,7 @@ const karaoke = require('./karaoke.js')({ karAbierto: () => luzKar(), app, db, s
   findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || (lightApi ? lightApi.findPlayer(sid, token) : null),
   lightVenue: (sid) => (lightApi ? lightApi.venueOf(sid) : ''), extraVenues: () => (lightApi ? lightApi.pollVenues() : []) });
 // Votación del público (nota del 1 al 10 desde el celular)
-const vote = require('./vote.js')({ placeOf, app, db, save, requireAdmin, fail, setStage, festejo,
+const vote = require('./vote.js')({ eventoNombre, placeOf, app, db, save, requireAdmin, fail, setStage, festejo,
   findPlayer: (sid, token) => ((db.sessions[sid] || {}).players || {})[token] || null,
   venue: () => (Object.values(db.sessions)[0] || {}).theme || 'frida',
   notify: () => Object.values(db.sessions).forEach((s) => broadcast(s)) });
@@ -1265,10 +1268,12 @@ agendaApi = require('./agenda.js')({ app, db, save, requireAdmin, fail, currentV
 // El sorteo se ve en el tablero y en el GC (escenario «juego»).
 // ¿Quién quiere ser ganador? entra a los juegos disponibles (Manual, Por sorteo y Por votación): Cote, 26 nov, respuesta 34.1
 // («que lo deje dentro de los juegos ya disponibles, porque el juego ya está terminado»)
-const DRAW_GAMES = EVENTO ? ['bingo', 'desafio'] : ['bingo', 'rosco', 'festival', 'objeto', 'desafio']; // en un evento, solo Bingo y ¿Quién quiere ser ganador?
+// Copia de eventos: todos los juegos, igual que en los locales (orden 12 de Code 0, pedido de Cote, 28 nov: «Quisiera que
+// estuvieran todos los juegos»; antes solo Bingo y ¿Quién quiere ser ganador?)
+const DRAW_GAMES = ['bingo', 'rosco', 'festival', 'objeto', 'desafio'];
 db.gameDraw ||= { played: [], last: null };
 if (!db.gameDraw.rule2) { db.gameDraw.played = db.gameDraw.last ? [db.gameDraw.last.game] : []; db.gameDraw.rule2 = true; }
-const drawPub = () => ({ ...db.gameDraw, total: Math.max(db.gameDraw.total || 3, (db.gameDraw.list || []).length + 1), how: howOf(), free: howOf() === 'manual', undo: undefined, undoable: !!(db.gameDraw.undo || []).length, games: DRAW_GAMES, evento: EVENTO, venue: (Object.values(db.sessions)[0] || {}).theme || 'frida', now: Date.now() });
+const drawPub = () => ({ ...db.gameDraw, total: Math.max(db.gameDraw.total || 3, (db.gameDraw.list || []).length + 1), how: howOf(), free: howOf() === 'manual', undo: undefined, undoable: !!(db.gameDraw.undo || []).length, games: DRAW_GAMES, evento: EVENTO, ...(EVENTO ? { eventoNombre: eventoNombre() } : {}), venue: (Object.values(db.sessions)[0] || {}).theme || 'frida', now: Date.now() });
 app.get('/api/gamedraw', (_req, res) => res.json(drawPub()));
 // Cuántos juegos se sortean esa noche (pedido de Cote): 1.º, 2.º, 3.º… sorteados
 db.gameDraw.list ||= [];
@@ -1543,7 +1548,7 @@ app.post('/api/gamevote/reset', requireAdmin, (_req, res) => {
 
 // Leer la pantalla actual es público, para que la fuente de OBS no necesite iniciar sesión; cambiarla es del moderador.
 // Diseño nuevo de las pantallas (pedido de Cote, 22 nov): encendido salvo que se apague en el Centro de control
-app.get('/api/tema', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json({ on: db.tema !== false, pub: db.pubUrl || '', evento: EVENTO, priv: !!db.privacidad }); });
+app.get('/api/tema', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json({ on: db.tema !== false, pub: db.pubUrl || '', evento: EVENTO, ...(EVENTO ? { eventoNombre: eventoNombre() } : {}), priv: !!db.privacidad }); });
 // Aviso de datos personales al entrar (decisión de Cote, pregunta 9.2: desde diciembre, Ley 21.719; preparado por orden de
 // Code 0, 28 nov): una línea en la entrada de la sala de juegos y de la sala light. Apagado por defecto; se enciende en el
 // Centro de control. El texto final y la fecha los confirma Cote.
@@ -1600,7 +1605,7 @@ const cartonInfo = () => {
     }
   } else if (st === 'voto') {
     const v = db.vote || {};
-    out.title = v.mode === 'karaoke' ? (v.title || `El Festival de ${({ kennedy: 'Mercado Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' })[out.venue] || ''}`) : (v.title || 'El objeto más extraño');
+    out.title = v.mode === 'karaoke' ? (v.title || `El Festival de ${({ kennedy: 'Mercado Kennedy', frida: 'Frida Kahlo', tobalaba: 'Tobalaba' })[out.venue] || (out.venue === 'evento' ? eventoNombre() : '')}`) : (v.title || 'El objeto más extraño');
     const id = v.open || v.onstage; const p = (v.players || []).find((x) => x.id === id);
     out.big = p ? p.name : v.winner ? v.winner.name : '¡Participa!'; out.small = p ? (v.mode === 'karaoke' ? 'En el escenario' : 'Presenta su objeto') : v.winner ? 'Ganó' : '';
     if (p && p.thing) out.lines.push(p.thing);
