@@ -3,7 +3,7 @@ frida-horizontal-cartelera.mp4: 1280x720, 30 cps, sin audio, H.264 (unos 0,54 Mb
 las dos laminas de cartelera (71,4-88,5 s y 100,1-120,2 s), que en el original eran de octubre:
   1) Viernes 4 Doble de Karol G 21 horas · Sabado 5 Doble de Chayanne 21 horas · Domingo 6 Tarde de juegos 14 horas
   2) Viernes 11 Doble de Jesse y Joy 21 horas · Sabado 12 Doble de Romeo Santos 21 horas · Domingo 13 Tarde de juegos 14 horas
-La hora va arriba a la derecha de cada fila, en el rosado del numero; el domingo va entero en amarillo (pedidos de Cote, 28 nov).
+La hora va arriba a la derecha de cada fila, en el rosado del numero, con la misma sangria que la palabra del dia a la izquierda (225 px desde el borde dorado; lo calcula lamina.js). Domingo: la palabra en blanco, el numero y la hora en el rosado de siempre y "Tarde de juegos" en el rosado del numero (campo nomColor). Pedidos de Cote, 28 nov.
 Para otro mes (unos minutos): bajar el original de la Sala (https://cantabingo.onrender.com/vertical/frida-h.mp4, no va al repositorio)
-y correr ./generar.sh <original> <carpeta de trabajo> '<filas lamina 1>' '<filas lamina 2>' (cada fila: {"dia","num","antes","nom","hora","color"}; color solo para el domingo, ej. "#ffd23f";
+y correr ./generar.sh <original> <carpeta de trabajo> '<filas lamina 1>' '<filas lamina 2>' (cada fila: {"dia","num","antes","nom","hora","color"}; nomColor para el color del nombre, ej. "#e8247c";
 2 o 3 filas por lamina). Necesita ffmpeg, Python con Pillow y Playwright.
