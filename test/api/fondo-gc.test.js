@@ -47,3 +47,20 @@ test('fondo Kennedy: fuera de las 01:00 y 19:00 no se mete', async () => {
   const s = await at('2026-11-26T00:30:00Z', data); // miércoles 21:30
   assert.equal((await s.ok('GET', '/api/light?local=kennedy')).fondo, '');
 });
+
+// Cote, 28 nov, 02:45: creó una sala de juegos en Tobalaba después de la 01:00 y el GC Light quedó pegado en el fondo.
+// Con la sala abierta y mandando, el GC muestra la sala a cualquier hora; un botón del GC Light (también FONDO) vuelve a mandar.
+test('fondo: una sala de juegos creada después de la 01:00 se ve en el GC Light', async () => {
+  const data = base(); data.fondoAuto = { 'tobalaba:ini': '2026-11-20', 'tobalaba:60': '2026-11-28' };
+  data.lights = { tobalaba: { id: 'Lt', venue: 'tobalaba', stage: 'fondo', players: {}, created: 1 } }; data.lightInfoDefault = true; data.lightInfoAll = true;
+  const s = await at('2026-11-28T05:40:00Z', data); // sábado 02:40
+  assert.equal((await s.ok('GET', '/api/light?local=tobalaba')).fondo, '/vertical/tobalaba.mp4?v=77');
+  await s.openRoom({ theme: 'tobalaba' });
+  let st = await s.ok('GET', '/api/light?local=tobalaba');
+  assert.equal(st.sala, true); assert.equal(st.fondo, '');
+  await sleep(5);
+  st = await s.admin.post('/api/light/stage', { local: 'tobalaba', show: 'fondo' });
+  assert.equal(st.sala, false); assert.equal(st.fondo, '/vertical/tobalaba.mp4?v=77');
+  st = await s.admin.post('/api/light/stage', { local: 'tobalaba', show: 'sala' }); // «Juego en vivo»
+  assert.equal(st.sala, true); assert.equal(st.fondo, '');
+});

@@ -1117,8 +1117,9 @@ const fondoVid = (v) => { const scr = FONDO_GC[v]; const c = scr && (db.vertical
 const fondoDe = (v) => {
   const scr = FONDO_GC[v]; const c = scr && (db.vertical || {})[scr];
   if (!c || !c.video || ((db.lights || {})[v] || {}).stage !== 'fondo') return '';
-  const h = +horaChile().hour;
-  if ((h >= 12 || h < 1) && salaManda(v)) return ''; // con la sala de juegos de este local abierta, manda la sala
+  // Con la sala de juegos de este local abierta y mandando (gana lo último que se tocó), el GC muestra la sala, a cualquier
+  // hora (Cote, 28 nov, 02:45: creó una sala en Tobalaba después de la 01:00 y el GC Light quedó pegado en el fondo)
+  if (salaManda(v)) return '';
   return `/vertical/${scr}.mp4?v=${c.video}`;
 };
 const fondoAuto = () => {
@@ -1130,7 +1131,8 @@ const fondoAuto = () => {
     if (!db.fondoAuto[`${v}:ini`]) { db.fondoAuto[`${v}:ini`] = day; l.stage = 'fondo'; l.video = false; save(); aviso(); }
     for (const at of [60, 19 * 60]) { // 01:00 y 19:00 (si el servicio se estaba reiniciando justo ahí, hasta 15 minutos después)
       const k = `${v}:${at}`;
-      if (min >= at && min < at + 15 && db.fondoAuto[k] !== day) { db.fondoAuto[k] = day; l.stage = 'fondo'; l.video = false; save(); aviso(); }
+      // A la 01:00 el fondo le gana a la sala de juegos que siga abierta (cuenta como un toque); a las 19:00 no: si hay sala, manda la sala
+      if (min >= at && min < at + 15 && db.fondoAuto[k] !== day) { db.fondoAuto[k] = day; l.stage = 'fondo'; l.video = false; if (at === 60) l.stageAt = Date.now(); save(); aviso(); }
     }
   }
 };
