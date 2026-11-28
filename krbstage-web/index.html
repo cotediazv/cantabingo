@@ -969,6 +969,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
 .int-cifra{border:1px solid var(--linea);border-radius:10px;background:var(--tarima);padding:16px 18px}
 .int-cifra b{display:block;font-family:var(--f-display);font-weight:800;font-size:clamp(40px,5vw,60px);line-height:1;color:var(--foco)}
 .int-cifra span{display:block;margin-top:6px;font-size:14px;color:var(--tenue)}
+@media (max-width:600px){.int-cifras{grid-template-columns:1fr 1fr;gap:10px}.int-cifra{padding:12px 14px}.int-cifra span{font-size:13px}}
 .int-pasos{list-style:none;margin:36px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
 .int-pasos li{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start;border:1px solid var(--linea);border-radius:10px;background:var(--tarima);padding:18px}
 .int-pasos b{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--foco);color:var(--noche);font-family:var(--f-display);font-weight:800;font-size:26px;line-height:1}
@@ -1129,7 +1130,12 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
       <div class="etiqueta">Innovación</div>
       <h2>KRB Interactivo</h2>
       <p class="int-bajada">Desarrollamos y aplicamos juegos interactivos para grandes volúmenes de personas, mezclados con la animación en vivo.</p>
-      <div class="int-cifras" id="int-cifras" hidden></div>
+      <div class="int-cifras" id="int-cifras">
+        <div class="int-cifra"><b>250</b><span>personas por noche en promedio en Mercado Kennedy</span></div>
+        <div class="int-cifra"><b>350</b><span>personas por noche en promedio en Tobalaba</span></div>
+        <div class="int-cifra"><b>250</b><span>personas por noche en promedio en Frida Kahlo</span></div>
+        <div class="int-cifra"><b>2023</b><span>nace KRB Stage, con una historia desde 2009 a través de Kararock Band, que le da las iniciales</span></div>
+      </div>
       <ol class="int-pasos">
         <li><b>1</b><div><h3>Escanea el código QR con tu celular</h3><p>El código de la pantalla abre la sala de juegos en el navegador.</p></div></li>
         <li><b>2</b><div><h3>Pon tu nombre, apellido y participa</h3><p>Desde ahí juega: cartones, respuestas, notas y votos.</p></div></li>
@@ -1203,7 +1209,7 @@ footer .envoltura{display:flex;justify-content:space-between;gap:16px;flex-wrap:
       <div class="etiqueta esp-mont-tit">Show producido íntegro por KRB Stage</div>
           <div class="esp-montados">
             <a class="esp-mont" data-code="DbfKhfKM2E4" href="https://www.instagram.com/reel/DbfKhfKM2E4/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Pet Shop Boys</b><small>por Mr. Psíquico</small></a>
-            <a class="esp-mont" data-code="DbggHTrBw98" href="https://www.instagram.com/reel/DbggHTrBw98/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Depeche Mode vs Pet Shop Boys</b></a>
+            <a class="esp-mont" data-code="DbggHTrBw98" href="https://www.instagram.com/reel/DbggHTrBw98/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Depeche Mode vs Pet Shop Boys</b><small>por Guillermo Rojas y Mr. Psíquico</small></a>
             <a class="esp-mont" data-code="DbjoqmEsPWX" href="https://www.instagram.com/reel/DbjoqmEsPWX/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Depeche Mode</b><small>por Guillermo Rojas</small></a>
             <a class="esp-mont" data-code="DZ2buyOzr6k" href="https://www.instagram.com/reel/DZ2buyOzr6k/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Dua Lipa</b><small>por Josefa Bejarano</small></a>
             <a class="esp-mont" data-code="DXgxo5XkR4L" href="https://www.instagram.com/reel/DXgxo5XkR4L/" target="_blank" rel="noopener"><div class="esp-media"><span class="esp-ver">▶ Ver video</span></div><b>Lady Gaga</b><small>por Ninoska Coetzee</small></a>
