@@ -221,7 +221,8 @@ module.exports = function programacion({ app, dir }) {
   // ---------- Cómo se escribe cada show ----------
   // «El Bingo de…» pasó a ser «Los juegos de» + el local (Cote, 23 nov)
   const JUEGOS_DE = { MK: 'Mercado Kennedy', TOB: 'Tobalaba', FRIDA: 'Frida' };
-  const losJuegos = (local) => `Los juegos de ${JUEGOS_DE[local] || 'Frida'}`;
+  // Frida, los domingos a las 2 de la tarde: «Tarde de juegos» (Cote, 28 nov)
+  const losJuegos = (local) => (local === 'FRIDA' ? 'Tarde de juegos' : `Los juegos de ${JUEGOS_DE[local] || 'Frida'}`);
   function showGlosa(s, local) {
     if (!s) return '';
     if (s.tipo === 'standup') return `Stand Up: ${plain(s.nombre) ? s.nombre.toUpperCase() : ''}`.trim();
@@ -246,7 +247,8 @@ module.exports = function programacion({ app, dir }) {
     else if (s.tipo === 'doble') t = `Doble de ${s.nombre}`;
     else if (s.tipo === 'bingo') t = losJuegos(local);
     else t = [s.nombre, s.artista ? `(${s.artista})` : ''].filter(Boolean).join(' ');
-    return local === 'TOB' ? `BINGO + ${t}` : t; // sin «+ Karaoke» (Cote, 24 nov)
+    // Tobalaba: «Noche de juegos +» delante del show del viernes (Cote, 28 nov; antes «BINGO +»); sin «+ Karaoke» (24 nov)
+    return local === 'TOB' ? `Noche de juegos + ${t}` : t;
   }
   const interno = (s) => Boolean(s) && (s.tipo === 'bingo' || /bingo|juego/i.test(`${s.nombre || ''}`));
   const showVacio = (s) => !s || (!['piano', 'bingo'].includes(s.tipo) && !clean(s.nombre));
@@ -257,7 +259,7 @@ module.exports = function programacion({ app, dir }) {
   const etiquetaTurno = (f, cortesia) => { const x = parse(f); return cortesia ? `(${DIA_TURNO[x.wd]} ${x.d} ${MES_CORTO[x.m - 1]})` : `${DIA_TURNO[x.wd]} ${pad(x.d)}`; };
   const ETQ = { MK: 'MK', TOB: 'Tob', FRIDA: 'Frida' };
   const etqCam = (local, wd) => (local === 'MK' && wd === 5 ? 'MK Karaoke' : ETQ[local]);
-  const etqEdi = (local, wd) => (local === 'MK' && wd === 5 ? 'MK Karaoke' : local === 'FRIDA' && wd === 0 ? 'Frida Bingo' : ETQ[local]);
+  const etqEdi = (local, wd) => (local === 'MK' && wd === 5 ? 'MK Karaoke' : local === 'FRIDA' && wd === 0 ? 'Frida Tarde de juegos' : ETQ[local]);
   const ORDEN_ENT = { 4: ['MK', 'FRIDA', 'TOB'], 5: ['MK', 'FRIDA', 'TOB'], 6: ['MK', 'FRIDA', 'TOB'], 0: ['MK', 'FRIDA', 'TOB'] };
   const ORDEN_CAM = { 4: ['MK', 'FRIDA', 'TOB'], 5: ['FRIDA', 'MK', 'TOB'], 6: ['MK', 'FRIDA', 'TOB'], 0: ['FRIDA', 'MK', 'TOB'] };
   const ORDEN_EDI = { 4: ['MK', 'FRIDA', 'TOB'], 5: ['MK', 'FRIDA', 'TOB'], 6: ['FRIDA', 'MK', 'TOB'], 0: ['FRIDA', 'MK', 'TOB'] };
@@ -441,11 +443,11 @@ module.exports = function programacion({ app, dir }) {
   }
   function leerShowCartelera(t, local) {
     t = t.trim();
-    if (local === 'TOB') t = t.replace(/^BINGO\s*\+\s*/i, '').replace(/\s*\+\s*Karaoke\s*$/i, '');
+    if (local === 'TOB') t = t.replace(/^(BINGO|Noche de juegos)\s*\+\s*/i, '').replace(/\s*\+\s*Karaoke\s*$/i, '');
     let x;
     if ((x = t.match(/^Stand Up:\s*(.+)$/i))) return { tipo: 'standup', nombre: x[1].trim() };
     if (/piano man/i.test(t)) return { tipo: 'piano' };
-    if (/bingo de frida|^los juegos de/i.test(t)) return { tipo: 'bingo' };
+    if (/bingo de frida|^los juegos de|^tarde de juegos$/i.test(t)) return { tipo: 'bingo' };
     if ((x = t.match(/^Banda Tributo a\s+(.+)$/i))) return { tipo: 'tributo', nombre: x[1].trim(), banda: true };
     if ((x = t.match(/^Tributo a\s+(.+)$/i))) return { tipo: 'tributo', nombre: x[1].trim() };
     if ((x = t.match(/^Doble de\s+(.+)$/i))) return { tipo: 'doble', nombre: x[1].trim() };
@@ -463,7 +465,7 @@ module.exports = function programacion({ app, dir }) {
     const con = (o) => (persona ? { ...o, persona } : o);
     if ((x = t.match(/^Stand Up:\s*(.+)$/i))) return con({ tipo: 'standup', nombre: x[1].trim() });
     if (/^piano man$/i.test(t)) return { tipo: 'piano' };
-    if (/^(bingo de frida|los juegos de .+)$/i.test(t)) return { tipo: 'bingo' };
+    if (/^(bingo de frida|los juegos de .+|tarde de juegos)$/i.test(t)) return { tipo: 'bingo' };
     if (banda) return con({ tipo: 'tributo', nombre: t, banda: true });
     if (/^especial/i.test(t) || local === 'TOB') { x = t.match(/^(.+?)\s*\(([^)]+)\)\s*$/); return x ? { tipo: 'otro', nombre: x[1].trim(), artista: x[2].trim() } : { tipo: 'otro', nombre: t }; }
     if (local === 'FRIDA' && (wd === 5 || wd === 6)) return con({ tipo: 'doble', nombre: t });

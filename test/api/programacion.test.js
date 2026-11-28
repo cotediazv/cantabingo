@@ -20,7 +20,8 @@ test('cartelera de solo lectura: show y artista, nunca personas ni a quién se p
   const tob = c.locales.find((l) => l.local === 'TOB');
   assert.deepEqual(tob.dias.map((d) => [d.fecha, d.show, d.artista]), [['2026-12-04', 'Especial 80s', 'Marcelo Durán']]);
   const txt = await (await j('GET', '/api/prog/cartelera?m=2026-12&formato=texto')).text();
-  assert.match(txt, /Vier 04 - BINGO \+ Especial 80s \(Marcelo Durán\)/);
+  assert.match(txt, /Vier 04 - Noche de juegos \+ Especial 80s \(Marcelo Durán\)/);
+  assert.doesNotMatch(txt, /bingo/i);
   assert.doesNotMatch(JSON.stringify(c) + txt, /XYZ|Oscar|monto/i);
   // el respaldo sí pide la clave
   assert.equal((await j('GET', '/api/prog/respaldo')).status, 401);
@@ -69,4 +70,21 @@ test('turnos extra entre paréntesis: el monto va a mano y sin él no se envía'
   const r2 = await (await j('GET', '/api/prog/revisar?m=2026-12', null, tok)).json();
   assert.ok(!r2.avisos.some((a) => /turno extra/.test(a.texto)));
   assert.notEqual((await j('POST', '/api/prog/glosa/enviar', { mes: '2026-12' }, tok)).status, 409);
+});
+
+test('Noche de juegos en Tobalaba y Tarde de juegos en Frida (Cote, 28 nov): nada escribe «Bingo» solo', async () => {
+  const srv = await startServer();
+  srvs.push(srv);
+  const j = (m, p, b, t) => fetch(srv.url + p, { method: m, headers: { 'Content-Type': 'application/json', 'x-prog': t || '' }, body: b ? JSON.stringify(b) : undefined });
+  const tok = (await (await j('POST', '/api/prog/login', ADMIN)).json()).token;
+  await j('POST', '/api/prog/celda', { fecha: '2026-12-04', local: 'TOB', celda: { show: { tipo: 'otro', nombre: 'Especial Rock' }, editor: 'Vero' } }, tok);
+  await j('POST', '/api/prog/celda', { fecha: '2026-12-06', local: 'FRIDA', celda: { show: { tipo: 'bingo' }, editor: 'Meni' } }, tok);
+  const c = await (await j('GET', '/api/prog/cartelera?m=2026-12')).json();
+  assert.equal(c.locales.find((l) => l.local === 'TOB').dias[0].cartelera, 'Noche de juegos + Especial Rock');
+  assert.equal(c.locales.find((l) => l.local === 'FRIDA').dias[0].cartelera, 'Tarde de juegos');
+  const a = await (await j('GET', '/api/prog/archivos?m=2026-12', null, tok)).json();
+  assert.match(a.cartelera, /Dom 6 - Tarde de juegos/);
+  assert.match(a.camaras, /Frida Tarde de juegos: Meni/);
+  assert.ok(a.filas.some((f) => f[1] === 'FRIDA' && f[2] === 'SHOW' && f[3] === 'Tarde de juegos'));
+  assert.doesNotMatch(a.cartelera + a.camaras + a.entretencion + a.turnos, /bingo/i);
 });
