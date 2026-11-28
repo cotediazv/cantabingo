@@ -1367,6 +1367,7 @@ if (Test-Path $yml) {
       if (-not $yaCorre) {
         Start-Process -FilePath $cf -ArgumentList @("tunnel", "--config", "`"$yml`"", "run") -WindowStyle Hidden
       }
+      $script:tunelCf = $cf; $script:tunelYml = $yml; $script:tunelHost = $hostTunel
       Write-Host ("  Desde internet: https://" + $hostTunel + "  (pide la clave)") -ForegroundColor Green
     }
   }
@@ -1539,7 +1540,7 @@ function Diagnostico {
                    @('GetProfileParameter','{"parameterCategory":"SimpleOutput","parameterName":"StreamEncoder"}'),
                    @('GetProfileParameter','{"parameterCategory":"SimpleOutput","parameterName":"VBitrate"}'),
                    @('GetProfileParameter','{"parameterCategory":"AdvOut","parameterName":"Encoder"}'))) {
-    try { $r = [KRB.Obs]::Consultar($q[0], $q[1]); $r = $r -replace '^.*"responseData":', '' -replace '"requestStatus".*$', ''; & $L ("OBS " + $q[0] + $(if ($q[1]) { " " + $q[1] } else { "" }) + ": " + $r) } catch {}
+    try { $r = [KRB.Obs]::Consultar($q[0], $q[1]); $i = $r.IndexOf('"responseData"'); if ($i -ge 0) { $r = $r.Substring($i + 15).TrimEnd('}') } elseif ($r.IndexOf('"comment"') -ge 0) { $r = "OBS respondio: " + ($r -replace '^.*"comment"\s*:\s*"([^"]*)".*$', '$1') }; & $L ("OBS " + $q[0] + $(if ($q[1]) { " " + $q[1] } else { "" }) + ": " + $r) } catch {}
   }
   [IO.File]::WriteAllText((Join-Path $root "diagnostico.txt"), ($o -join "`r`n"), (New-Object Text.UTF8Encoding $false))
 }
@@ -1562,8 +1563,36 @@ function Subir-Registro {
     $script:ultimaSubida = $huella
   } catch {}
 }
+# ---------- Vigilante del tunel (Cote, 28 nov: el diagnostico mostro «Cloudflare Tunnel error» en luces.krbstage.cl) ----------
+# Antes el tunel solo se abria al partir el programa: si se cerraba o quedaba pegado, nadie lo volvia a abrir y el panel no
+# respondia desde afuera. Ahora, cada 5 minutos, el Dell prueba su propia direccion por internet; si falla dos veces
+# seguidas (o el tunel no esta corriendo), lo vuelve a abrir, lo anota y avisa al celular.
+$script:tunelFallos = 0
+function Revisar-Tunel {
+  if (-not $script:tunelCf -or -not $script:tunelHost) { return }
+  try {
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    $corre = Get-CimInstance Win32_Process -Filter "Name='cloudflared.exe'" -ErrorAction SilentlyContinue | Where-Object { $_.CommandLine -like "*tunel.yml*" }
+    $ok = $false
+    if ($corre) {
+      try { $r = Invoke-WebRequest -Uri ("https://" + $script:tunelHost + "/api/estado") -UseBasicParsing -TimeoutSec 15; $ok = $true }
+      catch { $code = 0; try { $code = [int]$_.Exception.Response.StatusCode } catch {}; if ($code -eq 401 -or $code -eq 200) { $ok = $true } }
+    }
+    if ($ok) { $script:tunelFallos = 0; return }
+    $script:tunelFallos++
+    if (-not $corre -or $script:tunelFallos -ge 2) {
+      foreach ($x in $corre) { try { Stop-Process -Id $x.ProcessId -Force -ErrorAction SilentlyContinue } catch {} }
+      Start-Sleep -Seconds 2
+      Start-Process -FilePath $script:tunelCf -ArgumentList @("tunnel", "--config", "`"$($script:tunelYml)`"", "run") -WindowStyle Hidden
+      [KRB.Bitacora]::Anotar("Tunel de internet: no respondia; se volvio a abrir")
+      [KRB.Aviso]::Mandar("El tunel de luces.krbstage.cl no respondia. El Dell lo volvio a abrir (" + (Get-Date -Format "HH:mm") + ").", $true)
+      $script:tunelFallos = 0
+    }
+  } catch {}
+}
 Anotar-Consumo
 $proximoConsumo = (Get-Date).AddMinutes(10)
+$proximoTunel = (Get-Date).AddMinutes(3)
 $proximaSubida = (Get-Date).AddMinutes(2)
 $script:diagNoche = ""
 Mostrar-Version
@@ -1578,6 +1607,7 @@ while ($true) {
   $ahoraN = Get-Date; $nocheAyer = [KRB.Bitacora]::Noche($ahoraN)
   if ($ahoraN.Hour -eq 1 -and $ahoraN.Minute -ge 35 -and $script:diagNoche -ne $nocheAyer -and -not $enActividad) { $script:diagNoche = $nocheAyer; try { Diagnostico } catch {}; $proximaSubida = Get-Date }
   if ((Get-Date) -ge $proximaSubida) { Subir-Registro; $proximaSubida = (Get-Date).AddMinutes(10) }
+  if ((Get-Date) -ge $proximoTunel) { Revisar-Tunel; $proximoTunel = (Get-Date).AddMinutes(5) }
   $forzar = [KRB.Web]::PedirActualizar
   # Nunca durante las actividades (Cote, 27 nov): en el horario del local (con margen) no se busca ni se reinicia; solo si se
   # pide a mano con "Buscar actualizacion ahora"

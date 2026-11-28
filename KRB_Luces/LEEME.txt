@@ -113,3 +113,4 @@ OBS: TRANSMISION AUTOMATICA (27 nov)
 - (28 nov) Si OBS graba mientras transmite, el programa detiene la grabacion (Cote: no grabar al transmitir).
 - (28 nov) El Automatico no sale del grupo que eligio el DJ (el Dell rechaza cambios a otro grupo); la fuerza de la musica elige la escena dentro del grupo. El fader del DJ es la intensidad general del Dell.
 - (28 nov) El registro de la noche y el diagnostico se suben solos cada 10 min a la Sala (Centro de control > Registro de las luces del Dell).
+- (28 nov) Vigilante del tunel: cada 5 min el Dell prueba luces.krbstage.cl; si falla 2 veces lo vuelve a abrir y avisa al celular.
