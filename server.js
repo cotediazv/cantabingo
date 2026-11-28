@@ -1282,7 +1282,7 @@ db.gameDraw.total ||= 3;
 // toca el juego), «Por sorteo» (tómbola) y «Por votación» (el público vota desde el celular). La elección queda
 // guardada para las noches siguientes. Al cambiar de pestaña, un sorteo o una votación a medio hacer se cancela.
 const HOWS = ['manual', 'sorteo', 'votacion'];
-const howOf = () => EVENTO ? 'manual' : (HOWS.includes(db.gameDraw.how) ? db.gameDraw.how : db.gameDraw.free ? 'manual' : 'sorteo');
+const howOf = () => (HOWS.includes(db.gameDraw.how) ? db.gameDraw.how : db.gameDraw.free ? 'manual' : 'sorteo'); // también en la copia de eventos (orden 13 de Code 0, 28 nov)
 app.post('/api/gamedraw/mode', requireAdmin, (req, res) => {
   const b = req.body || {};
   const how = HOWS.includes(b.how) ? b.how : b.free ? 'manual' : 'sorteo';

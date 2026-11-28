@@ -22,7 +22,8 @@ test('modo evento: nombre del evento y todos los juegos', async () => {
   assert.ok(st.expires - Date.now() > 13 * 3600e3); // de 9:00 a 18:00 alcanza
   const g = await srv.ok('GET', '/api/gamedraw');
   // todos los juegos, como en los locales (orden 12 de Code 0, pedido de Cote, 28 nov: «Quisiera que estuvieran todos los juegos»)
-  assert.deepEqual(g.games, ['bingo', 'rosco', 'festival', 'objeto', 'desafio']); assert.equal(g.how, 'manual'); assert.equal(g.evento, true);
+  assert.deepEqual(g.games, ['bingo', 'rosco', 'festival', 'objeto', 'desafio']); assert.equal(g.evento, true);
+  await srv.admin.post('/api/gamedraw/mode', { how: 'manual' });
   assert.equal(g.eventoNombre, 'Colada Continua');
   assert.equal((await srv.ok('GET', '/api/tema')).eventoNombre, 'Colada Continua');
   const free = (game) => srv.admin.call('POST', '/api/gamedraw/free', { game });
@@ -59,6 +60,39 @@ test('modo evento: nombre del evento y todos los juegos', async () => {
   assert.equal(d.phase, 'intro');
   assert.equal((await free('bingo')).status, 200);
   assert.equal((await free('enpie')).status, 400); // lo que no es un juego del menú sigue sin poder elegirse
+});
+
+test('modo evento: también Por sorteo y Por votación, de principio a fin', async () => {
+  // orden 13 de Code 0, pedido de Cote (28 nov): «tiene que tener la opción manual, sorteo y votación del público. Al igual
+  // que la sala de juegos normal»
+  const srv = await startServer({ env: { MODO_EVENTO: '1' } });
+  srvs.push(srv);
+  const { sid } = await srv.openRoom({ name: 'Los Juegos de Colada Continua' });
+  // Por sorteo: iniciar el sorteo, girar la tómbola y sale un juego del evento
+  let g = await srv.admin.post('/api/gamedraw/mode', { how: 'sorteo' });
+  assert.equal(g.how, 'sorteo');
+  assert.equal((await srv.admin.call('POST', '/api/gamedraw/free', { game: 'bingo' })).status, 409); // cada pestaña solo lo suyo
+  g = await srv.admin.post('/api/gamedraw/ready');
+  assert.deepEqual(g.ready.pool, ['bingo', 'rosco', 'festival', 'objeto', 'desafio']);
+  g = await srv.admin.post('/api/gamedraw');
+  assert.ok(['bingo', 'rosco', 'festival', 'objeto', 'desafio'].includes(g.last.game));
+  assert.equal((await srv.ok('GET', '/api/stage')).show, 'juego');
+  // Por votación: la presentación lleva el nombre del evento y el público elige; gana El Festival con 2 de 3 votos
+  await srv.admin.post('/api/gamedraw/mode', { how: 'votacion' });
+  let v = await srv.admin.post('/api/gamevote/intro');
+  for (let i = 0; i < 8; i++) v = await srv.admin.post('/api/gamevote/next');
+  v = await srv.admin.post('/api/gamevote/start');
+  assert.deepEqual(v.options, ['bingo', 'rosco', 'festival', 'objeto', 'desafio']);
+  assert.equal(v.venue, 'evento');
+  const tok = [];
+  for (const n of ['ANA', 'LUIS', 'ROSA']) tok.push((await srv.join(sid, n, 'PRUEBA')).token);
+  await srv.ok('POST', '/api/gamevote/vote', { sid, token: tok[0], game: 'festival' });
+  await srv.ok('POST', '/api/gamevote/vote', { sid, token: tok[1], game: 'festival' });
+  await srv.ok('POST', '/api/gamevote/vote', { sid, token: tok[2], game: 'bingo' });
+  await new Promise((r) => setTimeout(r, 31000)); // la votación dura 30 s
+  v = await srv.ok('GET', '/api/gamevote');
+  assert.equal(v.winner, 'festival');
+  assert.equal((await srv.ok('GET', '/api/vote')).title, 'El Festival de Colada Continua');
 });
 
 test('sin modo evento: la Sala de los locales queda igual', async () => {

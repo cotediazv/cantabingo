@@ -634,17 +634,13 @@ views.nuevo = async () => {
       <label class="f" id="pname-wrap" hidden>Nombre del bingo<input type="text" name="name" maxlength="60" value="Los Juegos de Frida"></label>
       <label class="f" id="ptheme-wrap" hidden>Colores en pantalla<select id="ptheme">
         <option value="frida">Magenta (como Frida)</option><option value="tobalaba">Rojo (como Tobalaba)</option><option value="kennedy">Celeste azulado (como Mercado Kennedy)</option></select></label>
-      <label class="f">Número de cartones <span class="hint">de 25 a 3.000</span><input type="number" name="count" min="25" max="3000" value="320" required></label>
-      <div class="wide"><button class="primary big">Crear los cartones</button></div>
+      <label class="f">Número de participantes <span class="hint">de 25 a 3.000</span><input type="number" name="count" min="25" max="3000" value="320" required></label>
+      <div class="wide"><button class="primary big">Crear juego</button></div>
     </form>`;
   const f = $('#f');
   // Copia de eventos (Cote, 27 nov: «una sala aparte… para eventos externos»): en vez del local, el nombre del evento
   const ev = !!(await fetch('/api/tema', { cache: 'no-store' }).then((r) => r.json()).catch(() => ({}))).evento;
   if (ev) {
-    // orden 12 de Code 0, pedido de Cote (28 nov): «debería decir número de participantes. Y crear juego»
-    const cnt = f.querySelector('input[name="count"]').closest('label');
-    cnt.innerHTML = cnt.innerHTML.replace('Número de cartones', 'Número de participantes');
-    f.querySelector('.wide button.primary').textContent = 'Crear juego';
     f.querySelector('.wide').outerHTML = `<label class="f wide">Nombre del evento<input type="text" id="evname" maxlength="45" required placeholder="Ej.: Colada Continua"></label>
       <p class="muted small wide" id="ev-note">La sala se llamará «Los Juegos de …» y el bingo «El Bingo de …».</p>`;
     $('#pname-wrap').remove(); $('#ptheme-wrap').remove();
@@ -2179,11 +2175,11 @@ async function paintGameNav() {
   if (!g) return;
   const info = GAME_INFO(g.venue);
   const how = g.how || (g.free ? 'manual' : 'sorteo'); // pestaña elegida: «Manual», «Por sorteo» o «Por votación»
-  // Copia de eventos (Cote, 27 nov): solo los juegos del evento y la pestaña «Manual», abierta de una
+  // Copia de eventos: el nombre del evento y sus juegos; Manual, Por sorteo y Por votación, como en los locales (orden 13 de
+  // Code 0, pedido de Cote, 28 nov)
   if (g.evento) {
     if (g.eventoNombre) window.EVENTO_NOMBRE = g.eventoNombre;
     document.querySelectorAll('.games-nav [data-game]').forEach((el) => { el.hidden = !(g.games || []).includes(el.dataset.game); });
-    if (!navOpen) navOpen = 'manual';
   }
   document.querySelectorAll('.g-fest').forEach((b) => { b.textContent = info.festival.name; });
   document.querySelectorAll('[data-game]').forEach((el) => { const done = how === 'sorteo' && g.played.includes(el.dataset.game); el.classList.toggle('g-played', done); el.title = done ? 'Salió en el último sorteo: queda fuera del próximo' : ''; });
