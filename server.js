@@ -943,6 +943,46 @@ app.get('/api/luces/dj', async (req, res) => {
   }
   res.json({ url: `${base}/dj#tk=${encodeURIComponent(db.lucesTk)}` });
 });
+// Registro de las luces del Dell, en línea (pedido de Cote, 28 nov: «no voy a ir a buscar el registro al Dell semana a
+// semana; búsquense una forma en la cual puedan verlo online»). El Dell lo sube solo cada 10 minutos (solo si cambió) con la
+// clave de las luces (la misma LUCES_CLAVE de Render, que nunca está en el repositorio): las últimas noches y el diagnóstico.
+// Lo leen el moderador (#/lucesreg) y Code 4 con un enlace de lectura (?k=…; solo lee, no toca nada; se cambia con ?nueva=1).
+app.post('/api/luces/registro', (req, res) => {
+  const key = process.env.LUCES_CLAVE || '';
+  const got = String(req.get('authorization') || '').replace(/^Bearer\s+/i, '');
+  if (!key || !got || got.length !== key.length || !crypto.timingSafeEqual(Buffer.from(got), Buffer.from(key))) return fail(res, 401, 'Clave de las luces incorrecta');
+  const b = req.body || {};
+  const r = db.lucesReg ||= { noches: {} };
+  const corta = (t, n) => String(t || '').slice(-n);
+  for (const n of Array.isArray(b.noches) ? b.noches.slice(0, 3) : []) {
+    if (n && /^\d{4}-\d{2}-\d{2}$/.test(String(n.noche || ''))) r.noches[n.noche] = { texto: corta(n.texto, 300000), at: Date.now() };
+  }
+  const fechas = Object.keys(r.noches).sort();
+  while (fechas.length > 21) delete r.noches[fechas.shift()];
+  if (b.diagnostico) r.diag = { texto: corta(b.diagnostico, 200000), at: Date.now() };
+  r.version = String(b.version || '').slice(0, 80); r.at = Date.now();
+  save();
+  res.json({ ok: true });
+});
+app.get('/api/luces/registro', (req, res) => {
+  db.lucesLectura ||= crypto.randomBytes(12).toString('hex');
+  const admin = validToken(req.get('x-admin'));
+  const k = String(req.query.k || '');
+  const okK = k.length === db.lucesLectura.length && crypto.timingSafeEqual(Buffer.from(k), Buffer.from(db.lucesLectura));
+  if (!admin && !okK) return fail(res, 401, 'Sin permiso');
+  if (admin && req.query.nueva) { db.lucesLectura = crypto.randomBytes(12).toString('hex'); save(); }
+  const r = db.lucesReg || { noches: {} };
+  const noches = Object.keys(r.noches).sort().reverse();
+  const noche = noches.includes(String(req.query.noche)) ? String(req.query.noche) : noches[0] || '';
+  const out = { at: r.at || 0, version: r.version || '', noches, noche, texto: noche ? r.noches[noche].texto : '', diag: (r.diag || {}).texto || '', diagAt: (r.diag || {}).at || 0 };
+  if (admin) out.enlace = `${/^localhost|^127\./.test(req.get('host') || '') ? 'http' : 'https'}://${req.get('host')}/api/luces/registro?k=${db.lucesLectura}&formato=texto`;
+  if (req.query.formato === 'texto') {
+    res.type('text/plain; charset=utf-8');
+    return res.send(`REGISTRO DE LAS LUCES (Dell de Kennedy) · subido ${out.at ? new Date(out.at).toLocaleString('es-CL', { timeZone: 'America/Santiago' }) : 'nunca'} · versión ${out.version}\nNoches guardadas: ${noches.join(', ')}\n\n=== NOCHE ${noche} ===\n${out.texto}\n\n=== DIAGNÓSTICO (${out.diagAt ? new Date(out.diagAt).toLocaleString('es-CL', { timeZone: 'America/Santiago' }) : 'sin diagnóstico'}) ===\n${out.diag}\n`);
+  }
+  if (!admin) { delete out.enlace; }
+  res.json(out);
+});
 // Qué está mostrando cada pantalla liviana (pv.html, el deco): avisa cada 30 s (pedido de Cote, 25 nov: verlo desde la
 // casa en el Centro de control). Solo en memoria.
 const decos = {};
