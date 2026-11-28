@@ -110,3 +110,4 @@ OBS: TRANSMISION AUTOMATICA (27 nov)
 - (27 nov) Las luces se encienden solas en Standby (Azul, fundido continuo) a las 19:00, jueves a sabado.
 - (28 nov) Si OBS se cierra en su horario (o estaba transmitiendo), a los 20 s el Dell lo abre de nuevo sin la pantalla de
   modo seguro y pide transmitir (un intento por minuto). Aviso al celular cuando pasa y cuando la memoria pasa el 90 %.
+- (28 nov) Si OBS graba mientras transmite, el programa detiene la grabacion (Cote: no grabar al transmitir).

@@ -371,6 +371,9 @@ namespace KRB {
             else { intentos++; string no = Resultado(Pedir("StopStream"));
               if (no != null && (intentos <= 3 || intentos % 30 == 0)) Bitacora.Anotar("OBS NO PARO la transmision (intento " + intentos + "): " + no); }
           }
+          // Cote (28 nov): «que OBS no grabe cuando transmite» (llenaba el disco). Si esta grabando mientras transmite, se detiene
+          if (Transmitiendo) { string rg = Pedir("GetRecordStatus");
+            if (System.Text.RegularExpressions.Regex.IsMatch(rg, "\"outputActive\"\\s*:\\s*true")) { Pedir("StopRecord"); Bitacora.Anotar("OBS estaba grabando mientras transmitia: se detuvo la grabacion (para no llenar el disco)"); } }
           if (caido) Bitacora.Anotar("OBS: conectado con el programa de luces");
           caido = false; previo = ahora;
           Estado = "conectado" + (porPartir ? " (intentando partir: " + intentos + " intentos)" : "");
