@@ -32,6 +32,7 @@
       // Copia de eventos (MODO_EVENTO): nombre libre (Cote, 27 nov) y todos los juegos (orden 12 de Code 0, 28 nov)
       window.EVENTO = !!r.evento; document.documentElement.classList.toggle('evento', !!r.evento);
       if (r.evento) window.EVENTO_NOMBRE = r.eventoNombre || '';
+      if (r.salas) window.SALAS = r.salas; // nombre de la sala de cada local (orden 15, 28 nov)
       if (typeof r.pub === 'string' && r.pub !== pub) { pub = r.pub; setPub(r.pub); paintPub(); }
       if (typeof r.priv === 'boolean' && r.priv !== priv) { priv = r.priv; paintPriv(); }
       if (typeof r.on === 'boolean' && r.on !== last) { last = r.on; set(r.on); paint(); }

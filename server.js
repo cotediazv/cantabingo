@@ -24,9 +24,24 @@ const SESSION_HOURS = EVENTO ? 14 : 8; // cuánto dura una sesión de bingo desd
 let db = { projects: {}, sessions: {} };
 try { db = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); } catch { /* primera ejecución */ }
 for (const s of Object.values(db.sessions)) s.auto = { on: false, interval: 10, stopOnWin: true };
+// Nombre de la sala de juegos de cada local (orden 15 de Code 0, pedido de Cote, 28 nov: «Sí, sí, va el cambio»; antes
+// «Los Juegos de <local>»): «Noche de juegos» en Mercado Kennedy y Tobalaba, «Tarde de juegos» en Frida. SALA_CON_LOCAL
+// decide si lleva el local («Noche de juegos de Mercado Kennedy») o no («Noche de juegos»): lo elige Cote. «El Bingo de
+// <local>» dentro del bingo no cambia (se arma con el local de la sala, no con su nombre). La copia de eventos sigue con
+// «Los Juegos de <evento>».
+const SALA_CON_LOCAL = false;
+const SALA_LOCAL = { frida: 'Frida', kennedy: 'Mercado Kennedy', tobalaba: 'Tobalaba' };
+const SALA_TIPO = { frida: 'Tarde de juegos', kennedy: 'Noche de juegos', tobalaba: 'Noche de juegos' };
+const salaNombre = (v) => (SALA_TIPO[v] ? (SALA_CON_LOCAL ? `${SALA_TIPO[v]} de ${SALA_LOCAL[v]}` : SALA_TIPO[v]) : '');
+// Un nombre de sala «de siempre» de un local (Los Juegos de…, El Bingo de…, Noche/Tarde de juegos, con o sin local) pasa
+// al nombre de ahora; un nombre escrito a mano («Otro nombre») queda igual
+const NOMBRE_LOCAL_RE = /^(?:Los Juegos de|El Bingo de|Noche de juegos de|Tarde de juegos de)\s+(?:Frida(?: Kahlo)?|Tobalaba|(?:Mercado )?Kennedy)$|^(?:Noche|Tarde) de juegos$/i;
+const nombreSala = (name, theme) => (SALA_TIPO[theme] && (!String(name || '').trim() || NOMBRE_LOCAL_RE.test(String(name).trim())) ? salaNombre(theme) : name);
 // Las salas se llaman «Los Juegos de…»; las ya creadas con el nombre anterior se renombran al arrancar
 for (const x of [...Object.values(db.sessions || {}), ...Object.values(db.projects || {})]) {
   if (typeof x.name === 'string') x.name = x.name.replace(/^El Bingo de /, 'Los Juegos de ');
+  // y, desde el 28 nov, al nombre de ahora del local (Noche / Tarde de juegos); si se cambia SALA_CON_LOCAL, también
+  if (x && typeof x.name === 'string' && x.theme) x.name = nombreSala(x.name, x.theme);
 }
 // Datos anteriores: los nombres ya guardados también pasan a mayúsculas
 {
@@ -546,7 +561,7 @@ app.post('/api/projects', (req, res) => {
   while (headers.length < 5) headers.push(' ');
   const p = {
     id: id(), created: Date.now(), format, values, items,
-    name: str(b.name, 60, 'Proyecto de bingo'),
+    name: EVENTO ? str(b.name, 60, 'Proyecto de bingo') : nombreSala(str(b.name, 60, 'Proyecto de bingo'), b.theme), // Noche / Tarde de juegos (orden 15)
     theme: EVENTO ? 'evento' : ['frida', 'tobalaba', 'kennedy'].includes(b.theme) ? b.theme : 'frida', // colores en pantalla según el local
     headers: headers.slice(0, 5).join(''), freeCenter: b.freeCenter !== false,
     startNumber: clamp(b.startNumber, 1, 999999, 1),
@@ -589,7 +604,7 @@ app.post('/api/projects/:id/session', (req, res) => {
 function startSession(p, b) {
   db.salaAt = Date.now(); // al abrir la sala, el GC Light del local pasa a la sala de juegos
   const s = {
-    id: shortId(), projectId: p.id, name: str(b.name, 50, p.name), password: str(b.password, 40),
+    id: shortId(), projectId: p.id, name: EVENTO ? str(b.name, 50, p.name) : nombreSala(str(b.name, 50, p.name), b.theme || p.theme), password: str(b.password, 40),
     cardsPerPlayer: clamp(b.cardsPerPlayer, 1, 4, 1),
     showName: b.showName !== false, isPublic: b.isPublic !== false, patterns: cleanPatterns(b.patterns),
     bigQr: false, // el bingo parte con su GC (corrección de Cote, 24 nov); el QR grande se pone con su botón
@@ -1552,7 +1567,7 @@ app.post('/api/gamevote/reset', requireAdmin, (_req, res) => {
 
 // Leer la pantalla actual es público, para que la fuente de OBS no necesite iniciar sesión; cambiarla es del moderador.
 // Diseño nuevo de las pantallas (pedido de Cote, 22 nov): encendido salvo que se apague en el Centro de control
-app.get('/api/tema', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json({ on: db.tema !== false, pub: db.pubUrl || '', evento: EVENTO, ...(EVENTO ? { eventoNombre: eventoNombre() } : {}), priv: !!db.privacidad }); });
+app.get('/api/tema', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json({ on: db.tema !== false, pub: db.pubUrl || '', evento: EVENTO, ...(EVENTO ? { eventoNombre: eventoNombre() } : { salas: { frida: salaNombre('frida'), kennedy: salaNombre('kennedy'), tobalaba: salaNombre('tobalaba') } }), priv: !!db.privacidad }); });
 // Aviso de datos personales al entrar (decisión de Cote, pregunta 9.2: desde diciembre, Ley 21.719; preparado por orden de
 // Code 0, 28 nov): una línea en la entrada de la sala de juegos y de la sala light. Apagado por defecto; se enciende en el
 // Centro de control. El texto final y la fecha los confirma Cote.
@@ -1589,7 +1604,7 @@ const cartonInfo = () => {
   if (!s) return out;
   if (st === 'bingo') {
     const p = db.projects[s.projectId] || {};
-    out.title = String(s.name || '').replace(/^Los Juegos de /, 'El Bingo de ');
+    out.title = SALA_LOCAL[s.theme] ? `El Bingo de ${SALA_LOCAL[s.theme]}` : String(s.name || '').replace(/^Los Juegos de /, 'El Bingo de '); // «El Bingo de <local>» no cambia
     const v = s.drawn[s.drawn.length - 1];
     const per = (p.values || 75) / 5;
     const letter = (x) => (p.format === 'numbers' && p.headers ? String(p.headers)[Math.min(4, Math.floor((x - 1) / per))] || '' : '');
@@ -1690,9 +1705,9 @@ setInterval(() => {
 // hay, crea 320) y dura hasta las 4 de la mañana siguiente (para que no se cierre en medio de los juegos).
 const AUTO_SALAS_FROM = '2026-11-21'; // la creación automática empieza el sábado 21 de noviembre (pedido de Cote)
 const AUTO_SALAS = [
-  { dow: 'Thu', from: 18 * 60 + 30, venue: 'kennedy', name: 'Los Juegos de Mercado Kennedy' }, // el local se llama Mercado Kennedy (pedido de Cote, 21 nov)
-  { dow: 'Fri', from: 18 * 60, until: 22 * 60 + 45, venue: 'tobalaba', name: 'Los Juegos de Tobalaba' },
-  { dow: 'Sun', from: 13 * 60, until: 17 * 60, venue: 'frida', name: 'Los Juegos de Frida' },
+  { dow: 'Thu', from: 18 * 60 + 30, venue: 'kennedy', name: salaNombre('kennedy') }, // el local se llama Mercado Kennedy (pedido de Cote, 21 nov)
+  { dow: 'Fri', from: 18 * 60, until: 22 * 60 + 45, venue: 'tobalaba', name: salaNombre('tobalaba') },
+  { dow: 'Sun', from: 13 * 60, until: 17 * 60, venue: 'frida', name: salaNombre('frida') },
 ];
 // Fin de los juegos (pedido de Cote, 20 nov): Tobalaba a las 22:45 y Frida (domingo) a las 17:00 la sala del local se
 // cierra sola, aunque se haya creado a mano. Kennedy (21:30) no se cierra: los jueves a las 21:45 pasa sola a Karaoke
