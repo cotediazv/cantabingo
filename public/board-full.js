@@ -70,7 +70,7 @@
       const previous = st.drawn.slice(-6, -1).reverse().map((v) => ballHTML(st, v, 'fbprev')).join('');
       $('#fb').innerHTML = `
         <header class="fb-top">
-          <b class="fb-title">${esc(bingoName(st.name))}</b>
+          <b class="fb-title">${esc(bingoName(st.name, st.theme))}</b>
           <span class="fb-pill"><span class="t2-emo">👥</span> <b>${st.players}</b> ${st.players === 1 ? 'participante' : 'participantes'}</span>
           <span class="fb-pill">Ronda <b>${st.round}</b></span>
           <span class="fb-pill"><b>${st.drawn.length}</b> de ${st.values}</span>

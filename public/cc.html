@@ -246,7 +246,10 @@ function cartonBtn() { return '<button type="button" id="ctBtn" data-a="carton">
 function paintCt() { var b = $('ctBtn'); if (b) b.innerHTML = S.carton ? '🗂️ Cartón al centro: quitar' : '🗂️ Cartón al centro'; }
 setInterval(function () { if ($('ctBtn')) api('GET', '/api/stage', null, function (e, r) { if (r) { S.carton = !!r.carton; paintCt(); } }); }, 4000);
 function foot() { return '<p class="center" style="margin-top:22px"><a class="btn" href="#/control">🎛️ Centro de control</a></p>'; }
-function bingoName(n) { return String(n || '').replace(/^Los Juegos de /, 'El Bingo de '); }
+var BINGO_LOCAL = { frida: 'Frida', kennedy: 'Mercado Kennedy', tobalaba: 'Tobalaba' };
+// La sala se llama «Noche / Tarde de juegos» (orden 15, 28 nov); dentro del bingo sigue «El Bingo de <local>»
+function bingoName(n, theme) { if (BINGO_LOCAL[theme] && /^(Los Juegos de|Noche de juegos|Tarde de juegos)\b/i.test(String(n || ''))) return 'El Bingo de ' + BINGO_LOCAL[theme]; return String(n || '').replace(/^Los Juegos de /, 'El Bingo de '); }
+var SALA_NOMBRE = { frida: 'Tarde de juegos', kennedy: 'Noche de juegos', tobalaba: 'Noche de juegos' };
 function letra(st, v) { var hs = String(st.headers || 'BINGO'); for (var c = 0; c < 5; c++) if (v <= Math.floor(((c + 1) * st.values) / 5)) return hs.charAt(c); return hs.charAt(4); }
 function conLetra(st, v) { return st.format === 'numbers' ? letra(st, v) + ' ' + v : String(v); }
 function figName(id) { var all = LINES.concat(SHAPES, LETTERS); for (var i = 0; i < all.length; i++) if (all[i][0] === id) return all[i][1]; return id; }
@@ -490,7 +493,7 @@ views.nuevo = function () {
     var o = topBar(['#/', 'Inicio']) + '<h1>Nuevo proyecto de bingo</h1><div class="panel"><p>¿Qué bingo es?</p><div class="row">';
     var ks = ['frida', 'tobalaba', 'kennedy'];
     for (var i = 0; i < ks.length; i++) o += btn(V[ks[i]], 'venue', d('v', ks[i]), 'third' + (ks[i] === v ? ' on' : ''));
-    o += '</div><p class="muted">Se llamará «Los Juegos de ' + V[v] + '».</p><p>Número de participantes <span class="muted">de 25 a 3.000</span></p><input id="count" type="number" min="25" max="3000" value="320">' + btn('Crear juego', 'crear', d('v', v), 'big primary paso') + '</div>';
+    o += '</div><p class="muted">Se llamará «' + SALA_NOMBRE[v] + '».</p><p>Número de participantes <span class="muted">de 25 a 3.000</span></p><input id="count" type="number" min="25" max="3000" value="320">' + btn('Crear juego', 'crear', d('v', v), 'big primary paso') + '</div>';
     render(o);
   };
   A.venue = function (el) { v = el.getAttribute('data-v'); var c = $('count').value; paint(); $('count').value = c; };
@@ -515,7 +518,7 @@ views.bingo = function () {
           o += ann(wn.length > 1 ? '🏆 ¡Bingo! Ganaron' : '🏆 ¡Bingo! Ganó', wn, ['Cartón ' + wc.join(' · ') + (wn.length === 1 && wp ? ' · 📍 ' + wp : ''), 'Figura: ' + figName((st.patterns || [])[0])]) + nav('bingo', false) + foot(); render(o); return;
         }
         var mins = Math.max(0, Math.round((st.expires - new Date().getTime() - offset) / 60000));
-        o += '<div class="panel"><h1>' + h(bingoName(st.name)) + '</h1><div class="muted">Ronda ' + st.round + ' · ' + st.players + ' participantes · ' + (st.players * st.cardsPerPlayer) + ' de ' + st.totalCards + ' cartones repartidos · quedan ' + Math.floor(mins / 60) + ' h ' + (mins % 60) + ' min</div><p style="margin:8px 0 0">Figura: <b>' + h(figName(st.patterns[0])) + '</b></p></div>';
+        o += '<div class="panel"><h1>' + h(bingoName(st.name, st.theme)) + '</h1><div class="muted">Ronda ' + st.round + ' · ' + st.players + ' participantes · ' + (st.players * st.cardsPerPlayer) + ' de ' + st.totalCards + ' cartones repartidos · quedan ' + Math.floor(mins / 60) + ' h ' + (mins % 60) + ' min</div><p style="margin:8px 0 0">Figura: <b>' + h(figName(st.patterns[0])) + '</b></p></div>';
         if (!st.drawn.length) o += howto('Bingo', BINGO_HOWTO);
         var n = st.drawn.length;
         o += '<div class="panel"><div class="balls"><span class="ball"><small>' + (n ? letra(st, st.drawn[n - 1]) : '') + '</small><b>' + (n ? st.drawn[n - 1] : '—') + '</b></span><span class="ball prev"><small>' + (n > 1 ? letra(st, st.drawn[n - 2]) : '') + '</small><b>' + (n > 1 ? st.drawn[n - 2] : '—') + '</b></span><div class="muted">VALOR ACTUAL · ANTERIOR</div></div>';
@@ -586,7 +589,7 @@ views.figura = function () {
       if (!st || location.hash !== '#/figura') return;
       if (st.winConfirmed) { go('#/ronda'); return; }
       if (st.started) { go('#/bingo'); return; }
-      render(topBar(['#/juegos', 'Juegos']) + '<h1>' + h(bingoName(st.name)) + '</h1><div class="panel"><h2>¿Qué figura se juega?</h2>' + figPicker(st.patterns[0]) + btn('Empezar el bingo', 'figura', '', 'big primary paso') + '</div>');
+      render(topBar(['#/juegos', 'Juegos']) + '<h1>' + h(bingoName(st.name, st.theme)) + '</h1><div class="panel"><h2>¿Qué figura se juega?</h2>' + figPicker(st.patterns[0]) + btn('Empezar el bingo', 'figura', '', 'big primary paso') + '</div>');
     });
   });
 };
@@ -1005,7 +1008,7 @@ A.loginAnim = function () {
   });
 };
 A.crear = function (el) {
-  var v = el.getAttribute('data-v'); var name = 'Los Juegos de ' + V[v];
+  var v = el.getAttribute('data-v'); var name = SALA_NOMBRE[v]; // el servidor igual pone el nombre de ahora del local
   toast('Creando los cartones…');
   api('POST', '/api/projects', { name: name, theme: v, count: $('count').value, format: 'numbers', values: 75, headers: 'BINGO', freeCenter: false, startNumber: 1 }, function (err, p) {
     if (err) { toast(err); return; }

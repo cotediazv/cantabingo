@@ -261,8 +261,15 @@ window.figSplash = (st) => {
   setTimeout(() => { clearInterval(t); el.remove(); }, left);
 };
 // Enlaces fijos: siempre llevan a la sesión activa, así el QR no cambia de una partida a otra
-// La sala se llama «Los Juegos de Frida»; dentro del bingo, el juego se llama «El Bingo de Frida»
-function bingoName(name) { return String(name || '').replace(/^Los Juegos de /, 'El Bingo de '); }
+// La sala se llama «Tarde de juegos» / «Noche de juegos» (orden 15, 28 nov; antes «Los Juegos de Frida»); dentro del bingo,
+// el juego sigue llamándose «El Bingo de Frida»: se arma con el local de la sala (theme), no con su nombre
+const BINGO_LOCAL = { frida: 'Frida', kennedy: 'Mercado Kennedy', tobalaba: 'Tobalaba' };
+function bingoName(name, theme) {
+  if (BINGO_LOCAL[theme] && /^(?:Los Juegos de|Noche de juegos|Tarde de juegos)\b/i.test(String(name || ''))) return `El Bingo de ${BINGO_LOCAL[theme]}`;
+  return String(name || '').replace(/^Los Juegos de /, 'El Bingo de ');
+}
+// Nombre de la sala de cada local, como lo decide el servidor (/api/tema: «Noche de juegos», «Tarde de juegos»…)
+window.salaNombre = (v) => ((window.SALAS || {})[v] || { frida: 'Tarde de juegos', kennedy: 'Noche de juegos', tobalaba: 'Noche de juegos' }[v] || '');
 const joinUrl = () => `${window.pubBase()}#/jugar`; // el QR del público: a la dirección elegida en el Centro de control
 const boardUrl = () => `${location.origin}${location.pathname}#/tablero`;
 const gcUrl = () => `${location.origin}${location.pathname}#/gc`;
@@ -400,7 +407,7 @@ views.simulada = async () => {
       <div class="wide"><button class="primary big paso">🤖 Crear sala simulada</button></div>
     </form>`;
   const f = $('#f'); let venue = 'frida';
-  const NAMES = { frida: 'Los Juegos de Frida', tobalaba: 'Los Juegos de Tobalaba', kennedy: 'Los Juegos de Mercado Kennedy' };
+  const NAMES = { frida: window.salaNombre('frida'), tobalaba: window.salaNombre('tobalaba'), kennedy: window.salaNombre('kennedy') }; // el servidor igual pone el nombre de ahora
   $('#venues').onclick = (e) => { const v = e.target.dataset.venue; if (!v) return; venue = v; $$('#venues button').forEach((b) => b.classList.toggle('on', b.dataset.venue === v)); };
   f.onsubmit = async (e) => {
     e.preventDefault();
@@ -661,7 +668,7 @@ views.nuevo = async () => {
         <p class="muted small" id="venue-note" style="margin-top:8px"></p>
         <input type="hidden" name="theme" value="frida">
       </div>
-      <label class="f" id="pname-wrap" hidden>Nombre del bingo<input type="text" name="name" maxlength="60" value="Los Juegos de Frida"></label>
+      <label class="f" id="pname-wrap" hidden>Nombre del bingo<input type="text" name="name" maxlength="60" value=""></label>
       <label class="f" id="ptheme-wrap" hidden>Colores en pantalla<select id="ptheme">
         <option value="frida">Magenta (como Frida)</option><option value="tobalaba">Rojo (como Tobalaba)</option><option value="kennedy">Celeste azulado (como Mercado Kennedy)</option></select></label>
       <label class="f">Número de participantes <span class="hint">de 25 a 3.000</span><input type="number" name="count" min="25" max="3000" value="320" required></label>
@@ -679,7 +686,7 @@ views.nuevo = async () => {
     setTimeout(() => $('#evname').focus(), 50);
   }
   // Pestañas de local: cada una fija el nombre y los colores de la pantalla; «Otro nombre» deja elegirlos
-  const VENUES = { frida: ['Los Juegos de Frida', 'magenta'], tobalaba: ['Los Juegos de Tobalaba', 'rojo'], kennedy: ['Los Juegos de Mercado Kennedy', 'celeste azulado'] }; // el local se llama Mercado Kennedy (pedido de Cote, 21 nov)
+  const VENUES = { frida: [window.salaNombre('frida'), 'magenta'], tobalaba: [window.salaNombre('tobalaba'), 'rojo'], kennedy: [window.salaNombre('kennedy'), 'celeste azulado'] }; // Noche / Tarde de juegos (orden 15, 28 nov)
   const pickVenue = (v) => {
     $$('#venues button').forEach((b) => { b.classList.toggle('on', b.dataset.venue === v); b.setAttribute('aria-selected', b.dataset.venue === v); });
     const custom = v === 'new';
@@ -746,7 +753,7 @@ views.figura = async (pid) => {
   const info = await api('GET', `/api/sessions/${p.sessionId}/host`);
   if (info.roundOver) { location.replace(`#/ronda/${pid}`); return undefined; }
   if (info.started) { location.replace(`#/anfitrion/${pid}`); return undefined; }
-  app.innerHTML = `<p class="back"><a href="#/juegos">← Juegos</a></p><h1>${esc(bingoName(p.name))}</h1>
+  app.innerHTML = `<p class="back"><a href="#/juegos">← Juegos</a></p><h1>${esc(bingoName(p.name, p.theme))}</h1>
     <form class="panel" id="f"><h2>¿Qué figura se juega?</h2>${patternPicker(info.patterns)}
       <button class="primary big paso">Empezar el bingo</button></form>`;
   $('#f').onsubmit = async (e) => {
@@ -865,7 +872,7 @@ async function hostConsole(p) {
       <p class="small an-hide" style="text-align:center;margin-top:22px"><a href="#/admin/${p.id}">⚙️ Administración</a></p>
     </div>`;
   const render = () => {
-    $('#title').textContent = bingoName(st.name);
+    $('#title').textContent = bingoName(st.name, st.theme);
     const mins = Math.max(0, Math.round((st.expires - Date.now()) / 60000));
     $('#meta').textContent = `Ronda ${st.round} · ${st.players} participantes · ${st.players * st.cardsPerPlayer} de ${st.totalCards} cartones repartidos · quedan ${Math.floor(mins / 60)} h ${mins % 60} min`;
     $('#pats').innerHTML = patternsInline(st.patterns); // figura de la ronda, a la vista del animador
@@ -1316,7 +1323,7 @@ views.jugar = async (sid) => {
     } else if (k === 'bingofin') {
       const wins = (st.results || []).filter((x) => x.validated && !x.dismissed);
       const names = [...new Set(wins.map((x) => x.name).filter(Boolean))];
-      head = `🎱 ${bingoName(st.name)}`;
+      head = `🎱 ${bingoName(st.name, st.theme)}`;
       body = (wins.some((x) => marks[x.cardNo]) ? '<div class="pvote-win">🎉 ¡BINGO!<small>¡Ganaste el bingo!</small></div>'
         : `<p class="pvote-ask">¡Tenemos ganador!${names.map((n) => `<b>${esc(n)}</b>`).join('')}</p>`) +
         '<p class="pact-next">Ya viene el próximo juego</p>';
@@ -1324,7 +1331,7 @@ views.jugar = async (sid) => {
       head = '🎡 El Rosko';
       body = '<p class="pvote-wait">Ya viene el sorteo de concursantes: ¡puedes salir elegido para participar en nuestro escenario!</p>';
     } else {
-      head = `🎮 Los Juegos de ${venueShort()}`;
+      head = `🎮 ${st.theme === 'evento' ? `Los Juegos de ${venueShort()}` : (st.name || window.salaNombre(st.theme))}`; // Noche / Tarde de juegos (orden 15)
       body = '<p class="pvote-ask">¡Ya estás en la sala!<b>Mira la pantalla: ya viene el próximo juego</b></p><p class="pact-next">Bingo, El Rosko, El Festival o El objeto más extraño</p>';
     }
     const html = `<div class="pvote-head"><b>${esc(head)}</b></div>${body}`;
@@ -1386,7 +1393,7 @@ views.jugar = async (sid) => {
       const h = window.voteHowto(v); phoneHowto(h.title, h.lines);
     } else if (key.startsWith('rosco')) phoneHowto('El Rosko', window.ROSCO_HOWTO);
     else if (key.startsWith('desafio')) phoneHowto('¿Quién quiere ser ganador?', window.DESAFIO_HOWTO);
-    else phoneHowto(bingoName(st.name), BINGO_HOWTO);
+    else phoneHowto(bingoName(st.name, st.theme), BINGO_HOWTO);
   };
   // Pedido de Cote (21 nov): el botón de KRB Kids no aparece durante los juegos, solo en los intermedios (sala abierta
   // esperando, QR, show, karaoke, sorteo o votación del próximo juego, y cuando un juego ya terminó)
@@ -1430,7 +1437,7 @@ views.jugar = async (sid) => {
     syncStage();
     if (round !== null && st.round !== round) me.cards.forEach((c) => marks[c.no].clear());
     round = st.round;
-    $('#title').textContent = bingoName(st.name);
+    $('#title').textContent = bingoName(st.name, st.theme);
     $('#meta').textContent = `${me.name} · Ronda ${st.round} · ${st.drawn.length} valores anunciados`;
     $('#pats').innerHTML = st.started ? patternsInline(st.patterns) : ''; // la figura se ve cuando el bingo empieza
     $('#now').innerHTML = `${ballHTML(st, st.drawn.at(-1), 'mid')}<div><div class="small"><b>Valor actual</b> · anteriores:</div>

@@ -795,7 +795,7 @@
       var sig = JSON.stringify([st.drawn, st.bigQr, st.celebrate, st.results, st.patterns, st.round]);
       if (sig === last) return;
       last = sig;
-      var title = String(st.name || '').replace(/^Los Juegos de /, 'El Bingo de ');
+      var title = { frida: 'El Bingo de Frida', kennedy: 'El Bingo de Mercado Kennedy', tobalaba: 'El Bingo de Tobalaba' }[st.theme] || String(st.name || '').replace(/^Los Juegos de /, 'El Bingo de '); // «El Bingo de <local>» no cambia (orden 15)
       var pid = (st.patterns || [])[0] || '';
       var fig = FIG[pid] || (pid.length === 1 ? 'Figura ' + pid.toUpperCase() : pid);
       var drawn = st.drawn || [];
