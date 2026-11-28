@@ -418,12 +418,16 @@ namespace KRB {
     }
     // Luces en Standby solas a las 19:00, jueves a sabado (Cote, 27 nov). Una vez por noche, hasta las 00:30; si el programa
     // parte dentro de ese rato (por ejemplo, despues de un corte de luz), tambien, porque el cable parte con todo apagado.
-    static string standbyNoche = "";
+    static string standbyNoche = null;
     public static void RevisarStandby() {
       DateTime t = DateTime.Now, d = t.AddHours(-6).Date; double m = (t - d).TotalMinutes; int dw = (int)d.DayOfWeek;
       string noche = d.ToString("yyyy-MM-dd");
+      // la noche ya hecha queda en un archivo: si el programa se vuelve a abrir en pleno show, NO repite el Standby
+      // (registro del 27 nov: se repitio a las 20:22 y 20:58, despues de que el programa se cerro solo)
+      string marca = Path.Combine(Path.GetDirectoryName(Archivo) ?? ".", "standby-noche.txt");
+      if (standbyNoche == null) { try { standbyNoche = File.Exists(marca) ? File.ReadAllText(marca).Trim() : ""; } catch { standbyNoche = ""; } }
       if ((dw == 4 || dw == 5 || dw == 6) && m >= 19 * 60 && m < 24 * 60 + 30 && standbyNoche != noche) {
-        standbyNoche = noche;
+        standbyNoche = noche; try { File.WriteAllText(marca, noche); } catch {}
         if (Web.MomentoProgramado("standby_inicio")) Bitacora.Anotar("Luces: Standby automatico de las 19:00");
       }
     }
