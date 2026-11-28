@@ -33,7 +33,7 @@ Sitio: https://cantabingo.onrender.com · Render (plan Starter, disco de 1 GB) �
 - Las claves del moderador son variables de entorno en Render (`ADMIN_USER`, `ADMIN_PASS`). **Nunca escribirlas en este repositorio, que es público.**
 - Pantallas verticales en los tres locales (Kennedy, Frida y Tobalaba); Tobalaba tiene además una horizontal.
 - La clave del karaoke (`KARAOKE_CLAVE`) también va solo en Render. Las claves del equipo (una por local) las pone Cote en Centro de control → Salas light (se guardan cifradas en los datos, nunca en el repositorio).
-- Nombres del equipo: **Code 1** = este chat (Sala de juegos); **Code 2** = guía de código de la página web; **Claude 1** = karaoke, planillas y GC (antes «Claude (karaoke)»); **Claude 2** = desarrollo y publicación de la página web. **Gabriel** (`gabodiazc`, hijo de Cote) desarrolla juegos en su propia rama; se revisan y se publican con el «publica» de Cote. **Code 3** = programación (cartelera y turnos) y **Claude 3** = su asistente por voz con Cote (desde el 23 nov): todo lo que hace Code 3 se anota en el «Registro Claude 3 y Code 3» (https://claude.ai/artifact/AGZ1bZxJqBQiDFhCc7Qjci) y lo que le falte (cuentas, accesos, archivos, respuestas) se lo pide a Claude 3 ahí.
+- Nombres del equipo: **Code 1** = este chat (Sala de juegos); **Code 2** = guía de código de la página web; **Claude 1** = karaoke, planillas y GC (antes «Claude (karaoke)»); **Claude 2** = desarrollo y publicación de la página web. **Gabriel** (`gabodiazc`, hijo de Cote) desarrolla juegos en su propia rama; se revisan y se publican con el «publica» de Cote. **Code 0** puede revisar todos los registros (pedido de Cote, 28 nov; enlaces en «Coordinación»). **Code 3** = programación (cartelera y turnos) y **Claude 3** = su asistente por voz con Cote (desde el 23 nov): todo lo que hace Code 3 se anota en el «Registro Claude 3 y Code 3» (https://claude.ai/artifact/AGZ1bZxJqBQiDFhCc7Qjci) y lo que le falte (cuentas, accesos, archivos, respuestas) se lo pide a Claude 3 ahí.
 
 ## Días de uso (no publicar esos días salvo que Cote lo pida)
 
@@ -165,6 +165,15 @@ Datos externos: la lista del karaoke sale del Apps Script de cada local (`?modo=
 - Página web: la trabajan Code 2 y Claude 2 (documento «Página web»: https://claude.ai/artifact/NVRyTTV3vG331n4G6TRA79).
 
 ## Coordinación
+
+**Code 0 puede revisar todos los registros** (pedido de Cote, 28 nov: «Quiero que a Code 0 te permitas revisar todos los registros que tengas»). Todos los documentos están en la cuenta de Cote y se abren con su enlace:
+- Registro de pedidos de Code 1 y Claude 1 (pestaña principal y «Todo lo realizado»): https://claude.ai/artifact/RbtjUoJnTiu6kE7QsH9bG5
+- Registro Claude 3 y Code 3 (programación, cartelera y turnos): https://claude.ai/artifact/AGZ1bZxJqBQiDFhCc7Qjci
+- Registro de las luces (Code 4): https://claude.ai/artifact/Nim2YfHh5C9XKGS6LfXse4
+- GC Show (código de las planillas): https://claude.ai/artifact/MzTn5UkwNy2YCzJDsWm7sm
+- Guía del animador: https://claude.ai/artifact/UDvbHK5zrbnRMVZzS1VR7d
+- Página web (Code 2 y Claude 2): https://claude.ai/artifact/NVRyTTV3vG331n4G6TRA79
+- Este CLAUDE.md y el historial del repositorio (`git log`).
 
 Documento compartido con Claude 1 (karaoke): https://claude.ai/artifact/RbtjUoJnTiu6kE7QsH9bG5
 Tiene el Registro de pedidos y la pestaña "Todo lo realizado". Leerlo solo cuando Cote diga "lee" o "revisa".
