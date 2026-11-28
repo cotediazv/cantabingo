@@ -449,6 +449,7 @@ views.control = async () => {
     <!-- Centro de control en secciones (orden 14 de Code 0, pedido de Cote, 28 nov: «todas las informaciones estén en pestañas…
          minimizadas… lo único que se vea como en primera opción son los enlaces de las pantallas de la sala de juego»): a la vista
          solo los enlaces de las pantallas; todo lo demás queda plegado y se abre tocando su título (ctlFold) -->
+    <div id="ctl-sala-go"></div><!-- siempre a la vista, al inicio (Cote, 28 nov: «el botón sala de juego debería estar siempre en el inicio») -->
     <div class="panel ctl-main" id="ctl-links-box"><h2>📺 Pantallas de la sala de juegos</h2>
       <div class="ctl-links">
         <p><b>📱 Participar</b><small>Lo que abre el público al escanear el QR</small><a class="link" href="${joinUrl()}" target="_blank">${esc(joinUrl())}</a></p>
@@ -458,7 +459,7 @@ views.control = async () => {
     </div>
     <div class="panel"><h2>Sala de juegos abierta</h2>
       <p class="muted small">Si hay más de una, a la gente le aparece una lista para elegir. Cierra las que ya no se usan.</p>
-      <div id="ctl-sala-go"></div><div id="open-list"></div></div>
+      <div id="open-list"></div></div>
     <details class="panel ctl-fold" id="ctl-stage-fold"><summary><h2>En pantalla</h2><span class="muted small">Tocar para abrir</span></summary>
       <p class="muted small" id="stage-note"></p>
       <div class="lp-stages" id="stage"></div>
